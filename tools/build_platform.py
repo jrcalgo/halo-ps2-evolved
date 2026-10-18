@@ -30,7 +30,11 @@ def main():
     report["elf_sha256"] = hashlib.sha256(elf.read_bytes()).hexdigest()
     report["elf_header"] = subprocess.check_output([str(reader), "-h", str(elf)], text=True)
     report["status"] = "compiled"
-    report["limits"] = "Compiled the NTSC startup, pad poll, GIF/VIF DMA setup, VU1 upload, and synthetic texture self-test. No PCSX2 or hardware run was observed, so M06 acceptance is not met."
+    sources = ["src/platform/main.c", "src/platform/triangle.vsm", "tools/ee-platform.mk",
+               "submodules/halo-ps2/engine/src/platform/video.c", "submodules/halo-ps2/engine/src/platform/pad.c",
+               "submodules/halo-ps2/engine/src/render/chain.c", "submodules/halo-ps2/engine/src/render/upload.c"]
+    report["source_sha256"] = {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in sources}
+    report["limits"] = "Compiled the synthetic textured VU1 triangle, presentation/input loop, and resource checks. Runtime reports remain separate; compilation does not pass M06."
     save(report_path, report)
     print(elf)
 

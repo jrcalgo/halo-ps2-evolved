@@ -1,0 +1,46 @@
+; Synthetic M06 geometry only. VU1 transforms positions and emits a textured GS triangle.
+; Input: scale, offset, GIF tag, then three {STQ, RGBA, float position} triples.
+; Output at qword 32: GIF tag and three transformed triples. No gameplay state.
+        .vu
+        .align 4
+        .global PlatformVu_Start
+        .global PlatformVu_End
+        .macro WAIT4
+        NOP NOP
+        NOP NOP
+        NOP NOP
+        NOP NOP
+        .endm
+        .macro VERTEX input, output
+        NOP lq VF04, \input+0(VI00)
+        NOP lq VF05, \input+1(VI00)
+        NOP lq VF06, \input+2(VI00)
+        WAIT4
+        mul.xyz VF06, VF06, VF01 NOP
+        WAIT4
+        add.xyz VF06, VF06, VF02 NOP
+        WAIT4
+        ftoi4.xy VF06, VF06 NOP
+        WAIT4
+        ftoi0.z VF06, VF06 NOP
+        WAIT4
+        NOP sq VF04, \output+0(VI00)
+        NOP sq VF05, \output+1(VI00)
+        NOP sq VF06, \output+2(VI00)
+        .endm
+PlatformVu_Start:
+        NOP lq VF01, 0(VI00)
+        NOP lq VF02, 1(VI00)
+        NOP lq VF03, 2(VI00)
+        WAIT4
+        NOP sq VF03, 32(VI00)
+        VERTEX 3, 33
+        VERTEX 6, 36
+        VERTEX 9, 39
+        NOP iaddiu VI01, VI00, 32
+        WAIT4
+        NOP xgkick VI01
+        NOP[E] NOP
+        NOP NOP
+PlatformVu_End:
+        .align 4

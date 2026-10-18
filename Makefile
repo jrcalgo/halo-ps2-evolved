@@ -2,6 +2,7 @@ PYTHON ?= python3
 BUILD_ENV ?= native
 OFFLINE ?= 0
 export BUILD_ENV OFFLINE
+export SCENARIO EMULATOR_MODE SMOKE_SECONDS
 
 .PHONY: doctor bootstrap test-host test-gameplay-host32 reference-scenario host-abi32 toolchain-plan toolchain host-tools native-prerequisites smoke-elf vu-smoke probe platform-elf convert elf test-emulator iso
 doctor:
@@ -49,6 +50,9 @@ platform-elf:
 convert:
 	$(PYTHON) tools/convert_map.py
 
-elf test-emulator iso:
+test-emulator:
+	$(PYTHON) tools/test_emulator.py
+
+elf iso:
 	@echo "Target '$@' is unavailable: source acquisition and audited implementation are pending. See docs/milestones.md." >&2
 	@exit 2

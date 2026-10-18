@@ -20,11 +20,12 @@ M00–M05 and M09 are complete. Native and container toolchains are built, the i
 | `make smoke-elf` | Compile a minimal EE ABI/logging ELF after SDK installation |
 | `make toolchain` | Build the pinned compiler/SDK; native and container builds have passed |
 | `make probe` | Build the frozen original integer-math closure for R5900 |
+| `make test-emulator` | Visibly run the platform fixture in interpreter/recompiler modes; retains private evidence |
 | `make platform-elf` | Build the M06 platform fixture; compilation alone does not pass M06 |
 | `make reference-scenario` | Repeat the source-derived ILP32 integer-math reference |
 | `make convert MAP=bloodgulch` | Convert the privately configured Xbox map twice; existing output directories are preserved through refusal |
 
-`elf`, `test-emulator`, and `iso` remain unavailable until their implementation gates are met. Use `BUILD_ENV=container` for supported compilation and host-test targets. The emulator runner is the next M06 integration task.
+`elf` and `iso` remain unavailable until their implementation gates are met. Use `BUILD_ENV=container` for supported compilation and host-test targets. The [visible emulator workflow](docs/emulator.md) is implemented; full M06 stability acceptance remains in progress.
 
 `HALO_BUILD_ROOT` selects generated output; the default is ignored `build/`. `HALO_TOOLCHAIN_SOURCE_ROOT` optionally selects compiler staging checkouts. `HALO_BUILD_JOBS` defaults to two and the driver accepts 1–64. No target changes global Git transport policy or installs system packages.
 
