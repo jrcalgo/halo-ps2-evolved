@@ -48,3 +48,15 @@ Current guarded ELF: `e002209c53d2a1f239cd1c3c3d50001c4837b83b70fc710d4835188b12
 - Measure all committed EE regions without double counting and preserve the reserve. The 4,034-byte host visibility measurement is not total EE memory accounting.
 
 The M10 report is historical evidence at completion commit `d5a5c23`; its strict current-source qualifier will intentionally reject later M11 source/runner changes. Reproduce M10 from that frozen revision when needed. Do not overwrite its accepted ELF/report to make a later revision appear identical. Close M11 only through the governing plan's milestone procedure, then make its dedicated completion commit.
+
+## Bounded staging lifecycle checkpoint
+
+`src/stream/staging.{h,c}` adds a portable, fixed four-slot owner-thread state machine backed by caller-provided storage. Requests carry a map identifier and a non-repeating 64-bit ticket; ticket exhaustion rejects further work rather than wrapping. No request performs heap allocation. High-water accounting counts the full stride of each occupied slot, including cancelled work awaiting acknowledgement.
+
+Queued and ready requests can be cancelled immediately. Reading requests retain their buffers until the worker reports completion; acquired buffers retain theirs until the consumer releases them. A map is drained only after both kinds of ownership end. Short/failed reads discard the request. Duplicate, stale and out-of-order operations fail without transitioning another request. Workers must return completion messages to the owner thread; these functions are deliberately not thread-safe. A consumer must release only after its final use (including any DMA use) ends. This module does not supply a GPU fence.
+
+`python3 -m unittest discover -s tests -p test_staging.py -v` passes the compiled C lifecycle regression: full-pool rejection, oversize rejection, delayed cancellation, held-buffer cancellation, ready/queued cancellation, map isolation, slot reuse, stale completion, short/failed reads, duplicate operations and serial exhaustion. Four 256-byte fixture slots reach exactly 1,024 bytes high-water. This is synthetic host evidence, not an EE streaming allocation measurement.
+
+Next: integrate an actual EE read worker and bounded completion transport; reserve aligned production storage/worker stack inside the streaming budget; connect stable map/resource keys and upload lifetimes; then exercise cancellation and unload/reload in the visible viewer. The current world viewer still uses blocking reads and does not link this module. M11 remains incomplete.
+
+Checkpoint validation: all 40 project host tests and 12 upstream synthetic suites pass natively. The restricted first run failed two existing ILP32 executions with SIGSYS; the permitted unrestricted rerun passed. Container and EE validation of this new module have not run.

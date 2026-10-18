@@ -67,3 +67,5 @@ The accepted runs are `platform-interpreter-a0d37b6cfabc46fdab57f2a9b191d5eb` an
 - Guarded ELF parity: `build/visibility/elf-parity.json`; ELF `e002209c53d2a1f239cd1c3c3d50001c4837b83b70fc710d4835188b12219dfa`.
 - Four current visible diagnostics and raw frame hashes: `build/visibility/framebuffer-comparison.json`. Exact culling on/off equality within each CPU mode; 23 cross-mode baseline pixel differences are recorded separately. Earlier unsafe unguarded readbacks do not qualify.
 - Native/container suites: 39 project tests and 12 upstream synthetic suites. Remaining M11 gates are explicit in `visibility-streaming.md` and section 14 of the governing plan.
+
+- M11 staging lifecycle checkpoint: `tests/test_staging.py` compiles the parent C state machine with C11 warnings as errors and passes cancellation, exhaustion, stale completion and failed-read cases. Synthetic host-only evidence; no EE or GPU ownership claim. See `docs/visibility-streaming.md`.
