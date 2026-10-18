@@ -12,6 +12,8 @@ ACTIONS = {
     "toolchain": ["python3", "tools/build_toolchain.py"],
     "smoke-elf": ["python3", "tools/build_smoke.py"],
     "vu-smoke": ["python3", "tools/build_smoke.py", "--vu"],
+    "probe": ["python3", "tools/build_probe.py"],
+    "platform-elf": ["python3", "tools/build_platform.py"],
     "test-host": ["make", "test-host"],
 }
 

@@ -38,28 +38,40 @@ Parent Git metadata, workspace permissions, source access, and the initial envir
 - DVP `world.vsm` object bytes match across environments (SHA-256 `b98e92d27413ade70bfcefa15b78408ffd033376791c9c8f9641fb90f63ca136`). That is assembly parity, not VU execution.
 - No PS2 runtime, emulator, or hardware behavior is claimed.
 
-## M04 — Not started
+## M04 — Blocked
 
-No selected artifact investigation or repeatable xemu reference scenario has been completed.
+`binary_session` reports `rea-agents` 6.5.0 with no target open. Ghidra 12.1.4 and Hopper are available; IDA is not configured. No retail artifact was supplied, and `xemu` is not on `PATH`, so no reference scenario was run. Details are in `evidence-ledger.md`. This is not an M04 pass.
 
 ## M05 — Complete
 
 `make test-host` runs `tests/test_resource_accounting.py`. The audited `halo-ps2` `arena_*` functions pass alignment, exhaustion, scratch reset, future-mark rejection, and size overflow on LP64 and ILP32 hosts, with identical check records. `config/memory-budget.json` totals 32 MiB and preserves the 5.5 MiB reserve. Overlapping claims fail. Steady-state allocations and pool exhaustion are reported in scenario results. This is host accounting, not EE runtime validation.
 
-## M06 — Not started
+## M06 — In progress
 
-The VU1 source assembles; GS initialization, VU execution, triangle/input/timer, and stability acceptance remain pending.
+`make platform-elf` compiles `src/platform/main.c` with the pinned `halo-ps2` `video.c` and its NTSC `graph_set_mode` path. The ELF was not executed. Triangle, pad, DMA, PCSX2 interpreter/recompiler, and the ten-minute smoke remain pending because `pcsx2` is not on `PATH`.
 
 ## M07 — In progress
 
-One untouched original gameplay module passes a bounded ILP32 host baseline. R5900 compilation, target execution, and the broader compatibility criteria remain pending.
+`make probe` compiles and links the frozen integer-math closure for R5900. The result status is `compiled`. The ELF was not executed, so host/EE comparison and the no-silent-stub acceptance are unmet. The ILP32 host result remains a separate host check.
 
-## M08–M23 — Not started
+## M08 — Not started
 
-Renderer runtime, game-loop integration, map conversion, gameplay systems, split-screen, campaign, streaming, and final hardware gates have not passed.
+The hybrid proof has not run. It waits on M06 and M07 execution, which have not happened.
+
+## M09 — Blocked
+
+No local retail ISO or map directory is configured. Conversion has not started. Retail data remains untracked.
+
+## M10–M22 — Not started
+
+These milestones wait on M09 or later gameplay gates. They have not been started.
+
+## M23 — Blocked
+
+No physical console, storage backend, or operator setup is available. Hardware qualification has not started.
 
 ## Next actions
 
-1. Execute M04. REA is registered for Cursor, but this session does not yet show REA tools until the client is restarted. `xemu` is not on `PATH`, and no retail input is configured. Leave M04 incomplete while those are absent.
-2. Execute M06 platform bring-up with the installed toolchain. PCSX2 is not on `PATH`, so interpreter and recompiler acceptance stays pending.
-3. Execute M07 only against the frozen integer-math closure. Do not treat the ILP32 host result as the R5900 gate.
+1. Supply a retail Xbox ISO or map directory and an `xemu` binary before any M04 reference scenario or M09 conversion.
+2. Supply PCSX2 before the M06 stability run and the M07 R5900 execution comparison.
+3. Do not treat `make probe` or `make platform-elf` as passed runtime gates.

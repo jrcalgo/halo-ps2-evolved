@@ -3,7 +3,7 @@ BUILD_ENV ?= native
 OFFLINE ?= 0
 export BUILD_ENV OFFLINE
 
-.PHONY: doctor bootstrap test-host test-gameplay-host32 host-abi32 toolchain-plan toolchain host-tools native-prerequisites smoke-elf vu-smoke probe convert elf test-emulator iso
+.PHONY: doctor bootstrap test-host test-gameplay-host32 host-abi32 toolchain-plan toolchain host-tools native-prerequisites smoke-elf vu-smoke probe platform-elf convert elf test-emulator iso
 doctor:
 	$(PYTHON) tools/doctor.py
 
@@ -37,6 +37,12 @@ vu-smoke:
 test-host:
 	$(PYTHON) tools/test_host.py
 
-probe convert elf test-emulator iso:
+probe:
+	$(PYTHON) tools/build_probe.py
+
+platform-elf:
+	$(PYTHON) tools/build_platform.py
+
+convert elf test-emulator iso:
 	@echo "Target '$@' is unavailable: source acquisition and audited implementation are pending. See docs/milestones.md." >&2
 	@exit 2
