@@ -3,7 +3,7 @@ BUILD_ENV ?= native
 OFFLINE ?= 0
 export BUILD_ENV OFFLINE
 
-.PHONY: doctor bootstrap test-host test-gameplay-host32 host-abi32 toolchain-plan toolchain host-tools native-prerequisites smoke-elf vu-smoke probe platform-elf convert elf test-emulator iso
+.PHONY: doctor bootstrap test-host test-gameplay-host32 reference-scenario host-abi32 toolchain-plan toolchain host-tools native-prerequisites smoke-elf vu-smoke probe platform-elf convert elf test-emulator iso
 doctor:
 	$(PYTHON) tools/doctor.py
 
@@ -27,6 +27,9 @@ host-abi32:
 
 test-gameplay-host32:
 	$(PYTHON) tools/test_gameplay_host32.py
+
+reference-scenario:
+	$(PYTHON) tools/run_reference_scenario.py
 
 smoke-elf:
 	$(PYTHON) tools/build_smoke.py

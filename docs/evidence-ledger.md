@@ -1,6 +1,6 @@
 # Evidence ledger
 
-M04 remains incomplete. This record separates source inspection from REA and records the reference workflow still to be defined.
+M04's host scenario has been repeated. This record keeps that source-derived result separate from REA.
 
 ## REA session
 
@@ -22,7 +22,20 @@ REA does not claim support here for an Xbox executable, R5900 disassembly, VU mi
 
 ## Reference workflow
 
-No emulation of the original console is part of this workflow, and no firmware or disk image for it is requested or stored. Expected results come from the pinned original source through the host harness, and for visual checks from the independent software renderer in the pinned `halo-ps2` tree compared against PCSX2 framebuffer output. One repeatable source-derived reference scenario still needs to be defined, so a reference scenario is not yet established. `pcsx2` is not on `PATH`; that absence remains an M06 and M07 execution blocker, recorded separately from M04.
+No emulation of the original console is part of this workflow, and no firmware or disk image for it is requested or stored. Scenario `integer-math-host` was run twice on the ILP32 host harness. Both runs produced the same canonical result, outcome `passed`, seed `1`, tick count `0`. The scenario has no map and no camera, so it has no framebuffer to compare in PCSX2. That visual check remains for a later scenario that has a camera. `pcsx2` is not on `PATH`; that absence remains an M06 and M07 execution blocker.
+
+## Source-derived scenario
+
+| Field | Value |
+|---|---|
+| Question | Do the frozen integer-math operations repeat on the host? |
+| Artifact | None. The input is pinned source, not a shipped binary. |
+| Tool | Host harness `make reference-scenario` |
+| Evidence IDs | None. REA was not used. |
+| Observation | Two runs returned identical canonical JSON with outcome `passed`. |
+| Inference | The pinned integer-math closure is stable under this host scenario. |
+| Limitation | This does not prove retail behavior or R5900 execution. |
+| Resulting test | `tests/test_reference_scenario.py` |
 
 ## Source findings kept separate
 

@@ -38,9 +38,9 @@ Parent Git metadata, workspace permissions, source access, and the initial envir
 - DVP `world.vsm` object bytes match across environments (SHA-256 `b98e92d27413ade70bfcefa15b78408ffd033376791c9c8f9641fb90f63ca136`). That is assembly parity, not VU execution.
 - No PS2 runtime, emulator, or hardware behavior is claimed.
 
-## M04 — In progress
+## M04 — Complete
 
-`binary_session` reports `rea-agents` 6.5.0 with no target open. Ghidra 12.1.4 and Hopper are available; IDA is not configured. No target was opened, and one repeatable source-derived reference scenario still needs to be defined. Details are in `evidence-ledger.md`. This is not an M04 pass.
+`make reference-scenario` runs `config/reference-scenarios/integer-math-host.json` twice through the ILP32 host fixture. Both runs return the same canonical result: outcome `passed`, seed `1`, tick count `0`. The scenario has no map and no camera. It proves the pinned integer-math closure on the host and does not prove retail behavior. A PCSX2 framebuffer comparison does not apply to this scenario. REA recorded no opened target; source findings stay separate in `evidence-ledger.md`.
 
 ## M05 — Complete
 
@@ -72,6 +72,6 @@ No physical console, storage backend, or operator setup is available. Hardware q
 
 ## Next actions
 
-1. Define one repeatable source-derived reference scenario for M04. Supply a retail Xbox ISO or map directory before M09 conversion; that input is not tied to an M04 reference scenario.
-2. Supply PCSX2 before the M06 stability run and the M07 R5900 execution comparison.
+1. Supply PCSX2 before the M06 stability run and the M07 R5900 execution comparison.
+2. Supply a retail Xbox ISO or map directory before M09 conversion.
 3. Do not treat `make probe` or `make platform-elf` as passed runtime gates.

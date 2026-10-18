@@ -1,0 +1,13 @@
+{
+  "id": "integer-math-host",
+  "map": null,
+  "difficulty_or_variant": "source-closure",
+  "player_actions": [],
+  "camera": null,
+  "observation_method": "ILP32 host execution of the frozen integer_math.c fixture; stdout is one canonical JSON line",
+  "seed": 1,
+  "tick_count": 0,
+  "source": "submodules/halo-64/source/math/integer_math.c",
+  "expected_outcome": "passed",
+  "limits": "No retail map and no camera. This scenario proves the pinned integer-math closure on the host. It does not prove retail behavior, and it has no framebuffer for a later PCSX2 visual comparison."
+}
