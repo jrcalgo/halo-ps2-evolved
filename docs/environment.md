@@ -66,3 +66,7 @@ The user supplied `SCPH-30001.rom0` and sidecars plus the Halo Xbox ISO under `~
 PCSX2 2.8.2 starts with `APPIMAGE_EXTRACT_AND_RUN=1` on the existing X11 display `:0.0`. Its ordinary AppImage FUSE mount is unavailable, so the extraction-based path is used without installing system packages. The BIOS boot and synthetic VU1 triangle are visible in the desktop window. The 15-second recompiler check passed; full stability runs are still open. Screenshots are scoped to the emulator process group, not other desktop windows.
 
 M06 subsequently passed 600 guest seconds in interpreter and recompiler modes with identical platform state and presentation snapshots. Retained-evidence qualification passed. The full evidence index is `emulator.md`; no physical-console result is claimed.
+
+## M10 corrected viewer checkpoint
+
+The BSP matrix restore builds natively and in the pinned container with matching allocated ELF sections (`e16df34e5d80a87d5e023b6d7f84dacfe5b329a49fc17f82dc141c0c75009726`). The supported static Chicago sky composition passes repeated private conversion and synthetic tests. Fixed camera, pad flight and both CPU-mode routes pass with current packs; retained-evidence qualification also passes. All 33 project tests and 12 upstream synthetic converter suites pass in the container. The earlier untested-world and missing-prerequisite statements are historical; `milestones.md` and `world-viewer.md` record current evidence and limitations.

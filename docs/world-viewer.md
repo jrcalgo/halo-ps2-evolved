@@ -1,6 +1,12 @@
 # Blood Gulch static-world viewer
 
-M10 is in progress and is not complete. `python3 tools/build_world.py` compiles the pinned halo-ps2 engine sources into parent-owned `build/world-elf/`. The ELF SHA-256 is `23ccc739d2db6acd96622aca7dc67978a9fa20ca4e547a6043119c0cb7df8a41`. `BUILD_ENV=container` uses the existing locked offline image and separate output. Both builds passed and allocated ELF sections match in `build/emulator/world-elf-parity.json`.
+M10 is **complete**. The fixed reference camera, five-waypoint pad flight and corrected five-minute route passed on the current ELF/packs. Recompiler and interpreter each completed 9,001 route frames with zero logged drops or resource failures; all 12 route views per mode were inspected. `python3 tools/qualify_world.py` passed retained technical qualification. M11 is next. This is static-world emulator acceptance; no Halo player behavior or physical-console performance is established.
+
+## Historical execution record
+
+The entries below retain the failed/interrupted attempts and intermediate findings. The final closure record supersedes their pending status.
+
+The initial implementation checkpoint was incomplete. `python3 tools/build_world.py` compiles the pinned halo-ps2 engine sources into parent-owned `build/world-elf/`. The ELF SHA-256 is `23ccc739d2db6acd96622aca7dc67978a9fa20ca4e547a6043119c0cb7df8a41`. `BUILD_ENV=container` uses the existing locked offline image and separate output. Both builds passed and allocated ELF sections match in `build/emulator/world-elf-parity.json`.
 
 The initial baseline used an unchanged upstream source tree; the later M10 correction checkpoint below records two local-fork fixes. The linker combines the existing BSP/model VU1 programs and PS2-native platform, renderer, visibility, texture cache, pack reader and object presentation sources. This executable does not contain original Halo gameplay code. Retail packs remain external private inputs from M09.
 
@@ -35,3 +41,9 @@ Reviewing the corrected-renderer route exposed invalid inherited test cameras: t
 Fresh fixed view `world-recompiler-a18045d4c9fe4cfca664463dcc5d0b42` finished 181 frames. Fresh pad flight `world-recompiler-b103944e5d164fcba2532170dc6b4dd4` finished 3,001 frames and all five waypoints; logged bounds are x `22.36..136.46`, y `-188.89..-48.79`, z `0.90..25.02`. Both use the corrected ELF and static-sky object pack, and passed retained log resource checks.
 
 The inward-facing recompiler route `world-recompiler-fa69cc52b952440eb3922b5870093d61` finished 9,001 frames with zero logged drops, texture failures, clipped-geometry losses or DMA overflow. Chain high-water was 7,964 qwords of 32,768. Logged EE preparation averages range 3.78–7.13 guest milliseconds, with 1,535–5,062 submitted triangles. The 12 retained route views were inspected. Their map geometry and material appearance remain stable; the aerial perimeter views expose unmodeled exterior below the sky dome, also outside the BSP in the independent reference. This is distinct from the earlier missing-floor defect, which is fixed. Texture/lightmap quantization, static UV animation, and a partial sky dome remain declared reductions. Interpreter route `world-interpreter-b6102d1b20874900b675f00ecbf1c44d` is running and has not passed. No physical-console performance conclusion is drawn.
+
+## M10 closure
+
+Interpreter route `world-interpreter-b6102d1b20874900b675f00ecbf1c44d` completed 9,001 frames, zero logged drops, chain high-water 7,982/32,768 qwords, 1,535–5,062 submitted triangles, and logged EE preparation averages of 3.95–7.47 guest milliseconds. No texture failure, clipped-geometry loss or DMA overflow was logged. All 12 interpreter views were inspected and agree with the recompiler route's geometry/material presentation. Both route contact sheets remain private beside their captures. The aerial map-exterior/partial-sky-dome limitation remains the same in both modes.
+
+`python3 tools/qualify_world.py` passed against the current ELF and packs. It qualified fixed run `world-recompiler-a18045d4c9fe4cfca664463dcc5d0b42`, pad run `world-recompiler-b103944e5d164fcba2532170dc6b4dd4`, and both corrected routes. The retained report is `build/emulator/world-qualification.json`. Native/container ELF parity is retained in `build/emulator/world-elf-parity.json`. The verified local fork/bundle/lock commit is `e1d8e11b348d941894873ef9cd0fc02c8b4a635a`. No retail assets or generated evidence were committed. All M10 acceptance bullets now have evidence; visibility/cache-churn/streaming stress remains M11, and physical-console validation remains M23.

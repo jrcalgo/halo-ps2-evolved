@@ -6,9 +6,9 @@ Status reviewed 2026-10-18. A milestone is complete only when every required acc
 
 ## Handoff — 2026-10-18
 
-Resume baseline is `c9082d2`, the M08 closure. M00–M09 are complete. M06 closed at `9f57c87`, M07 at `722778f`, and M09 at `e6eb7e5`. M10 has a visible Blood Gulch route in both CPU modes and is still open because the free-camera traversal has not passed. M11–M22 have not started. M23 stays blocked on a physical console.
+Current implementation baseline is `64aa289`; the M10 closure is recorded below. M00–M10 are complete. M06 closed at `9f57c87`, M07 at `722778f`, and M09 at `e6eb7e5`. M10’s corrected fixed view, free-camera traversal, both inward-facing routes and final retained-evidence qualification pass. Earlier route runs used a visually defective renderer and are historical evidence. M11–M22 have not started. M23 stays blocked on a physical console.
 
-Blood Gulch, Xbox build `01.10.12.2276`, converted twice. BSP SHA-256 is `55ab30028ccd76aa5a3358d062988480c9142fb9b89de2f7a50321b4f4452c09`. The largest axis error is `0.001114` inside the declared bound `0.001116` over 5503 triangles. Pack sizes are 405504, 2344960, and 350208 bytes. Inputs and packs stay under ignored `data/retail`.
+Blood Gulch, Xbox build `01.10.12.2276`, converted twice. BSP SHA-256 is `55ab30028ccd76aa5a3358d062988480c9142fb9b89de2f7a50321b4f4452c09`. The largest axis error is `0.001114` inside the declared bound `0.001116` over 5503 triangles. Current static-sky variant pack sizes are 405504, 2441216, and 350208 bytes; the original object pack remains preserved. Inputs and packs stay under ignored `data/retail`.
 
 `make platform-elf` links the pad poll, GIF/VIF DMA setup, VU1 upload, NTSC video, and the synthetic texture self-test. The self-test draws sprites. The ELF SHA-256 begins `109ca0eb70732463`. That checkpoint had no runtime capture. The later triangle now executes visibly; see M06 below. The accepted integer-math probe ELF is `7917b2cdca5c9b9e40f62998ab46081a95a1b730ca4267611f7228a05f8ab824`; see M07 below.
 
@@ -82,13 +82,9 @@ The visible object is synthetic. It is not a Halo player or a retail scene. The 
 
 `MAP=bloodgulch make convert` decompressed the locally configured Xbox cache, build `01.10.12.2276`, and converted it twice. The BSP, object, and texture pack hashes match across the two clean output directories. BSP SHA-256 is `55ab30028ccd76aa5a3358d062988480c9142fb9b89de2f7a50321b4f4452c09`. The largest axis error is `0.001114` against the declared bound `0.001116` over 5503 triangles. Pack sizes are 405504, 2344960, and 350208 bytes, inside the BSP, resident-gameplay, and texture-cache regions. Truncated and bad-magic headers fail in `tests/test_convert_map.py`. Retail inputs and packs stay under ignored `data/retail`.
 
-## M10 — In progress
+## M10 — Complete
 
-The viewer ELF is `23ccc739d2db6acd96622aca7dc67978a9fa20ca4e547a6043119c0cb7df8a41`. PCSX2 is 2.8.2. `python3 tools/run_world_viewer.py --route` is the five-minute route command. It is not yet an acceptance pass.
-
-Both CPU modes completed 9001 frames and 0 dropped frames. Recompiler run `world-recompiler-5fb93b007f7d40f9b5b69934cceb149e` took 305 wall seconds. Interpreter run `world-interpreter-188533b309954851867bd73310fd1d24` took 1213 wall seconds. Both logged a 12-key, 300-second camera path, a drawn sky model, lightmaps, EE preparation, submissions, texture hits, and chain sizes. No DMA overflow was reported. Wall time is not a console performance result.
-
-The earlier free-camera attempts failed their map-side check; the correction checkpoint below records the subsequent successful flight. Corrected route qualification is still open. See `world-viewer.md`.
+Corrected ELF `e16df34e5d80a87d5e023b6d7f84dacfe5b329a49fc17f82dc141c0c75009726` passes native/container allocated-section parity. In PCSX2 2.8.2, the fixed valley view agrees with the independent reference, the pad flight covers five waypoints, and each CPU-mode route completes 9,001 frames. All 12 retained views per mode were inspected. `python3 tools/qualify_world.py` passes current source/ELF/pack/configuration/log/capture checks. No texture failure, clipped-geometry loss or DMA overflow was logged. See `world-viewer.md` for corrected run identities, historical failures, guest profiler data and appearance limits. M11 is next; physical-console performance is unproven.
 
 ## M11–M22 — Not started
 
@@ -100,14 +96,18 @@ No physical console, storage backend, or operator setup is available. Hardware q
 
 ## Next actions
 
-1. Repeat and inspect M10’s five-minute routes with the corrected renderer and static-sky packs, then qualify the current evidence.
+1. Begin M11 at section 14 of the governing plan: validate cluster/portal connectivity, then compare culling with the accepted conservative baseline.
 2. Do not treat the completed 300-second route alone as M10 acceptance.
 3. Do not treat `make probe` or `make platform-elf` as passed runtime gates. M07’s runtime gate is `make test-emulator SCENARIO=probe`.
 
 ## Current implementation checkpoints
 
-`a7c3bfa` saves M06 implementation, `52a389b` saves M07 fixture preparation, `ac46127` saves M08 host replay preparation, and `87a913f` saves M10 viewer/reference preparation. These are explicitly incomplete checkpoints. Native and container suites now pass 25 project tests plus all 12 synthetic converter scripts. Original retail-data checks inside that synthetic suite remain skipped; M09 has its own separate conversion evidence.
+`a7c3bfa` saves M06 implementation, `52a389b` saves M07 fixture preparation, `ac46127` saves M08 host replay preparation, and `87a913f` saves M10 viewer/reference preparation. These are explicitly incomplete checkpoints. That earlier checkpoint passed 25 project tests plus all 12 synthetic converter scripts; the current container suite passes 33 project tests and 12 synthetic suites. Original retail-data checks inside that synthetic suite remain skipped; M09 has its own separate conversion evidence.
 
 ### M10 resume correction checkpoint
 
-The free-camera runner reached all five waypoints with corrected renderer ELF `e16df34e5d80a87d5e023b6d7f84dacfe5b329a49fc17f82dc141c0c75009726`, 3,001 frames and zero logged drops. The review also found missing BSP geometry caused by sky-state writes over the BSP matrix, and incorrect first-layer-only sky conversion. Both have scoped local-fork fixes and the fixed view now agrees with the geometry reference. The new static-sky object pack is deterministic across two conversions. M10 stays incomplete until corrected five-minute routes pass in both CPU modes and their visuals are inspected. See `world-viewer.md`; M11 has not started.
+The free-camera runner reached all five waypoints with corrected renderer ELF `e16df34e5d80a87d5e023b6d7f84dacfe5b329a49fc17f82dc141c0c75009726`, 3,001 frames and zero logged drops. The review also found missing BSP geometry caused by sky-state writes over the BSP matrix, and incorrect first-layer-only sky conversion. Both have scoped local-fork fixes and the fixed view now agrees with the geometry reference. The new static-sky object pack is deterministic across two conversions. At that checkpoint M10 remained incomplete pending corrected five-minute routes; those gates subsequently passed as recorded in the closure below. See `world-viewer.md`; M11 has not started.
+
+### M10 closure — Passed
+
+The corrected recompiler and interpreter routes each finished 9,001 frames with zero logged drops or resource failures. All 12 views per CPU mode were inspected; the independent fixed-view geometry comparison and five-waypoint pad flight pass. `python3 tools/qualify_world.py` rechecked the current retained evidence and passed. Corrected ELF is `e16df34e5d80a87d5e023b6d7f84dacfe5b329a49fc17f82dc141c0c75009726`. Fork `e1d8e11b348d941894873ef9cd0fc02c8b4a635a`, its recovery bundle, and dependency lock agree. Full evidence and limitations are in `world-viewer.md`. Prior pending-status checkpoint entries above are historical. M11–M22 remain unstarted and M23 remains blocked on physical hardware.

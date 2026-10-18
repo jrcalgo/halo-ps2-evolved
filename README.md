@@ -2,7 +2,7 @@
 
 Private integration project combining selected Halo gameplay sources with PS2-native rendering and offline conversion. The governing scope and acceptance gates are in [the implementation plan](plans/0.native-ps2-halo-hybrid-port.md).
 
-M00–M09 are complete. Native and container toolchains are built, the integer-math and datum probes have executed on R5900, and a synthetic gameplay object has driven a visible PS2 triangle for the platform smoke duration. Blood Gulch has been drawn on a 300-second scripted route in both CPU modes. M10 stays open until the free-camera traversal passes.
+M00–M10 are complete. Native and container toolchains are built, the integer-math and datum probes have executed on R5900, and a synthetic gameplay object has driven a visible PS2 triangle for the platform smoke duration. M10’s resume review repaired BSP/sky state corruption and static sky-layer conversion. The corrected fixed view, free-camera traversal, five-minute routes in both CPU modes, and retained-evidence qualification pass. M11 visibility/residency/streaming is next. Physical-console acceptance remains open.
 
 ## Available commands
 

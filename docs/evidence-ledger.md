@@ -52,3 +52,10 @@ The accepted runs are `platform-interpreter-a0d37b6cfabc46fdab57f2a9b191d5eb` an
 - ELF parity: `build/emulator/world-elf-parity.json`; corrected ELF `e16df34e5d80a87d5e023b6d7f84dacfe5b329a49fc17f82dc141c0c75009726`.
 - Static-sky variant: `build/convert/bloodgulch.json`; repeated pack identity and geometry bounds pass. Historical conversion report retained at `build/convert/bloodgulch-pre-m10-sky.json`.
 - Corrected five-minute routes remain pending. No physical-console performance claim is made.
+
+## M10 closure — Passed
+
+- Qualifier: `python3 tools/qualify_world.py`; report `build/emulator/world-qualification.json`, SHA-256 `7750a9957ea65a5bd482252a01b26f467d9c93ed13b32e4e4d44c26398b731d8`.
+- Current fixed/pad/route identities and results are indexed inside that report. Both CPU modes completed 9,001 route frames. All 12 captures per mode were visually reviewed.
+- Interpreter route: `build/emulator/runs/world-interpreter-b6102d1b20874900b675f00ecbf1c44d/`; recompiler route: `build/emulator/runs/world-recompiler-fa69cc52b952440eb3922b5870093d61/`.
+- Static-world emulator acceptance only. Sky animation, full Xbox shader equivalence, gameplay integration, streaming stress and physical-console performance are outside this result. See `world-viewer.md`.
