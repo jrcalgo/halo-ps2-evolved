@@ -68,9 +68,7 @@ This is one page, not the renderer's cache-miss path. World and object packs are
 
 ## Measured memory snapshot (partial)
 
-For the current stream viewer ELF, allocatable ELF sections total 2,127,664 bytes, including `.bss` (which already contains the 1 MiB staging storage, worker stack, metadata, and other static state). The viewer reserves a 12 MiB world arena; the loaded Blood Gulch map and renderer use 5,279,024 bytes, return to that baseline after every reload, and report a 6,314 KiB high-water value. Separately allocated renderer DMA chains use 1,179,648 bytes (two 32,768-qword chains and two 4,096-qword upload buffers).
-
-These figures are a partial snapshot, not total EE memory accounting: kernel/IOP overhead and other SDK/runtime allocations are not included. The measured DMA allocation also exceeds the initial `dma_commands` regional estimate of 1 MiB by 131,072 bytes. The stream staging area is part of ELF `.bss`, so adding its 1,048,576 bytes again to ELF static would double count it. The current budget remains a proposed partition; M11 memory acceptance stays open until all allocations are mapped to non-overlapping physical regions, including the measured DMA excess.
+The current stream ELF, arena, DMA chains, GS window, upload cap, and cache-cap table are recorded in `memory.md`. Allocated sections of `build/world-stream-elf/world.elf` total 2,199,488 bytes, 102,336 above the 2 MiB `elf_static` region, because the staging pool and lightmap decode buffer sit in `.bss`. An earlier snapshot of this ELF, before that decode buffer, was 2,127,664 bytes. The 12 MiB arena still returns to 5,279,024 bytes after each reload, with a 6,314 KiB high water. Renderer DMA chains are 1,179,648 bytes, 131,072 above the 1 MiB `dma_commands` region. Those bytes are not counted twice, and the reserve is not spent to cover them. Kernel, IOP, and a physical PS2 high water are still unmeasured, so M11 memory acceptance stays open.
 
 ## Remaining M11 gates
 
