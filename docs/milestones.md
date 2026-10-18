@@ -88,7 +88,7 @@ The viewer ELF is `23ccc739d2db6acd96622aca7dc67978a9fa20ca4e547a6043119c0cb7df8
 
 Both CPU modes completed 9001 frames and 0 dropped frames. Recompiler run `world-recompiler-5fb93b007f7d40f9b5b69934cceb149e` took 305 wall seconds. Interpreter run `world-interpreter-188533b309954851867bd73310fd1d24` took 1213 wall seconds. Both logged a 12-key, 300-second camera path, a drawn sky model, lightmaps, EE preparation, submissions, texture hits, and chain sizes. No DMA overflow was reported. Wall time is not a console performance result.
 
-The free-camera gate is still open. The latest recompiler attempt failed its map-side check. Resume that flight before treating M10 as complete. See `world-viewer.md`.
+The earlier free-camera attempts failed their map-side check; the correction checkpoint below records the subsequent successful flight. Corrected route qualification is still open. See `world-viewer.md`.
 
 ## M11–M22 — Not started
 
@@ -100,10 +100,14 @@ No physical console, storage backend, or operator setup is available. Hardware q
 
 ## Next actions
 
-1. Finish M10’s free-camera traversal so the pad can reach the map sides, then compare the fixed view with the geometry reference.
+1. Repeat and inspect M10’s five-minute routes with the corrected renderer and static-sky packs, then qualify the current evidence.
 2. Do not treat the completed 300-second route alone as M10 acceptance.
 3. Do not treat `make probe` or `make platform-elf` as passed runtime gates. M07’s runtime gate is `make test-emulator SCENARIO=probe`.
 
 ## Current implementation checkpoints
 
 `a7c3bfa` saves M06 implementation, `52a389b` saves M07 fixture preparation, `ac46127` saves M08 host replay preparation, and `87a913f` saves M10 viewer/reference preparation. These are explicitly incomplete checkpoints. Native and container suites now pass 25 project tests plus all 12 synthetic converter scripts. Original retail-data checks inside that synthetic suite remain skipped; M09 has its own separate conversion evidence.
+
+### M10 resume correction checkpoint
+
+The free-camera runner reached all five waypoints with corrected renderer ELF `e16df34e5d80a87d5e023b6d7f84dacfe5b329a49fc17f82dc141c0c75009726`, 3,001 frames and zero logged drops. The review also found missing BSP geometry caused by sky-state writes over the BSP matrix, and incorrect first-layer-only sky conversion. Both have scoped local-fork fixes and the fixed view now agrees with the geometry reference. The new static-sky object pack is deterministic across two conversions. M10 stays incomplete until corrected five-minute routes pass in both CPU modes and their visuals are inspected. See `world-viewer.md`; M11 has not started.

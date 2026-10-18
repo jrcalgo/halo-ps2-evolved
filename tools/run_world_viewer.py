@@ -1,6 +1,7 @@
 """Launch the existing static-world viewer visibly; short runs are diagnostics only."""
 import argparse
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -49,7 +50,9 @@ def main():
         if sha(ROOT / name) != digest:
             raise RuntimeError("Rebuild the viewer after changing " + name)
     converted = json.loads((ROOT / "build/convert/bloodgulch.json").read_text())
-    packs = ROOT / "data/retail/convert/bloodgulch/run-a"
+    packs = (ROOT / converted.get("pack_directory", "data/retail/convert/bloodgulch/run-a")).resolve()
+    if not packs.is_relative_to(ROOT / "data/retail"):
+        raise RuntimeError("Converted packs must remain under private data/retail")
     suffixes = {"bsp": ".hp2", "textures": ".tex.hp2", "objects": ".obj.hp2"}
     for kind, suffix in suffixes.items():
         if sha(packs / ("bloodgulch" + suffix)) != converted["pack_sha256"][kind]:
@@ -75,7 +78,7 @@ def main():
     log = run / "emulog.txt"
     command = [config["binary"], "-datapath", str(run / "data"), "-nofullscreen", "-logfile", str(log), "-elf", str(elf)]
     result = {"status":"running", "scenario":"bloodgulch-static", "mode":args.mode, "visible":True, "command":command,
-              "elf_sha256":sha(elf), "source_sha256":report["source_sha256"], "pack_sha256":converted["pack_sha256"],
+              "runner_sha256":sha(Path(__file__)), "elf_sha256":sha(elf), "source_sha256":report["source_sha256"], "pack_sha256":converted["pack_sha256"],
               "settings_sha256":sha(ini), "config_sha256":sha(cfg), "camera":args.camera, "requested_frames":args.frames,
               "bios_sha256":sha(config["bios"]), "emulator_sha256":sha(Path(config["binary"]).resolve()),
               "run_directory":str(run), "log":str(log), "captures":[], "limits":"Diagnostic static viewer; no M10 completion or hardware performance claim."}
@@ -98,44 +101,54 @@ def main():
                 if owned:
                     window=owned[0][0];subprocess.run(["wmctrl","-ir",window,"-e","0,80,80,1024,768"],check=True);focus(window)
             if args.freecam and window:
-                samples = re.findall(r"\[cam\] pos (-?\d+\.\d+) (-?\d+\.\d+) (-?\d+\.\d+)", text)
-                x = float(samples[-1][0]) if samples else 65.0
-                y = float(samples[-1][1]) if samples else -95.0
-                # Observed on this pad map: W moves toward -Y, S toward +Y. Strafe is chosen after the first X sample.
-                mode = getattr(keyboard, "mode", "south")
-                origin = getattr(keyboard, "origin", None)
-                z = float(samples[-1][2]) if samples else 9.0
-                if mode == "south" and y < -165:
-                    mode, origin = "north", None
-                elif mode == "north" and y > -60:
-                    mode, origin = "east", x
-                elif mode == "east" and origin is not None and x < origin - 8:
-                    mode, origin = "east-a", None
-                elif mode in ("east", "east-a") and x > 120:
-                    mode, origin = "west", x
-                elif mode == "west" and origin is not None and x > origin + 8:
-                    mode, origin = "west-d", None
-                elif mode in ("west", "west-d") and x < 30:
-                    mode, origin = "rise", None
-                elif mode == "rise" and z > 20:
-                    mode = "done"
-                keyboard.mode, keyboard.origin = mode, origin
-                keys = {"south": ("W", "3"), "north": ("S", "3"), "east": ("D", "3"), "east-a": ("A", "3"),
-                        "west": ("A", "3"), "west-d": ("D", "3"), "rise": ("E", "3"), "done": ()}[mode]
+                samples = re.findall(r"\[cam\] pos (-?\d+\.\d+) (-?\d+\.\d+) (-?\d+\.\d+) yaw (-?\d+\.\d+)", text)
+                # Use the actual pad camera, with no pathkeys. Slow input and
+                # logged-position feedback avoid flying past the whole map in
+                # one two-second camera-report interval.
+                targets = ((20, -170, 9), (120, -170, 9), (120, -60, 9),
+                           (20, -60, 9), (65, -95, 24))
+                waypoint = getattr(keyboard, "waypoint", 0)
+                keys = ()
+                if samples:
+                    x, y, z, yaw = map(float, samples[-1])
+                    if waypoint < len(targets):
+                        tx, ty, tz = targets[waypoint]
+                        dx, dy, dz = tx-x, ty-y, tz-z
+                        if math.hypot(dx, dy) < 18 and abs(dz) < 8:
+                            waypoint += 1
+                            print("Pad camera waypoint " + str(waypoint) + ": " + str((x,y,z)), flush=True)
+                            result.setdefault("pad_waypoints", []).append([x,y,z])
+                            save(path, result)
+                        else:
+                            yaw = math.radians(yaw)
+                            forward = dx*math.cos(yaw) + dy*math.sin(yaw)
+                            strafe = dx*math.sin(yaw) - dy*math.cos(yaw)
+                            keys = tuple((["W" if forward > 0 else "S"] if abs(forward) > 10 else []) +
+                                         (["D" if strafe > 0 else "A"] if abs(strafe) > 10 else []) +
+                                         (["E" if dz > 0 else "Q"] if abs(dz) > 8 else []))
+                keyboard.waypoint = waypoint
                 now = time.monotonic()
-                if keys != held or now - getattr(keyboard, "sent", 0) > 2:
+                if keys != held or (keys and now - getattr(keyboard, "sent", 0) > 2):
                     focus(window)
-                    time.sleep(0.2)
                     for key in held:
-                        if key not in keys: keyboard.key(key, False)
+                        keyboard.key(key, False)
+                    # Releasing before re-pressing also repairs focus-loss input.
                     for key in keys:
                         keyboard.key(key, True)
                     held = keys
                     keyboard.sent = now
             if window and "[prof] frames=" in text and not result["captures"]:
                 capture(window,run/"visible-start.png");result["captures"].append(str(run/"visible-start.png"));save(path,result)
-            if window and args.route and re.search(r"\[prof\] frames=4500 ", text) and len(result["captures"]) == 1:
-                capture(window,run/"visible-route.png");result["captures"].append(str(run/"visible-route.png"));save(path,result)
+            if window and args.route:
+                samples = re.findall(r"\[prof\] frames=(\d+) ", text)
+                frame = int(samples[-1]) if samples else 0
+                bucket = frame // 750
+                if bucket > 0 and bucket != result.get("route_capture_bucket"):
+                    shot = run / ("visible-route-%02d.png" % bucket)
+                    capture(window,shot)
+                    result["captures"].append(str(shot))
+                    result["route_capture_bucket"] = bucket
+                    save(path,result)
             done=re.search(r"\[done\] frames=(\d+) dropped=(\d+)",text)
             if window and done:
                 if int(done[1])<args.frames or "[cfg] no host:halo.cfg" in text:
@@ -153,6 +166,8 @@ def main():
                     # Converted BSP extents are about x 6..132, y -190..-45. Require a pad flight that reaches toward each side.
                     if min(xs) > 40 or max(xs) < 110 or min(ys) > -150 or max(ys) < -70 or span[2] < 6:
                         raise RuntimeError("Free camera did not traverse the map bounds: " + str([min(xs), max(xs), min(ys), max(ys), span]))
+                    if len(result.get("pad_waypoints", [])) != 5:
+                        raise RuntimeError("Pad-camera waypoint flight did not finish")
                     result["camera_span"] = span
                 time.sleep(.5);capture(window,run/"visible-final.png")
                 focus(window);keyboard_shot=Input();keyboard_shot.key("F8",True);time.sleep(.1);keyboard_shot.key("F8",False);keyboard_shot.close()

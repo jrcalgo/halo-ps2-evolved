@@ -44,3 +44,11 @@ The frozen integer-math closure and the NTSC video startup described in `source-
 ## M06 platform acceptance
 
 The accepted runs are `platform-interpreter-a0d37b6cfabc46fdab57f2a9b191d5eb` and `platform-recompiler-87ed53e831be4efb97514515817cac1c` under ignored `build/emulator/runs/`. Both report 35965 frames, Start/Cross input, fixed heap `1261568`, chain high-water 20/64 and intact guards over 600 guest seconds. The common ELF SHA-256 is `b62363fc5a536dede9db7ca886b4b6c4017bf0dc775bc4948c9873ff0484f711`. Presentation RGB hashes match (`7d69dda01f9f01a6a49fa446ff02df1533438c534d540f996205d894c6318e71`). `platform-qualification.json` retains independent log/configuration/identity/capture checks. This is synthetic emulator evidence, not retail gameplay or real-console qualification; REA was not used.
+
+## M10 resume correction evidence (incomplete milestone)
+
+- Corrected fixed view: `build/emulator/runs/world-recompiler-24b291464c9445dc99fd327804f60cd4/`; independent reference: `build/reference/bloodgulch-valley.png` (same camera and BSP).
+- Corrected pad flight, original object pack: `build/emulator/runs/world-recompiler-2ce3b40f236a4d29bb5669fe264e5daa/`; 3,001 frames, five recorded waypoints, zero logged drops.
+- ELF parity: `build/emulator/world-elf-parity.json`; corrected ELF `e16df34e5d80a87d5e023b6d7f84dacfe5b329a49fc17f82dc141c0c75009726`.
+- Static-sky variant: `build/convert/bloodgulch.json`; repeated pack identity and geometry bounds pass. Historical conversion report retained at `build/convert/bloodgulch-pre-m10-sky.json`.
+- Corrected five-minute routes remain pending. No physical-console performance claim is made.

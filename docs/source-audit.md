@@ -80,3 +80,7 @@ The current M06 fixture executes a synthetic checker-textured triangle visibly, 
 The unchanged datum module passes bounded ILP32 host tests and the same cases on R5900. Interpreter and recompiler results match the host, and the stale-handle mutation is rejected. The world viewer compiles into parent-owned native/container outputs with matching allocated ELF sections; its Blood Gulch runtime gate remains pending.
 
 Current checkpoint validation passes 25 project host tests and 12 upstream synthetic converter scripts in both native and container environments. Positive and negative integer/datum EE builds have matching allocated ELF contents across those environments. M07 execution is recorded in `gameplay-probe.md`.
+
+## M10 local rendering corrections
+
+The halo-ps2 upstream baseline remains `a571749c8c8de34c045e363726596989097c604a`; the local fork now includes `46787de` (restore BSP constants after sky) and `e1d8e11` (static supported Chicago sky composition). Gitlink, dependency lock, local bare fork, and private recovery bundle are updated together. Only the former changes engine code. `docs/world-viewer.md` records the observed defects, source evidence, current fixed view, tests, and open runtime gates. UV animation and general shader equivalence remain unproven.

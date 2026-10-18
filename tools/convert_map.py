@@ -107,6 +107,11 @@ def main() -> None:
     name = os.environ.get("MAP", "bloodgulch")
     compressed = retail_map(name)
     work = ROOT / "data/retail/convert" / name
+    variant = os.environ.get("CONVERT_VARIANT", "")
+    if variant:
+        if not variant.replace("-", "").replace("_", "").isalnum():
+            raise RuntimeError("CONVERT_VARIANT must be an alphanumeric directory label")
+        work = work / variant
     decompressed_dir = work / "decompressed"
     decompressed_dir.mkdir(parents=True, exist_ok=True)
     decompressed = decompressed_dir / compressed.name
@@ -141,6 +146,7 @@ def main() -> None:
         "map": name,
         "edition": {"engine": header.engine_name, "build": header.build, "type": header.map_type_name},
         "converter": pin,
+        "pack_directory": str((work / "run-a").relative_to(ROOT)),
         "compressed_sha256": sha256(compressed),
         "decompressed_sha256": sha256(decompressed),
         "pack_sha256": first,
