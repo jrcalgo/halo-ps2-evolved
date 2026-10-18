@@ -8,13 +8,14 @@ Status reviewed 2026-10-18. A milestone is complete only when every required acc
 
 Parent Git metadata, workspace permissions, source access, and the initial environment inventory are established. Historical recovery notes are retained in `environment.md`.
 
-## M01 — In progress
+## M01 — Complete
 
 - Eleven real submodules are registered, initialized recursively, and pinned to the current parent gitlinks.
 - Canonical upstream URLs remain in `.gitmodules`; full upstream/fork commits and bundle checksums are in `config/dependencies.json`.
 - Local fork adaptations are backed by complete private bundles before fork-only gitlinks are recorded.
 - Repeated offline bootstrap and synthetic fresh-parent restoration/refusal tests pass.
-- **Remaining acceptance gate:** restore all eleven exact gitlinks from a fresh checkout of the current parent commit using only the private bundles, then rerun bootstrap and verify clean matching heads.
+- A fresh no-hardlinks checkout of parent commit `e688717` restored all eleven dependencies using only the private bundles. Both recursive status and each exact commit matched the manifest; the parent remained clean.
+- A second `OFFLINE=1 make bootstrap` passed and left all eleven pins unchanged.
 - Private bundles are ignored and need a separate backup. Public upstreams cannot restore fork-only commits.
 
 ## M02 — In progress
@@ -58,7 +59,6 @@ Renderer runtime, game-loop integration, map conversion, gameplay systems, split
 
 ## Next actions
 
-1. Complete the actual fresh-parent bundle restoration for M01, then record and commit M01 closure.
-2. Keep native and container compiler builds running to their terminal reports; diagnose failures without claiming parity prematurely.
-3. After full builds pass, create and run the minimal EE ELF in both environments, compare hashes/ABI, and record the limits of emulator/hardware validation.
-4. Continue M02 closure audit and M05 resource accounting independently; no retail input or emulator/console path has been supplied yet.
+1. Keep native and container compiler builds running to their terminal reports; diagnose failures without claiming parity prematurely.
+2. After full builds pass, create and run the minimal EE ELF in both environments, compare hashes/ABI, and record the limits of emulator/hardware validation.
+3. Continue M02 closure audit and M05 resource accounting independently; no retail input or emulator/console path has been supplied yet.
