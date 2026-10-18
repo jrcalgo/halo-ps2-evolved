@@ -75,7 +75,7 @@ The EE README names newlib 4.5.0 while its configuration selects `ee-v4.6.0`; th
 
 ## Runtime preparation follow-up
 
-The current M06 fixture executes a synthetic checker-textured triangle visibly, including VU1 transforms, cache maintenance, guarded DMA submission, frame presentation and pad polling. The first 600-second interpreter attempt completed its stability loop but failed its controlled Cross-input acceptance; fresh runs are in progress after input delivery was made retryable. M06 is not complete. These are project-fixture observations, not REA findings or evidence that upstream world/model programs have executed.
+The current M06 fixture executes a synthetic checker-textured triangle visibly, including VU1 transforms, cache maintenance, guarded DMA submission, frame presentation and pad polling. The first 600-second interpreter attempt completed its stability loop but failed its controlled Cross-input acceptance; fresh full runs then passed in both CPU modes after input delivery was made retryable. M06 is complete, including independent retained-evidence qualification. These are project-fixture observations, not REA findings or evidence that upstream world/model programs have executed.
 
 The unchanged datum module now passes bounded ILP32 host tests and compiles for EE with explicit array/iterator layouts and a stale-handle mutation control. Target execution is pending. The world viewer compiles into parent-owned native/container outputs with matching allocated ELF sections; its Blood Gulch runtime gate remains pending.
 

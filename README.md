@@ -2,7 +2,7 @@
 
 Private integration project combining selected Halo gameplay sources with PS2-native rendering and offline conversion. The governing scope and acceptance gates are in [the implementation plan](plans/0.native-ps2-halo-hybrid-port.md).
 
-M00–M05 and M09 are complete. Native and container toolchains are built, the integer-math EE probe links, and Blood Gulch has been converted deterministically. The platform and probe runtime gates remain open; no integrated Halo gameplay executable has run.
+M00–M06 and M09 are complete. Native and container toolchains are built, the integer-math EE probe links, and Blood Gulch has been converted deterministically. Both full platform CPU-mode checks passed; the probe runtime gate remains open; no integrated Halo gameplay executable has run.
 
 ## Available commands
 
@@ -25,7 +25,7 @@ M00–M05 and M09 are complete. Native and container toolchains are built, the i
 | `make reference-scenario` | Repeat the source-derived ILP32 integer-math reference |
 | `make convert MAP=bloodgulch` | Convert the privately configured Xbox map twice; existing output directories are preserved through refusal |
 
-`elf` and `iso` remain unavailable until their implementation gates are met. Use `BUILD_ENV=container` for supported compilation and host-test targets. The [visible emulator workflow](docs/emulator.md) is implemented; full M06 stability acceptance remains in progress.
+`elf` and `iso` remain unavailable until their implementation gates are met. Use `BUILD_ENV=container` for supported compilation and host-test targets. The [visible emulator workflow](docs/emulator.md) is implemented; M06 stability acceptance and retained-evidence qualification passed.
 
 `HALO_BUILD_ROOT` selects generated output; the default is ignored `build/`. `HALO_TOOLCHAIN_SOURCE_ROOT` optionally selects compiler staging checkouts. `HALO_BUILD_JOBS` defaults to two and the driver accepts 1–64. No target changes global Git transport policy or installs system packages.
 

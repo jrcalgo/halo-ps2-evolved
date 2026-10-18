@@ -64,3 +64,5 @@ The mid-build note above is historical. Native and container toolchain builds la
 The user supplied `SCPH-30001.rom0` and sidecars plus the Halo Xbox ISO under `~/Documents/Halo`. ROM0 has ROMVER `0110AC20000727`. The local ISO pointer has been corrected; existing Blood Gulch map and pack hashes still match. Original BIOS files remain untouched; per-run copies and writable sidecars stay under ignored emulator output.
 
 PCSX2 2.8.2 starts with `APPIMAGE_EXTRACT_AND_RUN=1` on the existing X11 display `:0.0`. Its ordinary AppImage FUSE mount is unavailable, so the extraction-based path is used without installing system packages. The BIOS boot and synthetic VU1 triangle are visible in the desktop window. The 15-second recompiler check passed; full stability runs are still open. Screenshots are scoped to the emulator process group, not other desktop windows.
+
+M06 subsequently passed 600 guest seconds in interpreter and recompiler modes with identical platform state and presentation snapshots. Retained-evidence qualification passed. The full evidence index is `emulator.md`; no physical-console result is claimed.

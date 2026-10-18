@@ -58,11 +58,9 @@ Parent Git metadata, workspace permissions, source access, and the initial envir
 
 `make test-host` runs `tests/test_resource_accounting.py`. The audited `halo-ps2` `arena_*` functions pass alignment, exhaustion, scratch reset, future-mark rejection, and size overflow on LP64 and ILP32 hosts, with identical check records. `config/memory-budget.json` totals 32 MiB and preserves the 5.5 MiB reserve. Overlapping claims fail. Steady-state allocations and pool exhaustion are reported in scenario results. This is host accounting, not EE runtime validation.
 
-## M06 — In progress
+## M06 — Complete
 
-The synthetic textured VU1 triangle now executes visibly on the desktop. A 15-second recompiler run passed: 900 frames, Start/Cross edges `8` and `16384`, fixed heap `1261568`, DMA chain high-water 20/64 quadwords, and intact canaries. Native/container allocated ELF contents match; canonical `-ffile-prefix-map` paths remove the SDK inline-assertion filename difference without disabling diagnostics.
-
-The first full interpreter loop completed 600 guest seconds with stable resources but failed acceptance because Cross input was not observed. The runner now retries focused delivery and fails early when inputs are unacknowledged. Fresh 600-second interpreter/recompiler runs are in progress. M06 remains incomplete. Private logs, captures and JSON reports are under `build/emulator/runs/`; the workflow and evidence index are in `emulator.md`.
+Both CPU modes passed 600 guest seconds with the same platform ELF: 35965 frames, Start/Cross `[8,16384]`, heap `1261568`, DMA high-water 20/64 and intact guards. Presentation snapshots match exactly. Native/container allocated ELF parity and independent retained-evidence qualification passed. The first full attempt that missed Cross remains classified as failed; it is not the acceptance run. See `emulator.md` for run IDs, hashes and commands. This closes the emulator platform gate; physical-console qualification remains M23.
 
 ## M07 — In progress
 
@@ -92,8 +90,8 @@ No physical console, storage backend, or operator setup is available. Hardware q
 
 ## Next actions
 
-1. Finish M06’s textured VU1 triangle, presentation and polling loop, then execute visibly with the supplied BIOS and retained emulator evidence.
-2. M09 has a local Blood Gulch pack. M10 still waits on an executed M06.
+1. Execute M07’s integer/datum fixtures and explicit failure controls in both CPU modes.
+2. M10 can now execute the existing Blood Gulch packs visibly; full route/free-camera acceptance remains open.
 3. Do not treat `make probe` or `make platform-elf` as passed runtime gates.
 
 ## Current implementation checkpoints

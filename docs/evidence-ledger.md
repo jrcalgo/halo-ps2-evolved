@@ -22,7 +22,7 @@ REA does not claim support here for an Xbox executable, R5900 disassembly, VU mi
 
 ## Reference workflow
 
-No emulation of the original console is part of this workflow, and no firmware or disk image for it is requested or stored. Scenario `integer-math-host` was run twice on the ILP32 host harness. Both runs produced the same canonical result, outcome `passed`, seed `1`, tick count `0`. The scenario has no map and no camera, so it has no framebuffer to compare in PCSX2. That visual check remains for a later scenario that has a camera. PCSX2 is installed at `~/.local/bin/pcsx2`. The user supplied a PS2 ROM0 and sidecars under `~/Documents/Halo`. The supplied BIOS booted visibly from an ignored profile copy. M06 passed a 15-second textured-triangle diagnostic; its full stability checks are underway. M07 execution remains pending. See [emulator evidence](emulator.md).
+No emulation of the original console is part of this workflow, and no firmware or disk image for it is requested or stored. Scenario `integer-math-host` was run twice on the ILP32 host harness. Both runs produced the same canonical result, outcome `passed`, seed `1`, tick count `0`. The scenario has no map and no camera, so it has no framebuffer to compare in PCSX2. That visual check remains for a later scenario that has a camera. PCSX2 is installed at `~/.local/bin/pcsx2`. The user supplied a PS2 ROM0 and sidecars under `~/Documents/Halo`. The supplied BIOS booted visibly from an ignored profile copy. M06 passed both full 600-second platform runs and retained-evidence qualification. M07 execution remains pending. See [emulator evidence](emulator.md).
 
 ## Source-derived scenario
 
@@ -40,3 +40,7 @@ No emulation of the original console is part of this workflow, and no firmware o
 ## Source findings kept separate
 
 The frozen integer-math closure and the NTSC video startup described in `source-audit.md` come from reading the pinned source trees. They are not REA findings.
+
+## M06 platform acceptance
+
+The accepted runs are `platform-interpreter-a0d37b6cfabc46fdab57f2a9b191d5eb` and `platform-recompiler-87ed53e831be4efb97514515817cac1c` under ignored `build/emulator/runs/`. Both report 35965 frames, Start/Cross input, fixed heap `1261568`, chain high-water 20/64 and intact guards over 600 guest seconds. The common ELF SHA-256 is `b62363fc5a536dede9db7ca886b4b6c4017bf0dc775bc4948c9873ff0484f711`. Presentation RGB hashes match (`7d69dda01f9f01a6a49fa446ff02df1533438c534d540f996205d894c6318e71`). `platform-qualification.json` retains independent log/configuration/identity/capture checks. This is synthetic emulator evidence, not retail gameplay or real-console qualification; REA was not used.
