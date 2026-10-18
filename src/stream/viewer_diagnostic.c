@@ -13,6 +13,7 @@ static unsigned char storage[1024 * 1024] __attribute__((aligned(64)));
 static unsigned char stack[16384] __attribute__((aligned(16)));
 static staging_ticket ticket[STAGING_SLOTS];
 static unsigned phase, cycle, started, unloads;
+static unsigned cache_limit, cache_route, cache_evictions, cache_failures, cache_deferred;
 static arena_t *level;
 static world_t *world;
 static char pack_path[160], tex_path[160], object_path[160];
@@ -22,20 +23,28 @@ static void require(int good, const char *message) {
     if (!good) { printf("[err] streaming diagnostic: %s\n", message); exit(1); }
 }
 void hybrid_stream_configure(arena_t *a, world_t *w, const char *pack, const char *tex,
-                             int bsp, const char *objects) {
+                             int bsp, const char *objects, unsigned pages, unsigned route) {
     require(a && w && pack && strlen(pack)<sizeof pack_path,"configure");
     level=a; world=w; strcpy(pack_path,pack); bsp_index=bsp;
     has_tex=tex!=NULL; if(tex) { require(strlen(tex)<sizeof tex_path,"texture path"); strcpy(tex_path,tex); }
     has_objects=objects!=NULL; if(objects) { require(strlen(objects)<sizeof object_path,"object path"); strcpy(object_path,objects); }
+    cache_limit=pages;
+    cache_route=route;
     baseline_used=a->used;
 }
 void hybrid_stream_build(unsigned frame, const camera_t *camera, const text_batch_t *text) {
+    camera_t swept;
+    const camera_t *view=camera;
     if (!started) {
         require(ChangeThreadPriority(GetThreadId(),64) >= 0,"owner priority");
         require(reader_start(&reader,storage,sizeof storage,stack,sizeof stack,30),"start");
         started=1;
         printf("[stream] start storage=%u stack=%u metadata=%u\n",
                (unsigned)sizeof storage,(unsigned)sizeof stack,(unsigned)sizeof reader);
+        if (cache_limit) {
+            bsp_render_cache_limit(cache_limit);
+            printf("[stream] cache_limit=%u physical=%u\n",cache_limit,(unsigned)bsp_render_cache_pages());
+        }
     }
     if (phase < 6) {
         require(frame < 120,"timeout");
@@ -100,7 +109,28 @@ void hybrid_stream_build(unsigned frame, const camera_t *camera, const text_batc
         printf("[stream] map_unload_reload=passed cycles=3\n");
         phase=7;
     }
+    if (cache_route) {
+        static const float route[][4] = {
+            {65,-95,9,-70}, {65,-145,32,84}, {110,-155,32,138}, {118,-105,32,-167},
+            {100,-65,32,-122}, {25,-75,32,-44}, {18,-115,32,-2}, {30,-155,32,45},
+            {65,-175,32,90}, {118,-155,32,160}, {65,-58,32,-90}, {65,-95,9,-70}
+        };
+        unsigned point=(frame/30u)%(sizeof route/sizeof route[0]);
+        swept=*camera;
+        swept.pos[0]=route[point][0]; swept.pos[1]=route[point][1]; swept.pos[2]=route[point][2];
+        swept.yaw=route[point][3]*0.01745329252f;
+        swept.pitch=-5.0f*0.01745329252f;
+        view=&swept;
+    }
     if (unloads && frame >= 60 && frame <= 62) printf("[stream] frame_build_start=%u\n",frame);
-    bsp_render_build(frame,camera,text);
+    bsp_render_build(frame,view,text);
+    if (cache_limit) {
+        const render_stats_t *stats=bsp_render_stats();
+        cache_evictions+=stats->tex_evictions;
+        cache_failures+=stats->tex_failed;
+        cache_deferred+=stats->tex_deferred;
+        if (frame==360) printf("[stream] texture_churn evictions=%u failed=%u deferred=%u pages=%u\n",
+                               cache_evictions,cache_failures,cache_deferred,(unsigned)bsp_render_cache_pages());
+    }
     if (unloads && frame >= 60 && frame <= 62) printf("[stream] frame_build_done=%u\n",frame);
 }

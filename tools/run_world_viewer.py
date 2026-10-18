@@ -38,9 +38,19 @@ def main():
     parser.add_argument("--framebuffer", action="store_true", help="Retain raw GS pixels at frame 120, with HUD disabled")
     parser.add_argument("--route", action="store_true")
     parser.add_argument("--freecam", action="store_true")
+    parser.add_argument("--cache-pages", type=int, default=0,
+                        help="diagnostic-only stream cache cap")
+    parser.add_argument("--cache-route", action="store_true",
+                        help="sweep fixed Blood Gulch views in the stream diagnostic")
+    parser.add_argument("--framebuffer-frame", type=int, default=120,
+                        help="frame to read back when --framebuffer is set")
     args = parser.parse_args()
     if args.variant == "stream":
         args.frames = max(args.frames, 360)
+    if (args.cache_pages or args.cache_route) and args.variant != "stream":
+        raise RuntimeError("Cache stress options require --variant stream")
+    if args.cache_pages < 0 or not 1 <= args.framebuffer_frame <= args.frames:
+        raise RuntimeError("Invalid cache page limit or framebuffer frame")
     if args.route:
         args.frames = 9000
         args.objects = True
@@ -82,7 +92,11 @@ def main():
     if args.force_conservative:
         lines += ["debug 64"]
     if args.framebuffer:
-        lines = [line for line in lines if not line.startswith("overlay ")] + ["overlay 0", "fbdump 120"]
+        lines = [line for line in lines if not line.startswith("overlay ")] + ["overlay 0", "fbdump " + str(args.framebuffer_frame)]
+    if args.cache_pages:
+        lines.append("cache_pages " + str(args.cache_pages))
+    if args.cache_route:
+        lines.append("cache_route 1")
     if args.objects:
         lines += ["obj bloodgulch.obj.hp2", "objects 1", "sky3d 1", "skyfog 1", "objanim 0"]
     if args.route:
@@ -97,7 +111,9 @@ def main():
               "runner_sha256":sha(Path(__file__)), "elf_sha256":sha(elf), "source_sha256":report["source_sha256"], "pack_sha256":converted["pack_sha256"],
               "settings_sha256":sha(ini), "config_sha256":sha(cfg), "camera":args.camera, "requested_frames":args.frames,
               "bios_sha256":sha(config["bios"]), "emulator_sha256":sha(Path(config["binary"]).resolve()),
-              "run_directory":str(run), "log":str(log), "captures":[], "limits":"Diagnostic static viewer; no M10 completion or hardware performance claim."}
+              "run_directory":str(run), "log":str(log), "captures":[], "cache_pages":args.cache_pages,
+              "cache_route":args.cache_route, "framebuffer_frame":args.framebuffer_frame if args.framebuffer else None,
+              "limits":"Diagnostic static viewer; no M10 completion or hardware performance claim."}
     if args.variant == "stream":
         result["stream_fixture_sha256"] = sha(boot / "stream-fixture.bin")
     result["variant"] = args.variant
@@ -185,6 +201,13 @@ def main():
                         raise RuntimeError("Streaming diagnostic exceeded its reservation")
                     result["streaming"] = {"cycles": 3, "map_reload_cycles": 3, "high_water": int(measured[1]), "arena_used": [int(u[1]) for u in unloads],
                                            "reserved": int(measured[2]), "scope": "synthetic worker reads; no texture or whole-map unload claim"}
+                    if args.cache_pages:
+                        churn = re.search(r"\[stream\] texture_churn evictions=(\d+) failed=(\d+) deferred=(\d+) pages=(\d+)", text)
+                        if not churn or int(churn.group(1)) < 1:
+                            raise RuntimeError("Forced cache limit did not cause a rendered texture eviction")
+                        result["streaming"]["texture_churn"] = {
+                            "evictions": int(churn.group(1)), "failed": int(churn.group(2)),
+                            "deferred": int(churn.group(3)), "pages": int(churn.group(4))}
                 if args.route and ("scripted path: 12 keys" not in text or "sky model: drawn" not in text or "ee prep avg=" not in text or "tex hit=" not in text):
                     raise RuntimeError("Route did not record the scripted camera, sky, or profiler breakdown")
                 if args.freecam:
