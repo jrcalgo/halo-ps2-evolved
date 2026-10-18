@@ -48,7 +48,7 @@ Parent Git metadata, workspace permissions, source access, and the initial envir
 
 ## M06 — In progress
 
-`make platform-elf` compiles `src/platform/main.c` with the pinned `halo-ps2` `video.c` and its NTSC `graph_set_mode` path. The native ELF SHA-256 begins `a2673b3a9373a5df`. The ELF was not executed. Triangle, pad, DMA, PCSX2 interpreter/recompiler, and the ten-minute smoke remain pending because `pcsx2` is not on `PATH`.
+`make platform-elf` links `src/platform/main.c` with the pinned pad, GIF/VIF DMA setup, VU1 microcode upload, NTSC video path, and synthetic texture self-test. The native ELF SHA-256 begins `109ca0eb70732463`. The ELF was not executed. PCSX2 is installed at `~/.local/bin/pcsx2`, and no PS2 BIOS was found, so interpreter, recompiler, controller logs, and the ten-minute smoke remain pending.
 
 ## M07 — In progress
 
@@ -72,6 +72,6 @@ No physical console, storage backend, or operator setup is available. Hardware q
 
 ## Next actions
 
-1. Supply PCSX2 before the M06 stability run and the M07 R5900 execution comparison.
-2. M09 has a local Blood Gulch pack. M10 still needs PCSX2 before a static-world rendering run.
+1. Supply a PS2 BIOS you own before the M06 stability run and the M07 R5900 execution comparison. PCSX2 is already installed.
+2. M09 has a local Blood Gulch pack. M10 still waits on an executed M06.
 3. Do not treat `make probe` or `make platform-elf` as passed runtime gates.

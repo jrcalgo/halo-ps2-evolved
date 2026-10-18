@@ -30,7 +30,7 @@ def main():
     report["elf_sha256"] = hashlib.sha256(elf.read_bytes()).hexdigest()
     report["elf_header"] = subprocess.check_output([str(reader), "-h", str(elf)], text=True)
     report["status"] = "compiled"
-    report["limits"] = "Compiled the audited NTSC video startup and timer read. No PCSX2 or hardware run was observed, so M06 acceptance is not met."
+    report["limits"] = "Compiled the NTSC startup, pad poll, GIF/VIF DMA setup, VU1 upload, and synthetic texture self-test. No PCSX2 or hardware run was observed, so M06 acceptance is not met."
     save(report_path, report)
     print(elf)
 
