@@ -98,7 +98,7 @@ Portal culling at `(65,-80,9)` matches the uncullled frame in both CPU modes whi
 
 ## M13 — In progress
 
-The bounded synthetic host combat state machine and its regression pass. It cross-compiles to an R5900 object. The Blood Gulch audit reads 15 weapon tags, including magazine and trigger records, through the pinned tag index. The current complete host suite passes 55 project tests and 12 upstream synthetic suites after rebuilding the stale portal viewer; the four rendered-movement checks ran visibly. This is a checkpoint, not M13 acceptance: source-equivalent behavior for all retail weapons, BSP hits, player damage and EE combat execution are open. See `combat.md`.
+The bounded synthetic host combat state machine and its regression pass. It cross-compiles to an R5900 object. The audit reads all 24 supplied maps and identifies 23 distinct weapon paths, including magazine and trigger records, through the pinned tag index. The current complete host suite passes 55 project tests and 12 upstream synthetic suites after rebuilding the stale portal viewer; the four rendered-movement checks ran visibly. This is a checkpoint, not M13 acceptance: source-equivalent behavior for all retail weapons, BSP hits, player damage and EE combat execution are open. See `combat.md`.
 
 ## M14–M22 — Not started
 

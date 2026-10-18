@@ -87,22 +87,37 @@ def audit_map(path: Path) -> dict:
         region = file.read(header.tag_data_size)
     if len(region) != header.tag_data_size:
         raise ValueError("truncated tag region")
+    digest = hashlib.sha256()
+    with path.open("rb") as file:
+        for chunk in iter(lambda: file.read(1 << 20), b""):
+            digest.update(chunk)
     return {
-        "map_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "map_sha256": digest.hexdigest(),
         "source": "halo-64 weapon_definitions.h 32-bit layout; halo-ps2 scenconv.py 0x45c anchor",
         "weapons": audit_region(index, region),
+        "grenade_equipment": sorted(e.path for e in index.entries
+                                    if e.group == "eqip" and "grenade" in e.path.lower()),
+        "grenade_projectiles": sorted(e.path for e in index.entries
+                                     if e.group == "proj" and "grenade" in e.path.lower()),
     }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("map", type=Path, help="decompressed user-owned Xbox map")
+    parser.add_argument("map", nargs="+", type=Path, help="decompressed user-owned Xbox map(s)")
     parser.add_argument("--output", type=Path, default=ROOT / "build/combat-m13/weapons.json")
     args = parser.parse_args()
-    report = audit_map(args.map)
+    reports = {path.stem: audit_map(path) for path in args.map}
+    if len(reports) != len(args.map):
+        raise ValueError("map names must be unique")
+    presence: dict[str, list[str]] = {}
+    for name, report in reports.items():
+        for weapon in report["weapons"]:
+            presence.setdefault(weapon["path"], []).append(name)
+    report = {"maps": reports, "weapon_presence": presence}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
-    print(f"{len(report['weapons'])} weapon tags -> {args.output}")
+    print(f"{len(reports)} maps, {len(presence)} distinct weapon tags -> {args.output}")
 
 
 if __name__ == "__main__":

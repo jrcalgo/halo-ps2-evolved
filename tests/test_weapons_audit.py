@@ -27,6 +27,9 @@ class WeaponAudit(unittest.TestCase):
         self.assertEqual(by_name["flag"]["triggers"], [])
         self.assertEqual(by_name["needler"]["triggers"][0]["projectile"],
                          "weapons\\needler\\needle")
+        report = audit_map(MAP)
+        self.assertEqual(len(report["grenade_equipment"]), 2)
+        self.assertEqual(len(report["grenade_projectiles"]), 2)
 
 
 if __name__ == "__main__":
