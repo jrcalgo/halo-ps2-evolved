@@ -25,6 +25,13 @@ FOUNDATION_UNITS = {
     "game_time": "source/game/game_time.c",
 }
 ROOT_SYMBOLS = ("weapon_update", "projectile_update", "object_cause_damage")
+LIFECYCLE_ROOTS = (
+    "weapon_new", "weapon_delete", "weapon_owner_update",
+    "weapon_handle_potential_inventory_item", "weapon_place", "weapon_ready",
+    "weapon_put_away", "weapon_melee_attack", "projectile_new",
+    "projectile_delete", "object_damage_update", "object_initialize_vitality",
+    "area_of_effect_cause_damage", "damage_data_new",
+)
 PREFIX = r"""#include <string.h>
 #include <stdlib.h>
 #define HALO_LINUX 1
@@ -89,9 +96,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--foundations", action="store_true",
                         help="also compile and partially link the original datum and tick services")
+    parser.add_argument("--lifecycle", action="store_true",
+                        help="retain combat creation, ownership, inventory, melee and damage roots")
     args = parser.parse_args()
     build, prefix, env, _ = environment()
-    output = build / ("combat-source-foundations" if args.foundations else "combat-source-probe")
+    output_name = "combat-source-foundations" if args.foundations else "combat-source-probe"
+    output = build / (output_name + ("-lifecycle" if args.lifecycle else ""))
     output.mkdir(parents=True, exist_ok=True)
     header = output / "halo_ps2_probe_prefix.h"
     header.write_text(PREFIX)
@@ -138,8 +148,9 @@ def main() -> None:
                                      "object_sha256": digest(obj),
                                      "undefined_symbols": sum(bool(line.strip()) for line in symbols.splitlines())}
     combined = output / "combat-core.o"
+    roots = ROOT_SYMBOLS + (LIFECYCLE_ROOTS if args.lifecycle else ())
     link = subprocess.run([str(linker), "-r", "--gc-sections",
-                           *[arg for symbol in ROOT_SYMBOLS for arg in ("-u", symbol)],
+                           *[arg for symbol in roots for arg in ("-u", symbol)],
                            *map(str, objects), "-o", str(combined)],
                           cwd=ROOT, env=env, text=True, capture_output=True)
     (output / "partial-link.log").write_text(link.stdout + link.stderr)
@@ -148,7 +159,7 @@ def main() -> None:
     live = live_external_symbols(nm, objdump, combined)
     (output / "live-externals.txt").write_text("\n".join(live) + "\n")
     report["partial_link"] = {
-        "roots": list(ROOT_SYMBOLS), "object_sha256": digest(combined),
+        "roots": list(roots), "object_sha256": digest(combined),
         "undefined_symbol_table_count": len(undefined_symbols(nm, combined)),
         "live_external_count": len(live), "live_d3d_count": sum(name.startswith("D3D") for name in live),
         "live_external_symbols": live,
