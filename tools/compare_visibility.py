@@ -10,16 +10,22 @@ from render_reference import png
 
 
 def framebuffer(text, expected_frame=120):
-    headers=re.findall(r'\[fb\] begin frame=(\d+) w=(\d+) h=(\d+) psm=(\d+) addr=(\d+) ret=(-?\d+)',text)
-    if len(headers)!=1 or tuple(map(int,headers[0][:4]))!=(expected_frame,512,448,10) or int(headers[0][5])!=1:
+    begins=re.findall(rf'\[fb\] begin frame={expected_frame}\b', text)
+    ends=re.findall(rf'\[fb\] end frame={expected_frame}\b', text)
+    if len(begins)!=1 or len(ends)!=1:
         raise RuntimeError('Expected one successful 512x448 PSMCT16S framebuffer readback')
-    if '[fb] guards=ok bytes=458752' not in text:
+    prefix=r'[^\n]*'
+    match=re.search(
+        rf'{prefix}\[fb\] guards=ok bytes=458752\n{prefix}\[fb\] begin frame={expected_frame} w=(\d+) h=(\d+) psm=(\d+) addr=\d+ ret=(-?\d+)\n(.*?){prefix}\[fb\] end frame={expected_frame}\n',
+        text, re.S)
+    if not match:
         raise RuntimeError('Framebuffer DMA bounds were not checked')
-    rows=re.findall(r'\[fb\] (\d+) ([0-9a-f]+)',text)
+    width, height, psm, ret, body = match.groups()
+    if (int(width), int(height), int(psm), int(ret))!=(512, 448, 10, 1):
+        raise RuntimeError('Expected one successful 512x448 PSMCT16S framebuffer readback')
+    rows=re.findall(r'\[fb\] (\d+) ([0-9a-f]+)', body)
     if [int(n) for n,_ in rows]!=list(range(448)) or any(len(v)!=2048 for _,v in rows):
         raise RuntimeError('Framebuffer rows missing, duplicated or truncated')
-    if re.findall(r'\[fb\] end frame=(\d+)',text)!=[str(expected_frame)]:
-        raise RuntimeError('Framebuffer readback did not finish')
     return b''.join(bytes.fromhex(v) for _,v in rows)
 
 

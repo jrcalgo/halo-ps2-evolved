@@ -21,3 +21,6 @@ class FramebufferEvidence(unittest.TestCase):
         text='[fb] guards=ok bytes=458752\n'+head+rows+'\n[fb] end frame=300\n'
         self.assertEqual(len(framebuffer(text,300)),458752)
         with self.assertRaises(RuntimeError):framebuffer(text,120)
+        other='[fb] guards=ok bytes=458752\n[fb] begin frame=29 w=512 h=448 psm=10 addr=0 ret=1\n'+rows+'\n[fb] end frame=29\n'+text
+        self.assertEqual(len(framebuffer(other,300)),458752)
+        self.assertEqual(len(framebuffer(other,29)),458752)

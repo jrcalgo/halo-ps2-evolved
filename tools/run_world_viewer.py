@@ -44,12 +44,19 @@ def main():
                         help="sweep fixed Blood Gulch views in the stream diagnostic")
     parser.add_argument("--framebuffer-frame", type=int, default=120,
                         help="frame to read back when --framebuffer is set")
+    parser.add_argument("--framebuffer-frames", default="",
+                        help="comma-separated readback frames; implies --framebuffer")
     args = parser.parse_args()
     if args.variant == "stream":
         args.frames = max(args.frames, 360)
+    if args.framebuffer_frames:
+        args.framebuffer = True
+        args.framebuffer_frame_list = [int(item) for item in args.framebuffer_frames.split(",") if item]
+    else:
+        args.framebuffer_frame_list = [args.framebuffer_frame] if args.framebuffer else []
     if (args.cache_pages or args.cache_route) and args.variant != "stream":
         raise RuntimeError("Cache stress options require --variant stream")
-    if args.cache_pages < 0 or not 1 <= args.framebuffer_frame <= args.frames:
+    if args.cache_pages < 0 or any(not 1 <= frame <= args.frames for frame in args.framebuffer_frame_list):
         raise RuntimeError("Invalid cache page limit or framebuffer frame")
     if args.route:
         args.frames = 9000
@@ -92,7 +99,8 @@ def main():
     if args.force_conservative:
         lines += ["debug 64"]
     if args.framebuffer:
-        lines = [line for line in lines if not line.startswith("overlay ")] + ["overlay 0", "fbdump " + str(args.framebuffer_frame)]
+        lines = [line for line in lines if not line.startswith("overlay ")] + ["overlay 0"]
+        lines += ["fbdump " + str(frame) for frame in args.framebuffer_frame_list]
     if args.cache_pages:
         lines.append("cache_pages " + str(args.cache_pages))
     if args.cache_route:
@@ -112,7 +120,9 @@ def main():
               "settings_sha256":sha(ini), "config_sha256":sha(cfg), "camera":args.camera, "requested_frames":args.frames,
               "bios_sha256":sha(config["bios"]), "emulator_sha256":sha(Path(config["binary"]).resolve()),
               "run_directory":str(run), "log":str(log), "captures":[], "cache_pages":args.cache_pages,
-              "cache_route":args.cache_route, "framebuffer_frame":args.framebuffer_frame if args.framebuffer else None,
+              "cache_route":args.cache_route,
+              "framebuffer_frame":args.framebuffer_frame_list[0] if args.framebuffer_frame_list else None,
+              "framebuffer_frames":args.framebuffer_frame_list if args.framebuffer else None,
               "limits":"Diagnostic static viewer; no M10 completion or hardware performance claim."}
     if args.variant == "stream":
         result["stream_fixture_sha256"] = sha(boot / "stream-fixture.bin")

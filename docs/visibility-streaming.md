@@ -1,6 +1,6 @@
 # M11 visibility, residency and streaming
 
-M11 is **incomplete and in progress**. Host topology/visibility comparisons, bounded worker lifecycle checks, transactional uploads, metadata churn, three repeated EE map unload/reload cycles, and a constrained-cache raw-frame comparison pass under PCSX2. The constrained-cache sweep also records 1,426 allocation failures; only its final sampled view is proven pixel-identical, so full route quality remains open. Broader EE routes, production async texture-buffer ownership, real hardware, and full committed-memory qualification remain open. M12 has not started.
+M11 is **incomplete and in progress**. Host topology/visibility comparisons, bounded worker lifecycle checks, transactional uploads, metadata churn, three repeated EE map unload/reload cycles, and a constrained-cache raw-frame comparison pass under PCSX2. The 96-page sweep records 1,426 allocation failures and one clean sampled view. A 168-page sweep matches three sampled views and still logs one failure. No probed cap both evicts and admits every request, so full route quality remains open. Broader EE routes, production async texture-buffer ownership, real hardware, and full committed-memory qualification remain open. M12 has not started.
 
 ## Topology and host visibility
 
@@ -52,7 +52,13 @@ The diagnostic renderer accepts a cache-page limit and reports actual per-frame 
 
 Recompiler baseline/stress runs are `world-stream-recompiler-d1ffeb27a25043afb487506756d8d48c` and `world-stream-recompiler-f25080c32b6548f3ab28d5b7724fc188`; report `build/streaming-ee/cache-stress-recompiler.json`. Interpreter baseline/stress runs are `world-stream-interpreter-063dd8547a774576b2ca77bf3545b631` and `world-stream-interpreter-225e0ae20b2047249fc2c399980d1536`; report `build/streaming-ee/cache-stress-interpreter.json`. Both capped runs record 9 actual evictions and 1,426 failed allocation attempts over the sweep, with no deferred uploads. At the sampled frame 300, the profiler reports zero failed/deferred requests and the raw image matches its uncapped counterpart exactly (zero differing pixels) within each CPU mode. The reviewed image shows the same Blood Gulch view.
 
-The 1,426 failures are a material limitation: they occur during earlier points in the deliberately constrained sweep and can omit requested texture/lightmap work. Therefore this proves a real eviction occurred without stale/corrupt output at one clean sampled view, but it does not prove artifact-free presentation throughout the sweep or under ordinary cache capacity. A broader route must demonstrate sustained texture completeness under less destructive pressure before the M11 cache-eviction acceptance is closed. These PCSX2 results also do not prove physical PS2 behavior.
+The 1,426 failures are a material limitation: they occur during earlier points in the deliberately constrained sweep and can omit requested texture/lightmap work. Therefore this proves a real eviction occurred without stale/corrupt output at one clean sampled view, but it does not prove artifact-free presentation throughout the sweep or under ordinary cache capacity. These PCSX2 results also do not prove physical PS2 behavior.
+
+## Milder cache-cap search
+
+The physical texture window is 271 pages. Recompiler probes of the same 12-view sweep found no cap that both evicts and admits every request. At 160, 164, 166, and 168 pages the eviction count equals the failure count (7, 3, 2, and 1). At 172, 176, 190, and 220 pages both counts are zero, so the working set fits and the run does not churn. Deferred uploads stayed at zero throughout.
+
+The 168-page cap is the smallest churn observed. Paired with an uncapped run, guarded raw frames 120, 240, and 300 match exactly within each CPU mode (zero differing pixels). Recompiler runs are `world-stream-recompiler-587ac9ed7978444883175da3b3f4d49e` and `world-stream-recompiler-40affcdf694149f6851e92e11b588843`. Interpreter runs are `world-stream-interpreter-e318168a4bbc494f97e81243da10c09b` and `world-stream-interpreter-48d97b63350947b3aa9c7cd1d91e5b9a`. Reports: `build/streaming-ee/cache-stress-168-recompiler.json` and `build/streaming-ee/cache-stress-168-interpreter.json`. The recompiler frame-300 image shows Blood Gulch terrain. Its pixel hash equals the earlier 96-page frame-300 sample. Interpreter and recompiler hashes still differ from each other. Each capped sweep still logs one failed allocation, so route-wide texture completeness remains open.
 
 ## Measured memory snapshot (partial)
 
@@ -63,7 +69,7 @@ These figures are a partial snapshot, not total EE memory accounting: kernel/IOP
 ## Remaining M11 gates
 
 - Extend EE comparison beyond this fixed camera, including portal crossings and the map perimeter.
-- Extend rendered cache-churn checks beyond the current one-frame exact comparison. The capped sweep records real evictions but also allocation failures; verify texture completeness across multiple route views and tune pressure without masking misses.
+- The 12-view sweep has no probed cap that both evicts and admits every texture request. A 168-page cap matches three sampled views and still logs one failure; cache-churn acceptance stays open.
 - Integrate asynchronous texture-page reads and conversion with explicit ownership through DMA completion; current streaming worker exercises a synthetic byte fixture and the world pack loads remain synchronous.
 - Extend EE visibility comparisons across portal crossings and map perimeter routes.
 - Reconcile the measured DMA buffers with the 1 MiB regional estimate and map every EE, kernel, IOP, SDK and staging allocation to non-overlapping budget regions.
