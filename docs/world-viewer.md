@@ -1,0 +1,13 @@
+# Blood Gulch static-world viewer preparation
+
+M10 is in preparation, awaiting M06 runtime acceptance. `python3 tools/build_world.py` compiles the pinned halo-ps2 engine sources into parent-owned `build/world-elf/`. `BUILD_ENV=container` uses the existing locked offline image and separate output. Both builds passed and allocated ELF sections match in `build/emulator/world-elf-parity.json`. These are compilation results only; the viewer has not loaded Blood Gulch in PCSX2.
+
+The upstream source tree remains unchanged. The linker combines the existing BSP/model VU1 programs and PS2-native platform, renderer, visibility, texture cache, pack reader and object presentation sources. This executable does not contain original Halo gameplay code. Retail packs remain external private inputs from M09.
+
+The upcoming runtime configuration must explicitly set `pack`, `tex`, all five `camera` values, conservative culling, target frame cadence and bounded frame count. `hold 1` retains the final visible frame. Use emulator-owned snapshots rather than upstream `fbdump` until the CT16S screenshot handling is resolved. Capture fixed views before a timed camera route. No M10 performance or correctness gate has passed yet.
+
+The independently implemented CPU projection/clipping/depth rasterizer is `tools/render_reference.py`. It reuses the pack decoder, but calls no PS2 rendering code. Its geometry/depth view at camera `(65,-95,9)`, yaw `-70`, pitch `-5` shows the valley floor, a base ahead, surrounding cliffs and open sky. The camera contract is `config/reference-scenarios/bloodgulch-static.json`; private PNG/JSON output lives under `build/reference/`. This is a geometry reference from converted data, not an oracle for retail materials or gameplay. Synthetic tests exercise near-plane clipping, camera axes and depth-order independence.
+
+`tools/run_world_viewer.py` is prepared for a visible bounded diagnostic after M06 passes. It checks ELF/source/pack hashes, creates an isolated run, stages private pack symlinks beside the ELF, and captures the project-owned emulator window. Its default 180-frame diagnostic does not meet M10's five-minute route or free-camera acceptance gates. No world-viewer runtime has happened yet.
+
+The parent-owned `src/world/visibility.c` adapter selects the existing renderer's conservative `force_all` path. The upstream `vis_run` is compiled unchanged under an alternate symbol; portal reachability is bypassed, while conservative frustum checks remain. Native/container allocated ELF parity passes with the adapter. Initial diagnostics raise the clipping work allowance to prioritize completeness; they do not claim a 30 fps performance pass. M11 must compare portal-culling output against this baseline before enabling it.

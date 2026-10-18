@@ -16,6 +16,7 @@ ACTIONS = {
     "probe-negative": ["python3", "tools/build_probe.py", "--negative-control"],
     "datum-negative": ["python3", "tools/build_datum.py", "--negative-control"],
     "datum-probe": ["python3", "tools/build_datum.py"],
+    "world-elf": ["python3", "tools/build_world.py"],
     "platform-elf": ["python3", "tools/build_platform.py"],
     "test-host": ["make", "test-host"],
 }

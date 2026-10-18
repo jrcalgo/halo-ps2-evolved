@@ -1,0 +1,30 @@
+{
+  "id": "bloodgulch-static-valley",
+  "map": "bloodgulch",
+  "difficulty_or_variant": "static-world-viewer",
+  "seed": 1,
+  "tick_count": 0,
+  "player_actions": [],
+  "camera": {
+    "position": [
+      65,
+      -95,
+      9
+    ],
+    "yaw_degrees": -70,
+    "pitch_degrees": -5,
+    "horizontal_fov_degrees": 70,
+    "display_aspect": [
+      4,
+      3
+    ],
+    "framebuffer": [
+      512,
+      448
+    ]
+  },
+  "observation_method": "Independent CPU geometry/depth rendering and visible PCSX2 world-viewer snapshots from the same camera.",
+  "expected_outcome": "Valley floor, a base ahead, surrounding cliffs and open sky agree in placement; retail materials require separate inspection.",
+  "source_pack_sha256": "55ab30028ccd76aa5a3358d062988480c9142fb9b89de2f7a50321b4f4452c09",
+  "limits": "Converted BSP geometry only. No retail behavior, texture correctness, gameplay, timed-route or physical-console acceptance is established."
+}
