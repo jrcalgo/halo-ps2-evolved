@@ -21,7 +21,7 @@ int main(void) {
             assert(cache.map[0]==0 && tc_pages_free(&cache)==1);
             assert(cache.upload_bytes==32 && cache.evictions==0);
             assert(tc_acquire(&cache,0,1,32,&entry)==TC_UPLOAD);
-        } else assert(result==0 && c.qw==17);
+        } else { assert(result==0 && c.qw==17); tc_commit_claim(&cache,0); tc_cancel_claim(&cache,0); assert(cache.map[0]); }
         assert(!memcmp(prefix,memory,16));
     }
     chain_init(&c,memory,32);
