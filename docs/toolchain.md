@@ -1,14 +1,22 @@
 # Toolchain source lock and build preflight
 
+## EE executable parity — 2026-10-18
+
+Both `build/toolchain/compiler-sdk.json` and `build/container/toolchain/compiler-sdk.json` finished with status `passed`. Each run completed compiler stages 00–09, then `sdk-build` and `sdk-install`. Host `ps2client` and `fsclient` were rebuilt from the pinned source during the same native and container driver runs. The compiler identity in both environments is `mips64r5900el-ps2-elf-gcc (GCC) 15.2.0`. The EE assembler is GNU assembler 2.45.1. The SDK commit is `a3ce5d035ceae1218dc0b83e465d1e5c927d951d`. The IOP tree used by this profile contains `001-binutils.sh` and `002-gcc-stage1.sh` only.
+
+`make smoke-elf` and `BUILD_ENV=container make smoke-elf` each produced `halo-smoke.elf`. Native file SHA-256 is `cae68909c4a540801274d63bff384f9825973ad0d74aa11f08769fcb7181d8a2`. Container file SHA-256 is `887c3b1794f7f5e8c0cc3eb0b5788bc87c86f57fd0582fc2f432d6957598e4d8`. ELF class, endianness, machine flags `0x20920025`, and entry point `0x100b20` match. Every allocatable section (`.text`, `.ctors`, `.dtors`, `.data`, `.rodata`, `.MIPS.abiflags`, `.eh_frame`, `.sdata`, `.bss`) has identical bytes. The file hashes differ because `.debug_str` embeds the native versus `build/container` staging paths, and `.strtab` local symbols carry different per-build suffixes. The same fixture compiled from `/tmp/halo-ee-anywhere` reproduced those allocatable bytes, so the compile is not tied to this checkout path. All 211 installed IOP `.irx` modules have identical allocatable section bytes across the two environments. Static library file hashes differ for the same path-metadata reason. No ELF was executed. PCSX2 and hardware gates remain open.
+
+Converter code under `submodules/halo-ps2/tools` imports only the Python standard library and the local `halo2ps2` package. There is no third-party Python lock to add. Keep `python3 -I`.
+
 ## Execution update — 2026-10-18
 
 The older status notes below describe the initial preflight and have since been superseded. Nine required locked sources are now acquired in isolated native and container staging roots. Fifteen pinned Ubuntu package archives are verified and unpacked under `build/host-prerequisites`; local wrappers and a static GMP/MPFR/MPC link probe pass. No global package installation was performed.
 
 The base container image, requested package versions, full installed package inventory, and image ID are recorded in `config/container-environment.json`. Its private archive is `build/container-environment.tar`; its checksum is recorded separately in ignored run metadata. The container uses no network, runs as the current UID/GID, mounts the checkout read-only, and writes to `build/container`.
 
-Two isolated compiler/SDK builds are active. At the last review, native stages compiler-00 through compiler-03 had passed and compiler-04 was running; container stages compiler-00 and compiler-01 had passed and compiler-02 was running. See each report and its run-specific logs under `build/toolchain/runs/` or `build/container/toolchain/runs/`. Do not infer completion from an active stage.
+The compiler and SDK builds recorded below have since finished. See the parity section above for the terminal reports. Historical run logs remain under `build/toolchain/runs/` and `build/container/toolchain/runs/`.
 
-The standalone DVP assembler bootstrap and host utilities have passed. `src/vu1/world.vsm` assembles with the installed DVP assembler. The corrected container host suite passes ten infrastructure tests and twelve synthetic converter checks; retail map checks skipped. The native infrastructure suite also passes ten tests. No EE ELF, PS2 runtime, emulator, or physical-console behavior has yet been validated.
+The standalone DVP assembler bootstrap and host utilities have passed. `src/vu1/world.vsm` assembles in native and container environments; both `world.o` files have SHA-256 `b98e92d27413ade70bfcefa15b78408ffd033376791c9c8f9641fb90f63ca136`. This establishes identical assembly output for that source, not VU execution.
 
 The installed native host prefix is selected with `HALO_HOST_PREREQUISITE_PREFIX`; this allows the container to consume the same verified read-only host prerequisites while keeping build outputs separate. The native environment unit test explicitly overrides that variable with its temporary fixture prefix, preventing a developer environment from redirecting its test data.
 
@@ -40,7 +48,7 @@ The lock resolver is an explicit maintenance operation: `python3 tools/lock_tool
 
 All eleven acquisition scripts inside the EE, IOP and DVP forks now invoke the parent `tools/locked_source.py` helper. They refuse positional ref overrides, never clone/fetch/reset, and require an already acquired staging checkout at the recorded commit. Tracked source modifications cause refusal. Builds must use staging trees outside `submodules/`, leaving dependency working trees separate from generated build state.
 
-The isolated build driver exports absolute `HALO_LOCKED_SOURCE_HELPER` and `HALO_TOOLCHAIN_SOURCE_ROOT` paths. Staging directories are named by source IDs in the table. The explicit acquisition helper can fetch a selected exact commit or restore it from a local repository without resetting existing trees. Large compiler source acquisition has not been executed. A successful source lookup alone does not validate a compiler build.
+The isolated build driver exports absolute `HALO_LOCKED_SOURCE_HELPER` and `HALO_TOOLCHAIN_SOURCE_ROOT` paths. Staging directories are named by source IDs in the table. The explicit acquisition helper can fetch a selected exact commit or restore it from a local repository without resetting existing trees. Nine required compiler and SDK source trees are acquired in both isolated staging roots.
 
 The parent `ps2toolchain` and `ps2dev` umbrella scripts still contain their upstream fetching behavior and must not be used as the locked build entry point. The SDK downloader now obtains validated local source paths and links them into its external dependency locations, refusing existing directories or different links. Both destinations are checked before either link is created.
 
@@ -48,12 +56,12 @@ The parent `ps2toolchain` and `ps2dev` umbrella scripts still contain their upst
 
 ## Preflight and current constraints
 
-Run `make toolchain-plan` for a read-only report. It intentionally exits nonzero until readiness is established. It neither installs packages nor acquires sources.
+Run `make toolchain-plan` for a read-only report. It neither installs packages nor acquires sources. Its latest native run passed with eleven resolved source identities and 218.56 GiB free; it did not execute a toolchain build.
 
 - Native host tools absent from the global PATH are supplied from the verified local prefix; the preflight sets PATH for the build process only.
 - The compiler acquisition script used a conservative free-space requirement. The native filesystem now has ample available headroom, and the builds report their own space checks; no unrelated data was removed.
 - Docker access works through the isolated runner. The pinned image is locally available and no network is permitted inside its build container.
-- Native/container source and configuration are intentionally identical, but artifact parity awaits completion of both compiler/SDK builds. SDK installation and minimal ELF compilation remain pending.
+- Native and container source and configuration are the same pins. Allocatable EE ELF and IOP IRX bytes match; debug path metadata does not. Emulator execution remains open.
 
 ## Validation
 
@@ -70,14 +78,14 @@ Ten host infrastructure tests pass, including acquisition, build-stage failure/l
 
 Set `HALO_BUILD_ROOT` to select a build filesystem. The read-only preflight measures the nearest existing ancestor without creating directories. `HALO_TOOLCHAIN_SOURCE_ROOT` can explicitly select compiler staging checkouts; otherwise it defaults under that build root. Source readiness is determined by actual clean Git checkouts and exact commits, not by a mutable acquisition flag in the versioned lock. An external location still needs suitable environment write access.
 
-The normal 32-bit host gameplay harness also needs libc development support: the initial `gcc -m32` header probe failed before linking. See `gameplay-probe.md`.
+The 32-bit host gameplay harness uses a private extracted sysroot, as described in `gameplay-probe.md`.
 
 ## Executable native workflow
 
 `make host-tools` builds the small native utilities independently of the missing cross compiler. It stages the exact pinned ps2client commit from the local initialized dependency, builds and installs under `build/toolchain/install`, and records compiler identity and output hashes. This command has passed, including a repeat run. No console was contacted.
 
-`make toolchain` implements the selected compiler scripts, isolated SDK build/install and SDK glue links, followed by host tools. It currently fails preflight as intended; its full compilation path has not run. `BUILD_ENV=container` is explicitly unavailable until its image/package environment is implemented and pinned.
+`make toolchain` implements the selected compiler scripts, isolated SDK build/install and SDK glue links, followed by host tools. Both environments have now passed that driver. ELF parity is recorded above and is not emulator validation.
 
 `tools/acquire_sources.py --id SOURCE_ID` performs intentional network acquisition; `--from-local /path --offline` uses only that local repository. Existing dirty, mismatched or symlinked destinations are preserved through refusal. Failed new acquisitions remove only their own temporary directory. Nested source submodules require a separate explicit audit rather than automatic fetching. Remote compiler acquisition requires the conservative storage allowance.
 
-The driver clears inherited build/install overrides, bounds jobs through `HALO_BUILD_JOBS`, and writes unique per-run logs/results. Failed commands stop subsequent stages. The latest report is convenient for tooling; historical run records remain separate. Source object IDs provide Git content identity; no downloaded archive checksum or native/container parity is claimed.
+The driver clears inherited build/install overrides, bounds jobs through `HALO_BUILD_JOBS`, and writes unique per-run logs/results. Failed commands stop subsequent stages. The latest report is convenient for tooling; historical run records remain separate. Source object IDs provide Git content identity. VU1 assembly output matches between environments. Normalized EE and IOP executable contents match as recorded above.
