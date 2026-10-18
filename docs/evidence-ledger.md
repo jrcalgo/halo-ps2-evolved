@@ -41,6 +41,10 @@ No emulation of the original console is part of this workflow, and no firmware o
 
 The frozen integer-math closure and the NTSC video startup described in `source-audit.md` come from reading the pinned source trees. They are not REA findings.
 
+## M13 Ghidra provider check — tooling only
+
+On 2026-10-18, the local REA Ghidra provider used Ghidra 12.1.4, JDK 21, and Node 24.22.0. The REA CLI doctor reported the Ghidra provider available, and the CLI decompiled a small temporary `add(int,int)` ELF function. Evidence ID: `ev_169f7cf0a68cd944c8b0727ebe9b114177bff044f57fe53a316761de3b0c87af`. Codex's REA MCP configuration was updated outside this repository to pass the Ghidra/JDK environment; the already-running MCP process still held its old environment and requires a new session or reconnection. This verifies the local analysis tool, **not** a Halo executable or any combat behavior. The M13 source findings are documented separately in `combat.md`.
+
 ## M06 platform acceptance
 
 The accepted runs are `platform-interpreter-a0d37b6cfabc46fdab57f2a9b191d5eb` and `platform-recompiler-87ed53e831be4efb97514515817cac1c` under ignored `build/emulator/runs/`. Both report 35965 frames, Start/Cross input, fixed heap `1261568`, chain high-water 20/64 and intact guards over 600 guest seconds. The common ELF SHA-256 is `b62363fc5a536dede9db7ca886b4b6c4017bf0dc775bc4948c9873ff0484f711`. Presentation RGB hashes match (`7d69dda01f9f01a6a49fa446ff02df1533438c534d540f996205d894c6318e71`). `platform-qualification.json` retains independent log/configuration/identity/capture checks. This is synthetic emulator evidence, not retail gameplay or real-console qualification; REA was not used.

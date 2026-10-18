@@ -4,6 +4,8 @@ Governing specification: [detailed plan](../plans/0.native-ps2-halo-hybrid-port.
 
 Status reviewed 2026-10-18. A milestone is complete only when every required acceptance gate has evidence. Compilation does not establish runtime behavior. A dedicated local commit is made when each milestone closes.
 
+**Current state:** M00–M12 complete; M13 in progress with a host-only combat checkpoint; M14–M22 not started; M23 waits on physical hardware. The older handoff below records the state at its own checkpoint and is retained for provenance.
+
 ## Handoff — 2026-10-18
 
 Current implementation baseline is `64aa289`; the M10 closure is recorded below. M00–M10 are complete. M06 closed at `9f57c87`, M07 at `722778f`, and M09 at `e6eb7e5`. M10’s corrected fixed view, free-camera traversal, both inward-facing routes and final retained-evidence qualification pass. Earlier route runs used a visually defective renderer and are historical evidence. M11 is in progress; M12–M22 have not started. M23 stays blocked on a physical console.
@@ -94,9 +96,13 @@ Portal culling at `(65,-80,9)` matches the uncullled frame in both CPU modes whi
 
 `test_move.py`, `test_pad.py`, `test_collide.py`, and `test_player.py` pass. The pill settles, jumps, crouches, walks a slope, stops at walls and a corner, and recovers outside the BSP. Scratch is 47,644 bytes. The EE collision walk in `world-recompiler-6faf9afd611e4bf8aaccc40727fa45fd` holds 30 fps at the first start, with the heap break at 16,222 KB of the 27,136 KB committed budget. Object collision is not in this pill. See `player-movement.md`. M13 has not started.
 
-## M13–M22 — Not started
+## M13 — In progress
 
-Each milestone waits on its own acceptance prerequisites. M13 waits on M12.
+The bounded synthetic host combat state machine and its regression pass. It cross-compiles to an R5900 object. The current complete host suite passes 53 project tests and 12 upstream synthetic suites after rebuilding the stale portal viewer; the four rendered-movement checks ran visibly. This is a checkpoint, not M13 acceptance: all retail weapons, source-derived behavior, BSP hits, player damage and EE combat execution are open. See `combat.md`.
+
+## M14–M22 — Not started
+
+Each milestone waits on its own acceptance prerequisites.
 
 ## M23 — Blocked
 
@@ -104,7 +110,7 @@ No physical console, storage backend, or operator setup is available. Hardware q
 
 ## Next actions
 
-1. M12 is complete on the host and in the EE collision walk. M13 has not started. M14 through M22 stay unstarted.
+1. Continue M13 from the source/tag audit in `combat.md`; cover all weapon families and run visible EE combat gates before closure. M14 through M22 stay unstarted.
 2. Do not treat the completed 300-second route alone as M10 acceptance.
 3. Do not treat `make probe` or `make platform-elf` as passed runtime gates. M07’s runtime gate is `make test-emulator SCENARIO=probe`.
 
