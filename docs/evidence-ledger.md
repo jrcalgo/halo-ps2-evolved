@@ -69,3 +69,5 @@ The accepted runs are `platform-interpreter-a0d37b6cfabc46fdab57f2a9b191d5eb` an
 - Native/container suites: 39 project tests and 12 upstream synthetic suites. Remaining M11 gates are explicit in `visibility-streaming.md` and section 14 of the governing plan.
 
 - M11 staging lifecycle checkpoint: `tests/test_staging.py` compiles the parent C state machine with C11 warnings as errors and passes cancellation, exhaustion, stale completion and failed-read cases. Synthetic host-only evidence; no EE or GPU ownership claim. See `docs/visibility-streaming.md`.
+
+- M11 EE reader checkpoint: `tests/test_staging.py` now also runs the actual worker with a pthread/semaphore SDK shim and a deliberately delayed read; cancellation, mailbox handoff and drain/shutdown checks pass. `tools/build_streaming.py` cross-compiles both objects with the R5900 compiler and installed SDK headers. Report: ignored `build/streaming-ee/result.json`. Object-only build; no EE execution or viewer integration claimed.

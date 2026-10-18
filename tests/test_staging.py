@@ -14,3 +14,16 @@ class Staging(unittest.TestCase):
                             str(ROOT/'src/stream/staging.c'), '-o', str(exe)],
                            check=True, capture_output=True)
             subprocess.run([str(exe)], check=True, capture_output=True)
+
+    def test_worker_handoff_and_drain(self):
+        with tempfile.TemporaryDirectory() as temp:
+            exe = Path(temp) / 'reader'
+            subprocess.run(['cc', '-std=gnu11', '-Wall', '-Wextra', '-Werror',
+                            '-pthread', '-I'+str(ROOT/'tests/streaming'),
+                            '-I'+str(ROOT/'src'),
+                            '-I'+str(ROOT/'submodules/halo-ps2/engine/src'),
+                            str(ROOT/'tests/streaming/reader.c'),
+                            str(ROOT/'src/stream/reader_ee.c'),
+                            str(ROOT/'src/stream/staging.c'), '-o', str(exe)],
+                           check=True, capture_output=True)
+            subprocess.run([str(exe)], check=True, capture_output=True, timeout=10)
