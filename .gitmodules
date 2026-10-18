@@ -1,0 +1,33 @@
+[submodule "halo-64"]
+	path = submodules/halo-64
+	url = https://github.com/JackTulli/halo-64.git
+[submodule "halo-ps2"]
+	path = submodules/halo-ps2
+	url = https://github.com/BuechlerA/halo-ps2.git
+[submodule "halo-ce-universal"]
+	path = submodules/halo-ce-universal
+	url = https://github.com/cybersecurity/halo-ce-universal.git
+[submodule "ps2dev"]
+	path = submodules/ps2dev
+	url = https://github.com/ps2dev/ps2dev.git
+[submodule "ps2toolchain"]
+	path = submodules/ps2toolchain
+	url = https://github.com/ps2dev/ps2toolchain.git
+[submodule "ps2sdk"]
+	path = submodules/ps2sdk
+	url = https://github.com/ps2dev/ps2sdk.git
+[submodule "ps2client"]
+	path = submodules/ps2client
+	url = https://github.com/ps2dev/ps2client.git
+[submodule "ps2link"]
+	path = submodules/ps2link
+	url = https://github.com/ps2dev/ps2link.git
+[submodule "ps2toolchain-ee"]
+	path = submodules/ps2toolchain-ee
+	url = https://github.com/ps2dev/ps2toolchain-ee.git
+[submodule "ps2toolchain-iop"]
+	path = submodules/ps2toolchain-iop
+	url = https://github.com/ps2dev/ps2toolchain-iop.git
+[submodule "ps2toolchain-dvp"]
+	path = submodules/ps2toolchain-dvp
+	url = https://github.com/ps2dev/ps2toolchain-dvp.git

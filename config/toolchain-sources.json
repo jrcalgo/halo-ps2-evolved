@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "id": "ps2toolchain_ee_binutils",
+      "url": "https://github.com/ps2dev/binutils-gdb.git",
+      "ref": "ee-v2.45.1",
+      "declared_by": "submodules/ps2toolchain-ee/config/ps2toolchain-ee-config.sh",
+      "commit": "616e51fa6ed9d1e8f4bda7d0087fac30c5398aa9"
+    },
+    {
+      "id": "ps2toolchain_ee_gcc",
+      "url": "https://github.com/ps2dev/gcc.git",
+      "ref": "ee-v15.2.0",
+      "declared_by": "submodules/ps2toolchain-ee/config/ps2toolchain-ee-config.sh",
+      "commit": "df77d03bc1bd5765b40de554918a5ff541202548"
+    },
+    {
+      "id": "ps2toolchain_ee_newlib",
+      "url": "https://github.com/ps2dev/newlib.git",
+      "ref": "ee-v4.6.0",
+      "declared_by": "submodules/ps2toolchain-ee/config/ps2toolchain-ee-config.sh",
+      "commit": "8881dc4b138f0561596980ac9a481c7e638aebd0"
+    },
+    {
+      "id": "ps2toolchain_ee_pthread_embedded",
+      "url": "https://github.com/ps2dev/pthread-embedded.git",
+      "ref": "platform_agnostic",
+      "declared_by": "submodules/ps2toolchain-ee/config/ps2toolchain-ee-config.sh",
+      "commit": "b1746fd2b52d5aeafc1173761eb50e0958e8994b"
+    },
+    {
+      "id": "ps2toolchain_iop_binutils",
+      "url": "https://gnu.googlesource.com/binutils-gdb",
+      "ref": "binutils-2_45_1",
+      "declared_by": "submodules/ps2toolchain-iop/config/ps2toolchain-iop-config.sh",
+      "commit": "48324fde1e284293dd3d570dba597cb644921c92"
+    },
+    {
+      "id": "ps2toolchain_iop_gcc",
+      "url": "https://gnu.googlesource.com/gcc",
+      "ref": "releases/gcc-15.2.0",
+      "declared_by": "submodules/ps2toolchain-iop/config/ps2toolchain-iop-config.sh",
+      "commit": "5115c7e447fc07457443df874bf57840e8316d5f"
+    },
+    {
+      "id": "ps2toolchain_dvp_binutils",
+      "url": "https://github.com/ps2dev/binutils-gdb.git",
+      "ref": "dvp-v2.45.1",
+      "declared_by": "submodules/ps2toolchain-dvp/config/ps2toolchain-dvp-config.sh",
+      "commit": "3eb45ea37f0efd498d1de3cf9562de07197aefa8"
+    },
+    {
+      "id": "ps2toolchain_dvp_masp",
+      "url": "https://github.com/ps2dev/masp.git",
+      "ref": "v0.1.16",
+      "declared_by": "submodules/ps2toolchain-dvp/config/ps2toolchain-dvp-config.sh",
+      "commit": "ddb4fa5fb1546e74662979a4e417217c27201c3f"
+    },
+    {
+      "id": "ps2toolchain_dvp_openvcl",
+      "url": "https://github.com/ps2dev/openvcl.git",
+      "ref": "v0.4.0",
+      "declared_by": "submodules/ps2toolchain-dvp/config/ps2toolchain-dvp-config.sh",
+      "commit": "5d432985669f9ed2ecde7058a8d2faeb0396b2d4"
+    },
+    {
+      "id": "ps2sdk_lwip",
+      "url": "https://github.com/lwip-tcpip/lwip.git",
+      "ref": "STABLE-2_2_1_RELEASE",
+      "declared_by": "submodules/ps2sdk/download_dependencies.sh",
+      "commit": "77dcd25a72509eb83f72b033d219b1d40cd8eb95"
+    },
+    {
+      "id": "ps2sdk_fatfs",
+      "url": "https://github.com/fjtrujy/FatFs.git",
+      "ref": "iop-r0.16",
+      "declared_by": "submodules/ps2sdk/download_dependencies.sh",
+      "commit": "18cc3d9e07473a6aa3d783a66224b243a7b4974c"
+    }
+  ],
+  "scope": "Audited compiler and SDK source refs; acquisition, archive checksums, host packages and container base remain pending."
+}

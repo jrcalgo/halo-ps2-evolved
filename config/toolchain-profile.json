@@ -1,0 +1,34 @@
+{
+  "name": "halo-ps2-initial",
+  "status": "source-audited stage selection; full builds unvalidated",
+  "required_sources": [
+    "ps2toolchain_dvp_binutils",
+    "ps2toolchain_iop_binutils",
+    "ps2toolchain_iop_gcc",
+    "ps2toolchain_ee_binutils",
+    "ps2toolchain_ee_gcc",
+    "ps2toolchain_ee_newlib",
+    "ps2toolchain_ee_pthread_embedded",
+    "ps2sdk_lwip",
+    "ps2sdk_fatfs"
+  ],
+  "optional_sources": ["ps2toolchain_dvp_masp", "ps2toolchain_dvp_openvcl"],
+  "compiler_scripts": [
+    "submodules/ps2toolchain-dvp/scripts/001-binutils.sh",
+    "submodules/ps2toolchain-iop/scripts/001-binutils.sh",
+    "submodules/ps2toolchain-iop/scripts/002-gcc-stage1.sh",
+    "submodules/ps2toolchain-ee/scripts/001-binutils.sh",
+    "submodules/ps2toolchain-ee/scripts/002-gcc-stage1.sh",
+    "submodules/ps2toolchain-ee/scripts/003-newlib.sh",
+    "submodules/ps2toolchain-ee/scripts/004-newlib-nano.sh",
+    "submodules/ps2toolchain-ee/scripts/005-pthread-embedded.sh",
+    "submodules/ps2toolchain-ee/scripts/006-gcc-stage2.sh",
+    "submodules/ps2toolchain-ee/scripts/007-post-install.sh"
+  ],
+  "after_compiler": [
+    "Build and install an isolated SDK staging checkout with locked lwIP/FatFs links",
+    "Install SDK glue-library links following the audited ps2dev SDK stage",
+    "Build ps2client host utility separately",
+    "Compile minimal EE executable in native and container environments"
+  ]
+}

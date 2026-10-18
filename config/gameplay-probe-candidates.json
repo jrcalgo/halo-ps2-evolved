@@ -1,0 +1,83 @@
+{
+  "status": "provisional; not a complete or compiled source closure",
+  "files": [
+    {
+      "path": "source/math/integer_math.c",
+      "halo_64_sha256": "739c66201acfe18423305ec9a5a1a9b51aba61cfafdc36148af389eb219574d5",
+      "halo_ce_universal_sha256": "739c66201acfe18423305ec9a5a1a9b51aba61cfafdc36148af389eb219574d5",
+      "identical": true,
+      "comparison_status": "compared",
+      "direct_includes": [
+        "#include \"cseries.h\"",
+        "#include \"integer_math.h\""
+      ]
+    },
+    {
+      "path": "source/math/integer_math.h",
+      "halo_64_sha256": "4819125a698f6c6c770c360790479775e9694f1cf9914f13bb94a7103b0a5cab",
+      "halo_ce_universal_sha256": "4819125a698f6c6c770c360790479775e9694f1cf9914f13bb94a7103b0a5cab",
+      "identical": true,
+      "comparison_status": "compared",
+      "direct_includes": []
+    },
+    {
+      "path": "source/math/random_math.c",
+      "halo_64_sha256": "f44dc6ac22b697158dd86f52e770111a83936160021ffcec45848a945f24c82f",
+      "halo_ce_universal_sha256": "8d4808e8f9cb3274488f8e63ce4ae2072027cd8227a888f3cfdb988c90c1676f",
+      "identical": false,
+      "comparison_status": "compared",
+      "direct_includes": [
+        "#include \"cseries.h\"",
+        "#include \"cseries_windows.h\"",
+        "#include \"real_math.h\"",
+        "#include \"geometry.h\"",
+        "#include \"random_math.h\"",
+        "#include \"game_engine.h\""
+      ]
+    },
+    {
+      "path": "source/math/random_math.h",
+      "halo_64_sha256": "9d5c005b0e0295628c8082788071ea7d5ee61b3599ca19a692da2f1c35b2527b",
+      "halo_ce_universal_sha256": null,
+      "identical": false,
+      "comparison_status": "missing from independently pinned source",
+      "direct_includes": []
+    },
+    {
+      "path": "source/memory/data.c",
+      "halo_64_sha256": "d7e5b02aa77f1ce762794e4ed0df6d7fa83781e76fe546107bac24ae8ea5b582",
+      "halo_ce_universal_sha256": "db97ad491207a513f6d6015f9c2fbd2c2bd7a83e2d5698be4ab8a8bf3ea773e9",
+      "identical": false,
+      "comparison_status": "compared",
+      "direct_includes": [
+        "#include \"cseries.h\"",
+        "#include \"data.h\""
+      ]
+    },
+    {
+      "path": "source/memory/data.h",
+      "halo_64_sha256": "cb7a93de367ee0debcbf184889ad7662c99db4a72d4bd77a44c8db9bc95f59c7",
+      "halo_ce_universal_sha256": "cb7a93de367ee0debcbf184889ad7662c99db4a72d4bd77a44c8db9bc95f59c7",
+      "identical": true,
+      "comparison_status": "compared",
+      "direct_includes": [
+        "#include \"tag_files.h\""
+      ]
+    },
+    {
+      "path": "source/cseries/cseries.h",
+      "halo_64_sha256": "3a15e8bf5eafa83331596b71c3cf6b656a2368d757e0f2b7c646870368a4de34",
+      "halo_ce_universal_sha256": "aa7d6f14653606d0a0d8ce1987ddf5f94201d0facb8769fd990ce95b4780d5d3",
+      "identical": false,
+      "comparison_status": "compared",
+      "direct_includes": [
+        "#include <StdDef.h>",
+        "#include <stdio.h>",
+        "#include <stdlib.h>",
+        "#include <math.h>",
+        "#include <string.h>",
+        "#include <stdarg.h>"
+      ]
+    }
+  ]
+}

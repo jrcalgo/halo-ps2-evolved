@@ -1,0 +1,46 @@
+# Initial environment report
+
+Observed on 2026-10-18 in `/home/ai/Documents/GitHub/haloce-decomp-ps2`.
+
+## Observations
+
+- The saved implementation plan exists and has been read.
+- `git status --short` fails with `fatal: not a git repository`.
+- `.git` is an empty directory with mode `dr-xr-xr-x`. Environment permissions protect this directory. No metadata repair, deletion, or alternate Git-directory workaround was attempted.
+- `git ls-remote https://github.com/JackTulli/halo-64.git HEAD` fails with `Could not resolve host: github.com`.
+- Git, Make, Python 3, Docker CLI, and Node are present on PATH. Node resolves to a v24.10.0 installation; this does not establish REA compatibility.
+- PCSX2, xemu, `ee-gcc`, and `mips64r5900el-ps2-elf-gcc` were not found on PATH.
+- No applicable ancestor or workspace `AGENTS.md` was found. An unrelated recursive search encountered permission errors outside this project; those locations are not project instructions.
+- No dependency source, actual commit pin, retail input, emulator configuration, or physical console has been validated.
+
+## Recovery needed
+
+The environment owner must provide writable, valid parent Git metadata, or make the placeholder writable so an ordinary repository can be initialized. GitHub DNS/HTTPS access or complete local dependency archives is also required. These are environment restrictions, not missing user approval.
+
+After recovery, rerun `make doctor`, establish the parent repository without losing user files, and perform M01 additions with immediate recursive initialization as specified in the plan. Do not invent pins or substitute directories for submodules.
+
+## Verification scope
+
+`make doctor` performs a local, read-only inventory and exits nonzero when initial prerequisites are blocked. It does not download packages, contact hosts, start Docker, repair configuration, validate REA providers, or establish emulator/hardware correctness.
+
+## Recovery and execution update — 2026-10-18
+
+Git now recognizes the parent repository. Ordinary sandbox writes to Git metadata remain restricted, but approved escalations successfully added and initialized all eight dependencies and configured local forks. GitHub DNS succeeds under that escalation. The original M00 blockers no longer prevent dependency acquisition.
+
+Offline bootstrap and fresh-parent bundle restoration were verified. All twelve converter scripts passed synthetic checks; real-map checks skipped missing assets. Initial C host tests failed because LeakSanitizer cannot run under the sandbox's ptrace environment; the same suite was rerun under approved escalation with sanitizers enabled.
+
+The escalated C host suite completed successfully with `-fsanitize=address,undefined` and leak detection enabled: all fifteen host test executables passed. Fixtures and binaries were confined to a temporary directory. This validates the tested host paths, not EE/VU execution or physical-console behavior.
+
+## Compiler preflight update
+
+The workspace has approximately 2.69 GiB free, below the new conservative 20 GiB build/staging allowance. `makeinfo`, `flex`, `bison`, and `gawk` are missing from PATH. The system Docker daemon is accessible through approved escalation at `/var/run/docker.sock`; no PS2 toolchain image was found. No packages/images were installed and no unrelated data was removed. These constraints prevent starting a responsible native/container toolchain build in this environment.
+
+## SDK and host ABI update
+
+The SDK downloader adaptation passed synthetic idempotence and preservation checks and is recorded in its local fork/bundle. A standard-header `gcc -m32` compilation failed with missing `bits/libc-header-start.h`; no host gameplay ABI execution was possible. `HALO_BUILD_ROOT` can now select a build filesystem for preflight without creating files. User input has been requested for a suitable build location and retail data paths.
+
+## Native host utility and driver update
+
+`make host-tools` successfully compiled and installed ps2client/fsclient with Ubuntu GCC 12.4.0 from the pinned ps2client source in isolated staging. Repeat execution passed; hashes and logs are recorded in ignored build output. No console connection was attempted. Eight infrastructure tests passed.
+
+The enhanced preflight found missing GMP/MPFR/MPC development support in addition to makeinfo/flex/bison/gawk and storage constraints. The native compiler/SDK driver refuses execution on these actual prerequisites; pending full-build and container validation are reported separately from readiness. Large compiler sources were not downloaded.

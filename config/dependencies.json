@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "dependencies": [
+    {
+      "name": "halo-64",
+      "path": "submodules/halo-64",
+      "upstream": "https://github.com/JackTulli/halo-64.git",
+      "upstream_commit": "17541f4444baabb47d1a0deb917f26ccb7b6bc5c",
+      "commit": "17541f4444baabb47d1a0deb917f26ccb7b6bc5c",
+      "branch": "ps2-port",
+      "bundle_sha256": "b94c0693c0e676de09fc19fbcc046a5a3cd73a97c1d402ac907a771385976181"
+    },
+    {
+      "name": "halo-ps2",
+      "path": "submodules/halo-ps2",
+      "upstream": "https://github.com/BuechlerA/halo-ps2.git",
+      "upstream_commit": "a571749c8c8de34c045e363726596989097c604a",
+      "commit": "a571749c8c8de34c045e363726596989097c604a",
+      "branch": "ps2-port",
+      "bundle_sha256": "9e212cf15ce2ddef2993a7bf3cd7c43fc747a7113afbde8693a0fe436553d467"
+    },
+    {
+      "name": "halo-ce-universal",
+      "path": "submodules/halo-ce-universal",
+      "upstream": "https://github.com/cybersecurity/halo-ce-universal.git",
+      "upstream_commit": "7524ba61689a912bdec234d9687b178f0b0e7389",
+      "commit": "7524ba61689a912bdec234d9687b178f0b0e7389",
+      "branch": "ps2-port",
+      "bundle_sha256": "ecc27c723edae4db1447a5ce7a6bf2dd76139dba080fd525164495fe27ba29e1"
+    },
+    {
+      "name": "ps2dev",
+      "path": "submodules/ps2dev",
+      "upstream": "https://github.com/ps2dev/ps2dev.git",
+      "upstream_commit": "594e2b21863a574e1923927f6349cceb87c88109",
+      "commit": "594e2b21863a574e1923927f6349cceb87c88109",
+      "branch": "ps2-port",
+      "bundle_sha256": "ffeb89cc6939bb86e584ac842ce4092ef5231c57e0095978fdc55aa091e9f83c"
+    },
+    {
+      "name": "ps2toolchain",
+      "path": "submodules/ps2toolchain",
+      "upstream": "https://github.com/ps2dev/ps2toolchain.git",
+      "upstream_commit": "1b32a279d66ba765a19673b00747e22eeda07eef",
+      "commit": "1b32a279d66ba765a19673b00747e22eeda07eef",
+      "branch": "ps2-port",
+      "bundle_sha256": "6d32ddb90eab05636fb4eb7b3f15817230bf7ef060ca45b01145e94c45b545ec"
+    },
+    {
+      "name": "ps2sdk",
+      "path": "submodules/ps2sdk",
+      "upstream": "https://github.com/ps2dev/ps2sdk.git",
+      "upstream_commit": "329e2bb43287e16af16c4dde1c614e2662c24468",
+      "commit": "a3ce5d035ceae1218dc0b83e465d1e5c927d951d",
+      "branch": "ps2-port",
+      "bundle_sha256": "e5269b399d6902bebd2175770ef6d9f6f35305c9d34e5836ddcffc5542009c01"
+    },
+    {
+      "name": "ps2client",
+      "path": "submodules/ps2client",
+      "upstream": "https://github.com/ps2dev/ps2client.git",
+      "upstream_commit": "4af9c6a7a05a3a428270f2d836166cd3965bcb17",
+      "commit": "4af9c6a7a05a3a428270f2d836166cd3965bcb17",
+      "branch": "ps2-port",
+      "bundle_sha256": "726a839b077ba17a933b3145880d22c717a1554c8ad858b164245c4467481fa7"
+    },
+    {
+      "name": "ps2link",
+      "path": "submodules/ps2link",
+      "upstream": "https://github.com/ps2dev/ps2link.git",
+      "upstream_commit": "0c6138c5553760423070d1797ac475c4d98a06e6",
+      "commit": "0c6138c5553760423070d1797ac475c4d98a06e6",
+      "branch": "ps2-port",
+      "bundle_sha256": "35367206a9c8809786f5ed5b181589daa917f95c29a3bd332e62301b67542200"
+    },
+    {
+      "name": "ps2toolchain-ee",
+      "path": "submodules/ps2toolchain-ee",
+      "upstream": "https://github.com/ps2dev/ps2toolchain-ee.git",
+      "upstream_commit": "4795b8357049e86137589af2db3d588cae79a77c",
+      "commit": "8499ca61e0e684ee87c6105a63dcd6dc4ecf9874",
+      "branch": "ps2-port",
+      "bundle_sha256": "0c32a280a63836127e1467bbc56182298a9a57c870451f0de38481b96e5ea4e4"
+    },
+    {
+      "name": "ps2toolchain-iop",
+      "path": "submodules/ps2toolchain-iop",
+      "upstream": "https://github.com/ps2dev/ps2toolchain-iop.git",
+      "upstream_commit": "d7ead3c9f3d3220b3ca0b17641fd5b7fe3d734cf",
+      "commit": "85e38922217323fa6b8d6a19159a8dce97b42b21",
+      "branch": "ps2-port",
+      "bundle_sha256": "621aa63c158e4b883b76d7a72015a67b6a3287c03f9aebeea4883d163efd1b38"
+    },
+    {
+      "name": "ps2toolchain-dvp",
+      "path": "submodules/ps2toolchain-dvp",
+      "upstream": "https://github.com/ps2dev/ps2toolchain-dvp.git",
+      "upstream_commit": "d8aa68a0295dcc480255826b1320857278ffdfc2",
+      "commit": "a7cdd7ba5ff7fa6488fb9e1090b748843105959f",
+      "branch": "ps2-port",
+      "bundle_sha256": "32a25818369d5791e6b3e3ebd67bdae5ce1ae9ae649c0a8d428e255d90968420"
+    }
+  ]
+}

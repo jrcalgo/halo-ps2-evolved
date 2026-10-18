@@ -1,0 +1,6 @@
+/build/
+/.local/
+/assets/
+/data/retail/
+__pycache__/
+*.pyc
