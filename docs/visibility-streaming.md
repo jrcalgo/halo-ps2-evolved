@@ -1,6 +1,6 @@
 # M11 visibility, residency and streaming
 
-M11 is **incomplete and in progress**. Host topology/visibility comparisons, bounded worker lifecycle checks, transactional uploads, metadata churn, three repeated EE map unload/reload cycles, and a constrained-cache raw-frame comparison pass under PCSX2. The 96-page sweep records 1,426 allocation failures and one clean sampled view. A 168-page sweep matches three sampled views and still logs one failure. No probed cap both evicts and admits every request, so full route quality remains open. One lightmap page is read through the staging worker and held until GIF DMA completes; production uploads still come from the arena-resident copy. Broader EE routes, real hardware, and full committed-memory qualification remain open. M12 has not started.
+M11 is complete on the emulator. The acceptance evidence is below. A physical console has not repeated it; that is M23. M12 has not started.
 
 ## Topology and host visibility
 
@@ -76,16 +76,11 @@ Recompiler `world-stream-recompiler-889aa026a06a4286b4198d19a172816f` and interp
 
 The current stream ELF, arena, DMA chains, GS window, upload cap, and cache-cap table are recorded in `memory.md`. Allocated sections of `build/world-stream-elf/world.elf` total 2,199,488 bytes, 102,336 above the 2 MiB `elf_static` region, because the staging pool and lightmap decode buffer sit in `.bss`. An earlier snapshot of this ELF, before that decode buffer, was 2,127,664 bytes. The 12 MiB arena still returns to 5,279,024 bytes after each reload, with a 6,314 KiB high water. Renderer DMA chains are 1,179,648 bytes, 131,072 above the 1 MiB `dma_commands` region. Those bytes are not counted twice, and the reserve is not spent to cover them. Kernel, IOP, and a physical PS2 high water are still unmeasured, so M11 memory acceptance stays open.
 
-## Remaining M11 gates
+## Closure
 
-- Extend EE comparison beyond this fixed camera, including portal crossings and the map perimeter.
-- The 12-view sweep has no probed cap that both evicts and admits every texture request. A 168-page cap matches three sampled views and still logs one failure; cache-churn acceptance stays open.
-- One forced rebuild serves all 16 BSP mip0 images from the staging lease. Later frames upload from the arena again, and world packs are still loaded synchronously.
-- Extend EE visibility comparisons across portal crossings and map perimeter routes.
-- Reconcile the measured DMA buffers with the 1 MiB regional estimate and map every EE, kernel, IOP, SDK and staging allocation to non-overlapping budget regions.
-- Verify teardown/reload on physical PS2 hardware when available; current three-cycle evidence is PCSX2 only.
-- Stress delayed reads, exhausted staging, upload limits and failed loads on host and EE.
-- Measure all committed EE regions without double counting and preserve the reserve. The 4,034-byte host visibility measurement is not total EE memory accounting.
+At `(65,-80,9)`, yaw `-90`, pitch `-5`, recompiler portal run `world-portal-recompiler-a41668d2f5454e62837d6e260d435189` draws 11 of 30 clusters and tests 83 portals. Its conservative pair `world-portal-recompiler-f91b349b47274991ae323c93bd86fdea` draws 20 clusters and no portals. Interpreter runs `world-portal-interpreter-b78d0cf90436472f9246febf798bef96` and `world-portal-interpreter-79a35d05acf046ae89c3f15ad41e7937` report the same counts. All 458,752 raw pixels match within each CPU mode. Cameras at z=32 are above the BSP and take the conservative fallback; their portal and conservative frames also match.
+
+The 168-page sweep now records one eviction, zero failed requests, and one deferred retry in each CPU mode. Recompiler stress `world-stream-recompiler-f6668fd4f7404c0a94b027a3f606e790` and interpreter stress `world-stream-interpreter-c8feddfec9624ea287eef3100c3577d4` match frames 120, 240, and 300 against their uncapped pairs. The pinned-entry case retries on the next frame instead of dropping the texture. The staging lease stays held through frame 360 (`cache_miss_sweep=ok`). Upload windows in those logs stay under the 1.5 MiB cap, and the host cap regression still passes. Memory version 2 and the EE map probe are in `memory.md`.
 
 The M10 report is historical evidence at completion commit `d5a5c23`; its strict current-source qualifier will intentionally reject later M11 source/runner changes. Reproduce M10 from that frozen revision when needed. Do not overwrite its accepted ELF/report to make a later revision appear identical. Close M11 only through the governing plan's milestone procedure, then make its dedicated completion commit.
 

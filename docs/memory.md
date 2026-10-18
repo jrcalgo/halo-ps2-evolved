@@ -1,6 +1,6 @@
 # Memory record
 
-M11's acceptance line "total committed memory remains within its budget" is open. This file is the measured record behind that line. The versioned split is `config/memory-budget.json`. A byte counted in two regions is a failed account, and the 5.5 MiB reserve is not available to hide an overflow.
+M11's memory acceptance is met by the measurements below. The versioned split is `config/memory-budget.json` version 2. A byte counted in two regions is a failed account, and the 5.5 MiB reserve was not spent.
 
 ## Budget
 
@@ -117,4 +117,20 @@ Host visibility storage for the 448-camera audit peaked at 4,034 bytes. That num
 
 Budget version 2 gives the measured DMA chains their own bytes. The stream ELF's 1,133,688 bytes of staging, decode buffer, worker stack, reader, and one-shot chain are charged to `streaming` (1,572,864). The other 1,068,624 allocated bytes fit in `elf_static`. Steady arena sections fit as well: BSP raw 611,856 in `current_bsp`, TEXS 406,016 plus lightmaps 33,120 in `texture_cache`, and models, scenario, animation, and object textures 3,734,272 in `resident_gameplay`. The OTEX load scratch is 1,089,940 bytes and fits in the spare of `current_bsp` while it is live; arena high water was 6,465,536. Those assignments are not double-counted.
 
-Kernel and IOP occupancy are still unmeasured. `system_kernel` remains a 1,572,864-byte reservation, not a reading. No physical PS2 has reported a high water. The M11 memory acceptance stays open until that reservation is either measured or replaced.
+## Kernel, stack, and IOP-side EE buffers
+
+The homebrew link starts `.text` at `0x00100000`. A running probe on the project BIOS reports the same layout before `SifInitRpc`, after it, after `rom0:SIO2MAN`, and after `rom0:PADMAN`:
+
+| Reading | Value |
+|---|---|
+| `_end` of the probe | `0x0012b7a0` |
+| `EndOfHeap()` | `0x01fdf000` |
+| Stack pointer | `0x01ffed10` |
+| `_stack_size` | 131,072 |
+| 32 MiB top | `0x02000000` |
+
+The first 1,048,576 bytes are outside the linked image. The kernel owns them. From `EndOfHeap()` to the top of RAM is 135,168 bytes: the 131,072-byte stack plus 4,096 bytes of gap. Loading SIO2MAN and PADMAN did not move `_end` or `EndOfHeap()`, so those IOP modules did not take an EE user-heap buffer. Their EE-side RPC state stays inside the kernel region or the small probe image.
+
+Those two reserved ends total 1,183,744 bytes. `system_kernel` is 1,572,864, leaving 389,120 bytes unused. The stream viewer's `_end` is `0x00319fe0`. Its heap therefore runs from there to `0x01fdf000`, 30,167,072 bytes, which holds the 12,582,912-byte arena and the 1,179,648-byte DMA chains.
+
+No physical PS2 has repeated this map. That does not change the emulator measurement.

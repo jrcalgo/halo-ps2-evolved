@@ -86,9 +86,9 @@ The visible object is synthetic. It is not a Halo player or a retail scene. The 
 
 Corrected ELF `e16df34e5d80a87d5e023b6d7f84dacfe5b329a49fc17f82dc141c0c75009726` passes native/container allocated-section parity. In PCSX2 2.8.2, the fixed valley view agrees with the independent reference, the pad flight covers five waypoints, and each CPU-mode route completes 9,001 frames. All 12 retained views per mode were inspected. `python3 tools/qualify_world.py` passes current source/ELF/pack/configuration/log/capture checks. No texture failure, clipped-geometry loss or DMA overflow was logged. See `world-viewer.md` for corrected run identities, historical failures, guest profiler data and appearance limits. M11 is next; physical-console performance is unproven.
 
-## M11 — In progress
+## M11 — Complete
 
-Topology and 448 host colour/depth visibility comparisons pass after conservative outside-bounds and near-plane fixes. Guarded EE/GS culling comparisons match within each CPU mode; cache budget/frame-wrap and 200,000-operation cache ownership regressions pass. Bounded worker lifecycle and transactional upload rollback are covered. Visible interpreter/recompiler stream runs each pass three same-map renderer teardown/reload cycles and return arena usage to 5,279,024 bytes. A 96-page sweep records nine evictions and 1,426 allocation failures, with one clean frame-300 match. A 168-page sweep records one eviction and one failure, and frames 120, 240, and 300 match the uncapped image in each CPU mode. No probed cap both evicts and admits every request, so route-wide texture completeness remains open. Both CPU modes also read lightmap page 0 (8192 bytes) through the staging worker, then serve one forced rebuild of all 16 BSP mip0 images (299,040 bytes, two staging slots) from that lease. Release waits for GIF DMA. Later frames upload from the arena again. The recompiler's final capture still shows Blood Gulch. The staging lifetime test passes. Cross-mode baseline differences remain separately recorded. Production cache-miss uploads, broader EE routes, full RAM accounting, and physical-hardware teardown remain open. See `visibility-streaming.md`.
+Portal culling at `(65,-80,9)` matches the uncullled frame in both CPU modes while cutting the view from 20 clusters to 11 and testing 83 portals. The 448 host views already matched. A 168-page sweep evicts one texture, fails none, defers one retry, and matches frames 120, 240, and 300 in both CPU modes. The staging lease holds all 16 mip0 images for 360 frames. Three reloads return the arena to 5,279,024 bytes. Budget version 2 and the EE memory-map probe fit the measured kernel, stack, ELF, arena, DMA, and streaming bytes. Details are in `visibility-streaming.md` and `memory.md`. A physical console has not repeated this. That remains M23.
 
 ## M12–M22 — Not started
 
@@ -100,7 +100,7 @@ No physical console, storage backend, or operator setup is available. Hardware q
 
 ## Next actions
 
-1. Continue M11 at section 14: broaden EE portal comparisons, then implement bounded async staging and explicit texture/read lifetimes; test churn, cancellation, unload and total memory.
+1. M11 is complete. M12 is next and has not started.
 2. Do not treat the completed 300-second route alone as M10 acceptance.
 3. Do not treat `make probe` or `make platform-elf` as passed runtime gates. M07’s runtime gate is `make test-emulator SCENARIO=probe`.
 
