@@ -58,9 +58,9 @@ Parent Git metadata, workspace permissions, source access, and the initial envir
 
 The hybrid proof has not run. It waits on M06 and M07 execution, which have not happened.
 
-## M09 — Blocked
+## M09 — Complete
 
-No local retail ISO or map directory is configured. Conversion has not started. Retail data remains untracked.
+`MAP=bloodgulch make convert` decompressed the locally configured Xbox cache, build `01.10.12.2276`, and converted it twice. The BSP, object, and texture pack hashes match across the two clean output directories. BSP SHA-256 is `55ab30028ccd76aa5a3358d062988480c9142fb9b89de2f7a50321b4f4452c09`. The largest axis error is `0.001114` against the declared bound `0.001116` over 5503 triangles. Pack sizes are 405504, 2344960, and 350208 bytes, inside the BSP, resident-gameplay, and texture-cache regions. Truncated and bad-magic headers fail in `tests/test_convert_map.py`. Retail inputs and packs stay under ignored `data/retail`.
 
 ## M10–M22 — Not started
 
@@ -73,5 +73,5 @@ No physical console, storage backend, or operator setup is available. Hardware q
 ## Next actions
 
 1. Supply PCSX2 before the M06 stability run and the M07 R5900 execution comparison.
-2. Supply a retail Xbox ISO or map directory before M09 conversion.
+2. M09 has a local Blood Gulch pack. M10 still needs PCSX2 before a static-world rendering run.
 3. Do not treat `make probe` or `make platform-elf` as passed runtime gates.

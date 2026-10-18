@@ -46,6 +46,9 @@ probe:
 platform-elf:
 	$(PYTHON) tools/build_platform.py
 
-convert elf test-emulator iso:
+convert:
+	$(PYTHON) tools/convert_map.py
+
+elf test-emulator iso:
 	@echo "Target '$@' is unavailable: source acquisition and audited implementation are pending. See docs/milestones.md." >&2
 	@exit 2
