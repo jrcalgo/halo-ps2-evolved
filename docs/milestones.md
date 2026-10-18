@@ -18,32 +18,33 @@ Parent Git metadata, workspace permissions, source access, and the initial envir
 - A second `OFFLINE=1 make bootstrap` passed and left all eleven pins unchanged.
 - Private bundles are ignored and need a separate backup. Public upstreams cannot restore fork-only commits.
 
-## M02 — In progress
+## M02 — Complete
 
-- Source reuse audit and current findings: `source-audit.md` and `gameplay-probe.md`.
-- Eleven toolchain/SDK leaf sources have exact commit locks. Nine required sources were acquired into isolated native and container staging trees.
-- The adapted compiler acquisition scripts refuse implicit fetch/reset and require exact locked staging checkouts. SDK external sources are supplied through verified local paths.
-- The initial gameplay candidate remains original `integer_math.c`; an ILP32 host fixture now compiles and executes it without changing source algorithms.
-- Full transitive gameplay include/link closure, license/provenance review, and post-build source audit remain open. No gameplay source algorithm has been modified.
+- Source inventory, reuse classifications, and the frozen integer-math compile list are in `source-audit.md`, `gameplay-probe.md`, and `config/gameplay-probe-candidates.json`.
+- The compile closure is `halo-64` `source/math/integer_math.c`, `source/math/integer_math.h`, and `source/cseries/cseries.h`. Integer math files match the pinned OpenCE copies. `cseries.h` does not. `cseries.c` is excluded because its include graph is wider than `csprintf` and `temporary`.
+- `halo-ps2` pin `a571749c8c8de34c045e363726596989097c604a` is `upstream/HEAD` on `claude/open-decisions-review-75968c`. The renderer, VU1 programs, pack reader, converters, arena, pad, timer, and profiler are present in that tree.
+- File-level notices: the frozen gameplay files have no per-file copyright lines and remain under `halo-64/LICENSE.md` (CC0-1.0). Inspected `halo-ps2` sources have no per-file banner and remain under GPL-3.0. Retail rights stay unresolved.
+- Locked toolchain commits and checksummed host packages are the build inputs. Umbrella fetch scripts are not the build entry point.
+- No gameplay algorithm was modified. PS2 runtime is not claimed.
 
-## M03 — In progress
+## M03 — Complete
 
-- Pinned `ps2client` and `fsclient` host utilities build and pass a repeat run.
-- Native prerequisite packages are checksum-verified, extracted to a workspace-local prefix, and smoke-linked without changing global packages.
-- The immutable container image and archive are pinned in `config/container-environment.json`; container execution is network-isolated and writes only under `build/container`.
-- Native compiler/SDK run `build/toolchain/compiler-sdk.json`: compiler stages 00–03 passed; stage 04 is running at last review.
-- Container compiler/SDK run `build/container/toolchain/compiler-sdk.json`: stages 00–01 passed; stage 02 is running at last review.
-- DVP `world.vsm` assembles natively. The full compiler/SDK builds and native/container EE ELF parity remain pending.
-- Native and isolated-container host test suites each pass 10 infrastructure tests and 12 synthetic converter checks. Retail-data checks skipped because no map assets are configured.
-- No PS2 runtime or emulator behavior is claimed.
+- Native and container `make toolchain` reports are `passed`: compiler stages 00–09, `sdk-build`, and `sdk-install`. Identities are EE `657b9e646920fda447079be56d915eb4f8a33c25`, IOP `4afa44d71fee30ecfd1aa014f2a11736b824be6a`, DVP `28d83d34d85360988aa32b9a783062d394a7d62e`, and SDK `a3ce5d035ceae1218dc0b83e465d1e5c927d951d`.
+- Both environments report `mips64r5900el-ps2-elf-gcc (GCC) 15.2.0` and GNU assembler 2.45.1.
+- `make smoke-elf` and `BUILD_ENV=container make smoke-elf` produced `build/platform-smoke/halo-smoke.elf` (`cae68909c4a540801274d63bff384f9825973ad0d74aa11f08769fcb7181d8a2`) and `build/container/platform-smoke/halo-smoke.elf` (`887c3b1794f7f5e8c0cc3eb0b5788bc87c86f57fd0582fc2f432d6957598e4d8`).
+- Allocatable ELF sections match, including `.text` and `.data`. File hashes differ because debug strings embed `build/toolchain` versus `build/container` paths and local symbol suffixes differ. The same fixture compiled from `/tmp/halo-ee-anywhere` reproduced the allocatable bytes.
+- All 211 IOP `.irx` modules match on allocatable section bytes. Static library file hashes still differ by path metadata.
+- Converter imports are Python standard library only. `make test-host` passed 13 infrastructure tests, including resource accounting, and 12 synthetic converter checks. Real map checks skipped.
+- DVP `world.vsm` object bytes match across environments (SHA-256 `b98e92d27413ade70bfcefa15b78408ffd033376791c9c8f9641fb90f63ca136`). That is assembly parity, not VU execution.
+- No PS2 runtime, emulator, or hardware behavior is claimed.
 
 ## M04 — Not started
 
 No selected artifact investigation or repeatable xemu reference scenario has been completed.
 
-## M05 — In progress
+## M05 — Complete
 
-Original Halo integer math passes selected 32-bit ILP32 host fixtures, including a deliberate negative control. Arena accounting and memory-bound acceptance remain open.
+`make test-host` runs `tests/test_resource_accounting.py`. The audited `halo-ps2` `arena_*` functions pass alignment, exhaustion, scratch reset, future-mark rejection, and size overflow on LP64 and ILP32 hosts, with identical check records. `config/memory-budget.json` totals 32 MiB and preserves the 5.5 MiB reserve. Overlapping claims fail. Steady-state allocations and pool exhaustion are reported in scenario results. This is host accounting, not EE runtime validation.
 
 ## M06 — Not started
 
@@ -59,6 +60,6 @@ Renderer runtime, game-loop integration, map conversion, gameplay systems, split
 
 ## Next actions
 
-1. Keep native and container compiler builds running to their terminal reports; diagnose failures without claiming parity prematurely.
-2. After full builds pass, create and run the minimal EE ELF in both environments, compare hashes/ABI, and record the limits of emulator/hardware validation.
-3. Continue M02 closure audit and M05 resource accounting independently; no retail input or emulator/console path has been supplied yet.
+1. Execute M04. REA is registered for Cursor, but this session does not yet show REA tools until the client is restarted. `xemu` is not on `PATH`, and no retail input is configured. Leave M04 incomplete while those are absent.
+2. Execute M06 platform bring-up with the installed toolchain. PCSX2 is not on `PATH`, so interpreter and recompiler acceptance stays pending.
+3. Execute M07 only against the frozen integer-math closure. Do not treat the ILP32 host result as the R5900 gate.
