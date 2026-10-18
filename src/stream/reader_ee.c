@@ -21,11 +21,23 @@ int reader_start(ee_reader *r, void *storage, size_t bytes,
                  void *stack, size_t stack_bytes, int priority) {
     ee_sema_t sem = {0};
     ee_thread_t thread = {0};
+    staging_pool kept;
+    int preserve;
     if (!r || !stack || ((uintptr_t)stack & 15) || stack_bytes < 16384 ||
         stack_bytes > INT_MAX || priority < 1 || priority > 127) return 0;
+    /* A restarted worker must keep DMA-leased slots. Their bytes stay put. */
+    preserve = !r->running && r->pool.storage == storage;
+    if (preserve) {
+        for (unsigned i = 0; i < STAGING_SLOTS; ++i) {
+            staging_state state = r->pool.slots[i].state;
+            if (state != ST_FREE && state != ST_DMA && state != ST_CANCEL_DMA) return 0;
+        }
+        kept = r->pool;
+    }
     memset(r, 0, sizeof *r);
     r->wake = r->done = r->thread = -1;
-    if (!staging_init(&r->pool, storage, bytes)) return 0;
+    if (preserve) r->pool = kept;
+    else if (!staging_init(&r->pool, storage, bytes)) return 0;
     sem.init_count = 0; sem.max_count = 1;
     r->wake = CreateSema(&sem);
     if (r->wake < 0) return 0;
@@ -75,8 +87,10 @@ void reader_cancel_map(ee_reader *r, uint32_t map) {
 int reader_stop(ee_reader *r) {
     if (!r->running) return 0;
     if (r->active) return 0;
-    for (unsigned i = 0; i < STAGING_SLOTS; ++i)
-        if (r->pool.slots[i].state != ST_FREE) return 0;
+    for (unsigned i = 0; i < STAGING_SLOTS; ++i) {
+        staging_state state = r->pool.slots[i].state;
+        if (state != ST_FREE && state != ST_DMA && state != ST_CANCEL_DMA) return 0;
+    }
     /* No outstanding read. The worker has signalled done and can only wait
      * for wake; termination cannot interrupt filesystem or consumer work. */
     if (TerminateThread(r->thread) < 0) return 0;

@@ -14,11 +14,11 @@ The contract is 26.5 MiB committed plus 5.5 MiB reserve, 32 MiB total (33,554,43
 | current_bsp | 6,291,456 | map data |
 | texture_cache | 4,194,304 | EE RAM for textures and lightmaps |
 | dynamic_simulation | 2,621,440 | dynamic pool |
-| dma_commands | 1,048,576 | DMA buffers |
+| dma_commands | 1,179,648 | DMA buffers |
 | streaming | 1,572,864 | streaming pool |
 | checkpoint | 524,288 | checkpoint storage |
 | audio | 524,288 | audio staging |
-| frame_scratch | 524,288 | frame scratch |
+| frame_scratch | 393,216 | frame scratch |
 | uncommitted_reserve | 5,767,168 | reserve |
 
 Stacks stay inside `system_kernel` until a measured split is versioned. GS VRAM is a separate 4 MiB store and is not one of these EE regions.
@@ -68,9 +68,7 @@ The renderer allocates two frame chains and two upload buffers with `memalign`, 
 | Frame chain (`CHAIN_QW`) | 32,768 | 524,288 | 1,048,576 |
 | Upload chain (`UPLOAD_QW`) | 4,096 | 65,536 | 131,072 |
 
-The sum is 1,179,648 bytes. `dma_commands` is 1,048,576. The upload pair is the 131,072-byte excess.
-
-Cause: the 1 MiB region matches the two frame chains and does not include the double-buffered upload chains. Effect: a source chain that overflows still fails the frame, which is the chain cap doing its job, but the allocation itself is already outside the region. M06 and M08 logged chain high-water of 20 quadwords against a 64-quadword diagnostic chain; that is a different, smaller ELF, not this world viewer.
+The sum is 1,179,648 bytes. Budget version 2 sets `dma_commands` to that size and reduces `frame_scratch` by the same 131,072 bytes, so the 26.5 MiB committed total and the 5.5 MiB reserve stay put. No frame-scratch high water has been measured. M06 and M08 logged chain high-water of 20 quadwords against a 64-quadword diagnostic chain; that is a different, smaller ELF, not this world viewer.
 
 ## GS VRAM
 
@@ -117,4 +115,6 @@ Host visibility storage for the 448-camera audit peaked at 4,034 bytes. That num
 
 ## Not yet measured
 
-Kernel and IOP occupancy, SDK allocations beyond the arena `malloc` and the four DMA chains, and the split of the 5,279,024 arena bytes into the budget regions are unmeasured. No physical PS2 has reported a high water. Until those are mapped without double counting, and until the 102,336-byte ELF excess and the 131,072-byte DMA excess are either moved by a versioned budget change or removed from the image, the M11 memory acceptance stays open.
+Budget version 2 gives the measured DMA chains their own bytes. The stream ELF's 1,133,688 bytes of staging, decode buffer, worker stack, reader, and one-shot chain are charged to `streaming` (1,572,864). The other 1,068,624 allocated bytes fit in `elf_static`. Steady arena sections fit as well: BSP raw 611,856 in `current_bsp`, TEXS 406,016 plus lightmaps 33,120 in `texture_cache`, and models, scenario, animation, and object textures 3,734,272 in `resident_gameplay`. The OTEX load scratch is 1,089,940 bytes and fits in the spare of `current_bsp` while it is live; arena high water was 6,465,536. Those assignments are not double-counted.
+
+Kernel and IOP occupancy are still unmeasured. `system_kernel` remains a 1,572,864-byte reservation, not a reading. No physical PS2 has reported a high water. The M11 memory acceptance stays open until that reservation is either measured or replaced.

@@ -25,7 +25,7 @@ static int (*arena_texture)(void *, int, tex_image_t *);
 static const uint8_t *staged_pixels[64];
 static uint8_t *arena_pixels[64];
 static uint32_t staged_bytes[64];
-static unsigned staged_count, staged_slots, lease_used, lease_state;
+static unsigned staged_count, staged_slots, staged_total, lease_used, lease_state;
 static staging_ticket staged_ticket[2];
 static arena_t *level;
 static world_t *world;
@@ -96,23 +96,38 @@ static void arm_texture_lease(void)
     arena_texture = world->source.texture;
     require(arena_texture != NULL, "arena texture callback");
     bsp_render_set_texture_callback(texture_from_staging);
-    lease_state = 1;
+    staged_total = copied;
+    lease_state = 2;
     printf("[stream] cache_miss_source=staging textures=%u bytes=%u slots=%u\n", filled, copied, staged_slots);
 }
 
-static void release_texture_lease(void)
+/* set_world installs the arena callback again. Point it back at the leased copies
+ * and poison the reloaded arena bytes. The slot contents stay where they are. */
+static void rebind_texture_lease(void)
+{
+    require(lease_state == 2, "texture lease missing at reload");
+    require(world->bsp_tex.has && world->bsp_tex.tex.texture_count == staged_count, "reloaded texture count");
+    for (unsigned index = 0; index < staged_count; index++) {
+        tex_info info = tex_get(&world->bsp_tex.tex, index);
+        tex_mip_view mip;
+        require(tex_mip(&world->bsp_tex.tex, &info, 0, &mip), "reloaded mip0");
+        require(mip.bytes == staged_bytes[index], "reloaded mip0 size");
+        require(memcmp(mip.pixels, staged_pixels[index], mip.bytes) == 0, "reloaded mip0 bytes");
+        arena_pixels[index] = (uint8_t *)mip.pixels;
+        memset(arena_pixels[index], 0x5a, staged_bytes[index]);
+        SyncDCache(arena_pixels[index], arena_pixels[index] + staged_bytes[index]);
+    }
+    bsp_render_set_texture_callback(texture_from_staging);
+}
+
+/* The kick of frame-1 has finished. The slots must still refuse release. */
+static void confirm_texture_lease(unsigned frame)
 {
     require(lease_used, "leased texture was not uploaded");
     dma_channel_wait(DMA_CHANNEL_GIF, 0);
-    for (unsigned index = 0; index < staged_count; index++) {
-        memcpy(arena_pixels[index], staged_pixels[index], staged_bytes[index]);
-        SyncDCache(arena_pixels[index], arena_pixels[index] + staged_bytes[index]);
-    }
-    for (unsigned index = 0; index < staged_slots; index++) {
-        require(staging_dma_complete(&reader.pool, staged_ticket[index]), "texture dma complete");
-        require(staging_release(&reader.pool, staged_ticket[index]), "release texture slot");
-    }
-    bsp_render_set_texture_callback(arena_texture);
+    for (unsigned index = 0; index < staged_slots; index++)
+        require(!staging_release(&reader.pool, staged_ticket[index]), "lease ended before the sweep");
+    printf("[stream] cache_miss_sweep=ok frames=%u textures=%u bytes=%u\n", frame, staged_count, staged_total);
     printf("[stream] cache_miss_dma=ok textures=%u\n", staged_count);
     lease_state = 3;
 }
@@ -195,7 +210,6 @@ static void dma_lightmap_page(void) {
         require(staging_release(&reader.pool, decoded_ticket), "release after dma");
         require(staging_map_drained(&reader.pool, 51), "decoded slot drained");
         require(reader_stop(&reader), "dma reader stop");
-        arm_texture_lease();
         bsp_render_invalidate_textures();
         printf("[stream] dma_page=ok bytes=%u page=%u\n", page.pixel_bytes, index);
         dma_phase = 2;
@@ -215,10 +229,11 @@ void hybrid_stream_configure(arena_t *a, world_t *w, const char *pack, const cha
 void hybrid_stream_build(unsigned frame, const camera_t *camera, const text_batch_t *text) {
     camera_t swept;
     const camera_t *view=camera;
-    if (lease_state == 1) release_texture_lease();
+    if (lease_state == 2 && frame == 360) confirm_texture_lease(frame);
     if (!started) {
         require(ChangeThreadPriority(GetThreadId(),64) >= 0,"owner priority");
         require(reader_start(&reader,storage,sizeof storage,stack,sizeof stack,30),"start");
+        arm_texture_lease();
         started=1;
         printf("[stream] start storage=%u stack=%u metadata=%u\n",
                (unsigned)sizeof storage,(unsigned)sizeof stack,(unsigned)sizeof reader);
@@ -231,11 +246,14 @@ void hybrid_stream_build(unsigned frame, const camera_t *camera, const text_batc
         require(frame < 120,"timeout");
         reader_pump(&reader);
         switch(phase) {
-        case 0:
-            for (unsigned i=0;i<STAGING_SLOTS;i++)
-                require(reader_request(&reader,cycle+1,"stream-fixture.bin",0,256,&ticket[i]),"queue");
-            { staging_ticket extra;
-              require(!reader_request(&reader,99,"stream-fixture.bin",0,256,&extra),"exhaustion"); }
+        case 0: {
+            unsigned queued = 0;
+            staging_ticket extra;
+            while (queued < STAGING_SLOTS &&
+                   reader_request(&reader,cycle+1,"stream-fixture.bin",0,256,&ticket[queued]))
+                queued++;
+            require(queued > 0 && queued < STAGING_SLOTS, "texture lease left no free slot");
+            require(!reader_request(&reader,99,"stream-fixture.bin",0,256,&extra),"exhaustion");
             reader_pump(&reader);
             /* Cancellation before owner completion polling must retain the
              * active buffer even if the worker has already finished the I/O. */
@@ -243,6 +261,7 @@ void hybrid_stream_build(unsigned frame, const camera_t *camera, const text_batc
             require(!staging_map_drained(&reader.pool,cycle+1),"premature drain");
             require(!reader_stop(&reader),"premature shutdown");
             phase=1; break;
+        }
         case 1:
             if (!staging_map_drained(&reader.pool,cycle+1)) break;
             require(reader_request(&reader,100+cycle,"stream-fixture.bin",0,256,&ticket[0]),"reload");
@@ -281,6 +300,7 @@ void hybrid_stream_build(unsigned frame, const camera_t *camera, const text_batc
         require(bsp_render_set_world(level,&world->bsp,&world->source)==0,"restore renderer");
         if (has_objects) require(world_load_objects(world,level,object_path)==0,"reload object sections");
         require(level->used == baseline_used,"arena high-water/reload drift");
+        rebind_texture_lease();
         printf("[stream] unload_reload=%u used=%u baseline=%u cache_pages=%u\n",
                unloads+1,(unsigned)level->used,(unsigned)baseline_used,(unsigned)bsp_render_cache_pages());
         unloads++;

@@ -1,10 +1,10 @@
 {
-  "version": 1,
+  "version": 2,
   "unit": "byte",
   "committed_bytes": 27787264,
   "reserve_bytes": 5767168,
   "total_bytes": 33554432,
-  "notes": "Initial engineering allocation from the governing plan. Stacks remain inside the system reservation until a measured split is versioned. Do not count one byte in two regions.",
+  "notes": "Version 2 moves 131072 bytes from frame_scratch to dma_commands after the stream viewer measured two 4096-qword upload chains (1179648 bytes total). The 5.5 MiB reserve is unchanged. Staging bytes that live in the ELF image are accounted in streaming, not also in elf_static. See docs/memory.md.",
   "regions": [
     {"name": "system_kernel", "role": "reservation", "bytes": 1572864, "accounts": ["kernel", "stacks", "iop_ee_buffers"]},
     {"name": "elf_static", "role": "reservation", "bytes": 2097152, "accounts": ["executable_sections", "constants", "static_tables"]},
@@ -12,11 +12,11 @@
     {"name": "current_bsp", "role": "map", "bytes": 6291456, "accounts": ["map_data"]},
     {"name": "texture_cache", "role": "reservation", "bytes": 4194304, "accounts": ["ram_textures", "lightmaps"]},
     {"name": "dynamic_simulation", "role": "dynamic", "bytes": 2621440, "accounts": ["dynamic_pool"]},
-    {"name": "dma_commands", "role": "reservation", "bytes": 1048576, "accounts": ["dma_buffers"]},
+    {"name": "dma_commands", "role": "reservation", "bytes": 1179648, "accounts": ["dma_buffers"]},
     {"name": "streaming", "role": "streaming", "bytes": 1572864, "accounts": ["streaming_pool"]},
     {"name": "checkpoint", "role": "reservation", "bytes": 524288, "accounts": ["checkpoint_storage"]},
     {"name": "audio", "role": "reservation", "bytes": 524288, "accounts": ["audio_staging"]},
-    {"name": "frame_scratch", "role": "frame_scratch", "bytes": 524288, "accounts": ["frame_scratch"]},
+    {"name": "frame_scratch", "role": "frame_scratch", "bytes": 393216, "accounts": ["frame_scratch"]},
     {"name": "uncommitted_reserve", "role": "reserve", "bytes": 5767168, "accounts": ["reserve"]}
   ]
 }

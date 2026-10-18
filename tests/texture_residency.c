@@ -23,7 +23,7 @@ int main(void)
     tc_begin_frame(&t,UINT32_MAX-1);
     CHECK(tc_acquire(&t,0,1,1,&e)==TC_UPLOAD);
     tc_begin_frame(&t,UINT32_MAX);
-    CHECK(tc_acquire(&t,1,1,1,&e)==TC_FULL);
+    CHECK(tc_acquire(&t,1,1,1,&e)==TC_DEFER);
     tc_begin_frame(&t,0);
     CHECK(tc_acquire(&t,1,1,1,&e)==TC_UPLOAD && t.map[0]==0);
     /* Wrapped LRU: UINT32_MAX-2 is older than frame 0. */
