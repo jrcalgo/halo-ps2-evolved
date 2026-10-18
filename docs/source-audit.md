@@ -15,9 +15,9 @@ Pins and upstream identities are recorded in `config/dependencies.json`. Finding
 | N64 graphics/audio: `halo-64/port/n64/src/n64_render.c`, `n64_sound.c`, `xdk_*.c` | Reference only | N64 RSP/RDP, tiny3d, cartridge and sound APIs do not match PS2 services | Do not transplant; use only source-portability and scheduling observations |
 | N64 campaign experiment: `halo-64/port/n64/game/n64_campaign.c` | Exclude from this port | Simplified campaign experiment, not the original campaign closure | Do not treat it as the campaign implementation |
 | VU1 programs: `halo-ps2/engine/src/vu1/world.vsm`, `bsp.vsm`, `model.vsm` | Adapt in its dedicated fork | DVP assembler; gameplay must not own VU state | `world.vsm` assembly matched across environments; VU execution is untested |
-| VIF/DMA chain: `halo-ps2/engine/src/render/chain.c`, `upload.c` | Adapt in its dedicated fork | PS2 DMA/VIF ownership stays in the renderer | Source is present; no DMA runtime has been observed |
-| Pad input: `halo-ps2/engine/src/platform/pad.c` | Adapt in its dedicated fork | IOP `rom0:SIO2MAN` and `rom0:PADMAN` | Source is present; no controller has been observed |
-| Timer and profiler: `halo-ps2/engine/src/platform/timer.h`, `profiler.c` | Adapt in its dedicated fork | EE cycle counter and render timing | Source is present; no frame timing has been observed |
+| VIF/DMA chain: `halo-ps2/engine/src/render/chain.c`, `upload.c` | Adapt in its dedicated fork | PS2 DMA/VIF ownership stays in the renderer | Synthetic VIF/VU/GS execution and bounded chains have been observed; full M06 acceptance remains open (see `emulator.md`) |
+| Pad input: `halo-ps2/engine/src/platform/pad.c` | Adapt in its dedicated fork | IOP `rom0:SIO2MAN` and `rom0:PADMAN` | Virtual pad initialization and Start/Cross edges have been observed in the short fixture; full M06 acceptance remains open |
+| Timer and profiler: `halo-ps2/engine/src/platform/timer.h`, `profiler.c` | Adapt in its dedicated fork | EE cycle counter and render timing | Synthetic guest frame/time counters now progress; these are not physical-console performance measurements |
 | GS video setup: `halo-ps2/engine/src/platform/video.c`, `render/gs.h` | Adapt in its dedicated fork | PS2SDK graph/draw and GS allocation | Source is present; framebuffer sizes are not yet measured on hardware or in PCSX2 |
 | Map converters: `halo-ps2/tools/halo2ps2/*.py` | Reuse substantially unchanged where the synthetic checks apply; adapt in the fork when a real map requires it | Python standard library only (`python3 -I`); user-supplied maps stay untracked | Twelve synthetic scripts pass. `MAP=bloodgulch make convert` produced identical Blood Gulch packs; the map files stay untracked |
 
@@ -53,7 +53,7 @@ Twelve `halo-ps2/tools/tests/test_*.py` scripts completed successfully using syn
 
 ## Frozen baseline
 
-The integer-math compile closure is frozen in `config/gameplay-probe-candidates.json`. It is `source/math/integer_math.c`, `source/math/integer_math.h`, and `source/cseries/cseries.h` from pinned `halo-64`. Integer math source and header match the pinned OpenCE copies. `cseries.h` does not. `integer_math.c` calls `csprintf` and uses `temporary`; those definitions are in `source/cseries/cseries.c`, which also includes `cseries_windows.h`, `profile.h`, `errors.h`, `real_math.h`, `byte_swapping.h`, and `crc.h`. That wider graph is an explicit non-member of the frozen compile list. The host probe supplies the two symbols. `random_math` and `data.c` stay later probe candidates.
+The integer-math compile closure is frozen in `config/gameplay-probe-candidates.json`. It is `source/math/integer_math.c`, `source/math/integer_math.h`, and `source/cseries/cseries.h` from pinned `halo-64`. Integer math source and header match the pinned OpenCE copies. `cseries.h` does not. `integer_math.c` calls `csprintf` and uses `temporary`; those definitions are in `source/cseries/cseries.c`, which also includes `cseries_windows.h`, `profile.h`, `errors.h`, `real_math.h`, `byte_swapping.h`, and `crc.h`. That wider graph is an explicit non-member of the frozen compile list. The host probe supplies the two symbols. `random_math` stays deferred. The subsequent bounded datum closure is recorded in `gameplay-probe.md` and the candidate manifest.
 
 `submodules/halo-ps2` is pinned at `a571749c8c8de34c045e363726596989097c604a`. That commit is `upstream/HEAD` on `claude/open-decisions-review-75968c`, the only upstream branch advertised by `origin/HEAD`. The local fork branch `ps2-port` is checked out at the same commit. The renderer, VU1 programs, pack reader, converters, arena, pad, timer, and profiler listed above are present in this tree, so no other branch is selected.
 
@@ -72,3 +72,11 @@ Eleven acquisition scripts in the three compiler forks require exact staging che
 Ten infrastructure tests and twelve synthetic converter tests pass. The original Halo integer math module also passes the bounded ILP32 host probe documented in `gameplay-probe.md`; neither result establishes target execution.
 
 The EE README names newlib 4.5.0 while its configuration selects `ee-v4.6.0`; the recorded source identity follows the actual configuration. The SDK downloader fetches lwIP and FatFs and can reset hard to upstream refs, so pinning PS2SDK alone does not lock its build.
+
+## Runtime preparation follow-up
+
+The current M06 fixture executes a synthetic checker-textured triangle visibly, including VU1 transforms, cache maintenance, guarded DMA submission, frame presentation and pad polling. The first 600-second interpreter attempt completed its stability loop but failed its controlled Cross-input acceptance; fresh runs are in progress after input delivery was made retryable. M06 is not complete. These are project-fixture observations, not REA findings or evidence that upstream world/model programs have executed.
+
+The unchanged datum module now passes bounded ILP32 host tests and compiles for EE with explicit array/iterator layouts and a stale-handle mutation control. Target execution is pending. The world viewer compiles into parent-owned native/container outputs with matching allocated ELF sections; its Blood Gulch runtime gate remains pending.
+
+Current checkpoint validation passes 25 project host tests and 12 upstream synthetic converter scripts in both native and container environments. Positive and negative integer/datum EE builds have matching allocated ELF contents across those environments; execution remains gated on M06.
