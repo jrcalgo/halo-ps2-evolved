@@ -1,11 +1,12 @@
-"""Compile unchanged Halo combat source for R5900; object-only feasibility probe.
+"""Compile unchanged Halo combat source for R5900 and inspect a partial link.
 
 The generated prefix uses N64 capacity macros solely to satisfy header
-declarations. These are *not* PS2 runtime limits. No object is linked into the
-PS2 viewer, and successful compilation does not establish behavior parity.
+declarations. These are *not* PS2 runtime limits. The partial link retains only
+three update/damage roots; it is not a PS2 executable or evidence of parity.
 """
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -19,6 +20,11 @@ UNITS = {
     "projectiles": "source/items/projectiles.c",
     "damage": "source/objects/damage.c",
 }
+FOUNDATION_UNITS = {
+    "data": "source/memory/data.c",
+    "game_time": "source/game/game_time.c",
+}
+ROOT_SYMBOLS = ("weapon_update", "projectile_update", "object_cause_damage")
 PREFIX = r"""#include <string.h>
 #include <stdlib.h>
 #define HALO_LINUX 1
@@ -53,6 +59,7 @@ PREFIX = r"""#include <string.h>
 #define strnlen halo_strnlen
 #define random halo_random
 #include "halo_n64_limits.h"
+#pragma weak halo_random
 """
 
 
@@ -64,12 +71,37 @@ def digest(path: Path) -> str:
     return h.hexdigest()
 
 
+def undefined_symbols(nm: Path, obj: Path) -> set[str]:
+    output = subprocess.check_output([str(nm), "-u", str(obj)], text=True)
+    return {line.split()[-1] for line in output.splitlines() if line.strip()}
+
+
+def live_external_symbols(nm: Path, objdump: Path, obj: Path) -> list[str]:
+    """Filter undefined symbol-table entries to surviving relocations."""
+    undefined = undefined_symbols(nm, obj)
+    relocations = subprocess.check_output([str(objdump), "-r", str(obj)], text=True)
+    referenced = {line.split()[-1].split("+")[0] for line in relocations.splitlines()
+                  if "R_MIPS_" in line}
+    return sorted(undefined & referenced)
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--foundations", action="store_true",
+                        help="also compile and partially link the original datum and tick services")
+    args = parser.parse_args()
     build, prefix, env, _ = environment()
-    output = build / "combat-source-probe"
+    output = build / ("combat-source-foundations" if args.foundations else "combat-source-probe")
     output.mkdir(parents=True, exist_ok=True)
     header = output / "halo_ps2_probe_prefix.h"
     header.write_text(PREFIX)
+    semantics = output / "halo_msvc_semantics.h"
+    subprocess.run(["python3", str(SOURCE / "tools/linux_msvc_semantics.py"),
+                    "--output", str(semantics), "--all-inlines", "--exclude-static",
+                    "--tags", str(SOURCE / "source"),
+                    "--inlines", str(SOURCE / "source"),
+                    "--inlines", str(SOURCE / "port/include/xdk")],
+                   cwd=ROOT, env=env, check=True)
     config = json.loads((SOURCE / "config/config.json").read_text())
     include_dirs = [SOURCE / name for name in config["projects"][0]["options"]["include_dirs"]
                     if name != "xbox/include"]
@@ -77,14 +109,21 @@ def main() -> None:
                     SOURCE / "port/include/xdk", SOURCE / "port/n64/include"]
     compiler = prefix / "ee/bin/mips64r5900el-ps2-elf-gcc"
     nm = prefix / "ee/bin/mips64r5900el-ps2-elf-nm"
+    objdump = prefix / "ee/bin/mips64r5900el-ps2-elf-objdump"
+    linker = prefix / "ee/bin/mips64r5900el-ps2-elf-ld"
     flags = ["-std=gnu89", "-fms-extensions", "-fshort-wchar", "-fcommon",
-             "-fno-strict-aliasing", "-fwrapv", "-G0", "-w", "-D_EE",
-             *["-I" + str(item) for item in include_dirs], "-include", str(header), "-c"]
-    report = {"status": "objects-only", "compiler": subprocess.check_output(
+             "-fno-strict-aliasing", "-fno-delete-null-pointer-checks",
+             "-ffp-contract=off", "-fsigned-char", "-fwrapv", "-ffunction-sections",
+             "-fdata-sections", "-G0", "-w", "-D_EE",
+             *["-I" + str(item) for item in include_dirs], "-include", str(header),
+             "-include", str(semantics), "-c"]
+    report = {"status": "partial-relocatable-link", "compiler": subprocess.check_output(
         [str(compiler), "--version"], text=True).splitlines()[0],
-        "prefix_sha256": digest(header), "units": {},
-        "limits": "N64 capacity macros are compile-only placeholders; no PS2 runtime, link, or parity claim."}
-    for name, relative in UNITS.items():
+        "prefix_sha256": digest(header), "semantics_sha256": digest(semantics), "units": {},
+        "limits": "N64 capacity macros are compile-only placeholders; no PS2 executable, runtime, or parity claim."}
+    objects = []
+    units = UNITS | (FOUNDATION_UNITS if args.foundations else {})
+    for name, relative in units.items():
         source = SOURCE / relative
         obj = output / (name + ".o")
         run = subprocess.run([str(compiler), *flags, str(source), "-o", str(obj)],
@@ -92,11 +131,28 @@ def main() -> None:
         (output / (name + ".log")).write_text(run.stdout + run.stderr)
         if run.returncode:
             raise RuntimeError(f"{relative} failed; see {output / (name + '.log')}")
+        objects.append(obj)
         symbols = subprocess.check_output([str(nm), "-u", str(obj)], text=True)
         (output / (name + "-undefined.txt")).write_text(symbols)
         report["units"][relative] = {"source_sha256": digest(source),
                                      "object_sha256": digest(obj),
                                      "undefined_symbols": sum(bool(line.strip()) for line in symbols.splitlines())}
+    combined = output / "combat-core.o"
+    link = subprocess.run([str(linker), "-r", "--gc-sections",
+                           *[arg for symbol in ROOT_SYMBOLS for arg in ("-u", symbol)],
+                           *map(str, objects), "-o", str(combined)],
+                          cwd=ROOT, env=env, text=True, capture_output=True)
+    (output / "partial-link.log").write_text(link.stdout + link.stderr)
+    if link.returncode:
+        raise RuntimeError(f"Combat partial link failed; see {output / 'partial-link.log'}")
+    live = live_external_symbols(nm, objdump, combined)
+    (output / "live-externals.txt").write_text("\n".join(live) + "\n")
+    report["partial_link"] = {
+        "roots": list(ROOT_SYMBOLS), "object_sha256": digest(combined),
+        "undefined_symbol_table_count": len(undefined_symbols(nm, combined)),
+        "live_external_count": len(live), "live_d3d_count": sum(name.startswith("D3D") for name in live),
+        "live_external_symbols": live,
+    }
     save(output / "result.json", report)
     print(output / "result.json")
 
