@@ -1,22 +1,29 @@
-# Initial source audit — M02 in progress
+# Source audit — M02 baseline frozen
 
 Pins and upstream identities are recorded in `config/dependencies.json`. Findings below are source observations at those pins, not PS2 runtime evidence.
 
-| Component | Source | Initial disposition | Remaining gate |
+| Component and source | Disposition | Dependency/platform assumptions | Validation required |
 |---|---|---|---|
-| N64 portability boundary | `halo-64/tools/n64_build.py`, `port/n64/include/halo_n64_prefix.h`, `port/n64/src/xdk_*.c` | Reference for a separate HALO_PS2 boundary | Enumerate compiler fixups, ABI assumptions and excluded services |
-| Integer math | `halo-64/source/math/integer_math.c`, `.h` | Probe candidate | Depends on cseries declarations, diagnostic functions and Xbox-width long; host LP64 is not equivalent |
-| Random math | `halo-64/source/math/random_math.c` | Probe candidate | Audit seed state, arithmetic widths and all calls |
-| Datum management | `halo-64/source/memory/data.c`, `.h` | Probe candidate after math | Audit allocation, assertions, pointer layouts and stale-handle behavior |
-| PS2 renderer | `halo-ps2/engine/Makefile`, `src/render/`, `src/vu1/` | Adapt in PS2 fork behind parent interface | Compile EE/VU path; runtime and hardware gates remain pending |
-| Pack readers and converters | `halo-ps2/tools/halo2ps2/`, `engine/src/stream/hp2.c`, `engine/src/world/` | Reuse/adapt with synthetic baselines | Retail Blood Gulch format, full validation and budget audit |
-| Arenas | `halo-ps2/engine/src/core/mem.c` | Reuse candidate | Full overflow, lifetime, platform alignment and accounting review |
-| Upstream gameplay | `halo-ce-universal/source/` | Independent comparison source | Diff selected closure against halo-64; no blanket portability claim |
-| N64 graphics/audio | `halo-64/port/n64/src/` | Reference only | Do not transplant target-specific backend |
+| N64 boundary: `halo-64/tools/n64_build.py`, `port/n64/include/halo_n64_prefix.h`, `port/n64/src/xdk_*.c` | Reference only; design a separate PS2 boundary | libdragon, VR4300 big-endian ABI, Xbox/XDK calls replaced by N64 services; the compatibility ideas are useful but N64 assumptions are not | Enumerate portability fixups and unsupported services, then compile selected closure with the R5900 compiler |
+| Integer math: `halo-64/source/math/integer_math.c`, `.h` | Probe candidate; source hash matches pinned OpenCE copy | cseries scalar types, diagnostics, string helpers, and 32-bit `long`; LP64 changes bit-vector semantics | Existing ILP32 fixture passes selected operations and a fault-injection negative control; add R5900 compile, result comparison, and domain coverage |
+| Random math: `halo-64/source/math/random_math.c`, `.h` | Defer pending closure | cseries/windows, real/geometry/game-engine state, random globals and time initialization; header is absent from pinned OpenCE tree | Compare source differences and seed/init behavior; compile only after deterministic boundary is designed |
+| Datum management: `halo-64/source/memory/data.c`, `.h` | Probe candidate after ABI boundary | cseries and diagnostics, 32-bit pointer/long assumptions, pointer-bearing 0x10-byte data iterator layout | Add layout assertions and allocate/delete/reuse/stale-handle/exhaustion fixtures on host and EE |
+| PS2 renderer: `halo-ps2/engine/Makefile`, `src/render/`, `src/vu1/` | Adapt in PS2 fork behind parent interface | PS2SDK EE/GS/VIF APIs, DVP assembler and VU1; renderer owns DMA/GS, gameplay layer must not | Toolchain currently building; then compile, PCSX2 interpreter/debugger checks and physical PS2 gates |
+| Pack readers/converters: `halo-ps2/tools/halo2ps2/`, `engine/src/stream/hp2.c`, `engine/src/world/` | Reuse/adapt candidate | Host Python and user-supplied Halo maps; runtime consumes converted pointer-free PS2 layouts | Synthetic converter suite passes; verify real Blood Gulch conversion, deterministic packs, malformed inputs and memory budget when private map data are configured |
+| Arenas: `halo-ps2/engine/src/core/mem.c` | Reuse candidate | PS2 EE alignment and fixed 32 MiB memory ceiling; no unbounded runtime heap | Review overflow, lifetime and alignment; add accounting/high-water/exhaustion tests before integration |
+| Gameplay comparison: pinned `halo-ce-universal/source/` | Independent comparison source, not a blanket replacement | Different source revisions and declarations; selected candidate hashes and direct includes are in `config/gameplay-probe-candidates.json` | Expand the comparison to the selected transitive closure and resolve behavioral/source differences individually |
+| N64 graphics/audio: `halo-64/port/n64/src/n64_render.c`, `n64_sound.c`, `xdk_*.c` | Reference only | N64 RSP/RDP, tiny3d, cartridge and sound APIs do not match PS2 services | Do not transplant; use only source-portability and scheduling observations |
+| N64 campaign experiment: `halo-64/port/n64/game/n64_campaign.c` | Exclude from this port | Simplified campaign experiment, not the original campaign closure | Do not treat it as the campaign implementation |
+| VU1 programs: `halo-ps2/engine/src/vu1/world.vsm`, `bsp.vsm`, `model.vsm` | Adapt in its dedicated fork | DVP assembler; gameplay must not own VU state | `world.vsm` assembly matched across environments; VU execution is untested |
+| VIF/DMA chain: `halo-ps2/engine/src/render/chain.c`, `upload.c` | Adapt in its dedicated fork | PS2 DMA/VIF ownership stays in the renderer | Source is present; no DMA runtime has been observed |
+| Pad input: `halo-ps2/engine/src/platform/pad.c` | Adapt in its dedicated fork | IOP `rom0:SIO2MAN` and `rom0:PADMAN` | Source is present; no controller has been observed |
+| Timer and profiler: `halo-ps2/engine/src/platform/timer.h`, `profiler.c` | Adapt in its dedicated fork | EE cycle counter and render timing | Source is present; no frame timing has been observed |
+| GS video setup: `halo-ps2/engine/src/platform/video.c`, `render/gs.h` | Adapt in its dedicated fork | PS2SDK graph/draw and GS allocation | Source is present; framebuffer sizes are not yet measured on hardware or in PCSX2 |
+| Map converters: `halo-ps2/tools/halo2ps2/*.py` | Reuse substantially unchanged where the synthetic checks apply; adapt in the fork when a real map requires it | Python standard library only (`python3 -I`); user-supplied maps stay untracked | Twelve synthetic scripts pass; real Blood Gulch conversion remains blocked on a local map configuration |
 
 ## Toolchain findings
 
-`ps2dev/scripts/*.sh` clones shallow references and can fetch and forcibly check out `FETCH_HEAD`. `ps2toolchain/scripts/001-dvp.sh`, `002-iop.sh`, and `003-ee.sh` do the same. `ps2toolchain/config/ps2toolchain-config.sh` selects `main` for separate DVP, IOP and EE orchestration repositories. Therefore the eight pinned top-level repositories do not yet lock the complete compiler closure. Do not run these scripts as the reproducible build.
+`ps2dev/scripts/*.sh` clones shallow references and can fetch and forcibly check out `FETCH_HEAD`. `ps2toolchain/scripts/001-dvp.sh`, `002-iop.sh`, and `003-ee.sh` do the same. `ps2toolchain/config/ps2toolchain-config.sh` selects `main` for separate DVP, IOP and EE orchestration repositories. The three orchestration repositories are now separately pinned; the adapted isolated driver bypasses these upstream fetching entry points.
 
 That initial audit note is superseded by the compiler-closure update below and the current execution report in `toolchain.md`. Native and container compiler/SDK builds are now running from the isolated locked source trees.
 
@@ -24,19 +31,43 @@ That initial audit note is superseded by the compiler-closure update below and t
 
 ## Instructions and provenance
 
-Read `halo-ce-universal/AGENTS.md` before modification. It requires minimal marked game-source changes, preserving arithmetic semantics, and prohibits reading `xbox/include`/Xbox SDK headers. This audit did not read those headers. The PS2 project has a GPL license file; preserve its notices and keep its adaptations in the dedicated fork. Complete license/provenance review is still pending.
+Read `halo-ce-universal/AGENTS.md` before modification. It requires minimal marked game-source changes, preserving arithmetic semantics, and prohibits reading `xbox/include`/Xbox SDK headers. This audit did not read those headers. The repository-level license notices are summarized below; file-level third-party provenance remains pending.
+
+Root-level license notices reviewed for the repositories being compiled or adapted:
+
+| Repository | Notice observed | Handling |
+|---|---|---|
+| `halo-64` | CC0-1.0 | Applies to licensor-owned work; its text does not clear third-party material. Keep all upstream notices. |
+| `halo-ce-universal` | CC0-1.0 | Same third-party-rights limit; retain source attribution and provenance. |
+| `halo-ps2` | GNU GPL v3 | Keep copied/adapted engine and converter work in its GPL fork and preserve notices. |
+| `ps2dev` and EE/IOP/DVP compiler forks | MIT | Retain license and copyright files in their source repositories. |
+| `ps2toolchain` | BSD 2-Clause | Retain the license and notices. |
+| `ps2sdk` and `ps2link` | Academic Free License 2.0 | Retain the supplied license and source notices. |
+| `ps2client` | BSD-style 3-clause terms in `doc/license.txt` | The notice is not at repository root; retain the in-tree license document with compiled source attribution. |
+
+This is a review of repository-level notices, not a complete inventory of every vendored/transitive file or a conclusion about retail-game rights. The project does not commit retail or converted data. Before redistribution, review all copied source and binary notices and the applicable rights for user-provided game data.
 
 ## Baseline checks
 
 Twelve `halo-ps2/tools/tests/test_*.py` scripts completed successfully using synthetic inputs. Their optional real-map checks explicitly skipped absent data. The baseline runner is `make test-host`; bootstrap safety tests are included. These results establish host checks only, not converter completeness or PS2 execution.
 
-The initial gameplay source list above is provisional, not a frozen compilable dependency closure. M02 is not passed.
+## Frozen baseline
+
+The integer-math compile closure is frozen in `config/gameplay-probe-candidates.json`. It is `source/math/integer_math.c`, `source/math/integer_math.h`, and `source/cseries/cseries.h` from pinned `halo-64`. Integer math source and header match the pinned OpenCE copies. `cseries.h` does not. `integer_math.c` calls `csprintf` and uses `temporary`; those definitions are in `source/cseries/cseries.c`, which also includes `cseries_windows.h`, `profile.h`, `errors.h`, `real_math.h`, `byte_swapping.h`, and `crc.h`. That wider graph is an explicit non-member of the frozen compile list. The host probe supplies the two symbols. `random_math` and `data.c` stay later probe candidates.
+
+`submodules/halo-ps2` is pinned at `a571749c8c8de34c045e363726596989097c604a`. That commit is `upstream/HEAD` on `claude/open-decisions-review-75968c`, the only upstream branch advertised by `origin/HEAD`. The local fork branch `ps2-port` is checked out at the same commit. The renderer, VU1 programs, pack reader, converters, arena, pad, timer, and profiler listed above are present in this tree, so no other branch is selected.
+
+File-level notices for the frozen compile list: `integer_math.c`, `integer_math.h`, and `cseries.h` contain no copyright or SPDX lines. They remain under `halo-64/LICENSE.md` (CC0-1.0), which does not clear third-party game rights. Inspected `halo-ps2` engine and converter files likewise have no per-file license banner; `halo-ps2/LICENSE` is GPL-3.0 and stays with that fork. Retail-game rights remain unresolved, and retail data stays untracked.
+
+Build dependencies used by the locked toolchain resolve to the git commits in `config/dependencies.json` and `config/toolchain-sources.json`, or to the checksummed host packages in `config/native-prerequisites.json`. The isolated driver does not invoke the fetching umbrella scripts. Converter Python imports are limited to the standard library and the local `halo2ps2` package.
+
+M02's source inventory, locked dependency identities, bounded gameplay probe list, and explicit remaining gaps are recorded here. Renderer and converter behavior are not accepted from documentation. PS2 runtime execution is not claimed.
 
 ## Compiler-closure update
 
 Three additional orchestration repositories are pinned submodules, initialized recursively and preserved as local forks. Eleven compiler/SDK leaf refs have exact commits; see `config/toolchain-sources.json` and [toolchain report](toolchain.md). Nine required source trees have since been acquired and verified in separate native and container staging roots.
 
-Eleven acquisition scripts in the three compiler forks require exact staging checkouts, with no implicit fetching/reset. SDK external dependencies also use verified local paths. The umbrella scripts retain their upstream-fetching behavior and are bypassed by the isolated driver. M02 remains in progress: transitive gameplay include/link closure, license/provenance audit, and source/build profile closure require further review.
+Eleven acquisition scripts in the three compiler forks require exact staging checkouts, with no implicit fetching/reset. SDK external dependencies also use verified local paths. The umbrella scripts retain their upstream-fetching behavior and are bypassed by the isolated driver. The integer-math compile closure, branch choice, and file-level notices for that closure are frozen above. Wider gameplay link closure remains a later probe, not an unrecorded gap.
 
 Ten infrastructure tests and twelve synthetic converter tests pass. The original Halo integer math module also passes the bounded ILP32 host probe documented in `gameplay-probe.md`; neither result establishes target execution.
 

@@ -1,12 +1,12 @@
 # Gameplay compatibility probe: source audit and entry conditions
 
-Status: preliminary M07 host probe; full M02 closure and M07 acceptance remain incomplete. The original `integer_math.c` has been compiled and executed in a bounded ILP32 Linux harness. This does not establish R5900 behavior.
+Status: the M02 integer-math compile closure is frozen. The original `integer_math.c` has been compiled and executed in a bounded ILP32 Linux harness. R5900 compilation and execution remain M07 work. This host result does not establish R5900 behavior.
 
 ## Compared source identities
 
 `config/gameplay-probe-candidates.json` records SHA-256 values and direct includes for seven candidate files from the pinned foundation repositories. Integer math source/header and the datum header are byte-identical between the pins. Random math, datum implementation, and cseries declarations differ; the N64 random math header is absent from the independently pinned OpenCE source tree.
 
-These differences rule out treating the two repositories as interchangeable source packages. The candidate source of record is the pinned halo-64 implementation, with changes compared to OpenCE individually before adoption. A complete transitive include/link closure is still pending.
+These differences rule out treating the two repositories as interchangeable source packages. The source of record is the pinned halo-64 implementation. The frozen compile list is `integer_math.c`, `integer_math.h`, and `cseries.h`. `cseries.c` is excluded from that list because its include graph is wider than the two symbols `integer_math.c` uses. `random_math` and datum management remain later candidates.
 
 ## Important observations
 

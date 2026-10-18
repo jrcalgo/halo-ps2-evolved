@@ -1,5 +1,14 @@
 {
-  "status": "provisional; not a complete or compiled source closure",
+  "status": "frozen integer-math compile closure",
+  "frozen_compile_closure": {
+    "source_of_record": "submodules/halo-64",
+    "files": [
+      "source/math/integer_math.c",
+      "source/math/integer_math.h",
+      "source/cseries/cseries.h"
+    ],
+    "link_boundary": "integer_math.c references csprintf and temporary. Those definitions live in source/cseries/cseries.c, whose includes reach cseries_windows.h, profile.h, errors.h, real_math.h, byte_swapping.h, and memory/crc.h. That wider graph is not part of this compile closure. The host probe supplies the two symbols instead of compiling cseries.c."
+  },
   "files": [
     {
       "path": "source/math/integer_math.c",
