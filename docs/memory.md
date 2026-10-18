@@ -25,7 +25,7 @@ Stacks stay inside `system_kernel` until a measured split is versioned. GS VRAM 
 
 ## Stream viewer image
 
-`build/world-stream-elf/world.elf` has 2,199,488 bytes of allocated ELF sections (`SHF_ALLOC`). `.text` is 283,200, `.vutext` is 4,480, `.data` is 6,104, `.rodata` is 17,480, and `.bss` is 1,888,160. That total is 102,336 bytes above the 2,097,152-byte `elf_static` region.
+`build/world-stream-elf/world.elf` has 2,202,312 bytes of allocated ELF sections (`SHF_ALLOC`). That is 105,160 bytes above the 2,097,152-byte `elf_static` region. The previous build of this ELF, before the cache-miss callback, was 2,199,488; the 2,824-byte increase is code. An earlier snapshot, before the lightmap decode buffer, was 2,127,664. `.bss` remains dominated by the staging pool below. All three figures are allocated sections of one diagnostic ELF, not a full EE map.
 
 Named diagnostic objects inside that `.bss`:
 
@@ -103,7 +103,11 @@ The EE pool is the 1,048,576-byte `storage` block, four slots, stride 262,144. T
 
 The host regression uses four 256-byte slots and reaches a 1,024-byte high water. That is the same state machine, not an EE allocation.
 
-Cause of the lightmap lease: compressed `LM0` is 13,315 bytes, which fits in one stride, and the decoded section is 33,120 bytes, which fits in the 65,536-byte decode buffer and in a second slot. Page 0 is 8,192 bytes. Effect: those bytes stay allocated from the read until GIF DMA of that page completes. The renderer's ordinary uploads still read the arena copy of the same page. Production cache misses are not served from the lease.
+Cause of the lightmap lease: compressed `LM0` is 13,315 bytes, which fits in one stride, and the decoded section is 33,120 bytes, which fits in the 65,536-byte decode buffer and in a second slot. Page 0 is 8,192 bytes. Effect: those bytes stay allocated from the read until GIF DMA of that page completes.
+
+The following frame forces every BSP texture miss through that same pool. All 16 mip0 images, 299,040 bytes, are packed into two slots. Each slot is leased for its full 262,144-byte stride, so the hold is 524,288 bytes inside the existing 1,048,576-byte pool. The arena copies are overwritten with `0x5A` until the next frame's GIF wait, then copied back. No second pool is allocated.
+
+Cause: `bsp_render_set_world` copies the texture callback, so a later change to `world->source.texture` does not affect uploads. The diagnostic replaces the copied callback for one frame and drops the texture claims, so the rebuild's misses DMA the staging copies. Effect: release fails until that frame's GIF DMA has been waited out. Recompiler `world-stream-recompiler-889aa026a06a4286b4198d19a172816f` and interpreter `world-stream-interpreter-cfbbe1668b754f54bee51f793630c6d6` both log `cache_miss_source=staging textures=16 bytes=299040 slots=2` and `cache_miss_dma=ok textures=16`. The recompiler's final frame still shows Blood Gulch, with the profiler failure count at 0. The callback is restored after that one frame, so later uploads read the arena again.
 
 ## Other ELFs
 

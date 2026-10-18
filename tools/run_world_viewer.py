@@ -211,6 +211,8 @@ def main():
                         raise RuntimeError("Streaming diagnostic exceeded its reservation")
                     if "[stream] dma_page=ok " not in text:
                         raise RuntimeError("Texture page was not held until DMA completion")
+                    if "[stream] cache_miss_source=staging " not in text or "[stream] cache_miss_dma=ok " not in text:
+                        raise RuntimeError("Cache miss was not served from the staging lease")
                     result["streaming"] = {"cycles": 3, "map_reload_cycles": 3, "high_water": int(measured[1]), "arena_used": [int(u[1]) for u in unloads],
                                            "reserved": int(measured[2]), "scope": "synthetic worker reads; no texture or whole-map unload claim"}
                     if args.cache_pages:

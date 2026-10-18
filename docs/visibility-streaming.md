@@ -64,7 +64,13 @@ The 168-page cap is the smallest churn observed. Paired with an uncapped run, gu
 
 After the three reloads, the stream diagnostic reads compressed `LM0` from the texture pack through the existing EE worker into one staging slot, decodes it into a second slot, and compares page 0 with the arena-resident lightmap. The decoded slot then moves to a DMA lease: release and map drain fail until GIF DMA of its 8192 bytes completes. The transfer lands in the texture window, so the renderer drops its texture claims before building the rest of that frame and uploads them again. Recompiler run `world-stream-recompiler-5c8799f2b67a48d4b6ca8e3693a26183` and interpreter run `world-stream-interpreter-4f81679a508745f3baffcadfa75d962c` both log `[stream] dma_page=ok bytes=8192 page=0` and finish the diagnostic. The recompiler's final capture still shows Blood Gulch. An earlier run without the claim flush left the canyon textures corrupted; that run is not the qualified result.
 
-This is one page, not the renderer's cache-miss path. World and object packs are still loaded synchronously, and the ordinary frame uploads still read the arena copy. Host coverage is the staging lifetime test, including a cancel that cannot free a buffer until DMA completion.
+This is one page. Host coverage is the staging lifetime test, including a cancel that cannot free a buffer until DMA completion.
+
+## One forced cache-miss generation
+
+After that lease, the diagnostic copies all 16 Blood Gulch BSP mip0 images (299,040 bytes) into two staging slots and replaces the renderer's texture callback. The arena bytes are set to `0x5A` for that frame, and texture claims are dropped so the rebuild misses. Both slots stay leased until the next frame has waited for GIF DMA; release fails before that. The callback is then pointed back at the arena copy.
+
+Recompiler `world-stream-recompiler-889aa026a06a4286b4198d19a172816f` and interpreter `world-stream-interpreter-cfbbe1668b754f54bee51f793630c6d6` log `cache_miss_source=staging textures=16 bytes=299040 slots=2` and `cache_miss_dma=ok textures=16`. The recompiler's final capture still shows Blood Gulch, and the profiler failure count is 0. The two slots are 524,288 bytes of the existing 1 MiB pool. Later frames upload from the arena again. World and object packs are still loaded synchronously.
 
 ## Measured memory snapshot (partial)
 
@@ -74,7 +80,7 @@ The current stream ELF, arena, DMA chains, GS window, upload cap, and cache-cap 
 
 - Extend EE comparison beyond this fixed camera, including portal crossings and the map perimeter.
 - The 12-view sweep has no probed cap that both evicts and admits every texture request. A 168-page cap matches three sampled views and still logs one failure; cache-churn acceptance stays open.
-- One lightmap page is now read through the staging worker and held until GIF DMA completes. The renderer still uploads from the synchronously loaded arena copy, so production cache misses are not served from this lease.
+- One forced rebuild serves all 16 BSP mip0 images from the staging lease. Later frames upload from the arena again, and world packs are still loaded synchronously.
 - Extend EE visibility comparisons across portal crossings and map perimeter routes.
 - Reconcile the measured DMA buffers with the 1 MiB regional estimate and map every EE, kernel, IOP, SDK and staging allocation to non-overlapping budget regions.
 - Verify teardown/reload on physical PS2 hardware when available; current three-cycle evidence is PCSX2 only.

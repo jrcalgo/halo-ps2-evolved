@@ -21,6 +21,12 @@ static unsigned phase, cycle, started, unloads;
 static unsigned cache_limit, cache_route, cache_evictions, cache_failures, cache_deferred;
 static unsigned dma_phase;
 static staging_ticket dma_ticket;
+static int (*arena_texture)(void *, int, tex_image_t *);
+static const uint8_t *staged_pixels[64];
+static uint8_t *arena_pixels[64];
+static uint32_t staged_bytes[64];
+static unsigned staged_count, staged_slots, lease_used, lease_state;
+static staging_ticket staged_ticket[2];
 static arena_t *level;
 static world_t *world;
 static char pack_path[160], tex_path[160], object_path[160];
@@ -29,6 +35,88 @@ static size_t baseline_used;
 static void require(int good, const char *message) {
     if (!good) { printf("[err] streaming diagnostic: %s\n", message); exit(1); }
 }
+static int texture_from_staging(void *user, int tex, tex_image_t *out)
+{
+    int result = arena_texture(user, tex, out);
+    if (result == 0 && tex >= 0 && (unsigned)tex < staged_count && staged_pixels[tex]) {
+        out->pixels = staged_pixels[tex];
+        lease_used = 1;
+    }
+    return result;
+}
+
+/* Copy every BSP mip0 into staging, then poison the arena bytes. A later cache
+ * miss must DMA the staging copy; the arena image is no longer the source. */
+static void arm_texture_lease(void)
+{
+    unsigned count, slot = 0, filled = 0, copied = 0;
+    size_t used = 0;
+    uint8_t *slot_dst = NULL;
+    require(world->bsp_tex.has, "bsp textures");
+    count = world->bsp_tex.tex.texture_count;
+    require(count > 0 && count <= 64, "texture count");
+    memset(staged_pixels, 0, sizeof staged_pixels);
+    memset(arena_pixels, 0, sizeof arena_pixels);
+    memset(staged_bytes, 0, sizeof staged_bytes);
+    staged_count = count;
+    for (unsigned index = 0; index < count; index++) {
+        tex_info info = tex_get(&world->bsp_tex.tex, index);
+        tex_mip_view mip;
+        require(tex_mip(&world->bsp_tex.tex, &info, 0, &mip), "texture mip0");
+        require(mip.bytes && mip.bytes <= reader.pool.stride && (mip.bytes & 15) == 0, "texture mip0 size");
+        if (!slot_dst || used + mip.bytes > reader.pool.stride) {
+            require(slot < 2, "texture pages fit two staging slots");
+            require(staging_request(&reader.pool, 70 + slot, reader.pool.stride, &staged_ticket[slot]), "texture slot");
+            slot_dst = staging_begin(&reader.pool, staged_ticket[slot]);
+            require(slot_dst != NULL, "texture slot memory");
+            used = 0;
+            slot++;
+        }
+        memcpy(slot_dst + used, mip.pixels, mip.bytes);
+        staged_pixels[index] = slot_dst + used;
+        arena_pixels[index] = (uint8_t *)mip.pixels;
+        staged_bytes[index] = mip.bytes;
+        used += mip.bytes;
+        copied += mip.bytes;
+        filled++;
+    }
+    staged_slots = slot;
+    for (unsigned index = 0; index < staged_slots; index++) {
+        require(staging_complete(&reader.pool, staged_ticket[index], reader.pool.stride, 1), "publish texture slot");
+        require(staging_acquire(&reader.pool, staged_ticket[index]) != NULL, "hold texture slot");
+        require(staging_dma_submit(&reader.pool, staged_ticket[index]), "lease texture slot");
+        require(!staging_release(&reader.pool, staged_ticket[index]), "release during texture lease");
+        SyncDCache(reader.pool.storage + staged_ticket[index].slot * reader.pool.stride,
+                   reader.pool.storage + (staged_ticket[index].slot + 1) * reader.pool.stride);
+    }
+    for (unsigned index = 0; index < count; index++) {
+        memset(arena_pixels[index], 0x5a, staged_bytes[index]);
+        SyncDCache(arena_pixels[index], arena_pixels[index] + staged_bytes[index]);
+    }
+    arena_texture = world->source.texture;
+    require(arena_texture != NULL, "arena texture callback");
+    bsp_render_set_texture_callback(texture_from_staging);
+    lease_state = 1;
+    printf("[stream] cache_miss_source=staging textures=%u bytes=%u slots=%u\n", filled, copied, staged_slots);
+}
+
+static void release_texture_lease(void)
+{
+    require(lease_used, "leased texture was not uploaded");
+    dma_channel_wait(DMA_CHANNEL_GIF, 0);
+    for (unsigned index = 0; index < staged_count; index++) {
+        memcpy(arena_pixels[index], staged_pixels[index], staged_bytes[index]);
+        SyncDCache(arena_pixels[index], arena_pixels[index] + staged_bytes[index]);
+    }
+    for (unsigned index = 0; index < staged_slots; index++) {
+        require(staging_dma_complete(&reader.pool, staged_ticket[index]), "texture dma complete");
+        require(staging_release(&reader.pool, staged_ticket[index]), "release texture slot");
+    }
+    bsp_render_set_texture_callback(arena_texture);
+    printf("[stream] cache_miss_dma=ok textures=%u\n", staged_count);
+    lease_state = 3;
+}
+
 /* Read one compressed lightmap section through the staging worker, decode it into
  * a second slot, and keep that slot until GIF DMA of its first page completes. */
 static void dma_lightmap_page(void) {
@@ -107,6 +195,7 @@ static void dma_lightmap_page(void) {
         require(staging_release(&reader.pool, decoded_ticket), "release after dma");
         require(staging_map_drained(&reader.pool, 51), "decoded slot drained");
         require(reader_stop(&reader), "dma reader stop");
+        arm_texture_lease();
         bsp_render_invalidate_textures();
         printf("[stream] dma_page=ok bytes=%u page=%u\n", page.pixel_bytes, index);
         dma_phase = 2;
@@ -126,6 +215,7 @@ void hybrid_stream_configure(arena_t *a, world_t *w, const char *pack, const cha
 void hybrid_stream_build(unsigned frame, const camera_t *camera, const text_batch_t *text) {
     camera_t swept;
     const camera_t *view=camera;
+    if (lease_state == 1) release_texture_lease();
     if (!started) {
         require(ChangeThreadPriority(GetThreadId(),64) >= 0,"owner priority");
         require(reader_start(&reader,storage,sizeof storage,stack,sizeof stack,30),"start");
