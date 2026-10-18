@@ -33,6 +33,9 @@ def main():
     parser.add_argument("--frames", type=int, default=180)
     parser.add_argument("--camera", type=float, nargs=5, default=[65, -95, 9, -70, -5])
     parser.add_argument("--objects", action="store_true")
+    parser.add_argument("--variant", choices=("conservative","portal"), default="conservative")
+    parser.add_argument("--force-conservative", action="store_true")
+    parser.add_argument("--framebuffer", action="store_true", help="Retain raw GS pixels at frame 120, with HUD disabled")
     parser.add_argument("--route", action="store_true")
     parser.add_argument("--freecam", action="store_true")
     args = parser.parse_args()
@@ -45,8 +48,9 @@ def main():
     if not 60 <= args.frames <= 18000:
         raise RuntimeError("Choose 60 through 18000 frames")
     require_platform()
-    report = json.loads((ROOT / "build/world-elf/result.json").read_text())
-    original = ROOT / "build/world-elf/world.elf"
+    build_name = "world-portal-elf" if args.variant == "portal" else "world-elf"
+    report = json.loads((ROOT / "build" / build_name / "result.json").read_text())
+    original = ROOT / "build" / build_name / "world.elf"
     if sha(original) != report["elf_sha256"]:
         raise RuntimeError("World ELF changed after build")
     for name, digest in report["source_sha256"].items():
@@ -61,7 +65,8 @@ def main():
         if sha(packs / ("bloodgulch" + suffix)) != converted["pack_sha256"][kind]:
             raise RuntimeError("Converted pack hash differs: " + kind)
     stop_previous()
-    run = OUTPUT / "runs" / f"world-{args.mode}-{uuid.uuid4().hex}"
+    label = "world-portal" if args.variant == "portal" else "world"
+    run = OUTPUT / "runs" / f"{label}-{args.mode}-{uuid.uuid4().hex}"
     boot = run / "boot"
     boot.mkdir(parents=True)
     elf = boot / "world.elf"
@@ -70,6 +75,10 @@ def main():
         (boot / ("bloodgulch" + suffix)).symlink_to(packs / ("bloodgulch" + suffix))
     lines = ["pack bloodgulch.hp2", "tex bloodgulch.tex.hp2", "arena_mb 12", "textures 1", "lightmaps 1", "clipbudget 1000",
              "camera " + " ".join(map(str,args.camera)), "frames " + str(args.frames), "fps 30", "hold 1", "overlay 1", "printcam 1", "fp 0", "lodctl 0"]
+    if args.force_conservative:
+        lines += ["debug 64"]
+    if args.framebuffer:
+        lines = [line for line in lines if not line.startswith("overlay ")] + ["overlay 0", "fbdump 120"]
     if args.objects:
         lines += ["obj bloodgulch.obj.hp2", "objects 1", "sky3d 1", "skyfog 1", "objanim 0"]
     if args.route:
@@ -85,6 +94,8 @@ def main():
               "settings_sha256":sha(ini), "config_sha256":sha(cfg), "camera":args.camera, "requested_frames":args.frames,
               "bios_sha256":sha(config["bios"]), "emulator_sha256":sha(Path(config["binary"]).resolve()),
               "run_directory":str(run), "log":str(log), "captures":[], "limits":"Diagnostic static viewer; no M10 completion or hardware performance claim."}
+    result["variant"] = args.variant
+    result["visibility"] = "conservative" if args.force_conservative or args.variant == "conservative" else "portal"
     path = run / "result.json"
     save(path,result)
     process = subprocess.Popen(command,cwd=boot,env={**os.environ,"DISPLAY":config["display"],"QT_QPA_PLATFORM":"xcb","APPIMAGE_EXTRACT_AND_RUN":"1"},stdout=(run/"launcher.log").open("w"),stderr=subprocess.STDOUT,start_new_session=True)

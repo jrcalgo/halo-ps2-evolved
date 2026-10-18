@@ -51,7 +51,7 @@ def png(path,width,height,rgb):
     path.write_bytes(b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('>2I5B',width,height,8,2,0,0,0))+chunk(b'IDAT',zlib.compress(rows))+chunk(b'IEND',b''))
 
 
-def rasterize(triangles,camera,width=512,height=448):
+def rasterize(triangles,camera,width=512,height=448,*,return_depth=False):
     pixels=bytearray(bytes((100,140,180))*width*height)
     depth=array('f',[0])*(width*height)
     tx=math.tan(math.radians(35));ty=tx/(4/3)
@@ -86,7 +86,8 @@ def rasterize(triangles,camera,width=512,height=448):
                     q=u*a[2]+v*b[2]+w*c[2];index=y*width+x
                     if q>depth[index]:
                         depth[index]=q;pixels[index*3:index*3+3]=colour;fragments+=1
-    return pixels,{"submitted_clipped_triangles":submitted,"depth_updates":fragments,"covered_pixels":sum(q>0 for q in depth)}
+    stats={"submitted_clipped_triangles":submitted,"depth_updates":fragments,"covered_pixels":sum(q>0 for q in depth)}
+    return (pixels,stats,depth) if return_depth else (pixels,stats)
 
 
 def main():

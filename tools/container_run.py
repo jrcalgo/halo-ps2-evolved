@@ -40,6 +40,8 @@ def command(action, image, output):
                 "HALO_BUILD_ROOT": str(output), "HALO_TOOLCHAIN_SOURCE_ROOT": str(output / "toolchain/sources"),
                 "HALO_HOST_PREREQUISITE_PREFIX": str(ROOT / "build/host-prerequisites/install"),
                 "HALO_BUILD_JOBS": os.environ.get("HALO_BUILD_JOBS", "2"), "HOME": "/tmp"}
+    if action == "world-elf":
+        settings["WORLD_VARIANT"] = os.environ.get("WORLD_VARIANT", "conservative")
     for key, value in settings.items():
         result.extend(["--env", key + "=" + value])
     if action == "toolchain":

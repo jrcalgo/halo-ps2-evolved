@@ -59,3 +59,11 @@ The accepted runs are `platform-interpreter-a0d37b6cfabc46fdab57f2a9b191d5eb` an
 - Current fixed/pad/route identities and results are indexed inside that report. Both CPU modes completed 9,001 route frames. All 12 captures per mode were visually reviewed.
 - Interpreter route: `build/emulator/runs/world-interpreter-b6102d1b20874900b675f00ecbf1c44d/`; recompiler route: `build/emulator/runs/world-recompiler-fa69cc52b952440eb3922b5870093d61/`.
 - Static-world emulator acceptance only. Sky animation, full Xbox shader equivalence, gameplay integration, streaming stress and physical-console performance are outside this result. See `world-viewer.md`.
+
+## M11 checkpoint — Incomplete
+
+- Host topology and 448 camera colour/depth comparisons: `build/visibility/audit.json`, retaining a unique run under `build/visibility/runs/`. Pre-fix near-plane failure: `build/visibility/audit-before-near-plane.json`.
+- Cache negative control: `build/visibility/cache-before.json`; corrected regressions are `tests/texture_residency.c` and the existing upstream cache invariants.
+- Guarded ELF parity: `build/visibility/elf-parity.json`; ELF `e002209c53d2a1f239cd1c3c3d50001c4837b83b70fc710d4835188b12219dfa`.
+- Four current visible diagnostics and raw frame hashes: `build/visibility/framebuffer-comparison.json`. Exact culling on/off equality within each CPU mode; 23 cross-mode baseline pixel differences are recorded separately. Earlier unsafe unguarded readbacks do not qualify.
+- Native/container suites: 39 project tests and 12 upstream synthetic suites. Remaining M11 gates are explicit in `visibility-streaming.md` and section 14 of the governing plan.

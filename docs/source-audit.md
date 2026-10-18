@@ -84,3 +84,7 @@ Current checkpoint validation passes 25 project host tests and 12 upstream synth
 ## M10 local rendering corrections
 
 The halo-ps2 upstream baseline remains `a571749c8c8de34c045e363726596989097c604a`; the local fork now includes `46787de` (restore BSP constants after sky) and `e1d8e11` (static supported Chicago sky composition). Gitlink, dependency lock, local bare fork, and private recovery bundle are updated together. Only the former changes engine code. `docs/world-viewer.md` records the observed defects, source evidence, current fixed view, tests, and open runtime gates. UV animation and general shader equivalence remain unproven.
+
+## M11 visibility/cache/readback checkpoint
+
+Local halo-ps2 changes add conservative near-plane portal traversal, strict upload budgeting, wrap-safe frame ages, and guarded framebuffer readback. The parent portal adapter selects conservative traversal outside the rendered BSP bounds. The ps2sdk screenshot source now sizes PSMCT16S DMA as 16-bit data; the world-viewer build consumes this locked source directly instead of its old installed debug-archive object. All original notices remain intact. Both fork gitlinks, dependency pins and private recovery bundles are updated. These changes have host and one-camera EE evidence; async streaming, churn, unload and total EE-memory acceptance remain open. See `visibility-streaming.md` for source findings, failed controls, exact comparison scope and cross-mode differences.

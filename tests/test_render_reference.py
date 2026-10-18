@@ -22,3 +22,11 @@ class ReferenceGeometry(unittest.TestCase):
         self.assertGreater(stats['covered_pixels'],0)
         _,empty=rasterize([[(-2,-1,-1),(-2,1,-1),(-2,0,1)]],[0,0,0,0,0],32,32)
         self.assertEqual(empty['covered_pixels'],0)
+
+    def test_depth_distinguishes_identical_colour_projections(self):
+        near=[(2,-1,-1),(2,1,-1),(2,0,1)]
+        far=[(4,-2,-2),(4,2,-2),(4,0,2)]
+        a,_,ad=rasterize([near],[0,0,0,0,0],32,32,return_depth=True)
+        b,_,bd=rasterize([far],[0,0,0,0,0],32,32,return_depth=True)
+        self.assertEqual(a,b)
+        self.assertNotEqual(ad,bd)

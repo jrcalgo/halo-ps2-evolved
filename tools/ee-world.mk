@@ -1,7 +1,9 @@
 # Compile pinned upstream world-viewer sources into parent-owned output only.
 ENGINE = submodules/halo-ps2/engine
+WORLD_VIS_SOURCE ?= src/world/visibility.c
 EE_BIN = $(WORLD_OUTPUT)/world.elf
-EE_OBJS = $(WORLD_OUTPUT)/visibility_adapter.o \
+EE_OBJS = $(WORLD_OUTPUT)/platform/screenshot_sdk.o \
+	$(WORLD_OUTPUT)/visibility_adapter.o \
 	$(WORLD_OUTPUT)/main.o \
 	$(WORLD_OUTPUT)/core/config.o \
 	$(WORLD_OUTPUT)/core/mat.o \
@@ -45,7 +47,13 @@ all: $(EE_BIN)
 $(EE_OBJS): tools/ee-world.mk
 -include $(EE_OBJS:.o=.d)
 
-$(WORLD_OUTPUT)/visibility_adapter.o: src/world/visibility.c
+# Consume the pinned readback fix directly; the existing installed debug archive
+# is otherwise unchanged. These strong symbols prevent its old screenshot.o loading.
+$(WORLD_OUTPUT)/platform/screenshot_sdk.o: submodules/ps2sdk/ee/debug/src/screenshot.c
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -c $< -o $@
+
+$(WORLD_OUTPUT)/visibility_adapter.o: $(WORLD_VIS_SOURCE)
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -c $< -o $@
 

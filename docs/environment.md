@@ -70,3 +70,7 @@ M06 subsequently passed 600 guest seconds in interpreter and recompiler modes wi
 ## M10 corrected viewer checkpoint
 
 The BSP matrix restore builds natively and in the pinned container with matching allocated ELF sections (`e16df34e5d80a87d5e023b6d7f84dacfe5b329a49fc17f82dc141c0c75009726`). The supported static Chicago sky composition passes repeated private conversion and synthetic tests. Fixed camera, pad flight and both CPU-mode routes pass with current packs; retained-evidence qualification also passes. All 33 project tests and 12 upstream synthetic converter suites pass in the container. The earlier untested-world and missing-prerequisite statements are historical; `milestones.md` and `world-viewer.md` record current evidence and limitations.
+
+## M11 portal diagnostic checkpoint
+
+The separate portal viewer builds natively and in the pinned container with matching allocated ELF contents (`e002209c53d2a1f239cd1c3c3d50001c4837b83b70fc710d4835188b12219dfa`). Its fixed-camera framebuffer comparisons complete visibly in both CPU modes, including explicit DMA guard checks. The world-viewer link now compiles the locked SDK screenshot source directly to use the 16S sizing fix; this is a scoped override, not a claim that the entire installed SDK was rebuilt. Native/container host suites pass 39 project tests and 12 upstream synthetic suites. M11 remains incomplete; `visibility-streaming.md` records its remaining runtime, staging, churn, unload and memory gates.
