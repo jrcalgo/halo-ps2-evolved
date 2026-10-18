@@ -7,6 +7,8 @@ import shutil
 import subprocess
 import sys
 
+from build_toolchain import environment
+
 ROOT = Path(__file__).resolve().parents[1]
 REPOSITORIES = (
     "halo-64", "halo-ps2", "halo-ce-universal", "ps2dev",
@@ -30,8 +32,10 @@ def inventory():
     git_dir = command("git", "rev-parse", "--absolute-git-dir") if git["ok"] else None
     git["metadata_writable"] = bool(git_dir and git_dir["ok"] and
                                       os.access(git_dir["detail"], os.W_OK))
+    _, _, tool_env, _ = environment()
     names = ("git", "make", "python3", "docker", "node", "pcsx2", "xemu",
-             "mips64r5900el-ps2-elf-gcc", "ee-gcc", "dvp-as", "ps2client")
+             "mips64r5900el-ps2-elf-gcc", "mipsel-none-elf-gcc", "ee-gcc", "dvp-as", "ps2client",
+             "makeinfo", "flex", "bison", "gawk")
     dependencies = {}
     lock_path = ROOT / "config/dependencies.json"
     locked = {item["name"]: item["commit"] for item in
@@ -56,7 +60,7 @@ def inventory():
     if any(item["verified_pin"] is None for item in dependencies.values()):
         blockers.append("Dependency gitlinks and full commit pins are unverified.")
     return {"workspace": str(ROOT), "git": git,
-            "tools": {name: shutil.which(name) for name in names},
+            "tools": {name: shutil.which(name, path=tool_env["PATH"]) for name in names},
             "dependencies": dependencies, "blockers": blockers,
             "network": "Not probed by doctor; no network operations are performed.",
             "limits": "Tool paths do not establish version compatibility, Docker daemon access, emulator configuration, or runtime correctness."}

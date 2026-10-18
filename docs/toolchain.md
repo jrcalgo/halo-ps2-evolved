@@ -1,12 +1,24 @@
 # Toolchain source lock and build preflight
 
+## Execution update — 2026-10-18
+
+The older status notes below describe the initial preflight and have since been superseded. Nine required locked sources are now acquired in isolated native and container staging roots. Fifteen pinned Ubuntu package archives are verified and unpacked under `build/host-prerequisites`; local wrappers and a static GMP/MPFR/MPC link probe pass. No global package installation was performed.
+
+The base container image, requested package versions, full installed package inventory, and image ID are recorded in `config/container-environment.json`. Its private archive is `build/container-environment.tar`; its checksum is recorded separately in ignored run metadata. The container uses no network, runs as the current UID/GID, mounts the checkout read-only, and writes to `build/container`.
+
+Two isolated compiler/SDK builds are active. At the last review, native stages compiler-00 through compiler-03 had passed and compiler-04 was running; container stages compiler-00 and compiler-01 had passed and compiler-02 was running. See each report and its run-specific logs under `build/toolchain/runs/` or `build/container/toolchain/runs/`. Do not infer completion from an active stage.
+
+The standalone DVP assembler bootstrap and host utilities have passed. `src/vu1/world.vsm` assembles with the installed DVP assembler. The corrected container host suite passes ten infrastructure tests and twelve synthetic converter checks; retail map checks skipped. The native infrastructure suite also passes ten tests. No EE ELF, PS2 runtime, emulator, or physical-console behavior has yet been validated.
+
+The installed native host prefix is selected with `HALO_HOST_PREREQUISITE_PREFIX`; this allows the container to consume the same verified read-only host prerequisites while keeping build outputs separate. The native environment unit test explicitly overrides that variable with its temporary fixture prefix, preventing a developer environment from redirecting its test data.
+
 ## Acquired orchestration repositories
 
 The parent has eleven initialized submodules. Three additional repositories split compiler construction into EE, IOP and DVP stages. Their original upstream commits and current local fork commits are in `config/dependencies.json`. Local fork changes are backed by verified private bundles before the parent gitlinks were updated.
 
 ## Resolved compiler and SDK source identities
 
-These are upstream reference resolutions, not downloaded or compiled sources. No archive SHA-256 is claimed for material that has not been acquired.
+These are upstream reference resolutions. Nine required source trees have since been acquired at these exact commits and are being built; no archive SHA-256 is claimed for material that has not been acquired.
 
 | Source | Declared ref | Resolved commit |
 |---|---|---|
@@ -38,22 +50,21 @@ The parent `ps2toolchain` and `ps2dev` umbrella scripts still contain their upst
 
 Run `make toolchain-plan` for a read-only report. It intentionally exits nonzero until readiness is established. It neither installs packages nor acquires sources.
 
-- Native tools absent from PATH: `makeinfo`, `flex`, `bison`, `gawk`. The preflight now checks headers and compiler-resolved linker libraries; GMP/MPFR/MPC development support is missing in the inspected environment.
-- Workspace free space observed at about 2.69 GiB. The preflight uses a conservative 20 GiB staging/build allowance; this is an engineering safeguard, not a measured minimum. No user files or unrelated Docker images were deleted.
-- Docker access works with an approved operation against `/var/run/docker.sock`. No PS2 toolchain image was present. No image was downloaded.
-- Native/container source equivalence, container base digest/package lock, SDK installation, minimal ELF compilation and runtime validation remain pending.
+- Native host tools absent from the global PATH are supplied from the verified local prefix; the preflight sets PATH for the build process only.
+- The compiler acquisition script used a conservative free-space requirement. The native filesystem now has ample available headroom, and the builds report their own space checks; no unrelated data was removed.
+- Docker access works through the isolated runner. The pinned image is locally available and no network is permitted inside its build container.
+- Native/container source and configuration are intentionally identical, but artifact parity awaits completion of both compiler/SDK builds. SDK installation and minimal ELF compilation remain pending.
 
 ## Validation
 
-Eight host infrastructure tests passed, including acquisition, build-stage failure/log retention, build settings, and SDK preservation checks: fork-only restoration/idempotence/refusal checks; annotated-tag/ambiguity handling; exact and clean staged source routing; and syntax/refusal paths for all eleven adapted shell scripts. Offline bootstrap passed against all eleven submodules after preserving the new fork commits. These checks do not establish compiler output correctness.
+Ten host infrastructure tests pass, including acquisition, build-stage failure/log retention, build settings, package checksum prechecks, container mount isolation, and SDK preservation checks. Offline bootstrap passes against all eleven submodules. Twelve upstream converter test scripts pass their synthetic checks; real-map tests skip in the absence of private assets. These checks do not establish compiler output correctness.
 
 ## Next steps
 
-1. Provide storage headroom and the missing native prerequisites.
-2. Acquire compiler and SDK source objects at the resolved commits, inspecting their instructions and transitive build inputs before execution.
-3. Validate the implemented isolated stage driver against acquired/audited compiler sources and the SDK staging checkout, bypassing umbrella scripts that still fetch sources.
-4. Verify archive provenance/checksums where archives are used and lock host/container build inputs.
-5. Execute native and container builds and compare minimal EE executables.
+1. Let the native and container compiler/SDK builds reach terminal reports; diagnose and fix any stage failures.
+2. Build the minimal EE ELF in both environments and compare target ABI and artifact hashes.
+3. Run the ELF in PCSX2 interpreter mode when an emulator path is available; retain native PS2 verification as a separate gate.
+4. Continue archive/source provenance review and update the remaining M02 audit.
 
 ## Build-location selection
 

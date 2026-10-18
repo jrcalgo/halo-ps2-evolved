@@ -18,7 +18,7 @@ Pins and upstream identities are recorded in `config/dependencies.json`. Finding
 
 `ps2dev/scripts/*.sh` clones shallow references and can fetch and forcibly check out `FETCH_HEAD`. `ps2toolchain/scripts/001-dvp.sh`, `002-iop.sh`, and `003-ee.sh` do the same. `ps2toolchain/config/ps2toolchain-config.sh` selects `main` for separate DVP, IOP and EE orchestration repositories. Therefore the eight pinned top-level repositories do not yet lock the complete compiler closure. Do not run these scripts as the reproducible build.
 
-Next: inventory the three compiler orchestration repositories, compiler/binutils archive identities, and SDK-required tools; lock their sources/checksums and adapt fork orchestration. A container base digest and native/container parity are also pending. No toolchain has been installed or built.
+That initial audit note is superseded by the compiler-closure update below and the current execution report in `toolchain.md`. Native and container compiler/SDK builds are now running from the isolated locked source trees.
 
 `halo-ps2/engine/Makefile` uses PS2SDK `draw`, `graph`, `packet2`, `dma`, `debug`, and `pad`, with `dvp-as`; exporting a GSKIT path does not establish a gsKit link dependency.
 
@@ -34,8 +34,10 @@ The initial gameplay source list above is provisional, not a frozen compilable d
 
 ## Compiler-closure update
 
-Three additional orchestration repositories are now pinned submodules, initialized recursively and preserved as local forks. Eleven compiler/SDK leaf refs have been resolved to exact commits; see `config/toolchain-sources.json` and [toolchain report](toolchain.md). This is identity locking, not source acquisition.
+Three additional orchestration repositories are pinned submodules, initialized recursively and preserved as local forks. Eleven compiler/SDK leaf refs have exact commits; see `config/toolchain-sources.json` and [toolchain report](toolchain.md). Nine required source trees have since been acquired and verified in separate native and container staging roots.
 
-Eleven acquisition scripts in the three compiler forks were adapted to require preexisting exact staging checkouts, with no implicit fetching/reset. The umbrella scripts and SDK downloader still need adaptation. M02 remains in progress; the complete dependency/build and gameplay closure is not frozen.
+Eleven acquisition scripts in the three compiler forks require exact staging checkouts, with no implicit fetching/reset. SDK external dependencies also use verified local paths. The umbrella scripts retain their upstream-fetching behavior and are bypassed by the isolated driver. M02 remains in progress: transitive gameplay include/link closure, license/provenance audit, and source/build profile closure require further review.
+
+Ten infrastructure tests and twelve synthetic converter tests pass. The original Halo integer math module also passes the bounded ILP32 host probe documented in `gameplay-probe.md`; neither result establishes target execution.
 
 The EE README names newlib 4.5.0 while its configuration selects `ee-v4.6.0`; the recorded source identity follows the actual configuration. The SDK downloader fetches lwIP and FatFs and can reset hard to upstream refs, so pinning PS2SDK alone does not lock its build.

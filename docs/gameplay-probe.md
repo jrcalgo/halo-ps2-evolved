@@ -1,6 +1,6 @@
 # Gameplay compatibility probe: source audit and entry conditions
 
-Status: M02 candidate audit. No Halo gameplay module has been compiled or executed by this project, and M07 has not started.
+Status: preliminary M07 host probe; full M02 closure and M07 acceptance remain incomplete. The original `integer_math.c` has been compiled and executed in a bounded ILP32 Linux harness. This does not establish R5900 behavior.
 
 ## Compared source identities
 
@@ -30,9 +30,11 @@ These differences rule out treating the two repositories as interchangeable sour
 
 This is an ordering proposal within M02, not permission to bypass the platform and build prerequisites of M07.
 
-## Host ABI check
+## Host ABI check and executed probe
 
-A temporary `gcc -m32` program including standard integer and I/O headers failed during compilation because `bits/libc-header-start.h` is unavailable. The test did not reach linking or execution. Appropriate 32-bit libc development support is a prerequisite for the normal pointer-sensitive host harness. No package was installed.
+The initial `gcc -m32` check failed because `bits/libc-header-start.h` was unavailable. Five pinned multiarch packages were then verified and extracted to an ignored private sysroot; they provide the ILP32 compiler/runtime without changing system packages. The harness creates a private source prefix with 32-bit Halo-compatible scalar types and visible diagnostic behavior, compiles the unmodified pinned `halo-64/source/math/integer_math.c` with `-m32`, then executes fixtures for rectangle intersection edges, floor/ceiling log2, integer square roots, and bit-vector word boundaries. The recorded report is `build/gameplay-host32/result.json`.
+
+The probe also compiles a generated negative-control copy with a deliberate `<` to `<=` boundary mutation and requires the fixture to reject it. The checked-in original source is not modified. Both positive and negative controls passed under the approved execution environment. `ceiling_log2(1)` is intentionally excluded because source inspection suggests that it can fail to terminate; its contract and behavior remain unresolved. This probe does not validate the wider Halo ABI, R5900 compiler behavior, target diagnostics, or gameplay runtime.
 
 ## Required fixture coverage
 

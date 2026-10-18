@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "distribution": "Ubuntu noble packages for the native Linux host",
+  "packages": [
+    {
+      "file": "bison_2%3a3.8.2+dfsg-1ubuntu0.24.04.1_amd64.deb",
+      "identity": "Package: bison\nVersion: 2:3.8.2+dfsg-1ubuntu0.24.04.1\nArchitecture: amd64",
+      "sha256": "9d75084d1293f68f3c1a2ee677dea5baa4e010bac2d4c455d8e23177e97aa353"
+    },
+    {
+      "file": "flex_2.6.4-8.2build1_amd64.deb",
+      "identity": "Package: flex\nVersion: 2.6.4-8.2build1\nArchitecture: amd64",
+      "sha256": "c5604f55827b50e3f568b4731b7799f86b147454c867be02bc141d9d8ce561ff"
+    },
+    {
+      "file": "gawk_1%3a5.2.1-2ubuntu0.1_amd64.deb",
+      "identity": "Package: gawk\nVersion: 1:5.2.1-2ubuntu0.1\nArchitecture: amd64",
+      "sha256": "baaf6853bea746485bff4ae0e506599b3c5093ebe6ec9b9584e4272f94f75b93"
+    },
+    {
+      "file": "libfl2_2.6.4-8.2build1_amd64.deb",
+      "identity": "Package: libfl2\nVersion: 2.6.4-8.2build1\nArchitecture: amd64",
+      "sha256": "098db71e672ded6e8194eec7132a2ca31dee49022848c7b0f77ce912d99cb445"
+    },
+    {
+      "file": "libgmp-dev_2%3a6.3.0+dfsg-2ubuntu6.1_amd64.deb",
+      "identity": "Package: libgmp-dev\nVersion: 2:6.3.0+dfsg-2ubuntu6.1\nArchitecture: amd64",
+      "sha256": "a9847b5ecfff791a46cb198f29a06d9d23a20afdfdd434812f2b44ccfb61d46a"
+    },
+    {
+      "file": "libmpc-dev_1.3.1-1build1.1_amd64.deb",
+      "identity": "Package: libmpc-dev\nVersion: 1.3.1-1build1.1\nArchitecture: amd64",
+      "sha256": "42a911f2771637dc830f08c0e3b79d20107fa07498af2b49dc44821de94a209e"
+    },
+    {
+      "file": "libmpfr-dev_4.2.1-1build1.1_amd64.deb",
+      "identity": "Package: libmpfr-dev\nVersion: 4.2.1-1build1.1\nArchitecture: amd64",
+      "sha256": "362fcdeb7dff545af83e65a3a972519185efd4a231c23e13d519cf97a5c8e3e4"
+    },
+    {
+      "file": "libsigsegv2_2.14-1ubuntu2_amd64.deb",
+      "identity": "Package: libsigsegv2\nVersion: 2.14-1ubuntu2\nArchitecture: amd64",
+      "sha256": "889f338bea4ebfd999939d946da4ac0a45668264a5aae78e023feeb0529505b8"
+    },
+    {
+      "file": "libtext-unidecode-perl_1.30-3_all.deb",
+      "identity": "Package: libtext-unidecode-perl\nVersion: 1.30-3\nArchitecture: all",
+      "sha256": "6595aa8edd7f2de116acd4043652697346fa8e157e9fdf14ada152a0ce04f0b2"
+    },
+    {
+      "file": "libxml-libxml-perl_2.0207+dfsg+really+2.0134-1build4_amd64.deb",
+      "identity": "Package: libxml-libxml-perl\nVersion: 2.0207+dfsg+really+2.0134-1build4\nArchitecture: amd64",
+      "sha256": "9fb537ee60e15fd709b3315fcf963ce501d11894938e0e732108a410042bbba6"
+    },
+    {
+      "file": "libxml-namespacesupport-perl_1.12-2_all.deb",
+      "identity": "Package: libxml-namespacesupport-perl\nVersion: 1.12-2\nArchitecture: all",
+      "sha256": "fa5c5ba9beb445220d9c73282f0845bfc3a0e1481e324175792b07155276807b"
+    },
+    {
+      "file": "libxml-sax-base-perl_1.09-3_all.deb",
+      "identity": "Package: libxml-sax-base-perl\nVersion: 1.09-3\nArchitecture: all",
+      "sha256": "08ed3ee24927c53638871d2be63d5dd9c0f1f42a58124b4b28c776bb8f0b5888"
+    },
+    {
+      "file": "libxml-sax-perl_1.02+dfsg-3_all.deb",
+      "identity": "Package: libxml-sax-perl\nVersion: 1.02+dfsg-3\nArchitecture: all",
+      "sha256": "c75639a373b5873248e03c53ae204e0832e5b9addc22b6484e3851141868af65"
+    },
+    {
+      "file": "texinfo-lib_7.1-3build2_amd64.deb",
+      "identity": "Package: texinfo-lib\nVersion: 7.1-3build2\nArchitecture: amd64",
+      "sha256": "f583b109e8450309deec697639c6dc019eda24f1c38fdabdaa96b843a232cbbb"
+    },
+    {
+      "file": "texinfo_7.1-3build2_all.deb",
+      "identity": "Package: texinfo\nVersion: 7.1-3build2\nArchitecture: all",
+      "sha256": "d45be908b080a764422bf8dc337381b7ba697e4dae0fd59a862f97588a9ef71a"
+    }
+  ]
+}

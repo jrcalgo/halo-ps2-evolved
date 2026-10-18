@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "packages": [
+    {
+      "file": "lib32gcc-12-dev_12.4.0-2ubuntu1~24.04.1_amd64.deb",
+      "identity": "Package: lib32gcc-12-dev\nVersion: 12.4.0-2ubuntu1~24.04.1\nArchitecture: amd64",
+      "sha256": "2606addb805beef9bcac5f3a61089f12c362556fa19f31de477190d368d9151a"
+    },
+    {
+      "file": "lib32gcc-s1_14.2.0-4ubuntu2~24.04.1_amd64.deb",
+      "identity": "Package: lib32gcc-s1\nVersion: 14.2.0-4ubuntu2~24.04.1\nArchitecture: amd64",
+      "sha256": "1802dc75345ccce457b44110a3819ca74ff8c33fc62394a78d0e59a11c0cf770"
+    },
+    {
+      "file": "libc6-dev-i386_2.39-0ubuntu8.9_amd64.deb",
+      "identity": "Package: libc6-dev-i386\nVersion: 2.39-0ubuntu8.9\nArchitecture: amd64",
+      "sha256": "44b85dd652192b23c6979b3f8c240b33105520fdba64024cbba0d818af33258b"
+    },
+    {
+      "file": "libc6-dev_2.39-0ubuntu8.9_amd64.deb",
+      "identity": "Package: libc6-dev\nVersion: 2.39-0ubuntu8.9\nArchitecture: amd64",
+      "sha256": "e13d5fcc1b2a86f75bca8e0026a8e39f24fe97ca86e92be79991f8697eb1306f"
+    },
+    {
+      "file": "libc6-i386_2.39-0ubuntu8.9_amd64.deb",
+      "identity": "Package: libc6-i386\nVersion: 2.39-0ubuntu8.9\nArchitecture: amd64",
+      "sha256": "a7120e4653c257e87385d0be55afcaca6d28e27ff4879afe576ccf3832ef80e4"
+    }
+  ]
+}

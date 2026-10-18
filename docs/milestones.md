@@ -2,49 +2,63 @@
 
 Governing specification: [detailed plan](../plans/0.native-ps2-halo-hybrid-port.md).
 
-## M00 — Passed for dependency acquisition
+Status reviewed 2026-10-18. A milestone is complete only when every required acceptance gate has evidence. Compilation does not establish runtime behavior. A dedicated local commit is made when each milestone closes.
 
-The parent Git repository is valid. Git metadata writes and GitHub access work through approved escalation; the ordinary sandbox still restricts metadata writes and GitHub DNS. Historical diagnostics remain in `environment.md`. Existing plans and user files were preserved.
+## M00 — Complete
 
-PS2 compilation, emulator configuration, retail inputs and physical-console access remain later prerequisites.
+Parent Git metadata, workspace permissions, source access, and the initial environment inventory are established. Historical recovery notes are retained in `environment.md`.
 
-## M01 — Passed initial bootstrap gates
+## M01 — In progress
 
-- Eleven actual submodules initialized recursively, including the three compiler orchestration dependencies discovered during M02.
-- Canonical upstream URLs retained in `.gitmodules`; full upstream and local fork pins recorded in `config/dependencies.json`.
-- Dedicated local bare forks and port branches; verified complete private bundles preserved before recording fork-only gitlinks.
-- Offline bootstrap passes for all eleven dependencies.
-- Fresh-parent synthetic tests restore a fork-only commit, repeat without pin changes, and refuse dirty trees or missing bundles.
-- Private bundles are ignored and require separate backup. Public upstreams cannot restore fork-only commits.
+- Eleven real submodules are registered, initialized recursively, and pinned to the current parent gitlinks.
+- Canonical upstream URLs remain in `.gitmodules`; full upstream/fork commits and bundle checksums are in `config/dependencies.json`.
+- Local fork adaptations are backed by complete private bundles before fork-only gitlinks are recorded.
+- Repeated offline bootstrap and synthetic fresh-parent restoration/refusal tests pass.
+- **Remaining acceptance gate:** restore all eleven exact gitlinks from a fresh checkout of the current parent commit using only the private bundles, then rerun bootstrap and verify clean matching heads.
+- Private bundles are ignored and need a separate backup. Public upstreams cannot restore fork-only commits.
 
 ## M02 — In progress
 
-- Source audit and reuse candidates: `source-audit.md`.
-- Eleven compiler/SDK leaf refs resolved to full commits; nine selected as required in the initial build profile. Large source acquisition remains pending.
-- Eleven compiler acquisition scripts require exact local sources and refuse implicit fetching/ref overrides. Concurrency defaults to two jobs.
-- SDK external dependency loading uses verified local paths, with repeat-run and existing-data preservation checks.
-- Parent umbrella scripts still have upstream fetching behavior. The new isolated driver bypasses those entry points; full driver execution remains unvalidated.
-- Candidate gameplay file hashes, differences and ABI assumptions recorded in `gameplay-probe.md` and `config/gameplay-probe-candidates.json`.
-- Complete gameplay include/link closure, provenance review and transitive compiler-source audit remain pending. No gameplay algorithms have been changed or executed.
+- Source reuse audit and current findings: `source-audit.md` and `gameplay-probe.md`.
+- Eleven toolchain/SDK leaf sources have exact commit locks. Nine required sources were acquired into isolated native and container staging trees.
+- The adapted compiler acquisition scripts refuse implicit fetch/reset and require exact locked staging checkouts. SDK external sources are supplied through verified local paths.
+- The initial gameplay candidate remains original `integer_math.c`; an ILP32 host fixture now compiles and executes it without changing source algorithms.
+- Full transitive gameplay include/link closure, license/provenance review, and post-build source audit remain open. No gameplay source algorithm has been modified.
 
-## M03 — In progress; native host-utility portion built
+## M03 — In progress
 
-- `make host-tools` compiled and installed pinned `ps2client` and `fsclient` from an isolated offline checkout, then passed a repeat run.
-- Source: ps2client `4af9c6a7a05a3a428270f2d836166cd3965bcb17`; host compiler: Ubuntu GCC 12.4.0.
-- Output and SHA-256 identities: `build/toolchain/host-tools.json`; run-specific logs/results under `build/toolchain/runs/`.
-- No console connection or target code execution was attempted.
-- `make toolchain` correctly refuses missing prerequisites before compiler stages run.
-- Remaining blockers: nine compiler/SDK source checkouts, missing native tools/development libraries and storage headroom. Container base/package lock and native/container ELF parity remain pending.
+- Pinned `ps2client` and `fsclient` host utilities build and pass a repeat run.
+- Native prerequisite packages are checksum-verified, extracted to a workspace-local prefix, and smoke-linked without changing global packages.
+- The immutable container image and archive are pinned in `config/container-environment.json`; container execution is network-isolated and writes only under `build/container`.
+- Native compiler/SDK run `build/toolchain/compiler-sdk.json`: compiler stages 00–03 passed; stage 04 is running at last review.
+- Container compiler/SDK run `build/container/toolchain/compiler-sdk.json`: stages 00–01 passed; stage 02 is running at last review.
+- DVP `world.vsm` assembles natively. The full compiler/SDK builds and native/container EE ELF parity remain pending.
+- Native and isolated-container host test suites each pass 10 infrastructure tests and 12 synthetic converter checks. Retail-data checks skipped because no map assets are configured.
+- No PS2 runtime or emulator behavior is claimed.
 
-## Validation completed
+## M04 — Not started
 
-- Eight infrastructure tests: passed, covering bundle restoration, clean/exact source routing, acquisition refusal and cleanup, stage failure/log retention, build settings, ref resolution and SDK preservation.
-- Twelve upstream Python converter scripts: synthetic checks passed; retail checks skipped.
-- Fifteen upstream C host executables: sanitizer suite passed through approved escalation; the ordinary sandbox's ptrace restriction prevented LeakSanitizer there.
-- No emulator or hardware tests have run.
+No selected artifact investigation or repeatable xemu reference scenario has been completed.
 
-## M04–M23 — Not started
+## M05 — In progress
 
-Preliminary source and host checks do not close REA artifact investigations, resource accounting, platform bring-up, gameplay compatibility, conversion, multiplayer, campaign or hardware gates.
+Original Halo integer math passes selected 32-bit ILP32 host fixtures, including a deliberate negative control. Arena accounting and memory-bound acceptance remain open.
 
-Next: obtain suitable build storage and native prerequisites, acquire and audit locked compiler sources, then validate native/container compilation. Actual retail input paths are also pending user input.
+## M06 — Not started
+
+The VU1 source assembles; GS initialization, VU execution, triangle/input/timer, and stability acceptance remain pending.
+
+## M07 — In progress
+
+One untouched original gameplay module passes a bounded ILP32 host baseline. R5900 compilation, target execution, and the broader compatibility criteria remain pending.
+
+## M08–M23 — Not started
+
+Renderer runtime, game-loop integration, map conversion, gameplay systems, split-screen, campaign, streaming, and final hardware gates have not passed.
+
+## Next actions
+
+1. Complete the actual fresh-parent bundle restoration for M01, then record and commit M01 closure.
+2. Keep native and container compiler builds running to their terminal reports; diagnose failures without claiming parity prematurely.
+3. After full builds pass, create and run the minimal EE ELF in both environments, compare hashes/ABI, and record the limits of emulator/hardware validation.
+4. Continue M02 closure audit and M05 resource accounting independently; no retail input or emulator/console path has been supplied yet.

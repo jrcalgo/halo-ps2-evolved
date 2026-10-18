@@ -13,6 +13,7 @@ import uuid
 from acquire_sources import acquire
 from locked_source import verify_checkout
 from toolchain_plan import preflight
+from host_prerequisites import native_environment
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -28,23 +29,26 @@ def save(path, report):
         temporary.replace(destination)
 
 
-def run_stages(stages, env, report_path, identities):
+def run_stages(stages, env, report_path, identities, timeout=None):
     run = report_path.parent / "runs" / (report_path.stem + "-" + uuid.uuid4().hex)
-    report = {"status": "running", "identities": identities, "stages": [], "run_directory": str(run)}
+    report = {"status": "running", "identities": identities, "stages": [], "run_directory": str(run),
+              "execution_environment": os.environ.get("HALO_EXECUTION_ENV", "native"),
+              "container_image_id": os.environ.get("HALO_CONTAINER_IMAGE_ID")}
     save(report_path, report)
     for index, (name, command, cwd) in enumerate(stages):
         log = run / "logs" / f"{index:02d}-{name}.log"
         log.parent.mkdir(parents=True, exist_ok=True)
         record = {"name": name, "command": command, "cwd": str(cwd), "log": str(log)}
         report["stages"].append(record)
+        save(report_path, report)
         print(f"Running {name}; log: {log}", flush=True)
         try:
             with log.open("w") as output:
-                result = subprocess.run(command, cwd=cwd, env=env, stdout=output, stderr=subprocess.STDOUT)
+                result = subprocess.run(command, cwd=cwd, env=env, stdout=output, stderr=subprocess.STDOUT, timeout=timeout)
             record["exit_code"] = result.returncode
             if result.returncode:
                 raise RuntimeError(f"Stage {name} failed with exit {result.returncode}; see {log}")
-        except (OSError, RuntimeError) as error:
+        except (OSError, RuntimeError, subprocess.TimeoutExpired) as error:
             record["error"] = str(error)
             report["status"] = "failed"
             save(report_path, report)
@@ -74,7 +78,7 @@ def environment():
                HALO_TOOLCHAIN_SOURCE_ROOT=str(Path(os.environ.get("HALO_TOOLCHAIN_SOURCE_ROOT", build / "toolchain/sources")).resolve()))
     env["PATH"] = os.pathsep.join(str(prefix / suffix) for suffix in
                                  ("bin", "ee/bin", "iop/bin", "dvp/bin", "ps2sdk/bin")) + os.pathsep + env.get("PATH", "")
-    return build, prefix, env, jobs
+    return build, prefix, native_environment(env), jobs
 
 
 def dependency(name):
@@ -156,9 +160,21 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--host-tools", action="store_true", help="Build only the small native ps2client utilities")
     args = parser.parse_args()
-    if os.environ.get("BUILD_ENV", "native") != "native":
-        raise RuntimeError("Container build execution is pending a pinned image/package environment")
+    selected = os.environ.get("BUILD_ENV", "native")
+    if selected not in ("native", "container"):
+        raise RuntimeError("BUILD_ENV must be native or container")
+    if selected == "container":
+        from container_run import run
+        run("host-tools" if args.host_tools else "toolchain")
+        return
     build, prefix, env, jobs = environment()
+    if os.environ.get("HALO_CONTAINER_PREPARE_SOURCES") == "1" and not args.host_tools:
+        profile = json.loads((ROOT / "config/toolchain-profile.json").read_text())
+        sources = json.loads((ROOT / "config/toolchain-sources.json").read_text())["sources"]
+        for item in sources:
+            if item["id"] in profile["required_sources"]:
+                acquire(item, Path(env["HALO_TOOLCHAIN_SOURCE_ROOT"]),
+                        local=ROOT / "build/toolchain/sources" / item["id"], offline=True)
     if args.host_tools:
         host_tools(build, prefix, env, jobs)
     else:

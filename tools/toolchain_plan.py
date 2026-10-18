@@ -9,6 +9,7 @@ import sys
 
 from lock_toolchain import declarations
 from locked_source import source_path
+from host_prerequisites import native_environment, prefix as host_prefix
 
 ROOT = Path(__file__).resolve().parents[1]
 # Conservative staging allowance, not a measured requirement or a correctness gate.
@@ -35,7 +36,8 @@ def preflight():
                 source_path(source["url"], source["ref"], source_root)
             except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
                 blockers.append(f"Source not acquired/verified: {source['id']}: {error}")
-    tools = {name: shutil.which(name) for name in HOST_TOOLS}
+    host_env = native_environment()
+    tools = {name: shutil.which(name, path=host_env["PATH"]) for name in HOST_TOOLS}
     missing = [name for name, executable in tools.items() if executable is None]
     if missing:
         blockers.append("Missing native tools: " + ", ".join(missing))
@@ -47,13 +49,18 @@ def preflight():
         blockers.append("Less than the conservative 20 GiB free-space allowance for source staging and builds")
     development = {}
     if tools["gcc"]:
-        headers = subprocess.run([tools["gcc"], "-x", "c", "-fsyntax-only", "-"],
+        include = ["-I" + str(host_prefix() / "include")] if host_prefix().is_dir() else []
+        headers = subprocess.run([tools["gcc"], *include, "-x", "c", "-fsyntax-only", "-"],
                                  input="#include <gmp.h>\n#include <mpfr.h>\n#include <mpc.h>\n#include <zlib.h>\n",
                                  capture_output=True, text=True)
         development["headers_ok"] = headers.returncode == 0
         development["header_diagnostics"] = headers.stderr.strip()
         libraries = {}
         for name in ("libgmp.so", "libmpfr.so", "libmpc.so", "libz.so"):
+            local = host_prefix() / "lib" / name.replace(".so", ".a")
+            if local.is_file():
+                libraries[name] = str(local)
+                continue
             resolved = subprocess.check_output([tools["gcc"], "-print-file-name=" + name], text=True).strip()
             libraries[name] = resolved if resolved != name and Path(resolved).is_file() else None
         development["libraries"] = libraries

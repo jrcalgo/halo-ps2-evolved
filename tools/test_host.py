@@ -5,6 +5,14 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+selected = os.environ.get("BUILD_ENV", "native")
+if selected == "container":
+    from container_run import run
+    run("test-host")
+    sys.exit(0)
+if selected != "native":
+    sys.exit("BUILD_ENV must be native or container")
+subprocess.run([sys.executable, "-B", "-m", "unittest", "discover", "-s", "tests", "-v"], cwd=ROOT, check=True)
 tests = ROOT / "submodules/halo-ps2/tools/tests"
 if not tests.is_dir():
     sys.exit("Missing halo-ps2 tests; run bootstrap first.")

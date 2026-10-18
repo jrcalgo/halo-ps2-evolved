@@ -78,27 +78,27 @@
       "path": "submodules/ps2toolchain-ee",
       "upstream": "https://github.com/ps2dev/ps2toolchain-ee.git",
       "upstream_commit": "4795b8357049e86137589af2db3d588cae79a77c",
-      "commit": "8499ca61e0e684ee87c6105a63dcd6dc4ecf9874",
+      "commit": "657b9e646920fda447079be56d915eb4f8a33c25",
       "branch": "ps2-port",
-      "bundle_sha256": "0c32a280a63836127e1467bbc56182298a9a57c870451f0de38481b96e5ea4e4"
+      "bundle_sha256": "a0ba56053b912a2e770741f0e00e4b8c0c9a6ee37c8dab36987131c8e70c405b"
     },
     {
       "name": "ps2toolchain-iop",
       "path": "submodules/ps2toolchain-iop",
       "upstream": "https://github.com/ps2dev/ps2toolchain-iop.git",
       "upstream_commit": "d7ead3c9f3d3220b3ca0b17641fd5b7fe3d734cf",
-      "commit": "85e38922217323fa6b8d6a19159a8dce97b42b21",
+      "commit": "4afa44d71fee30ecfd1aa014f2a11736b824be6a",
       "branch": "ps2-port",
-      "bundle_sha256": "621aa63c158e4b883b76d7a72015a67b6a3287c03f9aebeea4883d163efd1b38"
+      "bundle_sha256": "91548c27c5f8cad5ac96718feda195f0b3109658bb0caee0adb90c97ad92ec91"
     },
     {
       "name": "ps2toolchain-dvp",
       "path": "submodules/ps2toolchain-dvp",
       "upstream": "https://github.com/ps2dev/ps2toolchain-dvp.git",
       "upstream_commit": "d8aa68a0295dcc480255826b1320857278ffdfc2",
-      "commit": "a7cdd7ba5ff7fa6488fb9e1090b748843105959f",
+      "commit": "28d83d34d85360988aa32b9a783062d394a7d62e",
       "branch": "ps2-port",
-      "bundle_sha256": "32a25818369d5791e6b3e3ebd67bdae5ce1ae9ae649c0a8d428e255d90968420"
+      "bundle_sha256": "365e28751058ee179db8329c66d58277a158fc50e25ced28ed210c797b293177"
     }
   ]
 }

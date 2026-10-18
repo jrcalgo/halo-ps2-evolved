@@ -44,3 +44,13 @@ The SDK downloader adaptation passed synthetic idempotence and preservation chec
 `make host-tools` successfully compiled and installed ps2client/fsclient with Ubuntu GCC 12.4.0 from the pinned ps2client source in isolated staging. Repeat execution passed; hashes and logs are recorded in ignored build output. No console connection was attempted. Eight infrastructure tests passed.
 
 The enhanced preflight found missing GMP/MPFR/MPC development support in addition to makeinfo/flex/bison/gawk and storage constraints. The native compiler/SDK driver refuses execution on these actual prerequisites; pending full-build and container validation are reported separately from readiness. Large compiler sources were not downloaded.
+
+## Current recovery and parallel build update — 2026-10-18
+
+The earlier storage/prerequisite blocker is resolved. The workspace filesystem had about 220 GiB free at the latest check. Fifteen pinned Ubuntu packages were downloaded to the ignored build cache, checked against their SHA-256 values before extraction, and unpacked to a private workspace prefix. A small link probe using the local GMP, MPFR and MPC archives passed. No system packages were installed and no unrelated data was removed.
+
+The pinned, network-isolated container image and full archive are now available. The container host test suite passes all ten infrastructure tests and twelve synthetic converter checks. A test isolation issue involving the inherited `HALO_HOST_PREREQUISITE_PREFIX` was fixed by setting it to the test's own temporary prefix; the native suite passes the same ten tests.
+
+Nine required compiler/SDK source trees have been acquired at their locked commits in separate native and container staging roots. The native build has passed compiler stages 00–03 and is running stage 04. The container build has passed stages 00–01 and is running stage 02. Exact stage reports and logs are under `build/toolchain/` and `build/container/toolchain/`. These builds are still active; no EE ELF or PS2 runtime result is claimed.
+
+The standalone DVP assembler and host utilities are available. The PS2 VU1 world source assembles successfully, which validates only DVP assembly syntax and object generation. Actual EE/VU execution and input/render behavior remain untested.
