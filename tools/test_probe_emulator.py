@@ -131,18 +131,25 @@ def run_case(config, case, mode, host):
         result.update(status="failed", error=str(error)); save(path, result); raise
 
 
+def execute(case="all", mode="both"):
+    if case not in ("all", *CASES) or mode not in ("both", "interpreter", "recompiler"):
+        raise RuntimeError("Unknown probe case or CPU mode")
+    require_platform()
+    config = json.loads((ROOT / ".local/emulator.json").read_text())
+    modes = ("interpreter", "recompiler") if mode == "both" else (mode,)
+    hosts = {"gameplay": host_result("gameplay"), "datum": host_result("datum")}
+    results = [run_case(config, selected, selected_mode, hosts["datum" if selected.startswith("datum") else "gameplay"])
+               for selected in (CASES if case == "all" else [case]) for selected_mode in modes]
+    save(OUTPUT / "gameplay-latest.json", {"status": "passed", "results": results})
+    return results
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--case", choices=["all", *CASES], default="all")
     parser.add_argument("--mode", choices=("both", "interpreter", "recompiler"), default="both")
     args = parser.parse_args()
-    require_platform()
-    config = json.loads((ROOT / ".local/emulator.json").read_text())
-    modes = ("interpreter", "recompiler") if args.mode == "both" else (args.mode,)
-    hosts = {"gameplay": host_result("gameplay"), "datum": host_result("datum")}
-    results = [run_case(config, case, mode, hosts["datum" if case.startswith("datum") else "gameplay"])
-               for case in (CASES if args.case == "all" else [args.case]) for mode in modes]
-    save(OUTPUT / "gameplay-latest.json", {"status": "passed", "results": results})
+    execute(args.case, args.mode)
 
 
 if __name__ == "__main__":

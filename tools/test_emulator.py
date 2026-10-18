@@ -104,11 +104,13 @@ def validate_platform(text, seconds):
 
 
 def run_once(config, scenario, mode, seconds, timeout):
+    if scenario != "platform":
+        raise RuntimeError("The probe scenario uses tools/test_probe_emulator.py; a single success line is not acceptance")
     stop_previous()
     run = OUTPUT / "runs" / f"{scenario}-{mode}-{uuid.uuid4().hex}"
     run.mkdir(parents=True)
     ini = prepare(config, run, mode)
-    elf = ROOT / ("build/platform-elf/platform.elf" if scenario == "platform" else "build/gameplay-ee/integer-math.elf")
+    elf = ROOT / "build/platform-elf/platform.elf"
     if not elf.is_file():
         raise RuntimeError("Build the selected ELF before launching the emulator")
     build_report = json.loads((elf.parent / "result.json").read_text())
@@ -181,18 +183,14 @@ def run_once(config, scenario, mode, seconds, timeout):
                     capture(window, run / "visible-start.png")
                     result["captures"].append(str(run / "visible-start.png"))
                     save(path, result)
-            complete = "HALO_PS2_DONE" in text if scenario == "platform" else bool(re.search(r'\{"fixture":"integer_math".*"status":"passed"\}', text))
+            complete = "HALO_PS2_DONE" in text
             if complete:
                 if held:
                     keyboard.key(held[0], False); held = None
-                if scenario == "platform":
-                    if window is None or not result["captures"]:
-                        raise RuntimeError("Visible platform capture is missing")
-                    result["observed"] = validate_platform(text, seconds)
-                    result["status"] = "passed" if seconds == 600 else "short-smoke-passed"
-                else:
-                    result["observed"] = {"fixture": "integer_math", "abi": "ILP32", "status": "passed"}
-                    result["status"] = "executed"
+                if window is None or not result["captures"]:
+                    raise RuntimeError("Visible platform capture is missing")
+                result["observed"] = validate_platform(text, seconds)
+                result["status"] = "passed" if seconds == 600 else "short-smoke-passed"
                 if window:
                     capture(window, run / "visible-final.png")
                     result["captures"].append(str(run / "visible-final.png"))
@@ -221,6 +219,10 @@ def main():
     parser.add_argument("--seconds", type=int, default=int(os.environ.get("SMOKE_SECONDS") or "600"))
     parser.add_argument("--timeout", type=int, default=1800)
     args = parser.parse_args()
+    if args.scenario == "probe":
+        from test_probe_emulator import execute
+        execute("all", args.mode)
+        return
     if not 5 <= args.seconds <= 600:
         raise RuntimeError("Smoke duration must be between 5 and 600 guest seconds")
     config = json.loads((ROOT / ".local/emulator.json").read_text())

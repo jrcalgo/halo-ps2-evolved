@@ -6,13 +6,13 @@ Status reviewed 2026-10-18. A milestone is complete only when every required acc
 
 ## Handoff — 2026-10-18
 
-Resume baseline is `1d04512`; the platform checkpoint is `0b8ce41`. M00–M05 are complete. M09 closed at `e6eb7e5`. M06 is checkpoint `0b8ce41` and stays open. M07 is compiled only. M08 and M10–M22 have not started. M10 waits on an executed M06. M23 stays blocked on a physical console.
+Resume baseline is `9f57c87`, the M06 closure. M00–M07 and M09 are complete. M09 closed at `e6eb7e5`. M08 has host preparation only. M10 has a compiled viewer and has not rendered Blood Gulch. M11–M22 have not started. M23 stays blocked on a physical console.
 
 Blood Gulch, Xbox build `01.10.12.2276`, converted twice. BSP SHA-256 is `55ab30028ccd76aa5a3358d062988480c9142fb9b89de2f7a50321b4f4452c09`. The largest axis error is `0.001114` inside the declared bound `0.001116` over 5503 triangles. Pack sizes are 405504, 2344960, and 350208 bytes. Inputs and packs stay under ignored `data/retail`.
 
-`make platform-elf` links the pad poll, GIF/VIF DMA setup, VU1 upload, NTSC video, and the synthetic texture self-test. The self-test draws sprites. The ELF SHA-256 begins `109ca0eb70732463`. That checkpoint had no runtime capture. The later triangle now executes visibly; see M06 below. The probe ELF SHA-256 begins `a006fb06e5b26025` and its status is `compiled`.
+`make platform-elf` links the pad poll, GIF/VIF DMA setup, VU1 upload, NTSC video, and the synthetic texture self-test. The self-test draws sprites. The ELF SHA-256 begins `109ca0eb70732463`. That checkpoint had no runtime capture. The later triangle now executes visibly; see M06 below. The accepted integer-math probe ELF is `7917b2cdca5c9b9e40f62998ab46081a95a1b730ca4267611f7228a05f8ab824`; see M07 below.
 
-PCSX2 is installed at `~/.local/bin/pcsx2`. The user supplied PS2 BIOS files under `~/Documents/Halo`; ROM0 has a valid ROM directory (ROMVER `0110AC20000727`). Copies and writable sidecars are isolated under ignored emulator output. The short visible recompiler run passed; full interpreter/recompiler stability runs are in progress. EE integer-math execution is pending.
+PCSX2 2.8.2 is installed at `~/.local/bin/pcsx2`. The user supplied PS2 BIOS files under `~/Documents/Halo`; ROM0 has a valid ROM directory (ROMVER `0110AC20000727`). Copies and writable sidecars are isolated under ignored emulator output. Full interpreter/recompiler platform stability checks passed at `9f57c87`. The integer-math and datum EE fixtures passed in both CPU modes and match their ILP32 host results.
 
 The supplied PS2 BIOS and synthetic triangle have booted visibly. Blood Gulch rendering and player simulation have not run.
 
@@ -62,11 +62,13 @@ Parent Git metadata, workspace permissions, source access, and the initial envir
 
 Both CPU modes passed 600 guest seconds with the same platform ELF: 35965 frames, Start/Cross `[8,16384]`, heap `1261568`, DMA high-water 20/64 and intact guards. Presentation snapshots match exactly. Native/container allocated ELF parity and independent retained-evidence qualification passed. The first full attempt that missed Cross remains classified as failed; it is not the acceptance run. See `emulator.md` for run IDs, hashes and commands. This closes the emulator platform gate; physical-console qualification remains M23.
 
-## M07 — In progress
+## M07 — Complete
 
-`make probe` compiles and links the frozen integer-math closure for R5900. The result status is `compiled`, and the native ELF SHA-256 begins `7917b2cdca5c9b9e`. The ELF was not executed, so host/EE comparison and the no-silent-stub acceptance are unmet. The ILP32 host result remains a separate host check.
+Prerequisites are M02, M05, and M06 (`9f57c87`). The compiler is `mips64r5900el-ps2-elf-gcc (GCC) 15.2.0`. halo-64 is `17541f4444baabb47d1a0deb917f26ccb7b6bc5c`. PCSX2 is 2.8.2. `make test-emulator SCENARIO=probe` runs `tools/test_probe_emulator.py`, which is the acceptance command. A one-line integer-math success is not acceptance.
 
-Datum-pool host fixtures also pass allocation failure, exhaustion, stale lookup, reuse, iteration, reset and identifier rollover. The unchanged whole module and visible EE wrapper compile; target execution remains pending. See `gameplay-probe.md`.
+At parent `9f57c87`, both CPU modes passed the positive integer-math fixture, the rectangle-boundary mutation, the assertion-expression control, the positive datum fixture, and the stale-handle rejection. Positive results equal the ILP32 host records. Diagnostic expressions were evaluated. The mutation and stale-handle controls were rejected. Integer-math ELF `7917b2cdca5c9b9e40f62998ab46081a95a1b730ca4267611f7228a05f8ab824`. Datum ELF `3613c2999d6a0b032ce5318667521d04482149678e0a79f5b6c2746d8a7db96b`. `python3 tools/qualify_probe.py` rechecked retained logs, CPU flags, hashes, BIOS copies, and visible PNGs. The aggregate is ignored `build/emulator/gameplay-qualification.json`.
+
+`ceiling_log2(1)` was not executed. This does not establish floating-point equivalence, a general object lifecycle, or integrated gameplay. The next step is the M08 EE hybrid proof. See `gameplay-probe.md`.
 
 ## M08 — Host preparation
 
@@ -90,9 +92,9 @@ No physical console, storage backend, or operator setup is available. Hardware q
 
 ## Next actions
 
-1. Execute M07’s integer/datum fixtures and explicit failure controls in both CPU modes.
-2. M10 can now execute the existing Blood Gulch packs visibly; full route/free-camera acceptance remains open.
-3. Do not treat `make probe` or `make platform-elf` as passed runtime gates.
+1. Execute M08’s visible EE hybrid proof through the platform smoke duration.
+2. M10 can execute the existing Blood Gulch packs visibly; the five-minute route and free-camera acceptance remain open.
+3. Do not treat `make probe` or `make platform-elf` as passed runtime gates. M07’s runtime gate is `make test-emulator SCENARIO=probe`.
 
 ## Current implementation checkpoints
 

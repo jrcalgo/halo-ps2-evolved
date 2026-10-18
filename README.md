@@ -2,7 +2,7 @@
 
 Private integration project combining selected Halo gameplay sources with PS2-native rendering and offline conversion. The governing scope and acceptance gates are in [the implementation plan](plans/0.native-ps2-halo-hybrid-port.md).
 
-M00–M06 and M09 are complete. Native and container toolchains are built, the integer-math EE probe links, and Blood Gulch has been converted deterministically. Both full platform CPU-mode checks passed; the probe runtime gate remains open; no integrated Halo gameplay executable has run.
+M00–M07 and M09 are complete. Native and container toolchains are built, the integer-math and datum probes have executed on R5900 in both CPU modes, and Blood Gulch has been converted deterministically. No integrated Halo gameplay executable has run.
 
 ## Available commands
 
@@ -21,11 +21,12 @@ M00–M06 and M09 are complete. Native and container toolchains are built, the i
 | `make toolchain` | Build the pinned compiler/SDK; native and container builds have passed |
 | `make probe` | Build the frozen original integer-math closure for R5900 |
 | `make test-emulator` | Visibly run the platform fixture in interpreter/recompiler modes; retains private evidence |
+| `make test-emulator SCENARIO=probe` | Visibly run the strict integer-math and datum fixtures, including their failure controls |
 | `make platform-elf` | Build the M06 platform fixture; compilation alone does not pass M06 |
 | `make reference-scenario` | Repeat the source-derived ILP32 integer-math reference |
 | `make convert MAP=bloodgulch` | Convert the privately configured Xbox map twice; existing output directories are preserved through refusal |
 
-`elf` and `iso` remain unavailable until their implementation gates are met. Use `BUILD_ENV=container` for supported compilation and host-test targets. The [visible emulator workflow](docs/emulator.md) is implemented; M06 stability acceptance and retained-evidence qualification passed.
+`elf` and `iso` remain unavailable until their implementation gates are met. Use `BUILD_ENV=container` for supported compilation and host-test targets. The [visible emulator workflow](docs/emulator.md) is implemented. M06 stability acceptance and M07 probe qualification have passed. `SCENARIO=probe` uses the strict fixture runner; a single integer-math success line is not that gate.
 
 `HALO_BUILD_ROOT` selects generated output; the default is ignored `build/`. `HALO_TOOLCHAIN_SOURCE_ROOT` optionally selects compiler staging checkouts. `HALO_BUILD_JOBS` defaults to two and the driver accepts 1–64. No target changes global Git transport policy or installs system packages.
 
