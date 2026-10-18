@@ -38,9 +38,9 @@ Parent Git metadata, workspace permissions, source access, and the initial envir
 - DVP `world.vsm` object bytes match across environments (SHA-256 `b98e92d27413ade70bfcefa15b78408ffd033376791c9c8f9641fb90f63ca136`). That is assembly parity, not VU execution.
 - No PS2 runtime, emulator, or hardware behavior is claimed.
 
-## M04 — Blocked
+## M04 — In progress
 
-`binary_session` reports `rea-agents` 6.5.0 with no target open. Ghidra 12.1.4 and Hopper are available; IDA is not configured. No retail artifact was supplied, and `xemu` is not on `PATH`, so no reference scenario was run. Details are in `evidence-ledger.md`. This is not an M04 pass.
+`binary_session` reports `rea-agents` 6.5.0 with no target open. Ghidra 12.1.4 and Hopper are available; IDA is not configured. No target was opened, and one repeatable source-derived reference scenario still needs to be defined. Details are in `evidence-ledger.md`. This is not an M04 pass.
 
 ## M05 — Complete
 
@@ -72,6 +72,6 @@ No physical console, storage backend, or operator setup is available. Hardware q
 
 ## Next actions
 
-1. Supply a retail Xbox ISO or map directory and an `xemu` binary before any M04 reference scenario or M09 conversion.
+1. Define one repeatable source-derived reference scenario for M04. Supply a retail Xbox ISO or map directory before M09 conversion; that input is not tied to an M04 reference scenario.
 2. Supply PCSX2 before the M06 stability run and the M07 R5900 execution comparison.
 3. Do not treat `make probe` or `make platform-elf` as passed runtime gates.

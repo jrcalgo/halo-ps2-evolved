@@ -1,6 +1,6 @@
 # Evidence ledger
 
-M04 remains incomplete. This record separates source inspection from REA and records the missing reference runtime.
+M04 remains incomplete. This record separates source inspection from REA and records the reference workflow still to be defined.
 
 ## REA session
 
@@ -20,9 +20,9 @@ M04 remains incomplete. This record separates source inspection from REA and rec
 
 REA does not claim support here for an Xbox executable, R5900 disassembly, VU microcode, or emulator control. No such artifact was supplied, so those capabilities were not tested.
 
-## Reference runtime
+## Reference workflow
 
-`xemu` and `pcsx2` are not on `PATH`. No retail ISO, map directory, BIOS, or reference scenario configuration is present. No player action was observed in xemu. A repeatable reference scenario is therefore not established.
+No emulation of the original console is part of this workflow, and no firmware or disk image for it is requested or stored. Expected results come from the pinned original source through the host harness, and for visual checks from the independent software renderer in the pinned `halo-ps2` tree compared against PCSX2 framebuffer output. One repeatable source-derived reference scenario still needs to be defined, so a reference scenario is not yet established. `pcsx2` is not on `PATH`; that absence remains an M06 and M07 execution blocker, recorded separately from M04.
 
 ## Source findings kept separate
 
