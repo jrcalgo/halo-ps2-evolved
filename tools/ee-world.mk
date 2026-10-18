@@ -36,6 +36,15 @@ EE_OBJS = $(WORLD_OUTPUT)/platform/screenshot_sdk.o \
 	$(WORLD_OUTPUT)/world/tex.o \
 	$(WORLD_OUTPUT)/world/world.o \
 	$(WORLD_OUTPUT)/vu1/world.o
+ifeq ($(WORLD_STREAM_DIAGNOSTIC),1)
+EE_OBJS += $(WORLD_OUTPUT)/hybrid/staging.o $(WORLD_OUTPUT)/hybrid/reader_ee.o $(WORLD_OUTPUT)/hybrid/viewer_diagnostic.o
+$(WORLD_OUTPUT)/main.o: EE_CFLAGS += -Dbsp_render_build=hybrid_stream_build
+endif
+
+$(WORLD_OUTPUT)/hybrid/%.o: src/stream/%.c
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
 EE_LIBS = -ldraw -lgraph -lpacket2 -ldma -ldebug -lpad -lm
 EE_INCS = -I$(ENGINE)/src
 EE_CFLAGS = -std=gnu11 -Wall -Wextra -Wno-unused-parameter -MMD -MP -G0 \

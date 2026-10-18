@@ -33,7 +33,7 @@ def main():
     parser.add_argument("--frames", type=int, default=180)
     parser.add_argument("--camera", type=float, nargs=5, default=[65, -95, 9, -70, -5])
     parser.add_argument("--objects", action="store_true")
-    parser.add_argument("--variant", choices=("conservative","portal"), default="conservative")
+    parser.add_argument("--variant", choices=("conservative","portal","stream"), default="conservative")
     parser.add_argument("--force-conservative", action="store_true")
     parser.add_argument("--framebuffer", action="store_true", help="Retain raw GS pixels at frame 120, with HUD disabled")
     parser.add_argument("--route", action="store_true")
@@ -48,7 +48,7 @@ def main():
     if not 60 <= args.frames <= 18000:
         raise RuntimeError("Choose 60 through 18000 frames")
     require_platform()
-    build_name = "world-portal-elf" if args.variant == "portal" else "world-elf"
+    build_name = "world-stream-elf" if args.variant == "stream" else "world-portal-elf" if args.variant == "portal" else "world-elf"
     report = json.loads((ROOT / "build" / build_name / "result.json").read_text())
     original = ROOT / "build" / build_name / "world.elf"
     if sha(original) != report["elf_sha256"]:
@@ -65,10 +65,12 @@ def main():
         if sha(packs / ("bloodgulch" + suffix)) != converted["pack_sha256"][kind]:
             raise RuntimeError("Converted pack hash differs: " + kind)
     stop_previous()
-    label = "world-portal" if args.variant == "portal" else "world"
+    label = "world-stream" if args.variant == "stream" else "world-portal" if args.variant == "portal" else "world"
     run = OUTPUT / "runs" / f"{label}-{args.mode}-{uuid.uuid4().hex}"
     boot = run / "boot"
     boot.mkdir(parents=True)
+    if args.variant == "stream":
+        (boot / "stream-fixture.bin").write_bytes(bytes(i ^ 0xa5 for i in range(256)))
     elf = boot / "world.elf"
     shutil.copy2(original, elf)
     for suffix in suffixes.values():
@@ -94,6 +96,8 @@ def main():
               "settings_sha256":sha(ini), "config_sha256":sha(cfg), "camera":args.camera, "requested_frames":args.frames,
               "bios_sha256":sha(config["bios"]), "emulator_sha256":sha(Path(config["binary"]).resolve()),
               "run_directory":str(run), "log":str(log), "captures":[], "limits":"Diagnostic static viewer; no M10 completion or hardware performance claim."}
+    if args.variant == "stream":
+        result["stream_fixture_sha256"] = sha(boot / "stream-fixture.bin")
     result["variant"] = args.variant
     result["visibility"] = "conservative" if args.force_conservative or args.variant == "conservative" else "portal"
     path = run / "result.json"
@@ -167,6 +171,15 @@ def main():
             if window and done:
                 if int(done[1])<args.frames or "[cfg] no host:halo.cfg" in text:
                     raise RuntimeError("Viewer did not execute the requested local scenario")
+                if args.variant == "stream":
+                    cycles = re.findall(r"\[stream\] cycle=(\d+) cancel/reload/contents/drain=ok", text)
+                    measured = re.search(r"\[stream\] passed cycles=3 short-read=discarded high=(\d+) reserved=(\d+)", text)
+                    if cycles != ["0", "1", "2"] or not measured:
+                        raise RuntimeError("Streaming lifecycle diagnostic did not pass")
+                    if int(measured[1]) != 1048576 or int(measured[2]) > 1572864:
+                        raise RuntimeError("Streaming diagnostic exceeded its reservation")
+                    result["streaming"] = {"cycles": 3, "high_water": int(measured[1]),
+                                           "reserved": int(measured[2]), "scope": "synthetic worker reads; no texture or whole-map unload claim"}
                 if args.route and ("scripted path: 12 keys" not in text or "sky model: drawn" not in text or "ee prep avg=" not in text or "tex hit=" not in text):
                     raise RuntimeError("Route did not record the scripted camera, sky, or profiler breakdown")
                 if args.freecam:
