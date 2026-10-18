@@ -40,8 +40,22 @@ ifeq ($(WORLD_STREAM_DIAGNOSTIC),1)
 EE_OBJS += $(WORLD_OUTPUT)/hybrid/staging.o $(WORLD_OUTPUT)/hybrid/reader_ee.o $(WORLD_OUTPUT)/hybrid/viewer_diagnostic.o
 $(WORLD_OUTPUT)/main.o: EE_CFLAGS += -DHALO_STREAM_DIAGNOSTIC -Dbsp_render_build=hybrid_stream_build
 endif
+ifeq ($(WORLD_PLAY),1)
+EE_OBJS += $(WORLD_OUTPUT)/play_ee.o \
+	$(WORLD_OUTPUT)/game/collpack.o $(WORLD_OUTPUT)/game/collide.o \
+	$(WORLD_OUTPUT)/game/move.o $(WORLD_OUTPUT)/game/pad.o $(WORLD_OUTPUT)/game/pill.o
+EE_LDFLAGS += -Wl,--wrap,flycam_update -Wl,--wrap,profiler_overlay
+endif
 
 $(WORLD_OUTPUT)/hybrid/%.o: src/stream/%.c
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/play_ee.o: src/game/play_ee.c
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/game/%.o: src/game/%.c
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
 

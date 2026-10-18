@@ -90,9 +90,13 @@ Corrected ELF `e16df34e5d80a87d5e023b6d7f84dacfe5b329a49fc17f82dc141c0c75009726`
 
 Portal culling at `(65,-80,9)` matches the uncullled frame in both CPU modes while cutting the view from 20 clusters to 11 and testing 83 portals. The 448 host views already matched. A 168-page sweep evicts one texture, fails none, defers one retry, and matches frames 120, 240, and 300 in both CPU modes. The staging lease holds all 16 mip0 images for 360 frames. Three reloads return the arena to 5,279,024 bytes. Budget version 2 and the EE memory-map probe fit the measured kernel, stack, ELF, arena, DMA, and streaming bytes. Details are in `visibility-streaming.md` and `memory.md`. A physical console has not repeated this. That remains M23.
 
-## M12–M22 — Not started
+## M12 — Complete
 
-Each milestone waits on its own acceptance prerequisites.
+`test_move.py`, `test_pad.py`, `test_collide.py`, and `test_player.py` pass. The pill settles, jumps, crouches, walks a slope, stops at walls and a corner, and recovers outside the BSP. Scratch is 47,644 bytes. The EE collision walk in `world-recompiler-6faf9afd611e4bf8aaccc40727fa45fd` holds 30 fps at the first start, with the heap break at 16,222 KB of the 27,136 KB committed budget. Object collision is not in this pill. See `player-movement.md`. M13 has not started.
+
+## M13–M22 — Not started
+
+Each milestone waits on its own acceptance prerequisites. M13 waits on M12.
 
 ## M23 — Blocked
 
@@ -100,7 +104,7 @@ No physical console, storage backend, or operator setup is available. Hardware q
 
 ## Next actions
 
-1. M11 is complete. M12 is next and has not started.
+1. M12 is complete on the host and in the EE collision walk. M13 has not started. M14 through M22 stay unstarted.
 2. Do not treat the completed 300-second route alone as M10 acceptance.
 3. Do not treat `make probe` or `make platform-elf` as passed runtime gates. M07’s runtime gate is `make test-emulator SCENARIO=probe`.
 

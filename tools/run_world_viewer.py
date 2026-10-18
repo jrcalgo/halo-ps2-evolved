@@ -1,5 +1,6 @@
 """Launch the existing static-world viewer visibly; short runs are diagnostics only."""
 import argparse
+import configparser
 import json
 import math
 import os
@@ -38,6 +39,10 @@ def main():
     parser.add_argument("--framebuffer", action="store_true", help="Retain raw GS pixels at frame 120, with HUD disabled")
     parser.add_argument("--route", action="store_true")
     parser.add_argument("--freecam", action="store_true")
+    parser.add_argument("--motion", type=Path, default=None,
+                        help="pathkey file from the player eye: seconds x y z yaw pitch")
+    parser.add_argument("--play", action="store_true",
+                        help="leave the window open for keyboard play; do not wait for the frame limit")
     parser.add_argument("--cache-pages", type=int, default=0,
                         help="diagnostic-only stream cache cap")
     parser.add_argument("--cache-route", action="store_true",
@@ -47,6 +52,10 @@ def main():
     parser.add_argument("--framebuffer-frames", default="",
                         help="comma-separated readback frames; implies --framebuffer")
     args = parser.parse_args()
+    if args.play:
+        args.variant = "play"
+        args.objects = True
+        args.frames = 0
     if args.variant == "stream":
         args.frames = max(args.frames, 360)
     if args.framebuffer_frames:
@@ -58,16 +67,16 @@ def main():
         raise RuntimeError("Cache stress options require --variant stream")
     if args.cache_pages < 0 or any(not 1 <= frame <= args.frames for frame in args.framebuffer_frame_list):
         raise RuntimeError("Invalid cache page limit or framebuffer frame")
+    if not args.play and not 60 <= args.frames <= 18000:
+        raise RuntimeError("Choose 60 through 18000 frames")
     if args.route:
         args.frames = 9000
         args.objects = True
     if args.freecam:
         args.frames = 3000
         args.objects = True
-    if not 60 <= args.frames <= 18000:
-        raise RuntimeError("Choose 60 through 18000 frames")
     require_platform()
-    build_name = "world-stream-elf" if args.variant == "stream" else "world-portal-elf" if args.variant == "portal" else "world-elf"
+    build_name = "world-stream-elf" if args.variant == "stream" else "world-portal-elf" if args.variant == "portal" else "world-play-elf" if args.variant == "play" else "world-elf"
     report = json.loads((ROOT / "build" / build_name / "result.json").read_text())
     original = ROOT / "build" / build_name / "world.elf"
     if sha(original) != report["elf_sha256"]:
@@ -94,8 +103,18 @@ def main():
     shutil.copy2(original, elf)
     for suffix in suffixes.values():
         (boot / ("bloodgulch" + suffix)).symlink_to(packs / ("bloodgulch" + suffix))
+    if args.play:
+        sys.path.insert(0, str(ROOT / "tools"))
+        from convert_collision import build_pack
+        decompressed = ROOT / "data/retail/convert/bloodgulch/decompressed/bloodgulch.map"
+        if not decompressed.is_file():
+            raise RuntimeError("Decompressed Blood Gulch is required for the collision walk")
+        (boot / "collision.hp2").write_bytes(build_pack(decompressed))
+    overlay = "0" if args.play or args.motion else "1"
+    fp = "1" if args.play else "0"
     lines = ["pack bloodgulch.hp2", "tex bloodgulch.tex.hp2", "arena_mb 12", "textures 1", "lightmaps 1", "clipbudget 1000",
-             "camera " + " ".join(map(str,args.camera)), "frames " + str(args.frames), "fps 30", "hold 1", "overlay 1", "printcam 1", "fp 0", "lodctl 0"]
+             "camera " + " ".join(map(str,args.camera)), "frames " + str(args.frames), "fps 30", "hold 1",
+             "overlay " + overlay, "printcam 1", "fp " + fp, "lodctl 0"]
     if args.force_conservative:
         lines += ["debug 64"]
     if args.framebuffer:
@@ -107,12 +126,25 @@ def main():
         lines.append("cache_route 1")
     if args.objects:
         lines += ["obj bloodgulch.obj.hp2", "objects 1", "sky3d 1", "skyfog 1", "objanim 0"]
+    if args.motion:
+        keys = [line.strip() for line in args.motion.read_text().splitlines() if line.strip()]
+        if not keys or len(keys) > 24:
+            raise RuntimeError("Motion path needs 1 to 24 keys")
+        lines += ["pathkey " + key for key in keys]
     if args.route:
         lines += ["pathkey " + " ".join(map(str, key)) for key in ROUTE]
     cfg = boot / "halo.cfg"
     cfg.write_text("\n".join(lines) + "\n")
     config = json.loads((ROOT / ".local/emulator.json").read_text())
     ini = prepare(config, run, args.mode)
+    if args.play:
+        pad = configparser.ConfigParser(interpolation=None)
+        pad.optionxform = str
+        pad.read(ini)
+        pad["Pad1"].update(RUp="Keyboard/Up", RDown="Keyboard/Down", RLeft="Keyboard/Right",
+                           RRight="Keyboard/Left", Cross="Keyboard/G", Circle="Keyboard/Control")
+        with ini.open("w") as handle:
+            pad.write(handle)
     log = run / "emulog.txt"
     command = [config["binary"], "-datapath", str(run / "data"), "-nofullscreen", "-logfile", str(log), "-elf", str(elf)]
     result = {"status":"running", "scenario":"bloodgulch-static", "mode":args.mode, "visible":True, "command":command,
@@ -183,8 +215,24 @@ def main():
                         keyboard.key(key, True)
                     held = keys
                     keyboard.sent = now
+            if args.play and window and "[play] ready" in text:
+                result.update(status="playing", wall_seconds=time.monotonic()-start)
+                save(path, result)
+                print("Collision walk is live. The window stays open.", flush=True)
+                print("W S walk, A D strafe, arrow keys look, G jump, Control crouch.", flush=True)
+                return
+            if args.play and "[play] collision pack" in text:
+                raise RuntimeError("Collision walk did not load")
             if window and "[prof] frames=" in text and not result["captures"]:
                 capture(window,run/"visible-start.png");result["captures"].append(str(run/"visible-start.png"));save(path,result)
+            if window and args.motion:
+                for mark in re.findall(r"\[prof\] frames=(\d+) ", text):
+                    shot = run / ("gameplay-" + mark + ".png")
+                    if str(shot) in result["captures"]:
+                        continue
+                    capture(window, shot)
+                    result["captures"].append(str(shot))
+                    save(path, result)
             if window and args.route:
                 samples = re.findall(r"\[prof\] frames=(\d+) ", text)
                 frame = int(samples[-1]) if samples else 0
