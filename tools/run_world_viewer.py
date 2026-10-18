@@ -16,12 +16,15 @@ from emulator_window import windows, focus, capture, Input
 
 
 # Inside the converted Blood Gulch bounds, with margin. Times are seconds at 30 fps.
-ROUTE = [
-    (0, 65, -95, 9, -70, -5), (25, 20, -90, 8, -20, -8), (50, 18, -150, 7, 20, -5),
-    (75, 70, -175, 8, 80, -4), (100, 120, -160, 10, 10, -6), (125, 118, -70, 12, -160, -8),
-    (150, 90, -55, 14, -100, -10), (175, 40, -60, 16, -40, -12), (200, 30, -120, 4, 90, -2),
-    (225, 100, -130, 20, -90, -15), (250, 65, -95, 9, -70, -5), (300, 65, -110, 12, -70, -5),
-]
+# Perimeter views stay above the BSP's ~26-unit maximum and face inward.
+# The initial/final valley view is the independently checked reference camera.
+ROUTE = [(0,65,-95,9,-70,-5)]
+for t,x,y in ((25,65,-145),(50,65,-175),(75,110,-155),(100,118,-105),
+              (125,100,-65),(150,65,-58),(175,25,-75),(200,18,-115),(225,30,-155)):
+    dx,dy = 68-x,-117-y
+    ROUTE.append((t,x,y,32,round(math.degrees(math.atan2(dy,dx)),3),
+                  round(math.degrees(math.atan2(4-32,math.hypot(dx,dy))),3)))
+ROUTE += [(250,65,-95,9,-70,-5),(300,65,-95,9,-70,-5)]
 
 
 def main():
