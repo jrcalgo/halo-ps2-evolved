@@ -4,6 +4,18 @@ Governing specification: [detailed plan](../plans/0.native-ps2-halo-hybrid-port.
 
 Status reviewed 2026-10-18. A milestone is complete only when every required acceptance gate has evidence. Compilation does not establish runtime behavior. A dedicated local commit is made when each milestone closes.
 
+## Handoff — 2026-10-18
+
+Parent HEAD is `0b8ce41`. M00–M05 are complete. M09 closed at `e6eb7e5`. M06 is checkpoint `0b8ce41` and stays open. M07 is compiled only. M08 and M10–M22 have not started. M10 waits on an executed M06. M23 stays blocked on a physical console.
+
+Blood Gulch, Xbox build `01.10.12.2276`, converted twice. BSP SHA-256 is `55ab30028ccd76aa5a3358d062988480c9142fb9b89de2f7a50321b4f4452c09`. The largest axis error is `0.001114` inside the declared bound `0.001116` over 5503 triangles. Pack sizes are 405504, 2344960, and 350208 bytes. Inputs and packs stay under ignored `data/retail`.
+
+`make platform-elf` links the pad poll, GIF/VIF DMA setup, VU1 upload, NTSC video, and the synthetic texture self-test. The self-test draws sprites. The ELF SHA-256 begins `109ca0eb70732463`. No frame was captured. The probe ELF SHA-256 begins `a006fb06e5b26025` and its status is `compiled`.
+
+PCSX2 is installed at `~/.local/bin/pcsx2`. No PS2 BIOS was found, and one must not be downloaded. The interpreter run, the recompiler run, controller logs, the ten-minute smoke, and the EE integer-math comparison have not run.
+
+A converted multiplayer map and a startup ELF are on disk. Nothing has booted Halo, drawn Blood Gulch, or moved a player.
+
 ## M00 — Complete
 
 Parent Git metadata, workspace permissions, source access, and the initial environment inventory are established. Historical recovery notes are retained in `environment.md`.
@@ -64,7 +76,7 @@ The hybrid proof has not run. It waits on M06 and M07 execution, which have not 
 
 ## M10–M22 — Not started
 
-These milestones wait on M09 or later gameplay gates. They have not been started.
+M09 is closed. These milestones have not been started. M10 waits on an executed M06, and each later milestone waits on its own gate.
 
 ## M23 — Blocked
 

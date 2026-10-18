@@ -54,3 +54,7 @@ The pinned, network-isolated container image and full archive are now available.
 Nine required compiler/SDK source trees have been acquired at their locked commits in separate native and container staging roots. The native build has passed compiler stages 00–03 and is running stage 04. The container build has passed stages 00–01 and is running stage 02. Exact stage reports and logs are under `build/toolchain/` and `build/container/toolchain/`. These builds are still active; no EE ELF or PS2 runtime result is claimed.
 
 The standalone DVP assembler and host utilities are available. The PS2 VU1 world source assembles successfully, which validates only DVP assembly syntax and object generation. Actual EE/VU execution and input/render behavior remain untested.
+
+## Handoff — 2026-10-18
+
+The mid-build note above is historical. Native and container toolchain builds later passed, as recorded in `toolchain.md`. The line in the initial observations that PCSX2 was absent from `PATH` is also historical: the binary is now installed at `~/.local/bin/pcsx2`. The current halt, including the missing PS2 BIOS and the unexecuted platform and probe ELFs, is recorded in `milestones.md`.

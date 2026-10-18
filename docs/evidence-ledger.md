@@ -22,7 +22,7 @@ REA does not claim support here for an Xbox executable, R5900 disassembly, VU mi
 
 ## Reference workflow
 
-No emulation of the original console is part of this workflow, and no firmware or disk image for it is requested or stored. Scenario `integer-math-host` was run twice on the ILP32 host harness. Both runs produced the same canonical result, outcome `passed`, seed `1`, tick count `0`. The scenario has no map and no camera, so it has no framebuffer to compare in PCSX2. That visual check remains for a later scenario that has a camera. `pcsx2` is not on `PATH`; that absence remains an M06 and M07 execution blocker.
+No emulation of the original console is part of this workflow, and no firmware or disk image for it is requested or stored. Scenario `integer-math-host` was run twice on the ILP32 host harness. Both runs produced the same canonical result, outcome `passed`, seed `1`, tick count `0`. The scenario has no map and no camera, so it has no framebuffer to compare in PCSX2. That visual check remains for a later scenario that has a camera. PCSX2 is installed at `~/.local/bin/pcsx2`. No PS2 BIOS was found, so the M06 and M07 execution runs have not started. Do not download a BIOS.
 
 ## Source-derived scenario
 
