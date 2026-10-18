@@ -48,11 +48,11 @@ Parent Git metadata, workspace permissions, source access, and the initial envir
 
 ## M06 — In progress
 
-`make platform-elf` compiles `src/platform/main.c` with the pinned `halo-ps2` `video.c` and its NTSC `graph_set_mode` path. The ELF was not executed. Triangle, pad, DMA, PCSX2 interpreter/recompiler, and the ten-minute smoke remain pending because `pcsx2` is not on `PATH`.
+`make platform-elf` compiles `src/platform/main.c` with the pinned `halo-ps2` `video.c` and its NTSC `graph_set_mode` path. The native ELF SHA-256 begins `a2673b3a9373a5df`. The ELF was not executed. Triangle, pad, DMA, PCSX2 interpreter/recompiler, and the ten-minute smoke remain pending because `pcsx2` is not on `PATH`.
 
 ## M07 — In progress
 
-`make probe` compiles and links the frozen integer-math closure for R5900. The result status is `compiled`. The ELF was not executed, so host/EE comparison and the no-silent-stub acceptance are unmet. The ILP32 host result remains a separate host check.
+`make probe` compiles and links the frozen integer-math closure for R5900. The result status is `compiled`, and the native ELF SHA-256 begins `a006fb06e5b26025`. The ELF was not executed, so host/EE comparison and the no-silent-stub acceptance are unmet. The ILP32 host result remains a separate host check.
 
 ## M08 — Not started
 
