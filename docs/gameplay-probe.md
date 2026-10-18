@@ -1,6 +1,6 @@
 # Gameplay compatibility probe: source audit and entry conditions
 
-Status: the M02 integer-math compile closure is frozen. The original `integer_math.c` has been compiled and executed in a bounded ILP32 Linux harness. R5900 compilation and execution remain M07 work. This host result does not establish R5900 behavior.
+Status: the M02 integer-math compile closure is frozen. The original `integer_math.c` has been compiled and executed in a bounded ILP32 Linux harness. The closure compiles and links for R5900; execution remains M07 work. This host result does not establish R5900 behavior.
 
 ## Compared source identities
 

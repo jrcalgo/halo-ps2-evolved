@@ -6,13 +6,13 @@ Status reviewed 2026-10-18. A milestone is complete only when every required acc
 
 ## Handoff — 2026-10-18
 
-Parent HEAD is `0b8ce41`. M00–M05 are complete. M09 closed at `e6eb7e5`. M06 is checkpoint `0b8ce41` and stays open. M07 is compiled only. M08 and M10–M22 have not started. M10 waits on an executed M06. M23 stays blocked on a physical console.
+Resume baseline is `1d04512`; the platform checkpoint is `0b8ce41`. M00–M05 are complete. M09 closed at `e6eb7e5`. M06 is checkpoint `0b8ce41` and stays open. M07 is compiled only. M08 and M10–M22 have not started. M10 waits on an executed M06. M23 stays blocked on a physical console.
 
 Blood Gulch, Xbox build `01.10.12.2276`, converted twice. BSP SHA-256 is `55ab30028ccd76aa5a3358d062988480c9142fb9b89de2f7a50321b4f4452c09`. The largest axis error is `0.001114` inside the declared bound `0.001116` over 5503 triangles. Pack sizes are 405504, 2344960, and 350208 bytes. Inputs and packs stay under ignored `data/retail`.
 
 `make platform-elf` links the pad poll, GIF/VIF DMA setup, VU1 upload, NTSC video, and the synthetic texture self-test. The self-test draws sprites. The ELF SHA-256 begins `109ca0eb70732463`. No frame was captured. The probe ELF SHA-256 begins `a006fb06e5b26025` and its status is `compiled`.
 
-PCSX2 is installed at `~/.local/bin/pcsx2`. No PS2 BIOS was found, and one must not be downloaded. The interpreter run, the recompiler run, controller logs, the ten-minute smoke, and the EE integer-math comparison have not run.
+PCSX2 is installed at `~/.local/bin/pcsx2`. The user supplied PS2 BIOS files under `~/Documents/Halo`; ROM0 has a valid ROM directory (ROMVER `0110AC20000727`). Copies and writable sidecars are isolated under ignored emulator output. The interpreter run, the recompiler run, controller logs, the ten-minute smoke, and the EE integer-math comparison have not run.
 
 A converted multiplayer map and a startup ELF are on disk. Nothing has booted Halo, drawn Blood Gulch, or moved a player.
 
@@ -46,7 +46,7 @@ Parent Git metadata, workspace permissions, source access, and the initial envir
 - `make smoke-elf` and `BUILD_ENV=container make smoke-elf` produced `build/platform-smoke/halo-smoke.elf` (`cae68909c4a540801274d63bff384f9825973ad0d74aa11f08769fcb7181d8a2`) and `build/container/platform-smoke/halo-smoke.elf` (`887c3b1794f7f5e8c0cc3eb0b5788bc87c86f57fd0582fc2f432d6957598e4d8`).
 - Allocatable ELF sections match, including `.text` and `.data`. File hashes differ because debug strings embed `build/toolchain` versus `build/container` paths and local symbol suffixes differ. The same fixture compiled from `/tmp/halo-ee-anywhere` reproduced the allocatable bytes.
 - All 211 IOP `.irx` modules match on allocatable section bytes. Static library file hashes still differ by path metadata.
-- Converter imports are Python standard library only. `make test-host` passed 13 infrastructure tests, including resource accounting, and 12 synthetic converter checks. Real map checks skipped.
+- Converter imports are Python standard library only. `make test-host` passed 17 infrastructure tests, including resource accounting, and 12 synthetic converter checks. Real map checks skipped.
 - DVP `world.vsm` object bytes match across environments (SHA-256 `b98e92d27413ade70bfcefa15b78408ffd033376791c9c8f9641fb90f63ca136`). That is assembly parity, not VU execution.
 - No PS2 runtime, emulator, or hardware behavior is claimed.
 
@@ -60,7 +60,7 @@ Parent Git metadata, workspace permissions, source access, and the initial envir
 
 ## M06 — In progress
 
-`make platform-elf` links `src/platform/main.c` with the pinned pad, GIF/VIF DMA setup, VU1 microcode upload, NTSC video path, and synthetic texture self-test. The native ELF SHA-256 begins `109ca0eb70732463`. The ELF was not executed. PCSX2 is installed at `~/.local/bin/pcsx2`, and no PS2 BIOS was found, so interpreter, recompiler, controller logs, and the ten-minute smoke remain pending.
+`make platform-elf` links `src/platform/main.c` with the pinned pad, GIF/VIF DMA setup, VU1 microcode upload, NTSC video path, and synthetic texture self-test. The native ELF SHA-256 begins `109ca0eb70732463`. The ELF was not executed. PCSX2 is installed at `~/.local/bin/pcsx2`, and the user has now supplied a PS2 BIOS; interpreter, recompiler, controller logs, and the ten-minute smoke remain pending.
 
 ## M07 — In progress
 
@@ -84,6 +84,6 @@ No physical console, storage backend, or operator setup is available. Hardware q
 
 ## Next actions
 
-1. Supply a PS2 BIOS you own before the M06 stability run and the M07 R5900 execution comparison. PCSX2 is already installed.
+1. Finish M06’s textured VU1 triangle, presentation and polling loop, then execute visibly with the supplied BIOS and retained emulator evidence.
 2. M09 has a local Blood Gulch pack. M10 still waits on an executed M06.
 3. Do not treat `make probe` or `make platform-elf` as passed runtime gates.

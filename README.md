@@ -2,7 +2,7 @@
 
 Private integration project combining selected Halo gameplay sources with PS2-native rendering and offline conversion. The governing scope and acceptance gates are in [the implementation plan](plans/0.native-ps2-halo-hybrid-port.md).
 
-The project is at the source-audit/build-foundation stage. It does not yet build or run a Halo PS2 executable.
+M00–M05 and M09 are complete. Native and container toolchains are built, the integer-math EE probe links, and Blood Gulch has been converted deterministically. The platform and probe runtime gates remain open; no integrated Halo gameplay executable has run.
 
 ## Available commands
 
@@ -18,9 +18,13 @@ The project is at the source-audit/build-foundation stage. It does not yet build
 | `make test-gameplay-host32` | Compile unchanged Halo integer math and run selected ILP32 host fixtures/negative control |
 | `make vu-smoke` | Assemble the existing renderer VU1 program without runtime claims |
 | `make smoke-elf` | Compile a minimal EE ABI/logging ELF after SDK installation |
-| `make toolchain` | Run selected compiler/SDK stages only after preflight succeeds; full execution unvalidated |
+| `make toolchain` | Build the pinned compiler/SDK; native and container builds have passed |
+| `make probe` | Build the frozen original integer-math closure for R5900 |
+| `make platform-elf` | Build the M06 platform fixture; compilation alone does not pass M06 |
+| `make reference-scenario` | Repeat the source-derived ILP32 integer-math reference |
+| `make convert MAP=bloodgulch` | Convert the privately configured Xbox map twice; existing output directories are preserved through refusal |
 
-`probe`, `convert`, `elf`, `test-emulator`, and `iso` still fail explicitly because their implementations and runtime prerequisites are pending. The pinned container host-tool path is verified; complete compiler/SDK builds and EE parity remain in progress. Use `BUILD_ENV=container` for supported compilation and host-test targets.
+`elf`, `test-emulator`, and `iso` remain unavailable until their implementation gates are met. Use `BUILD_ENV=container` for supported compilation and host-test targets. The emulator runner is the next M06 integration task.
 
 `HALO_BUILD_ROOT` selects generated output; the default is ignored `build/`. `HALO_TOOLCHAIN_SOURCE_ROOT` optionally selects compiler staging checkouts. `HALO_BUILD_JOBS` defaults to two and the driver accepts 1–64. No target changes global Git transport policy or installs system packages.
 
