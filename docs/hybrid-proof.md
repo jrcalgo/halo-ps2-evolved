@@ -1,9 +1,11 @@
-# M08 synthetic hybrid proof preparation
+# M08 hybrid proof
 
-M08 remains incomplete and depends on completed M06/M07 runtime gates. No hybrid scene has executed on EE.
+M08 is complete. Original Halo datum and integer-point operations drive a synthetic visible object. The project boundary is `src/hybrid/boundary.h`. Command and snapshot types in `src/hybrid/protocol.h` contain handles and scalars only.
 
-`src/hybrid/protocol.h` defines tick-indexed commands, lifecycle events and copied presentation snapshots. The protocol contains scalar values and handles, with no DMA state, GS addresses or borrowed pointers. `src/hybrid/core.c` owns a fixed four-slot datum pool and uses the unchanged original Halo `data.c` implementation for creation, lookup, stale-handle rejection, iteration and destruction. Original integer-math point setters and offsets update a synthetic 2D position. This is not a Halo player, physics implementation or complete object system.
+`python3 tools/build_hybrid_host.py` runs the shared 18,000-tick script on ILP32. Suppressed, delayed, and normal presentation reads produce event hash `1235839601`, with 30 creations, 30 destructions, and 30 stale rejections. Mutating a copied snapshot does not change the next capture.
 
-`python3 tools/build_hybrid_host.py` compiles and executes the bounded ILP32 preparation. Each replay covers 18,000 ticks, 30 creations, 30 destructions and 30 rejected stale commands. Normal, suppressed and every-seventh-tick presentation consumers produce the same canonical event/state hash, `1235839601`, and final counters. Mutating a copied snapshot does not change subsequent snapshots. The host currently reuses the probe diagnostic/allocation boundary; that reuse must be made explicit or replaced with a project service boundary before the visible EE integration is accepted.
+`make hybrid-elf` links the unchanged `data.c` and `integer_math.c` with that script and the platform presenter in `src/hybrid/ee_main.c`. The ELF SHA-256 is `defae213cf558a118194137d99e5fa8088d9e6f61dd8605c3e1e1e8ebcc7e3ca`. DMA, VIF, VU1, and GS calls are confined to `ee_main.c`.
 
-Private reports and logs are under `build/hybrid-host32/`. This host replay does not establish real-time scheduling, rendering independence under actual EE load, visible motion, or the required full-duration integrated smoke. Those M08 gates remain pending.
+`make test-emulator SCENARIO=hybrid` ran PCSX2 2.8.2 at parent `722778f` in both CPU modes. Each mode reported the same three schedule hashes and `elapsed_ms=600033`. Heap stayed `1269760`. Chain high-water stayed 20. Window captures are `visible-start.png`, `visible-motion.png`, and `visible-final.png` in the retained run directories. `python3 tools/qualify_hybrid.py` rechecked those logs. The qualification record is ignored `build/emulator/hybrid-qualification.json`.
+
+This object is not a Halo player, weapon, or retail scene. Guest elapsed time is not a physical-console performance measurement.

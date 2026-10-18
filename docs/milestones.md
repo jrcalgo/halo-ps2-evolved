@@ -6,13 +6,13 @@ Status reviewed 2026-10-18. A milestone is complete only when every required acc
 
 ## Handoff — 2026-10-18
 
-Resume baseline is `9f57c87`, the M06 closure. M00–M07 and M09 are complete. M09 closed at `e6eb7e5`. M08 has host preparation only. M10 has a compiled viewer and has not rendered Blood Gulch. M11–M22 have not started. M23 stays blocked on a physical console.
+Resume baseline is `722778f`, the M07 closure. M00–M09 are complete once the M08 closure commit lands. M06 closed at `9f57c87` and M09 at `e6eb7e5`. M10 has a compiled viewer and has not rendered Blood Gulch. M11–M22 have not started. M23 stays blocked on a physical console.
 
 Blood Gulch, Xbox build `01.10.12.2276`, converted twice. BSP SHA-256 is `55ab30028ccd76aa5a3358d062988480c9142fb9b89de2f7a50321b4f4452c09`. The largest axis error is `0.001114` inside the declared bound `0.001116` over 5503 triangles. Pack sizes are 405504, 2344960, and 350208 bytes. Inputs and packs stay under ignored `data/retail`.
 
 `make platform-elf` links the pad poll, GIF/VIF DMA setup, VU1 upload, NTSC video, and the synthetic texture self-test. The self-test draws sprites. The ELF SHA-256 begins `109ca0eb70732463`. That checkpoint had no runtime capture. The later triangle now executes visibly; see M06 below. The accepted integer-math probe ELF is `7917b2cdca5c9b9e40f62998ab46081a95a1b730ca4267611f7228a05f8ab824`; see M07 below.
 
-PCSX2 2.8.2 is installed at `~/.local/bin/pcsx2`. The user supplied PS2 BIOS files under `~/Documents/Halo`; ROM0 has a valid ROM directory (ROMVER `0110AC20000727`). Copies and writable sidecars are isolated under ignored emulator output. Full interpreter/recompiler platform stability checks passed at `9f57c87`. The integer-math and datum EE fixtures passed in both CPU modes and match their ILP32 host results.
+PCSX2 2.8.2 is installed at `~/.local/bin/pcsx2`. The user supplied PS2 BIOS files under `~/Documents/Halo`; ROM0 has a valid ROM directory (ROMVER `0110AC20000727`). Copies and writable sidecars are isolated under ignored emulator output. Full interpreter/recompiler platform stability checks passed at `9f57c87`. The integer-math and datum EE fixtures passed in both CPU modes and match their ILP32 host results. The hybrid proof passed at parent `722778f`: event hash `1235839601` across three presentation schedules, `elapsed_ms=600033`, in both CPU modes.
 
 The supplied PS2 BIOS and synthetic triangle have booted visibly. Blood Gulch rendering and player simulation have not run.
 
@@ -70,9 +70,13 @@ At parent `9f57c87`, both CPU modes passed the positive integer-math fixture, th
 
 `ceiling_log2(1)` was not executed. This does not establish floating-point equivalence, a general object lifecycle, or integrated gameplay. The next step is the M08 EE hybrid proof. See `gameplay-probe.md`.
 
-## M08 — Host preparation
+## M08 — Complete
 
-A bounded synthetic ILP32 replay using original datum/point operations agrees across normal, suppressed and delayed presentation reads over 18,000 ticks. The visible EE hybrid proof waits on completed M06/M07 gates. See `hybrid-proof.md`.
+Prerequisites are M06 (`9f57c87`) and M07 (`722778f`). The compiler is `mips64r5900el-ps2-elf-gcc (GCC) 15.2.0`. halo-64 is `17541f4444baabb47d1a0deb917f26ccb7b6bc5c`. PCSX2 is 2.8.2. `make test-emulator SCENARIO=hybrid` is the acceptance command.
+
+Both CPU modes ran ELF `defae213cf558a118194137d99e5fa8088d9e6f61dd8605c3e1e1e8ebcc7e3ca` for 18,000 ticks. Suppressed, delayed, and normal schedules all reported event hash `1235839601`, matching the ILP32 host. The paced normal schedule reached `elapsed_ms=600033` with heap `1269760` and chain high-water 20. `python3 tools/qualify_hybrid.py` rechecked the retained logs and captures. The record is ignored `build/emulator/hybrid-qualification.json`.
+
+The visible object is synthetic. It is not a Halo player or a retail scene. The next step is M10’s Blood Gulch route. See `hybrid-proof.md`.
 
 ## M09 — Complete
 
@@ -92,8 +96,8 @@ No physical console, storage backend, or operator setup is available. Hardware q
 
 ## Next actions
 
-1. Execute M08’s visible EE hybrid proof through the platform smoke duration.
-2. M10 can execute the existing Blood Gulch packs visibly; the five-minute route and free-camera acceptance remain open.
+1. Execute M10’s five-minute Blood Gulch route and free-camera traversal.
+2. Do not treat the 180-frame world-viewer diagnostic as M10 acceptance.
 3. Do not treat `make probe` or `make platform-elf` as passed runtime gates. M07’s runtime gate is `make test-emulator SCENARIO=probe`.
 
 ## Current implementation checkpoints

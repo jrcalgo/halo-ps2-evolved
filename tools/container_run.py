@@ -18,6 +18,7 @@ ACTIONS = {
     "datum-probe": ["python3", "tools/build_datum.py"],
     "world-elf": ["python3", "tools/build_world.py"],
     "platform-elf": ["python3", "tools/build_platform.py"],
+    "hybrid-elf": ["python3", "tools/build_hybrid.py"],
     "test-host": ["make", "test-host"],
 }
 

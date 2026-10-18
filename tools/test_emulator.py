@@ -214,7 +214,7 @@ def run_once(config, scenario, mode, seconds, timeout):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--scenario", choices=("platform", "probe"), default=os.environ.get("SCENARIO") or "platform")
+    parser.add_argument("--scenario", choices=("platform", "probe", "hybrid"), default=os.environ.get("SCENARIO") or "platform")
     parser.add_argument("--mode", choices=("interpreter", "recompiler", "both"), default=os.environ.get("EMULATOR_MODE") or "both")
     parser.add_argument("--seconds", type=int, default=int(os.environ.get("SMOKE_SECONDS") or "600"))
     parser.add_argument("--timeout", type=int, default=1800)
@@ -222,6 +222,10 @@ def main():
     if args.scenario == "probe":
         from test_probe_emulator import execute
         execute("all", args.mode)
+        return
+    if args.scenario == "hybrid":
+        from test_hybrid_emulator import execute as execute_hybrid
+        execute_hybrid(args.mode)
         return
     if not 5 <= args.seconds <= 600:
         raise RuntimeError("Smoke duration must be between 5 and 600 guest seconds")

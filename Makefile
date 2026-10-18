@@ -4,7 +4,7 @@ OFFLINE ?= 0
 export BUILD_ENV OFFLINE
 export SCENARIO EMULATOR_MODE SMOKE_SECONDS
 
-.PHONY: doctor bootstrap test-host test-gameplay-host32 reference-scenario host-abi32 toolchain-plan toolchain host-tools native-prerequisites smoke-elf vu-smoke probe platform-elf convert elf test-emulator iso
+.PHONY: doctor bootstrap test-host test-gameplay-host32 reference-scenario host-abi32 toolchain-plan toolchain host-tools native-prerequisites smoke-elf vu-smoke probe platform-elf hybrid-elf convert elf test-emulator iso
 doctor:
 	$(PYTHON) tools/doctor.py
 
@@ -46,6 +46,9 @@ probe:
 
 platform-elf:
 	$(PYTHON) tools/build_platform.py
+
+hybrid-elf:
+	$(PYTHON) tools/build_hybrid.py
 
 convert:
 	$(PYTHON) tools/convert_map.py

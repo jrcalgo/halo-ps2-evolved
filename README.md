@@ -2,7 +2,7 @@
 
 Private integration project combining selected Halo gameplay sources with PS2-native rendering and offline conversion. The governing scope and acceptance gates are in [the implementation plan](plans/0.native-ps2-halo-hybrid-port.md).
 
-M00–M07 and M09 are complete. Native and container toolchains are built, the integer-math and datum probes have executed on R5900 in both CPU modes, and Blood Gulch has been converted deterministically. No integrated Halo gameplay executable has run.
+M00–M09 are complete. Native and container toolchains are built, the integer-math and datum probes have executed on R5900, and a synthetic gameplay object has driven a visible PS2 triangle for the platform smoke duration. Blood Gulch has been converted and has not yet been drawn.
 
 ## Available commands
 
@@ -22,6 +22,8 @@ M00–M07 and M09 are complete. Native and container toolchains are built, the i
 | `make probe` | Build the frozen original integer-math closure for R5900 |
 | `make test-emulator` | Visibly run the platform fixture in interpreter/recompiler modes; retains private evidence |
 | `make test-emulator SCENARIO=probe` | Visibly run the strict integer-math and datum fixtures, including their failure controls |
+| `make hybrid-elf` | Build the M08 hybrid ELF; compilation alone does not pass M08 |
+| `make test-emulator SCENARIO=hybrid` | Visibly run the 18,000-tick hybrid proof in interpreter and recompiler modes |
 | `make platform-elf` | Build the M06 platform fixture; compilation alone does not pass M06 |
 | `make reference-scenario` | Repeat the source-derived ILP32 integer-math reference |
 | `make convert MAP=bloodgulch` | Convert the privately configured Xbox map twice; existing output directories are preserved through refusal |
