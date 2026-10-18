@@ -7,8 +7,8 @@
 /* Owner-thread state machine. Workers return completions to the owner; they
  * never mutate this structure. Cancelled READING buffers stay owned by the
  * worker until completion. HELD buffers stay owned by the consumer until release. */
-typedef enum { ST_FREE, ST_QUEUED, ST_READING, ST_READY, ST_HELD,
-               ST_CANCEL_READING, ST_CANCEL_HELD } staging_state;
+typedef enum { ST_FREE, ST_QUEUED, ST_READING, ST_READY, ST_HELD, ST_DMA,
+               ST_CANCEL_READING, ST_CANCEL_HELD, ST_CANCEL_DMA } staging_state;
 typedef struct { uint64_t serial; unsigned slot; } staging_ticket;
 typedef struct {
     staging_state state;
@@ -28,6 +28,11 @@ int staging_request(staging_pool *, uint32_t map, size_t, staging_ticket *);
 void *staging_begin(staging_pool *, staging_ticket);
 int staging_complete(staging_pool *, staging_ticket, size_t bytes, int ok);
 const void *staging_acquire(staging_pool *, staging_ticket);
+/* Owner fills a queued slot and publishes it. The worker must not be reading it. */
+int staging_commit(staging_pool *, staging_ticket, const void *);
+/* HELD -> DMA. Release fails until staging_dma_complete. Cancel keeps the buffer. */
+int staging_dma_submit(staging_pool *, staging_ticket);
+int staging_dma_complete(staging_pool *, staging_ticket);
 int staging_release(staging_pool *, staging_ticket);
 void staging_cancel_map(staging_pool *, uint32_t);
 int staging_map_drained(const staging_pool *, uint32_t);

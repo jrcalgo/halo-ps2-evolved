@@ -15,9 +15,9 @@
       "path": "submodules/halo-ps2",
       "upstream": "https://github.com/BuechlerA/halo-ps2.git",
       "upstream_commit": "a571749c8c8de34c045e363726596989097c604a",
-      "commit": "a4a5833c08f3065d870664584f360257476f7958",
+      "commit": "589caa183fe1fb63b4d0ae2be235e1a38a99d047",
       "branch": "ps2-port",
-      "bundle_sha256": "c8bade6c85c2ecd67834b26537d7eec6795cb51fcf223aec932b8e5983665790"
+      "bundle_sha256": "95f384fc7a1bec81a1133d740bfce17dac4f02de38c6988e16ef0407c75fc88a"
     },
     {
       "name": "halo-ce-universal",

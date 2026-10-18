@@ -1,6 +1,6 @@
 # M11 visibility, residency and streaming
 
-M11 is **incomplete and in progress**. Host topology/visibility comparisons, bounded worker lifecycle checks, transactional uploads, metadata churn, three repeated EE map unload/reload cycles, and a constrained-cache raw-frame comparison pass under PCSX2. The 96-page sweep records 1,426 allocation failures and one clean sampled view. A 168-page sweep matches three sampled views and still logs one failure. No probed cap both evicts and admits every request, so full route quality remains open. Broader EE routes, production async texture-buffer ownership, real hardware, and full committed-memory qualification remain open. M12 has not started.
+M11 is **incomplete and in progress**. Host topology/visibility comparisons, bounded worker lifecycle checks, transactional uploads, metadata churn, three repeated EE map unload/reload cycles, and a constrained-cache raw-frame comparison pass under PCSX2. The 96-page sweep records 1,426 allocation failures and one clean sampled view. A 168-page sweep matches three sampled views and still logs one failure. No probed cap both evicts and admits every request, so full route quality remains open. One lightmap page is read through the staging worker and held until GIF DMA completes; production uploads still come from the arena-resident copy. Broader EE routes, real hardware, and full committed-memory qualification remain open. M12 has not started.
 
 ## Topology and host visibility
 
@@ -60,6 +60,12 @@ The physical texture window is 271 pages. Recompiler probes of the same 12-view 
 
 The 168-page cap is the smallest churn observed. Paired with an uncapped run, guarded raw frames 120, 240, and 300 match exactly within each CPU mode (zero differing pixels). Recompiler runs are `world-stream-recompiler-587ac9ed7978444883175da3b3f4d49e` and `world-stream-recompiler-40affcdf694149f6851e92e11b588843`. Interpreter runs are `world-stream-interpreter-e318168a4bbc494f97e81243da10c09b` and `world-stream-interpreter-48d97b63350947b3aa9c7cd1d91e5b9a`. Reports: `build/streaming-ee/cache-stress-168-recompiler.json` and `build/streaming-ee/cache-stress-168-interpreter.json`. The recompiler frame-300 image shows Blood Gulch terrain. Its pixel hash equals the earlier 96-page frame-300 sample. Interpreter and recompiler hashes still differ from each other. Each capped sweep still logs one failed allocation, so route-wide texture completeness remains open.
 
+## Lightmap page DMA lease
+
+After the three reloads, the stream diagnostic reads compressed `LM0` from the texture pack through the existing EE worker into one staging slot, decodes it into a second slot, and compares page 0 with the arena-resident lightmap. The decoded slot then moves to a DMA lease: release and map drain fail until GIF DMA of its 8192 bytes completes. The transfer lands in the texture window, so the renderer drops its texture claims before building the rest of that frame and uploads them again. Recompiler run `world-stream-recompiler-5c8799f2b67a48d4b6ca8e3693a26183` and interpreter run `world-stream-interpreter-4f81679a508745f3baffcadfa75d962c` both log `[stream] dma_page=ok bytes=8192 page=0` and finish the diagnostic. The recompiler's final capture still shows Blood Gulch. An earlier run without the claim flush left the canyon textures corrupted; that run is not the qualified result.
+
+This is one page, not the renderer's cache-miss path. World and object packs are still loaded synchronously, and the ordinary frame uploads still read the arena copy. Host coverage is the staging lifetime test, including a cancel that cannot free a buffer until DMA completion.
+
 ## Measured memory snapshot (partial)
 
 For the current stream viewer ELF, allocatable ELF sections total 2,127,664 bytes, including `.bss` (which already contains the 1 MiB staging storage, worker stack, metadata, and other static state). The viewer reserves a 12 MiB world arena; the loaded Blood Gulch map and renderer use 5,279,024 bytes, return to that baseline after every reload, and report a 6,314 KiB high-water value. Separately allocated renderer DMA chains use 1,179,648 bytes (two 32,768-qword chains and two 4,096-qword upload buffers).
@@ -70,7 +76,7 @@ These figures are a partial snapshot, not total EE memory accounting: kernel/IOP
 
 - Extend EE comparison beyond this fixed camera, including portal crossings and the map perimeter.
 - The 12-view sweep has no probed cap that both evicts and admits every texture request. A 168-page cap matches three sampled views and still logs one failure; cache-churn acceptance stays open.
-- Integrate asynchronous texture-page reads and conversion with explicit ownership through DMA completion; current streaming worker exercises a synthetic byte fixture and the world pack loads remain synchronous.
+- One lightmap page is now read through the staging worker and held until GIF DMA completes. The renderer still uploads from the synchronously loaded arena copy, so production cache misses are not served from this lease.
 - Extend EE visibility comparisons across portal crossings and map perimeter routes.
 - Reconcile the measured DMA buffers with the 1 MiB regional estimate and map every EE, kernel, IOP, SDK and staging allocation to non-overlapping budget regions.
 - Verify teardown/reload on physical PS2 hardware when available; current three-cycle evidence is PCSX2 only.

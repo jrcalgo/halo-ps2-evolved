@@ -209,6 +209,8 @@ def main():
                         raise RuntimeError("World unload/reload did not return arena use to baseline")
                     if int(measured[1]) != 1048576 or int(measured[2]) > 1572864:
                         raise RuntimeError("Streaming diagnostic exceeded its reservation")
+                    if "[stream] dma_page=ok " not in text:
+                        raise RuntimeError("Texture page was not held until DMA completion")
                     result["streaming"] = {"cycles": 3, "map_reload_cycles": 3, "high_water": int(measured[1]), "arena_used": [int(u[1]) for u in unloads],
                                            "reserved": int(measured[2]), "scope": "synthetic worker reads; no texture or whole-map unload claim"}
                     if args.cache_pages:

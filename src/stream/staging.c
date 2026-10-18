@@ -50,6 +50,25 @@ const void *staging_acquire(staging_pool *p, staging_ticket t) {
     s->state = ST_HELD;
     return p->storage + t.slot * p->stride;
 }
+int staging_commit(staging_pool *p, staging_ticket t, const void *src) {
+    staging_slot *s = lookup(p, t);
+    if (!s || s->state != ST_QUEUED || !src) return 0;
+    memcpy(p->storage + t.slot * p->stride, src, s->requested);
+    s->state = ST_READY;
+    return 1;
+}
+int staging_dma_submit(staging_pool *p, staging_ticket t) {
+    staging_slot *s = lookup(p, t);
+    if (!s || s->state != ST_HELD) return 0;
+    s->state = ST_DMA;
+    return 1;
+}
+int staging_dma_complete(staging_pool *p, staging_ticket t) {
+    staging_slot *s = lookup(p, t);
+    if (!s || (s->state != ST_DMA && s->state != ST_CANCEL_DMA)) return 0;
+    s->state = s->state == ST_DMA ? ST_HELD : ST_CANCEL_HELD;
+    return 1;
+}
 int staging_release(staging_pool *p, staging_ticket t) {
     staging_slot *s = lookup(p, t);
     if (!s || (s->state != ST_HELD && s->state != ST_CANCEL_HELD)) return 0;
@@ -63,6 +82,7 @@ void staging_cancel_map(staging_pool *p, uint32_t map) {
         switch (s->state) {
         case ST_READING: s->state = ST_CANCEL_READING; break;
         case ST_HELD: s->state = ST_CANCEL_HELD; break;
+        case ST_DMA: s->state = ST_CANCEL_DMA; break;
         case ST_QUEUED: case ST_READY: s->state = ST_FREE; break;
         default: break;
         }
