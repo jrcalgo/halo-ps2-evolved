@@ -6,7 +6,7 @@ Status reviewed 2026-10-18. A milestone is complete only when every required acc
 
 ## Handoff — 2026-10-18
 
-Resume baseline is `722778f`, the M07 closure. M00–M09 are complete once the M08 closure commit lands. M06 closed at `9f57c87` and M09 at `e6eb7e5`. M10 has a compiled viewer and has not rendered Blood Gulch. M11–M22 have not started. M23 stays blocked on a physical console.
+Resume baseline is `c9082d2`, the M08 closure. M00–M09 are complete. M06 closed at `9f57c87`, M07 at `722778f`, and M09 at `e6eb7e5`. M10 has a visible Blood Gulch route in both CPU modes and is still open because the free-camera traversal has not passed. M11–M22 have not started. M23 stays blocked on a physical console.
 
 Blood Gulch, Xbox build `01.10.12.2276`, converted twice. BSP SHA-256 is `55ab30028ccd76aa5a3358d062988480c9142fb9b89de2f7a50321b4f4452c09`. The largest axis error is `0.001114` inside the declared bound `0.001116` over 5503 triangles. Pack sizes are 405504, 2344960, and 350208 bytes. Inputs and packs stay under ignored `data/retail`.
 
@@ -14,7 +14,7 @@ Blood Gulch, Xbox build `01.10.12.2276`, converted twice. BSP SHA-256 is `55ab30
 
 PCSX2 2.8.2 is installed at `~/.local/bin/pcsx2`. The user supplied PS2 BIOS files under `~/Documents/Halo`; ROM0 has a valid ROM directory (ROMVER `0110AC20000727`). Copies and writable sidecars are isolated under ignored emulator output. Full interpreter/recompiler platform stability checks passed at `9f57c87`. The integer-math and datum EE fixtures passed in both CPU modes and match their ILP32 host results. The hybrid proof passed at parent `722778f`: event hash `1235839601` across three presentation schedules, `elapsed_ms=600033`, in both CPU modes.
 
-The supplied PS2 BIOS and synthetic triangle have booted visibly. Blood Gulch rendering and player simulation have not run.
+The supplied PS2 BIOS, the synthetic triangle, and the Blood Gulch viewer have booted visibly. Player simulation has not run.
 
 ## M00 — Complete
 
@@ -82,9 +82,13 @@ The visible object is synthetic. It is not a Halo player or a retail scene. The 
 
 `MAP=bloodgulch make convert` decompressed the locally configured Xbox cache, build `01.10.12.2276`, and converted it twice. The BSP, object, and texture pack hashes match across the two clean output directories. BSP SHA-256 is `55ab30028ccd76aa5a3358d062988480c9142fb9b89de2f7a50321b4f4452c09`. The largest axis error is `0.001114` against the declared bound `0.001116` over 5503 triangles. Pack sizes are 405504, 2344960, and 350208 bytes, inside the BSP, resident-gameplay, and texture-cache regions. Truncated and bad-magic headers fail in `tests/test_convert_map.py`. Retail inputs and packs stay under ignored `data/retail`.
 
-## M10 — Build preparation
+## M10 — In progress
 
-The pinned world viewer compiles natively and in the container into parent-owned output; allocated ELF sections match. Runtime waits on M06. See `world-viewer.md`.
+The viewer ELF is `23ccc739d2db6acd96622aca7dc67978a9fa20ca4e547a6043119c0cb7df8a41`. PCSX2 is 2.8.2. `python3 tools/run_world_viewer.py --route` is the five-minute route command. It is not yet an acceptance pass.
+
+Both CPU modes completed 9001 frames and 0 dropped frames. Recompiler run `world-recompiler-5fb93b007f7d40f9b5b69934cceb149e` took 305 wall seconds. Interpreter run `world-interpreter-188533b309954851867bd73310fd1d24` took 1213 wall seconds. Both logged a 12-key, 300-second camera path, a drawn sky model, lightmaps, EE preparation, submissions, texture hits, and chain sizes. No DMA overflow was reported. Wall time is not a console performance result.
+
+The free-camera gate is still open. The latest recompiler attempt failed its map-side check. Resume that flight before treating M10 as complete. See `world-viewer.md`.
 
 ## M11–M22 — Not started
 
@@ -96,8 +100,8 @@ No physical console, storage backend, or operator setup is available. Hardware q
 
 ## Next actions
 
-1. Execute M10’s five-minute Blood Gulch route and free-camera traversal.
-2. Do not treat the 180-frame world-viewer diagnostic as M10 acceptance.
+1. Finish M10’s free-camera traversal so the pad can reach the map sides, then compare the fixed view with the geometry reference.
+2. Do not treat the completed 300-second route alone as M10 acceptance.
 3. Do not treat `make probe` or `make platform-elf` as passed runtime gates. M07’s runtime gate is `make test-emulator SCENARIO=probe`.
 
 ## Current implementation checkpoints
