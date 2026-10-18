@@ -48,6 +48,8 @@ def main():
     report_path = output / "result.json"
     report = run_stages(stages, dict(os.environ), report_path,
                         {"halo_64_commit": item["commit"], "source_sha256": hashlib.sha256(original.read_bytes()).hexdigest()}, timeout=15)
+    report["source_sha256"] = {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in
+                               ("submodules/halo-64/source/math/integer_math.c", "tests/gameplay_host32/integer_math.c", "tests/gameplay_host32/prefix.h")}
     report["binary_sha256"] = hashlib.sha256(binary.read_bytes()).hexdigest()
     report["status"] = "compiled" if args.compile_only else "passed"
     report["limits"] = "Whole original integer math module on an ILP32 Linux host only; no R5900/gameplay integration or M07 acceptance."

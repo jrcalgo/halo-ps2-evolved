@@ -47,3 +47,13 @@ The probe also compiles a generated negative-control copy with a deliberate `<` 
 - Diagnostic expression evaluation, and failures that cannot be hidden by stubs.
 
 Original defects or undefined-domain behavior require an explicit design decision and retained evidence before any algorithm is changed. REA investigations remain reserved for selected artifacts and questions unresolved by source; none was needed for these source observations.
+
+## M07 preparation: visible controls and datum closure
+
+The EE integer-math wrapper now has visible PASS/FAIL presentation and explicit assertion-expression evaluation checks. Separate generated boundary-mutation and assertion-failure controls are prepared. They have compiled but have not executed on EE; compilation is not acceptance.
+
+The datum closure is now `data.c`, `data.h`, and `tag_files.h` from the pinned halo-64 source of record. The whole original implementation is compiled unchanged behind a narrow CRT/allocation boundary. `csstrncpy` calls an out-of-line wrapper with the original `strncpy` semantics: the two-byte name-derived identifier seed is intentionally not a C string. This avoids misclassifying intentional bounded copying as a compiler truncation error. Diagnostic checks remain active; allocation failure is explicit.
+
+`python3 tools/build_datum.py --host` passes a bounded ILP32 fixture for allocation failure, four-slot exhaustion, stale lookup, slot reuse, iteration, explicit-index allocation, reset, invalidation/revalidation and identifier rollover. Layout assertions require a 56-byte datum array, signature offset 40, storage-pointer offset 52, and a 16-byte iterator. `python3 tools/build_datum.py` builds its EE counterpart; EE execution remains pending. These checks do not establish general object lifecycle correctness or floating-point equivalence. Signed identifier shifts and narrowing retain the pinned implementation and must be checked on the target rather than generalized as portable ISO C behavior.
+
+The datum negative control generates an ignored copy that deliberately disables identifier mismatch rejection. The host fixture rejects it after slot reuse; arbitrary crashes do not qualify. `python3 tools/build_datum.py --host --negative-control` records that rejection. EE positive/negative controls are built independently with `--negative-control` selecting the latter. The frozen closure hashes are recorded in `config/gameplay-probe-candidates.json`.

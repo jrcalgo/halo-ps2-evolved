@@ -1,5 +1,11 @@
 #include "prefix.h"
 #include "integer_math.h"
+#include <stddef.h>
+
+_Static_assert(sizeof(point2d) == 4, "Xbox point layout");
+_Static_assert(sizeof(rectangle2d) == 8, "Xbox rectangle layout");
+_Static_assert(offsetof(rectangle2d, x0) == 2 && offsetof(rectangle2d, x1) == 6, "Xbox rectangle field order");
+_Static_assert(sizeof(pixel32) == 4, "Xbox pixel width");
 
 char temporary[1024];
 

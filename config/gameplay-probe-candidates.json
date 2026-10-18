@@ -1,5 +1,5 @@
 {
-  "status": "frozen integer-math compile closure",
+  "status": "frozen integer-math and datum-pool compile closures",
   "frozen_compile_closure": {
     "source_of_record": "submodules/halo-64",
     "files": [
@@ -88,5 +88,14 @@
         "#include <stdarg.h>"
       ]
     }
-  ]
+  ],
+  "datum_compile_closure": {
+    "source_of_record": "submodules/halo-64",
+    "files": {
+      "source/memory/data.c": "d7e5b02aa77f1ce762794e4ed0df6d7fa83781e76fe546107bac24ae8ea5b582",
+      "source/memory/data.h": "cb7a93de367ee0debcbf184889ad7662c99db4a72d4bd77a44c8db9bc95f59c7",
+      "source/tag_files/tag_files.h": "cdae5cf36d90ed8dd62c017cd9e09cfce79bc058dabdb0f85538013730660f16"
+    },
+    "link_boundary": "Project-owned CRT, allocation and diagnostics wrappers; original whole-file implementation remains unchanged. No object system or floating-point closure is included."
+  }
 }
