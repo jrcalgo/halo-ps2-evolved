@@ -38,7 +38,7 @@ EE_OBJS = $(WORLD_OUTPUT)/platform/screenshot_sdk.o \
 	$(WORLD_OUTPUT)/vu1/world.o
 ifeq ($(WORLD_STREAM_DIAGNOSTIC),1)
 EE_OBJS += $(WORLD_OUTPUT)/hybrid/staging.o $(WORLD_OUTPUT)/hybrid/reader_ee.o $(WORLD_OUTPUT)/hybrid/viewer_diagnostic.o
-$(WORLD_OUTPUT)/main.o: EE_CFLAGS += -Dbsp_render_build=hybrid_stream_build
+$(WORLD_OUTPUT)/main.o: EE_CFLAGS += -DHALO_STREAM_DIAGNOSTIC -Dbsp_render_build=hybrid_stream_build
 endif
 
 $(WORLD_OUTPUT)/hybrid/%.o: src/stream/%.c

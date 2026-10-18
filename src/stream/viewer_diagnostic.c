@@ -1,6 +1,9 @@
 /* Viewer-only M11 worker diagnostic. Does not replace texture streaming. */
 #include "reader_ee.h"
 #include "render/bsp_render.h"
+#include "world/world.h"
+#include "core/mem.h"
+#include <string.h>
 #include <stdio.h>
 #include <kernel.h>
 #include <stdlib.h>
@@ -9,9 +12,22 @@ static ee_reader reader;
 static unsigned char storage[1024 * 1024] __attribute__((aligned(64)));
 static unsigned char stack[16384] __attribute__((aligned(16)));
 static staging_ticket ticket[STAGING_SLOTS];
-static unsigned phase, cycle, started;
+static unsigned phase, cycle, started, unloads;
+static arena_t *level;
+static world_t *world;
+static char pack_path[160], tex_path[160], object_path[160];
+static int bsp_index, has_tex, has_objects;
+static size_t baseline_used;
 static void require(int good, const char *message) {
     if (!good) { printf("[err] streaming diagnostic: %s\n", message); exit(1); }
+}
+void hybrid_stream_configure(arena_t *a, world_t *w, const char *pack, const char *tex,
+                             int bsp, const char *objects) {
+    require(a && w && pack && strlen(pack)<sizeof pack_path,"configure");
+    level=a; world=w; strcpy(pack_path,pack); bsp_index=bsp;
+    has_tex=tex!=NULL; if(tex) { require(strlen(tex)<sizeof tex_path,"texture path"); strcpy(tex_path,tex); }
+    has_objects=objects!=NULL; if(objects) { require(strlen(objects)<sizeof object_path,"object path"); strcpy(object_path,objects); }
+    baseline_used=a->used;
 }
 void hybrid_stream_build(unsigned frame, const camera_t *camera, const text_batch_t *text) {
     if (!started) {
@@ -67,5 +83,24 @@ void hybrid_stream_build(unsigned frame, const camera_t *camera, const text_batc
             phase=6; break;
         }
     }
+    if (phase >= 6 && unloads < 3 && frame == 60 + unloads * 60) {
+        bsp_render_clear_world();
+        arena_reset(level);
+        require(level->used == 0,"arena reset");
+        require(world_load(world,level,pack_path,has_tex?tex_path:NULL,bsp_index)==0,"reload BSP/TEXS");
+        require(bsp_render_set_world(level,&world->bsp,&world->source)==0,"restore renderer");
+        if (has_objects) require(world_load_objects(world,level,object_path)==0,"reload object sections");
+        require(level->used == baseline_used,"arena high-water/reload drift");
+        printf("[stream] unload_reload=%u used=%u baseline=%u cache_pages=%u\n",
+               unloads+1,(unsigned)level->used,(unsigned)baseline_used,(unsigned)bsp_render_cache_pages());
+        unloads++;
+        printf("[stream] reload_ready=%u\n",unloads);
+    }
+    if (phase >= 6 && unloads == 3 && frame >= 240 && phase == 6) {
+        printf("[stream] map_unload_reload=passed cycles=3\n");
+        phase=7;
+    }
+    if (unloads && frame >= 60 && frame <= 62) printf("[stream] frame_build_start=%u\n",frame);
     bsp_render_build(frame,camera,text);
+    if (unloads && frame >= 60 && frame <= 62) printf("[stream] frame_build_done=%u\n",frame);
 }

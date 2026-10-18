@@ -39,6 +39,8 @@ def main():
     parser.add_argument("--route", action="store_true")
     parser.add_argument("--freecam", action="store_true")
     args = parser.parse_args()
+    if args.variant == "stream":
+        args.frames = max(args.frames, 360)
     if args.route:
         args.frames = 9000
         args.objects = True
@@ -174,11 +176,14 @@ def main():
                 if args.variant == "stream":
                     cycles = re.findall(r"\[stream\] cycle=(\d+) cancel/reload/contents/drain=ok", text)
                     measured = re.search(r"\[stream\] passed cycles=3 short-read=discarded high=(\d+) reserved=(\d+)", text)
+                    unloads = re.findall(r"\[stream\] unload_reload=(\d+) used=(\d+) baseline=(\d+) cache_pages=(\d+)", text)
                     if cycles != ["0", "1", "2"] or not measured:
-                        raise RuntimeError("Streaming lifecycle diagnostic did not pass")
+                        raise RuntimeError("Streaming request lifecycle diagnostic did not pass")
+                    if [u[0] for u in unloads] != ["1", "2", "3"] or any(u[1] != u[2] for u in unloads) or "[stream] map_unload_reload=passed cycles=3" not in text:
+                        raise RuntimeError("World unload/reload did not return arena use to baseline")
                     if int(measured[1]) != 1048576 or int(measured[2]) > 1572864:
                         raise RuntimeError("Streaming diagnostic exceeded its reservation")
-                    result["streaming"] = {"cycles": 3, "high_water": int(measured[1]),
+                    result["streaming"] = {"cycles": 3, "map_reload_cycles": 3, "high_water": int(measured[1]), "arena_used": [int(u[1]) for u in unloads],
                                            "reserved": int(measured[2]), "scope": "synthetic worker reads; no texture or whole-map unload claim"}
                 if args.route and ("scripted path: 12 keys" not in text or "sky model: drawn" not in text or "ee prep avg=" not in text or "tex hit=" not in text):
                     raise RuntimeError("Route did not record the scripted camera, sky, or profiler breakdown")

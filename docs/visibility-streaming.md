@@ -1,6 +1,6 @@
 # M11 visibility, residency and streaming
 
-M11 is **incomplete and in progress**. Host topology/visibility comparisons and one fixed EE/GS culling comparison pass. Async staging, cancellation/unload, GPU cache churn and total committed-memory qualification remain open. M12 has not started.
+M11 is **incomplete and in progress**. Host topology/visibility comparisons, bounded worker lifecycle checks, transactional uploads, metadata churn, and three repeated EE map unload/reload cycles pass under PCSX2. Pixel correctness during actual texture eviction, broader EE routes, production async texture-buffer ownership, real hardware, and full committed-memory qualification remain open. M12 has not started.
 
 ## Topology and host visibility
 
@@ -38,12 +38,28 @@ Interpreter and recompiler baselines differ at 23 pixels. The same differences a
 
 Current guarded ELF: `e002209c53d2a1f239cd1c3c3d50001c4837b83b70fc710d4835188b12219dfa`. Reports: `build/visibility/elf-parity.json` and `build/visibility/framebuffer-comparison.json`. Native and pinned-container suites pass 39 project tests plus 12 upstream synthetic converter suites.
 
+## Map teardown and reload
+
+The `stream` viewer now exercises the real renderer teardown path, not only synthetic reader cancellation. At diagnostic frames 60, 120, and 180 it waits for GS work, clears renderer references into the map arena, resets the arena, reloads Blood Gulch BSP and texture packs (and object pack sections), then reinitializes renderer state. The visible runner requires three success markers and verifies that each loaded-map arena usage returns to its initial baseline.
+
+Both current CPU modes pass. Recompiler run `world-stream-recompiler-19e0f31875cf41e1b2b217c6e272cd7a` and interpreter run `world-stream-interpreter-63c0440bd32740f5a29eec8ab23fe02c` each report three cycles at 5,279,024 bytes versus a 5,279,024-byte baseline, then finish 361 frames and show Blood Gulch after reload. Captures and detailed logs are retained under each ignored run directory. The runs each log three dropped frames caused by synchronous teardown/reload; this is a lifecycle check, not a steady-state performance result. Interpreter final capture was visually inspected.
+
+The first teardown attempt stalled because it consumed the GS FINISH event expected by the next presentation wait. The renderer now re-primes the completion handoff after world clear; the subsequent interpreter and recompiler runs both complete. This demonstrates repeatable same-map arena reclamation under PCSX2, not disc-backed switching between distinct worlds or real-console safety.
+
+## Measured memory snapshot (partial)
+
+For the current stream viewer ELF, allocatable ELF sections total 2,127,664 bytes, including `.bss` (which already contains the 1 MiB staging storage, worker stack, metadata, and other static state). The viewer reserves a 12 MiB world arena; the loaded Blood Gulch map and renderer use 5,279,024 bytes, return to that baseline after every reload, and report a 6,314 KiB high-water value. Separately allocated renderer DMA chains use 1,179,648 bytes (two 32,768-qword chains and two 4,096-qword upload buffers).
+
+These figures are a partial snapshot, not total EE memory accounting: kernel/IOP overhead and other SDK/runtime allocations are not included. The measured DMA allocation also exceeds the initial `dma_commands` regional estimate of 1 MiB by 131,072 bytes. The stream staging area is part of ELF `.bss`, so adding its 1,048,576 bytes again to ELF static would double count it. The current budget remains a proposed partition; M11 memory acceptance stays open until all allocations are mapped to non-overlapping physical regions, including the measured DMA excess.
+
 ## Remaining M11 gates
 
 - Extend EE comparison beyond this fixed camera, including portal crossings and the map perimeter.
-- Audit resource-key namespaces and submitted/uploading texture lifetimes; force cache churn and prove no stale textures.
-- Add fixed-capacity staging/read requests with explicit ownership, completion and map generations. Current `stream/file.c` performs blocking reads; async streaming is not implemented.
-- Drain/cancel requests and GPU references before releasing map storage. Implement and test repeated unload/reload.
+- Force real rendered cache churn and verify pixel integrity through eviction; the 200,000-operation test currently validates cache metadata and ownership only.
+- Integrate asynchronous texture-page reads and conversion with explicit ownership through DMA completion; current streaming worker exercises a synthetic byte fixture and the world pack loads remain synchronous.
+- Extend EE visibility comparisons across portal crossings and map perimeter routes.
+- Reconcile the measured DMA buffers with the 1 MiB regional estimate and map every EE, kernel, IOP, SDK and staging allocation to non-overlapping budget regions.
+- Verify teardown/reload on physical PS2 hardware when available; current three-cycle evidence is PCSX2 only.
 - Stress delayed reads, exhausted staging, upload limits and failed loads on host and EE.
 - Measure all committed EE regions without double counting and preserve the reserve. The 4,034-byte host visibility measurement is not total EE memory accounting.
 
@@ -57,7 +73,7 @@ Queued and ready requests can be cancelled immediately. Reading requests retain 
 
 `python3 -m unittest discover -s tests -p test_staging.py -v` passes the compiled C lifecycle regression: full-pool rejection, oversize rejection, delayed cancellation, held-buffer cancellation, ready/queued cancellation, map isolation, slot reuse, stale completion, short/failed reads, duplicate operations and serial exhaustion. Four 256-byte fixture slots reach exactly 1,024 bytes high-water. This is synthetic host evidence, not an EE streaming allocation measurement.
 
-Next: integrate an actual EE read worker and bounded completion transport; reserve aligned production storage/worker stack inside the streaming budget; connect stable map/resource keys and upload lifetimes; then exercise cancellation and unload/reload in the visible viewer. The current world viewer still uses blocking reads and does not link this module. M11 remains incomplete.
+At this checkpoint, the next work was to integrate an EE read worker and bounded completion transport. That work is recorded in the following checkpoints; the current remaining gaps are listed above. M11 remains incomplete.
 
 Checkpoint validation: all 40 project host tests and 12 upstream synthetic suites pass natively. The restricted first run failed two existing ILP32 executions with SIGSYS; the permitted unrestricted rerun passed. Container and EE validation of this new module have not run.
 
@@ -67,7 +83,7 @@ Checkpoint validation: all 40 project host tests and 12 upstream synthetic suite
 
 A pthread/semaphore kernel shim executes the actual worker source with a deterministic held read. The test cancels that map while the read is outstanding, queues another map, verifies buffer contents after completion, and verifies drain/shutdown refusal until consumer release. Both staging tests pass with C warnings as errors. This establishes host handoff behavior, not PS2SDK runtime equivalence or GPU-fence correctness.
 
-`python3 tools/build_streaming.py` cross-compiles both worker and lifecycle objects with the installed R5900 compiler and PS2SDK headers (`-D_EE`, warnings as errors). Source hashes and compiler identity are retained in `build/streaming-ee/result.json`. The first ad-hoc command omitted `_EE`; the checked-in command includes the SDK-required definition and passes. No viewer ELF links these objects yet. Next work is viewer integration and visible EE diagnostics, production streaming-budget reservation, bounded failure/status reporting, repeated unload/reload, and cache/GPU lifetime integration. M11 remains incomplete.
+`python3 tools/build_streaming.py` cross-compiles both worker and lifecycle objects with the installed R5900 compiler and PS2SDK headers (`-D_EE`, warnings as errors). Source hashes and compiler identity are retained in `build/streaming-ee/result.json`. The first ad-hoc command omitted `_EE`; the checked-in command includes the SDK-required definition and passes. At this checkpoint no viewer ELF linked these objects. The subsequent visible integration and teardown evidence appears below; production texture-page ownership and cache/GPU lifetime remain open. M11 remains incomplete.
 
 Validation after the worker addition: all 41 project host tests and 12 upstream synthetic converter suites pass natively. Container validation and EE runtime validation remain pending for this checkpoint.
 
@@ -77,7 +93,7 @@ Validation after the worker addition: all 41 project host tests and 12 upstream 
 
 Two initial visible runs timed out: changing worker priority alone did not solve starvation. PS2SDK's `InitThread` sets the owner to priority 1. The diagnostic explicitly changes owner priority to 64, with the worker at 30, so the worker can execute and block on I/O while rendering continues. This scheduling policy is diagnostic-only and requires profiling before production adoption. A transient X11 window-enumeration failure was retried; its failed run is retained.
 
-The diagnostic reserves 1,048,576 staging bytes, a 16,384-byte stack and 824 bytes of reader metadata (1,065,784 bytes total, excluding kernel thread/semaphore overhead). All four slots are occupied to prove exhaustion; cancelled active reads retain storage until completion. Each of three reload requests verifies all fixture bytes, then cancels while held and requires release before drain. An EOF-crossing request must be discarded; shutdown occurs only after all requests drain. This tests worker/map-ID lifecycle, not full `world_t` unload/reload, DMA ownership or texture-cache churn. The reservation is compiled static storage; whole-ELF and total committed-memory accounting remain open.
+The diagnostic reserves 1,048,576 staging bytes, a 16,384-byte stack and 824 bytes of reader metadata (1,065,784 bytes total, excluding kernel thread/semaphore overhead). All four slots are occupied to prove exhaustion; cancelled active reads retain storage until completion. Each of three reload requests verifies all fixture bytes, then cancels while held and requires release before drain. An EOF-crossing request must be discarded; shutdown occurs only after all requests drain. At that checkpoint this tested worker/map-ID lifecycle, not full `world_t` teardown, DMA ownership or texture-cache churn. The later map teardown/reload evidence is recorded above. The reservation is compiled static storage and lies within ELF `.bss`; it must not be counted a second time in a total physical-memory sum.
 
 The recompiler run `world-stream-recompiler-e35d5c061b474c0eb3689c8b22affbaf` completed 181 frames with zero logged drops and all worker markers. The interpreter run and final runner qualification are recorded below. Native host validation remains 41 project tests plus 12 upstream synthetic suites passing.
 
