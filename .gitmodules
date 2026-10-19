@@ -31,3 +31,6 @@
 [submodule "ps2toolchain-dvp"]
 	path = submodules/ps2toolchain-dvp
 	url = https://github.com/ps2dev/ps2toolchain-dvp.git
+[submodule "submodules/Assembly"]
+	path = submodules/Assembly
+	url = https://github.com/XboxChaos/Assembly.git

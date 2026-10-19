@@ -1,8 +1,11 @@
 /* Replaces the free camera when this object is linked.
  * The pad steps the collision biped and the view is its eye. */
 #include "game/collpack.h"
+#include "game/gun.h"
 #include "game/move.h"
 #include "game/pad.h"
+#include "game/play_fp.h"
+#include "game/shot.h"
 #include "platform/profiler.h"
 #include "render/bsp_render.h"
 #include "render/camera.h"
@@ -27,6 +30,14 @@ static int s_ready;
 static int s_failed;
 static int s_was_out;
 static collide_pill_stats s_last;
+#define PLAY_FLY 16
+
+static gun s_gun;
+static shot s_fly[PLAY_FLY];
+static const shot_def *s_fly_def[PLAY_FLY];
+static uint32_t s_seed = 1;
+static int s_mark; /* 0 none, 1 flying, 2 surface, 3 range */
+static int s_triangle;
 
 static uint8_t *load_file(const char *path, size_t *size)
 {
@@ -71,8 +82,13 @@ static int play_init(void)
     s_scratch = malloc(s_scratch_bytes);
     if (!s_scratch) return -1;
     player_spawn(&s_body, pose, &s_yaw, &s_pitch);
-    printf("[play] ready feet %.2f %.2f %.2f yaw %.1f\n",
-        pose[0], pose[1], pose[2], s_yaw * 57.2957795f);
+    if (play_fp_open() != 0) printf("[play] weapon models missing\n");
+    gun_init(&s_gun, play_fp_gun() ? play_fp_gun() : &GUN_PISTOL);
+    memset(s_fly, 0, sizeof s_fly);
+    s_mark = 0;
+    printf("[play] ready feet %.2f %.2f %.2f yaw %.1f %s %d models %d\n",
+        pose[0], pose[1], pose[2], s_yaw * 57.2957795f, play_fp_name(), s_gun.loaded,
+        play_fp_model_count());
     return 0;
 }
 
@@ -101,11 +117,81 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
     pad.left_y = (int16_t)(in->move_y * 32767.0f);
     pad.right_x = (int16_t)(in->look_x * 32767.0f);
     pad.right_y = (int16_t)(in->look_y * 32767.0f);
-    pad.cross = (held & 0x4000u) != 0;
-    pad.circle = (held & 0x2000u) != 0;
+    pad.cross = (held & PAD_CROSS) != 0;
+    pad.circle = (held & PAD_CIRCLE) != 0;
     pad_to_command(&pad, &cmd, &s_yaw, &s_pitch);
     mover_tick_map(&s_body, &cmd, s_yaw, &s_bsp, s_scratch, s_scratch_bytes, 0, &stats);
     s_last = stats;
+    {
+        const gun_def *def = play_fp_gun();
+        const shot_def *bullet = NULL;
+        if ((held & PAD_TRIANGLE) && !s_triangle) {
+            play_fp_cycle();
+            def = play_fp_gun();
+            if (def) gun_init(&s_gun, def);
+            printf("[play] weapon %s %d %d\n", play_fp_name(), s_gun.loaded, s_gun.total);
+        }
+        s_triangle = (held & PAD_TRIANGLE) != 0;
+        bullet = play_fp_shot();
+        if (def && def->has_trigger &&
+            gun_tick(&s_gun, def, (held & PAD_R1) != 0, (held & PAD_SQUARE) != 0) &&
+            bullet) {
+            float origin[3], forward[3];
+            float cy = cosf(s_yaw), sy = sinf(s_yaw), cp = cosf(s_pitch), sp = sinf(s_pitch);
+            int pellets = def->projectiles_per_shot > 0 ? def->projectiles_per_shot : 1;
+            int spawned = 0, slot;
+            origin[0] = s_body.pos[0];
+            origin[1] = s_body.pos[1];
+            origin[2] = s_body.pos[2] + s_body.eye;
+            forward[0] = cp * cy;
+            forward[1] = cp * sy;
+            forward[2] = sp;
+            if (pellets > PLAY_FLY) pellets = PLAY_FLY;
+            for (slot = 0; slot < PLAY_FLY && spawned < pellets; slot++) {
+                if (s_fly[slot].alive) continue;
+                shot_spawn(&s_fly[slot], origin, forward, bullet);
+                s_fly_def[slot] = bullet;
+                spawned++;
+            }
+            if (spawned) {
+                s_mark = 1;
+                printf("[play] fire %s %d pellets %d\n", play_fp_name(), s_gun.loaded, spawned);
+            }
+        }
+    }
+    {
+        shot_scene scene;
+        int slot, flying = 0, hits = 0, ended = 0;
+        float hit_at[3];
+        memset(&scene, 0, sizeof scene);
+        scene.bsp = &s_bsp;
+        hit_at[0] = hit_at[1] = hit_at[2] = 0.0f;
+        for (slot = 0; slot < PLAY_FLY; slot++) {
+            int was;
+            if (!s_fly[slot].alive || !s_fly_def[slot]) continue;
+            was = 1;
+            shot_tick(&s_fly[slot], s_fly_def[slot], &scene, &s_seed);
+            if (s_fly[slot].alive) flying = 1;
+            else if (was && s_fly[slot].hit_surface) {
+                hits++;
+                hit_at[0] = s_fly[slot].position[0];
+                hit_at[1] = s_fly[slot].position[1];
+                hit_at[2] = s_fly[slot].position[2];
+            } else if (was) {
+                ended++;
+            }
+        }
+        if (hits) {
+            s_mark = 2;
+            printf("[play] hit %d %.2f %.2f %.2f\n", hits,
+                hit_at[0], hit_at[1], hit_at[2]);
+        } else if (ended) {
+            s_mark = 3;
+            printf("[play] range %d\n", ended);
+        } else if (flying) {
+            s_mark = 1;
+        }
+    }
     cam->pos[0] = s_body.pos[0];
     cam->pos[1] = s_body.pos[1];
     cam->pos[2] = s_body.pos[2] + s_body.eye;
@@ -151,4 +237,14 @@ void __wrap_profiler_overlay(const profiler_t *p, text_batch_t *b)
         speed, s_last.features, s_last.nodes_visited,
         s_body.grounded ? "GND" : "AIR", s_body.crouching ? " CR" : "");
     text_batch_print(b, 8, 48, s_last.saturated ? 0xFF6060 : 0xC0FFFF, line);
+    {
+        const gun_def *def = play_fp_gun();
+        const char *mark = s_mark == 1 ? "FLY" : s_mark == 2 ? "HIT" : s_mark == 3 ? "END" : "----";
+        if (def && def->rounds_loaded_maximum > 0)
+            snprintf(line, sizeof line, "%s %d|%d  %s  Q",
+                play_fp_name(), s_gun.loaded, s_gun.total, mark);
+        else
+            snprintf(line, sizeof line, "%s  %s  Q", play_fp_name(), mark);
+    }
+    text_batch_print(b, 8, 56, s_mark == 2 ? 0xFFC080 : 0xFFFFFF, line);
 }

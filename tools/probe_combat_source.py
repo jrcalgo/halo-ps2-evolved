@@ -24,6 +24,12 @@ FOUNDATION_UNITS = {
     "data": "source/memory/data.c",
     "game_time": "source/game/game_time.c",
 }
+LEAF_SUPPORT_UNITS = {
+    "real_math": "source/math/real_math.c",
+    "random_math": "source/math/random_math.c",
+    "periodic_functions": "source/math/periodic_functions.c",
+    "tag_groups": "source/tag_files/tag_groups.c",
+}
 ROOT_SYMBOLS = ("weapon_update", "projectile_update", "object_cause_damage")
 LIFECYCLE_ROOTS = (
     "weapon_new", "weapon_delete", "weapon_owner_update",
@@ -32,6 +38,7 @@ LIFECYCLE_ROOTS = (
     "projectile_delete", "object_damage_update", "object_initialize_vitality",
     "area_of_effect_cause_damage", "damage_data_new",
 )
+TOOLCHAIN_RUNTIME_SYMBOLS = {"floor", "fmod", "rint", "scalbn", "sqrt", "strrchr"}
 PREFIX = r"""#include <string.h>
 #include <stdlib.h>
 #define HALO_LINUX 1
@@ -92,16 +99,27 @@ def live_external_symbols(nm: Path, objdump: Path, obj: Path) -> list[str]:
     return sorted(undefined & referenced)
 
 
+def is_toolchain_runtime(symbol: str) -> bool:
+    return symbol.startswith("__") or symbol in TOOLCHAIN_RUNTIME_SYMBOLS
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--foundations", action="store_true",
                         help="also compile and partially link the original datum and tick services")
     parser.add_argument("--lifecycle", action="store_true",
                         help="retain combat creation, ownership, inventory, melee and damage roots")
+    parser.add_argument("--leaf-support", action="store_true",
+                        help="add original vector, random, transition and tag-block implementations")
+    parser.add_argument("--deterministic-math", action="store_true",
+                        help="link the pinned cross-platform musl math implementation")
     args = parser.parse_args()
     build, prefix, env, _ = environment()
     output_name = "combat-source-foundations" if args.foundations else "combat-source-probe"
-    output = build / (output_name + ("-lifecycle" if args.lifecycle else ""))
+    suffix = (("-lifecycle" if args.lifecycle else "") +
+              ("-leaf" if args.leaf_support else "") +
+              ("-math" if args.deterministic_math else ""))
+    output = build / (output_name + suffix)
     output.mkdir(parents=True, exist_ok=True)
     header = output / "halo_ps2_probe_prefix.h"
     header.write_text(PREFIX)
@@ -132,7 +150,8 @@ def main() -> None:
         "prefix_sha256": digest(header), "semantics_sha256": digest(semantics), "units": {},
         "limits": "N64 capacity macros are compile-only placeholders; no PS2 executable, runtime, or parity claim."}
     objects = []
-    units = UNITS | (FOUNDATION_UNITS if args.foundations else {})
+    units = (UNITS | (FOUNDATION_UNITS if args.foundations else {}) |
+             (LEAF_SUPPORT_UNITS if args.leaf_support else {}))
     for name, relative in units.items():
         source = SOURCE / relative
         obj = output / (name + ".o")
@@ -147,6 +166,23 @@ def main() -> None:
         report["units"][relative] = {"source_sha256": digest(source),
                                      "object_sha256": digest(obj),
                                      "undefined_symbols": sum(bool(line.strip()) for line in symbols.splitlines())}
+    if args.deterministic_math:
+        musl = SOURCE / "port/third_party/musl-math"
+        musl_flags = ["-std=gnu11", "-O2", "-ffp-contract=off", "-fno-math-errno",
+                      "-ffunction-sections", "-fdata-sections", "-G0", "-w", "-D_EE",
+                      "-I" + str(musl / "include"), "-include", str(musl / "include/libm.h"), "-c"]
+        for source in sorted((musl / "src").glob("*.c")):
+            obj = output / ("musl-" + source.stem + ".o")
+            run = subprocess.run([str(compiler), *musl_flags, str(source), "-o", str(obj)],
+                                 cwd=ROOT, env=env, text=True, capture_output=True)
+            (output / ("musl-" + source.stem + ".log")).write_text(run.stdout + run.stderr)
+            if run.returncode:
+                raise RuntimeError(f"{source.relative_to(SOURCE)} failed; see {output / ('musl-' + source.stem + '.log')}")
+            objects.append(obj)
+        report["deterministic_math"] = {
+            "source": "port/third_party/musl-math", "object_count": len(list((musl / "src").glob("*.c"))),
+            "readme_sha256": digest(musl / "README.md"),
+        }
     combined = output / "combat-core.o"
     roots = ROOT_SYMBOLS + (LIFECYCLE_ROOTS if args.lifecycle else ())
     link = subprocess.run([str(linker), "-r", "--gc-sections",
@@ -157,12 +193,18 @@ def main() -> None:
     if link.returncode:
         raise RuntimeError(f"Combat partial link failed; see {output / 'partial-link.log'}")
     live = live_external_symbols(nm, objdump, combined)
+    runtime = [symbol for symbol in live if is_toolchain_runtime(symbol)]
+    game_platform = [symbol for symbol in live if not is_toolchain_runtime(symbol)]
     (output / "live-externals.txt").write_text("\n".join(live) + "\n")
     report["partial_link"] = {
         "roots": list(roots), "object_sha256": digest(combined),
         "undefined_symbol_table_count": len(undefined_symbols(nm, combined)),
         "live_external_count": len(live), "live_d3d_count": sum(name.startswith("D3D") for name in live),
         "live_external_symbols": live,
+        "toolchain_runtime_external_count": len(runtime),
+        "toolchain_runtime_external_symbols": runtime,
+        "game_platform_external_count": len(game_platform),
+        "game_platform_external_symbols": game_platform,
     }
     save(output / "result.json", report)
     print(output / "result.json")

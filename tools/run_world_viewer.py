@@ -43,6 +43,8 @@ def main():
                         help="pathkey file from the player eye: seconds x y z yaw pitch")
     parser.add_argument("--play", action="store_true",
                         help="leave the window open for keyboard play; do not wait for the frame limit")
+    parser.add_argument("--fuel-still", action="store_true",
+                        help="play build, start on the fuel rod, dump one GS frame, then exit")
     parser.add_argument("--cache-pages", type=int, default=0,
                         help="diagnostic-only stream cache cap")
     parser.add_argument("--cache-route", action="store_true",
@@ -56,6 +58,11 @@ def main():
         args.variant = "play"
         args.objects = True
         args.frames = 0
+    if args.fuel_still:
+        args.variant = "play"
+        args.objects = True
+        args.frames = 90
+        args.framebuffer_frames = "70"
     if args.variant == "stream":
         args.frames = max(args.frames, 360)
     if args.framebuffer_frames:
@@ -93,6 +100,7 @@ def main():
         if sha(packs / ("bloodgulch" + suffix)) != converted["pack_sha256"][kind]:
             raise RuntimeError("Converted pack hash differs: " + kind)
     stop_previous()
+    play_boot = args.play or args.fuel_still
     label = "world-stream" if args.variant == "stream" else "world-portal" if args.variant == "portal" else "world"
     run = OUTPUT / "runs" / f"{label}-{args.mode}-{uuid.uuid4().hex}"
     boot = run / "boot"
@@ -103,15 +111,25 @@ def main():
     shutil.copy2(original, elf)
     for suffix in suffixes.values():
         (boot / ("bloodgulch" + suffix)).symlink_to(packs / ("bloodgulch" + suffix))
-    if args.play:
+    if play_boot:
+        play_objects = ROOT / "build/play-objects"
+        if not (play_objects / "bloodgulch.obj.hp2").is_file() or not (play_objects / "weapons.fp").is_file():
+            subprocess.run([sys.executable, str(ROOT / "tools/play_weapons.py")], check=True)
+        objects = boot / "bloodgulch.obj.hp2"
+        objects.unlink()
+        objects.symlink_to(play_objects / "bloodgulch.obj.hp2")
+        shutil.copy2(play_objects / "weapons.fp", boot / "weapons.fp")
+    if args.fuel_still:
+        (boot / "fpstill.txt").write_text("weapons\\fuel rod gun\\fuel rod\n")
+    if args.play or args.fuel_still:
         sys.path.insert(0, str(ROOT / "tools"))
         from convert_collision import build_pack
         decompressed = ROOT / "data/retail/convert/bloodgulch/decompressed/bloodgulch.map"
         if not decompressed.is_file():
             raise RuntimeError("Decompressed Blood Gulch is required for the collision walk")
         (boot / "collision.hp2").write_bytes(build_pack(decompressed))
-    overlay = "0" if args.play or args.motion else "1"
-    fp = "1" if args.play else "0"
+    overlay = "0" if play_boot or args.motion else "1"
+    fp = "1" if play_boot else "0"
     lines = ["pack bloodgulch.hp2", "tex bloodgulch.tex.hp2", "arena_mb 12", "textures 1", "lightmaps 1", "clipbudget 1000",
              "camera " + " ".join(map(str,args.camera)), "frames " + str(args.frames), "fps 30", "hold 1",
              "overlay " + overlay, "printcam 1", "fp " + fp, "lodctl 0"]
@@ -142,7 +160,8 @@ def main():
         pad.optionxform = str
         pad.read(ini)
         pad["Pad1"].update(RUp="Keyboard/Up", RDown="Keyboard/Down", RLeft="Keyboard/Right",
-                           RRight="Keyboard/Left", Cross="Keyboard/G", Circle="Keyboard/Control")
+                           RRight="Keyboard/Left", Cross="Keyboard/G", Circle="Keyboard/Control",
+                           R1="Keyboard/F", Square="Keyboard/R", Triangle="Keyboard/Q")
         with ini.open("w") as handle:
             pad.write(handle)
     log = run / "emulog.txt"
@@ -221,7 +240,7 @@ def main():
                 print("Collision walk is live. The window stays open.", flush=True)
                 print("W S walk, A D strafe, arrow keys look, G jump, Control crouch.", flush=True)
                 return
-            if args.play and "[play] collision pack" in text:
+            if play_boot and "[play] collision pack" in text:
                 raise RuntimeError("Collision walk did not load")
             if window and "[prof] frames=" in text and not result["captures"]:
                 capture(window,run/"visible-start.png");result["captures"].append(str(run/"visible-start.png"));save(path,result)
