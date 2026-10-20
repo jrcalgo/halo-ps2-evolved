@@ -26,8 +26,9 @@ from halo2ps2.scenconv import (  # noqa: E402
     NO_ANIM, OBJ_MODEL, WEAPON_FP_ANIM, WEAPON_FP_MODEL, Region,
     first_person_idle, graph_nodes, model_nodes,
 )
+from halo_random_directions import direction_table  # noqa: E402
 
-STAMP = "7"
+STAMP = "30"
 BUDGET = 6815744  # resident_gameplay in config/memory-budget.json
 OUT = ROOT / "build/play-objects"
 MAPS = ROOT / "data/retail/weapon-audit-maps"
@@ -37,9 +38,19 @@ REC = struct.Struct("<64sIIHH32sI")
 REMAP = struct.Struct("<III BBH 64s 64s")
 # Clip, reserve, and the primary trigger, packed for play_fp.c.
 # flags: waste, chamber, partial, latch, magazine, trigger.
-AMMO = struct.Struct("<10h5f")
-PROJ = struct.Struct("<I7f 33s BBB")
-assert REC.size == 112 and REMAP.size == 144 and AMMO.size == 40 and PROJ.size == 68
+AMMO = struct.Struct("<14h13f")
+PROJ = struct.Struct("<I8f 33s BBB 5f IhHf5f3ff 66f")
+PROJECTILE_MATERIALS = 33
+FRICTION = struct.Struct("<" + "5f" * PROJECTILE_MATERIALS)
+POTENTIAL = struct.Struct("<" + "hH5f" * PROJECTILE_MATERIALS)
+SPREAD = struct.Struct("<3fI")
+TRIGGER = struct.Struct("<I11h25f64s64sH")
+MAGAZINE = struct.Struct("<I4h4xfhhf")
+FIRING_EFFECT = struct.Struct("<hh64s64s64s64s64s64s")
+assert REC.size == 112 and REMAP.size == 144 and AMMO.size == 80 and PROJ.size == 404
+assert TRIGGER.size == 256
+assert MAGAZINE.size == 28
+assert FIRING_EFFECT.size == 388
 _ANIM_PROBE = struct.pack(animconv.ANIM_FMT, b"x", 1, 2, 3, 4, 5, 6, 7, 1.5, 11, 12, 13, 14)
 assert struct.unpack_from("<I", _ANIM_PROBE, 68)[0] == 11
 assert struct.unpack_from("<I", _ANIM_PROBE, 80)[0] == 14
@@ -144,6 +155,8 @@ def magazines(paths: list[str]) -> list[dict]:
             mag_count, mag_at = region.reflexive(block + 0x308 + 488, 112, 8)
             trig_count, trig_at = region.reflexive(block + 0x308 + 500, 276, 8)
             weapon_type = region.u("<h", block + 0x4E2)[0]
+            heat_overheat, heat_recovery = region.u("<ff", block + 0x308 + 72)
+            heat_loss = region.u("<f", block + 0x308 + 84)[0]
             loaded_max = initial = reloaded = recharge = mag_flags = 0
             chamber = 0.0
             if mag_count:
@@ -153,14 +166,23 @@ def magazines(paths: list[str]) -> list[dict]:
                 reloaded = region.u("<h", mag_at + 24)[0]
                 chamber = region.u("<f", mag_at + 28)[0]
             rate = rate_final = accel = decel = 0.0
+            error_accel = error_decel = 0.0
             rps = pellets = trig_flags = 0
             magazine_index = -1
+            trigger_count = 0
+            charge = charged = heat_per_round = 0.0
+            overcharged_action = 0
             if trig_count:
+                trigger_count = trig_count
                 trig_flags = region.u("<I", trig_at)[0]
                 rate, rate_final = region.u("<ff", trig_at + 4)
                 magazine_index, rps, _minimum = region.u("<hhh", trig_at + 32)
                 pellets = region.u("<h", trig_at + 110)[0]
                 accel, decel = region.u("<ff", trig_at + 248)
+                error_accel, error_decel = region.u("<ff", trig_at + 256)
+                charge, charged = region.u("<ff", trig_at + 72)
+                overcharged_action = region.u("<h", trig_at + 80)[0]
+                heat_per_round = region.u("<f", trig_at + 184)[0]
             ready = reload = enter = 0
             anim_group, anim_id = region.tagref(block + WEAPON_FP_ANIM)
             if anim_group == "antr" and region.entry(anim_id):
@@ -185,11 +207,174 @@ def magazines(paths: list[str]) -> list[dict]:
                 flags |= 32
             found[path] = {
                 "loaded_max": loaded_max, "initial": initial, "reloaded": reloaded,
-                "rounds_per_shot": rps, "reload_frames": reload, "ready_frames": ready,
+                "magazine_index": magazine_index, "rounds_per_shot": rps,
+                "reload_frames": reload, "ready_frames": ready,
                 "enter_frames": enter, "flags": flags, "pellets": pellets,
                 "recharge": recharge, "rate": rate, "rate_final": rate_final,
                 "accel": accel, "decel": decel, "chamber": chamber,
+                "error_accel": error_accel, "error_decel": error_decel,
+                "trigger_count": trigger_count, "weapon_type": weapon_type,
+                "charge": charge, "charged": charged,
+                "overcharged_action": overcharged_action,
+                "heat_overheat": heat_overheat, "heat_recovery": heat_recovery,
+                "heat_loss": heat_loss, "heat_per_round": heat_per_round,
             }
+    missing = [path for path in paths if path not in found]
+    if missing:
+        raise RuntimeError("weapons not in any map: " + ", ".join(missing))
+    return [found[path] for path in paths]
+
+
+def trigger_records(paths: list[str]) -> list[list[dict]]:
+    """Read both retail weapon triggers without collapsing secondary behavior.
+
+    Fields and offsets follow weapon_trigger_definition in the pinned
+    halo-ce-universal source. This is an evidence/data section; the play
+    runtime must not treat it as implemented behavior until it consumes and
+    validates the full trigger state machine.
+    """
+    maps = sorted(MAPS.glob("*.map"), key=lambda path: (path.stem != "bloodgulch", path.stem))
+    if not maps:
+        raise RuntimeError("decompressed weapon maps are missing")
+    found: dict[str, list[dict]] = {}
+    for map_path in maps:
+        wanted = [path for path in paths if path not in found]
+        if not wanted:
+            break
+        data = texconv.MapData.open(map_path)
+        region = Region(data)
+        by_path = {entry.path: entry for entry in data.index.entries if entry.group == "weap"}
+        for path in wanted:
+            entry = by_path.get(path)
+            if entry is None:
+                continue
+            block = region.block(entry)
+            count, address = region.reflexive(block + 0x308 + 500, 276, 8)
+            if count > 2:
+                raise RuntimeError(f"{path} has {count} triggers; CE runtime supports two")
+            rows = []
+            for index in range(2):
+                if index >= count:
+                    rows.append({"flags": 0, "halves": (0,) * 11,
+                                 "values": (0.0,) * 25, "firing_effect_count": 0,
+                                 "projectile": "", "charging_effect": ""})
+                    continue
+                at = address + index * 276
+                flags = region.u("<I", at)[0]
+                halves = (*region.u("<8h", at + 32),
+                          region.u("<h", at + 80)[0],
+                          *region.u("<2h", at + 108))
+                values = (
+                    *region.u("<4f", at + 4),
+                    *region.u("<4f", at + 48),
+                    *region.u("<2f", at + 72),
+                    *region.u("<2f", at + 84),
+                    *region.u("<f", at + 112),
+                    *region.u("<3f", at + 120),
+                    *region.u("<2f", at + 184),
+                    *region.u("<f", at + 196),
+                    *region.u("<6f", at + 240),
+                )
+                projectile_group, projectile_id = region.tagref(at + 148)
+                charge_group, charge_id = region.tagref(at + 92)
+                firing_effect_count = region.u("<I", at + 264)[0]
+                if firing_effect_count > 0xFFFF:
+                    raise RuntimeError(f"too many firing effects in {path} trigger {index}")
+
+                def referenced_path(group, tag_id):
+                    tag = region.entry(tag_id) if tag_id != 0xFFFFFFFF else None
+                    return tag.path if tag and tag.group == group else ""
+
+                rows.append({
+                    "flags": flags,
+                    "halves": halves,
+                    "values": values,
+                    "firing_effect_count": firing_effect_count,
+                    "projectile": referenced_path(projectile_group, projectile_id),
+                    "charging_effect": referenced_path(charge_group, charge_id),
+                })
+            found[path] = rows
+    missing = [path for path in paths if path not in found]
+    if missing:
+        raise RuntimeError("weapons not in any map: " + ", ".join(missing))
+    return [found[path] for path in paths]
+
+
+def weapon_trigger_modes(paths: list[str]) -> list[dict]:
+    """Read weapon-level trigger policy from the pinned HCE _weapon_definition."""
+    maps = sorted(MAPS.glob("*.map"), key=lambda path: (path.stem != "bloodgulch", path.stem))
+    if not maps:
+        raise RuntimeError("decompressed weapon maps are missing")
+    found: dict[str, dict] = {}
+    for map_path in maps:
+        wanted = [path for path in paths if path not in found]
+        if not wanted:
+            break
+        data = texconv.MapData.open(map_path)
+        region = Region(data)
+        by_path = {entry.path: entry for entry in data.index.entries if entry.group == "weap"}
+        for path in wanted:
+            entry = by_path.get(path)
+            if entry is None:
+                continue
+            definition = region.block(entry) + 0x308
+            flags = region.u("<I", definition)[0]
+            # _weapon_definition starts with flags[4], label[32], then
+            # secondary_trigger_mode and maximum_alternate_shots_loaded.
+            mode, alternate = region.u("<2h", definition + 36)
+            if not 0 <= mode <= 4 or alternate < 0:
+                raise RuntimeError(f"invalid weapon trigger policy in {path}: {mode}, {alternate}")
+            # The six-value aim-assist block and following tag fields put
+            # age heat/rate penalties and misfire start/chance at +312..+324.
+            age_heat, age_rate, misfire_start, misfire_chance = region.u(
+                "<4f", definition + 312)
+            found[path] = {"flags": flags, "mode": mode, "alternate": alternate,
+                           "age_heat": age_heat, "age_rate": age_rate,
+                           "misfire_start": misfire_start, "misfire_chance": misfire_chance}
+    missing = [path for path in paths if path not in found]
+    if missing:
+        raise RuntimeError("weapons not in any map: " + ", ".join(missing))
+    return [found[path] for path in paths]
+
+
+def magazine_records(paths: list[str]) -> list[list[dict]]:
+    """Extract both bounded 112-byte retail magazine definitions per weapon."""
+    maps = sorted(MAPS.glob("*.map"), key=lambda path: (path.stem != "bloodgulch", path.stem))
+    if not maps:
+        raise RuntimeError("decompressed weapon maps are missing")
+    found: dict[str, list[dict]] = {}
+    empty = {"flags": 0, "values": (0,) * 4, "reload": 0.0,
+             "rounds_reloaded": 0, "pad": 0, "chamber": 0.0}
+    for map_path in maps:
+        wanted = [path for path in paths if path not in found]
+        if not wanted:
+            break
+        data = texconv.MapData.open(map_path)
+        region = Region(data)
+        by_path = {entry.path: entry for entry in data.index.entries if entry.group == "weap"}
+        for path in wanted:
+            entry = by_path.get(path)
+            if entry is None:
+                continue
+            block = region.block(entry)
+            count, address = region.reflexive(block + 0x308 + 488, 112, 8)
+            if count > 2:
+                raise RuntimeError(f"{path} has {count} magazines; CE runtime supports two")
+            rows = []
+            for index in range(2):
+                if index >= count:
+                    rows.append(empty.copy())
+                    continue
+                at = address + index * 112
+                rows.append({
+                    "flags": region.u("<I", at)[0],
+                    "values": region.u("<4h", at + 4),
+                    "reload": region.u("<f", at + 20)[0],
+                    "rounds_reloaded": region.u("<h", at + 24)[0],
+                    "pad": region.u("<h", at + 26)[0],
+                    "chamber": region.u("<f", at + 28)[0],
+                })
+            found[path] = rows
     missing = [path for path in paths if path not in found]
     if missing:
         raise RuntimeError("weapons not in any map: " + ", ".join(missing))
@@ -208,12 +393,7 @@ def _paths_in(blob: bytes) -> list[str]:
 
 
 def projectiles(paths: list[str]) -> list[dict]:
-    """Primary projectile for each weapon: velocity, range, gravity, impact, responses.
-
-    Distribution on every retail trigger is the point function, so a shot
-    leaves along the aim. Shotgun pellets share that aim; their cone is the
-    random direction table, which this record does not include.
-    """
+    """Primary projectile fields; trigger cone data and the CE table use RND1."""
     maps = sorted(MAPS.glob("*.map"), key=lambda path: (path.stem != "bloodgulch", path.stem))
     if not maps:
         raise RuntimeError("decompressed weapon maps are missing")
@@ -234,8 +414,33 @@ def projectiles(paths: list[str]) -> list[dict]:
             empty = {
                 "velocity": 0, "final_velocity": 0.0, "deceleration_start": 0.0,
                 "deceleration_end": 0.0, "range": 0.0, "gravity": 0.0,
-                "damage_lower": 0.0, "damage_upper": 0.0,
-                "response": bytes(33), "has": 0, "pellets": 0,
+                "timer_upper_bound": 0.0, "minimum_velocity": 0.0,
+                "maximum_damage_distance": 0.0,
+                "projectile_flags": 0, "detonation_timer_starts": 0, "timer_lower_bound": 0.0,
+                "attached_damage_minimum": 0.0, "attached_damage_lower": 0.0,
+                "attached_damage_upper": 0.0, "attached_damage_material_21": 0.0,
+                "attached_damage_material_22": 0.0,
+                "water_gravity_scale": 0.0, "water_damage_range_lower_bound": 0.0,
+                "water_damage_range_upper_bound": 0.0,
+                "guided_angular_velocity": 0.0,
+                "damage_minimum": 0.0, "damage_lower": 0.0, "damage_upper": 0.0,
+                "damage_material_21": 0.0, "damage_material_22": 0.0,
+                "damage_material_modifiers": (0.0,) * PROJECTILE_MATERIALS,
+                "attached_damage_material_modifiers": (0.0,) * PROJECTILE_MATERIALS,
+                "response": bytes(PROJECTILE_MATERIALS),
+                "initial_friction": (0.0,) * PROJECTILE_MATERIALS,
+                "parallel_friction": (0.0,) * PROJECTILE_MATERIALS,
+                "perpendicular_friction": (0.0,) * PROJECTILE_MATERIALS,
+                "angular_noise": (0.0,) * PROJECTILE_MATERIALS,
+                "velocity_noise": (0.0,) * PROJECTILE_MATERIALS,
+                "potential_response": (0,) * PROJECTILE_MATERIALS,
+                "potential_flags": (0,) * PROJECTILE_MATERIALS,
+                "potential_skip": (0.0,) * PROJECTILE_MATERIALS,
+                "potential_angle_lower": (0.0,) * PROJECTILE_MATERIALS,
+                "potential_angle_upper": (0.0,) * PROJECTILE_MATERIALS,
+                "potential_velocity_lower": (0.0,) * PROJECTILE_MATERIALS,
+                "potential_velocity_upper": (0.0,) * PROJECTILE_MATERIALS,
+                "has": 0, "pellets": 0,
             }
             if trig_count <= 0:
                 found[path] = empty
@@ -248,31 +453,356 @@ def projectiles(paths: list[str]) -> list[dict]:
                 found[path] = empty
                 continue
             base = region.block(proj) + 0x17C
+            projectile_flags = region.u("<I", base)[0]
+            detonation_timer_starts = region.u("<h", base + 4)[0]
+            timer_lower_bound = region.u("<f", base + 64)[0]
             velocity = region.u("<I", base + 104)[0]
             maximum_range, gravity = region.u("<ff", base + 76)
             final_velocity = region.u("<f", base + 108)[0]
             deceleration_start, deceleration_end = region.u("<ff", base + 84)
+            timer_upper_bound, minimum_velocity = region.u("<2f", base + 68)
+            maximum_damage_distance = region.u("<f", base + 100)[0]
+            water_gravity_scale, water_damage_lower, water_damage_upper = region.u("<3f", base + 92)
             count, addr = region.u("<II", base + 196)
             response = bytearray(33)
+            initial_friction = [0.0] * PROJECTILE_MATERIALS
+            parallel_friction = [0.0] * PROJECTILE_MATERIALS
+            perpendicular_friction = [0.0] * PROJECTILE_MATERIALS
+            angular_noise = [0.0] * PROJECTILE_MATERIALS
+            velocity_noise = [0.0] * PROJECTILE_MATERIALS
+            potential_response = [0] * PROJECTILE_MATERIALS
+            potential_flags = [0] * PROJECTILE_MATERIALS
+            potential_skip = [0.0] * PROJECTILE_MATERIALS
+            potential_angle_lower = [0.0] * PROJECTILE_MATERIALS
+            potential_angle_upper = [0.0] * PROJECTILE_MATERIALS
+            potential_velocity_lower = [0.0] * PROJECTILE_MATERIALS
+            potential_velocity_upper = [0.0] * PROJECTILE_MATERIALS
             if count and addr:
                 origin = addr - region.base
                 for index in range(min(count, 33)):
-                    value = region.u("<h", origin + index * 160 + 2)[0]
+                    response_at = origin + index * 160
+                    value = region.u("<h", response_at + 2)[0]
                     if 0 <= value <= 255:
                         response[index] = value
+                    initial_friction[index] = region.u("<f", response_at + 144)[0]
+                    parallel_friction[index] = region.u("<f", response_at + 152)[0]
+                    perpendicular_friction[index] = region.u("<f", response_at + 156)[0]
+                    angular_noise[index] = region.u("<f", response_at + 96)[0]
+                    velocity_noise[index] = region.u("<f", response_at + 100)[0]
+                    potential_response[index], potential_flags[index] = region.u("<hH", response_at + 36)
+                    (potential_skip[index], potential_angle_lower[index], potential_angle_upper[index],
+                     potential_velocity_lower[index], potential_velocity_upper[index]) = region.u(
+                        "<5f", response_at + 40)
             damage_id = region.u("<I", base + 180)[0]
-            lower = upper = 0.0
+            minimum = lower = upper = material_21 = material_22 = 0.0
+            material_modifiers = (0.0,) * PROJECTILE_MATERIALS
             damage = region.entry(damage_id)
             if damage is not None:
-                lower, upper = region.u("<ff", region.block(damage) + 468)
+                minimum, lower, upper = region.u("<3f", region.block(damage) + 464)
+                material_modifiers = region.u("<33f", region.block(damage) + 512)
+                material_21 = region.u("<f", region.block(damage) + 512 + 21 * 4)[0]
+                material_22 = region.u("<f", region.block(damage) + 512 + 22 * 4)[0]
+            attached_damage_id = region.u("<I", base + 164)[0]
+            attached_damage = region.entry(attached_damage_id)
+            attached_minimum = attached_lower = attached_upper = 0.0
+            attached_material_21 = attached_material_22 = 0.0
+            attached_material_modifiers = (0.0,) * PROJECTILE_MATERIALS
+            if attached_damage is not None and attached_damage.group == "jpt!":
+                attached_base = region.block(attached_damage)
+                attached_minimum, attached_lower, attached_upper = region.u("<3f", attached_base + 464)
+                attached_material_modifiers = region.u("<33f", attached_base + 512)
+                attached_material_21 = region.u("<f", attached_base + 512 + 21 * 4)[0]
+                attached_material_22 = region.u("<f", attached_base + 512 + 22 * 4)[0]
             found[path] = {
                 "velocity": velocity, "final_velocity": final_velocity,
                 "deceleration_start": deceleration_start,
                 "deceleration_end": deceleration_end,
+                "timer_upper_bound": timer_upper_bound,
+                "timer_lower_bound": timer_lower_bound,
+                "minimum_velocity": minimum_velocity,
+                "maximum_damage_distance": maximum_damage_distance,
+                "projectile_flags": projectile_flags,
+                "detonation_timer_starts": detonation_timer_starts,
+                "attached_damage_minimum": attached_minimum,
+                "attached_damage_lower": attached_lower,
+                "attached_damage_upper": attached_upper,
+                "attached_damage_material_21": attached_material_21,
+                "attached_damage_material_22": attached_material_22,
+                "water_gravity_scale": water_gravity_scale,
+                "water_damage_range_lower_bound": water_damage_lower,
+                "water_damage_range_upper_bound": water_damage_upper,
+                "guided_angular_velocity": region.u("<f", base + 112)[0],
                 "range": maximum_range, "gravity": gravity,
-                "damage_lower": lower, "damage_upper": upper,
-                "response": bytes(response), "has": 1, "pellets": max(pellets, 0),
+                "damage_minimum": minimum, "damage_lower": lower, "damage_upper": upper,
+                "damage_material_21": material_21, "damage_material_22": material_22,
+                "damage_material_modifiers": material_modifiers,
+                "attached_damage_material_modifiers": attached_material_modifiers,
+                "response": bytes(response), "initial_friction": tuple(initial_friction),
+                "parallel_friction": tuple(parallel_friction),
+                "perpendicular_friction": tuple(perpendicular_friction),
+                "angular_noise": tuple(angular_noise), "velocity_noise": tuple(velocity_noise),
+                "potential_response": tuple(potential_response),
+                "potential_flags": tuple(potential_flags), "potential_skip": tuple(potential_skip),
+                "potential_angle_lower": tuple(potential_angle_lower),
+                "potential_angle_upper": tuple(potential_angle_upper),
+                "potential_velocity_lower": tuple(potential_velocity_lower),
+                "potential_velocity_upper": tuple(potential_velocity_upper),
+                "has": 1, "pellets": max(pellets, 0),
             }
+    missing = [path for path in paths if path not in found]
+    if missing:
+        raise RuntimeError("weapons not in any map: " + ", ".join(missing))
+    return [found[path] for path in paths]
+
+
+def trigger_projectiles(paths: list[str]) -> list[list[dict]]:
+    """Resolve projectile tags independently for trigger 0 and trigger 1."""
+    maps = sorted(MAPS.glob("*.map"), key=lambda path: (path.stem != "bloodgulch", path.stem))
+    if not maps:
+        raise RuntimeError("decompressed weapon maps are missing")
+    found: dict[str, list[dict]] = {}
+    for map_path in maps:
+        wanted = [path for path in paths if path not in found]
+        if not wanted:
+            break
+        data = texconv.MapData.open(map_path)
+        region = Region(data)
+        by_path = {entry.path: entry for entry in data.index.entries if entry.group == "weap"}
+        for path in wanted:
+            entry = by_path.get(path)
+            if entry is None:
+                continue
+            block = region.block(entry)
+            count, address = region.reflexive(block + 0x308 + 500, 276, 8)
+            if count > 2:
+                raise RuntimeError(f"{path} has {count} triggers; CE runtime supports two")
+            pair = []
+            for index in range(2):
+                if index >= count:
+                    pair.append(_empty_projectile(0))
+                    continue
+                at = address + index * 276
+                _group, projectile_id = region.tagref(at + 148)
+                pellets = max(region.u("<h", at + 110)[0], 0)
+                pair.append(_projectile_record(region, projectile_id, pellets))
+            found[path] = pair
+    missing = [path for path in paths if path not in found]
+    if missing:
+        raise RuntimeError("weapons not in any map: " + ", ".join(missing))
+    return [found[path] for path in paths]
+
+
+def firing_effect_records(paths: list[str]) -> list[list[list[dict]]]:
+    """Read the fixed-at-most-two firing-effect records for each trigger."""
+    maps = sorted(MAPS.glob("*.map"), key=lambda path: (path.stem != "bloodgulch", path.stem))
+    if not maps:
+        raise RuntimeError("decompressed weapon maps are missing")
+    found: dict[str, list[list[dict]]] = {}
+    for map_path in maps:
+        wanted = [path for path in paths if path not in found]
+        if not wanted:
+            break
+        data = texconv.MapData.open(map_path)
+        region = Region(data)
+        by_path = {entry.path: entry for entry in data.index.entries if entry.group == "weap"}
+        for path in wanted:
+            entry = by_path.get(path)
+            if entry is None:
+                continue
+            count, trigger_at = region.reflexive(region.block(entry) + 0x308 + 500, 276, 8)
+            triggers = []
+            for trigger_index in range(2):
+                effects = []
+                if trigger_index >= count:
+                    triggers.append([{"lower": 0, "upper": 0, "paths": ("",) * 6}
+                                     for _ in range(2)])
+                    continue
+                at = trigger_at + trigger_index * 276
+                effect_count, effect_at = region.reflexive(at + 264, 132, 2)
+                if effect_count > 2:
+                    raise RuntimeError(
+                        f"{path} trigger {trigger_index} has {effect_count} firing effects; "
+                        "the bounded EE cache supports two")
+                for effect_index in range(2):
+                    if effect_index >= effect_count:
+                        effects.append({"lower": 0, "upper": 0, "paths": ("",) * 6})
+                        continue
+                    base = effect_at + effect_index * 132
+                    lower, upper = region.u("<2h", base)
+                    refs = [region.tagref(base + 12 + ref * 16) for ref in range(6)]
+                    resolved = []
+                    for group, tag_id in refs:
+                        target = region.entry(tag_id) if tag_id != 0xFFFFFFFF else None
+                        resolved.append(target.path if target and target.group == group else "")
+                    effects.append({"lower": lower, "upper": upper, "paths": tuple(resolved)})
+                triggers.append(effects)
+            found[path] = triggers
+    missing = [path for path in paths if path not in found]
+    if missing:
+        raise RuntimeError("weapons not in any map: " + ", ".join(missing))
+    return [found[path] for path in paths]
+
+
+def _empty_projectile(pellets: int) -> dict:
+    return {
+        "velocity": 0, "final_velocity": 0.0, "deceleration_start": 0.0,
+        "deceleration_end": 0.0, "range": 0.0, "gravity": 0.0,
+        "timer_upper_bound": 0.0, "minimum_velocity": 0.0,
+        "maximum_damage_distance": 0.0,
+        "projectile_flags": 0, "detonation_timer_starts": 0, "timer_lower_bound": 0.0,
+        "attached_damage_minimum": 0.0, "attached_damage_lower": 0.0,
+        "attached_damage_upper": 0.0, "attached_damage_material_21": 0.0,
+        "attached_damage_material_22": 0.0,
+        "water_gravity_scale": 0.0, "water_damage_range_lower_bound": 0.0,
+        "water_damage_range_upper_bound": 0.0, "guided_angular_velocity": 0.0,
+        "damage_minimum": 0.0, "damage_lower": 0.0, "damage_upper": 0.0,
+        "damage_material_21": 0.0, "damage_material_22": 0.0,
+        "damage_material_modifiers": (0.0,) * PROJECTILE_MATERIALS,
+        "attached_damage_material_modifiers": (0.0,) * PROJECTILE_MATERIALS,
+        "response": bytes(PROJECTILE_MATERIALS),
+        "initial_friction": (0.0,) * PROJECTILE_MATERIALS,
+        "parallel_friction": (0.0,) * PROJECTILE_MATERIALS,
+        "perpendicular_friction": (0.0,) * PROJECTILE_MATERIALS,
+        "angular_noise": (0.0,) * PROJECTILE_MATERIALS,
+        "velocity_noise": (0.0,) * PROJECTILE_MATERIALS,
+        "potential_response": (0,) * PROJECTILE_MATERIALS,
+        "potential_flags": (0,) * PROJECTILE_MATERIALS,
+        "potential_skip": (0.0,) * PROJECTILE_MATERIALS,
+        "potential_angle_lower": (0.0,) * PROJECTILE_MATERIALS,
+        "potential_angle_upper": (0.0,) * PROJECTILE_MATERIALS,
+        "potential_velocity_lower": (0.0,) * PROJECTILE_MATERIALS,
+        "potential_velocity_upper": (0.0,) * PROJECTILE_MATERIALS,
+        "has": 0, "pellets": pellets,
+    }
+
+
+def _projectile_record(region: Region, projectile_id: int, pellets: int) -> dict:
+    projectile = region.entry(projectile_id) if projectile_id != 0xFFFFFFFF else None
+    if projectile is None or projectile.group != "proj":
+        return _empty_projectile(pellets)
+    base = region.block(projectile) + 0x17C
+    projectile_flags = region.u("<I", base)[0]
+    detonation_timer_starts = region.u("<h", base + 4)[0]
+    timer_lower_bound = region.u("<f", base + 64)[0]
+    velocity = region.u("<I", base + 104)[0]
+    maximum_range, gravity = region.u("<ff", base + 76)
+    final_velocity = region.u("<f", base + 108)[0]
+    deceleration_start, deceleration_end = region.u("<ff", base + 84)
+    timer_upper_bound, minimum_velocity = region.u("<2f", base + 68)
+    maximum_damage_distance = region.u("<f", base + 100)[0]
+    water_gravity_scale, water_damage_lower, water_damage_upper = region.u("<3f", base + 92)
+    guided_angular_velocity = region.u("<f", base + 112)[0]
+    count, address = region.u("<II", base + 196)
+    response = bytearray(33)
+    initial_friction = [0.0] * PROJECTILE_MATERIALS
+    parallel_friction = [0.0] * PROJECTILE_MATERIALS
+    perpendicular_friction = [0.0] * PROJECTILE_MATERIALS
+    angular_noise = [0.0] * PROJECTILE_MATERIALS
+    velocity_noise = [0.0] * PROJECTILE_MATERIALS
+    potential_response = [0] * PROJECTILE_MATERIALS
+    potential_flags = [0] * PROJECTILE_MATERIALS
+    potential_skip = [0.0] * PROJECTILE_MATERIALS
+    potential_angle_lower = [0.0] * PROJECTILE_MATERIALS
+    potential_angle_upper = [0.0] * PROJECTILE_MATERIALS
+    potential_velocity_lower = [0.0] * PROJECTILE_MATERIALS
+    potential_velocity_upper = [0.0] * PROJECTILE_MATERIALS
+    if count and address:
+        origin = address - region.base
+        for index in range(min(count, 33)):
+            response_at = origin + index * 160
+            value = region.u("<h", response_at + 2)[0]
+            if 0 <= value <= 255:
+                response[index] = value
+            initial_friction[index] = region.u("<f", response_at + 144)[0]
+            parallel_friction[index] = region.u("<f", response_at + 152)[0]
+            perpendicular_friction[index] = region.u("<f", response_at + 156)[0]
+            angular_noise[index] = region.u("<f", response_at + 96)[0]
+            velocity_noise[index] = region.u("<f", response_at + 100)[0]
+            potential_response[index], potential_flags[index] = region.u("<hH", response_at + 36)
+            (potential_skip[index], potential_angle_lower[index], potential_angle_upper[index],
+             potential_velocity_lower[index], potential_velocity_upper[index]) = region.u("<5f", response_at + 40)
+    damage_id = region.u("<I", base + 180)[0]
+    minimum = lower = upper = material_21 = material_22 = 0.0
+    material_modifiers = (0.0,) * PROJECTILE_MATERIALS
+    damage = region.entry(damage_id)
+    if damage is not None:
+        minimum, lower, upper = region.u("<3f", region.block(damage) + 464)
+        material_modifiers = region.u("<33f", region.block(damage) + 512)
+        material_21 = region.u("<f", region.block(damage) + 512 + 21 * 4)[0]
+        material_22 = region.u("<f", region.block(damage) + 512 + 22 * 4)[0]
+    attached_damage_id = region.u("<I", base + 164)[0]
+    attached_damage = region.entry(attached_damage_id)
+    attached_minimum = attached_lower = attached_upper = 0.0
+    attached_material_21 = attached_material_22 = 0.0
+    attached_material_modifiers = (0.0,) * PROJECTILE_MATERIALS
+    if attached_damage is not None and attached_damage.group == "jpt!":
+        attached_base = region.block(attached_damage)
+        attached_minimum, attached_lower, attached_upper = region.u("<3f", attached_base + 464)
+        attached_material_modifiers = region.u("<33f", attached_base + 512)
+        attached_material_21 = region.u("<f", attached_base + 512 + 21 * 4)[0]
+        attached_material_22 = region.u("<f", attached_base + 512 + 22 * 4)[0]
+    return {
+        "velocity": velocity, "final_velocity": final_velocity,
+        "deceleration_start": deceleration_start, "deceleration_end": deceleration_end,
+        "timer_upper_bound": timer_upper_bound,
+        "timer_lower_bound": timer_lower_bound,
+        "minimum_velocity": minimum_velocity,
+        "maximum_damage_distance": maximum_damage_distance,
+        "projectile_flags": projectile_flags,
+        "detonation_timer_starts": detonation_timer_starts,
+        "attached_damage_minimum": attached_minimum,
+        "attached_damage_lower": attached_lower,
+        "attached_damage_upper": attached_upper,
+        "attached_damage_material_21": attached_material_21,
+        "attached_damage_material_22": attached_material_22,
+        "damage_material_modifiers": material_modifiers,
+        "attached_damage_material_modifiers": attached_material_modifiers,
+        "water_gravity_scale": water_gravity_scale,
+        "water_damage_range_lower_bound": water_damage_lower,
+        "water_damage_range_upper_bound": water_damage_upper,
+        "guided_angular_velocity": guided_angular_velocity,
+        "range": maximum_range, "gravity": gravity,
+        "damage_minimum": minimum, "damage_lower": lower, "damage_upper": upper,
+        "damage_material_21": material_21, "damage_material_22": material_22,
+        "response": bytes(response), "initial_friction": tuple(initial_friction),
+        "parallel_friction": tuple(parallel_friction),
+        "perpendicular_friction": tuple(perpendicular_friction),
+        "angular_noise": tuple(angular_noise), "velocity_noise": tuple(velocity_noise),
+        "potential_response": tuple(potential_response), "potential_flags": tuple(potential_flags),
+        "potential_skip": tuple(potential_skip), "potential_angle_lower": tuple(potential_angle_lower),
+        "potential_angle_upper": tuple(potential_angle_upper),
+        "potential_velocity_lower": tuple(potential_velocity_lower),
+        "potential_velocity_upper": tuple(potential_velocity_upper),
+        "has": 1, "pellets": pellets,
+    }
+
+
+def spreads(paths: list[str]) -> list[dict]:
+    """Read the primary trigger's CE random-cone parameters and flags."""
+    maps = sorted(MAPS.glob("*.map"), key=lambda path: (path.stem != "bloodgulch", path.stem))
+    if not maps:
+        raise RuntimeError("decompressed weapon maps are missing")
+    found: dict[str, dict] = {}
+    for map_path in maps:
+        wanted = [path for path in paths if path not in found]
+        if not wanted:
+            break
+        data = texconv.MapData.open(map_path)
+        region = Region(data)
+        by_path = {entry.path: entry for entry in data.index.entries if entry.group == "weap"}
+        for path in wanted:
+            entry = by_path.get(path)
+            if entry is None:
+                continue
+            trigger_count, trigger_at = region.reflexive(region.block(entry) + 0x308 + 500, 276, 8)
+            if not trigger_count:
+                found[path] = {"inner": 0.0, "lower": 0.0, "upper": 0.0, "flags": 0}
+                continue
+            # The HCE weapon tag's charging-effect tagref is 16 bytes. These
+            # offsets match weapon_trigger_definition after that field.
+            inner, lower, upper = region.u("<3f", trigger_at + 120)
+            flags = region.u("<I", trigger_at)[0]
+            found[path] = {"inner": inner, "lower": lower, "upper": upper, "flags": flags}
     missing = [path for path in paths if path not in found]
     if missing:
         raise RuntimeError("weapons not in any map: " + ", ".join(missing))
@@ -281,27 +811,129 @@ def projectiles(paths: list[str]) -> list[dict]:
 
 def attach_ammo(blob: bytes) -> bytes:
     """Replace the magazine and projectile tails, in weapon-table order."""
-    cuts = [index for index in (blob.find(b"AMO1"), blob.find(b"PRJ1")) if index >= 0]
+    cuts = [index for index in (blob.find(b"AMO1"), blob.find(b"PRJ1"), blob.find(b"RND1"),
+                                blob.find(b"PRS1"), blob.find(b"POT1"), blob.find(b"TRG1"), blob.find(b"PRJ2"),
+                                blob.find(b"PRS2"), blob.find(b"POT2"),
+                                blob.find(b"MAG2"), blob.find(b"WMD1"),
+                                blob.find(b"FEF1")) if index >= 0]
     if cuts:
         blob = blob[:min(cuts)]
     paths = _paths_in(blob)
     rows = magazines(paths)
     shots = projectiles(paths)
+    cones = spreads(paths)
+    trigger_pairs = trigger_records(paths)
+    trigger_shots = trigger_projectiles(paths)
+    magazine_pairs = magazine_records(paths)
+    weapon_modes = weapon_trigger_modes(paths)
+    firing_effects = firing_effect_records(paths)
     out = bytearray(blob)
     out += struct.pack("<4sH", b"AMO1", len(rows))
     for row in rows:
         out += AMMO.pack(
             row["loaded_max"], row["initial"], row["reloaded"], row["rounds_per_shot"],
             row["reload_frames"], row["ready_frames"], row["enter_frames"], row["flags"],
-            row["pellets"], row["recharge"], row["rate"], row["rate_final"],
-            row["accel"], row["decel"], row["chamber"])
+            row["pellets"], row["recharge"], row["trigger_count"],
+            row["weapon_type"], row["overcharged_action"], 0,
+            row["rate"], row["rate_final"], row["accel"], row["decel"], row["chamber"],
+            row["error_accel"], row["error_decel"],
+            row["charge"], row["charged"], row["heat_overheat"],
+            row["heat_recovery"], row["heat_loss"], row["heat_per_round"])
     out += struct.pack("<4sH", b"PRJ1", len(shots))
     for shot in shots:
         out += PROJ.pack(
             shot["velocity"], shot["final_velocity"], shot["deceleration_start"],
             shot["deceleration_end"], shot["range"], shot["gravity"],
-            shot["damage_lower"], shot["damage_upper"], shot["response"],
-            shot["has"], shot["pellets"], 0)
+            shot["damage_minimum"], shot["damage_lower"], shot["damage_upper"], shot["response"],
+            shot["has"], shot["pellets"], 0, shot["damage_material_21"], shot["damage_material_22"],
+            shot["timer_upper_bound"], shot["minimum_velocity"], shot["maximum_damage_distance"],
+            shot["projectile_flags"], shot["detonation_timer_starts"], 0,
+            shot["timer_lower_bound"], shot["attached_damage_minimum"],
+            shot["attached_damage_lower"], shot["attached_damage_upper"],
+            shot["attached_damage_material_21"], shot["attached_damage_material_22"],
+            shot["water_gravity_scale"], shot["water_damage_range_lower_bound"],
+            shot["water_damage_range_upper_bound"], shot["guided_angular_velocity"],
+            *shot["damage_material_modifiers"],
+            *shot["attached_damage_material_modifiers"])
+    out += struct.pack("<4sHH", b"PRS1", len(shots), PROJECTILE_MATERIALS)
+    for shot in shots:
+        out += FRICTION.pack(*(value for i in range(PROJECTILE_MATERIALS) for value in (
+            shot["initial_friction"][i], shot["parallel_friction"][i],
+            shot["perpendicular_friction"][i], shot["angular_noise"][i],
+            shot["velocity_noise"][i])))
+    out += struct.pack("<4sHH", b"POT1", len(shots), PROJECTILE_MATERIALS)
+    for shot in shots:
+        out += POTENTIAL.pack(*(value for i in range(PROJECTILE_MATERIALS) for value in (
+            shot["potential_response"][i], shot["potential_flags"][i],
+            shot["potential_skip"][i], shot["potential_angle_lower"][i],
+            shot["potential_angle_upper"][i], shot["potential_velocity_lower"][i],
+            shot["potential_velocity_upper"][i])))
+    directions = direction_table()
+    out += struct.pack("<4sHH", b"RND1", len(cones), len(directions))
+    for cone in cones:
+        out += SPREAD.pack(cone["inner"], cone["lower"], cone["upper"], cone["flags"])
+    for direction in directions:
+        out += struct.pack("<3f", *direction)
+    out += bytes((-len(out)) & 3)
+    out += bytes((-len(out)) & 3)
+    out += struct.pack("<4sHHHH", b"TRG1", len(trigger_pairs), 2, TRIGGER.size, 1)
+    for pair in trigger_pairs:
+        for trigger in pair:
+            out += TRIGGER.pack(
+                trigger["flags"], *trigger["halves"], *trigger["values"],
+                _z(trigger["projectile"], 64), _z(trigger["charging_effect"], 64),
+                trigger["firing_effect_count"])
+    out += struct.pack("<4sHH", b"PRJ2", len(trigger_shots), 2)
+    for pair in trigger_shots:
+        for shot in pair:
+            out += PROJ.pack(
+                shot["velocity"], shot["final_velocity"], shot["deceleration_start"],
+                shot["deceleration_end"], shot["range"], shot["gravity"],
+                shot["damage_minimum"], shot["damage_lower"], shot["damage_upper"], shot["response"],
+                shot["has"], shot["pellets"], 0, shot["damage_material_21"], shot["damage_material_22"],
+                shot["timer_upper_bound"], shot["minimum_velocity"], shot["maximum_damage_distance"],
+                shot["projectile_flags"], shot["detonation_timer_starts"], 0,
+                shot["timer_lower_bound"], shot["attached_damage_minimum"],
+                shot["attached_damage_lower"], shot["attached_damage_upper"],
+                shot["attached_damage_material_21"], shot["attached_damage_material_22"],
+                shot["water_gravity_scale"], shot["water_damage_range_lower_bound"],
+                shot["water_damage_range_upper_bound"], shot["guided_angular_velocity"],
+                *shot["damage_material_modifiers"],
+                *shot["attached_damage_material_modifiers"])
+    out += struct.pack("<4sHH", b"PRS2", len(trigger_shots), PROJECTILE_MATERIALS)
+    for pair in trigger_shots:
+        for shot in pair:
+            out += FRICTION.pack(*(value for i in range(PROJECTILE_MATERIALS) for value in (
+                shot["initial_friction"][i], shot["parallel_friction"][i],
+                shot["perpendicular_friction"][i], shot["angular_noise"][i],
+                shot["velocity_noise"][i])))
+    out += struct.pack("<4sHH", b"POT2", len(trigger_shots), PROJECTILE_MATERIALS)
+    for pair in trigger_shots:
+        for shot in pair:
+            out += POTENTIAL.pack(*(value for i in range(PROJECTILE_MATERIALS) for value in (
+                shot["potential_response"][i], shot["potential_flags"][i],
+                shot["potential_skip"][i], shot["potential_angle_lower"][i],
+                shot["potential_angle_upper"][i], shot["potential_velocity_lower"][i],
+                shot["potential_velocity_upper"][i])))
+    out += struct.pack("<4sHHHH", b"MAG2", len(magazine_pairs), 2, MAGAZINE.size, 0)
+    for pair in magazine_pairs:
+        for magazine in pair:
+            out += MAGAZINE.pack(
+                magazine["flags"], *magazine["values"], magazine["reload"],
+                magazine["rounds_reloaded"], magazine["pad"], magazine["chamber"])
+    out += struct.pack("<4sHHHH", b"WMD1", len(weapon_modes), 24, 0, 0)
+    for policy in weapon_modes:
+        out += struct.pack("<Ihh4f", policy["flags"], policy["mode"], policy["alternate"],
+                           policy["age_heat"], policy["age_rate"],
+                           policy["misfire_start"], policy["misfire_chance"])
+    out += struct.pack("<4sHHHHHH", b"FEF1", len(firing_effects), 2, 2,
+                       FIRING_EFFECT.size, 1, 0)
+    for weapon in firing_effects:
+        for trigger in weapon:
+            for effect in trigger:
+                out += FIRING_EFFECT.pack(
+                    effect["lower"], effect["upper"],
+                    *(_z(path, 64) for path in effect["paths"]))
     return bytes(out)
 
 
@@ -968,13 +1600,34 @@ def build(force: bool = False) -> None:
     if not force and manifest.is_file() and table.is_file() and (OUT / "bloodgulch.obj.hp2").is_file():
         current = json.loads(manifest.read_text())
         blob = table.read_bytes()
-        if current.get("stamp") == STAMP and b"AMO1" in blob and b"PRJ1" in blob:
+        trigger_at = blob.find(b"TRG1")
+        trigger_schema = (trigger_at >= 0 and len(blob) >= trigger_at + 12 and
+                          struct.unpack_from("<H", blob, trigger_at + 10)[0] == 1)
+        policy_at = blob.find(b"WMD1")
+        policy_schema = (policy_at >= 0 and len(blob) >= policy_at + 8 and
+                         struct.unpack_from("<H", blob, policy_at + 6)[0] == 24)
+        effect_at = blob.find(b"FEF1")
+        effect_schema = (effect_at >= 0 and len(blob) >= effect_at + 16 and
+                         struct.unpack_from("<4sHHHHHH", blob, effect_at) ==
+                         (b"FEF1", 23, 2, 2, FIRING_EFFECT.size, 1, 0))
+        projectile_at = blob.find(b"PRJ1")
+        projectile_schema = False
+        if projectile_at >= 0 and len(blob) >= projectile_at + 6:
+            projectile_count = struct.unpack_from("<H", blob, projectile_at + 4)[0]
+            projectile_end = projectile_at + 6 + projectile_count * PROJ.size
+            friction_at = blob.find(b"PRS1", projectile_at)
+            potential_at = blob.find(b"POT1", friction_at)
+            projectile_schema = (projectile_count == 23 and friction_at == projectile_end and
+                                 potential_at > friction_at and len(blob) >= projectile_end)
+        if (current.get("stamp") == STAMP and b"AMO1" in blob and b"PRJ1" in blob and
+                b"PRS1" in blob and b"PRS2" in blob and
+                projectile_schema and policy_schema and trigger_schema and effect_schema):
             print(f"play weapon pack is current ({current['models']} models)", flush=True)
             return
         if b"WFP1" in blob and b"RMP1" in blob:
             table.write_bytes(attach_ammo(blob))
             current["stamp"] = STAMP
-            current["ammo"] = "retail magazines and projectiles"
+            current["ammo"] = "retail magazines, projectiles, triggers, and weapon policies"
             manifest.write_text(json.dumps(current, indent=2) + "\n")
             print(f"wrote retail magazines and projectiles for {current['weapons']} weapons", flush=True)
             return
@@ -1039,7 +1692,7 @@ def build(force: bool = False) -> None:
     (OUT / "weapons.fp").write_bytes(blob)
     manifest.write_text(json.dumps({
         "stamp": STAMP, "weapons": len(weapons), "models": models, "bytes": total,
-        "ammo": "retail magazines",
+        "ammo": "retail magazines, projectiles, triggers, and weapon policies",
         "note": "Play object pack. Reference packs under data/retail are unchanged.",
     }, indent=2) + "\n")
     print(f"wrote {models} weapon models of {len(weapons)} weapons", flush=True)

@@ -7,6 +7,17 @@
 
 enum { CONTENTS_UNKNOWN, CONTENTS_EMPTY, CONTENTS_SEMI, CONTENTS_SOLID };
 
+int16_t collide_material_type(const collide_bsp *bsp, int16_t material_index)
+{
+    int16_t material_type;
+    if (!bsp || !bsp->material_types || material_index < 0 ||
+        (uint32_t)material_index >= bsp->material_count)
+        return -1;
+    memcpy(&material_type, bsp->material_types + material_index, sizeof material_type);
+    if (material_type < -1 || material_type >= 26) return -1;
+    return material_type;
+}
+
 static const int k_map[3][2][2] = {
     {{2, 1}, {1, 2}},
     {{0, 2}, {2, 0}},

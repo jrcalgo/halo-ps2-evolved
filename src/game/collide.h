@@ -23,8 +23,10 @@ typedef struct {
     const uint8_t *surfaces;      /* surface_count * 12 */
     const uint8_t *edges;         /* edge_count * 24: v0 v1 e0 e1 s0 s1, i32 */
     const uint8_t *vertices;      /* vertex_count * 16: xyz f32, first edge i32 */
+    const int16_t *material_types;/* CE runtime physics type per BSP collision material */
     uint32_t plane_count, node_count, leaf_count, ref_count;
     uint32_t node2d_count, surface_count, edge_count, vertex_count;
+    uint32_t material_count;
 } collide_bsp;
 
 typedef struct {
@@ -42,6 +44,10 @@ int collide_test_vector(
     float maximum_t,
     unsigned flags,
     collide_hit *hit);
+
+/* Resolve a raw BSP surface collision-material index to CE's runtime physics
+ * material type. Invalid or unmapped indices resolve to NONE (-1). */
+int16_t collide_material_type(const collide_bsp *bsp, int16_t material_index);
 
 /* collision_move_pill for structure only. Scratch is frame scratch,
  * not the heap and not a static in the ELF. 256 features and a BSP

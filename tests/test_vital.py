@@ -23,32 +23,48 @@ def cyborg(path):
     data = coll.data_address - index.base
     body, shield = struct.unpack_from("<f", region, data + 8)[0], struct.unpack_from("<f", region, data + 204)[0]
     recharge = struct.unpack_from("<I", region, data + 448)[0]
+    minimum_stun, stun_seconds = struct.unpack_from("<ff", region, data + 0x10C)
+    indirect_material, = struct.unpack_from("<h", region, data + 4)
+    shield_material, = struct.unpack_from("<h", region, data + 210)
     count, address = struct.unpack_from("<II", region, data + 564)
     materials = []
     for i in range(count):
         raw = region[address - index.base + i * 0x48:address - index.base + (i + 1) * 0x48]
-        materials.append(struct.unpack_from("<f", raw, 0x3C)[0])
+        material_type, = struct.unpack_from("<h", raw, 0x24)
+        leak, shield_multiplier = struct.unpack_from("<ff", raw, 0x28)
+        body_multiplier, = struct.unpack_from("<f", raw, 0x3C)
+        materials.append((material_type, leak, shield_multiplier, body_multiplier))
     mods = {}
     for name in (r"weapons\pistol\bullet", r"weapons\assault rifle\bullet"):
         effect = next(item for item in index.entries if item.group == "jpt!" and item.path == name)
         point = effect.data_address - index.base
         flags = struct.unpack_from("<I", region, point + 456)[0]
-        modifier = struct.unpack_from("<f", region, point + 512 + 21 * 4)[0]
-        mods[name] = (flags, modifier)
-    return body, shield, recharge, materials, mods
+        modifier_body = struct.unpack_from("<f", region, point + 512 + 21 * 4)[0]
+        modifier_shield = struct.unpack_from("<f", region, point + 512 + 22 * 4)[0]
+        mods[name] = (flags, modifier_body, modifier_shield)
+    return (body, shield, recharge, minimum_stun, stun_seconds, materials, mods,
+            indirect_material, shield_material)
 
 
 class Vital(unittest.TestCase):
     def test_shield_body_and_death(self):
         if not MAP.is_file():
             self.skipTest("decompressed Blood Gulch is not in the tree")
-        body, shield, recharge, materials, mods = cyborg(MAP)
+        (body, shield, recharge, minimum_stun, stun_seconds, materials, mods,
+         indirect_material, shield_material) = cyborg(MAP)
         self.assertEqual((body, shield), (75.0, 75.0))
         self.assertEqual(recharge, 0x3C088889)
-        self.assertEqual(materials[0], 1.0)
-        self.assertEqual(materials[2], struct.unpack("<f", struct.pack("<I", 0x3F4CCCCD))[0])
-        self.assertEqual(mods[r"weapons\pistol\bullet"], (0x2, 1.5))
-        self.assertEqual(mods[r"weapons\assault rifle\bullet"][1], 1.0)
+        self.assertEqual((minimum_stun, stun_seconds), (6.0, 4.0))
+        # This EE probe currently models the tag's indirect damage material and
+        # shield material only. Lock down the exact no-leak/unit-shield profile
+        # it relies on; other target profiles need the generic CE path.
+        self.assertEqual(indirect_material, 1)
+        self.assertEqual(shield_material, 22)
+        self.assertEqual(materials[1], (21, 0.0, 1.0, 1.0))
+        self.assertEqual(materials[2], (21, 0.0, 1.0, struct.unpack("<f", struct.pack("<I", 0x3F4CCCCD))[0]))
+        self.assertTrue(all(item[1] == 0.0 and item[2] == 1.0 for item in materials))
+        self.assertEqual(mods[r"weapons\pistol\bullet"], (0x2, 1.5, 1.0))
+        self.assertEqual(mods[r"weapons\assault rifle\bullet"], (0, 1.0, 1.0))
         with tempfile.TemporaryDirectory() as temp:
             exe = Path(temp) / "vital"
             subprocess.run(
@@ -57,6 +73,21 @@ class Vital(unittest.TestCase):
                 check=True, capture_output=True)
             out = subprocess.run([str(exe)], check=True, capture_output=True, text=True).stdout
         rows = {line.split()[0]: line.split() for line in out.splitlines()}
+        self.assertEqual(rows["indirect_body"][4], rows["indirect_legs"][4])
+        self.assertAlmostEqual(float(rows["indirect_body"][4]), 1.0 - 10.0 / 75.0, places=6)
+        self.assertAlmostEqual(float(rows["shield_leak"][2]), 1.0 - 8.0 / 75.0, places=6)
+        self.assertAlmostEqual(float(rows["shield_leak"][4]), 1.0 - 2.0 / 75.0, places=6)
+        self.assertEqual(float(rows["shield_modifier_overflow"][2]), 0.0)
+        self.assertAlmostEqual(float(rows["shield_modifier_overflow"][4]), 1.0 - 12.5 / 75.0, places=6)
+        # Selected record applies 50% leak, then its 2x shield multiplier.
+        self.assertAlmostEqual(float(rows["direct_material"][2]), 1.0 - 10.0 / 75.0, places=6)
+        self.assertAlmostEqual(float(rows["direct_material"][4]), 0.9, places=6)
+        # Out-of-range direct indices fall back to CE's indirect resistance record.
+        self.assertAlmostEqual(float(rows["indirect_fallback"][2]), 1.0 - 10.0 / 75.0, places=6)
+        self.assertAlmostEqual(float(rows["indirect_fallback"][4]), 1.0, places=6)
+        self.assertEqual(rows["below_stun_threshold"][6], "0")
+        self.assertEqual(rows["pistol1"][6], "120")
+        self.assertEqual(rows["pistol5"][6], "120")
         self.assertAlmostEqual(float(rows["pistol1"][2]), 2.0 / 3.0, places=5)
         self.assertEqual(float(rows["pistol1"][4]), 1.0)
         self.assertEqual(rows["pistol1"][8], "0")

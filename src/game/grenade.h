@@ -6,6 +6,7 @@
  * is limited to units. The blast is the explosion effect. No heap. */
 #ifndef GAME_GRENADE_H
 #define GAME_GRENADE_H
+#include "game/collide.h"
 #include <stdint.h>
 
 #define GRENADE_CARRY_MAX 4
@@ -18,6 +19,8 @@ typedef struct {
     float damage_minimum;
     float damage_lower;
     float damage_upper;
+    float damage_material_modifier_21;
+    float damage_material_modifier_22;
     int fixed_fuse;
 } grenade_def;
 
@@ -39,6 +42,20 @@ typedef struct {
     int unit_surface;
 } grenade_surface;
 
+/* Read-only material-response view used to audit the bounded tag tables. */
+typedef struct {
+    int response;
+    int potential_response;
+    int potential_flags;
+    float parallel_friction;
+    float perpendicular_friction;
+    float potential_skip_fraction;
+    float potential_angle_lower_bound;
+    float potential_angle_upper_bound;
+    float potential_velocity_lower_bound;
+    float potential_velocity_upper_bound;
+} grenade_material_profile;
+
 extern const grenade_def GRENADE_FRAG;
 extern const grenade_def GRENADE_PLASMA;
 
@@ -50,6 +67,11 @@ int grenade_tick(grenade *g);
 /* Same, and a plane may bounce or stick the grenade. */
 int grenade_tick_on(grenade *g, const grenade_def *def,
     const grenade_surface *surface, uint32_t *seed);
+/* Sweep the tick's CE-equation segment through the static collision BSP and
+ * use the selected retail surface plane/material for projectile response. */
+int grenade_tick_bsp(grenade *g, const grenade_def *def,
+    const collide_bsp *bsp, uint32_t *seed);
 /* 0 outside the cutoff. Otherwise the scaled damage, and the seed advances. */
 float grenade_damage(const grenade_def *def, float distance, uint32_t *seed);
+int grenade_material_profile_get(int plasma, int material, grenade_material_profile *out);
 #endif

@@ -1,18 +1,18 @@
 #include "game/vital.h"
 #include <string.h>
 
+const vital_damage_profile VITAL_CYBORG_INDIRECT_PROFILE = {
+    75.0f, 75.0f, 0.0f, 1.0f, 1.0f,
+    VITAL_MINIMUM_SHIELD_STUN_DAMAGE, VITAL_STUN_TICKS, 0.008333333767950535f,
+    0, 0, {{0, 0.0f, 1.0f, 1.0f}}
+};
+
 static float recharge_step(void)
 {
     float value;
     uint32_t bits = VITAL_RECHARGE_BITS;
     memcpy(&value, &bits, sizeof value);
     return value;
-}
-
-static float body_multiplier(int part)
-{
-    if (part == VITAL_LEGS) return 0.800000011920929f;
-    return 1.0f;
 }
 
 void vital_init(vital *v)
@@ -23,29 +23,94 @@ void vital_init(vital *v)
     v->dead = 0;
 }
 
-void vital_hurt(vital *v, float amount, int part, float material_modifier, int headshot)
+void vital_hurt_profile(vital *v, float amount, int part,
+    const vital_damage_profile *profile, float body_material_modifier,
+    float shield_material_modifier, int headshot)
+{
+    vital_hurt_material_profile(v, amount, part, profile,
+        profile ? profile->indirect_material_index : -1,
+        body_material_modifier, shield_material_modifier, headshot);
+}
+
+void vital_hurt_material_profile(vital *v, float amount, int part,
+    const vital_damage_profile *profile, int damage_material_index,
+    float body_material_modifier, float shield_material_modifier, int headshot)
 {
     float total = amount;
     float shield_damage = 0.0f;
     float damage_amount, actual;
-    if (v->dead) return;
+    float shield_leak_fraction, resistance_shield_multiplier, resistance_body_multiplier;
+    const vital_damage_material *material = NULL;
+    if (!v || !profile || v->dead) return;
+    if (profile->material_count > 0 && profile->material_count <= VITAL_DAMAGE_MATERIAL_MAX) {
+        if (damage_material_index < 0 || damage_material_index >= profile->material_count)
+            damage_material_index = profile->indirect_material_index;
+        if (damage_material_index >= 0 && damage_material_index < profile->material_count)
+            material = &profile->material[damage_material_index];
+    }
+    shield_leak_fraction = material ? material->shield_leak_fraction : profile->shield_leak_fraction;
+    resistance_shield_multiplier = material ? material->shield_damage_multiplier : profile->shield_damage_multiplier;
+    resistance_body_multiplier = material ? material->body_damage_multiplier : profile->body_damage_multiplier;
     if (v->shield > 0.0f) {
-        float normalized = amount / VITAL_MAX_SHIELD;
-        shield_damage = amount;
-        total = 0.0f;
+        float actual_shield_damage, normalized;
+        shield_damage = (1.0f - shield_leak_fraction) * total;
+        if (shield_damage < 0.0f) shield_damage = 0.0f;
+        total -= shield_damage;
+        actual_shield_damage = resistance_shield_multiplier * shield_damage *
+            shield_material_modifier;
+        normalized = actual_shield_damage / profile->maximum_shield;
         if (normalized > v->shield) {
-            total = amount - VITAL_MAX_SHIELD * v->shield;
+            float excess = actual_shield_damage - profile->maximum_shield * v->shield;
+            if (excess > 0.0f) total += excess;
             v->shield = 0.0f;
         } else {
             v->shield -= normalized;
         }
     }
-    if (shield_damage >= 0.0f || v->shield == 0.0f) v->stun = VITAL_STUN_TICKS;
-    damage_amount = body_multiplier(part) * total;
-    actual = damage_amount / VITAL_MAX_BODY * material_modifier;
+    if (shield_damage >= profile->minimum_shield_stun_damage || v->shield == 0.0f)
+        v->stun = profile->shield_stun_ticks;
+    /* The probe uses the indirect damage material from the cyborg collision
+     * tag, whose body_damage_multiplier is 1.0. Do not infer a multiplier from
+     * a coarse body-part enum: CE selects this value from a collision material. */
+    damage_amount = resistance_body_multiplier * total;
+    actual = damage_amount / profile->maximum_body * body_material_modifier;
     if (part == VITAL_HEAD && damage_amount > 0.0f && headshot) v->body = 0.0f;
     if (damage_amount > 0.0f) v->body -= actual;
     if (v->body < 0.0f) v->dead = 1;
+}
+
+void vital_hurt(vital *v, float amount, int part, float material_modifier, int headshot)
+{
+    vital_hurt_profile(v, amount, part, &VITAL_CYBORG_INDIRECT_PROFILE,
+        material_modifier, 1.0f, headshot);
+}
+
+int vital_apply_projectile_hit(vital *v, shot *projectile, int part,
+    float material_modifier, int headshot)
+{
+    return vital_apply_projectile_hit_profile(v, projectile, part,
+        &VITAL_CYBORG_INDIRECT_PROFILE, material_modifier, 1.0f, headshot);
+}
+
+int vital_apply_projectile_hit_profile(vital *v, shot *projectile, int part,
+    const vital_damage_profile *profile, float body_material_modifier,
+    float shield_material_modifier, int headshot)
+{
+    if (!v || !projectile || !profile || !projectile->hit_object_this_tick) return 0;
+    if (projectile->damage_material_types_valid) {
+        body_material_modifier = projectile->damage_body_modifier;
+        shield_material_modifier = projectile->damage_shield_modifier;
+    } else if (projectile->attached_damage_event) {
+        body_material_modifier = projectile->damage_modifier_21;
+        shield_material_modifier = projectile->damage_modifier_22;
+    }
+    projectile->hit_object_this_tick = 0;
+    if (projectile->damage > 0.0f) {
+        vital_hurt_material_profile(v, projectile->damage, part, profile,
+            projectile->damage_resistance_index, body_material_modifier,
+            shield_material_modifier, headshot);
+    }
+    return 1;
 }
 
 void vital_melee(vital *v)
@@ -55,9 +120,14 @@ void vital_melee(vital *v)
 
 void vital_tick(vital *v)
 {
+    vital_tick_profile(v, &VITAL_CYBORG_INDIRECT_PROFILE);
+}
+
+void vital_tick_profile(vital *v, const vital_damage_profile *profile)
+{
     if (v->dead || v->shield >= 1.0f) return;
     if (v->stun == 0) {
-        v->shield += recharge_step();
+        v->shield += profile ? profile->shield_recharge_step : recharge_step();
         if (v->shield > 1.0f) v->shield = 1.0f;
     } else {
         v->stun--;

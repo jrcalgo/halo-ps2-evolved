@@ -2,10 +2,12 @@
  * The pad steps the collision biped and the view is its eye. */
 #include "game/collpack.h"
 #include "game/gun.h"
+#include "game/grenade.h"
 #include "game/move.h"
 #include "game/pad.h"
 #include "game/play_fp.h"
 #include "game/shot.h"
+#include "game/vital.h"
 #include "platform/profiler.h"
 #include "render/bsp_render.h"
 #include "render/camera.h"
@@ -31,13 +33,146 @@ static int s_failed;
 static int s_was_out;
 static collide_pill_stats s_last;
 #define PLAY_FLY 16
+#define PLAY_GRENADE_CAPACITY GRENADE_CARRY_MAX
+#define PLAY_WEAPON_SLOTS 32
 
 static gun s_gun;
+static gun_trigger_pair s_trigger_pair;
+static gun_trigger_profile s_trigger_profile[GUN_TRIGGER_MAX];
+static int s_trigger_pair_active;
+static gun s_gun_saved[PLAY_WEAPON_SLOTS];
+static gun_trigger_pair s_trigger_pair_saved[PLAY_WEAPON_SLOTS];
+static uint8_t s_weapon_runtime_ready[PLAY_WEAPON_SLOTS];
+static uint8_t s_pair_runtime_ready[PLAY_WEAPON_SLOTS];
+static int s_active_weapon_slot = -1;
 static shot s_fly[PLAY_FLY];
 static const shot_def *s_fly_def[PLAY_FLY];
+static grenade s_grenades[PLAY_GRENADE_CAPACITY];
+static int s_grenades_carried;
+static uint8_t s_grenade_button;
+static uint8_t s_freecam_button;
+static int s_freecam_mode;
+/* Fixed combat probe target: exercises the EE projectile→vitality handoff.
+ * It is not an AI actor or a retail object-damage implementation. */
+static vital s_probe_target;
+static vital_damage_profile s_probe_damage_profile;
+static int16_t s_probe_body_damage_material_type = 21;
+static int16_t s_probe_shield_damage_material_type = 22;
+static float s_probe_target_center[3];
 static uint32_t s_seed = 1;
 static int s_mark; /* 0 none, 1 flying, 2 surface, 3 range */
 static int s_triangle;
+
+static void play_select_weapon(void)
+{
+    const gun_def *def = play_fp_gun();
+    const play_fp_weapon_trigger_policy *policy = play_fp_weapon_trigger_policy_get();
+    int16_t loaded[GUN_TRIGGER_MAGAZINES] = {0, 0};
+    int trigger_count, i, slot;
+    if (s_active_weapon_slot >= 0 && s_active_weapon_slot < PLAY_WEAPON_SLOTS) {
+        s_gun_saved[s_active_weapon_slot] = s_gun;
+        s_trigger_pair_saved[s_active_weapon_slot] = s_trigger_pair;
+    }
+    slot = play_fp_slot();
+    if (slot < 0 || slot >= PLAY_WEAPON_SLOTS) return;
+    s_active_weapon_slot = slot;
+    if (s_weapon_runtime_ready[slot]) {
+        s_gun = s_gun_saved[slot];
+        s_trigger_pair = s_trigger_pair_saved[slot];
+    } else {
+        gun_init(&s_gun, def ? def : &GUN_PISTOL);
+        memset(&s_trigger_pair, 0, sizeof s_trigger_pair);
+        s_weapon_runtime_ready[slot] = 1;
+    }
+    memset(s_trigger_profile, 0, sizeof s_trigger_profile);
+    s_trigger_pair_active = 0;
+    trigger_count = play_fp_trigger_profiles(s_trigger_profile);
+    if (!policy || trigger_count <= 1 ||
+        policy->secondary_trigger_mode == GUN_SECONDARY_TRIGGER_LOADS_ALTERNATE_AMMO ||
+        policy->secondary_trigger_mode == GUN_SECONDARY_TRIGGER_LOADS_MULTIPLE_PRIMARY_AMMO)
+        return;
+    for (i = 0; i < trigger_count; i++)
+        if (play_fp_trigger_uses_weapon_origin(i)) return;
+    if (!play_fp_trigger_loaded(loaded)) return;
+    if (!s_pair_runtime_ready[slot]) {
+        gun_trigger_pair_init(&s_trigger_pair, loaded);
+        s_trigger_pair.player_owned = 1;
+        s_trigger_pair.weapon_flags = policy->flags;
+        s_trigger_pair.age_rate_of_fire_penalty = policy->age_rate_of_fire_penalty;
+        s_trigger_pair.age_heat_recovery_penalty = policy->age_heat_recovery_penalty;
+        if (def) {
+            s_trigger_pair.heat_overheated_threshold = def->heat_overheat;
+            s_trigger_pair.heat_recovery_threshold = def->heat_recovery;
+            s_trigger_pair.heat_loss_per_second = def->heat_loss;
+        }
+        s_pair_runtime_ready[slot] = 1;
+    }
+    s_trigger_pair_active = 1;
+}
+
+static int play_spawn_projectiles(const shot_def *bullet, int pellets,
+    const shot_cone *cone, float error_fraction,
+    int distribution_function, float distribution_angle)
+{
+    float origin[3], forward[3];
+    const float (*directions)[3] = play_fp_directions();
+    unsigned direction_count = play_fp_direction_count();
+    float cy = cosf(s_yaw), sy = sinf(s_yaw), cp = cosf(s_pitch), sp = sinf(s_pitch);
+    int dropped = 0;
+    if (!bullet || pellets <= 0) return 0;
+    origin[0] = s_body.pos[0];
+    origin[1] = s_body.pos[1];
+    origin[2] = s_body.pos[2] + s_body.eye;
+    forward[0] = cp * cy;
+    forward[1] = cp * sy;
+    forward[2] = sp;
+    return shot_pool_spawn_cone(s_fly, s_fly_def, PLAY_FLY, bullet, origin, forward,
+        pellets, directions, direction_count, cone, error_fraction,
+        distribution_function, distribution_angle, &s_seed, &dropped);
+}
+
+static void play_tick_trigger_pair(unsigned held)
+{
+    const play_fp_weapon_trigger_policy *policy = play_fp_weapon_trigger_policy_get();
+    unsigned fired;
+    int trigger;
+    if (!policy) return;
+    fired = gun_trigger_pair_tick_controls_seeded(&s_trigger_pair, s_trigger_profile,
+        GUN_TRIGGER_MAX, policy->secondary_trigger_mode, policy->flags,
+        policy->age_rate_of_fire_penalty, (held & PAD_R1) != 0,
+        (held & PAD_L1) != 0, 1, 0, 0, &s_seed);
+    for (trigger = 0; trigger < GUN_TRIGGER_MAX; trigger++) {
+        const play_fp_trigger *source;
+        const shot_def *bullet;
+        shot_cone cone;
+        int pellets, spawned;
+        if (!(fired & (1u << trigger))) continue;
+        if (s_trigger_pair.trigger[trigger].misfired) {
+            printf("[play] misfire %s trigger %d\n", play_fp_name(), trigger);
+            continue;
+        }
+        source = play_fp_trigger_at(trigger);
+        bullet = play_fp_trigger_shot(trigger);
+        if (!source || !bullet) continue;
+        cone.inner_cone_angle = source->values[PLAY_FP_TRIGGER_ERROR_CONE_INNER];
+        cone.error_lower_bound = source->values[PLAY_FP_TRIGGER_ERROR_CONE_LOWER];
+        cone.error_upper_bound = source->values[PLAY_FP_TRIGGER_ERROR_CONE_UPPER];
+        cone.trigger_flags = source->flags;
+        pellets = s_trigger_profile[trigger].projectiles_per_shot > 0 ?
+            s_trigger_profile[trigger].projectiles_per_shot : 1;
+        spawned = play_spawn_projectiles(bullet, pellets, &cone,
+            s_trigger_pair.trigger[trigger].error_fraction, source->halves[9],
+            source->values[PLAY_FP_TRIGGER_DISTRIBUTION_ANGLE]);
+        if (spawned) {
+            s_mark = 1;
+            printf("[play] fire %s trigger %d pellets %d\n",
+                play_fp_name(), trigger, spawned);
+        }
+        if (spawned < pellets)
+            printf("[play] projectile pool full capacity %d dropped %d\n",
+                PLAY_FLY, pellets - spawned);
+    }
+}
 
 static uint8_t *load_file(const char *path, size_t *size)
 {
@@ -61,8 +196,8 @@ static uint8_t *load_file(const char *path, size_t *size)
 
 static int play_init(void)
 {
-    size_t pack_size, coll_size, tag_size;
-    const uint8_t *coll, *tag;
+    size_t pack_size, coll_size, tag_size, vita_size;
+    const uint8_t *coll, *tag, *vita;
     float pose[4], tags[COLL_TAG_FLOATS];
     s_pack = load_file("host:/collision.hp2", &pack_size);
     if (!s_pack) {
@@ -73,7 +208,10 @@ static int play_init(void)
         collpack_collision(coll, coll_size, &s_bsp) != 0 ||
         collpack_spawn(coll, 0, pose) != 0 ||
         collpack_section(s_pack, pack_size, "TAGS", &tag, &tag_size) != 0 ||
-        collpack_tags(tag, tag_size, tags) != 0) {
+        collpack_tags(tag, tag_size, tags) != 0 ||
+        collpack_section(s_pack, pack_size, "VITA", &vita, &vita_size) != 0 ||
+        collpack_vital_profile(vita, vita_size, &s_probe_damage_profile,
+            &s_probe_body_damage_material_type, &s_probe_shield_damage_material_type) != 0) {
         printf("[play] collision pack rejected\n");
         return -1;
     }
@@ -82,8 +220,20 @@ static int play_init(void)
     s_scratch = malloc(s_scratch_bytes);
     if (!s_scratch) return -1;
     player_spawn(&s_body, pose, &s_yaw, &s_pitch);
+    vital_init(&s_probe_target);
+    memset(s_grenades, 0, sizeof s_grenades);
+    s_grenades_carried = GRENADE_CARRY_MAX;
+    s_grenade_button = 0;
+    s_freecam_button = 0;
+    s_freecam_mode = 0;
+    /* Keep the diagnostic target before the nearby spawn-side BSP occluder;
+     * the previous six-unit placement was behind geometry and could never
+     * receive a real projectile hit in the normal play camera. */
+    s_probe_target_center[0] = s_body.pos[0] + cosf(s_yaw) * 1.0f;
+    s_probe_target_center[1] = s_body.pos[1] + sinf(s_yaw) * 1.0f;
+    s_probe_target_center[2] = s_body.pos[2] + s_body.eye;
     if (play_fp_open() != 0) printf("[play] weapon models missing\n");
-    gun_init(&s_gun, play_fp_gun() ? play_fp_gun() : &GUN_PISTOL);
+    play_select_weapon();
     memset(s_fly, 0, sizeof s_fly);
     s_mark = 0;
     printf("[play] ready feet %.2f %.2f %.2f yaw %.1f %s %d models %d\n",
@@ -112,6 +262,19 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
         s_ready = 1;
     }
     if (padRead(0, 0, &buttons) != 0) held = (unsigned)(0xFFFF ^ buttons.btns);
+    if ((held & PAD_R3) && !s_freecam_button) {
+        s_freecam_mode = !s_freecam_mode;
+        printf("[play] freecam %s (R3/4 toggles)\n", s_freecam_mode ? "on" : "off");
+    }
+    s_freecam_button = (uint8_t)((held & PAD_R3) != 0);
+    if (s_freecam_mode) {
+        /* Diagnostic free flight is opt-in; ordinary play (including grenade
+         * smoke) always advances the collision-resolved player body. */
+        s_grenade_button = (uint8_t)((held & PAD_L2) != 0);
+        s_triangle = (held & PAD_TRIANGLE) != 0;
+        __real_flycam_update(cam, in, dt);
+        return;
+    }
     memset(&pad, 0, sizeof pad);
     pad.left_x = (int16_t)(in->move_x * 32767.0f);
     pad.left_y = (int16_t)(in->move_y * 32767.0f);
@@ -120,42 +283,61 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
     pad.cross = (held & PAD_CROSS) != 0;
     pad.circle = (held & PAD_CIRCLE) != 0;
     pad_to_command(&pad, &cmd, &s_yaw, &s_pitch);
+    /* The combat probe follows the same fixed 30 Hz simulation tick as
+     * projectiles. Advance stun/recharge before this tick's damage events. */
+    vital_tick_profile(&s_probe_target, &s_probe_damage_profile);
     mover_tick_map(&s_body, &cmd, s_yaw, &s_bsp, s_scratch, s_scratch_bytes, 0, &stats);
     s_last = stats;
+    if ((held & PAD_L2) && !s_grenade_button) {
+        int slot;
+        float origin[3] = {s_body.pos[0], s_body.pos[1], s_body.pos[2] + s_body.eye};
+        float aim[3] = {cosf(s_pitch) * cosf(s_yaw),
+            cosf(s_pitch) * sinf(s_yaw), sinf(s_pitch)};
+        for (slot = 0; slot < PLAY_GRENADE_CAPACITY && s_grenades[slot].alive; ++slot) {}
+        if (slot < PLAY_GRENADE_CAPACITY && grenade_throw(&s_grenades[slot],
+                &GRENADE_FRAG, origin, aim,
+                &s_grenades_carried, &s_seed)) {
+            printf("[play] grenade throw frag carried %d slot %d mode player eye %.3f %.3f %.3f aim %.3f %.3f %.3f\n",
+                s_grenades_carried, slot, origin[0], origin[1], origin[2],
+                aim[0], aim[1], aim[2]);
+        } else {
+            printf("[play] grenade unavailable carried %d\n", s_grenades_carried);
+        }
+    }
+    s_grenade_button = (uint8_t)((held & PAD_L2) != 0);
     {
         const gun_def *def = play_fp_gun();
         const shot_def *bullet = NULL;
         if ((held & PAD_TRIANGLE) && !s_triangle) {
             play_fp_cycle();
             def = play_fp_gun();
-            if (def) gun_init(&s_gun, def);
+            play_select_weapon();
             printf("[play] weapon %s %d %d\n", play_fp_name(), s_gun.loaded, s_gun.total);
         }
         s_triangle = (held & PAD_TRIANGLE) != 0;
         bullet = play_fp_shot();
-        if (def && def->has_trigger &&
-            gun_tick(&s_gun, def, (held & PAD_R1) != 0, (held & PAD_SQUARE) != 0) &&
-            bullet) {
-            float origin[3], forward[3];
-            float cy = cosf(s_yaw), sy = sinf(s_yaw), cp = cosf(s_pitch), sp = sinf(s_pitch);
-            int pellets = def->projectiles_per_shot > 0 ? def->projectiles_per_shot : 1;
-            int spawned = 0, slot;
-            origin[0] = s_body.pos[0];
-            origin[1] = s_body.pos[1];
-            origin[2] = s_body.pos[2] + s_body.eye;
-            forward[0] = cp * cy;
-            forward[1] = cp * sy;
-            forward[2] = sp;
-            if (pellets > PLAY_FLY) pellets = PLAY_FLY;
-            for (slot = 0; slot < PLAY_FLY && spawned < pellets; slot++) {
-                if (s_fly[slot].alive) continue;
-                shot_spawn(&s_fly[slot], origin, forward, bullet);
-                s_fly_def[slot] = bullet;
-                spawned++;
-            }
-            if (spawned) {
-                s_mark = 1;
-                printf("[play] fire %s %d pellets %d\n", play_fp_name(), s_gun.loaded, spawned);
+        if (s_trigger_pair_active) {
+            play_tick_trigger_pair(held);
+        } else {
+            int requires_weapon_origin = play_fp_trigger_uses_weapon_origin(0);
+            if (def && def->has_trigger && !requires_weapon_origin &&
+                gun_tick_seeded(&s_gun, def, (held & PAD_R1) != 0,
+                         (held & PAD_SQUARE) != 0, &s_seed) && bullet && !s_gun.misfired) {
+                const play_fp_cone *cone = play_fp_spread();
+                int pellets = def->projectiles_per_shot > 0 ? def->projectiles_per_shot : 1;
+                const play_fp_trigger *source = play_fp_trigger_at(0);
+                int spawned = play_spawn_projectiles(bullet, pellets,
+                    (const shot_cone *)cone, s_gun.shot_error_fraction,
+                    source ? source->halves[9] : 0,
+                    source ? source->values[PLAY_FP_TRIGGER_DISTRIBUTION_ANGLE] : 0.0f);
+                if (spawned) {
+                    s_mark = 1;
+                    printf("[play] fire %s %d pellets %d\n",
+                        play_fp_name(), s_gun.loaded, spawned);
+                }
+                if (spawned < pellets)
+                    printf("[play] projectile pool full capacity %d dropped %d\n",
+                        PLAY_FLY, pellets - spawned);
             }
         }
     }
@@ -165,14 +347,39 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
         float hit_at[3];
         memset(&scene, 0, sizeof scene);
         scene.bsp = &s_bsp;
+        scene.directions = play_fp_directions();
+        scene.direction_count = play_fp_direction_count();
+        if (!s_probe_target.dead) {
+            scene.target = 1;
+            scene.target_is_unit = 1;
+            memcpy(scene.target_center, s_probe_target_center, sizeof scene.target_center);
+            scene.target_radius = 0.45f;
+            scene.target_material = 0;
+            scene.target_body_damage_material_type = s_probe_body_damage_material_type;
+            scene.target_shield_damage_material_type = s_probe_shield_damage_material_type;
+            scene.target_damage_material_types_valid = 1;
+            /* The probe has no modeled actor surface, so use the same indirect
+             * resistance index CE selects for an unclassified object hit. */
+            scene.target_damage_resistance_index = s_probe_damage_profile.indirect_material_index;
+            scene.target_damage_resistance_index_valid = 1;
+        }
         hit_at[0] = hit_at[1] = hit_at[2] = 0.0f;
         for (slot = 0; slot < PLAY_FLY; slot++) {
-            int was;
+            int was, object_hit;
             if (!s_fly[slot].alive || !s_fly_def[slot]) continue;
             was = 1;
             shot_tick(&s_fly[slot], s_fly_def[slot], &scene, &s_seed);
+            object_hit = vital_apply_projectile_hit_profile(&s_probe_target, &s_fly[slot],
+                VITAL_BODY, &s_probe_damage_profile,
+                s_fly_def[slot]->damage_material_modifier_21,
+                s_fly_def[slot]->damage_material_modifier_22, 0);
+            if (object_hit && s_fly[slot].damage > 0.0f) {
+                printf("[play] probe damage %.2f shield %.3f body %.3f dead %d\n",
+                    s_fly[slot].damage, s_probe_target.shield, s_probe_target.body,
+                    s_probe_target.dead);
+            }
             if (s_fly[slot].alive) flying = 1;
-            else if (was && s_fly[slot].hit_surface) {
+            else if (was && (object_hit || s_fly[slot].hit_surface)) {
                 hits++;
                 hit_at[0] = s_fly[slot].position[0];
                 hit_at[1] = s_fly[slot].position[1];
@@ -190,6 +397,31 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
             printf("[play] range %d\n", ended);
         } else if (flying) {
             s_mark = 1;
+        }
+    }
+    {
+        int slot;
+        for (slot = 0; slot < PLAY_GRENADE_CAPACITY; ++slot) {
+            grenade *item = &s_grenades[slot];
+            if (item->alive && grenade_tick_bsp(item, &GRENADE_FRAG, &s_bsp, &s_seed)) {
+                float dx = item->position[0] - s_probe_target_center[0];
+                float dy = item->position[1] - s_probe_target_center[1];
+                float dz = item->position[2] - s_probe_target_center[2];
+                float distance = sqrtf(dx * dx + dy * dy + dz * dz);
+                if (distance < GRENADE_FRAG.cutoff) {
+                    float damage = grenade_damage(&GRENADE_FRAG, distance, &s_seed);
+                    vital_hurt_profile(&s_probe_target, damage, VITAL_BODY,
+                        &s_probe_damage_profile,
+                        GRENADE_FRAG.damage_material_modifier_21,
+                        GRENADE_FRAG.damage_material_modifier_22, 0);
+                    printf("[play] grenade explosion frag slot %d damage %.2f distance %.2f shield %.3f body %.3f dead %d\n",
+                        slot, damage, distance, s_probe_target.shield,
+                        s_probe_target.body, s_probe_target.dead);
+                } else {
+                    printf("[play] grenade explosion frag slot %d outside %.2f\n",
+                        slot, distance);
+                }
+            }
         }
     }
     cam->pos[0] = s_body.pos[0];
@@ -247,4 +479,8 @@ void __wrap_profiler_overlay(const profiler_t *p, text_batch_t *b)
             snprintf(line, sizeof line, "%s  %s  Q", play_fp_name(), mark);
     }
     text_batch_print(b, 8, 56, s_mark == 2 ? 0xFFC080 : 0xFFFFFF, line);
+    snprintf(line, sizeof line, "PROBE SH %.2f BODY %.2f %s",
+        s_probe_target.shield, s_probe_target.body,
+        s_probe_target.dead ? "DEAD" : "ALIVE");
+    text_batch_print(b, 8, 64, s_probe_target.dead ? 0xFF6060 : 0xC0FFC0, line);
 }

@@ -43,6 +43,12 @@ def main():
                         help="pathkey file from the player eye: seconds x y z yaw pitch")
     parser.add_argument("--play", action="store_true",
                         help="leave the window open for keyboard play; do not wait for the frame limit")
+    parser.add_argument("--freecam-toggle", action="store_true",
+                        help="with --play, press R3/4 once to toggle in-game freecam; press 4 again to return to player control")
+    parser.add_argument("--combat-smoke", action="store_true",
+                        help="bounded EE pistol-to-vitality diagnostic against the fixed play probe")
+    parser.add_argument("--grenade-smoke", action="store_true",
+                        help="bounded EE frag throw, BSP bounce/fuse and blast diagnostic")
     parser.add_argument("--fuel-still", action="store_true",
                         help="play build, start on the fuel rod, dump one GS frame, then exit")
     parser.add_argument("--cache-pages", type=int, default=0,
@@ -54,10 +60,22 @@ def main():
     parser.add_argument("--framebuffer-frames", default="",
                         help="comma-separated readback frames; implies --framebuffer")
     args = parser.parse_args()
+    if args.freecam_toggle and not args.play:
+        raise RuntimeError("--freecam-toggle requires --play")
     if args.play:
         args.variant = "play"
         args.objects = True
         args.frames = 0
+    if args.combat_smoke:
+        args.variant = "play"
+        args.objects = True
+        args.frames = 300
+    if args.grenade_smoke:
+        if args.freecam or args.freecam_toggle:
+            raise RuntimeError("--grenade-smoke must run with player collision; freecam options are not allowed")
+        args.variant = "play"
+        args.objects = True
+        args.frames = 300
     if args.fuel_still:
         args.variant = "play"
         args.objects = True
@@ -100,7 +118,7 @@ def main():
         if sha(packs / ("bloodgulch" + suffix)) != converted["pack_sha256"][kind]:
             raise RuntimeError("Converted pack hash differs: " + kind)
     stop_previous()
-    play_boot = args.play or args.fuel_still
+    play_boot = args.play or args.fuel_still or args.combat_smoke or args.grenade_smoke
     label = "world-stream" if args.variant == "stream" else "world-portal" if args.variant == "portal" else "world"
     run = OUTPUT / "runs" / f"{label}-{args.mode}-{uuid.uuid4().hex}"
     boot = run / "boot"
@@ -121,7 +139,7 @@ def main():
         shutil.copy2(play_objects / "weapons.fp", boot / "weapons.fp")
     if args.fuel_still:
         (boot / "fpstill.txt").write_text("weapons\\fuel rod gun\\fuel rod\n")
-    if args.play or args.fuel_still:
+    if args.play or args.fuel_still or args.combat_smoke or args.grenade_smoke:
         sys.path.insert(0, str(ROOT / "tools"))
         from convert_collision import build_pack
         decompressed = ROOT / "data/retail/convert/bloodgulch/decompressed/bloodgulch.map"
@@ -154,19 +172,21 @@ def main():
     cfg = boot / "halo.cfg"
     cfg.write_text("\n".join(lines) + "\n")
     config = json.loads((ROOT / ".local/emulator.json").read_text())
+    display = os.environ.get("DISPLAY") or config["display"]
+    visible_display = display == config["display"]
     ini = prepare(config, run, args.mode)
-    if args.play:
+    if args.play or args.combat_smoke or args.grenade_smoke:
         pad = configparser.ConfigParser(interpolation=None)
         pad.optionxform = str
         pad.read(ini)
         pad["Pad1"].update(RUp="Keyboard/Up", RDown="Keyboard/Down", RLeft="Keyboard/Right",
                            RRight="Keyboard/Left", Cross="Keyboard/G", Circle="Keyboard/Control",
-                           R1="Keyboard/F", Square="Keyboard/R", Triangle="Keyboard/Q")
+                           R1="Keyboard/F", R3="Keyboard/4", Square="Keyboard/R", Triangle="Keyboard/Q")
         with ini.open("w") as handle:
             pad.write(handle)
     log = run / "emulog.txt"
     command = [config["binary"], "-datapath", str(run / "data"), "-nofullscreen", "-logfile", str(log), "-elf", str(elf)]
-    result = {"status":"running", "scenario":"bloodgulch-static", "mode":args.mode, "visible":True, "command":command,
+    result = {"status":"running", "scenario":"bloodgulch-static", "mode":args.mode, "visible":visible_display, "command":command,
               "runner_sha256":sha(Path(__file__)), "elf_sha256":sha(elf), "source_sha256":report["source_sha256"], "pack_sha256":converted["pack_sha256"],
               "settings_sha256":sha(ini), "config_sha256":sha(cfg), "camera":args.camera, "requested_frames":args.frames,
               "bios_sha256":sha(config["bios"]), "emulator_sha256":sha(Path(config["binary"]).resolve()),
@@ -181,12 +201,29 @@ def main():
     result["visibility"] = "conservative" if args.force_conservative or args.variant == "conservative" else "portal"
     path = run / "result.json"
     save(path,result)
-    process = subprocess.Popen(command,cwd=boot,env={**os.environ,"DISPLAY":config["display"],"QT_QPA_PLATFORM":"xcb","APPIMAGE_EXTRACT_AND_RUN":"1"},stdout=(run/"launcher.log").open("w"),stderr=subprocess.STDOUT,start_new_session=True)
+    # Validate that input/capture can reach the visible desktop before starting
+    # PCSX2; otherwise a display-access failure leaves an orphaned emulator.
+    keyboard = Input() if args.freecam or args.combat_smoke or args.grenade_smoke or args.freecam_toggle else None
+    try:
+        process = subprocess.Popen(command,cwd=boot,env={**os.environ,"DISPLAY":display,"QT_QPA_PLATFORM":"xcb","APPIMAGE_EXTRACT_AND_RUN":"1"},stdout=(run/"launcher.log").open("w"),stderr=subprocess.STDOUT,start_new_session=True)
+    except Exception:
+        if keyboard: keyboard.close()
+        raise
     save(OUTPUT / "active.json",{"pid":process.pid,"run_directory":str(run)})
     print("Visible Blood Gulch viewer; evidence: " + str(run),flush=True)
     start = progress = time.monotonic(); size = 0; window = None
-    keyboard = Input() if args.freecam else None
     held = ()
+    fire_held = False
+    fire_started = False
+    fire_next_at = 0.0
+    fire_release_at = 0.0
+    fire_released = False
+    grenade_started = False
+    grenade_aim_started = False
+    grenade_aim_release_at = 0.0
+    grenade_release_at = 0.0
+    grenade_released = False
+    freecam_toggle_sent = False
     try:
         while time.monotonic()-start < 7200:
             text = log.read_text(errors="replace") if log.exists() else ""
@@ -196,7 +233,9 @@ def main():
             if window is None:
                 owned=windows(process.pid)
                 if owned:
-                    window=owned[0][0];subprocess.run(["wmctrl","-ir",window,"-e","0,80,80,1024,768"],check=True);focus(window)
+                    window=owned[0][0]
+                    if visible_display:
+                        subprocess.run(["wmctrl","-ir",window,"-e","0,80,80,1024,768"],check=True);focus(window)
             if args.freecam and window:
                 samples = re.findall(r"\[cam\] pos (-?\d+\.\d+) (-?\d+\.\d+) (-?\d+\.\d+) yaw (-?\d+\.\d+)", text)
                 # Use the actual pad camera, with no pathkeys. Slow input and
@@ -235,11 +274,69 @@ def main():
                     held = keys
                     keyboard.sent = now
             if args.play and window and "[play] ready" in text:
+                if args.freecam_toggle and not freecam_toggle_sent:
+                    focus(window)
+                    keyboard.key("4", True)
+                    time.sleep(.12)
+                    keyboard.key("4", False)
+                    freecam_toggle_sent = True
+                    result["freecam_toggle"] = "enabled via R3; press 4 again to return to collision player"
+                    save(path, result)
+                    print("In-game freecam toggled on with R3/4; press 4 again to return to colliding player control.", flush=True)
+                    time.sleep(.2)
                 result.update(status="playing", wall_seconds=time.monotonic()-start)
                 save(path, result)
                 print("Collision walk is live. The window stays open.", flush=True)
-                print("W S walk, A D strafe, arrow keys look, G jump, Control crouch.", flush=True)
+                print("W S walk, A D strafe, arrows look, G jump, Control crouch, 4 toggles freecam.", flush=True)
                 return
+            if args.combat_smoke and window and "[play] ready" in text and not fire_started:
+                focus(window)
+                keyboard.key("f", False)
+                time.sleep(.1)
+                keyboard.key("f", True)
+                fire_held = True
+                fire_started = True
+                fire_next_at = time.monotonic() + 1.4
+                fire_release_at = time.monotonic() + .15
+                print("Combat smoke: pulsing pistol fire on the fixed probe target.", flush=True)
+            if args.combat_smoke and fire_held and not fire_released and time.monotonic() >= fire_release_at:
+                focus(window)
+                keyboard.key("f", False)
+                fire_held = False
+            if (args.combat_smoke and fire_started and not fire_held and not fire_released and
+                    time.monotonic() >= fire_next_at):
+                focus(window)
+                keyboard.key("f", True)
+                fire_held = True
+                fire_next_at = time.monotonic() + 1.4
+                fire_release_at = time.monotonic() + .15
+            if args.combat_smoke and fire_held and not fire_released:
+                if re.search(r"\[play\] probe damage .* dead 1", text):
+                    focus(window)
+                    keyboard.key("f", False)
+                    fire_held = False
+                    fire_released = True
+                    print("Combat smoke: probe target death observed; released fire.", flush=True)
+            if (args.grenade_smoke and window and "[play] ready" in text and
+                    not grenade_aim_started):
+                focus(window)
+                keyboard.key("Down", True)
+                grenade_aim_started = True
+                grenade_aim_release_at = time.monotonic() + .65
+                print("Grenade smoke: pitching the collision player down before the throw.", flush=True)
+            if (args.grenade_smoke and grenade_aim_started and not grenade_started and
+                    time.monotonic() >= grenade_aim_release_at):
+                focus(window)
+                keyboard.key("Down", False)
+                keyboard.key("1", True)
+                grenade_started = True
+                grenade_release_at = time.monotonic() + .15
+                print("Grenade smoke: pressed L2 once to throw a frag grenade from the player.", flush=True)
+            if (args.grenade_smoke and grenade_started and not grenade_released and
+                    time.monotonic() >= grenade_release_at):
+                focus(window)
+                keyboard.key("1", False)
+                grenade_released = True
             if play_boot and "[play] collision pack" in text:
                 raise RuntimeError("Collision walk did not load")
             if window and "[prof] frames=" in text and not result["captures"]:
@@ -305,6 +402,32 @@ def main():
                     if len(result.get("pad_waypoints", [])) != 5:
                         raise RuntimeError("Pad-camera waypoint flight did not finish")
                     result["camera_span"] = span
+                if args.combat_smoke:
+                    damage_events = re.findall(r"\[play\] probe damage ([0-9.]+) shield ([0-9.]+) body (-?[0-9.]+) dead (\d+)", text)
+                    deaths = [event for event in damage_events if event[3] == "1"]
+                    fires = re.findall(r"\[play\] fire PISTOL (\d+) pellets (\d+)", text)
+                    hits = re.findall(r"\[play\] hit 1 ", text)
+                    if (not fire_released or not deaths or len(fires) != 6 or
+                            len(damage_events) != 6 or len(hits) != 6):
+                        raise RuntimeError("Integrated play combat did not fire, hit, and kill the probe target")
+                    result["combat_smoke"] = {
+                        "weapon": "PISTOL", "fire_events": len(fires), "probe_damage_events": len(damage_events),
+                        "final_damage": float(deaths[-1][0]), "final_shield": float(deaths[-1][1]),
+                        "final_body": float(deaths[-1][2]), "target_dead": True,
+                        "target": "fixed diagnostic sphere; not a retail actor"}
+                if args.grenade_smoke:
+                    throws = re.findall(r"\[play\] grenade throw frag carried (\d+) slot (\d+) mode player eye (-?[0-9.]+) (-?[0-9.]+) (-?[0-9.]+) aim (-?[0-9.]+) (-?[0-9.]+) (-?[0-9.]+)", text)
+                    explosions = re.findall(r"\[play\] grenade explosion frag slot (\d+)(?: damage ([0-9.]+) distance ([0-9.]+) shield ([0-9.]+) body (-?[0-9.]+) dead (\d+)| outside ([0-9.]+))", text)
+                    if (not grenade_released or len(throws) != 1 or not explosions or
+                            float(throws[0][7]) >= 0.0):
+                        raise RuntimeError("EE grenade smoke did not throw from the collision player and detonate one frag grenade")
+                    result["grenade_smoke"] = {
+                        "throws": len(throws), "carried_after_throw": int(throws[0][0]),
+                        "slot": int(throws[0][1]), "throw_origin_eye": [float(v) for v in throws[0][2:5]],
+                        "throw_aim": [float(v) for v in throws[0][5:8]],
+                        "control": "collision-resolved player (mover_tick_map); freecam disabled",
+                        "explosions": len(explosions),
+                        "target": "fixed diagnostic sphere; not a retail actor"}
                 time.sleep(.5);capture(window,run/"visible-final.png")
                 focus(window);keyboard_shot=Input();keyboard_shot.key("F8",True);time.sleep(.1);keyboard_shot.key("F8",False);keyboard_shot.close()
                 status = "route-completed" if args.route else "freecam-completed" if args.freecam else "diagnostic-completed"
@@ -317,6 +440,10 @@ def main():
     except Exception as error:
         result.update(status="failed",error=str(error));save(path,result);raise
     finally:
+        if keyboard and fire_held and not fire_released:
+            keyboard.key("f", False)
+        if keyboard and grenade_started and not grenade_released:
+            keyboard.key("1", False)
         if keyboard and held:
             for key in held: keyboard.key(key, False)
         if keyboard: keyboard.close()

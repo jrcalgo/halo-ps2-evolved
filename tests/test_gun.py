@@ -189,6 +189,16 @@ class Gun(unittest.TestCase):
         self.assertEqual(fuel[2:], ["1", "loaded", "4", "idle", "29"])
         scorpion = [line.split() for line in reports if line.startswith("scorpion second")][0]
         self.assertEqual(scorpion[2:], ["123", "loaded", "0", "total", "9997"])
+        self.assertEqual([line for line in reports if line.startswith("error shot")][0],
+                         "error shot 1 used 0.00000000 next 0.06666667")
+        self.assertEqual([line for line in reports if line.startswith("error recover")][0],
+                         "error recover used 0.06666667 next 0.00000000")
+        self.assertEqual([line for line in reports if line.startswith("charge release")][0],
+                         "charge release tick=40 shots=1 heat=0.16")
+        self.assertEqual([line for line in reports if line.startswith("single charge start")][0],
+                         "single charge start shots=1")
+        self.assertEqual([line for line in reports if line.startswith("heat rifle")][0],
+                         "heat rifle shots=25 overheat_events=7 heat=0.81")
 
 
 if __name__ == "__main__":

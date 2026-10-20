@@ -71,12 +71,97 @@ int collpack_collision(const uint8_t *payload, size_t length, collide_bsp *bsp)
     bsp->vertices = payload + cursor;
     cursor += counts[7] * stride[7];
     if (cursor + (size_t)counts[8] * 16 > length) return -1;
+    cursor += counts[8] * 16;
+    if (cursor + 4 > length) return -1;
+    bsp->material_count = rd32(payload + cursor);
+    cursor += 4;
+    if (bsp->material_count > 256 || cursor + (size_t)bsp->material_count * 2 > length) return -1;
+    bsp->material_types = (const int16_t *)(payload + cursor);
+    for (index = 0; index < bsp->material_count; index++) {
+        int16_t type;
+        memcpy(&type, payload + cursor + index * 2, sizeof type);
+        if (type < -1 || type >= COLL_RUNTIME_MATERIAL_TYPES) return -1;
+    }
     return 0;
 }
 
 uint32_t collpack_spawn_count(const uint8_t *payload)
 {
     return rd32(payload + 32);
+}
+
+static int finite_float(float value)
+{
+    return value == value && value > -1.0e20f && value < 1.0e20f;
+}
+
+int collpack_vital_profile(const uint8_t *payload, size_t length,
+    vital_damage_profile *profile, int16_t *body_material_type,
+    int16_t *shield_material_type)
+{
+    uint16_t version, material_count;
+    int16_t indirect_index, shield_type, body_type = -1;
+    uint32_t index, offset = 32;
+    float maximum_body, maximum_shield, minimum_stun, stun_seconds, recharge_step;
+    float shield_leak, shield_multiplier, body_multiplier;
+    const uint8_t *record;
+    if (!payload || !profile || !body_material_type || !shield_material_type || length < 32 ||
+        memcmp(payload, "VIT1", 4) != 0) return -1;
+    memcpy(&version, payload + 4, 2);
+    memcpy(&material_count, payload + 6, 2);
+    memcpy(&indirect_index, payload + 8, 2);
+    memcpy(&shield_type, payload + 10, 2);
+    if (version != 1 || material_count == 0 || material_count > 40 || indirect_index < 0 ||
+        indirect_index >= material_count || length != 32u + (size_t)material_count * 14u ||
+        shield_type < -1 || shield_type >= COLL_RUNTIME_MATERIAL_TYPES) return -1;
+    memcpy(&maximum_body, payload + 12, 4);
+    memcpy(&maximum_shield, payload + 16, 4);
+    memcpy(&minimum_stun, payload + 20, 4);
+    memcpy(&stun_seconds, payload + 24, 4);
+    memcpy(&recharge_step, payload + 28, 4);
+    if (!finite_float(maximum_body) || !finite_float(maximum_shield) ||
+        !finite_float(minimum_stun) || !finite_float(stun_seconds) ||
+        !finite_float(recharge_step) || maximum_body <= 0.0f || maximum_shield <= 0.0f ||
+        minimum_stun < 0.0f || stun_seconds < 0.0f || stun_seconds * 30.0f > 32767.0f ||
+        recharge_step < 0.0f || recharge_step > 1.0f) return -1;
+    for (index = 0; index < material_count; index++) {
+        int16_t type;
+        record = payload + offset + index * 14u;
+        memcpy(&type, record, 2);
+        memcpy(&shield_leak, record + 2, 4);
+        memcpy(&shield_multiplier, record + 6, 4);
+        memcpy(&body_multiplier, record + 10, 4);
+        if (type < -1 || type >= COLL_RUNTIME_MATERIAL_TYPES ||
+            !finite_float(shield_leak) || !finite_float(shield_multiplier) ||
+            !finite_float(body_multiplier) || shield_leak < 0.0f || shield_leak > 1.0f ||
+            shield_multiplier < 0.0f || body_multiplier < 0.0f) return -1;
+        if (index == (uint32_t)indirect_index) body_type = type;
+    }
+    if (body_type < 0) return -1;
+    record = payload + offset + (uint32_t)indirect_index * 14u;
+    memcpy(&shield_leak, record + 2, 4);
+    memcpy(&shield_multiplier, record + 6, 4);
+    memcpy(&body_multiplier, record + 10, 4);
+    profile->maximum_body = maximum_body;
+    profile->maximum_shield = maximum_shield;
+    profile->shield_leak_fraction = shield_leak;
+    profile->shield_damage_multiplier = shield_multiplier;
+    profile->body_damage_multiplier = body_multiplier;
+    profile->minimum_shield_stun_damage = minimum_stun;
+    profile->shield_stun_ticks = (short)(stun_seconds * 30.0f + 0.5f);
+    profile->shield_recharge_step = recharge_step;
+    profile->indirect_material_index = indirect_index;
+    profile->material_count = material_count;
+    for (index = 0; index < material_count; index++) {
+        record = payload + offset + index * 14u;
+        memcpy(&profile->material[index].material_type, record, 2);
+        memcpy(&profile->material[index].shield_leak_fraction, record + 2, 4);
+        memcpy(&profile->material[index].shield_damage_multiplier, record + 6, 4);
+        memcpy(&profile->material[index].body_damage_multiplier, record + 10, 4);
+    }
+    *body_material_type = body_type;
+    *shield_material_type = shield_type;
+    return 0;
 }
 
 int collpack_spawn(const uint8_t *payload, uint32_t index, float out[4])

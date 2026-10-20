@@ -1,5 +1,6 @@
 #include "game/grenade.h"
 #include <math.h>
+#include <string.h>
 
 #define GRENADE_GRAVITY 0.0035651792f
 #define GRENADE_REFLECT 2
@@ -8,83 +9,84 @@
 #define GRENADE_DETONATE 1
 
 typedef struct {
-    unsigned char response, potential, only_units;
+    unsigned char response, potential, potential_flags;
     float parallel, perpendicular, skip, angle_upper, velocity_lower, velocity_upper;
+    float angle_lower;
 } grenade_material;
 
 static const grenade_material FRAG_MATERIAL[33] = {
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.699999988f, 0.800000012f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.699999988f, 0.800000012f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.699999988f, 0.800000012f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.699999988f, 0.800000012f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.699999988f, 0.800000012f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.600000024f, 0.699999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.800000012f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.5f, 0.699999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.600000024f, 0.699999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {3, 2, 0, 0.699999988f, 0.699999988f, 0.0f, 0.52359879f, 0.0333333351f, 33.3333359f},
-    {2, 3, 0, 0.800000012f, 0.899999976f, 0.200000003f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.550000012f, 0.649999976f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.699999988f, 0.800000012f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.699999988f, 0.800000012f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.699999988f, 0.800000012f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.699999988f, 0.800000012f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.699999988f, 0.800000012f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.600000024f, 0.699999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.800000012f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.5f, 0.699999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.600000024f, 0.699999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {3, 2, 0, 0.699999988f, 0.699999988f, 0.0f, 0.52359879f, 0.0333333351f, 33.3333359f, 0.0f},
+    {2, 3, 0, 0.800000012f, 0.899999976f, 0.200000003f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.550000012f, 0.649999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.800000012f, 0.899999976f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
 };
 static const grenade_material PLASMA_MATERIAL[33] = {
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.699999988f, 0.800000012f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.699999988f, 0.800000012f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 2, 0, 0.800000012f, 0.800000012f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {3, 0, 0, 0.5f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 4, 1, 0.649999976f, 0.75f, 0.0f, 0.0f, 0.0f, 0.0f},
-    {2, 0, 0, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.699999988f, 0.800000012f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.699999988f, 0.800000012f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 2, 0, 0.800000012f, 0.800000012f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {3, 0, 0, 0.5f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 4, 1, 0.649999976f, 0.75f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {2, 0, 0, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
 };
 
-const grenade_def GRENADE_FRAG = {0.5f, 1.5f, 2.5f, 80.0f, 120.0f, 120.0f, 0};
-const grenade_def GRENADE_PLASMA = {2.0f, 0.5f, 2.0f, 80.0f, 120.0f, 120.0f, 1};
+const grenade_def GRENADE_FRAG = {0.5f, 1.5f, 2.5f, 80.0f, 120.0f, 120.0f, 1.0f, 1.0f, 0};
+const grenade_def GRENADE_PLASMA = {2.0f, 0.5f, 2.0f, 80.0f, 120.0f, 120.0f, 1.0f, 1.0f, 1};
 
 static const grenade_material *table_for(const grenade_def *def)
 {
@@ -145,8 +147,8 @@ static int choose_response(const grenade_material *material, int unit_surface,
         (void)seed_range(seed, 0.0f, 0.0f);
     }
     if (!material->potential) return response;
-    if (material->only_units && !unit_surface) gates = 0;
-    if (gates && material->angle_upper != 0.0f) {
+    if ((material->potential_flags & 1u) && !unit_surface) gates = 0;
+    if (gates && (material->angle_lower != 0.0f || material->angle_upper != 0.0f)) {
         float speed = length3(velocity);
         float nlen = length3(normal);
         float cosine, angle;
@@ -156,7 +158,7 @@ static int choose_response(const grenade_material *material, int unit_surface,
             if (cosine > 1.0f) cosine = 1.0f;
             if (cosine < -1.0f) cosine = -1.0f;
             angle = acosf(cosine) - 1.57079632679f;
-            if (angle < 0.0f || angle > material->angle_upper) gates = 0;
+            if (angle < material->angle_lower || angle > material->angle_upper) gates = 0;
         }
     }
     if (gates && material->velocity_upper != 0.0f) {
@@ -283,6 +285,41 @@ int grenade_tick(grenade *g)
     return grenade_tick_on(g, 0, 0, 0);
 }
 
+int grenade_tick_bsp(grenade *g, const grenade_def *def,
+    const collide_bsp *bsp, uint32_t *seed)
+{
+    grenade_surface surface;
+    float end[3], segment[3], plane[4], average_z;
+    collide_hit hit;
+    int i;
+    int16_t material;
+    if (!g || !g->alive) return 0;
+    if (g->resting || !bsp) return grenade_tick_on(g, def, 0, seed);
+
+    /* Match projectile_update's one-tick ballistic segment. Collision chooses
+     * the nearest front-facing BSP surface exactly as the bullet path does. */
+    average_z = g->velocity[2] - GRENADE_GRAVITY * 0.5f;
+    end[0] = g->position[0] + g->velocity[0];
+    end[1] = g->position[1] + g->velocity[1];
+    end[2] = g->position[2] + average_z;
+    for (i = 0; i < 3; ++i) segment[i] = end[i] - g->position[i];
+    if (!collide_test_vector(bsp, g->position, segment, 1.0f, COLLIDE_FRONT, &hit) ||
+        hit.t <= 0.0f || hit.surface < 0 || hit.plane < 0 ||
+        (uint32_t)hit.surface >= bsp->surface_count ||
+        (uint32_t)hit.plane >= bsp->plane_count)
+        return grenade_tick_on(g, def, 0, seed);
+
+    memcpy(plane, bsp->planes + (size_t)hit.plane * 4, sizeof plane);
+    memcpy(&material, bsp->surfaces + (size_t)hit.surface * 12 + 10, sizeof material);
+    surface.normal[0] = plane[0];
+    surface.normal[1] = plane[1];
+    surface.normal[2] = plane[2];
+    surface.d = plane[3];
+    surface.material = collide_material_type(bsp, material);
+    surface.unit_surface = 0;
+    return grenade_tick_on(g, def, &surface, seed);
+}
+
 float grenade_damage(const grenade_def *def, float distance, uint32_t *seed)
 {
     float scale = blast_scale(def, distance);
@@ -290,4 +327,22 @@ float grenade_damage(const grenade_def *def, float distance, uint32_t *seed)
     if (scale <= 0.0f) return 0.0f;
     rolled = seed_range(seed, def->damage_lower, def->damage_upper);
     return ((1.0f - scale) * def->damage_minimum + rolled * scale);
+}
+
+int grenade_material_profile_get(int plasma, int material, grenade_material_profile *out)
+{
+    const grenade_material *record;
+    if (!out || material < 0 || material >= 33) return 0;
+    record = (plasma ? PLASMA_MATERIAL : FRAG_MATERIAL) + material;
+    out->response = record->response;
+    out->potential_response = record->potential;
+    out->potential_flags = record->potential_flags;
+    out->parallel_friction = record->parallel;
+    out->perpendicular_friction = record->perpendicular;
+    out->potential_skip_fraction = record->skip;
+    out->potential_angle_upper_bound = record->angle_upper;
+    out->potential_angle_lower_bound = record->angle_lower;
+    out->potential_velocity_lower_bound = record->velocity_lower;
+    out->potential_velocity_upper_bound = record->velocity_upper;
+    return 1;
 }

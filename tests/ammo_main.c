@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-_Static_assert(sizeof(play_fp_ammo) == 40, "magazine record");
+_Static_assert(sizeof(play_fp_ammo) == 80, "magazine record");
 
 int main(int argc, char **argv)
 {
@@ -41,6 +41,23 @@ int main(int argc, char **argv)
             def.rounds_per_shot, def.reload_empty_frames, def.ready_frames,
             def.shotgun_enter_frames, def.uses_magazine);
         printf("held %d %d %d\n", weapon.loaded, weapon.total, def.has_trigger);
+        if (i == 5) {
+            int tick, fired_tick = -1;
+            for (tick = 0; tick < 40; ++tick)
+                if (gun_tick(&weapon, &def, 1, 0)) fired_tick = tick;
+            if (gun_tick(&weapon, &def, 0, 0)) fired_tick = 40;
+            printf("plasma pistol fired_tick=%d shots=%u heat=%.3f\n",
+                fired_tick, weapon.shots, weapon.heat);
+        } else if (i == 6) {
+            int tick, overheats = 0, was_overheated = 0;
+            for (tick = 0; tick < 90; ++tick) {
+                (void)gun_tick(&weapon, &def, 1, 0);
+                if (weapon.overheated && !was_overheated) ++overheats;
+                was_overheated = weapon.overheated;
+            }
+            printf("plasma rifle shots=%u overheats=%d heat=%.3f\n",
+                weapon.shots, overheats, weapon.heat);
+        }
     }
     fclose(file);
     return 0;

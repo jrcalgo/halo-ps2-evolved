@@ -15,6 +15,8 @@ sys.path.insert(0, str(ROOT / "submodules" / "halo-ps2" / "tools"))
 
 # physics.c global_gravity. It is not a tag field.
 GRAVITY = 0.0035651792
+# NUMBER_OF_MATERIAL_TYPES in pinned halo-ce-universal/source/game/game_globals.h.
+CE_MATERIAL_TYPE_COUNT = 26
 
 # Order of the TAGS float block. move.h and pad.c cite the same fields.
 TAG_NAMES = (
@@ -39,7 +41,7 @@ def _decompressed(source: Path):
 
 
 def collision_payload(source: Path) -> tuple[bytes, dict[str, float]]:
-    """COLL payload: 9 counts, tables, then 16-byte starts (x, y, z, yaw)."""
+    """COLL payload: 9 counts, tables, 16-byte starts, runtime material types."""
     data, raw, loc = _decompressed(source)
     block = raw[loc.file_offset:loc.file_offset + loc.size]
     address = loc.address
@@ -64,11 +66,28 @@ def collision_payload(source: Path) -> tuple[bytes, dict[str, float]]:
     for index in range(spawn_count):
         spawns += data.region[spawn_off + index * 52:spawn_off + index * 52 + 16]
     counts.append(spawn_count)
+    material_count, material_addr = struct.unpack_from("<II", block, root + 0xA4)
+    material_off = material_addr - address
+    if material_count > 256 or material_off < 0 or material_off + material_count * 20 > len(block):
+        raise ValueError("BSP collision-material block is out of range")
+    material_types = bytearray()
+    for index in range(material_count):
+        # structure_collision_material: tag_reference (16), pad (2),
+        # runtime_physics_material_type (s16), per pinned CE structure header.
+        material_type = struct.unpack_from("<h", block, material_off + index * 20 + 18)[0]
+        # collision_structure_material_type returns NONE for invalid enum
+        # values; preserve that lookup behavior in the converted table.
+        if material_type < 0 or material_type >= CE_MATERIAL_TYPE_COUNT:
+            material_type = -1
+        material_types += struct.pack("<h", material_type)
     tags = _tags(data)
-    return struct.pack("<9I", *counts) + b"".join(parts) + bytes(spawns), tags
+    payload = struct.pack("<9I", *counts) + b"".join(parts) + bytes(spawns)
+    payload += struct.pack("<I", material_count) + bytes(material_types)
+    return payload, tags
 
 
 def _tags(data) -> dict[str, float]:
+    import math
     import struct as st
     entry = next(item for item in data.index.entries if item.group == "matg")
     region = data.region
@@ -99,6 +118,184 @@ def _tags(data) -> dict[str, float]:
     return {name: values[name] for name in TAG_NAMES}
 
 
+def _cyborg_vitality(data) -> bytes:
+    """Pack the player cyborg's collision-model damage_resistance records.
+
+    Layout is pinned to halo-ce-universal's object_definitions.h,
+    collision_model_definitions.h and damage_resistances.h. The play diagnostic
+    uses the indirect damage material; all records are retained for future hit
+    region resolution.
+    """
+    import math
+    import struct as st
+
+    region = data.region
+    bipd = next((entry for entry in data.index.entries
+                 if entry.group == "bipd" and entry.path == r"characters\cyborg_mp\cyborg_mp"), None)
+    if bipd is None:
+        raise ValueError("Blood Gulch map is missing the player cyborg biped")
+    bipd_base = bipd.data_address - data.base
+    collision_model_id = st.unpack_from("<I", region, bipd_base + 124)[0]
+    collision_model = data.by_id.get(collision_model_id)
+    if collision_model is None or collision_model.group != "coll":
+        raise ValueError("player cyborg collision-model reference is missing or not coll")
+    base = collision_model.data_address - data.base
+    indirect_index = st.unpack_from("<h", region, base + 4)[0]
+    maximum_body = st.unpack_from("<f", region, base + 8)[0]
+    maximum_shield = st.unpack_from("<f", region, base + 204)[0]
+    shield_material_type = st.unpack_from("<h", region, base + 210)[0]
+    minimum_shield_stun = st.unpack_from("<f", region, base + 268)[0]
+    shield_stun_seconds = st.unpack_from("<f", region, base + 272)[0]
+    recharge_step = st.unpack_from("<f", region, base + 448)[0]
+    material_count, material_address = st.unpack_from("<II", region, base + 564)
+    material_base = material_address - data.base
+    if (material_count == 0 or material_count > 40 or indirect_index < 0 or
+            indirect_index >= material_count or material_base < 0 or
+            material_base + material_count * 0x48 > len(region)):
+        raise ValueError("player cyborg damage_resistance materials are malformed")
+    if shield_material_type < 0 or shield_material_type >= 26:
+        shield_material_type = -1
+    profile = (maximum_body, maximum_shield, minimum_shield_stun,
+               shield_stun_seconds, recharge_step)
+    if not all(math.isfinite(value) for value in profile) or maximum_body <= 0.0 or maximum_shield <= 0.0:
+        raise ValueError("player cyborg damage_resistance profile has invalid values")
+    records = bytearray()
+    for index in range(material_count):
+        item = material_base + index * 0x48
+        material_type = st.unpack_from("<h", region, item + 0x24)[0]
+        shield_leak, shield_multiplier = st.unpack_from("<2f", region, item + 0x28)
+        body_multiplier = st.unpack_from("<f", region, item + 0x3C)[0]
+        if material_type < 0 or material_type >= 26:
+            material_type = -1
+        if not all(math.isfinite(value) for value in (shield_leak, shield_multiplier, body_multiplier)):
+            raise ValueError(f"player cyborg damage material {index} has invalid values")
+        records += st.pack("<h3f", material_type, shield_leak, shield_multiplier, body_multiplier)
+    # VIT1 v1: magic/version/count/indirect index/shield material, resistance
+    # maxima/stun/recharge, followed by source-ordered damage-material records.
+    return st.pack("<4sHHhh5f", b"VIT1", 1, material_count, indirect_index,
+                   shield_material_type, *profile) + bytes(records)
+
+
+def _cyborg_actor_collision(data) -> bytes:
+    """Pack cyborg node-BSP triangles with CE damage indices and node metadata.
+
+    ACOL v2 adds source-order model-node parent/default-pose records before
+    the model-local triangles. These defaults are a bind-pose reference only;
+    gameplay must use the animated node pose. Polygon rings follow
+    collision_surface_polygon in halo-ce-universal.
+    """
+    import math
+    import struct as st
+
+    region = data.region
+    coll = next((entry for entry in data.index.entries
+                 if entry.group == "coll" and entry.path == r"characters\cyborg\cyborg"), None)
+    if coll is None:
+        raise ValueError("Blood Gulch map is missing the cyborg collision model")
+    base = coll.data_address - data.base
+    node_count, node_address = st.unpack_from("<II", region, base + 0x28C)
+    if node_count == 0 or node_count > 256:
+        raise ValueError("cyborg collision-model node count is invalid")
+    node_base = node_address - data.base
+    if node_base < 0 or node_base + node_count * 0x40 > len(region):
+        raise ValueError("cyborg collision-model node block is out of range")
+
+    # model_node in halo-ce-universal: 32-byte name, sibling/child/parent
+    # indices and pad (8), translation (12), quaternion (16), distance (4),
+    # unused[8] (32), runtime inverse matrix (52): 156 bytes total.
+    bipd = next((entry for entry in data.index.entries
+                 if entry.group == "bipd" and entry.path == r"characters\cyborg_mp\cyborg_mp"), None)
+    if bipd is None:
+        raise ValueError("Blood Gulch map is missing the player cyborg biped")
+    bipd_base = bipd.data_address - data.base
+    model_id, = st.unpack_from("<I", region, bipd_base + 52)
+    model = data.by_id.get(model_id)
+    if model is None or model.group != "mode":
+        raise ValueError("player cyborg model reference is missing or not mode")
+    model_base = model.data_address - data.base
+    model_node_count, model_node_address = st.unpack_from("<II", region, model_base + 184)
+    model_node_base = model_node_address - data.base
+    if (model_node_count != node_count or model_node_base < 0 or
+            model_node_base + model_node_count * 156 > len(region)):
+        raise ValueError("player cyborg model and collision node tables do not align")
+    node_records = bytearray()
+    for node_index in range(node_count):
+        model_node = model_node_base + node_index * 156
+        coll_name = bytes(region[node_base + node_index * 0x40:
+                                 node_base + node_index * 0x40 + 32]).split(b"\0", 1)[0]
+        model_name = bytes(region[model_node:model_node + 32]).split(b"\0", 1)[0]
+        if coll_name != model_name:
+            raise ValueError(f"cyborg model/collision node {node_index} names do not align")
+        parent, = st.unpack_from("<h", region, model_node + 36)
+        translation = st.unpack_from("<3f", region, model_node + 40)
+        rotation = st.unpack_from("<4f", region, model_node + 52)
+        distance, = st.unpack_from("<f", region, model_node + 68)
+        if parent < -1 or parent >= node_count or parent == node_index:
+            raise ValueError(f"cyborg model node {node_index} has an invalid parent")
+        if not all(math.isfinite(v) for v in (*translation, *rotation, distance)):
+            raise ValueError(f"cyborg model node {node_index} has non-finite defaults")
+        node_records += st.pack("<hh8f", node_index, parent, *translation, *rotation, distance)
+
+    triangles = bytearray()
+    triangle_count = 0
+    for node_index in range(node_count):
+        node = node_base + node_index * 0x40
+        region_index, = st.unpack_from("<h", region, node + 32)
+        runtime_damage_part, = st.unpack_from("<h", region, node + 50)
+        bsp_count, bsp_address = st.unpack_from("<II", region, node + 52)
+        if bsp_count > 32:
+            raise ValueError(f"cyborg node {node_index} has too many BSPs")
+        bsp_base = bsp_address - data.base if bsp_count else 0
+        if bsp_count and (bsp_base < 0 or bsp_base + bsp_count * 96 > len(region)):
+            raise ValueError(f"cyborg node {node_index} BSP block is out of range")
+        for bsp_index in range(bsp_count):
+            bsp = bsp_base + bsp_index * 96
+            counts, addresses = [], []
+            for block_index in range(8):
+                count, address = st.unpack_from("<II", region, bsp + block_index * 12)
+                offset = address - data.base if count else 0
+                stride = (12, 16, 8, 8, 20, 12, 24, 16)[block_index]
+                if count > 131072 or (count and (offset < 0 or offset + count * stride > len(region))):
+                    raise ValueError(f"cyborg node {node_index} BSP block {block_index} is invalid")
+                counts.append(count)
+                addresses.append(offset)
+            surface_count, edge_count, vertex_count = counts[5], counts[6], counts[7]
+            for surface_index in range(surface_count):
+                surface = addresses[5] + surface_index * 12
+                first_edge, = st.unpack_from("<i", region, surface + 4)
+                resistance_index, = st.unpack_from("<h", region, surface + 10)
+                edge_index = first_edge
+                points = []
+                for edge_step in range(8):
+                    if edge_index < 0 or edge_index >= edge_count:
+                        raise ValueError(f"cyborg node {node_index} surface {surface_index} edge ring is invalid")
+                    edge = addresses[6] + edge_index * 24
+                    vertices = st.unpack_from("<2i", region, edge)
+                    edge_indices = st.unpack_from("<2i", region, edge + 8)
+                    surface_indices = st.unpack_from("<2i", region, edge + 16)
+                    reverse = surface_indices[1] == surface_index
+                    vertex_index = vertices[int(reverse)]
+                    if vertex_index < 0 or vertex_index >= vertex_count:
+                        raise ValueError(f"cyborg node {node_index} surface {surface_index} vertex is invalid")
+                    vertex = addresses[7] + vertex_index * 16
+                    points.append(st.unpack_from("<3f", region, vertex))
+                    next_edge = edge_indices[int(reverse)]
+                    if next_edge == first_edge:
+                        break
+                    edge_index = next_edge
+                else:
+                    raise ValueError(f"cyborg node {node_index} surface {surface_index} ring exceeds CE maximum")
+                if len(points) < 3:
+                    raise ValueError(f"cyborg node {node_index} surface {surface_index} has fewer than 3 points")
+                for point in range(1, len(points) - 1):
+                    vertices = (*points[0], *points[point], *points[point + 1])
+                    triangles += st.pack("<5h9f", node_index, region_index,
+                        runtime_damage_part, resistance_index, surface_index, *vertices)
+                    triangle_count += 1
+    # ACOL v2 header: magic, version, node count, triangle count, node stride.
+    return st.pack("<4sHHII", b"ACL1", 2, node_count, triangle_count, 36) + node_records + triangles
+
+
 def tags_payload(tags: dict[str, float]) -> bytes:
     return struct.pack("<I", len(TAG_NAMES)) + struct.pack("<" + "f" * len(TAG_NAMES), *(tags[name] for name in TAG_NAMES))
 
@@ -106,7 +303,10 @@ def tags_payload(tags: dict[str, float]) -> bytes:
 def build_pack(source: Path) -> bytes:
     from halo2ps2.hp2 import build
     payload, tags = collision_payload(source)
-    return build("bloodgulch", [("COLL", payload), ("TAGS", tags_payload(tags))], compress=False)
+    data, _raw, _loc = _decompressed(source)
+    return build("bloodgulch", [("COLL", payload), ("TAGS", tags_payload(tags)),
+                                 ("VITA", _cyborg_vitality(data)),
+                                 ("ACOL", _cyborg_actor_collision(data))], compress=False)
 
 
 def main() -> None:

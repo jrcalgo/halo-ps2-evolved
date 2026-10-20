@@ -14,7 +14,12 @@ unsigned __real_objects_pose_model(const object_world_t *w, int model, int graph
 #define PLAY_FP_MAX 32
 #define PLAY_FP_REC 112
 #define PLAY_FP_REMAP 144
-#define PLAY_FP_PROJ 68
+#define PLAY_FP_PROJ 404
+#define PLAY_FP_TRIGGER 256
+#define PLAY_FP_MAGAZINE 28
+#define PLAY_FP_WEAPON_POLICY 24
+#define PLAY_FP_FIRING_EFFECT 388
+#define PLAY_FP_DIRECTIONS 1026
 
 typedef struct {
     char path[64];
@@ -41,12 +46,39 @@ _Static_assert(sizeof(play_fp_weapon) == PLAY_FP_REC, "weapons.fp record");
 _Static_assert(sizeof(play_fp_remap) == PLAY_FP_REMAP, "weapons.fp pose map");
 _Static_assert(sizeof(play_fp_ammo) == PLAY_FP_AMMO, "weapons.fp magazine");
 _Static_assert(sizeof(play_fp_proj) == PLAY_FP_PROJ, "weapons.fp projectile");
+_Static_assert(sizeof(play_fp_trigger) == PLAY_FP_TRIGGER, "weapons.fp trigger");
+_Static_assert(sizeof(play_fp_magazine) == PLAY_FP_MAGAZINE, "weapons.fp trigger magazine");
+_Static_assert(sizeof(play_fp_weapon_trigger_policy) == PLAY_FP_WEAPON_POLICY,
+    "weapons.fp weapon trigger policy");
+_Static_assert(sizeof(play_fp_firing_effect) == PLAY_FP_FIRING_EFFECT,
+    "weapons.fp firing effect");
+_Static_assert(sizeof(play_fp_cone) == 16, "weapons.fp spread record");
 
 static play_fp_weapon s_weapon[PLAY_FP_MAX];
 static play_fp_remap s_remap[PLAY_FP_MAX];
 static gun_def s_gun[PLAY_FP_MAX];
 static shot_def s_proj[PLAY_FP_MAX];
+static play_fp_trigger s_trigger[2];
+static shot_def s_trigger_proj[2];
+static play_fp_magazine s_trigger_mag[2];
+static play_fp_weapon_trigger_policy s_weapon_trigger_policy;
+static play_fp_firing_effect s_firing_effect[2][2];
+static uint8_t s_trigger_has_proj[2];
+static uint32_t s_trigger_offset;
+static uint32_t s_trigger_proj_offset;
+static uint32_t s_projectile_friction_offset;
+static uint32_t s_trigger_projectile_friction_offset;
+static uint32_t s_projectile_potential_offset;
+static uint32_t s_trigger_projectile_potential_offset;
+static uint32_t s_trigger_mag_offset;
+static uint32_t s_weapon_trigger_policy_offset;
+static uint32_t s_firing_effect_offset;
+static int s_trigger_ext_ok;
 static uint8_t s_has_proj[PLAY_FP_MAX];
+static play_fp_cone s_cone[PLAY_FP_MAX];
+static float s_directions[PLAY_FP_DIRECTIONS][3];
+static unsigned s_direction_count;
+static int s_cone_ok;
 static int s_count;
 static int s_slot;
 static int s_sword_frame;
@@ -109,6 +141,151 @@ static int s_ammo;
 static int s_proj_ok;
 static int s_drawn = -1;
 
+static int read_shot_material_profiles(FILE *file, shot_def *def)
+{
+    int material;
+    for (material = 0; material < SHOT_MATERIALS; material++) {
+        float profile[SHOT_MATERIAL_PROFILE_FLOATS];
+        if (fread(profile, sizeof(float), SHOT_MATERIAL_PROFILE_FLOATS, file) !=
+            SHOT_MATERIAL_PROFILE_FLOATS) return 0;
+        def->initial_friction[material] = profile[0];
+        def->parallel_friction[material] = profile[1];
+        def->perpendicular_friction[material] = profile[2];
+        def->angular_noise[material] = profile[3];
+        def->velocity_noise[material] = profile[4];
+    }
+    return 1;
+}
+
+static int read_shot_potential_profiles(FILE *file, shot_def *def)
+{
+    int material;
+    for (material = 0; material < SHOT_MATERIALS; material++) {
+        if (fread(&def->potential_response[material], sizeof(int16_t), 1, file) != 1 ||
+            fread(&def->potential_flags[material], sizeof(uint16_t), 1, file) != 1 ||
+            fread(&def->potential_skip_fraction[material], sizeof(float), 1, file) != 1 ||
+            fread(&def->potential_angle_lower[material], sizeof(float), 1, file) != 1 ||
+            fread(&def->potential_angle_upper[material], sizeof(float), 1, file) != 1 ||
+            fread(&def->potential_velocity_lower[material], sizeof(float), 1, file) != 1 ||
+            fread(&def->potential_velocity_upper[material], sizeof(float), 1, file) != 1)
+            return 0;
+    }
+    return 1;
+}
+
+static void load_selected_triggers(void)
+{
+    FILE *file;
+    int i;
+    memset(s_trigger, 0, sizeof s_trigger);
+    memset(s_trigger_proj, 0, sizeof s_trigger_proj);
+    memset(s_trigger_mag, 0, sizeof s_trigger_mag);
+    memset(&s_weapon_trigger_policy, 0, sizeof s_weapon_trigger_policy);
+    memset(s_firing_effect, 0, sizeof s_firing_effect);
+    memset(s_trigger_has_proj, 0, sizeof s_trigger_has_proj);
+    if (!s_trigger_ext_ok || s_slot < 0 || s_slot >= s_count) return;
+    file = fopen("host:/weapons.fp", "rb");
+    if (!file) return;
+    for (i = 0; i < 2; i++) {
+        uint32_t record = (uint32_t)(s_slot * 2 + i);
+        if (fseek(file, (long)(s_trigger_offset + record * PLAY_FP_TRIGGER), SEEK_SET) != 0 ||
+            fread(&s_trigger[i], PLAY_FP_TRIGGER, 1, file) != 1 ||
+            fseek(file, (long)(s_trigger_proj_offset + record * PLAY_FP_PROJ), SEEK_SET) != 0) {
+            memset(s_trigger, 0, sizeof s_trigger);
+            memset(s_trigger_proj, 0, sizeof s_trigger_proj);
+            memset(s_trigger_has_proj, 0, sizeof s_trigger_has_proj);
+            fclose(file);
+            return;
+        }
+        {
+            play_fp_proj projectile;
+            if (fread(&projectile, PLAY_FP_PROJ, 1, file) != 1) {
+                memset(s_trigger, 0, sizeof s_trigger);
+                memset(s_trigger_proj, 0, sizeof s_trigger_proj);
+                memset(s_trigger_has_proj, 0, sizeof s_trigger_has_proj);
+                fclose(file);
+                return;
+            }
+            play_fp_apply_proj(&s_trigger_proj[i], &projectile);
+            s_trigger_has_proj[i] = projectile.has_projectile;
+            if (!s_trigger_projectile_friction_offset || !s_trigger_projectile_potential_offset ||
+                fseek(file, (long)(s_trigger_projectile_friction_offset +
+                    record * SHOT_MATERIALS * SHOT_MATERIAL_PROFILE_FLOATS * sizeof(float)), SEEK_SET) != 0 ||
+                !read_shot_material_profiles(file, &s_trigger_proj[i]) ||
+                fseek(file, (long)(s_trigger_projectile_potential_offset +
+                    record * SHOT_MATERIALS * (sizeof(int16_t) + sizeof(uint16_t) + 5 * sizeof(float))), SEEK_SET) != 0 ||
+                !read_shot_potential_profiles(file, &s_trigger_proj[i])) {
+                memset(s_trigger, 0, sizeof s_trigger);
+                memset(s_trigger_proj, 0, sizeof s_trigger_proj);
+                memset(s_trigger_has_proj, 0, sizeof s_trigger_has_proj);
+                fclose(file);
+                return;
+            }
+        }
+    }
+    if (fseek(file, (long)(s_trigger_mag_offset + s_slot * 2 * PLAY_FP_MAGAZINE), SEEK_SET) != 0) {
+        s_trigger_ext_ok = 0;
+        memset(s_trigger, 0, sizeof s_trigger);
+        memset(s_trigger_proj, 0, sizeof s_trigger_proj);
+        memset(s_trigger_mag, 0, sizeof s_trigger_mag);
+        memset(s_trigger_has_proj, 0, sizeof s_trigger_has_proj);
+        fclose(file);
+        return;
+    }
+    for (i = 0; i < 2; i++) {
+        if (fread(&s_trigger_mag[i], PLAY_FP_MAGAZINE, 1, file) != 1) {
+            s_trigger_ext_ok = 0;
+            memset(s_trigger, 0, sizeof s_trigger);
+            memset(s_trigger_proj, 0, sizeof s_trigger_proj);
+            memset(s_trigger_mag, 0, sizeof s_trigger_mag);
+            memset(s_trigger_has_proj, 0, sizeof s_trigger_has_proj);
+            fclose(file);
+            return;
+        }
+    }
+    if (fseek(file, (long)(s_weapon_trigger_policy_offset +
+            (uint32_t)s_slot * PLAY_FP_WEAPON_POLICY), SEEK_SET) != 0 ||
+        fread(&s_weapon_trigger_policy, PLAY_FP_WEAPON_POLICY, 1, file) != 1) {
+        s_trigger_ext_ok = 0;
+        memset(&s_weapon_trigger_policy, 0, sizeof s_weapon_trigger_policy);
+        fclose(file);
+        return;
+    }
+    if (fseek(file, (long)(s_firing_effect_offset +
+            (uint32_t)s_slot * 4 * PLAY_FP_FIRING_EFFECT), SEEK_SET) != 0 ||
+        fread(s_firing_effect, PLAY_FP_FIRING_EFFECT, 4, file) != 4) {
+        s_trigger_ext_ok = 0;
+        memset(s_firing_effect, 0, sizeof s_firing_effect);
+        fclose(file);
+        return;
+    }
+    if (s_ammo && s_slot < PLAY_FP_MAX) {
+        gun_def *definition = &s_gun[s_slot];
+        int trigger, effect;
+        definition->cannot_fire_at_maximum_age =
+            (s_weapon_trigger_policy.flags & GUN_WEAPON_CANNOT_FIRE_AT_MAXIMUM_AGE) != 0;
+        definition->age_heat_recovery_penalty =
+            s_weapon_trigger_policy.age_heat_recovery_penalty;
+        definition->age_rate_of_fire_penalty =
+            s_weapon_trigger_policy.age_rate_of_fire_penalty;
+        definition->age_misfire_start = s_weapon_trigger_policy.age_misfire_start;
+        definition->age_misfire_chance = s_weapon_trigger_policy.age_misfire_chance;
+        definition->age_generated_per_round = s_trigger[0].values[
+            PLAY_FP_TRIGGER_AGE_GENERATED_PER_ROUND];
+        definition->firing_effect_count = s_trigger[0].firing_effect_count;
+        definition->trigger_flags = s_trigger[0].flags;
+        for (trigger = 0; trigger < 2; trigger++) {
+            for (effect = 0; effect < 2; effect++) {
+                definition->firing_effect_shots[trigger][effect][0] =
+                    s_firing_effect[trigger][effect].shots_lower_bound;
+                definition->firing_effect_shots[trigger][effect][1] =
+                    s_firing_effect[trigger][effect].shots_upper_bound;
+            }
+        }
+    }
+    fclose(file);
+}
+
 static int path_is(const char *path, const char *full)
 {
     return strcmp(path, full) == 0;
@@ -127,6 +304,18 @@ int play_fp_open(void)
     s_carbine_frame = 0;
     s_ammo = 0;
     s_proj_ok = 0;
+    s_cone_ok = 0;
+    s_trigger_ext_ok = 0;
+    s_trigger_offset = 0;
+    s_trigger_proj_offset = 0;
+    s_projectile_friction_offset = 0;
+    s_trigger_projectile_friction_offset = 0;
+    s_projectile_potential_offset = 0;
+    s_trigger_projectile_potential_offset = 0;
+    s_trigger_mag_offset = 0;
+    s_weapon_trigger_policy_offset = 0;
+    s_firing_effect_offset = 0;
+    s_direction_count = 0;
     s_drawn = -1;
     file = fopen("host:/weapons.fp", "rb");
     if (!file) return -1;
@@ -187,6 +376,157 @@ int play_fp_open(void)
                     s_proj_ok = 1;
                 }
             }
+            if (s_proj_ok && fread(mark, 1, 4, file) == 4 && memcmp(mark, "PRS1", 4) == 0) {
+                unsigned short friction_count, materials;
+                long friction_data;
+                if (fread(&friction_count, 2, 1, file) == 1 && friction_count == count &&
+                    fread(&materials, 2, 1, file) == 1 && materials == SHOT_MATERIALS &&
+                    (friction_data = ftell(file)) >= 0) {
+                    s_projectile_friction_offset = (uint32_t)friction_data;
+                    for (i = 0; i < count; i++) {
+                        if (!read_shot_material_profiles(file, &s_proj[i])) {
+                            s_proj_ok = 0;
+                            break;
+                        }
+                    }
+                } else {
+                    s_proj_ok = 0;
+                }
+            } else {
+                s_proj_ok = 0;
+            }
+            if (s_proj_ok && fread(mark, 1, 4, file) == 4 && memcmp(mark, "POT1", 4) == 0) {
+                unsigned short potential_count, potential_materials;
+                long potential_data;
+                if (fread(&potential_count, 2, 1, file) == 1 && potential_count == count &&
+                    fread(&potential_materials, 2, 1, file) == 1 && potential_materials == SHOT_MATERIALS &&
+                    (potential_data = ftell(file)) >= 0) {
+                    s_projectile_potential_offset = (uint32_t)potential_data;
+                    for (i = 0; i < count; i++) {
+                        if (!read_shot_potential_profiles(file, &s_proj[i])) {
+                            s_proj_ok = 0;
+                            break;
+                        }
+                    }
+                } else {
+                    s_proj_ok = 0;
+                }
+            } else {
+                s_proj_ok = 0;
+            }
+            if (s_proj_ok && fread(mark, 1, 4, file) == 4 && memcmp(mark, "RND1", 4) == 0) {
+                unsigned short cones, directions;
+                if (fread(&cones, 2, 1, file) == 1 && cones == count &&
+                    fread(&directions, 2, 1, file) == 1 && directions == PLAY_FP_DIRECTIONS) {
+                    s_cone_ok = 1;
+                    for (i = 0; i < count; i++) {
+                        if (fread(&s_cone[i], sizeof s_cone[i], 1, file) != 1) {
+                            s_cone_ok = 0;
+                            break;
+                        }
+                    }
+                    if (s_cone_ok && fread(s_directions, sizeof(float) * 3, directions, file) == directions)
+                        s_direction_count = directions;
+                    else
+                        s_cone_ok = 0;
+                    if (s_cone_ok) printf("[play] spread table %u directions\n", s_direction_count);
+                    if (s_cone_ok) {
+                        unsigned short trigger_count, triggers_per_weapon, trigger_size, trigger_schema;
+                        unsigned short projectile_count, projectiles_per_weapon;
+                        long position = ftell(file);
+                        long trigger_data, projectile_data, projectile_friction_data, projectile_potential_data, magazine_data;
+                        if (position >= 0 &&
+                            fseek(file, position + ((4 - (position & 3)) & 3), SEEK_SET) == 0 &&
+                            fread(mark, 1, 4, file) == 4 && memcmp(mark, "TRG1", 4) == 0 &&
+                            fread(&trigger_count, 2, 1, file) == 1 && trigger_count == count &&
+                            fread(&triggers_per_weapon, 2, 1, file) == 1 && triggers_per_weapon == 2 &&
+                            fread(&trigger_size, 2, 1, file) == 1 && trigger_size == PLAY_FP_TRIGGER &&
+                            fread(&trigger_schema, 2, 1, file) == 1 && trigger_schema == 1) {
+                            trigger_data = ftell(file);
+                            if (trigger_data >= 0 &&
+                                fseek(file, trigger_data + (long)count * 2 * PLAY_FP_TRIGGER, SEEK_SET) == 0 &&
+                                fread(mark, 1, 4, file) == 4 && memcmp(mark, "PRJ2", 4) == 0 &&
+                                fread(&projectile_count, 2, 1, file) == 1 && projectile_count == count &&
+                                fread(&projectiles_per_weapon, 2, 1, file) == 1 && projectiles_per_weapon == 2) {
+                                projectile_data = ftell(file);
+                                if (projectile_data >= 0 &&
+                                    fseek(file, projectile_data + (long)count * 2 * PLAY_FP_PROJ, SEEK_SET) == 0 &&
+                                    fread(mark, 1, 4, file) == 4 && memcmp(mark, "PRS2", 4) == 0) {
+                                    unsigned short friction_count, materials;
+                                    if (fread(&friction_count, 2, 1, file) == 1 && friction_count == count &&
+                                        fread(&materials, 2, 1, file) == 1 && materials == SHOT_MATERIALS &&
+                                        (projectile_friction_data = ftell(file)) >= 0 &&
+                                        fseek(file, projectile_friction_data +
+                                            (long)count * 2 * SHOT_MATERIALS *
+                                                SHOT_MATERIAL_PROFILE_FLOATS * sizeof(float), SEEK_SET) == 0 &&
+                                        fread(mark, 1, 4, file) == 4 && memcmp(mark, "POT2", 4) == 0) {
+                                        unsigned short potential_count, potential_materials;
+                                        if (fread(&potential_count, 2, 1, file) == 1 && potential_count == count &&
+                                            fread(&potential_materials, 2, 1, file) == 1 && potential_materials == SHOT_MATERIALS &&
+                                            (projectile_potential_data = ftell(file)) >= 0 &&
+                                            fseek(file, projectile_potential_data + (long)count * 2 * SHOT_MATERIALS *
+                                                (sizeof(int16_t) + sizeof(uint16_t) + 5 * sizeof(float)), SEEK_SET) == 0 &&
+                                            fread(mark, 1, 4, file) == 4 && memcmp(mark, "MAG2", 4) == 0) {
+                                        unsigned short magazine_count, magazines_per_weapon,
+                                                       magazine_size, magazine_reserved;
+                                        if (fread(&magazine_count, 2, 1, file) == 1 && magazine_count == count &&
+                                            fread(&magazines_per_weapon, 2, 1, file) == 1 && magazines_per_weapon == 2 &&
+                                            fread(&magazine_size, 2, 1, file) == 1 && magazine_size == PLAY_FP_MAGAZINE &&
+                                            fread(&magazine_reserved, 2, 1, file) == 1 && magazine_reserved == 0) {
+                                            magazine_data = ftell(file);
+                                            if (magazine_data >= 0 &&
+                                                fseek(file, magazine_data +
+                                                    (long)count * 2 * PLAY_FP_MAGAZINE, SEEK_SET) == 0 &&
+                                                fread(mark, 1, 4, file) == 4 &&
+                                                memcmp(mark, "WMD1", 4) == 0) {
+                                            unsigned short policy_count, policy_size,
+                                                           policy_reserved0, policy_reserved1;
+                                            long policy_data;
+                                            if (fread(&policy_count, 2, 1, file) == 1 &&
+                                                policy_count == count &&
+                                                fread(&policy_size, 2, 1, file) == 1 &&
+                                                policy_size == PLAY_FP_WEAPON_POLICY &&
+                                                fread(&policy_reserved0, 2, 1, file) == 1 &&
+                                                policy_reserved0 == 0 &&
+                                                fread(&policy_reserved1, 2, 1, file) == 1 &&
+                                                policy_reserved1 == 0 &&
+                                                (policy_data = ftell(file)) >= 0) {
+                                                unsigned short effect_count, triggers_per_weapon,
+                                                    effects_per_trigger, effect_size, effect_schema,
+                                                    effect_reserved;
+                                                long effect_data = policy_data + (long)count * PLAY_FP_WEAPON_POLICY;
+                                                if (fseek(file, effect_data, SEEK_SET) == 0 &&
+                                                    fread(mark, 1, 4, file) == 4 &&
+                                                    memcmp(mark, "FEF1", 4) == 0 &&
+                                                    fread(&effect_count, 2, 1, file) == 1 && effect_count == count &&
+                                                    fread(&triggers_per_weapon, 2, 1, file) == 1 && triggers_per_weapon == 2 &&
+                                                    fread(&effects_per_trigger, 2, 1, file) == 1 && effects_per_trigger == 2 &&
+                                                    fread(&effect_size, 2, 1, file) == 1 && effect_size == PLAY_FP_FIRING_EFFECT &&
+                                                    fread(&effect_schema, 2, 1, file) == 1 && effect_schema == 1 &&
+                                                    fread(&effect_reserved, 2, 1, file) == 1 && effect_reserved == 0) {
+                                                    long effects = ftell(file);
+                                                    if (effects >= 0) {
+                                                        s_trigger_offset = (uint32_t)trigger_data;
+                                                        s_trigger_proj_offset = (uint32_t)projectile_data;
+                                                        s_trigger_projectile_friction_offset = (uint32_t)projectile_friction_data;
+                                                        s_trigger_projectile_potential_offset = (uint32_t)projectile_potential_data;
+                                                        s_trigger_mag_offset = (uint32_t)magazine_data;
+                                                        s_weapon_trigger_policy_offset = (uint32_t)policy_data;
+                                                        s_firing_effect_offset = (uint32_t)effects;
+                                                        s_trigger_ext_ok = 1;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        }
         }
         fclose(file);
     }
@@ -206,12 +546,18 @@ int play_fp_open(void)
         }
         fclose(file);
     }
+    load_selected_triggers();
     return 0;
 }
 
 int play_fp_count(void)
 {
     return s_count;
+}
+
+int play_fp_slot(void)
+{
+    return s_slot;
 }
 
 int play_fp_model_count(void)
@@ -243,7 +589,10 @@ const char *play_fp_name(void)
 
 void play_fp_cycle(void)
 {
-    if (s_count) s_slot = (s_slot + 1) % s_count;
+    if (s_count) {
+        s_slot = (s_slot + 1) % s_count;
+        load_selected_triggers();
+    }
 }
 
 const gun_def *play_fp_gun(void)
@@ -266,6 +615,115 @@ const shot_def *play_fp_shot(void)
     if (path_is(play_fp_path(), "weapons\\pistol\\pistol")) return &SHOT_PISTOL;
     if (path_is(play_fp_path(), "weapons\\assault rifle\\assault rifle")) return &SHOT_ASSAULT_RIFLE;
     return NULL;
+}
+
+const play_fp_trigger *play_fp_trigger_at(int index)
+{
+    if (!s_trigger_ext_ok || index < 0 || index >= 2) return NULL;
+    return &s_trigger[index];
+}
+
+int play_fp_trigger_uses_weapon_origin(int index)
+{
+    const play_fp_trigger *trigger = play_fp_trigger_at(index);
+    return trigger && (trigger->flags & GUN_TRIGGER_USES_WEAPON_ORIGIN) != 0;
+}
+
+const shot_def *play_fp_trigger_shot(int index)
+{
+    if (!s_trigger_ext_ok || index < 0 || index >= 2 || !s_trigger_has_proj[index]) return NULL;
+    return &s_trigger_proj[index];
+}
+
+const play_fp_magazine *play_fp_trigger_magazine(int index)
+{
+    if (!s_trigger_ext_ok || index < 0 || index >= 2) return NULL;
+    return &s_trigger_mag[index];
+}
+
+const play_fp_weapon_trigger_policy *play_fp_weapon_trigger_policy_get(void)
+{
+    return s_trigger_ext_ok ? &s_weapon_trigger_policy : NULL;
+}
+
+const play_fp_firing_effect *play_fp_firing_effect_at(int trigger, int effect)
+{
+    if (!s_trigger_ext_ok || trigger < 0 || trigger >= 2 || effect < 0 || effect >= 2)
+        return NULL;
+    return &s_firing_effect[trigger][effect];
+}
+
+int play_fp_trigger_loaded(int16_t loaded[GUN_TRIGGER_MAGAZINES])
+{
+    int i;
+    if (!loaded || !s_trigger_ext_ok) return 0;
+    for (i = 0; i < GUN_TRIGGER_MAGAZINES; i++) {
+        int initial = s_trigger_mag[i].values[1];
+        int maximum = s_trigger_mag[i].values[3];
+        if (initial < 0) initial = 0;
+        if (maximum < 0) maximum = 0;
+        if (initial > maximum) initial = maximum;
+        loaded[i] = (int16_t)initial;
+    }
+    return 1;
+}
+
+int play_fp_trigger_profiles(gun_trigger_profile profiles[GUN_TRIGGER_MAX])
+{
+    int i;
+    const gun_def *weapon = play_fp_gun();
+    if (!profiles || !s_trigger_ext_ok || !weapon) return 0;
+    for (i = 0; i < GUN_TRIGGER_MAX; i++) {
+        const play_fp_trigger *source = &s_trigger[i];
+        float values[25];
+        memcpy(values, source->values, sizeof values);
+        profiles[i].flags = source->flags;
+        profiles[i].magazine_index = source->halves[0];
+        profiles[i].rounds_per_shot = source->halves[1];
+        profiles[i].projectiles_per_shot = source->halves[10];
+        profiles[i].minimum_rounds = source->halves[2];
+        profiles[i].overcharged_action = source->halves[8];
+        profiles[i].rate_initial = values[PLAY_FP_TRIGGER_RATE_INITIAL];
+        profiles[i].rate_final = values[PLAY_FP_TRIGGER_RATE_FINAL];
+        profiles[i].rate_acceleration = values[PLAY_FP_TRIGGER_RUNTIME_RATE_ACCEL];
+        profiles[i].rate_deceleration = values[PLAY_FP_TRIGGER_RUNTIME_RATE_DECEL];
+        profiles[i].error_acceleration = values[PLAY_FP_TRIGGER_RUNTIME_ERROR_ACCEL];
+        profiles[i].error_deceleration = values[PLAY_FP_TRIGGER_RUNTIME_ERROR_DECEL];
+        profiles[i].charging_seconds = values[PLAY_FP_TRIGGER_CHARGING_SECONDS];
+        profiles[i].charged_seconds = values[PLAY_FP_TRIGGER_CHARGED_SECONDS];
+        profiles[i].spew_seconds = values[PLAY_FP_TRIGGER_SPEW_SECONDS];
+        profiles[i].age_generated_per_round =
+            values[PLAY_FP_TRIGGER_AGE_GENERATED_PER_ROUND];
+        profiles[i].heat_generated_per_round = values[16];
+        profiles[i].firing_effect_count = source->firing_effect_count;
+        profiles[i].age_misfire_start = s_weapon_trigger_policy.age_misfire_start;
+        profiles[i].age_misfire_chance = s_weapon_trigger_policy.age_misfire_chance;
+        {
+            int effect;
+            for (effect = 0; effect < 2; effect++) {
+                profiles[i].firing_effect_shots[effect][0] =
+                    s_firing_effect[i][effect].shots_lower_bound;
+                profiles[i].firing_effect_shots[effect][1] =
+                    s_firing_effect[i][effect].shots_upper_bound;
+            }
+        }
+    }
+    return weapon->trigger_count;
+}
+
+const play_fp_cone *play_fp_spread(void)
+{
+    return s_cone_ok && s_count ? &s_cone[s_slot] : NULL;
+}
+
+const float (*play_fp_directions(void))[3]
+{
+    return s_cone_ok ? (const float (*)[3])s_directions : NULL;
+}
+
+unsigned play_fp_direction_count(void)
+{
+    return s_cone_ok ? s_direction_count : 0;
 }
 
 /* Halo samples the first-person graph in its own node order, then copies each
