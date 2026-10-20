@@ -38,6 +38,21 @@ typedef struct {
     uint32_t node_stride;
     uint32_t triangle_stride;
 } collpack_actor_collision_view;
+typedef struct {
+    float distance;
+    float barycentric_u;
+    float barycentric_v;
+    int16_t node_index;
+    int16_t region_index;
+    int16_t damage_part;
+    int16_t resistance_index;
+    int16_t surface_index;
+} collpack_actor_hit;
 int collpack_actor_collision(const uint8_t *payload, size_t length,
     collpack_actor_collision_view *view);
+/* Ray against one actor's mesh. node_to_world is node_count row-major 3x4
+ * affine transforms (x/y/z rows, translation in column 4); no allocation. */
+int collpack_actor_ray(const collpack_actor_collision_view *view,
+    const float (*node_to_world)[12], const float origin[3],
+    const float direction[3], float maximum_distance, collpack_actor_hit *hit);
 #endif

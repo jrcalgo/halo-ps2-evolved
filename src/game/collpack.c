@@ -151,6 +151,88 @@ int collpack_actor_collision(const uint8_t *payload, size_t length,
     return 0;
 }
 
+static float actor_dot3(const float a[3], const float b[3])
+{
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
+static void actor_cross3(const float a[3], const float b[3], float out[3])
+{
+    out[0] = a[1] * b[2] - a[2] * b[1];
+    out[1] = a[2] * b[0] - a[0] * b[2];
+    out[2] = a[0] * b[1] - a[1] * b[0];
+}
+
+static void actor_transform_point(const float matrix[12], const float point[3], float out[3])
+{
+    unsigned row;
+    for (row = 0; row < 3; row++)
+        out[row] = matrix[row * 4] * point[0] + matrix[row * 4 + 1] * point[1] +
+            matrix[row * 4 + 2] * point[2] + matrix[row * 4 + 3];
+}
+
+int collpack_actor_ray(const collpack_actor_collision_view *view,
+    const float (*node_to_world)[12], const float origin[3],
+    const float direction[3], float maximum_distance, collpack_actor_hit *hit)
+{
+    uint32_t i;
+    int found = 0;
+    float nearest = maximum_distance;
+    if (!view || !view->nodes || !view->triangles || !node_to_world || !origin ||
+        !direction || !hit || view->node_count == 0 || view->triangle_stride != 46 ||
+        !finite_float(maximum_distance) || maximum_distance <= 0.0f) return -1;
+    for (i = 0; i < 3; i++)
+        if (!finite_float(origin[i]) || !finite_float(direction[i])) return -1;
+    for (i = 0; i < view->node_count; i++) {
+        unsigned j;
+        for (j = 0; j < 12; j++) if (!finite_float(node_to_world[i][j])) return -1;
+    }
+    for (i = 0; i < view->triangle_count; i++) {
+        const uint8_t *record = view->triangles + i * view->triangle_stride;
+        int16_t node, region, part, material, surface;
+        float local[9], p[3][3], edge1[3], edge2[3], pvec[3], tvec[3], qvec[3];
+        float determinant, inverse, u, v, distance;
+        unsigned vertex;
+        memcpy(&node, record, 2);
+        memcpy(&region, record + 2, 2);
+        memcpy(&part, record + 4, 2);
+        memcpy(&material, record + 6, 2);
+        memcpy(&surface, record + 8, 2);
+        if (node < 0 || node >= (int16_t)view->node_count || region < 0 || part < 0 ||
+            material < 0 || surface < 0) return -1;
+        memcpy(local, record + 10, sizeof local);
+        for (vertex = 0; vertex < 3; vertex++)
+            actor_transform_point(node_to_world[node], local + vertex * 3, p[vertex]);
+        for (vertex = 0; vertex < 3; vertex++) {
+            edge1[vertex] = p[1][vertex] - p[0][vertex];
+            edge2[vertex] = p[2][vertex] - p[0][vertex];
+            tvec[vertex] = origin[vertex] - p[0][vertex];
+        }
+        actor_cross3(direction, edge2, pvec);
+        determinant = actor_dot3(edge1, pvec);
+        if (determinant > -1.0e-8f && determinant < 1.0e-8f) continue;
+        inverse = 1.0f / determinant;
+        u = actor_dot3(tvec, pvec) * inverse;
+        if (u < 0.0f || u > 1.0f) continue;
+        actor_cross3(tvec, edge1, qvec);
+        v = actor_dot3(direction, qvec) * inverse;
+        if (v < 0.0f || u + v > 1.0f) continue;
+        distance = actor_dot3(edge2, qvec) * inverse;
+        if (distance < 0.0f || distance >= nearest) continue;
+        nearest = distance;
+        hit->distance = distance;
+        hit->barycentric_u = u;
+        hit->barycentric_v = v;
+        hit->node_index = node;
+        hit->region_index = region;
+        hit->damage_part = part;
+        hit->resistance_index = material;
+        hit->surface_index = surface;
+        found = 1;
+    }
+    return found;
+}
+
 int collpack_vital_profile(const uint8_t *payload, size_t length,
     vital_damage_profile *profile, int16_t *body_material_type,
     int16_t *shield_material_type)
