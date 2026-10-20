@@ -515,6 +515,7 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
         shot_scene scene;
         actor_live = play_pose_live_player_actor();
         int slot, flying = 0, hits = 0, ended = 0, shot_calls = 0;
+        int shot_actor_hits = 0, shot_surface_hits = 0, shot_resolved = 0;
         float hit_at[3], shot_tick_ms = 0.0f;
         memset(&scene, 0, sizeof scene);
         scene.bsp = &s_bsp;
@@ -579,9 +580,12 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
                         s_probe_target.shield, s_probe_target.body, s_probe_target.dead);
                 }
             }
+            if (object_hit) shot_actor_hits++;
             if (s_fly[slot].alive) flying = 1;
             else if (was && (object_hit || s_fly[slot].hit_surface)) {
                 hits++;
+                shot_resolved++;
+                if (!object_hit && s_fly[slot].hit_surface) shot_surface_hits++;
                 hit_at[0] = s_fly[slot].position[0];
                 hit_at[1] = s_fly[slot].position[1];
                 hit_at[2] = s_fly[slot].position[2];
@@ -598,6 +602,11 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
             printf("[play] range %d\n", ended);
         } else if (flying) {
             s_mark = 1;
+        }
+        if (shot_calls >= 15) {
+            printf("[play] pellet-result tick %u calls %d actor-hits %d bsp-hits %d resolved %d flying %d\n",
+                (unsigned)s_play_sim_tick, shot_calls, shot_actor_hits,
+                shot_surface_hits, shot_resolved, flying);
         }
         if ((unsigned)shot_calls > s_shot_tick_max_calls)
             s_shot_tick_max_calls = (unsigned)shot_calls;

@@ -482,10 +482,15 @@ def main():
                     fires = re.findall(r"\[play\] fire SHOTGUN (?:trigger \d+|\d+) pellets (\d+)", text)
                     live_actors = re.findall(r"\[play\] live-actor object (\d+) def (\d+) model-tag ([0-9a-fA-F]+) nodes (\d+)", text)
                     actor_damage = re.findall(r"\[play\] actor damage object (\d+) def (\d+) amount ([0-9.]+) node (-?\d+) region (-?\d+) part (-?\d+) resistance (-?\d+) shield ([0-9.]+) body (-?[0-9.]+) dead (\d+)", text)
+                    pellet_rows = re.findall(r"\[play\] pellet-result tick (\d+) calls (\d+) actor-hits (\d+) bsp-hits (\d+) resolved (\d+) flying (\d+)", text)
+                    volley = next((row for row in pellet_rows if int(row[1]) == 15), None)
                     windows_cost = re.findall(r"\[play\] shot-cost samples (\d+) avg-ms ([0-9.]+) max-shot-ms ([0-9.]+) max-tick-ms ([0-9.]+) max-calls-per-tick (\d+)", text)
                     if (not fires or int(fires[0]) != 15 or not live_actors or not actor_damage or
-                            not windows_cost or max(int(row[4]) for row in windows_cost) < 15):
-                        raise RuntimeError("Shotgun actor-ray smoke did not damage the live scenario biped with all 15 pellets in one simulation tick")
+                            not windows_cost or max(int(row[4]) for row in windows_cost) < 15 or
+                            not volley or int(volley[2]) != len(actor_damage) or
+                            int(volley[2]) + int(volley[3]) != 15 or
+                            int(volley[4]) != 15 or int(volley[5]) != 0):
+                        raise RuntimeError("Shotgun actor-ray smoke did not account for all 15 pellets as actor damage or BSP collision in one simulation tick")
                     if int(done[2]) != 0:
                         raise RuntimeError("Shotgun actor-ray smoke dropped emulator frames")
                     result["actor_ray_smoke"] = {
@@ -493,6 +498,9 @@ def main():
                         "live_actor": {"object_index": int(live_actors[0][0]), "definition_index": int(live_actors[0][1]),
                                        "model_tag": int(live_actors[0][2], 16), "node_count": int(live_actors[0][3])},
                         "actor_damage_events": len(actor_damage),
+                        "pellet_outcomes": {"tick": int(volley[0]), "calls": int(volley[1]),
+                                            "actor_damage_hits": int(volley[2]), "bsp_surface_hits": int(volley[3]),
+                                            "resolved": int(volley[4]), "still_flying": int(volley[5])},
                         "last_actor_hit": {"node": int(actor_damage[-1][3]), "region": int(actor_damage[-1][4]),
                                            "damage_part": int(actor_damage[-1][5]),
                                            "resistance_index": int(actor_damage[-1][6]), "dead": actor_damage[-1][9] == "1"},

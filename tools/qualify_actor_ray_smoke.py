@@ -47,6 +47,12 @@ def run_record(name: str, expected_mode: str, sources: dict[str, str]):
     actor = record.get("actor_ray_smoke", {})
     if actor.get("pellets") != 15 or actor.get("actor_damage_events", 0) <= 0:
         raise RuntimeError(f"{expected_mode} actor-ray smoke did not damage its live biped")
+    outcomes = actor.get("pellet_outcomes", {})
+    if (outcomes.get("calls") != 15 or outcomes.get("resolved") != 15 or
+            outcomes.get("still_flying") != 0 or
+            outcomes.get("actor_damage_hits", 0) + outcomes.get("bsp_surface_hits", 0) != 15 or
+            outcomes.get("actor_damage_hits") != actor.get("actor_damage_events")):
+        raise RuntimeError(f"{expected_mode} did not account for all 15 pellet collision/damage outcomes")
     identity = actor.get("live_actor", {})
     if identity.get("node_count") != 19 or identity.get("model_tag") != 0xE20B0097:
         raise RuntimeError(f"{expected_mode} live target is not the compatible cyborg biped")
@@ -56,10 +62,21 @@ def run_record(name: str, expected_mode: str, sources: dict[str, str]):
 
     prefix = r"^\[\s*[0-9.]+\]\s+"
     events = []
+    first_fire_tick = None
     for line in log.splitlines():
         event = re.sub(prefix, "", line)
         if event.startswith(("[play] live-actor ", "[play] fire SHOTGUN ",
-                             "[play] actor damage ", "[play] hit 15 ")):
+                             "[play] actor damage ", "[play] pellet-result ", "[play] hit 15 ")):
+            if event.startswith("[play] fire SHOTGUN "):
+                match = re.search(r" tick (\d+)", event)
+                if first_fire_tick is None:
+                    first_fire_tick = int(match.group(1))
+                event = re.sub(r" tick (\d+)",
+                    f" tick {int(match.group(1)) - first_fire_tick}", event)
+            elif event.startswith("[play] pellet-result "):
+                match = re.search(r"tick (\d+)", event)
+                relative = int(match.group(1)) - first_fire_tick
+                event = re.sub(r"tick \d+", f"tick {relative}", event)
             events.append(event)
     damage_events = [event for event in events if event.startswith("[play] actor damage ")]
     if len(damage_events) != actor["actor_damage_events"]:
@@ -69,7 +86,7 @@ def run_record(name: str, expected_mode: str, sources: dict[str, str]):
         "frames": record["frames"], "dropped": record["dropped"],
         "elf_sha256": record["elf_sha256"], "bios_sha256": record.get("bios_sha256"),
         "settings_sha256": record.get("settings_sha256"),
-        "live_actor": identity, "pellets": actor["pellets"],
+        "live_actor": identity, "pellets": actor["pellets"], "pellet_outcomes": outcomes,
         "damage_events": len(damage_events), "last_actor_hit": actor.get("last_actor_hit"),
         "shot_tick_cost_windows": costs,
         "captures": [str(path.relative_to(ROOT)) for path in captures],
@@ -93,7 +110,7 @@ def main() -> None:
     trace = ("\n".join(recompiler_events) + "\n").encode()
     result = {
         "status": "passed",
-        "scenario": "EE shotgun -> live spawned player-biped ACOL pose -> tag-profiled vitality",
+        "scenario": "EE shotgun -> all 15 live-biped/BSP collision outcomes -> tag-profiled vitality",
         "trace_sha256": hashlib.sha256(trace).hexdigest(),
         "trace_events": len(recompiler_events),
         "modes": {"recompiler": recompiler, "interpreter": interpreter},
