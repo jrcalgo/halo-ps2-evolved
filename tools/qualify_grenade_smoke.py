@@ -13,6 +13,7 @@ def parse_grenade_smoke(log: str, grenade_released: bool) -> dict:
         r"body (-?[0-9.]+) dead (\d+)| outside ([0-9.]+))", log)
     if (not grenade_released or len(throws) != 1 or not explosions or
             float(throws[0][7]) >= 0.0 or any(row[1] != "actor" for row in explosions) or
+            not any(row[2] and float(row[2]) > 0.0 for row in explosions) or
             "[play] freecam on" in log):
         raise RuntimeError(
             "EE grenade smoke did not throw from the collision player and detonate against the live scenario biped")

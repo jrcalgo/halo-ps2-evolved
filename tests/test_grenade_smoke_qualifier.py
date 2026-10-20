@@ -30,6 +30,9 @@ class GrenadeSmokeQualifier(unittest.TestCase):
             (fixture(freecam=True), True),
             (fixture(), False),
             (fixture().replace("aim 1.0 0.0 -0.5", "aim 1.0 0.0 0.5"), True),
+            (fixture().replace(
+                "target actor damage 120.00 distance 1.00 shield 0.000 body -0.600 dead 1",
+                "target actor outside 2.70"), True),
         )
         for log, released in invalid:
             with self.subTest(log=log, released=released):
