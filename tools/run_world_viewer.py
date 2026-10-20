@@ -47,6 +47,8 @@ def main():
                         help="with --play, press R3/4 once to toggle in-game freecam; press 4 again to return to player control")
     parser.add_argument("--combat-smoke", action="store_true",
                         help="bounded EE pistol-to-vitality diagnostic against the fixed play probe")
+    parser.add_argument("--actor-ray-smoke", action="store_true",
+                        help="fire one retail shotgun burst through the cyborg mesh and measure per-tick actor-ray work")
     parser.add_argument("--grenade-smoke", action="store_true",
                         help="bounded EE frag throw, BSP bounce/fuse and blast diagnostic")
     parser.add_argument("--fuel-still", action="store_true",
@@ -67,6 +69,10 @@ def main():
         args.objects = True
         args.frames = 0
     if args.combat_smoke:
+        args.variant = "play"
+        args.objects = True
+        args.frames = 300
+    if args.actor_ray_smoke:
         args.variant = "play"
         args.objects = True
         args.frames = 300
@@ -118,7 +124,7 @@ def main():
         if sha(packs / ("bloodgulch" + suffix)) != converted["pack_sha256"][kind]:
             raise RuntimeError("Converted pack hash differs: " + kind)
     stop_previous()
-    play_boot = args.play or args.fuel_still or args.combat_smoke or args.grenade_smoke
+    play_boot = args.play or args.fuel_still or args.combat_smoke or args.actor_ray_smoke or args.grenade_smoke
     label = "world-stream" if args.variant == "stream" else "world-portal" if args.variant == "portal" else "world"
     run = OUTPUT / "runs" / f"{label}-{args.mode}-{uuid.uuid4().hex}"
     boot = run / "boot"
@@ -139,7 +145,9 @@ def main():
         shutil.copy2(play_objects / "weapons.fp", boot / "weapons.fp")
     if args.fuel_still:
         (boot / "fpstill.txt").write_text("weapons\\fuel rod gun\\fuel rod\n")
-    if args.play or args.fuel_still or args.combat_smoke or args.grenade_smoke:
+    if args.actor_ray_smoke:
+        (boot / "fpstill.txt").write_text("weapons\\shotgun\\shotgun\n")
+    if args.play or args.fuel_still or args.combat_smoke or args.actor_ray_smoke or args.grenade_smoke:
         sys.path.insert(0, str(ROOT / "tools"))
         from convert_collision import build_pack
         decompressed = ROOT / "data/retail/convert/bloodgulch/decompressed/bloodgulch.map"
@@ -175,7 +183,7 @@ def main():
     display = os.environ.get("DISPLAY") or config["display"]
     visible_display = display == config["display"]
     ini = prepare(config, run, args.mode)
-    if args.play or args.combat_smoke or args.grenade_smoke:
+    if args.play or args.combat_smoke or args.actor_ray_smoke or args.grenade_smoke:
         pad = configparser.ConfigParser(interpolation=None)
         pad.optionxform = str
         pad.read(ini)
@@ -203,7 +211,7 @@ def main():
     save(path,result)
     # Validate that input/capture can reach the visible desktop before starting
     # PCSX2; otherwise a display-access failure leaves an orphaned emulator.
-    keyboard = Input() if args.freecam or args.combat_smoke or args.grenade_smoke or args.freecam_toggle else None
+    keyboard = Input() if args.freecam or args.combat_smoke or args.actor_ray_smoke or args.grenade_smoke or args.freecam_toggle else None
     try:
         process = subprocess.Popen(command,cwd=boot,env={**os.environ,"DISPLAY":display,"QT_QPA_PLATFORM":"xcb","APPIMAGE_EXTRACT_AND_RUN":"1"},stdout=(run/"launcher.log").open("w"),stderr=subprocess.STDOUT,start_new_session=True)
     except Exception:
@@ -289,17 +297,18 @@ def main():
                 print("Collision walk is live. The window stays open.", flush=True)
                 print("W S walk, A D strafe, arrows look, G jump, Control crouch, 4 toggles freecam.", flush=True)
                 return
-            if args.combat_smoke and window and "[play] ready" in text and not fire_started:
+            if (args.combat_smoke or args.actor_ray_smoke) and window and "[play] ready" in text and not fire_started:
                 focus(window)
                 keyboard.key("f", False)
                 time.sleep(.1)
                 keyboard.key("f", True)
                 fire_held = True
                 fire_started = True
-                fire_next_at = time.monotonic() + 1.4
+                fire_next_at = time.monotonic() + (1.4 if args.combat_smoke else 1.0e9)
                 fire_release_at = time.monotonic() + .15
-                print("Combat smoke: pulsing pistol fire on the fixed probe target.", flush=True)
-            if args.combat_smoke and fire_held and not fire_released and time.monotonic() >= fire_release_at:
+                print("Combat smoke: pulsing pistol fire on the fixed probe target." if args.combat_smoke
+                      else "Actor-ray smoke: firing one shotgun burst into the cyborg collision mesh.", flush=True)
+            if (args.combat_smoke or args.actor_ray_smoke) and fire_held and not fire_released and time.monotonic() >= fire_release_at:
                 focus(window)
                 keyboard.key("f", False)
                 fire_held = False
@@ -407,6 +416,7 @@ def main():
                     deaths = [event for event in damage_events if event[6] == "1"]
                     fires = re.findall(r"\[play\] fire PISTOL (\d+) pellets (\d+)", text)
                     hits = re.findall(r"\[play\] hit 1 ", text)
+                    shot_cost = re.findall(r"\[play\] shot-cost samples (\d+) avg-ms ([0-9.]+) max-shot-ms ([0-9.]+) max-tick-ms ([0-9.]+) max-calls-per-tick (\d+)", text)
                     if (not fire_released or not deaths or len(fires) != 6 or
                             len(damage_events) != 6 or len(hits) != 6):
                         raise RuntimeError("Integrated play combat did not fire, hit, and kill the probe target")
@@ -416,7 +426,27 @@ def main():
                         "final_body": float(deaths[-1][5]), "target_dead": True,
                         "hit_node": int(damage_events[-1][1]), "hit_damage_part": int(damage_events[-1][2]),
                         "hit_resistance_index": int(damage_events[-1][3]),
+                        "shot_tick_cost_windows": [
+                            {"samples": int(row[0]), "avg_ms": float(row[1]),
+                             "max_shot_ms": float(row[2]), "max_tick_ms": float(row[3]),
+                             "max_calls_per_tick": int(row[4])}
+                            for row in shot_cost],
                         "target": "retail cyborg collision mesh in a fixed bind-pose probe placement; not a live actor"}
+                if args.actor_ray_smoke:
+                    fires = re.findall(r"\[play\] fire SHOTGUN (?:trigger \d+|\d+) pellets (\d+)", text)
+                    windows_cost = re.findall(r"\[play\] shot-cost samples (\d+) avg-ms ([0-9.]+) max-shot-ms ([0-9.]+) max-tick-ms ([0-9.]+) max-calls-per-tick (\d+)", text)
+                    if not fires or int(fires[0]) != 15 or not windows_cost or max(int(row[4]) for row in windows_cost) < 15:
+                        raise RuntimeError("Shotgun actor-ray smoke did not exercise all 15 pellets in one simulation tick")
+                    if int(done[2]) != 0:
+                        raise RuntimeError("Shotgun actor-ray smoke dropped emulator frames")
+                    result["actor_ray_smoke"] = {
+                        "weapon": "SHOTGUN", "pellets": int(fires[0]),
+                        "shot_tick_cost_windows": [
+                            {"samples": int(row[0]), "avg_ms": float(row[1]),
+                             "max_shot_ms": float(row[2]), "max_tick_ms": float(row[3]),
+                             "max_calls_per_tick": int(row[4])}
+                            for row in windows_cost],
+                        "target": "retail cyborg mesh at fixed bind pose; emulator counter is not physical PS2 timing"}
                 if args.grenade_smoke:
                     throws = re.findall(r"\[play\] grenade throw frag carried (\d+) slot (\d+) mode player eye (-?[0-9.]+) (-?[0-9.]+) (-?[0-9.]+) aim (-?[0-9.]+) (-?[0-9.]+) (-?[0-9.]+)", text)
                     explosions = re.findall(r"\[play\] grenade explosion frag slot (\d+)(?: damage ([0-9.]+) distance ([0-9.]+) shield ([0-9.]+) body (-?[0-9.]+) dead (\d+)| outside ([0-9.]+))", text)

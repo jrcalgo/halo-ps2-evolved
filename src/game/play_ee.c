@@ -11,6 +11,7 @@
 #include "core/mat.h"
 #include "sim/skeleton.h"
 #include "platform/profiler.h"
+#include "platform/timer.h"
 #include "render/bsp_render.h"
 #include "render/camera.h"
 #include "render/flycam.h"
@@ -66,6 +67,11 @@ static float s_probe_target_center[3];
 static uint32_t s_seed = 1;
 static int s_mark; /* 0 none, 1 flying, 2 surface, 3 range */
 static int s_triangle;
+static float s_shot_tick_time_sum_ms;
+static float s_shot_tick_time_max_ms;
+static float s_shot_tick_time_max_tick_ms;
+static unsigned s_shot_tick_samples;
+static unsigned s_shot_tick_max_calls;
 
 static int play_actor_bind_pose(void)
 {
@@ -406,8 +412,8 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
     }
     {
         shot_scene scene;
-        int slot, flying = 0, hits = 0, ended = 0;
-        float hit_at[3];
+        int slot, flying = 0, hits = 0, ended = 0, shot_calls = 0;
+        float hit_at[3], shot_tick_ms = 0.0f;
         memset(&scene, 0, sizeof scene);
         scene.bsp = &s_bsp;
         scene.directions = play_fp_directions();
@@ -431,9 +437,18 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
         hit_at[0] = hit_at[1] = hit_at[2] = 0.0f;
         for (slot = 0; slot < PLAY_FLY; slot++) {
             int was, object_hit;
+            u32 shot_start;
+            float shot_ms;
             if (!s_fly[slot].alive || !s_fly_def[slot]) continue;
             was = 1;
+            shot_start = timer_cycles();
             shot_tick(&s_fly[slot], s_fly_def[slot], &scene, &s_seed);
+            shot_ms = timer_ms(shot_start, timer_cycles());
+            shot_tick_ms += shot_ms;
+            s_shot_tick_time_sum_ms += shot_ms;
+            if (shot_ms > s_shot_tick_time_max_ms) s_shot_tick_time_max_ms = shot_ms;
+            shot_calls++;
+            s_shot_tick_samples++;
             object_hit = vital_apply_projectile_hit_profile(&s_probe_target, &s_fly[slot],
                 VITAL_BODY, &s_probe_damage_profile,
                 s_fly_def[slot]->damage_material_modifier_21,
@@ -463,6 +478,21 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
             printf("[play] range %d\n", ended);
         } else if (flying) {
             s_mark = 1;
+        }
+        if ((unsigned)shot_calls > s_shot_tick_max_calls)
+            s_shot_tick_max_calls = (unsigned)shot_calls;
+        if (shot_tick_ms > s_shot_tick_time_max_tick_ms)
+            s_shot_tick_time_max_tick_ms = shot_tick_ms;
+        if (s_body.tick != 0 && s_body.tick % 60 == 0) {
+            printf("[play] shot-cost samples %u avg-ms %.4f max-shot-ms %.4f max-tick-ms %.4f max-calls-per-tick %u\n",
+                s_shot_tick_samples,
+                s_shot_tick_samples ? s_shot_tick_time_sum_ms / s_shot_tick_samples : 0.0f,
+                s_shot_tick_time_max_ms, s_shot_tick_time_max_tick_ms, s_shot_tick_max_calls);
+            s_shot_tick_time_sum_ms = 0.0f;
+            s_shot_tick_time_max_ms = 0.0f;
+            s_shot_tick_time_max_tick_ms = 0.0f;
+            s_shot_tick_samples = 0;
+            s_shot_tick_max_calls = 0;
         }
     }
     {
