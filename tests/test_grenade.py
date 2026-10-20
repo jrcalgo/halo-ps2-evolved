@@ -72,7 +72,7 @@ class Grenade(unittest.TestCase):
                 check=True, capture_output=True)
             out = subprocess.run([str(exe)], check=True, capture_output=True, text=True).stdout
         self.assertIn("falloff distance=1.00 damage=120.0 body=0.600", out)
-        self.assertIn("owner immunity and retail self-damage passed", out)
+        self.assertIn("owner immunity, self-damage, and direct/core-radius LOS passed", out)
 
     def test_throw_fuse_and_blast(self):
         if not MAP.is_file():

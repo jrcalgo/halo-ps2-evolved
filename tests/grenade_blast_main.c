@@ -6,6 +6,28 @@
 #include <stdio.h>
 #include <string.h>
 
+static void make_wall_bsp(collide_bsp *bsp, uint32_t nodes[3],
+    uint8_t leaves[8], uint32_t refs[2], uint8_t surface[12], float plane[4])
+{
+    memset(bsp, 0, sizeof *bsp);
+    memset(leaves, 0, 8);
+    memset(surface, 0, 12);
+    plane[0] = 1.0f; plane[1] = 0.0f; plane[2] = 0.0f; plane[3] = 1.0f;
+    nodes[0] = 0;
+    nodes[1] = 0x80000000u; /* empty leaf on the x < 1 side */
+    nodes[2] = 0xFFFFFFFFu; /* solid on the x >= 1 side */
+    leaves[2] = 1;           /* one collision surface reference */
+    refs[0] = 0;             /* plane 0 */
+    refs[1] = 0x80000000u;   /* terminal 2D tree selects surface 0 */
+    bsp->planes = plane;
+    bsp->nodes = nodes;
+    bsp->leaves = leaves;
+    bsp->refs = refs;
+    bsp->surfaces = surface;
+    bsp->plane_count = 1; bsp->node_count = 1; bsp->leaf_count = 1;
+    bsp->ref_count = 1; bsp->surface_count = 1;
+}
+
 static void target_at(combat_target *target, float x)
 {
     memset(target, 0, sizeof *target);
@@ -70,6 +92,23 @@ int main(void)
             &seed, &distance, &damage) == 1);
         assert(target.health.body < 1.0f);
     }
-    puts("owner immunity and retail self-damage passed");
+    {
+        collide_bsp wall;
+        uint32_t nodes[3], refs[2];
+        uint8_t leaves[8], surface[12];
+        float plane[4];
+        grenade_def direct = GRENADE_FRAG;
+        before = seed;
+        target_at(&target, 2.0f);
+        make_wall_bsp(&wall, nodes, leaves, refs, surface, plane);
+        assert(grenade_blast_target(&item, &GRENADE_FRAG, &wall, &target, -1,
+            &seed, &distance, &damage) == 0);
+        assert(seed == before && target.health.body == 1.0f);
+        direct.core_radius = 0.0f;
+        assert(grenade_blast_target(&item, &direct, &wall, &target, -1,
+            &seed, &distance, &damage) == 0);
+        assert(seed == before && target.health.body == 1.0f);
+    }
+    puts("owner immunity, self-damage, and direct/core-radius LOS passed");
     return 0;
 }
