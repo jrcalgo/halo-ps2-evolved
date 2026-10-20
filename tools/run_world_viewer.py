@@ -53,6 +53,8 @@ def main():
                         help="fire the retail pistol at the live scenario biped until its tag-profiled vitality reaches death")
     parser.add_argument("--actor-ar-smoke", action="store_true",
                         help="sustain retail assault-rifle fire into the live biped and record simulation-tick cadence/ammo")
+    parser.add_argument("--shotgun-reload-smoke", action="store_true",
+                        help="empty the retail shotgun, release fire, and validate each integrated shell reload tick")
     parser.add_argument("--grenade-smoke", action="store_true",
                         help="bounded EE frag throw, BSP bounce/fuse and blast diagnostic")
     parser.add_argument("--fuel-still", action="store_true",
@@ -93,6 +95,10 @@ def main():
         args.objects = True
         args.frames = 300
         args.camera = [98.49, -157.64, 3.10, 76.1, 0.0]
+    if args.shotgun_reload_smoke:
+        args.variant = "play"
+        args.objects = True
+        args.frames = 900
     if args.grenade_smoke:
         if args.freecam or args.freecam_toggle:
             raise RuntimeError("--grenade-smoke must run with player collision; freecam options are not allowed")
@@ -141,7 +147,7 @@ def main():
         if sha(packs / ("bloodgulch" + suffix)) != converted["pack_sha256"][kind]:
             raise RuntimeError("Converted pack hash differs: " + kind)
     stop_previous()
-    play_boot = args.play or args.fuel_still or args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.actor_ar_smoke or args.grenade_smoke
+    play_boot = args.play or args.fuel_still or args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.actor_ar_smoke or args.shotgun_reload_smoke or args.grenade_smoke
     label = "world-stream" if args.variant == "stream" else "world-portal" if args.variant == "portal" else "world"
     run = OUTPUT / "runs" / f"{label}-{args.mode}-{uuid.uuid4().hex}"
     boot = run / "boot"
@@ -168,7 +174,9 @@ def main():
         (boot / "fpstill.txt").write_text("weapons\\pistol\\pistol\n")
     if args.actor_ar_smoke:
         (boot / "fpstill.txt").write_text("weapons\\assault rifle\\assault rifle\n")
-    if args.play or args.fuel_still or args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.actor_ar_smoke or args.grenade_smoke:
+    if args.shotgun_reload_smoke:
+        (boot / "fpstill.txt").write_text("weapons\\shotgun\\shotgun\n")
+    if args.play or args.fuel_still or args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.actor_ar_smoke or args.shotgun_reload_smoke or args.grenade_smoke:
         sys.path.insert(0, str(ROOT / "tools"))
         from convert_collision import build_pack
         decompressed = ROOT / "data/retail/convert/bloodgulch/decompressed/bloodgulch.map"
@@ -208,7 +216,7 @@ def main():
     display = os.environ.get("DISPLAY") or config["display"]
     visible_display = display == config["display"]
     ini = prepare(config, run, args.mode)
-    if args.play or args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.actor_ar_smoke or args.grenade_smoke:
+    if args.play or args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.actor_ar_smoke or args.shotgun_reload_smoke or args.grenade_smoke:
         pad = configparser.ConfigParser(interpolation=None)
         pad.optionxform = str
         pad.read(ini)
@@ -236,7 +244,7 @@ def main():
     save(path,result)
     # Validate that input/capture can reach the visible desktop before starting
     # PCSX2; otherwise a display-access failure leaves an orphaned emulator.
-    keyboard = Input() if args.freecam or args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.actor_ar_smoke or args.grenade_smoke or args.freecam_toggle else None
+    keyboard = Input() if args.freecam or args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.actor_ar_smoke or args.shotgun_reload_smoke or args.grenade_smoke or args.freecam_toggle else None
     try:
         process = subprocess.Popen(command,cwd=boot,env={**os.environ,"DISPLAY":display,"QT_QPA_PLATFORM":"xcb","APPIMAGE_EXTRACT_AND_RUN":"1"},stdout=(run/"launcher.log").open("w"),stderr=subprocess.STDOUT,start_new_session=True)
     except Exception:
@@ -252,6 +260,7 @@ def main():
     fire_release_at = 0.0
     fire_released = False
     actor_ar_start_tick = None
+    shotgun_focus_refresh = 0.0
     grenade_started = False
     grenade_aim_started = False
     grenade_aim_release_at = 0.0
@@ -327,7 +336,7 @@ def main():
                 r"\[play\] fire ASSAULT RIFLE (?:trigger \d+|\d+) pellets \d+ tick (\d+)", text)]
             if args.actor_ar_smoke and actor_ar_ticks and actor_ar_start_tick is None:
                 actor_ar_start_tick = actor_ar_ticks[0]
-            if (args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.actor_ar_smoke) and window and "[play] ready" in text and not fire_started:
+            if (args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.actor_ar_smoke or args.shotgun_reload_smoke) and window and "[play] ready" in text and not fire_started:
                 focus(window)
                 keyboard.key("f", False)
                 time.sleep(.1)
@@ -335,14 +344,26 @@ def main():
                 fire_held = True
                 fire_started = True
                 fire_next_at = time.monotonic() + (1.4 if args.combat_smoke or args.actor_pistol_smoke else 1.0e9)
-                fire_release_at = time.monotonic() + (3600.0 if args.actor_ar_smoke else .15)
+                fire_release_at = time.monotonic() + (3600.0 if args.actor_ar_smoke or args.shotgun_reload_smoke else .15)
                 print("Combat smoke: pulsing pistol fire on the fixed probe target." if args.combat_smoke
                       else "Actor-pistol smoke: pulsing pistol fire into the live scenario biped." if args.actor_pistol_smoke
                       else "Actor assault-rifle smoke: sustaining fire against the live biped." if args.actor_ar_smoke
-                      else "Actor-ray smoke: firing one shotgun burst into the live scenario biped.", flush=True)
+                      else "Shotgun reload smoke: emptying all 12 shells before release.", flush=True)
+            shotgun_fire = re.findall(r"\[play\] fire SHOTGUN (\d+) pellets (\d+) tick (\d+) loaded (\d+)", text)
+            shotgun_empty = (args.shotgun_reload_smoke and len(shotgun_fire) >= 12 and
+                             int(shotgun_fire[11][3]) == 0)
+            if shotgun_empty and fire_held and not fire_released and window:
+                focus(window)
+                keyboard.key("f", False)
+                fire_held = False
+                fire_released = True
+                print("Shotgun reload smoke: empty magazine observed; released primary for shell reload.", flush=True)
+            if args.shotgun_reload_smoke and fire_held and window and time.monotonic() >= shotgun_focus_refresh:
+                focus(window)
+                shotgun_focus_refresh = time.monotonic() + 1.0
             actor_ar_release_due = (args.actor_ar_smoke and actor_ar_start_tick is not None and
                 actor_ar_ticks and actor_ar_ticks[-1] - actor_ar_start_tick >= 96)
-            if (args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.actor_ar_smoke) and fire_held and not fire_released and (
+            if (args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.actor_ar_smoke or args.shotgun_reload_smoke) and fire_held and not fire_released and (
                     actor_ar_release_due if args.actor_ar_smoke else time.monotonic() >= fire_release_at):
                 focus(window)
                 keyboard.key("f", False)
@@ -551,6 +572,35 @@ def main():
                                            "damage_part": int(deaths[-1][5]), "resistance_index": int(deaths[-1][6]),
                                            "shield": float(deaths[-1][7]), "body": float(deaths[-1][8])},
                         "target": "scenario player biped with ACOL pose and cyborg-tagged vitality"}
+                if args.shotgun_reload_smoke:
+                    fire_rows = re.findall(
+                        r"\[play\] fire SHOTGUN (\d+) pellets (\d+) tick (\d+) loaded (\d+)", text)
+                    state_rows = [tuple(map(int, row)) for row in re.findall(
+                        r"\[play\] shotgun-state tick (\d+) loaded (-?\d+) total (-?\d+) magazine (-?\d+) timer (-?\d+)", text)]
+                    shell_rows = []
+                    max_loaded = 0
+                    for row in state_rows:
+                        if row[1] == max_loaded + 1 and row[1] + row[2] == 12:
+                            shell_rows.append(row)
+                            max_loaded = row[1]
+                    shell_ticks = [row[0] for row in shell_rows]
+                    shell_loaded = [row[1] for row in shell_rows]
+                    if (not fire_released or len(fire_rows) != 12 or
+                            [int(row[3]) for row in fire_rows] != list(range(11, -1, -1)) or
+                            not state_rows or state_rows[0][1:3] != (12, 12) or
+                            len(shell_rows) != 12 or shell_loaded != list(range(1, 13)) or
+                            shell_rows[-1][2] != 0 or
+                            any(b - a != shell_ticks[1] - shell_ticks[0]
+                                for a, b in zip(shell_ticks[1:], shell_ticks[2:])) or
+                            int(done[2]) != 0):
+                        raise RuntimeError("Shotgun reload smoke failed to empty 12 shells and load 12 reserve shells at a stable integrated interval")
+                    result["shotgun_reload_smoke"] = {
+                        "shots": len(fire_rows), "post_shot_loaded": [int(row[3]) for row in fire_rows],
+                        "reload_shells": len(shell_rows), "loaded_after_each_shell": shell_loaded,
+                        "total_after_last_shell": shell_rows[-1][2], "shell_load_ticks": shell_ticks,
+                        "shell_interval_ticks": shell_ticks[1] - shell_ticks[0],
+                        "source_profile": "retail Blood Gulch shotgun tag: 12-round magazine, one shell per reload step",
+                        "reference": "Halo CE Universal weapon magazine reload completion/chaining; PS2 gun state machine uses fixed-size state and no heap"}
                 if args.grenade_smoke:
                     throws = re.findall(r"\[play\] grenade throw frag carried (\d+) slot (\d+) mode player eye (-?[0-9.]+) (-?[0-9.]+) (-?[0-9.]+) aim (-?[0-9.]+) (-?[0-9.]+) (-?[0-9.]+)", text)
                     explosions = re.findall(r"\[play\] grenade explosion frag slot (\d+)(?: damage ([0-9.]+) distance ([0-9.]+) shield ([0-9.]+) body (-?[0-9.]+) dead (\d+)| outside ([0-9.]+))", text)

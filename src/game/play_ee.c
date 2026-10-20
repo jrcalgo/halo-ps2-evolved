@@ -69,6 +69,9 @@ static int16_t s_probe_shield_damage_material_type = 22;
 static float s_probe_target_center[3];
 static uint32_t s_seed = 1;
 static uint32_t s_play_sim_tick;
+static int s_shotgun_state_loaded = -1;
+static int s_shotgun_state_total = -1;
+static int s_shotgun_state_magazine = -1;
 static int s_mark; /* 0 none, 1 flying, 2 surface, 3 range */
 static int s_triangle;
 static float s_shot_tick_time_sum_ms;
@@ -510,6 +513,16 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
                         PLAY_FLY, pellets - spawned);
             }
         }
+    }
+    if (strcmp(play_fp_path(), "weapons\\shotgun\\shotgun") == 0 &&
+        (s_shotgun_state_loaded != s_gun.loaded || s_shotgun_state_total != s_gun.total ||
+         s_shotgun_state_magazine != s_gun.magazine)) {
+        printf("[play] shotgun-state tick %u loaded %d total %d magazine %d timer %d\n",
+            (unsigned)s_play_sim_tick, s_gun.loaded, s_gun.total,
+            s_gun.magazine, s_gun.magazine_timer);
+        s_shotgun_state_loaded = s_gun.loaded;
+        s_shotgun_state_total = s_gun.total;
+        s_shotgun_state_magazine = s_gun.magazine;
     }
     {
         shot_scene scene;
