@@ -314,7 +314,7 @@ def main():
                 fire_next_at = time.monotonic() + (1.4 if args.combat_smoke else 1.0e9)
                 fire_release_at = time.monotonic() + .15
                 print("Combat smoke: pulsing pistol fire on the fixed probe target." if args.combat_smoke
-                      else "Actor-ray smoke: firing one shotgun burst into the cyborg collision mesh.", flush=True)
+                      else "Actor-ray smoke: firing one shotgun burst into the live scenario biped.", flush=True)
             if (args.combat_smoke or args.actor_ray_smoke) and fire_held and not fire_released and time.monotonic() >= fire_release_at:
                 focus(window)
                 keyboard.key("f", False)
