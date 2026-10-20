@@ -1,0 +1,226 @@
+{
+  "network_votekick_player_named": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: local votekick failure",
+    "reason": "hs_compile_and_evaluate_command calls this after parsing a name. CE returns FALSE when network_votekick_available() is false. This profile has no session, so the command fails and does not remove a player.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/hs/hs.c:15456; port/linux/game/network_votekick.c:971-974; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "pal_tags_first_person_advance": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: NTSC first-person advance",
+    "reason": "first_person_weapons_update treats FALSE as no keyframe and skips animation_update_render_only. CE returns TRUE when the graph is not PAL. Generated FALSE stops every first-person weapon.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/interface/first_person_weapons.c:1858-1863; port/linux/game/pal_tags.c:430-431; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "pal_tags_first_person_frames": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: NTSC first-person frame count",
+    "reason": "weapon_get_first_person_animation_time uses this as the frame count. CE returns the incoming NTSC count when the graph is not PAL. Generated zero is not that count.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/items/weapons.c:1382,1419; port/linux/game/pal_tags.c:397-399; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "pal_tags_loaded": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 4: NTSC-only PAL hook",
+    "reason": "scenario_tags_load calls this after tags are registered. CE returns immediately when the build region is not PAL. This profile does not rewrite biped, weapon, or projectile tags.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/cache/cache_files.c:1332-1334; port/linux/game/pal_tags.c:373-380; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "pc_menus_screen": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: Xbox menu path pass-through",
+    "reason": "player_ui_fast_setup_network_server closes widgets first, then passes this path to ui_widget_load_by_name_or_tag. CE returns name when menu_tags.loaded is false. Generated NULL is not that pass-through, and a remapped PC path would pretend Linux menus exist.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/interface/player_ui.c:654-669; port/linux/game/menu_tags.c:2321; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "powerup_render_bounds_tags_loaded": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0 batch 4: omitted Linux powerup bounds",
+    "reason": "The Linux hook enlarges overshield and active-camo radii. Xbox CE keeps the authored tag bounds. Omitting the rewrite is the Xbox contract, not a failed service reporting success.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/cache/cache_files.c:1339-1341; port/linux/game/powerup_render_bounds.c:163-183; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "process_ui_widgets": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 4: excluded widget pool",
+    "reason": "main_loop calls this twice. ui_widget.c is excluded, so there is no widget pool, pause, or attract walk. The only live CE gate this adapter evaluates is virtual_keyboard_active, already false on the pad profile.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/main/main.c:3294,3617; source/interface/ui_widget.c:8434-8639; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "progress_bar_dispose": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0 batch 4: exact CE empty dispose",
+    "reason": "game_dispose calls this. The CE body in progress_bar.c:1576-1579 is already an empty return.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/game/game.c:813; source/interface/progress_bar.c:1576-1579; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "progress_bar_initialize": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 4: no Xbox loading.tga copy",
+    "reason": "game_initialize calls this. CE copies d:\\loading.tga to z:\\ through CreateDirectoryA and CopyFileA. Those Xbox paths are not a mounted PS2 filesystem, progress_bar.c is excluded, and this void function does not report a successful writable copy.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/game/game.c:326; source/interface/progress_bar.c:1565-1571; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "qsort": {
+    "disposition": "implemented",
+    "owner": "Pinned PS2 EE Newlib 4.6.0 libc",
+    "reason": "Newlib libc_a-qsort.o is already linked. Live callers include aim-assist target ordering. This is a real sort, not a generated empty. Equal-key order follows Newlib, not the Xbox CRT.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/game/aim_assist.c:525; build/hcu-ps2-closure/all/halo-local.map",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rand": {
+    "disposition": "implemented",
+    "owner": "Pinned PS2 EE Newlib 4.6.0 libc",
+    "reason": "The only rooted caller mixes rand() into the local seed. Newlib libc_a-rand.o is linked. A generated zero would collapse that mix to the clock terms alone.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/math/random_math.c:156-159; build/hcu-ps2-closure/all/halo-local.map",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_bitmap_delete": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: bitmap hardware-format teardown",
+    "reason": "bitmap_delete always calls this before it frees CPU pixels. CE also releases hardware_format. This adapter never creates a D3D texture; it still nulls a leftover pointer.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/bitmaps/bitmaps.c:624-629; source/rasterizer/xbox/rasterizer_xbox_hardware_bitmaps.c:689-698; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_debug_options": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: retail debug-options initializer",
+    "reason": "HaloScript globals point at fields of this object. main_loop, cheats_network_client_rasterizer_enforce, decal zoffset, and freeze_flying_camera read it. The CE initializer is not BSS zero.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/rasterizer/rasterizer.c:602-687; source/main/main.c:3345; source/game/cheats.c:138-164; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_decal_vertices_delete": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: bounded decal vertex cache",
+    "reason": "Permanent delete and failed insert/lock both call delete. An empty body would leave the slot allocated for the rest of the map.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/effects/decals.c:911,2234,2244,2394; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_decal_vertices_lock": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: bounded decal vertex cache",
+    "reason": "decal_new_from_collision writes quads only when the lock is non-NULL. A generated NULL lock after a zero index drops geometry and still inserts a decal.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/effects/decals.c:2122-2230; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_decal_vertices_new": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: bounded decal vertex cache",
+    "reason": "cache_index != NONE is the insert gate. Generated zero is a valid-looking index that then locks to NULL. Exhaustion returns NONE.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/effects/decals.c:2108-2110; source/rasterizer/xbox/rasterizer_xbox_decals.c:565-577; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_decal_vertices_unlock": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: bounded decal vertex cache",
+    "reason": "Closes the write window after quads are filled. The CE unlock is paired with lock.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/effects/decals.c:2226; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_decals_dispose": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: bounded decal vertex cache",
+    "reason": "decals_dispose calls this. Xbox releases the D3D buffer. This adapter resets the BSS cache and clears initialized.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/effects/decals.c:559; source/rasterizer/xbox/rasterizer_xbox_decals.c:540-561; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_decals_dispose_from_old_map": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: bounded decal vertex cache",
+    "reason": "decals_dispose_from_old_map calls this. Xbox flushes the lruv cache. A no-op would keep map-owned vertex spans after tag unload.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/effects/decals.c:549; source/rasterizer/xbox/rasterizer_xbox_decals.c:461-470; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_decals_flush": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: bounded decal vertex cache",
+    "reason": "The HaloScript evaluator calls this. Xbox unlocks and lruv_flush. The BSS cache is reset so the command does not pretend GPU decals remain.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/hs/hs.c:14222; source/rasterizer/xbox/rasterizer_xbox_decals.c:955-964; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_decals_initialize": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: bounded decal vertex cache",
+    "reason": "decals_initialize calls this. Xbox allocates the GPU lruv cache. This adapter owns a BSS cache and marks it initialized so later new/lock have a defined owner.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/effects/decals.c:513; source/rasterizer/xbox/rasterizer_xbox_decals.c:497-536; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_decals_initialize_for_new_map": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0 batch 4: exact Xbox empty map init",
+    "reason": "Xbox _rasterizer_decals_initialize_for_new_map is already an empty return. Matching that body does not change map lifetime.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/effects/decals.c:536; source/rasterizer/xbox/rasterizer_xbox_decals.c:455-458; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_decals_update_function_pointers": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 4: BSS decal cache, no game-state lruv",
+    "reason": "The saved-game after_load_procs table calls this. Xbox restores lruv callbacks stored in game-state. This cache is BSS, so there are no stale function pointers to rewrite.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/saved games/game_state.c:196-203; source/rasterizer/xbox/rasterizer_xbox_decals.c:482-493; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_dispose": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: rasterizer initialized teardown",
+    "reason": "shell_dispose is the rooted caller. ps2_edge.c rasterizer_initialize sets initialized TRUE. Teardown clears that bit and the batch-4 arenas. It does not pretend a D3D device was released.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/shell/shell.c:84; port/ps2/src/ps2_edge.c:106; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_dispose_from_old_map": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: map rasterizer leftovers",
+    "reason": "game_dispose_from_old_map calls this first. CE nulls global_rasterizer_data. This adapter never stored that tag pointer; it drops map-owned default hardware-format leftovers and the arenas.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/game/game.c:936; source/rasterizer/common/rasterizer_common.c:57-63; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_dynamic_triangles_delete": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: bounded dynamic triangle arena",
+    "reason": "flag_render_proper and render_dynamic_quad delete after draw. The slot is marked unused and the bump resets when idle so later frames are not permanently exhausted.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/objects/widgets/flags.c:958; source/game/game_engine_king.c:741; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_dynamic_triangles_lock": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: bounded dynamic triangle arena",
+    "reason": "Callers fill triangle shorts before draw. A NULL lock after a live index breaks flag cloth and the king quad.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/objects/widgets/flags.c:775; source/game/game_engine_king.c:653; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_dynamic_triangles_new": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: bounded dynamic triangle arena",
+    "reason": "Xbox returns NONE on exhaustion. Callers check NONE before lock. Generated zero is a live index that then locks to NULL.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/objects/widgets/flags.c:751; source/rasterizer/xbox/rasterizer_xbox_draw_primitives.c:615-661; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_dynamic_triangles_unlock": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: bounded dynamic triangle arena",
+    "reason": "Closes the write window. NONE is ignored, matching the Xbox warning path without inventing a D3D unlock.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/game/game_engine_king.c:671; source/rasterizer/xbox/rasterizer_xbox_draw_primitives.c:716-746; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_dynamic_unlit_geometry_draw": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 4: CPU unlit draw, no GS submit",
+    "reason": "lightning_submit fills CPU vertices then calls this. The parent GS owner is not this file. A void draw is not a report that the bolt was presented.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/objects/widgets/lightning.c:346-461; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_dynamic_vertices_delete": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0 batch 4: exact Xbox empty vertex delete",
+    "reason": "Xbox _rasterizer_dynamic_vertices_delete is already an empty return. vertices_new and unlock are the next slice; this delete does not invent a reclaim those symbols do not own.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/objects/widgets/flags.c:959; source/rasterizer/xbox/rasterizer_xbox_draw_primitives.c:973-977; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_dynamic_vertices_lock": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 4: writable vertex lock scratch",
+    "reason": "flag cloth, lightning, and the king quad write through the lock. Generated vertices_new (next slice) still returns 0, which is not NONE. A NULL lock would crash those writers.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-4-review.md; source/objects/widgets/flags.c:774; source/objects/widgets/lightning.c:351; source/game/game_engine_king.c:652; port/ps2/src/ps2_m0_batch_4.c",
+    "test": "tests/test_hcu_external_review_batch_4.py::test_batch_4_rooted_symbols_are_dispositioned"
+  }
+}

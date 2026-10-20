@@ -1,0 +1,226 @@
+{
+  "localtime": {
+    "disposition": "implemented",
+    "owner": "Pinned PS2 EE Newlib 4.6.0 libc",
+    "reason": "write_to_error_file calls time then localtime to format a civil-time prefix, and already substitutes <TIME UNAVAILABLE> when the converter returns NULL. The combined map resolves localtime from libc_a-lcltime.o. This is not the monotonic EE timer.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/cseries/errors.c:161-176; build/toolchain/sources/ps2toolchain_ee_newlib/newlib/libc/time/lcltime.c; build/hcu-ps2-closure/all/halo-local.map libc_a-lcltime.o",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "main_menu_active": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 main-menu flag owner",
+    "reason": "main_menu_unload, main_change_map_name, and main_load_ui_scenario write the CE we_are_at_the_main_menu flag. A generated empty body leaves spawn and unplug policy on a stale false.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/main/main.c:1122,1546,1952; source/interface/ui_widget.c:1940-1945; port/ps2/src/ps2_m0_batch_3.c::main_menu_active",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "main_menu_is_active": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 main-menu flag owner",
+    "reason": "input_abstraction_update, player queue errors, and local spawn read the same flag. A generated false changes controller-unplug handling and player lifecycle.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/input/input_abstraction.c:768; source/game/player_queues_new.c:951; source/game/players.c:4824; source/interface/ui_widget.c:1948-1952; port/ps2/src/ps2_m0_batch_3.c::main_menu_is_active",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "main_screen_shell_begin_fade": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M1 sound-disabled menu music state",
+    "reason": "The only rooted caller is main_change_map_name, and it calls begin_fade only when ui_main_menu_music_active() is TRUE. That query is already the false M1 adapter, so the fade and widget-stack dispose never run.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/main/main.c:1519-1523; source/interface/ui_widget.c:3001-3024; docs/hcu-source-backed-review/hcu-ps2-ui-music-state-review.md",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "main_screen_shell_load": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 main-menu shell first-load adapter",
+    "reason": "main_menu_load always calls this. CE's first-load path resets the controller-detection timer; Bink intro and widget-root load are excluded. The adapter keeps that timer reset and does not claim a loaded widget or intro.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/main/main.c:1132; source/interface/ui_widget.c:4909-4963; source/input/input_abstraction.c:418-423; port/ps2/src/ps2_m0_batch_3.c::main_screen_shell_load",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "memcpy": {
+    "disposition": "implemented",
+    "owner": "Pinned PS2 EE Newlib 4.6.0 libc",
+    "reason": "The combined map resolves memcpy from libc_a-memcpy.o. Newlib documents overlap as undefined, matching the C contract Xbox CRT memcpy uses. csmemcpy asserts non-overlap before the call; remaining rooted sections are that wrapper or implicit struct copies.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/cseries/cseries.c:596-605; build/toolchain/sources/ps2toolchain_ee_newlib/newlib/libc/string/memcpy.c; build/hcu-ps2-closure/all/halo-local.map libc_a-memcpy.o",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "menu_tags_loaded": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 excluded PC-menu tag injection",
+    "reason": "scenario_tags_load calls this after tag instances are registered. The Linux body allocates widget/string/bitmap tags. Xbox CE does not. An empty load leaves the stock table and creates nothing for unload to free.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/cache/cache_files.c:1243-1245,1345-1347; port/linux/game/menu_tags.c:2070-2214; port/ps2/src/ps2_m0_batch_3.c::menu_tags_loaded",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "menu_tags_unloaded": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 excluded PC-menu tag injection",
+    "reason": "scenario_tags_unload calls this after texture-cache close. The pair with menu_tags_loaded is empty-on-empty, so no synthesized tag pointers survive the map.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/cache/cache_files.c:639-641; port/linux/game/menu_tags.c:2216-2220; port/ps2/src/ps2_m0_batch_3.c::menu_tags_unloaded",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "mods_enable": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 excluded resource-mod provider",
+    "reason": "The HaloScript evaluator calls this. With no provider and no tags applied, enable cannot replace or restore map resources. The void command does not report a successful apply.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/hs/hs.c:11708,11712; port/linux/game/mods.c:344-360; port/ps2/src/ps2_m0_batch_3.c::mods_enable",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "mods_list": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 excluded resource-mod provider",
+    "reason": "The HaloScript evaluator calls this. Printing 'none in the mods folder' would invent a successful scan. The adapter logs that no discovery provider exists.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/hs/hs.c:11709,11713; port/linux/game/mods.c:364-399; port/ps2/src/ps2_m0_batch_3.c::mods_list",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "mods_reload": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 excluded resource-mod provider",
+    "reason": "The HaloScript evaluator calls this. Linux rescans and replaces loaded resources. With no provider, reload must not mutate bitmap, sound, model, or string caches.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/hs/hs.c:11707,11711; port/linux/game/mods.c:301-318; port/ps2/src/ps2_m0_batch_3.c::mods_reload",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "mods_tags_loaded": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 excluded resource-mod provider",
+    "reason": "scenario_tags_load calls this for UI and ordinary maps. Linux applies replacement assets. The adapter leaves CE tag bytes unchanged so unload has nothing to restore.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/cache/cache_files.c:1249-1251,1360-1362; port/linux/game/mods.c:238-260; port/ps2/src/ps2_m0_batch_3.c::mods_tags_loaded",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "mods_tags_unloaded": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 excluded resource-mod provider",
+    "reason": "scenario_tags_unload calls this after sound and texture cache close. Because load never applied replacements, unload does not restore or free cache pointers.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/cache/cache_files.c:631-633; port/linux/game/mods.c:286-290; port/ps2/src/ps2_m0_batch_3.c::mods_tags_unloaded",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "network_distributed_new_game": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 local distributed-netcode adapter",
+    "reason": "game_initialize_for_new_map always calls this. Linux clears port-only tables and update_queues_distributed_reset. Local update_server_next_update still consumes those latch bits, so the reset is the minimum selected-source contract.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/game/game.c:679; source/game/player_queues_new.c:976-982; port/linux/game/network_distributed.c:3293-3370; port/ps2/src/ps2_m0_batch_3.c::network_distributed_new_game",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "network_distributed_player_killed": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 local distributed-netcode adapter",
+    "reason": "game_engine_player_killed calls this before local death, score, and respawn mutation. Linux rewrites killer identity only for a client or server. The local adapter leaves the caller's pointers unchanged.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/game/game_engine.c:5001-5016; port/linux/game/network_distributed.c:2919-2963; port/ps2/src/ps2_m0_batch_3.c::network_distributed_player_killed",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "network_distributed_player_picked_up": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 local distributed-netcode adapter",
+    "reason": "players.c calls this through player_network_picked_up only when local_player_index is NONE, and Linux returns unless the connection is a server. Local inventory is already mutated beside the hook.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/game/players.c:304-306; port/linux/game/network_distributed.c:3007-3025; port/ps2/src/ps2_m0_batch_3.c::network_distributed_player_picked_up",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "network_distributed_tick": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 local distributed-netcode adapter",
+    "reason": "game_time_update calls this after every simulated tick. Linux only sends or applies remote state when the connection is a client or server. Local time and tick count already advanced before the call.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/game/game_time.c:479-486; port/linux/game/network_distributed.c:3373-3438; port/ps2/src/ps2_m0_batch_3.c::network_distributed_tick",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "network_game_abort": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 local network-session adapter",
+    "reason": "game_engine_update_non_deterministic calls this on postgame B without a server check. CE sets client_started for the next client start-frame. A generated empty body drops that flag.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/game/game_engine.c:5235-5237; source/networking/network_game_globals.c:747-751; port/ps2/src/ps2_m0_batch_3.c::network_game_abort",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "network_game_accept_remote_connections": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 local network-session adapter",
+    "reason": "player_ui_fast_setup_network_server writes the accept flag before a server create that already fails. CE stores the boolean. A generated empty body drops that write.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/interface/player_ui.c:672,682; source/networking/network_game_globals.c:379-384; port/ps2/src/ps2_m0_batch_3.c::network_game_accept_remote_connections",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "network_game_client_end_frame": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 local network-session adapter",
+    "reason": "main_loop calls this only when connection is above local. Generated FALSE would display a host-down error. CE's no-client branch resets to local, repairs queues, and returns TRUE.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/main/main.c:3647; source/networking/network_game_globals.c:598-601; port/ps2/src/ps2_m0_batch_3.c::network_game_client_end_frame",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "network_game_client_request_immediate_start": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 local network-session adapter",
+    "reason": "The HaloScript evaluator calls this. CE only requests a start-time change when a client object exists. With no client, the void command does not invent a started session.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/hs/hs.c:14230; source/networking/network_game_globals.c:763-772; port/ps2/src/ps2_m0_batch_3.c::network_game_client_request_immediate_start",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "network_game_client_start_frame": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 local network-session adapter",
+    "reason": "main_loop calls this only for a network client or server. Generated FALSE would abort. CE consumes client_started or, with no client, resets to local and returns TRUE.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/main/main.c:3584-3600; source/networking/network_game_globals.c:493-529; port/ps2/src/ps2_m0_batch_3.c::network_game_client_start_frame",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "network_game_distributed_client": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 connection-state adapter",
+    "reason": "Combat, shields, pickups, AI placement, and game-mode rules branch on this predicate. CE is game_connection() == _game_connection_network_client. A generated constant false would hide a later client connection.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/networking/network_game_globals.c:297-301; source/objects/damage.c objects_update_shields; source/game/players.c players_decide_pickups; port/ps2/src/ps2_m0_batch_3.c::network_game_distributed_client",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "network_game_server_ban_player": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 local network-session adapter",
+    "reason": "hs_compile_and_evaluate_command calls this. CE returns FALSE when it cannot name a machine. With no server, FALSE is a failed command, not a successful ban.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/hs/hs.c:15489; source/networking/network_server_manager.c:1120-1129; port/ps2/src/ps2_m0_batch_3.c::network_game_server_ban_player",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "network_game_server_get_game": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 local network-session adapter",
+    "reason": "game_engine_player_killed reads the host record only when global_network_game_server_get() is non-NULL. That getter is already NULL. Returning NULL does not invent a host game.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/game/game_engine.c:5071-5080; port/ps2/game/ps2_local.c::global_network_game_server_get; port/ps2/src/ps2_m0_batch_3.c::network_game_server_get_game",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "network_game_server_kick_player": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 local network-session adapter",
+    "reason": "hs_compile_and_evaluate_command calls this. CE returns FALSE when it cannot name a machine. With no server, FALSE is a failed command, not a successful kick.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/hs/hs.c:15489; source/networking/network_server_manager.c:1134-1143; port/ps2/src/ps2_m0_batch_3.c::network_game_server_kick_player",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "network_game_server_matching_player_names": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 local network-session adapter",
+    "reason": "console_complete asks for ban/kick names. CE returns 0 when no server exists. Zero matches is an empty completion, not a fabricated player list.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/main/console.c:322-324; source/networking/network_server_manager.c:960-961; port/ps2/src/ps2_m0_batch_3.c::network_game_server_matching_player_names",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "network_game_server_reset_to_pregame": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 local network-session adapter",
+    "reason": "Postgame A calls this only when a server pointer exists. With a null server the call is skipped. FALSE is a failed host reset, not a successful return to pregame.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/game/game_engine.c:5231-5233; source/networking/network_server_manager.c:5031; port/ps2/src/ps2_m0_batch_3.c::network_game_server_reset_to_pregame",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "network_game_server_start_frame": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 local network-session adapter",
+    "reason": "main_loop calls this only in the network-server branch. CE returns TRUE when no server object exists. Generated FALSE would mark the host down.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/main/main.c:3601; source/networking/network_game_globals.c:434-447; port/ps2/src/ps2_m0_batch_3.c::network_game_server_start_frame",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "network_game_server_switch_to_postgame": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 local network-session adapter",
+    "reason": "game_engine_update calls this only when a server pointer exists. Local postgame already ran. The adapter does not invent a host postgame record.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/game/game_engine.c:4910-4913; port/ps2/game/ps2_local.c::global_network_game_server_get; port/ps2/src/ps2_m0_batch_3.c::network_game_server_switch_to_postgame",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "network_game_server_update_ticks": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 local network-session adapter",
+    "reason": "game_time_update calls this only for a network-server connection. Local mode uses update_client_local_ticks. The adapter does not emit distributed tick messages.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/game/game_time.c:452-458; port/ps2/src/ps2_m0_batch_3.c::network_game_server_update_ticks",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  },
+  "network_votekick_matching_player_names": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 local network-session adapter",
+    "reason": "console_complete asks for votekick names. CE returns 0 when votekick is unavailable. Zero matches is an empty completion, not a fabricated player list.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-3-review.md; source/main/console.c:322; port/linux/game/network_votekick.c:947-948; port/ps2/src/ps2_m0_batch_3.c::network_votekick_matching_player_names",
+    "test": "tests/test_hcu_external_review_batch_3.py::test_batch_3_rooted_symbols_are_dispositioned"
+  }
+}

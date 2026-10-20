@@ -1,0 +1,7 @@
+#ifndef HCU_PS2_CACHE_TEST_PHYSICAL_MEMORY_MAP_H
+#define HCU_PS2_CACHE_TEST_PHYSICAL_MEMORY_MAP_H
+void *physical_memory_get_tag_cache_base_address(void);
+unsigned long physical_memory_get_tag_cache_size(void);
+void *physical_memory_get_structure_bsp_cache_base_address(void);
+unsigned long physical_memory_get_structure_bsp_cache_size(void);
+#endif

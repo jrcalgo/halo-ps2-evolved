@@ -1,0 +1,5 @@
+# M0 Newlib reentrancy-pointer data review
+
+The rooted `_impure_ptr` data symbol is supplied by the exact pinned EE Newlib archive object `libc.a(libc_a-impure.o)`. The pinned Newlib 4.6.0 source defines it as a pointer to its initialized `_impure_data` object (`newlib/libc/reent/impure.c`); this is a live initialized runtime object, not a zero-generated placeholder. Its source identity is `8881dc4b138f0561596980ac9a481c7e638aebd0` in [`toolchain-sources.json`](../config/toolchain-sources.json#L19), and the current HCU map resolves the root to that archive member.
+
+This disposition approves only provider and initialization ownership for the Newlib reentrancy pointer used by rooted CE/libc code. It does not imply that every reentrant libc function has CE-compatible concurrency semantics, nor approve `strtok`, which remains pending until its use/thread interaction is covered. `test_pinned_newlib_reent_pointer_has_initialized_archive_owner` checks the exact source initializer, archive member and ledger evidence.

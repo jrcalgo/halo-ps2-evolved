@@ -1,0 +1,226 @@
+{
+  "XFindClose": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: no-device save enumeration",
+    "reason": "Callers close only a handle that is not INVALID_HANDLE_VALUE. Returning 0 after a generated NULL first-handle looked like a failed close of a live enumeration.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/saved games/saved_game_files.c:690-693; port/ps2/src/ps2_m0_batch_1.c XFindClose",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "XFindFirstSaveGame": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: no-device save enumeration",
+    "reason": "CE tests INVALID_HANDLE_VALUE. Generated NULL is a live handle, so the loop runs on unwritten find_data.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/saved games/saved_game_files.c:672-677; port/ps2/src/ps2_m0_batch_1.c return INVALID_HANDLE_VALUE",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "XFindNextSaveGame": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: no-device save enumeration",
+    "reason": "No catalogue exists. Return 0 so a stray handle cannot invent a second save.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/saved games/saved_game_files.c:688,1825,1980; port/ps2/src/ps2_m0_batch_1.c XFindNextSaveGame",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "__sync_val_compare_and_swap_4": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 CRT (ps2_crt.c)",
+    "reason": "write_to_debug_file installs the debug FILE* with this CAS. The CRT already compares, stores, and returns the previous value.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/cseries/errors.c:144; port/ps2/src/ps2_crt.c:76-83",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "_control87": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: software x87 control word",
+    "reason": "real_math_reset_precision writes CW_DEFAULT with mask 0xFFFFF. A generated zero stored nothing. The EE has no x87 word; the adapter keeps the requested bits.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/math/real_math.c:132; port/ps2/src/ps2_m0_batch_1.c ps2_control87_word",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "_snprintf": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 CRT (ps2_crt.c)",
+    "reason": "Live callers format into a capacity and test > 0. The CRT already forwards to Newlib vsnprintf.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/saved games/saved_game_files.c:1884-1901; port/ps2/src/ps2_crt.c:47-56",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "_sound_cache_sound_request": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: CE sound-decision resident adapter",
+    "reason": "channel_get_state forces state 0 when this is false. A generated false changes event eligibility. A non-null permutation is decision-ready.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/sound/sound_manager.c:1950-1956; port/ps2/src/ps2_m0_batch_1.c return sound != NULL",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "_texture_cache_bitmap_get_hardware_format": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: tag-bitmap ready token",
+    "reason": "lights_illumination_at_point skips lightmap sampling on NULL. Returning the tag bitmap keeps the sample path; parent GS owns pixels.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/objects/object_lights.c:1465-1481; port/ps2/src/ps2_m0_batch_1.c return bitmap",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "_vsnprintf": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 CRT (ps2_crt.c)",
+    "reason": "terminal_printf already accepts both MSVC -1 and C99 would-be length. The CRT forwards to Newlib vsnprintf.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/interface/terminal.c:373-375; port/ps2/src/ps2_crt.c:42-45",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "_vsnwprintf": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 1: MSVC wide format",
+    "reason": "usnprintf substitutes %s/%d/%hs into UI text. The CRT copied the format and dropped arguments.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/text/unicode.c:1339; port/ps2/src/ps2_m0_batch_1.c return truncated ? -1",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "attract_mode_start": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 1: attract start without Bink",
+    "reason": "The CE body stops menu music and writes the countdown when Bink is inactive. The generated empty body dropped that transition.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/interface/attract_mode.c:193-217; port/ps2/src/ps2_m0_batch_1.c ps2_attract_countdown_timer",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "build_sprite": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: sprite batch without Xbox dynamic buffers",
+    "reason": "Antenna and glow write into a caller-owned batch. Counting under the valid bit acknowledges the protocol without Xbox locks.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/objects/widgets/antenna.c:516-528; port/ps2/src/ps2_m0_batch_1.c sprite_count",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "build_sprites_begin": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: sprite batch without Xbox dynamic buffers",
+    "reason": "CE resets the batch and sets the valid bit. A generated empty begin left stack sprite_data uninitialized.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/render/render_sprite.c:204-228; port/ps2/src/ps2_m0_batch_1.c _build_sprites_valid_bit, TRUE",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "build_sprites_end": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: sprite batch without Xbox dynamic buffers",
+    "reason": "CE clears the valid bit after submit. Begin never allocated Xbox buffers, so end only clears the bit.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/render/render_sprite.c:231-289; port/ps2/src/ps2_m0_batch_1.c _build_sprites_valid_bit, FALSE",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "config_boolean": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 1: CE default configuration",
+    "reason": "unit_animation_enhanced starts enhanced TRUE and then reads game.enhanced_animations. Generated zero disables cyborg animation parity.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/units/units.c:3335-3345; port/ps2/src/ps2_m0_batch_1.c game.enhanced_animations",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "config_changes": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 1: CE default configuration",
+    "reason": "Animation and volume sites reread when the generation changes. A fixed 0 is a stable default owner.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/units/units.c:3342; port/ps2/src/ps2_m0_batch_1.c return ps2_config_generation",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "config_real": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 1: CE default configuration",
+    "reason": "sound_manager_port_volume replaces 1.f defaults with config_real. Generated zero mutes music and effects.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/sound/sound_manager.c:1140-1141; port/ps2/src/ps2_m0_batch_1.c audio.music_volume",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "config_string": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 1: CE default configuration",
+    "reason": "terminal_shows reads game.console_log. Return the Linux/CE default important.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/interface/terminal.c:333-335; port/ps2/src/ps2_m0_batch_1.c return \"important\"",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "connected_geometry_add_triangle": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: fail-closed editor connected geometry",
+    "reason": "The builder walks the accumulator after new. Returning NONE avoids walking a zeroed array. The HS command is not allowed in map scripts.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/structures/structure_lens_flares.c:335-340; port/ps2/src/ps2_m0_batch_1.c connected_geometry_add_triangle",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "connected_geometry_delete": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: fail-closed editor connected geometry",
+    "reason": "CE frees dynamic arrays. Safe on a zeroed accumulator.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/tool/connected_geometry.c:127-145; port/ps2/src/ps2_m0_batch_1.c connected_geometry_delete",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "connected_geometry_group_coplanar": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: fail-closed editor connected geometry",
+    "reason": "The group count drives marker placement. Return 0 so the editor helper does not invent groups.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/structures/structure_lens_flares.c:343-344; port/ps2/src/ps2_m0_batch_1.c connected_geometry_group_coplanar",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "connected_geometry_new": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: fail-closed editor connected geometry",
+    "reason": "A generated empty new leaves garbage arrays for add_triangle. Zero the accumulator.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/structures/structure_lens_flares.c:321; port/ps2/src/ps2_m0_batch_1.c connected_geometry_new",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "create_global_network_game_client": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: no network session",
+    "reason": "player_ui_fast_setup_network_server requires both creates before setting network_server. FALSE is the failed-service path.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/interface/player_ui.c:673-684; port/ps2/src/ps2_m0_batch_1.c create_global_network_game_client",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "create_global_network_game_server": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: no network session",
+    "reason": "The same script path still closed widgets first. FALSE refuses a session this machine does not own.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/interface/player_ui.c:673; port/ps2/src/ps2_m0_batch_1.c create_global_network_game_server",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "custom_edition_cache_refuse": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 1: Custom Edition stock-map boundary",
+    "reason": "cache_file_header_verify must refuse version-609 before Xbox version-5 checks. Generated false lets a CE header fall through.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/cache/cache_files.c:904; port/ps2/src/ps2_m0_batch_1.c CACHE_FILE_VERSION_CUSTOM_EDITION",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "custom_edition_cache_tags_load": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: Custom Edition stock-map boundary",
+    "reason": "scenario_tags_load expects a converted tag header. NULL is the failed load; treating the file as Xbox is not allowed.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/cache/cache_files.c:1231-1256; port/ps2/src/ps2_m0_batch_1.c custom_edition_cache_tags_load",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "custom_edition_cache_tags_loaded": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: Custom Edition stock-map boundary",
+    "reason": "False selects stock Xbox offsets. True is valid only after a converted cache exists.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/cache/cache_files.c:375-378; port/ps2/src/ps2_m0_batch_1.c custom_edition_cache_tags_loaded",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "custom_edition_cache_tags_unload": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: Custom Edition stock-map boundary",
+    "reason": "scenario_tags_unload calls this only when tags_loaded is true. Empty unload of an empty owner.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/cache/cache_files.c:646-647; port/ps2/src/ps2_m0_batch_1.c custom_edition_cache_tags_unload",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "custom_edition_level_name": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 1: Custom Edition stock-map boundary",
+    "reason": "custom_maps\\ names must not enter the Xbox campaign loader. Generated false would treat them as stock maps.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/main/main.c:1279; port/ps2/src/ps2_m0_batch_1.c CUSTOM_EDITION_LEVEL_NAME_PREFIX",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "custom_edition_maps_description": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: Custom Edition stock-map boundary",
+    "reason": "fallback_string asks for catalogue copy. No PS2 catalogue exists.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/text/text_group.c:221; port/ps2/src/ps2_m0_batch_1.c custom_edition_maps_description",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "custom_edition_maps_name": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: Custom Edition stock-map boundary",
+    "reason": "fallback_string asks for catalogue names. Return NULL.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/text/text_group.c:219; port/ps2/src/ps2_m0_batch_1.c custom_edition_maps_name",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  },
+  "custom_edition_structure_bsp_load": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 1: Custom Edition stock-map boundary",
+    "reason": "scenario_structure_bsp_load calls this only when tags_loaded. FALSE is the failed convert; the gate is false today.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-1-review.md; source/cache/cache_files.c:1489; port/ps2/src/ps2_m0_batch_1.c custom_edition_structure_bsp_load",
+    "test": "tests/test_hcu_external_review_batch_1.py::test_batch_1_rooted_symbols_are_dispositioned"
+  }
+}

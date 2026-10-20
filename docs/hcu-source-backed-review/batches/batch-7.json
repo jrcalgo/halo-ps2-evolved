@@ -1,0 +1,226 @@
+{
+  "sound_cache_close": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 7: CE sound-cache datum",
+    "reason": "scenario_tags_unload drains the sound datum and calls data_make_invalid before tag teardown. The generated empty body left map-owned cache state unretired.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/cache/cache_files.c:626; source/cache/xbox_sound_cache.c:426-455",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "sound_cache_delete": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 7: CE sound-cache datum",
+    "reason": "sound_dispose always calls sound_cache_delete after the uninitialized manager path. CE disposes the datum and clears the physical base.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/sound/sound_manager.c:811; source/cache/xbox_sound_cache.c:211-218",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "sound_cache_flush": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 7: CE sound-cache datum",
+    "reason": "HaloScript sound_cache_flush_evaluate deletes only entries whose software and hardware counts are both zero.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/hs/hs.c:14196; source/cache/xbox_sound_cache.c:407-423",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "sound_cache_idle": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 7: CE sound-cache datum",
+    "reason": "sound_idle and sound_render call sound_cache_idle after the platform-disabled manager path. An empty datum has no LRU pages to advance.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/sound/sound_manager.c:3812,4002; source/cache/xbox_sound_cache.c:229-239",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "sound_cache_new": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 7: CE sound-cache datum",
+    "reason": "sound_initialize calls sound_cache_new before the HALO_PS2 platform -1 return. CE creates the 512-entry xbox sound datum and binds physical_memory_get_sound_cache_base_address().",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/sound/sound_manager.c:920-928; source/cache/xbox_sound_cache.c:372-404",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "sound_cache_open": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 7: CE sound-cache datum",
+    "reason": "scenario_tags_load pairs sound_cache_open with close. CE calls data_make_valid on the sound datum.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/cache/cache_files.c:1225; source/cache/xbox_sound_cache.c:221-226",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "sound_cache_sound_finished": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 7: CE sound-cache datum",
+    "reason": "channel stop/queue paths call this. CE returns immediately when sound_cache_sound_get_cache_sound is NULL, otherwise decrements software_reference_count.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/sound/sound_manager.c:1287; source/cache/xbox_sound_cache.c:305-328",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "strtok": {
+    "disposition": "implemented",
+    "owner": "Pinned PS2 EE Newlib 4.6.0 libc",
+    "reason": "csstrtok returns strtok(s1, s2). cseries.h remaps the strtok name onto csstrtok. The rooted member is libc_a-strtok.o; EE is single-threaded so the reent save pointer is that contract.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/cseries/cseries.c:554-560; source/cseries/cseries.h:279; build/hcu-ps2-closure/all/halo-local.map: libc_a-strtok.o",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "structure_bsp_header_deregister_vertex_buffers": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 7: no D3D vertex-buffer registrar",
+    "reason": "scenario_structure_bsp_unload calls this. CE only BlockUntilNotBusy on D3D buffers from excluded cache_files_windows.c. No D3D registration is created on this profile.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/cache/cache_files.c:1517; source/cache/cache_files_windows.c:511-536",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "structure_bsp_header_register_vertex_buffers": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 7: no D3D vertex-buffer registrar",
+    "reason": "scenario_structure_bsp_load calls this. CE writes D3DCOMMON_TYPE_VERTEXBUFFER and IDirect3DVertexBuffer8_Register. Those D3D objects are not consumed by the PS2 cache/GS path.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/cache/cache_files.c:1497; source/cache/cache_files_windows.c:485-508",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "tags_header_deregister_vertex_and_index_buffers": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 7: no D3D vertex-buffer registrar",
+    "reason": "scenario_tags_unload calls this after cache_file_close. CE waits on D3D vertex/index buffers that this profile never registers.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/cache/cache_files.c:649; source/cache/cache_files_windows.c:453-482",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "tags_header_register_vertex_and_index_buffers": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 7: no D3D vertex-buffer registrar",
+    "reason": "scenario_tags_load calls this for the tag header. CE Register/Common writes are Xbox D3D-only.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/cache/cache_files.c:1328; source/cache/cache_files_windows.c:428-450",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "texture_cache_close": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 7: no texture_cache_new datum",
+    "reason": "scenario_tags_unload calls texture_cache_close. CE flushes then data_make_invalid. texture_cache_new is not a live external, so there is no textures datum to invalidate.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/cache/cache_files.c:627; source/cache/xbox_texture_cache.c:726-736",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "texture_cache_debug_options": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 7: CE texture-cache debug bytes",
+    "reason": "The defining objects are texture_cache_graph_definition and texture_cache_list_definition, which alias texture_cache_debug_options and texture_cache_debug_options + 0x1. CE initializes {0}. The Xbox debug renderer that reads graph/list is excluded.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/hs/hs_globals_external.c:1926-1928; source/cache/xbox_texture_cache.c:218-221,340",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "texture_cache_flush": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 7: no texture_cache_new datum",
+    "reason": "HaloScript texture_cache_flush_evaluate kicks D3D and lruv_flush. No texture_cache_new datum and no D3D device exist in this closure.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/hs/hs.c:14195; source/cache/xbox_texture_cache.c:548-555",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "texture_cache_open": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 7: no texture_cache_new datum",
+    "reason": "scenario_tags_load calls texture_cache_open before sound_cache_open. CE data_make_valid requires the textures datum created by texture_cache_new, which is not a live external.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/cache/cache_files.c:1224; source/cache/xbox_texture_cache.c:355-360",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "time": {
+    "disposition": "implemented",
+    "owner": "Pinned PS2SDK libcglue RTC / Newlib time",
+    "reason": "GetSystemTime, system_seconds, and write_to_error_file call time() for wall-clock diagnostics. The rooted member is libc_a-time.o. This is not GetTickCount/EE bus-clock frame timing.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; port/ps2/src/ps2_time.c:49; source/cseries/cseries_windows.c:161; source/cseries/errors.c:161; build/hcu-ps2-closure/all/halo-local.map: libc_a-time.o",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "towlower": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 7: ASCII identifier fold",
+    "reason": "csstrcasecmp folds each char byte with towlower. The CE call is the same ASCII A-Z map already used by _stricmp, not Newlib locale wchar conversion.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/cseries/cseries.c:619-634; port/ps2/src/ps2_crt.c:12-16",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "transport_dispose": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 7: no XNet/Winsock",
+    "reason": "game_dispose calls transport_dispose. CE returns _transport_error_not_initialized when transport_initialized is false. The generated memset zero is _transport_error_none.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/game/game.c:811; source/bungie_net/network/transport_endpoint_set_winsock.c:361-377; source/bungie_net/network/transport.h:40-45",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "transport_initialize": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 7: no XNet/Winsock",
+    "reason": "game_initialize calls transport_initialize. CE returns _transport_error_none only after XNet/WSA startup. The generated zero reports success for a service that did not start.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/game/game.c:317; source/bungie_net/network/transport_endpoint_set_winsock.c:252-321; source/bungie_net/network/transport.h:40-45",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "ui_set_next_level": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 7: campaign next-level",
+    "reason": "main_won_map_private calls this after the network co-op branch returns. Level 0..9 calls main_set_map_name(main_get_solo_level_name(level)) and main_disallow_persistent_storage(); NONE calls main_roll_credits(); any other level calls main_goto_main_menu().",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/main/main.c:2409; source/interface/ui_widget.c:2086-2107",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "ui_widget_load_by_name_or_tag": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 7: no widget definition pool",
+    "reason": "player_ui_fast_setup_network_server treats a NULL load as failure and calls main_goto_main_menu(). ui_widget.c is excluded, so no definition/pool exists. A non-NULL stub would report success for a failed menu/server setup.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/interface/player_ui.c:662-691; source/interface/ui_widget.c:3897-3960",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "ui_widget_load_progress_widget": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 7: widget lifetime state",
+    "reason": "game_unload calls this. CE only error(_error_silent, ...) and returns. _error_silent is diagnostic and does not queue display_error UI state.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/game/game.c:749; source/interface/ui_widget.c:1954-1961; source/cseries/errors.c:248-268",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "ui_widgets_active_for_local_player": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 7: widget lifetime state",
+    "reason": "player_control_port_menu_has_controller zeroes input when a local player's widgets are active. The query scans initialized active-widget slots.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/game/player_control.c:620,655-658; source/interface/ui_widget.c:4369-4396",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "ui_widgets_close_all": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 7: widget lifetime state",
+    "reason": "Map/session teardown closes the virtual keyboard and clears per-player active widgets so tag pointers do not outlive the map.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/game/game.c:759,969; source/game/game_engine.c:5689; source/interface/player_ui.c:654; source/interface/ui_widget.c:2912-2933",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "ui_widgets_disable_pause_game": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 7: widget lifetime state",
+    "reason": "main_new_map and other main transitions store pause_disabled_ticks consumed by pause/game-time policy.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/main/main.c:1507; source/interface/ui_widget.c:2031-2040",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "ui_widgets_dispose": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 7: widget lifetime state",
+    "reason": "game_dispose calls ui_widgets_dispose, which CE implements as ui_widgets_close_all plus pool/global teardown.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/game/game.c:782; source/interface/ui_widget.c:2198-2208",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "ui_widgets_inhibit_processing": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 7: widget lifetime state",
+    "reason": "main_change_map_name writes processing_inhibited around the map-name fade so stale widgets are not processed.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/main/main.c:1524,1548; source/interface/ui_widget.c:1660-1667",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "ui_widgets_initialize": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 7: widget lifetime state",
+    "reason": "game_initialize calls ui_widgets_initialize. CE resets globals, records initialization success, and sets fade_to_black = -1.0f.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/game/game.c:313; source/interface/ui_widget.c:2163-2196",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "ui_widgets_set_fade_value": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 7: widget lifetime state",
+    "reason": "main_change_map_name writes fade_to_black during the map transition. CE stores widget_globals.fade_to_black = value.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/main/main.c:1525,1533,1544; source/interface/ui_widget.c:1852-1857",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "vswprintf": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 7: CE 3-arg wide sprintf",
+    "reason": "usprintf and uvsprintf call vswprintf(string, format, arglist). Newlib libc_a-vswprintf.o takes a size_t count before the format, so the linked member is the wrong call shape.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/text/unicode.c:1468,1514",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  },
+  "xbox_set_machine_name": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 7: local nickname store",
+    "reason": "xbox_set_machine_name_evaluate is void. CE converts the string and calls XSetNicknameW or reports an error. This profile stores the ASCII name and does not call XSetNicknameW.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-7-review.md; source/hs/hs.c:15102; source/networking/network_game_manager.c:232-243",
+    "test": "tests/test_hcu_external_review_batch_7.py::test_batch_7_rooted_symbols_are_dispositioned"
+  }
+}

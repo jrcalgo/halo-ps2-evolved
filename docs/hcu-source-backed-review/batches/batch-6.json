@@ -1,0 +1,226 @@
+{
+  "rasterizer_widget_draw_sprite3d": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0: Xbox widget sprite; parent GS owns draw",
+    "reason": "light_volume_render is the only rooted caller and the CE body is a void Xbox sprite submit. An empty call drops presentation only.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/objects/widgets/light_volumes.c:312; source/rasterizer/rasterizer.c:1703-1710; build/hcu-ps2-closure/all/ps2_platform.c empty void",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_widget_end": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0: Xbox widget batch close; parent GS owns draw",
+    "reason": "The only rooted caller ends the light-volume widget batch. No compiled consumer reads a widget-begin flag.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/objects/widgets/light_volumes.c:320; source/rasterizer/rasterizer.c:911-914",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_widget_set_texture": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch-6: fail-closed widget texture bind",
+    "reason": "Xbox bind is unimplemented. FALSE is the failed-service result; a success-shaped return would approve a bind that did not happen.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/objects/widgets/light_volumes.c:279; port/ps2/src/ps2_m0_batch_6.c rasterizer_widget_set_texture returns FALSE",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_widget_submit": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0: Xbox widget queue; parent GS owns draw",
+    "reason": "light_volume_submit queues the render proc after a camera-distance test. The void submit does not own that test or object state.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/objects/widgets/light_volumes.c:367; source/rasterizer/rasterizer.c:1636-1642",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_window_begin": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0: halt-screen window begin; parent GS owns present",
+    "reason": "The only rooted section is halt_and_catch_fire, which copies render.camera before the call. Empty begin does not change that CPU write.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/main/main.c:3230-3231",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_window_end": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0: halt-screen window end; parent GS owns present",
+    "reason": "Pairs the halt-screen begin. Void, no split-screen CPU scope in this caller.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/main/main.c:3272",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_windows_begin": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0: halt-screen windows begin; parent GS owns present",
+    "reason": "Rooted only from halt_and_catch_fire before the fatal text window.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/main/main.c:3202",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_windows_end": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0: halt-screen windows end; parent GS owns present",
+    "reason": "Closes the halt-screen multi-window scope. Void.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/main/main.c:3273",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch-6: CE render globals and frame clock",
+    "reason": "editor_custom_render points here, and glow, light-volume, lightning, particle, and unit-debug callers read camera, frame_index, or time_delta. A zero clock changes particle cull and glow motion.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/camera/editor_flying_camera.c:216; source/effects/particles.c:902,1023-1038; source/objects/widgets/glow.c:1433,1449; port/ps2/src/ps2_m0_batch_6.c struct render_globals render",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_contrails_enabled": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch-6: CE effect-enable defaults",
+    "reason": "HaloScript render_contrails_definition points at this flag. CE default is TRUE; generated BSS is FALSE.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/hs/hs_globals_external.c:1416; source/render/render.c:150; port/ps2/src/ps2_m0_batch_6.c boolean render_contrails_enabled = TRUE",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_dispose": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch-6: render object-cache lifetime",
+    "reason": "game_dispose clears the cached-object render-state pointer. Empty dispose leaves a stale game-state owner.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/render/render.c:186-190; source/render/render_objects.c:312-316; port/ps2/src/ps2_m0_batch_6.c cached_object_render_states = NULL",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_dispose_from_old_map": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch-6: render object-cache lifetime",
+    "reason": "Old-map teardown invalidates the cache when it is valid. A no-op keeps the previous map's datum valid.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/render/render_objects.c:301-308; port/ps2/src/ps2_m0_batch_6.c data_make_invalid",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_effects": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch-6: CE effect-enable defaults",
+    "reason": "HaloScript render_effects_evaluate writes the four effect switches. A no-op drops script-visible state.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/render/render.c:157-164; port/ps2/src/ps2_m0_batch_6.c render_effects",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_fov_vertical": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch-6: disabled interpolation identity",
+    "reason": "set_window_camera_values writes this angle into every window. Generated zero collapses the projection. Identity returns the native vertical FOV.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/main/main.c:1168-1172; port/linux/game/view_fov.c:125-148; port/ps2/src/ps2_m0_batch_6.c return native_vertical_field_of_view",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_frame": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch-6: CE render globals and frame clock",
+    "reason": "CE increments render.frame_index and stores the tick delta before submitting windows. Empty leaves particle cull and glow motion on a zero clock.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/render/render.c:607-608; source/main/main.c:3383; port/ps2/src/ps2_m0_batch_6.c render.frame_index++",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_frame_pregame": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch-6: CE render globals and frame clock",
+    "reason": "Pregame also increments render.frame_index and copies the window camera. Empty drops that clock step.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/render/render.c:245,253; source/main/main.c:2004; port/ps2/src/ps2_m0_batch_6.c render_frame_pregame",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_frame_present": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0: parent GS present",
+    "reason": "CE forwards to rasterizer_present. The void present does not report success or change simulation or cache lifetime.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/render/render.c:283-288; source/main/main.c:1226",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_initialize": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch-6: render object-cache lifetime",
+    "reason": "CE allocates cached object render states from game-state memory. Empty initialize skips that arena entry.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/render/render_objects.c:281-288; port/ps2/src/ps2_m0_batch_6.c game_state_data_new cached object render states",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_initialize_for_new_map": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch-6: render object-cache lifetime",
+    "reason": "CE repairs transparent-part links and marks the cache valid. Both are map lifetime, not draw.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/render/render.c:172-178; source/models/models.c:532; port/ps2/src/ps2_m0_batch_6.c models_fix_transparent_part_links",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_interpolation_camera": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch-6: disabled interpolation identity",
+    "reason": "main_game_render overwrites a valid observer with this result. Generated NULL leaves window cameras unset. Disabled interpolation returns the observer.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/main/main.c:3360; port/linux/game/render_interpolation.c:720-728; port/ps2/src/ps2_m0_batch_6.c return observer",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_interpolation_fraction": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch-6: disabled interpolation identity",
+    "reason": "antenna_render_proper consumes the fraction. Native inactive path is 1.0; generated zero is not.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/objects/widgets/antenna.c:434; port/linux/game/render_interpolation.c:514-517; port/ps2/src/ps2_m0_batch_6.c return 1.0f",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_interpolation_frame_begin": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch-6: disabled interpolation identity",
+    "reason": "Native begin only records interpolation activity. With no snapshot store, the empty body matches the disabled path.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; port/linux/game/render_interpolation.c:502-507; port/ps2/src/ps2_m0_batch_6.c render_interpolation_frame_begin",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_interpolation_frame_end": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch-6: disabled interpolation identity",
+    "reason": "Native end clears interpolation activity. Empty is the disabled end while queries stay on the identity path.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; port/linux/game/render_interpolation.c:509-512; port/ps2/src/ps2_m0_batch_6.c render_interpolation_frame_end",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_interpolation_object_node_matrices": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch-6: disabled interpolation identity",
+    "reason": "object_get_node_matrices uses NULL to select CE datum matrices. The adapter returns NULL and does not expose a snapshot.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/objects/objects.c:1303-1307; port/ps2/src/ps2_m0_batch_6.c return NULL",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_interpolation_reset": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch-6: disabled interpolation identity",
+    "reason": "Map init resets interpolation records because object indices are reused. No records are stored, so reset is a no-op.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; port/linux/game/render_interpolation.c:483-498; port/ps2/src/ps2_m0_batch_6.c render_interpolation_reset",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_interpolation_tick": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch-6: disabled interpolation identity",
+    "reason": "Native tick allocates snapshots with calloc/realloc, which the PS2 no-post-map-malloc budget forbids. Tick does not advance CE simulation; queries use the disabled fallback.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; port/linux/game/render_interpolation.c:387-394; port/ps2/src/ps2_m0_batch_6.c render_interpolation_tick",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_particle_systems_enabled": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch-6: CE effect-enable defaults",
+    "reason": "HaloScript render_psystems_definition points here. CE default TRUE also gates weather_particle_systems_render create/delete. Generated FALSE would suppress that lifecycle.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/hs/hs_globals_external.c:1420; source/effects/weather_particle_systems.c:756-786; port/ps2/src/ps2_m0_batch_6.c boolean render_particle_systems_enabled = TRUE",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_particles_enabled": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch-6: CE effect-enable defaults",
+    "reason": "HaloScript render_particles_definition points here. CE default is TRUE; generated BSS is FALSE.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/hs/hs_globals_external.c:1418; source/render/render.c:151; port/ps2/src/ps2_m0_batch_6.c boolean render_particles_enabled = TRUE",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_shadows": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch-6: CE effect-enable defaults",
+    "reason": "HaloScript render_shadows_definition points here. CE default is TRUE; generated BSS is FALSE.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/hs/hs_globals_external.c:1464; source/render/render_objects.c:264; port/ps2/src/ps2_m0_batch_6.c boolean render_shadows = TRUE",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "render_weather_particle_systems_enabled": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch-6: CE effect-enable defaults",
+    "reason": "HaloScript render_wsystems_definition and render_effects write this flag. CE default is TRUE. It stays distinct from the weather renderer's render_particle_systems_enabled test.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/hs/hs_globals_external.c:1422; source/render/render.c:153,160; port/ps2/src/ps2_m0_batch_6.c boolean render_weather_particle_systems_enabled = TRUE",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "reset_last_player1_profile_index": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch-6: last player-1 profile index",
+    "reason": "delete_enumerated_saved_game_file always stores NONE into the last player-1 profile index. An empty stub leaves a deleted profile selected.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/saved games/saved_game_files.c:1578; source/interface/ui_widget_event_handler_functions.c:1771-1775; port/ps2/src/ps2_m0_batch_6.c last_player1_profile_index = NONE",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  },
+  "rint": {
+    "disposition": "implemented",
+    "owner": "Pinned PS2 EE Newlib 4.6.0 libm (libm_a-s_rint.o)",
+    "reason": "fast_ftol and the pixel converters lower to __builtin_rint, resolved from Newlib libm_a-s_rint.o. This is not a generated zero stub. Rounding mode remains the EE default; _control87 is a separate pending row.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-6-review.md; source/cseries/cseries.h:341; build/hcu-ps2-closure/all/halo-local.map libm_a-s_rint.o",
+    "test": "tests/test_hcu_external_review_batch_6.py::test_batch_6_rooted_symbols_are_dispositioned"
+  }
+}

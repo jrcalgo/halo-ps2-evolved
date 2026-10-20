@@ -1,0 +1,12 @@
+CreateThread
+DeleteFileA
+GlobalMemoryStatus
+GlobalReAlloc
+SetEndOfFile
+Sleep
+WriteFile
+XCalculateSignatureBegin
+XCalculateSignatureEnd
+XCalculateSignatureUpdate
+XCreateSaveGame
+XDeleteSaveGame

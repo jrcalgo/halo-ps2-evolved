@@ -1,0 +1,33 @@
+{
+  "step": "milestone-1-step-1-standalone-closure",
+  "note": "Authoritative rooted set is build/hcu-ps2-closure/all. The parent probe uses all-no-bootstrap-memory and is recorded separately.",
+  "rooted_object": "build/hcu-ps2-closure/all/rooted.o",
+  "rooted_sha256": "3796bc3d9c28d591cb46fd4f8f8593a03bd80311fd4460e079525445c99c342f",
+  "elf": "build/hcu-ps2-closure/all/halo-local.elf",
+  "elf_sha256": "2fba411b7244b20fdf31f0b1e540fc2b6f5598891f53a64f8b12f850a0cda0aa",
+  "link_map": "build/hcu-ps2-closure/all/halo-local.map",
+  "link_map_sha256": "a34a6c49c54ed377af50f62b43632bdfe26f92a5bb666301b5caf934f06d79ad",
+  "result": "build/hcu-ps2-closure/all/result.json",
+  "result_sha256": "fd0929db9c968fd7324dddb1fba6722c6894c642fc66682127f1c4f3c2b2a283",
+  "undefined_symbol_count": 0,
+  "review_gate": "closed",
+  "rooted_external_count": 320,
+  "parent_probe": {
+    "report": "build/hcu-parent-link-probe/result.json",
+    "profile": "host",
+    "authoritative_note": "The review gate uses build/hcu-ps2-closure/all. This probe rebuilds all-no-bootstrap-memory and is a different rooted object.",
+    "no_bootstrap_rooted_sha256": "3796bc3d9c28d591cb46fd4f8f8593a03bd80311fd4460e079525445c99c342f",
+    "diagnostic_viewer_elf": "build/hcu-parent-link-probe/hcu-parent-link.elf",
+    "diagnostic_viewer_elf_sha256": "d5c816975381b57f52445d07424fa56078466c2f28cb9c9e00e73ca6790f3289",
+    "diagnostic_viewer_undefined": 0,
+    "diagnostic_viewer_elf_static_overage": 13572,
+    "gameplay_elf": "build/hcu-parent-link-probe/hcu-gameplay-machine.elf",
+    "gameplay_elf_sha256": "d62364a79b8f7198a2e1f849e4d1fefe1121879fa70e65fb0b7bc01924b43c7a",
+    "gameplay_undefined": 0,
+    "gameplay_load_file_bytes": 2065540,
+    "gameplay_bss_bytes": 2114532,
+    "gameplay_elf_static_overage": 0,
+    "halo_ce_universal_head": "c406a4149ddebae4f45462ce4c1e8d9cce0567c2",
+    "halo_ps2_head": "c8db480d1af1cd7ca5a3d29805e791233138b732"
+  }
+}

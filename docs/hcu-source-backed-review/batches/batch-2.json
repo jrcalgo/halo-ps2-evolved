@@ -1,0 +1,226 @@
+{
+  "custom_edition_structure_bsp_reference_valid": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0: CE BSP hooks gated by tags_loaded",
+    "reason": "scenario_structure_bsp_load calls this only after custom_edition_cache_tags_loaded() is true. The generated tags_loaded predicate is false, so the CE file/destination validator is not entered and stock BSP verification stays in control.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/cache/cache_files.c:1390-1393; build/hcu-ps2-closure/all/ps2_platform.c:166",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "custom_edition_structure_bsp_unload": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0: CE BSP hooks gated by tags_loaded",
+    "reason": "scenario_structure_bsp_unload calls this only while custom_edition_cache_tags_loaded() is true. No CE geometry is materialized, so the paired unload is unreachable.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/cache/cache_files.c:1520-1521; build/hcu-ps2-closure/all/ps2_platform.c:166",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "custom_edition_vehicle_placement_allowed": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 2: stock vehicle-placement fallback",
+    "reason": "object_types_place_all skips a vehicle when this returns false. The generated zero therefore suppresses stock placements. The CE contract returns true whenever custom_edition_vehicles_by_placement is false.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/objects/object_types.c:1230-1234; port/linux/game/custom_edition_objects.c:113-119; port/ps2/src/ps2_m0_batch_2.c",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "custom_edition_vehicles_by_placement": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 2: no Custom Edition placement owner",
+    "reason": "game_engine_remap_vehicle keeps the map vehicle set only when this is true. CE requires a loaded Custom Edition cache. This image has no CE cache owner, so the function is FALSE and stock remapping remains selected.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/game/game_engine.c:7729-7730; port/linux/game/custom_edition_objects.c:104-111; port/ps2/src/ps2_m0_batch_2.c",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "display_error_damaged_media": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 2: damaged-media halt",
+    "reason": "Cache and map status 2 call this and then continue teardown or load unless it never returns. CE ends the input frame and enters main_loop_of_death. The generated empty body is not that abort.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/cache/cache_files.c:1198-1207; source/game/game.c:760-761,894-895; source/interface/ui_widget.c:4641-4648; port/ps2/src/ps2_m0_batch_2.c",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "display_error_deferred": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 2: deferred error pause",
+    "reason": "input_abstraction_update stores a pad-unplug error and, in local play, requests a gameplay pause. process_ui_widgets is empty, so a generated no-op would drop both the record and the pause.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/input/input_abstraction.c:814-825; source/interface/ui_widget.c:4284-4310; port/ps2/src/ps2_m0_batch_2.c",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "display_error_when_main_menu_loaded": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 local connection: network-only main-loop queue",
+    "reason": "The only rooted caller is main_loop, and every call sits inside a network-client or network-server branch. main_setup_connection sets a local connection and the generated create_global_network_game_* functions stay false, so the script setup never promotes the connection.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/main/main.c:2861,3583-3649; source/interface/player_ui.c:651-685; build/hcu-ps2-closure/all/ps2_platform.c:160-161",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "display_errors_deferred_until_cinematic_stop": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0: cinematic error queue writer excluded",
+    "reason": "cinematic_stop drains widget_globals.deferred_cinematic_errors. The only writer is display_error while a cinematic is active, and that owner lives in excluded ui_widget.c, so the queue is not in the image.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/cutscene/cinematics.c:258; source/interface/ui_widget.c:4338-4364,4405-4417; port/ps2/port.json exclude_sources",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "display_scenario_help": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 2: campaign help mapping",
+    "reason": "HaloScript display_scenario_help maps the active scenario to a campaign help widget. An empty body drops that authored campaign request. The batch owner keeps the CE scenario-name map even though the widget loader is excluded.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/hs/hs.c:15101; source/interface/ui_widget.c:4703-4746; port/ps2/src/ps2_m0_batch_2.c",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "dispose_global_network_game_client": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 local profile: no network session",
+    "reason": "CE disposes a client only when the pointer is non-NULL, then clears client_started. ps2_local returns NULL and create_global_network_game_client is generated false, so the empty dispose matches the null-session path. main_exit only calls it for a network connection.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/networking/network_game_globals.c:471-481; source/interface/player_ui.c:655-656; port/ps2/game/ps2_local.c:36-38",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "dispose_global_network_game_server": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 local profile: no network session",
+    "reason": "CE disposes a server only when the pointer is non-NULL. ps2_local returns NULL and create_global_network_game_server is generated false, so the empty dispose matches the null-session path.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/networking/network_game_globals.c:421-429; source/interface/player_ui.c:655; port/ps2/game/ps2_local.c:31-34",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "distributed_player_to_byte": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 2: local player-byte encoding",
+    "reason": "CTF writes returner, grabber, and capturer identities through this encoder. A generated zero maps NONE onto absolute player 0. CE uses the absolute index, or 0xFF for NONE.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/game/game_engine_ctf.c:703,771,795,1224; port/linux/game/network_distributed.c:1157-1161; port/ps2/src/ps2_m0_batch_2.c",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "dsound_globals": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M1: DirectSound platform disabled",
+    "reason": "The defining object is the generated 30924-byte zero array. Xbox backend text reads it, but sound_initialize returns when preferences->platform is -1, before platform_sound_dsound is selected.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/sound/sound_preferences.c:28-37; source/sound/sound_manager.c:908-928; source/sound/sound_dsound_xbox.c:318; build/hcu-ps2-closure/all/ps2_platform.c:220",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "fclose": {
+    "disposition": "implemented",
+    "owner": "Pinned PS2 EE Newlib 4.6.0 libc",
+    "reason": "The rooted object links libc_a-fclose.o. Callers close a FILE* they obtained from fopen and already null-check the open, so Newlib reports close failure instead of a generated success.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/game/cheats.c:261; source/main/main.c:1897; build/hcu-ps2-closure/all/halo-local.map libc_a-fclose.o",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "fflush": {
+    "disposition": "implemented",
+    "owner": "Pinned PS2 EE Newlib 4.6.0 libc",
+    "reason": "The rooted object links libc_a-fflush.o. File-backed dump and error callers receive Newlib's flush result rather than a generated success.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/cseries/errors.c; build/hcu-ps2-closure/all/halo-local.map libc_a-fflush.o",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "fgets": {
+    "disposition": "implemented",
+    "owner": "Pinned PS2 EE Newlib 4.6.0 libc",
+    "reason": "Cheat and console readers stop on a NULL/EOF fgets. The rooted object links libc_a-fgets.o, not a generated empty read.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/game/cheats.c:248; source/main/console.c:414; build/hcu-ps2-closure/all/halo-local.map libc_a-fgets.o",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "first_person_legs_reset": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0: Linux-port legs/mesh caches not compiled",
+    "reason": "objects_initialize_for_new_map calls this to forget the previous map's waist key and object mesh. Those caches live in first_person_legs.c and object_mesh.c, which are not in the PS2 manifest, and source/render/ is excluded.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/objects/objects.c:1074-1076; port/linux/game/first_person_legs.c:125-131; port/ps2/port.json",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "fopen": {
+    "disposition": "implemented",
+    "owner": "Pinned PS2 EE Newlib 4.6.0 libc",
+    "reason": "Cheat, last-solo, and director paths open Xbox d:/z: names. Newlib returns NULL for those unmapped roots; every rooted caller branches on the handle and does not treat a failed open as success.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/game/cheats.c:240-242; source/main/main.c:1890-1905; source/camera/director.c:432-434; build/hcu-ps2-closure/all/halo-local.map libc_a-fopen.o",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "fprintf": {
+    "disposition": "implemented",
+    "owner": "Pinned PS2 EE Newlib 4.6.0 libc",
+    "reason": "File-backed format writes resolve from libc_a-fprintf.o. Failure is Newlib's return value, not a generated success, and is distinct from the already-reviewed stdout printf path.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/objects/objects.c; build/hcu-ps2-closure/all/halo-local.map libc_a-fprintf.o",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "fputc": {
+    "disposition": "implemented",
+    "owner": "Pinned PS2 EE Newlib 4.6.0 libc",
+    "reason": "The object dump writer uses Newlib fputc. The rooted object links libc_a-fputc.o rather than a generated success stub.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/objects/objects.c; build/hcu-ps2-closure/all/halo-local.map libc_a-fputc.o",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "fputs": {
+    "disposition": "implemented",
+    "owner": "Pinned PS2 EE Newlib 4.6.0 libc",
+    "reason": "Object and lens-flare dump paths use Newlib fputs. The rooted object links libc_a-fputs.o rather than a generated success stub.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/objects/objects.c; source/structures/structure_lens_flares.c; build/hcu-ps2-closure/all/halo-local.map libc_a-fputs.o",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "fread": {
+    "disposition": "implemented",
+    "owner": "Pinned PS2 EE Newlib 4.6.0 libc",
+    "reason": "main_load_last_solo_map reads z:\\last_solo.txt only after fopen succeeds, then falls back to scenario_paths[0] when the file is missing. Newlib fread supplies the element count.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/main/main.c:1890-1905; build/hcu-ps2-closure/all/halo-local.map libc_a-fread.o",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "fscanf": {
+    "disposition": "implemented",
+    "owner": "Pinned PS2 EE Newlib 4.6.0 libc",
+    "reason": "director_load_camera parses d:\\camera.txt only after fopen succeeds. Newlib fscanf is the linked body; a missing file leaves the camera unchanged.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/camera/director.c:432-450; build/hcu-ps2-closure/all/halo-local.map libc_a-fscanf.o",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "game_in_editor": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 local non-editor game profile",
+    "reason": "Rooted callers branch AI activation, object placement, player spawn, and map/menu setup on this predicate. CE's non-editor stub returns FALSE, and the generated zero matches that stub. source/editor/ is excluded.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/editor/editor_stubs.c:18-22; source/game/game.c:712; source/objects/object_types.c:1049,1183; source/main/main.c:3438-3473",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "global_rasterizer_model_ambient_reflection_tint": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0: unallocated cinematic tint",
+    "reason": "The only rooted caller is cinematic_stop, which writes zeros only when the pointer is non-NULL. The generated BSS pointer is NULL. Xbox/script writers live in excluded source/rasterizer/, so the skipped clear matches an unallocated tint.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/cutscene/cinematics.c:250-256; build/hcu-ps2-closure/all/ps2_platform.c:233",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "gmtime_r": {
+    "disposition": "implemented",
+    "owner": "Pinned PS2 EE Newlib 4.6.0 libc",
+    "reason": "GetSystemTime converts time(NULL) through gmtime_r and zeros the SYSTEMTIME when the conversion fails. The rooted object links libc_a-gmtime_r.o.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; port/ps2/src/ps2_time.c:42-70; build/hcu-ps2-closure/all/halo-local.map libc_a-gmtime_r.o",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "halo_custom_edition_tag_cache": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0: no Custom Edition tag cache",
+    "reason": "cache_file_tag_cache_contains uses this pointer only after custom_edition_cache_tags_loaded(). The generated NULL is the no-CE-backing result; this image has no reserved CE window.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/cache/cache_files.c:375-377; port/linux/src/xbox_memory.c:128-131; build/hcu-ps2-closure/all/ps2_platform.c:234",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "halo_interpolation_enabled": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0: interpolation disabled",
+    "reason": "main_update_time and main_rasterizer_throttle take the Xbox throttled path when this is false. The generated int zero is that disabled policy, not the Linux display.interpolation owner.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/main/main.c:2524-2528,2772; build/hcu-ps2-closure/all/ps2_platform.c:235",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "halo_screen_width": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 2: 512-pixel halt viewport",
+    "reason": "halt_and_catch_fire writes viewport x1 from this width. The generated strong zero overrode the weak 512 default. The batch owner restores 512 as a weak symbol so a parent VIDEO_WIDTH can still win.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/main/main.c:3216; port/ps2/src/ps2_edge.c:37-39; src/stream/hcu_main.c:25; port/ps2/src/ps2_m0_batch_2.c",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "hud_hires_tags_loaded": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0: Linux-port hires HUD tables not compiled",
+    "reason": "scenario_tags_load rebuilds Linux-port HUD bitmap tables here. hud_hires_tags.c is not in the PS2 manifest. hud_messaging falls through to stock HUD when the generated draw/sprite helpers return false/NULL.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/cache/cache_files.c:1351-1353; source/interface/hud_messaging.c:552-554; port/linux/game/hud_hires_tags.c:138-214",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "hud_hires_tags_unloaded": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0: Linux-port hires HUD tables not compiled",
+    "reason": "scenario_tags_unload clears the Linux-port HUD tables before cache teardown. Those tables are not compiled, so an empty unload does not retain map-owned bitmap pointers.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/cache/cache_files.c:620-624; port/linux/game/hud_hires_tags.c:216-223",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  },
+  "initialize_network_game_packets": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0: network message group not compiled",
+    "reason": "game_initialize calls this unconditionally, but the packet-group object and its encode/decode live in excluded source/networking/network_messages.c. No compiled local path reads that group.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-2-review.md; source/game/game.c:319; source/networking/network_messages.c:603-610,669,871; port/ps2/port.json exclude_dirs",
+    "test": "tests/test_hcu_external_review_batch_2.py::test_batch_2_rooted_symbols_are_dispositioned"
+  }
+}

@@ -1,0 +1,226 @@
+{
+  "CloseHandle": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 edge: file-bridge and EE-semaphore CloseHandle",
+    "reason": "Live callers close file-bridge slots, EE mutex semaphores, leftover find handles, and HaloAutoTest handles. The edge owner recognizes those tables and fails unknown pointers. CreateThread never produces a thread handle, so the missing thread case is not entered.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_edge.c:457-488; source/tag_files/files_windows.c:737; source/bungie_net/common/thread_win32.c:255",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "CopyFileA": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0 batch 0: XCreateSaveGame fail-closed rename path",
+    "reason": "The only live caller copies profile metadata after XCreateSaveGame returns zero. The batch contract returns ERROR_ACCESS_DENIED, so the CopyFileA sites in synchronize_metadata_display_name_with_profile_name are not reached.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; source/saved games/saved_game_files.c:1080-1130",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "CreateDirectoryA": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 edge: read-only volume directory deny",
+    "reason": "file_create and game_state_write_core treat a zero return as failure and do not invent a directory. The edge body returns 0 with ERROR_ACCESS_DENIED for a nonempty path.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_edge.c:233-238; source/tag_files/files_windows.c:400-413",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "CreateFileA": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 edge: GENERIC_READ OPEN_EXISTING file bridge",
+    "reason": "Tag-file reads use GENERIC_READ plus OPEN_EXISTING and receive a file-bridge handle. Write, create, and truncate modes return INVALID_HANDLE_VALUE. game_state_create_or_open_file already continues after a failed z:\\savegame.bin open on HALO_PS2.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_edge.c:241-275; source/saved games/game_state_xbox.c:245-260",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "CreateMutexA": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 edge: EE binary semaphore mutex",
+    "reason": "saved_game_files_initialize requires two successful create_mutex results. CE never OpenMutex-es the generated name; each create is a new EE semaphore used on the EE main thread.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_edge.c:394-427; source/saved games/saved_game_files.c:549-551",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "CreateThread": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 0: no EE worker threads",
+    "reason": "create_thread stores NULL and returns FALSE when CreateThread is NULL. Profile and playlist writers then skip the worker and keep memory-resident state. The adapter sets ERROR_NOT_ENOUGH_MEMORY instead of a bare generated NULL.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_m0_batch_0.c CreateThread; source/bungie_net/common/thread_win32.c:117-155",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "DeleteFileA": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 0: fail-closed writable Win32/XDK service",
+    "reason": "delete_persistent_storage is the only live caller and ignores the return. A success-shaped delete would claim savegame.bin was removed from a volume this profile cannot write.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_m0_batch_0.c DeleteFileA; source/saved games/game_state_xbox.c:467-475",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "FindFirstFileA": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 edge: empty-volume FindFirstFileA",
+    "reason": "find_files_next treats INVALID_HANDLE_VALUE as no matches. find_files_globals.handles start as INVALID_HANDLE_VALUE, so the first find_files_start does not close a live search handle.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_edge.c:331-336; source/tag_files/files_windows.c:165-182,593-612",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "FindNextFileA": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 edge: empty-volume FindNextFileA",
+    "reason": "Reached only after a successful first match. The empty-volume first-match failure ends the loop; the body returns 0 with ERROR_NO_MORE_FILES if called.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_edge.c:338-344; source/tag_files/files_windows.c:609-612",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "GetExitCodeThread": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0 batch 0: no EE worker threads",
+    "reason": "thread_has_exited is only entered with a non-NULL thread reference. CreateThread NULL keeps those references NULL, so the generated still-running failure is not observed.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; source/bungie_net/common/thread_win32.c:117-171; source/saved games/player_profile.c:682-691",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "GetFileAttributesA": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 edge: file-bridge GetFileAttributesA",
+    "reason": "file_exists distinguishes missing paths via ERROR_FILE_NOT_FOUND. HaloAutoTest only opens state.data when d:\\write.xts, read.xts, or loop.xts exist; missing attributes leave HATRun a no-op.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_edge.c:197-208; source/input/HaloAutoTest.c:34-48",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "GetFileAttributesExA": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 edge: file-bridge GetFileAttributesExA size query",
+    "reason": "The live caller is file_get_size, which copies nFileSizeLow only. The edge body writes attributes and both size words on a successful stat.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_edge.c:210-229; source/tag_files/files_windows.c:551-578",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "GetFileSize": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 edge: file-bridge GetFileSize",
+    "reason": "file_get_eof reads the bridge size on a valid handle. The save-path caller only runs after a write CreateFileA, which the edge rejects.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_edge.c:296-309; source/tag_files/files_windows.c:796-810",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "GetLastError": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 edge: process-global last-error slot",
+    "reason": "File facade and XInput diagnostics share one ps2_last_error. CreateThread never starts another EE thread, so the slot is equivalent to Win32 thread-local last-error for this profile.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_edge.c:130,346-349; source/input/input_xbox.c:814-825",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "GlobalMemoryStatus": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 0: EE physical GlobalMemoryStatus",
+    "reason": "check_memory_status reads dwAvailPhys from an otherwise uninitialized MEMORYSTATUS. The generated empty body was undefined. The replacement writes every field from the 32 MiB EE map minus bound CE spans.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_m0_batch_0.c GlobalMemoryStatus; source/cseries/debug_memory.c:423-448",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "GlobalReAlloc": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 0: debug-header GlobalReAlloc",
+    "reason": "system_realloc is only called from debug_realloc, which passes a 0x20-byte header whose user size is at offset 12 plus a 4-byte trailer. Copying min(old,new) prevents the previous unbounded new-size overread used by array growth.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_m0_batch_0.c GlobalReAlloc; source/cseries/debug_memory.c:136-146,553-592",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "ReadFile": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 edge: file-bridge ReadFile",
+    "reason": "file_read requires bytes_read==count. The edge reader reports the actual count and fails invalid handles. Save and HaloAutoTest write handles are not created on this profile.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_edge.c:277-294; source/tag_files/files_windows.c:842-871",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "ReleaseMutex": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 edge: EE binary semaphore mutex",
+    "reason": "release_mutex signals the create-owned semaphore and ignores the Win32 return. Saved-game take/release pairs run on the EE main thread.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_edge.c:449-455; source/bungie_net/common/thread_win32.c:239-246",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "ResumeThread": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0 batch 0: no EE worker threads",
+    "reason": "create_thread calls ResumeThread only after CreateThread returns a handle and SetThreadPriority succeeds. The NULL CreateThread adapter keeps that path closed. The generated zero return is success-shaped and must not be approved as a resume.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; source/bungie_net/common/thread_win32.c:117-136",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "SetEndOfFile": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 0: fail-closed writable Win32/XDK service",
+    "reason": "file_set_eof and the Xbox save initializers require a TRUE truncate. Write CreateFileA already fails, and the adapter reports ERROR_ACCESS_DENIED instead of a bare generated zero.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_m0_batch_0.c SetEndOfFile; source/tag_files/files_windows.c:816-836",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "SetFilePointer": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 edge: file-bridge SetFilePointer",
+    "reason": "Tag-file position helpers use BEGIN/CURRENT/END with no high dword, matching the edge seek. Save and HaloAutoTest write handles are not created.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_edge.c:311-329; source/tag_files/files_windows.c:760-782",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "SetLastError": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 edge: process-global last-error slot",
+    "reason": "XInputOpen and the file facade write the same global slot GetLastError reads. No second EE thread exists under the CreateThread adapter.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_edge.c:351-354; port/ps2/src/ps2_input.c SetLastError(ERROR_DEVICE_NOT_CONNECTED)",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "SetThreadPriority": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0 batch 0: no EE worker threads",
+    "reason": "create_thread calls SetThreadPriority only on a non-NULL CreateThread handle. The NULL adapter keeps that path closed.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; source/bungie_net/common/thread_win32.c:117-136",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "Sleep": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 0: EE bus-clock Sleep",
+    "reason": "main_loop Sleep(33-elapsed) and main_rasterizer_throttle Sleep(1) are live. The generated empty body busy-spins the EE. The replacement waits on GetTimerSystemTime using the same 147.456 MHz bus clock as GetTickCount.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_m0_batch_0.c Sleep; source/main/main.c:2698-2703,2781-2789",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "SwitchToThread": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 synchronous cache seam",
+    "reason": "scenario_tags_load and scenario_structure_bsp_load poll while (!read_complete). ps2_cache.c sets the flag to _cache_file_read_failed (2) or TRUE (1) before return and never leaves 0, so the yield body does not run.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; source/cache/cache_files.c:1264-1274,1426-1440; port/ps2/src/ps2_cache.c:358-366; source/cache/cache_files.h:30",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "WaitForSingleObject": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 edge: EE binary semaphore mutex",
+    "reason": "take_mutex accepts WAIT_OBJECT_0 from PollSema/WaitSema/WaitSemaEx on the create-owned semaphore. Saved-game locks are taken and released on the EE main thread.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_edge.c:429-447; source/bungie_net/common/thread_win32.c:221-236",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "WriteFile": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 0: fail-closed writable Win32/XDK service",
+    "reason": "file_write requires a complete byte count. The generated FALSE did not set last-error. The adapter reports ERROR_ACCESS_DENIED and zero bytes written so a failed service is not mistaken for a short success.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_m0_batch_0.c WriteFile; source/tag_files/files_windows.c:877-899",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "XCalculateSignatureBegin": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 0: fail-closed writable Win32/XDK service",
+    "reason": "saved_game_file_generate_checksum treats any handle other than INVALID_HANDLE_VALUE as valid. The generated NULL would run Update/End. The adapter returns INVALID_HANDLE_VALUE.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_m0_batch_0.c XCalculateSignatureBegin; source/saved games/saved_game_files.c:918-947",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "XCalculateSignatureEnd": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 0: fail-closed writable Win32/XDK service",
+    "reason": "A zero return is success. The generated stub would finalize a checksum after a bogus handle. The adapter returns ERROR_INVALID_HANDLE.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_m0_batch_0.c XCalculateSignatureEnd; source/saved games/saved_game_files.c:939-942",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "XCalculateSignatureUpdate": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 0: fail-closed writable Win32/XDK service",
+    "reason": "A zero return is success without hashing bytes. The adapter returns ERROR_INVALID_HANDLE.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_m0_batch_0.c XCalculateSignatureUpdate; source/saved games/saved_game_files.c:934-937",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "XCreateSaveGame": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 0: fail-closed writable Win32/XDK service",
+    "reason": "synchronize_metadata_display_name_with_profile_name treats zero as success and then copies files. The adapter returns ERROR_ACCESS_DENIED so the rename does not report a created save.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_m0_batch_0.c XCreateSaveGame; source/saved games/saved_game_files.c:1080-1170",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  },
+  "XDeleteSaveGame": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 0: fail-closed writable Win32/XDK service",
+    "reason": "Rename cleanup, delete_enumerated_saved_game_file, and saved_game_files_delete_all_custom_profiles treat zero as successful deletion. The generated zero would claim metadata was removed.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-0-review.md; port/ps2/src/ps2_m0_batch_0.c XDeleteSaveGame; source/saved games/saved_game_files.c:1532-1540",
+    "test": "tests/test_hcu_external_review_batch_0.py::test_batch_0_rooted_symbols_are_dispositioned"
+  }
+}

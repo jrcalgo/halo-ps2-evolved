@@ -1,0 +1,226 @@
+{
+  "rasterizer_dynamic_vertices_new": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 5: camera and dynamic-vertex contract",
+    "reason": "Xbox new starts at NONE and keeps NONE when the typed group is full. Generated 0 is a live buffer index; flag, lightning, and king callers lock any non-NONE result.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/port/ps2/src/ps2_m0_batch_5.c; submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_draw_primitives.c:758-811; submodules/halo-ce-universal/source/objects/widgets/flags.c:751-755",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_dynamic_vertices_unlock": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 5: camera and dynamic-vertex contract",
+    "reason": "Unlock closes a successful new. This profile never issues a live index, so unlock is an explicit no-op on the unused argument.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/port/ps2/src/ps2_m0_batch_5.c; submodules/halo-ce-universal/source/objects/widgets/lightning.c:452-453",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_fps_accumulate": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 5: null cinematic datum adapter",
+    "reason": "The HaloScript evaluator is the only rooted caller. The allowlist disables the command. An empty body drops a debug frame-rate overlay, not simulation or campaign flow.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/hs/hs.c:12664; submodules/halo-ce-universal/source/rasterizer/rasterizer_frame_statistics.c:324-332",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_frame_begin": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 5: camera and dynamic-vertex contract",
+    "reason": "halt_and_catch_fire reads rasterizer_globals clip fields into the camera after frame_begin. CE restores zero clips to the retail defaults before the Xbox device. The generated empty body does not.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/port/ps2/src/ps2_m0_batch_5.c; submodules/halo-ce-universal/source/rasterizer/rasterizer.c:742-749; submodules/halo-ce-universal/source/main/main.c:3201-3219",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_frame_end": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0 batch 5: parent GS draw exclusion",
+    "reason": "CE only forwards to the Xbox device. The sole rooted caller is the halt loop. Parent GS owns completion. Empty does not report success.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/rasterizer/rasterizer.c:1774-1777; submodules/halo-ce-universal/source/main/main.c:3274-3275",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_frame_update": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 5: null cinematic datum adapter",
+    "reason": "CE writes global_frame_parameters.dt from game_frame. Every dt reader is in excluded Xbox rasterizer files, so the empty body does not change a rooted consumer.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/rasterizer/common/rasterizer_common.c:67-73; submodules/halo-ce-universal/source/game/game.c:998",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_globals": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 5: camera and dynamic-vertex contract",
+    "reason": "HS .data.* definitions take field addresses. main.c cameras read the clip and bounds members. A generated BSS-zero object collapses those cameras. The owned object keeps CE clip defaults and leaves framerate_throttle false because this profile has no vblank device.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/port/ps2/src/ps2_m0_batch_5.c; submodules/halo-ce-universal/source/rasterizer/rasterizer.c:568-601; submodules/halo-ce-universal/source/hs/hs_globals_external.c:1086-1112; submodules/halo-ce-universal/source/main/main.c:1212-1213",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_initialize": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 edge: viewport and clip initializer",
+    "reason": "Already owned by ps2_edge.c. shell_initialize stores the boolean. The body writes viewport bounds, the retail clip defaults, and initialized. It does not allocate the tint pointer; the tint writer already no-ops on NULL.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/port/ps2/src/ps2_edge.c:82-107; submodules/halo-ce-universal/source/shell/shell.c:59-62; submodules/halo-ce-universal/source/rasterizer/rasterizer.c:700-711",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_initialize_for_new_map": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 5: camera and dynamic-vertex contract",
+    "reason": "game_initialize_for_new_map calls this. CE resets lights, screen-effect state, tint, and near clip. The generated empty body drops that map/cinematic camera reset. The owned body keeps that order without the excluded tag-block bind.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/port/ps2/src/ps2_m0_batch_5.c; submodules/halo-ce-universal/source/rasterizer/common/rasterizer_common.c:32-54; submodules/halo-ce-universal/source/game/game.c:666",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_lights_reset_for_new_map": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 5: camera and dynamic-vertex contract",
+    "reason": "The rooted caller is the HaloScript evaluator. CE memsets file-static lens-flare histories that this profile never allocates. The owned body is the explicit no-op of that missing storage.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/port/ps2/src/ps2_m0_batch_5.c; submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c:519-529",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_model_ambient_reflection_tint": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 5: null cinematic datum adapter",
+    "reason": "The HaloScript evaluator is the only rooted caller. CE writes only when the tint pointer is non-NULL. The generated pointer is NULL, so the empty body matches that guard.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_models.c:543-557; submodules/halo-ce-universal/source/hs/hs.c:14781-14796",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_model_begin": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0 batch 5: parent GS draw exclusion",
+    "reason": "Flag and king model brackets call this only after a successful dynamic-vertex new. With new returning NONE those paths are not entered. Empty is parent-owned draw.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/objects/widgets/flags.c:925-952; submodules/halo-ce-universal/source/rasterizer/rasterizer.c:1082-1087",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_model_draw": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0 batch 5: parent GS draw exclusion",
+    "reason": "Opaque flag/king submit. The callers are behind the NONE check. Empty is parent-owned draw.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/objects/widgets/flags.c:943-951; submodules/halo-ce-universal/source/rasterizer/rasterizer.c:1090-1107",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_model_end": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0 batch 5: parent GS draw exclusion",
+    "reason": "Closes the same flag/king model bracket. Empty is parent-owned draw.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/objects/widgets/flags.c:952; submodules/halo-ce-universal/source/rasterizer/rasterizer.c:1134-1138",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_model_transparent_geometry_submit": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0 batch 5: parent GS draw exclusion",
+    "reason": "Transparent flag/king submit behind the NONE check. Empty is parent-owned draw.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/objects/widgets/flags.c:928-939; submodules/halo-ce-universal/source/rasterizer/rasterizer.c:1110-1131",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_models_begin": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0 batch 5: parent GS draw exclusion",
+    "reason": "CE may run a render-only obscurer query, then the Xbox begin. Flag/king call this inside the NONE bracket. Empty does not change simulation state.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/objects/widgets/flags.c:926; submodules/halo-ce-universal/source/rasterizer/rasterizer.c:1806-1842",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_models_end": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0 batch 5: parent GS draw exclusion",
+    "reason": "Closes the models bracket on the flag/king paths. Empty is parent-owned draw.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/objects/widgets/flags.c:953; submodules/halo-ce-universal/source/rasterizer/rasterizer.c:1141-1145",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_preinitialize__fill_you_up_with_the_devils_cock": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 5: null cinematic datum adapter",
+    "reason": "halo_shell_main ignores the boolean. CE creates the D3D8 device. Generated FALSE is a failed create, not a successful service.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/shell/shell_xbox.c:112-114; submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox.c:1834-1854; build/hcu-ps2-closure/all/ps2_platform.c",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_present": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0 batch 5: parent GS draw exclusion",
+    "reason": "CE forwards screenshot parameters to the Xbox present. The sole rooted caller is the halt loop. Parent GS owns publication. Empty does not report success.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/rasterizer/rasterizer.c:755-760; submodules/halo-ce-universal/source/main/main.c:3275",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_profile_enable": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0 batch 5: parent GS draw exclusion",
+    "reason": "Flag and king wrap the model bracket with this Xbox profile toggle. It is part of that draw sequence, not a separate diagnostic that changes simulation.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/objects/widgets/flags.c:925; submodules/halo-ce-universal/source/rasterizer/rasterizer.c:1564-1568",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_screen_effect_set_convolution": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 5: null cinematic datum adapter",
+    "reason": "The HaloScript evaluator writes cinematic_screen_effect_globals, which CE no-ops when that pointer is NULL. This closure never allocates it. Empty matches that guard.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/rasterizer/rasterizer_cinematics.c:217-243; submodules/halo-ce-universal/source/hs/hs.c:14806-14820",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_screen_effect_set_filter": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 5: null cinematic datum adapter",
+    "reason": "HaloScript filter write. CE no-ops on a NULL cinematic datum. Empty matches that guard.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/rasterizer/rasterizer_cinematics.c:246-283; submodules/halo-ce-universal/source/hs/hs.c:14826-14841",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_screen_effect_set_filter_desaturation_tint": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 5: null cinematic datum adapter",
+    "reason": "HaloScript desaturation tint write. CE no-ops on a NULL cinematic datum. Empty matches that guard.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/rasterizer/rasterizer_cinematics.c:391-406; submodules/halo-ce-universal/source/hs/hs.c:14847-14860",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_screen_effect_set_video": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 5: null cinematic datum adapter",
+    "reason": "HaloScript video write. CE no-ops on a NULL cinematic datum. Empty matches that guard.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/rasterizer/rasterizer_cinematics.c:409-460; submodules/halo-ce-universal/source/hs/hs.c:14867-14870",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_screen_effect_start": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 5: null cinematic datum adapter",
+    "reason": "HaloScript start sets has_control on the cinematic datum. CE no-ops when that pointer is NULL. Campaign in_progress is owned by cinematic_stop itself, not this function.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/rasterizer/rasterizer_cinematics.c:193-214; submodules/halo-ce-universal/source/hs/hs.c:15095",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_screen_effect_stop": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 5: null cinematic datum adapter",
+    "reason": "HaloScript stop clears has_control. CE no-ops on a NULL cinematic datum. Empty matches that guard.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/rasterizer/rasterizer_cinematics.c:463-470; submodules/halo-ce-universal/source/hs/hs.c:14225",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_screen_effects_initialize_for_new_map": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 5: camera and dynamic-vertex contract",
+    "reason": "cinematic_stop calls this after restoring input and letterbox. The generated empty body would leave a previous cinematic near-clip override on rasterizer_globals. The owned body writes 0 through the setter, which restores 0.0625.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/port/ps2/src/ps2_m0_batch_5.c; submodules/halo-ce-universal/source/cutscene/cinematics.c:242-257; submodules/halo-ce-universal/source/rasterizer/rasterizer_cinematics.c:134-147",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_script_screen_effect_set_value": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 5: null cinematic datum adapter",
+    "reason": "HaloScript writes script_values[0..3] when the cinematic datum exists. CE no-ops on NULL. Empty matches that guard.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/rasterizer/rasterizer_cinematics.c:164-177; submodules/halo-ce-universal/source/hs/hs.c:14802-14805",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_set_near_clip_distance": {
+    "disposition": "implemented",
+    "owner": "HCU PS2 M0 batch 5: camera and dynamic-vertex contract",
+    "reason": "cinematic_stop and the HaloScript setter invoke this. CE writes a cinematic override that the getter applies to rasterizer_globals. The generated empty body drops that camera write. The owned body writes the same observable field the halt and window cameras read.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/port/ps2/src/ps2_m0_batch_5.c; submodules/halo-ce-universal/source/rasterizer/rasterizer_cinematics.c:474-497; submodules/halo-ce-universal/source/cutscene/cinematics.c:257",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_set_vblank_callback": {
+    "disposition": "state-adapter",
+    "owner": "HCU PS2 M0 batch 5: null cinematic datum adapter",
+    "reason": "main_initialize_time installs the halt-safe vblank handler. On HALO_PS2 input_vertical_blank_interrupt is empty. The owned globals object keeps framerate_throttle false, so main_rasterizer_throttle does not wait on the un-incremented index.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/main/main.c:1833-1855,2894,2772-2796; submodules/halo-ce-universal/source/input/input_xbox.c:633-646",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_widget_batch_sprites": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0 batch 5: parent GS draw exclusion",
+    "reason": "light_volume_render batches sprites inside a widget begin. Empty drops that draw. Parent GS owns sprites.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/objects/widgets/light_volumes.c:276-319; submodules/halo-ce-universal/source/rasterizer/rasterizer_widgets.h:104-105",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  },
+  "rasterizer_widget_begin": {
+    "disposition": "excluded-proven",
+    "owner": "HCU PS2 M0 batch 5: parent GS draw exclusion",
+    "reason": "light_volume_render begins the widget batch. Empty drops that submission scope. Parent GS owns sprites.",
+    "evidence": "docs/hcu-source-backed-review/hcu-ps2-batch-5-review.md; submodules/halo-ce-universal/source/objects/widgets/light_volumes.c:276-278; submodules/halo-ce-universal/source/rasterizer/rasterizer.c:1650-1657",
+    "test": "tests/test_hcu_external_review_batch_5.py::test_batch_5_rooted_symbols_are_dispositioned"
+  }
+}

@@ -1,0 +1,498 @@
+{
+  "step": "milestone-1-step-1-inputs",
+  "parent_commit": "a2575e957feefbdff27febedabf60590401e6bcc",
+  "parent_status_short": "M  .gitmodules\n M config/dependencies.json\n M docs/hcu-ps2-closure.md\n M plans/5.hcu-remake.md\n M plans/remake-cowork.md\n m submodules/halo-ce-universal\n m submodules/halo-ps2\nA  submodules/opl\n M tests/resource_accounting.c\n M tests/test_bootstrap.py\n M tests/test_resource_accounting.py\n M tools/bootstrap.py\n M tools/build_smoke.py\n M tools/doctor.py\n M tools/ee-smoke.mk\n M tools/ee-world.mk\n M tools/hcu_ps2_closure.py\n?? config/hcu-ps2-memory-map.json\n?? docs/ctag-retail-schema-audit.md\n?? docs/hcu-local-coop-audit.md\n?? docs/hcu-opl-reference.md\n?? docs/hcu-ps2-ascii-compare-review.md\n?? docs/hcu-ps2-ascii-tolower-review.md\n?? docs/hcu-ps2-attract-mode-review.md\n?? docs/hcu-ps2-bink-exclusion-review.md\n?? docs/hcu-ps2-build-sprites-review.md\n?? docs/hcu-ps2-cheat-state-review.md\n?? docs/hcu-ps2-collision-debug-review.md\n?? docs/hcu-ps2-config-hook-review.md\n?? docs/hcu-ps2-connected-geometry-review.md\n?? docs/hcu-ps2-control87-review.md\n?? docs/hcu-ps2-coop-spectating-review.md\n?? docs/hcu-ps2-ctf-debug-string-review.md\n?? docs/hcu-ps2-custom-edition-boundary-review.md\n?? docs/hcu-ps2-debug-keyboard-review.md\n?? docs/hcu-ps2-directsound-exclusion-review.md\n?? docs/hcu-ps2-editor-boundary-review.md\n?? docs/hcu-ps2-effect-render-switches-review.md\n?? docs/hcu-ps2-external-review.json\n?? docs/hcu-ps2-file-mutation-review.md\n?? docs/hcu-ps2-globalrealloc-review.md\n?? docs/hcu-ps2-input-device-type-review.md\n?? docs/hcu-ps2-keyboard-actions-review.md\n?? docs/hcu-ps2-last-error-threading-review.md\n?? docs/hcu-ps2-libc-ascii-ctype-review.md\n?? docs/hcu-ps2-libc-file-stdio-review.md\n?? docs/hcu-ps2-libc-memory-review.md\n?? docs/hcu-ps2-libc-numeric-format-review.md\n?? docs/hcu-ps2-libc-reent-review.md\n?? docs/hcu-ps2-libc-stdout-review.md\n?? docs/hcu-ps2-libc-string-review.md\n?? docs/hcu-ps2-libm-review.md\n?? docs/hcu-ps2-memory-and-scheduling-external-review.md\n?? docs/hcu-ps2-memory-audit.json\n?? docs/hcu-ps2-model-debug-controls-review.md\n?? docs/hcu-ps2-mutex-semaphore-review.md\n?? docs/hcu-ps2-network-bootstrap-review.md\n?? docs/hcu-ps2-network-script-flag-review.md\n?? docs/hcu-ps2-network-session-boundary-review.md\n?? docs/hcu-ps2-network-tick-boundary-review.md\n?? docs/hcu-ps2-object-debug-review.md\n?? docs/hcu-ps2-obstacle-debug-review.md\n?? docs/hcu-ps2-optical-diagnostic.md\n?? docs/hcu-ps2-physical-memory-api-review.md\n?? docs/hcu-ps2-platform-log-review.md\n?? docs/hcu-ps2-platform-placeholder-audit.md\n?? docs/hcu-ps2-rasterizer-boundary-review.md\n?? docs/hcu-ps2-rasterizer-state-review.md\n?? docs/hcu-ps2-render-debug-globals-review.md\n?? docs/hcu-ps2-render-debug-primitives-review.md\n?? docs/hcu-ps2-render-interpolation-review.md\n?? docs/hcu-ps2-render-lifecycle-review.md\n?? docs/hcu-ps2-shell-xbdm-review.md\n?? docs/hcu-ps2-sound-cache-review.md\n?? docs/hcu-ps2-stack-walk-review.md\n?? docs/hcu-ps2-tag-load-hooks-review.md\n?? docs/hcu-ps2-texture-cache-review.md\n?? docs/hcu-ps2-thread-api-review.md\n?? docs/hcu-ps2-timer-api-review.md\n?? docs/hcu-ps2-toolchain-runtime-review.md\n?? docs/hcu-ps2-ui-error-state-review.md\n?? docs/hcu-ps2-ui-music-state-review.md\n?? docs/hcu-ps2-wall-clock-review.md\n?? docs/hcu-ps2-xbox-save-api-review.md\n?? docs/hcu-ps2-xgetlaunchinfo-review.md\n?? docs/hcu-ps2-xphysicalfree-review.md\n?? docs/hcu-source-backed-review/\n?? docs/hcu-tag-loader-contract.md\n?? docs/investigations/\n?? docs/reports/\n?? plans/3.m14-asset-path-audit.md\n?? plans/4.m14-source-and-hardware-review.md\n?? squashfs-root/\n?? src/stream/cbsp_catalog.c\n?? src/stream/cbsp_catalog.h\n?? src/stream/ctag_map_source.c\n?? src/stream/ctag_map_source.h\n?? src/stream/ctag_mount.c\n?? src/stream/ctag_mount.h\n?? src/stream/ctag_ps2_backend.c\n?? src/stream/ctag_ps2_backend.h\n?? src/stream/ctag_resource_index.c\n?? src/stream/ctag_resource_index.h\n?? src/stream/hcu_file_bridge.c\n?? src/stream/hcu_file_bridge.h\n?? src/stream/hcu_filexio_irx.S\n?? src/stream/hcu_input_bridge.c\n?? src/stream/hcu_main.c\n?? src/stream/hcu_map_service.c\n?? src/stream/hcu_map_service.h\n?? src/stream/hcu_memory_bind.c\n?? src/stream/hcu_memory_bind.h\n?? src/stream/hcu_storage_boot.c\n?? src/stream/hcu_storage_boot.h\n?? src/stream/hmap.c\n?? src/stream/hmap.h\n?? src/stream/sha256.c\n?? src/stream/sha256.h\n?? tests/cbsp_catalog_main.c\n?? tests/ctag_mount_main.c\n?? tests/ctag_resource_index_main.c\n?? tests/file_reader_filexio_main.c\n?? tests/file_reader_main.c\n?? tests/fixtures/ee_bss_smoke.c\n?? tests/fixtures/ee_filexio_reset_smoke.c\n?? tests/fixtures/hcu-boot-system.cnf\n?? tests/hcu_asset_profile.mk\n?? tests/hcu_ctag_mount_shim/\n?? tests/hcu_file_bridge_main.c\n?? tests/hcu_input_bridge_main.c\n?? tests/hcu_ps2_cache_main.c\n?? tests/hcu_ps2_cache_shim/\n?? tests/hcu_ps2_crt_compare_main.c\n?? tests/hcu_ps2_input_main.c\n?? tests/hcu_ps2_memory_main.c\n?? tests/hcu_ps2_memory_shim/\n?? tests/hcu_storage_boot_main.c\n?? tests/hcu_storage_boot_shim/\n?? tests/hcu_validator_host32_prefix.h\n?? tests/hcu_validator_scratch_main.c\n?? tests/hmap_main.c\n?? tests/hp2_ctag_main.c\n?? tests/ps2_cache_cbsp_main.c\n?? tests/ps2_cache_mount_main.c\n?? tests/ps2_cbsp_main.c\n?? tests/ps2_ctag_main.c\n?? tests/ps2_rasterizer_bounds_main.c\n?? tests/sha256_main.c\n?? tests/test_animation_data_ranges.py\n?? tests/test_cbsp.py\n?? tests/test_ctag.py\n?? tests/test_ctag_mount.py\n?? tests/test_ctag_resources.py\n?? tests/test_ctag_schema_walk.py\n?? tests/test_file_reader.py\n?? tests/test_file_reader_filexio.py\n?? tests/test_hcu_asset_profiles.py\n?? tests/test_hcu_boot_physical.py\n?? tests/test_hcu_external_review.py\n?? tests/test_hcu_external_review_batch_0.py\n?? tests/test_hcu_external_review_batch_1.py\n?? tests/test_hcu_external_review_batch_2.py\n?? tests/test_hcu_external_review_batch_3.py\n?? tests/test_hcu_external_review_batch_4.py\n?? tests/test_hcu_external_review_batch_5.py\n?? tests/test_hcu_external_review_batch_6.py\n?? tests/test_hcu_external_review_batch_7.py\n?? tests/test_hcu_file_bridge.py\n?? tests/test_hcu_parent_link_probe.py\n?? tests/test_hcu_ps2_closure.py\n?? tests/test_hcu_ps2_input.py\n?? tests/test_hcu_ps2_rasterizer_bounds.py\n?? tests/test_hcu_schema_manifest.py\n?? tests/test_hcu_storage_boot.py\n?? tests/test_hmap.py\n?? tests/test_pack_retail_ctag_hp2.py\n?? tests/test_retail_bsp_capacity_audit.py\n?? tests/test_retail_bsp_schema_audit.py\n?? tests/test_retail_map_working_set.py\n?? tests/test_retail_ui_ctag_mount.py\n?? tests/test_sha256.py\n?? tests/test_world_section_capacity.py\n?? tests/world_section_capacity_main.c\n?? tools/audit_animation_data_ranges.py\n?? tools/audit_ctag_retail_maps.py\n?? tools/audit_retail_bsp_capacity.py\n?? tools/audit_retail_bsp_schema.py\n?? tools/audit_retail_cbsp_catalogs.py\n?? tools/audit_retail_ctag_conversion.py\n?? tools/audit_retail_map_working_set.py\n?? tools/cbsp.py\n?? tools/convert_retail_bsp.py\n?? tools/convert_retail_ctag.py\n?? tools/ctag.py\n?? tools/ctag_resources.py\n?? tools/ctag_schema_walk.py\n?? tools/ee-filexio-smoke.mk\n?? tools/hcu-asset-profile.mk\n?? tools/hcu_parent_link_probe.py\n?? tools/hcu_ps2_abi_host.py\n?? tools/hcu_ps2_external_review.py\n?? tools/hcu_ps2_link.py\n?? tools/hcu_ps2_memory_audit.py\n?? tools/hcu_schema_manifest.py\n?? tools/hmap.py\n?? tools/pack_retail_ctag_hp2.py\n?? tools/test_hcu_boot.py",
+  "submodules": "fd14ef3c46135e9422966c6a64cd926fb0bd23fb submodules/Assembly (heads/dev)\n 17541f4444baabb47d1a0deb917f26ccb7b6bc5c submodules/halo-64 (v0.3.2)\n c406a4149ddebae4f45462ce4c1e8d9cce0567c2 submodules/halo-ce-universal (build-220-1-gc406a414)\n c8db480d1af1cd7ca5a3d29805e791233138b732 submodules/halo-ps2 (heads/ps2-port)\n b3a2199795fe89ba7e2dd7b843354472dff2c3eb submodules/opl (latest)\n 4af9c6a7a05a3a428270f2d836166cd3965bcb17 submodules/ps2client (v2.0.0-5-g4af9c6a)\n 594e2b21863a574e1923927f6349cceb87c88109 submodules/ps2dev (v2.0.0-9-g594e2b2)\n 0c6138c5553760423070d1797ac475c4d98a06e6 submodules/ps2link (v1.9.1-13-g0c6138c)\n 4960c2e2bf65c5ea4b604d1a41766a82f97b104e submodules/ps2sdk (v2.0.0-166-g4960c2e2)\n 1b32a279d66ba765a19673b00747e22eeda07eef submodules/ps2toolchain (v2.0.0-4-g1b32a27)\n 28d83d34d85360988aa32b9a783062d394a7d62e submodules/ps2toolchain-dvp (v2.0.0-9-g28d83d3)\n 657b9e646920fda447079be56d915eb4f8a33c25 submodules/ps2toolchain-ee (v2.0.0-8-g657b9e6)\n 4afa44d71fee30ecfd1aa014f2a11736b824be6a submodules/ps2toolchain-iop (v2.0.0-10-g4afa44d)",
+  "compiler": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-gcc",
+  "compiler_version": "15.2.0",
+  "manifest_sha256": "ea9a5fb2996a5f5d21860f9609066d3f973c57bce3d71c92660523e5cae3a720",
+  "prefix_sha256": "8edce2ba3c42b406db6c73cdca3c6c68e318c9df390a16c1db0f54321c8074b2",
+  "budget_sha256": "67ef6d6085de71c22e3998a355cb2f79a8123837b7b14e89593a0d497de21b74",
+  "memory_map_sha256": "56db40932e23efd3b6c0ae4911ee2e2f1e6b369dcf08771d5ddf56a0fd769500",
+  "modified_source_hashes": [
+    {
+      "path": "config/dependencies.json",
+      "sha256": "79442c24094908bf1b6ff8ba4a752ef9c3fc219892e3a0f4c0dd2d608f1d5e74"
+    },
+    {
+      "path": "tests/resource_accounting.c",
+      "sha256": "b78e36e13f90ab066ccce63d442066336a520f159b77de430c0f2d6b8948f4f6"
+    },
+    {
+      "path": "tests/test_bootstrap.py",
+      "sha256": "1e1fa13877ac26be03d9f162a44c4c4932c704ab447e8ae49958d240213aa073"
+    },
+    {
+      "path": "tests/test_resource_accounting.py",
+      "sha256": "7ebfd06fb8673657fed2e20518d9fc33279e53e1e4f0b57c7445efc5fe2adbe4"
+    },
+    {
+      "path": "tools/bootstrap.py",
+      "sha256": "e58adb7536588497c73418a86c03845185ab26ecb50e12d98b5a05f3972d7979"
+    },
+    {
+      "path": "tools/build_smoke.py",
+      "sha256": "c897f546d3a7ecbbe969a59348d12a94990418da653cd8dd8c899ab85e04ed29"
+    },
+    {
+      "path": "tools/doctor.py",
+      "sha256": "44b97f35517032324dca87f1d7a370628c96e3d85f952f15e3d7c51036a96dc0"
+    },
+    {
+      "path": "tools/ee-smoke.mk",
+      "sha256": "ec5958fd394f3ce8a151edad9a77a262854c968f0d03d604daa06c4f8208e1c4"
+    },
+    {
+      "path": "tools/ee-world.mk",
+      "sha256": "ec7c402f5871d52e69e248c67e000d2a4bb079a6792773f951dcf9ca8bec3d03"
+    },
+    {
+      "path": "tools/hcu_ps2_closure.py",
+      "sha256": "1f46367969121acdbfa2d9749c8d7348844f2f2d39b891a218b7da321d11414e"
+    },
+    {
+      "path": "config/hcu-ps2-memory-map.json",
+      "sha256": "56db40932e23efd3b6c0ae4911ee2e2f1e6b369dcf08771d5ddf56a0fd769500"
+    },
+    {
+      "path": "docs/hcu-ps2-external-review.json",
+      "sha256": "b337c4d3579766b84556b22efbc3f5eeacd0f7deaced78c294d55c33a33e7c08"
+    },
+    {
+      "path": "docs/hcu-ps2-memory-audit.json",
+      "sha256": "3219f5ef4a4377998978f5ac06c5ed08b20660d6b3e944d0a69975b6dc3b40af"
+    },
+    {
+      "path": "src/stream/cbsp_catalog.c",
+      "sha256": "f8436e420513b79d656d2140eb326b24b8f98bde803ff1410d5803e39ff21ab2"
+    },
+    {
+      "path": "src/stream/cbsp_catalog.h",
+      "sha256": "f68d714ba92eb5bdd2eb79da8dd44dd26023980f5adf0683ce481ab8ab684318"
+    },
+    {
+      "path": "src/stream/ctag_map_source.c",
+      "sha256": "3f457ea3194edb2a2807ff414b084a593c5e9ff2b93e105ca3c7212fb571f241"
+    },
+    {
+      "path": "src/stream/ctag_map_source.h",
+      "sha256": "486c8fed2147964125fb0f440d2064a67b30f65bf0453d6c9f466350fc88130b"
+    },
+    {
+      "path": "src/stream/ctag_mount.c",
+      "sha256": "e2cc52e628a5c163be7038570c0502dc19db61ec2007d4ab9d6a76344eff9219"
+    },
+    {
+      "path": "src/stream/ctag_mount.h",
+      "sha256": "8c35eed53dbf508b16a15ca53b5e4667bd4dd9bb190561806c4fe3cb558fae1a"
+    },
+    {
+      "path": "src/stream/ctag_ps2_backend.c",
+      "sha256": "c84ef9ccbb6eb33cb38ed91399d7afa9e3a307a005a99ba46f15803c46d602ea"
+    },
+    {
+      "path": "src/stream/ctag_ps2_backend.h",
+      "sha256": "3ca0e00fef3cadbda689e11bfe83beeee51cdee544bf561a9245e0770245d730"
+    },
+    {
+      "path": "src/stream/ctag_resource_index.c",
+      "sha256": "0ce6bc433fc76699eda7e15af1a26aca4ff1f9a02eca9f9be7163e2353bfd18f"
+    },
+    {
+      "path": "src/stream/ctag_resource_index.h",
+      "sha256": "b7226dc98c80d8bdd5a012f9a9eb54ab05c5b34add214b45845d489f2be97351"
+    },
+    {
+      "path": "src/stream/hcu_file_bridge.c",
+      "sha256": "ec4be268247afc69b2306dfb6ffd9ee32d31eac4f7b5d9a189b078270e26116d"
+    },
+    {
+      "path": "src/stream/hcu_file_bridge.h",
+      "sha256": "37373ee0391849f73bbe8d7f71b78f571c0500358903f3aaa5adcf0af233275e"
+    },
+    {
+      "path": "src/stream/hcu_input_bridge.c",
+      "sha256": "de95197924448824cf1ad82e2fdf7f154ee6a7475259a7e2a1b094e546ccac74"
+    },
+    {
+      "path": "src/stream/hcu_main.c",
+      "sha256": "85cb19821861a6f747918bfc4e8a8123d16f421fe3c2b17ca6594e72998d5401"
+    },
+    {
+      "path": "src/stream/hcu_map_service.c",
+      "sha256": "09764a359dde064d78609c118eae8bb36eae8883b1d0bb98bdf4f9f4ea85b1e1"
+    },
+    {
+      "path": "src/stream/hcu_map_service.h",
+      "sha256": "87603a912cc70cd419a7ee2d3fe0249799855c38316bf388b7b8c24eb0771bd7"
+    },
+    {
+      "path": "src/stream/hcu_memory_bind.c",
+      "sha256": "4542021506d0873ad18f55e515ec22877d21eac38bd39bc939d61e186f720d17"
+    },
+    {
+      "path": "src/stream/hcu_memory_bind.h",
+      "sha256": "0401cf779e1288bec72a3cf5092388c45c25290af466d88a59465561185c63bc"
+    },
+    {
+      "path": "src/stream/hcu_storage_boot.c",
+      "sha256": "a64349cd5a6efd73e2e578d443064197f79e28840bee0aee10e4027fbc69c537"
+    },
+    {
+      "path": "src/stream/hcu_storage_boot.h",
+      "sha256": "d277e557ee3e41acb158c95ba2161a5b9a1a6ed7a95c7d5f22a5aba79e91924c"
+    },
+    {
+      "path": "src/stream/hmap.c",
+      "sha256": "afa02a47b6434355b6ba51f8da9321cb4d0af0f1886a984a2838308bacc2219b"
+    },
+    {
+      "path": "src/stream/hmap.h",
+      "sha256": "4a9e52e29a235737e91c09ad502a82e63b611ee591acf8e2213d0e34c7aee000"
+    },
+    {
+      "path": "src/stream/sha256.c",
+      "sha256": "ef41706070f8126fc09081f13db1da5bc75f369c1dca2b7e6db6953493b67429"
+    },
+    {
+      "path": "src/stream/sha256.h",
+      "sha256": "be371f9f13d78a49a3102e412922908733d2bd4b3514a7552dc0344304de806e"
+    },
+    {
+      "path": "tests/cbsp_catalog_main.c",
+      "sha256": "2901d48a7e05f9c809eed07078f9c4813e884458e2a2d8a3f46c4e20a3022f39"
+    },
+    {
+      "path": "tests/ctag_mount_main.c",
+      "sha256": "22378930f9e096bc44830bc82183be2d4b1edc554ed64f4e8df0e9036b2b0a23"
+    },
+    {
+      "path": "tests/ctag_resource_index_main.c",
+      "sha256": "5f40b72bef8feed1a5d11619c4344f13d7e8d9e7fb96d8f2f027fc3ea020dd8b"
+    },
+    {
+      "path": "tests/file_reader_filexio_main.c",
+      "sha256": "3439b35d4fa422025a1483341e5336bb0c99d3967497e806a27f210b23f1589c"
+    },
+    {
+      "path": "tests/file_reader_main.c",
+      "sha256": "a6e5189bdfe931eb1a5a35fbe9f8920ca87184ea4aaa933a422f66353fd08020"
+    },
+    {
+      "path": "tests/fixtures/ee_bss_smoke.c",
+      "sha256": "37c45c3d435a9794aa4c48cd659a191fb9bf341d29db49227cf128a7feacfed4"
+    },
+    {
+      "path": "tests/fixtures/ee_filexio_reset_smoke.c",
+      "sha256": "6b5fa1711d3473b2468b1f33084de28c1b1af3d91978bcea9aafcccc0b87460e"
+    },
+    {
+      "path": "tests/hcu_asset_profile.mk",
+      "sha256": "0e85c9ab8857edf8d5dcf0ebc599b3ce7d5b96795097015c34114a9505259eb4"
+    },
+    {
+      "path": "tests/hcu_file_bridge_main.c",
+      "sha256": "1396bd530a2b76392866d4b03c5bd1db0f44be4293f3ce5996355e9e7df648e2"
+    },
+    {
+      "path": "tests/hcu_input_bridge_main.c",
+      "sha256": "22ba3c7b036ed937b4a695ef2f06385b7eb47fda84b4b21fac93cf388feb80bb"
+    },
+    {
+      "path": "tests/hcu_ps2_cache_main.c",
+      "sha256": "177decaf09aad5307496c94df34757425549ac97aa1d45e8e0c5d824fa0f8f60"
+    },
+    {
+      "path": "tests/hcu_ps2_crt_compare_main.c",
+      "sha256": "84d327a648aac8326a6ab907c5c18d5a5bf80e4f7bd11aa39e5e1ad818bcdd3e"
+    },
+    {
+      "path": "tests/hcu_ps2_input_main.c",
+      "sha256": "ae2c9d551e80400e852d62802d222787405d92c1459a1e55cecd8f8eb2173d46"
+    },
+    {
+      "path": "tests/hcu_ps2_memory_main.c",
+      "sha256": "420560c2f49723cafe810555d78d1fae4ad6f3dfdf91fb8b63b0e28eefab69b0"
+    },
+    {
+      "path": "tests/hcu_storage_boot_main.c",
+      "sha256": "3a4648610642f1bf0b5a40e1efc5c803bce43ba54f7a9ca1863d3d17a02f587f"
+    },
+    {
+      "path": "tests/hcu_validator_host32_prefix.h",
+      "sha256": "b99370d1319e8d2339a5307c48bdb817abb2642cd67fd7c160d202f80eaf679c"
+    },
+    {
+      "path": "tests/hcu_validator_scratch_main.c",
+      "sha256": "604006f95a628336ea07c1c2c4ce5af4f356d6e30942f75871c170e724a55c89"
+    },
+    {
+      "path": "tests/hmap_main.c",
+      "sha256": "dc0f1bac4645056f421e5b50006022fc081790f4eecb365e9b6b601895289f67"
+    },
+    {
+      "path": "tests/hp2_ctag_main.c",
+      "sha256": "c76460fe66ea0304280c3cc8e46f643590ec1ec40e15ccb997f7dc0b3d057610"
+    },
+    {
+      "path": "tests/ps2_cache_cbsp_main.c",
+      "sha256": "b79c0e348036846191bea2d46a543ca0348666ae4a5732329e4e1937099e6553"
+    },
+    {
+      "path": "tests/ps2_cache_mount_main.c",
+      "sha256": "d29dc6d09ffc67006218b321dba49849fcc7ce2a7731d4da884767c9eef06a59"
+    },
+    {
+      "path": "tests/ps2_cbsp_main.c",
+      "sha256": "be0dcf877033e9b5b57e899ed7a25f01dc42106b95288013d2dd2a5e4993a330"
+    },
+    {
+      "path": "tests/ps2_ctag_main.c",
+      "sha256": "424743212a93368d856714e94f5569eca5a2ae71697d7b27b16b82f039a540be"
+    },
+    {
+      "path": "tests/ps2_rasterizer_bounds_main.c",
+      "sha256": "23afd8428da0c7e807e97829af606693f746194b2cc5c62e33b8a2063bcff737"
+    },
+    {
+      "path": "tests/sha256_main.c",
+      "sha256": "eed76f7f887c9f7dd709f250fe66be55c0aaed4868d5c2fd7d3caa7d5694c2cf"
+    },
+    {
+      "path": "tests/test_animation_data_ranges.py",
+      "sha256": "f7484c67b483d43369ab4d30bc90e03e2b445c21115929a65e8c9711af50be13"
+    },
+    {
+      "path": "tests/test_cbsp.py",
+      "sha256": "bfa1f8689b1de50a525536eb4371843b37a45d6dc436bc9c382f5497b0621e5b"
+    },
+    {
+      "path": "tests/test_ctag.py",
+      "sha256": "7e9c7b8fd27444d5c753e923b0e3286d5cae9c670922cdf597c50d245c40906c"
+    },
+    {
+      "path": "tests/test_ctag_mount.py",
+      "sha256": "a506df429c81c14b94145dda56ed8f9f47dee8852f2d58df708c9889c0132ea1"
+    },
+    {
+      "path": "tests/test_ctag_resources.py",
+      "sha256": "1de186102091b586a358b81eb4c27af95dba1e35626a120c44b8cf8fee7032a6"
+    },
+    {
+      "path": "tests/test_ctag_schema_walk.py",
+      "sha256": "6b10893d995259479b1d2ca9f293e5dac8b040c637400ab13ae3aafa8fcbd36e"
+    },
+    {
+      "path": "tests/test_file_reader.py",
+      "sha256": "cba93c48f5ff72a6c5e80287905b353f0d4f7053b53e365df926a92a25768f9d"
+    },
+    {
+      "path": "tests/test_file_reader_filexio.py",
+      "sha256": "cc61cd8716cb74ce81269d95bf9c13b1838a3499a9faf4fe138452dbd583db90"
+    },
+    {
+      "path": "tests/test_hcu_asset_profiles.py",
+      "sha256": "3846c64208631a88dd7920d36b2445b72d00d6018df3e4a83886b24bcb367c78"
+    },
+    {
+      "path": "tests/test_hcu_boot_physical.py",
+      "sha256": "d43643fdaa6edce35a32b83100f4511a732ad5ddd78518323252228df77d3ff4"
+    },
+    {
+      "path": "tests/test_hcu_external_review.py",
+      "sha256": "d18e904f3ac4690aa8d1e12a352f23265921b146e5ca55b20d30e6d7d697f325"
+    },
+    {
+      "path": "tests/test_hcu_external_review_batch_0.py",
+      "sha256": "f3e04111d82a5ba194ece1b7d4d6a4c40696dfe921c4611d0fdc41be440a92d0"
+    },
+    {
+      "path": "tests/test_hcu_external_review_batch_1.py",
+      "sha256": "ed8bac7279877bcc49bacf851b0229dd287a258eec9cdd2141b3c5c8ea7643cf"
+    },
+    {
+      "path": "tests/test_hcu_external_review_batch_2.py",
+      "sha256": "b162bfc6f9c57ba4ace731a3e357ffd3c749c997eaf03b63df1863f39b5e4460"
+    },
+    {
+      "path": "tests/test_hcu_external_review_batch_3.py",
+      "sha256": "fabb39f77209a1ce844162908d5572c914cc38b47522bfbf2bf5f32a9743bf34"
+    },
+    {
+      "path": "tests/test_hcu_external_review_batch_4.py",
+      "sha256": "d44b4d02a627092aeb906af7a8d4ff245f6ec4d06b6fc9f3b54c08e62c18b83b"
+    },
+    {
+      "path": "tests/test_hcu_external_review_batch_5.py",
+      "sha256": "969812f7360a2748329fba9b01f305514c8859aca1625ddd00a951fe63f70106"
+    },
+    {
+      "path": "tests/test_hcu_external_review_batch_6.py",
+      "sha256": "5b30d8348e96d41aabd413f4728d2ddf3109418c95d86be3823a569aa9897d79"
+    },
+    {
+      "path": "tests/test_hcu_external_review_batch_7.py",
+      "sha256": "acf0e3a7fa3154b88126c9b3c776fa2d29d31efd639a1da20c199248124c7a15"
+    },
+    {
+      "path": "tests/test_hcu_file_bridge.py",
+      "sha256": "7f34808a81eb0785cd7147501e165c45ae519b645f09cf1107f9d6f0fa4a3d7f"
+    },
+    {
+      "path": "tests/test_hcu_parent_link_probe.py",
+      "sha256": "8ba12bf4ba18983d8ea09feab0448fca6af95fadbcdc4de8444d7e3787cad13c"
+    },
+    {
+      "path": "tests/test_hcu_ps2_closure.py",
+      "sha256": "4d65668a8abafc1aeed8bef4d3b689108308814e7cd797d632f7e6ab3aca6fcd"
+    },
+    {
+      "path": "tests/test_hcu_ps2_input.py",
+      "sha256": "605fc368e75ba4b01d52caede5c3bd458af45c363fd72a20c06f36aeeeb64db0"
+    },
+    {
+      "path": "tests/test_hcu_ps2_rasterizer_bounds.py",
+      "sha256": "5d3348090c7cdea5c3b347697f43786bd836895e2615dd4b06ae1bfa8f0bb322"
+    },
+    {
+      "path": "tests/test_hcu_schema_manifest.py",
+      "sha256": "08ebea938bdf37be33487f4871cdaa183822fdc6e6d8b159838d87d8d2e6d1ed"
+    },
+    {
+      "path": "tests/test_hcu_storage_boot.py",
+      "sha256": "fb4827cfc5f625b913141a7537dde5df573f94a2526e31c25c7fb1f324148814"
+    },
+    {
+      "path": "tests/test_hmap.py",
+      "sha256": "b24d5f4f194148b4c5ca9411d21be68de50626105abe60b632543ed3a6a717ec"
+    },
+    {
+      "path": "tests/test_pack_retail_ctag_hp2.py",
+      "sha256": "c8e1daed7c08a69b78a3dd6b1131e75ef26093d88d8721e5ba94b77bf7c53b50"
+    },
+    {
+      "path": "tests/test_retail_bsp_capacity_audit.py",
+      "sha256": "9af405b34787a7207c812d907a2faefd2cb736a96500ba276c8819d0d14cc140"
+    },
+    {
+      "path": "tests/test_retail_bsp_schema_audit.py",
+      "sha256": "5209f1a4f3a002d171bbc15f0c7c9a41ca4b40fa0b7aef8e50374e02f0d6262f"
+    },
+    {
+      "path": "tests/test_retail_map_working_set.py",
+      "sha256": "2a6c76eb574d444257c2e46f60d143ebcef0fc5650e4a592dac241e345977e93"
+    },
+    {
+      "path": "tests/test_retail_ui_ctag_mount.py",
+      "sha256": "e05b4a2bda6b6b7548fa504944487a7d1fe9d0f572a50a650a85b55641bc16ad"
+    },
+    {
+      "path": "tests/test_sha256.py",
+      "sha256": "3ce6a88fc5d56149f47d425647a7a680b7b6ec471f78e93c5ea2e29bdefff266"
+    },
+    {
+      "path": "tests/test_world_section_capacity.py",
+      "sha256": "3333a4ec57feb1522eb482e12421fb358c1fbf27718f1301a8de8ce1337d2171"
+    },
+    {
+      "path": "tests/world_section_capacity_main.c",
+      "sha256": "746b3fddda7e71c312fd4ee24f26ac3a67a2c876d757f76b112f840d9997830b"
+    },
+    {
+      "path": "tools/audit_animation_data_ranges.py",
+      "sha256": "d10626221c7104c7bb9ea3aa632d82cb7a69330c258d9ad90a0d1584b1294af7"
+    },
+    {
+      "path": "tools/audit_ctag_retail_maps.py",
+      "sha256": "8f5c044c419ab969f35c4d256df1f5af88fd4c1f2651502b2844d85bd792a913"
+    },
+    {
+      "path": "tools/audit_retail_bsp_capacity.py",
+      "sha256": "7f207697215a1b77518c3042c251674072f904247798d85ec72c759c4c23059d"
+    },
+    {
+      "path": "tools/audit_retail_bsp_schema.py",
+      "sha256": "f04a9a020cfd1f5d494f0f837c694153039b166d7716750d99ab537bc2dba411"
+    },
+    {
+      "path": "tools/audit_retail_cbsp_catalogs.py",
+      "sha256": "0fab71b179c5a7cc0bd74e0b97413b51766c56afaa9c820060b6f5a3692dcb1c"
+    },
+    {
+      "path": "tools/audit_retail_ctag_conversion.py",
+      "sha256": "88325177c5c3a3896e679d7916fe52cb1541431101e0d71b2f90a022620f949f"
+    },
+    {
+      "path": "tools/audit_retail_map_working_set.py",
+      "sha256": "4b0730a679146cbc3030e665ce804d0106c2c21470006e3d2012d2d958b5ea37"
+    },
+    {
+      "path": "tools/cbsp.py",
+      "sha256": "f3e7839cc863f6f6a3869e6b5e870e61bfcad016a3609c4318fd744b4a6362e1"
+    },
+    {
+      "path": "tools/convert_retail_bsp.py",
+      "sha256": "fd238fdebe7bc9f6a9fd9c69698820e5c6eda72886c1460c8c6712216484974e"
+    },
+    {
+      "path": "tools/convert_retail_ctag.py",
+      "sha256": "5bb07fd37eb0b8f54850deb74b1bf4ab74d285b814b5bb024bcf2cb39afddc14"
+    },
+    {
+      "path": "tools/ctag.py",
+      "sha256": "37c24f66d85f3b54e7db1b5e5e75db541fd7d8fe3d61779d6e09a1c2468fbd68"
+    },
+    {
+      "path": "tools/ctag_resources.py",
+      "sha256": "df506d9a7f1d07ad6e929b1949bf1843391c9394a540df865923e61fd78fca10"
+    },
+    {
+      "path": "tools/ctag_schema_walk.py",
+      "sha256": "0dfc8ef1fc1c2df0eebd82b5b0b56fe187bf1cafe18498f483866ced54900c67"
+    },
+    {
+      "path": "tools/ee-filexio-smoke.mk",
+      "sha256": "fbfe8d38ecc00a9bfb14a6bd18a26b9abc7d960d63821c0932cbcf332a439a99"
+    },
+    {
+      "path": "tools/hcu-asset-profile.mk",
+      "sha256": "f163bdd9d7aabeed6339a02b8e262d8ab9efc90bce2a724a37f3278854ca8b19"
+    },
+    {
+      "path": "tools/hcu_parent_link_probe.py",
+      "sha256": "dd36ef7dabce051c4bab0bf0bf5f0f999a3b91f6b03b86adb111428107b19243"
+    },
+    {
+      "path": "tools/hcu_ps2_abi_host.py",
+      "sha256": "a75eff323dfe64e014ed3e4f1752a4a20dcd8b878f6530f64a3a9d11dbc7ee56"
+    },
+    {
+      "path": "tools/hcu_ps2_external_review.py",
+      "sha256": "034db1c9283b6d6e95e5a7710fc5dac16083c8df6fd0529c940bc5ea992519b6"
+    },
+    {
+      "path": "tools/hcu_ps2_link.py",
+      "sha256": "87b299076b0cd5e8a5050282f33e1b84dbf109dca992eadbf7e38a34f9eb48a2"
+    },
+    {
+      "path": "tools/hcu_ps2_memory_audit.py",
+      "sha256": "1076cbaf92b0715ca496845b1e5e65faf2c85b0788d415d3b50df7e354449813"
+    },
+    {
+      "path": "tools/hcu_schema_manifest.py",
+      "sha256": "a4211277b78a6845a469736ef74b2bab63ea2132999f2bc9a429e7a41f0ceb10"
+    },
+    {
+      "path": "tools/hmap.py",
+      "sha256": "acbe41b9e823e848e7754785834bb2decb54d6e1b25c6d7c4155697780b411c5"
+    },
+    {
+      "path": "tools/pack_retail_ctag_hp2.py",
+      "sha256": "bbcaa062284fdcbec07855b572307577c1f2978e4de7df52dfaa080084b17ed1"
+    },
+    {
+      "path": "tools/test_hcu_boot.py",
+      "sha256": "d1f01e0a38ce336ad62555b2e618d3d31e1327f5f9556202f191f70e02510eda"
+    }
+  ]
+}
