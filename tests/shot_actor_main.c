@@ -24,10 +24,11 @@ int main(void)
     uint8_t payload[16 + 36 + 46] = {0};
     collpack_actor_collision_view actor;
     float matrix[1][12] = { {1,0,0,0, 0,1,0,0, 0,0,1,0} };
+    float second_matrix[1][12] = { {1,0,0,0, 0,1,0,0, 0,0,1,-0.5f} };
     float origin[3] = {0, 0, 1}, direction[3] = {0, 0, -1};
     shot_scene scene = {0};
     shot projectile, attached_projectile;
-    shot_target_view target_view = {0};
+    shot_target_view target_view[2] = {{0}};
     vital_damage_profile target_profile = {0};
     shot_def attach_def;
     uint32_t seed = 123;
@@ -57,16 +58,19 @@ int main(void)
     scene.target_body_damage_material_type = 21;
     scene.target_shield_damage_material_type = 22;
     scene.target_damage_material_types_valid = 1;
-    target_view.object_index = 13;
-    target_view.body_damage_material_type = 21;
-    target_view.shield_damage_material_type = 22;
-    target_view.mesh = &actor;
+    target_view[0].object_index = 13;
+    target_view[0].body_damage_material_type = 21;
+    target_view[0].shield_damage_material_type = 22;
+    target_view[0].mesh = &actor;
     target_profile.material_count = 3;
     target_profile.material[2].material_type = 22; /* physics material, not resistance index */
-    target_view.vitality_profile = &target_profile;
-    target_view.node_to_world = (const float (*)[12])matrix;
-    scene.targets = &target_view;
-    scene.target_count = 1;
+    target_view[0].vitality_profile = &target_profile;
+    target_view[0].node_to_world = (const float (*)[12])matrix;
+    target_view[1] = target_view[0];
+    target_view[1].object_index = 14;
+    target_view[1].node_to_world = (const float (*)[12])second_matrix;
+    scene.targets = target_view;
+    scene.target_count = 2;
     shot_spawn(&projectile, origin, direction, &SHOT_PISTOL);
     shot_tick(&projectile, &SHOT_PISTOL, &scene, &seed);
     if (!projectile.hit_object || !projectile.hit_object_this_tick ||
@@ -77,6 +81,19 @@ int main(void)
     printf("actor shot node=%d region=%d part=%d resistance=%d damage=%.1f\n",
         projectile.hit_node_index, projectile.hit_region_index,
         projectile.hit_damage_part, projectile.damage_resistance_index, projectile.damage);
+    {
+        shot_def penetrate_def = SHOT_PISTOL;
+        shot penetrating;
+        penetrate_def.response[22] = 3;
+        shot_spawn(&penetrating, origin, direction, &penetrate_def);
+        shot_tick(&penetrating, &penetrate_def, &scene, &seed);
+        if (penetrating.impact_count != 2 || penetrating.impacts[0].object_index != 13 ||
+            penetrating.impacts[1].object_index != 14 ||
+            penetrating.impacts[0].damage <= 0.0f || penetrating.impacts[1].damage <= 0.0f)
+            return 5;
+        printf("actor penetration impacts=%u objects=%d,%d\n", penetrating.impact_count,
+            penetrating.impacts[0].object_index, penetrating.impacts[1].object_index);
+    }
     attach_def = SHOT_PISTOL;
     attach_def.response[22] = 4; /* CE damage material -> global physics material -> response. */
     shot_spawn(&attached_projectile, origin, direction, &attach_def);

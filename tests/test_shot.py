@@ -55,6 +55,7 @@ class Shot(unittest.TestCase):
                 check=True, capture_output=True)
             output = subprocess.run([str(exe)], check=True, capture_output=True, text=True).stdout
         self.assertIn("actor shot node=0 region=0 part=2 resistance=2 damage=25.0", output)
+        self.assertIn("actor penetration impacts=2 objects=13,14", output)
 
     def test_weapon_replay_independent_of_presentation_work(self):
         with tempfile.TemporaryDirectory() as temp:

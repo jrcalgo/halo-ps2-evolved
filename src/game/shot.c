@@ -96,6 +96,25 @@ static uint16_t seed_u16(uint32_t *seed)
     return (uint16_t)(*seed >> 16);
 }
 
+static void shot_record_impact(shot *s)
+{
+    shot_impact_event *impact;
+    if (!s || s->impact_count >= SHOT_MAX_IMPACTS_PER_TICK || s->hit_object_index < 0)
+        return;
+    impact = &s->impacts[s->impact_count++];
+    impact->object_index = s->hit_object_index;
+    impact->node_index = s->hit_node_index;
+    impact->damage_part = s->hit_damage_part;
+    impact->region_index = s->hit_region_index;
+    impact->resistance_index = s->damage_resistance_index;
+    impact->body_material_type = s->damage_body_material_type;
+    impact->shield_material_type = s->damage_shield_material_type;
+    impact->material_types_valid = s->damage_material_types_valid;
+    impact->damage = s->damage;
+    impact->body_modifier = s->damage_body_modifier;
+    impact->shield_modifier = s->damage_shield_modifier;
+}
+
 void shot_random_cone(const float axis[3], const float (*directions)[3], unsigned direction_count,
                       const shot_cone *cone, float error_fraction, uint32_t *seed, float result[3])
 {
@@ -186,6 +205,7 @@ void shot_spawn(shot *s, const float origin[3], const float forward[3], const sh
     s->hit_object_index = -1;
     s->attached_object_index = -1;
     s->ignored_object_index = -1;
+    s->impact_count = 0;
 }
 
 void shot_spawn_seeded(shot *s, const float origin[3], const float forward[3],
@@ -536,6 +556,7 @@ int shot_tick(shot *s, const shot_def *def, const shot_scene *scene, uint32_t *s
         def->deceleration_end;
     s->hit_object_this_tick = 0;
     s->attached_damage_event = 0;
+    s->impact_count = 0;
     if (s->attached) {
         if (s->attached_target && scene) {
             int followed = 0;
@@ -584,6 +605,7 @@ int shot_tick(shot *s, const shot_def *def, const shot_scene *scene, uint32_t *s
                 s->attached_damage_event = 1;
                 s->damage_modifier_21 = def->attached_damage_material_modifier_21;
                 s->damage_modifier_22 = def->attached_damage_material_modifier_22;
+                shot_record_impact(s);
             }
             s->action = SHOT_DETONATE;
             s->alive = 0;
@@ -740,6 +762,7 @@ int shot_tick(shot *s, const shot_def *def, const shot_scene *scene, uint32_t *s
                     s->damage = (1.0f - damage_scale) * def->damage_minimum +
                         random_damage * damage_scale;
                 }
+                shot_record_impact(s);
             }
             {
                 float impact_speed = -dot3(new_velocity, normal);

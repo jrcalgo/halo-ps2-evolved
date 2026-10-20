@@ -20,9 +20,17 @@
 #define SHOT_REFLECT 3
 #define SHOT_OVERPENETRATE 4
 #define SHOT_ATTACH 5
+#define SHOT_MAX_IMPACTS_PER_TICK 4
 
 struct collpack_actor_collision_view;
 struct vital_damage_profile;
+
+typedef struct {
+    int16_t object_index, node_index, damage_part, region_index, resistance_index;
+    int16_t body_material_type, shield_material_type;
+    uint8_t material_types_valid;
+    float damage, body_modifier, shield_modifier;
+} shot_impact_event;
 
 typedef struct {
     uint32_t velocity_bits;
@@ -111,6 +119,8 @@ typedef struct {
     int16_t hit_object_index;
     int16_t attached_object_index;
     int16_t ignored_object_index;
+    uint8_t impact_count;
+    shot_impact_event impacts[SHOT_MAX_IMPACTS_PER_TICK];
 } shot;
 
 /* Optional multi-object collision views supplied by the bounded play-runtime
