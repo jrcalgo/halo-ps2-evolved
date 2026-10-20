@@ -12,8 +12,8 @@ OPL/optical storage, and does not establish a rendered scene or retail-map fit.
 
 | Input | Value |
 |---|---|
-| Parent commit | `e671ce625a81301da110ad9b64ccf87397b45d2f` |
-| halo-ce-universal commit | `d9ca6d07b7378e04b88199978b1cf5f7011cd6de` |
+| Parent commit | `208b52af5abf177a8e5b8be5024ee679cc04217f` |
+| halo-ce-universal commit | `c77bef1dc48a5bc99cf0547ac9d1c7c73ef46c96` |
 | halo-ps2 commit | `71183bb0a9adc586cd267b2780c82bbc12cfd95b` |
 | Combined ELF | `build/hcu-parent-link-probe/hcu-gameplay-machine.elf` |
 | ELF SHA-256 | `c813542d890d797c94c0db23a367b6bf54afe4e1cf97d3cfbd4e5dde0e4b4d3d` |
@@ -75,8 +75,8 @@ short backing, exhaustion, and reinitialization are detected/handled.
 
 | Mode | Result file | Settings SHA-256 | Outcome |
 |---|---|---|---|
-| Interpreter | `build/hcu-ps2-closure/emulator-m1-interpreter-7001e61468c94020996b5ba338104ce2/result.json` | `ced91fd90abcd2f8d588e7f23c7beeefefa6668dc7e50d489a32816f658edbb7` | Passed `m3-memory-ready`; physical checks all true |
-| Recompiler | `build/hcu-ps2-closure/emulator-m1-recompiler-24ad9e54518f4a479274dae04dffc29a/result.json` | `0c1b600b76ee41dca499d73154dea3c846c0e48c7f6192698be1c2b007dc7210` | Passed `m3-memory-ready`; physical checks all true |
+| Interpreter | `build/hcu-ps2-closure/emulator-m1-interpreter-208d97d138894874a9b1dad7caca34c6/result.json` | `2534e60085b94b7398fa155cb1c909566452c9de1f905531a8d4c056e23928bc` | Passed `m3-memory-ready`; physical checks all true |
+| Recompiler | `build/hcu-ps2-closure/emulator-m1-recompiler-e687569c9fe64a40a9ae74333bbdab80/result.json` | `85589cc3f997c1ea2edc1c41b2c861a45f998509e7a25c9a615473ec8e7b130f` | Passed `m3-memory-ready`; physical checks all true |
 
 Both runs identify the same parent/HCU/halo-ps2 commits and ELF hash. Neither is
 expected to reach game initialization: this is an early memory-ready checkpoint.
@@ -86,6 +86,13 @@ expected to reach game initialization: this is an early memory-ready checkpoint.
 - `python3 tools/hcu_ps2_m0_gate.py`: closed, 9 checks, 0 errors.
 - `python3 tools/hcu_ps2_m1_physical_gate.py --run <interpreter result> --run <recompiler result>`: closed, 2 guest runs, 0 errors.
 - `PYTHONPATH=. pytest -q tests/test_hcu_v2_guard.py tests/test_hcu_parent_link_probe.py tests/test_hcu_boot_physical.py tests/test_hcu_m1_physical_gate.py tests/test_resource_accounting.py tests/test_hcu_allocation_ownership.py`: 22 passed, 1 skipped, 549 subtests passed.
+
+After recording this evidence, the HCU source pin advanced to
+`c77bef1dc48a5bc99cf0547ac9d1c7c73ef46c96` for additional compile-time ABI
+assertions. The current-hash interpreter/recompiler rerun above uses that pin;
+the combined machine ELF hash remains unchanged because the change adds only
+compile-time typedef assertions. The rerun gate, refreshed M0 gate, ABI compiler
+check, and focused suite all passed.
 
 The M1 physical-placement gate deliberately establishes only placement,
 non-overlap, exact-image provenance, and canary integrity. OPL USB/SMB/HDD,
