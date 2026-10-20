@@ -8,6 +8,8 @@
 #include "game/play_fp.h"
 #include "game/shot.h"
 #include "game/vital.h"
+#include "core/mat.h"
+#include "sim/skeleton.h"
 #include "platform/profiler.h"
 #include "render/bsp_render.h"
 #include "render/camera.h"
@@ -56,12 +58,67 @@ static int s_freecam_mode;
  * It is not an AI actor or a retail object-damage implementation. */
 static vital s_probe_target;
 static vital_damage_profile s_probe_damage_profile;
+static collpack_actor_collision_view s_actor_collision;
+static float s_probe_node_to_world[64][12];
 static int16_t s_probe_body_damage_material_type = 21;
 static int16_t s_probe_shield_damage_material_type = 22;
 static float s_probe_target_center[3];
 static uint32_t s_seed = 1;
 static int s_mark; /* 0 none, 1 flying, 2 surface, 3 range */
 static int s_triangle;
+
+static int play_actor_bind_pose(void)
+{
+    static skel_xform local[64];
+    static int16_t parent[64];
+    static mat4 world[64];
+    mat4 root;
+    unsigned node, row, column;
+    float origin[3] = {0.0f, 0.0f, 0.0f}, minimum[3], maximum[3];
+    float center[3], offset[3], feet[3];
+    mat4_from_ypr(&root, s_yaw + 3.14159265359f, 0.0f, 0.0f, origin);
+    for (node = 0; node < s_actor_collision.node_count; node++) {
+        const uint8_t *record = s_actor_collision.nodes + node * s_actor_collision.node_stride;
+        memcpy(&parent[node], record + 2, sizeof parent[node]);
+        memcpy(local[node].trans, record + 4, sizeof local[node].trans);
+        memcpy(local[node].rot, record + 16, sizeof local[node].rot);
+        local[node].scale = 1.0f;
+    }
+    if (skel_world(world, local, parent, s_actor_collision.node_count, &root) != 0) return -1;
+    for (row = 0; row < 3; row++) {
+        minimum[row] = 1.0e20f;
+        maximum[row] = -1.0e20f;
+    }
+    for (row = 0; row < s_actor_collision.triangle_count; row++) {
+        const uint8_t *triangle = s_actor_collision.triangles + row * s_actor_collision.triangle_stride;
+        int16_t triangle_node;
+        unsigned vertex, axis;
+        memcpy(&triangle_node, triangle, sizeof triangle_node);
+        if (triangle_node < 0 || triangle_node >= (int16_t)s_actor_collision.node_count) return -1;
+        for (vertex = 0; vertex < 3; vertex++) {
+            float point[3], transformed[3];
+            memcpy(point, triangle + 10 + vertex * 12, sizeof point);
+            mat4_transform_point(&world[triangle_node], point, transformed);
+            for (axis = 0; axis < 3; axis++) {
+                if (transformed[axis] < minimum[axis]) minimum[axis] = transformed[axis];
+                if (transformed[axis] > maximum[axis]) maximum[axis] = transformed[axis];
+            }
+        }
+    }
+    for (row = 0; row < 3; row++) center[row] = (minimum[row] + maximum[row]) * 0.5f;
+    mat4_transform_dir(&root, center, offset);
+    for (row = 0; row < 3; row++) feet[row] = s_probe_target_center[row] - offset[row];
+    root.m[3][0] = feet[0]; root.m[3][1] = feet[1]; root.m[3][2] = feet[2];
+    if (skel_world(world, local, parent, s_actor_collision.node_count, &root) != 0) return -1;
+    for (node = 0; node < s_actor_collision.node_count; node++) {
+        for (row = 0; row < 3; row++) {
+            for (column = 0; column < 3; column++)
+                s_probe_node_to_world[node][row * 4 + column] = world[node].m[column][row];
+            s_probe_node_to_world[node][row * 4 + 3] = world[node].m[3][row];
+        }
+    }
+    return 0;
+}
 
 static void play_select_weapon(void)
 {
@@ -196,8 +253,8 @@ static uint8_t *load_file(const char *path, size_t *size)
 
 static int play_init(void)
 {
-    size_t pack_size, coll_size, tag_size, vita_size;
-    const uint8_t *coll, *tag, *vita;
+    size_t pack_size, coll_size, tag_size, vita_size, acol_size;
+    const uint8_t *coll, *tag, *vita, *acol;
     float pose[4], tags[COLL_TAG_FLOATS];
     s_pack = load_file("host:/collision.hp2", &pack_size);
     if (!s_pack) {
@@ -232,13 +289,19 @@ static int play_init(void)
     s_probe_target_center[0] = s_body.pos[0] + cosf(s_yaw) * 1.0f;
     s_probe_target_center[1] = s_body.pos[1] + sinf(s_yaw) * 1.0f;
     s_probe_target_center[2] = s_body.pos[2] + s_body.eye;
+    if (collpack_section(s_pack, pack_size, "ACOL", &acol, &acol_size) != 0 ||
+        collpack_actor_collision(acol, acol_size, &s_actor_collision) != 0 ||
+        play_actor_bind_pose() != 0) {
+        printf("[play] cyborg actor collision rejected\n");
+        return -1;
+    }
     if (play_fp_open() != 0) printf("[play] weapon models missing\n");
     play_select_weapon();
     memset(s_fly, 0, sizeof s_fly);
     s_mark = 0;
-    printf("[play] ready feet %.2f %.2f %.2f yaw %.1f %s %d models %d\n",
+    printf("[play] ready feet %.2f %.2f %.2f yaw %.1f %s %d models %d actor-mesh %u bind-pose tris\n",
         pose[0], pose[1], pose[2], s_yaw * 57.2957795f, play_fp_name(), s_gun.loaded,
-        play_fp_model_count());
+        play_fp_model_count(), (unsigned)s_actor_collision.triangle_count);
     return 0;
 }
 
@@ -353,7 +416,9 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
             scene.target = 1;
             scene.target_is_unit = 1;
             memcpy(scene.target_center, s_probe_target_center, sizeof scene.target_center);
-            scene.target_radius = 0.45f;
+            scene.target_radius = 0.0f;
+            scene.actor_mesh = &s_actor_collision;
+            scene.actor_node_to_world = (const float (*)[12])s_probe_node_to_world;
             scene.target_material = 0;
             scene.target_body_damage_material_type = s_probe_body_damage_material_type;
             scene.target_shield_damage_material_type = s_probe_shield_damage_material_type;
@@ -374,9 +439,10 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
                 s_fly_def[slot]->damage_material_modifier_21,
                 s_fly_def[slot]->damage_material_modifier_22, 0);
             if (object_hit && s_fly[slot].damage > 0.0f) {
-                printf("[play] probe damage %.2f shield %.3f body %.3f dead %d\n",
-                    s_fly[slot].damage, s_probe_target.shield, s_probe_target.body,
-                    s_probe_target.dead);
+                printf("[play] probe damage %.2f node %d part %d resistance %d shield %.3f body %.3f dead %d\n",
+                    s_fly[slot].damage, s_fly[slot].hit_node_index,
+                    s_fly[slot].hit_damage_part, s_fly[slot].damage_resistance_index,
+                    s_probe_target.shield, s_probe_target.body, s_probe_target.dead);
             }
             if (s_fly[slot].alive) flying = 1;
             else if (was && (object_hit || s_fly[slot].hit_surface)) {

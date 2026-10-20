@@ -30,7 +30,7 @@ int collpack_vital_profile(const uint8_t *payload, size_t length,
 /* ACOL v2 view: packed node-default records and triangles alias the payload.
  * Defaults are bind-pose only; callers must provide animated node transforms
  * before treating these triangles as live actor collision. */
-typedef struct {
+typedef struct collpack_actor_collision_view {
     const uint8_t *nodes;
     const uint8_t *triangles;
     uint16_t node_count;
@@ -42,6 +42,7 @@ typedef struct {
     float distance;
     float barycentric_u;
     float barycentric_v;
+    float normal[3];
     int16_t node_index;
     int16_t region_index;
     int16_t damage_part;

@@ -1,4 +1,5 @@
 #include "game/collpack.h"
+#include <math.h>
 #include <string.h>
 
 static uint32_t rd32(const uint8_t *p)
@@ -192,6 +193,7 @@ int collpack_actor_ray(const collpack_actor_collision_view *view,
         int16_t node, region, part, material, surface;
         float local[9], p[3][3], edge1[3], edge2[3], pvec[3], tvec[3], qvec[3];
         float determinant, inverse, u, v, distance;
+        float normal[3], normal_length;
         unsigned vertex;
         memcpy(&node, record, 2);
         memcpy(&region, record + 2, 2);
@@ -219,10 +221,17 @@ int collpack_actor_ray(const collpack_actor_collision_view *view,
         if (v < 0.0f || u + v > 1.0f) continue;
         distance = actor_dot3(edge2, qvec) * inverse;
         if (distance < 0.0f || distance >= nearest) continue;
+        actor_cross3(edge1, edge2, normal);
+        normal_length = sqrtf(actor_dot3(normal, normal));
+        if (!(normal_length > 0.0f) || !finite_float(normal_length)) continue;
+        normal[0] /= normal_length;
+        normal[1] /= normal_length;
+        normal[2] /= normal_length;
         nearest = distance;
         hit->distance = distance;
         hit->barycentric_u = u;
         hit->barycentric_v = v;
+        memcpy(hit->normal, normal, sizeof hit->normal);
         hit->node_index = node;
         hit->region_index = region;
         hit->damage_part = part;

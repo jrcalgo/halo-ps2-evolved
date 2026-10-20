@@ -21,6 +21,8 @@
 #define SHOT_OVERPENETRATE 4
 #define SHOT_ATTACH 5
 
+struct collpack_actor_collision_view;
+
 typedef struct {
     uint32_t velocity_bits;
     float final_velocity;
@@ -97,6 +99,8 @@ typedef struct {
     float damage_body_modifier;
     float damage_shield_modifier;
     uint8_t damage_material_types_valid;
+    int16_t hit_node_index;
+    int16_t hit_damage_part;
 } shot;
 
 typedef struct {
@@ -117,6 +121,8 @@ typedef struct {
     int16_t target_damage_resistance_index;
     int target_damage_resistance_index_valid;
     int target_damage_material_types_valid;
+    const struct collpack_actor_collision_view *actor_mesh;
+    const float (*actor_node_to_world)[12];
     int underwater;
     const float (*directions)[3];
     unsigned direction_count;

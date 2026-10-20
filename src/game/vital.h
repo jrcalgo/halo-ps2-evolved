@@ -1,9 +1,10 @@
 /* Cyborg shield and body from characters\cyborg\cyborg and object_damage_shield
  * / object_damage_body. Vitality is stored normalized, as the object datum
- * does. The diagnostic probe uses the cyborg's indirect damage material
- * record 1 (type 21): no shield leak, unit shield/body multipliers. CE chooses
- * a collision damage-material record, not a generic head/body/legs multiplier;
- * this probe currently has no collision-region attribution.
+ * does. The diagnostic mesh probe uses direct collision-model resistance
+ * indices (indirect record 1/type 21 is the fallback). CE chooses a resistance
+ * record from the hit surface, not a generic head/body/legs multiplier. The
+ * shot retains node damage-part metadata, but actor-specific damage animation
+ * and reaction handling are not implemented yet.
  * Pistol and rifle damage against material 21 is 1.5 and 1. The shield
  * material modifier is 1. Stun threshold/time are 6 damage / 4 seconds.
  * Recharge is the collision

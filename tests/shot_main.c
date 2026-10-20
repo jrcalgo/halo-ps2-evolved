@@ -5,22 +5,7 @@
 
 static void clear_scene(shot_scene *scene)
 {
-    int i;
-    scene->bsp = 0;
-    scene->plane = 0;
-    scene->target = 0;
-    scene->target_is_unit = 0;
-    scene->plane_d = 0;
-    scene->plane_material = 0;
-    scene->target_radius = 0;
-    scene->target_material = 0;
-    scene->underwater = 0;
-    scene->directions = 0;
-    scene->direction_count = 0;
-    for (i = 0; i < 3; i++) {
-        scene->plane_normal[i] = 0;
-        scene->target_center[i] = 0;
-    }
+    memset(scene, 0, sizeof *scene);
 }
 
 static void fly(const shot_def *def, const char *name)

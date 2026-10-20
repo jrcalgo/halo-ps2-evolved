@@ -81,7 +81,7 @@ class ActorCollision(unittest.TestCase):
             subprocess.run(
                 ["cc", "-std=c11", "-Wall", "-Wextra", "-Werror", "-I" + str(ROOT / "src"),
                  str(ROOT / "tests/collpack_actor_main.c"), str(ROOT / "src/game/collpack.c"),
-                 "-o", str(exe)], check=True, capture_output=True)
+                 "-lm", "-o", str(exe)], check=True, capture_output=True)
             output = subprocess.run([str(exe)], check=True, capture_output=True, text=True).stdout
         self.assertIn("actor collision pack view ok", output)
 

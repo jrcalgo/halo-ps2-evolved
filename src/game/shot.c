@@ -1,4 +1,5 @@
 #include "game/shot.h"
+#include "game/collpack.h"
 #include <math.h>
 #include <string.h>
 
@@ -131,6 +132,8 @@ void shot_spawn(shot *s, const float origin[3], const float forward[3], const sh
     s->damage_body_modifier = 1.0f;
     s->damage_shield_modifier = 1.0f;
     s->damage_material_types_valid = 0;
+    s->hit_node_index = -1;
+    s->hit_damage_part = -1;
 }
 
 void shot_spawn_seeded(shot *s, const float origin[3], const float forward[3],
@@ -258,11 +261,11 @@ static float damage_material_modifier(const shot_def *def, int material, int att
 }
 
 static void set_target_damage_modifiers(shot *s, const shot_def *def,
-    const shot_scene *scene, int attached)
+    const shot_scene *scene, int attached, int damage_index)
 {
     if (!scene || !scene->target_damage_material_types_valid) return;
-    s->damage_resistance_index = scene->target_damage_resistance_index_valid ?
-        scene->target_damage_resistance_index : -1;
+    s->damage_resistance_index = damage_index >= 0 ? (int16_t)damage_index :
+        (scene->target_damage_resistance_index_valid ? scene->target_damage_resistance_index : -1);
     s->damage_body_material_type = scene->target_body_damage_material_type;
     s->damage_shield_material_type = scene->target_shield_damage_material_type;
     s->damage_body_modifier = damage_material_modifier(def,
@@ -309,10 +312,14 @@ static void reflect_with_friction(float velocity[3], const float normal[3],
 
 static int nearest_hit(
     const shot *s, const shot_scene *scene,
-    const float end[3], float *t, float normal[3], int *object_hit, int *material)
+    const float end[3], float *t, float normal[3], int *object_hit, int *material,
+    int *damage_index, int16_t *node_index, int16_t *damage_part)
 {
     float segment[3], best;
     int found = 0, i;
+    *damage_index = -1;
+    *node_index = -1;
+    *damage_part = -1;
     for (i = 0; i < 3; i++) segment[i] = end[i] - s->position[i];
     best = 2.0f;
     if (scene && scene->bsp) {
@@ -364,10 +371,28 @@ static int nearest_hit(
                 best = hit_t;
                 *material = scene->target_material;
                 *object_hit = 1;
+                *damage_index = scene->target_damage_resistance_index_valid ?
+                    scene->target_damage_resistance_index : -1;
                 for (i = 0; i < 3; i++)
                     normal[i] = offset[i] + segment[i] * hit_t;
                 found = 1;
             }
+        }
+    }
+    if (scene && scene->actor_mesh && scene->actor_node_to_world && !s->ignore_target) {
+        collpack_actor_hit hit;
+        if (collpack_actor_ray(scene->actor_mesh, scene->actor_node_to_world,
+                s->position, segment, best, &hit) == 1 && hit.distance > 0.0f && hit.distance < best) {
+            best = hit.distance;
+            *material = scene->target_material;
+            *object_hit = 1;
+            *damage_index = hit.resistance_index;
+            *node_index = hit.node_index;
+            *damage_part = hit.damage_part;
+            normal[0] = hit.normal[0];
+            normal[1] = hit.normal[1];
+            normal[2] = hit.normal[2];
+            found = 1;
         }
     }
     *t = best;
@@ -439,7 +464,8 @@ int shot_tick(shot *s, const shot_def *def, const shot_scene *scene, uint32_t *s
         float new_velocity[3], average[3], end[3], fraction;
         int i;
         float hit_t, normal[3];
-        int object_hit = 0, material = 0, hit;
+        int object_hit = 0, material = 0, hit, damage_index;
+        int16_t hit_node = -1, hit_part = -1;
         if (f32(def->velocity_bits) != def->final_velocity &&
             damage_range_upper != damage_range_lower) {
             float initial_speed = f32(def->velocity_bits);
@@ -529,7 +555,8 @@ int shot_tick(shot *s, const shot_def *def, const shot_scene *scene, uint32_t *s
             s->action = SHOT_DETONATE;
         }
         for (i = 0; i < 3; i++) end[i] = s->position[i] + average[i] * fraction * time_left;
-        hit = nearest_hit(s, scene, end, &hit_t, normal, &object_hit, &material);
+        hit = nearest_hit(s, scene, end, &hit_t, normal, &object_hit, &material,
+            &damage_index, &hit_node, &hit_part);
         if (hit) {
             float traveled[3];
             int response, object_overpenetrated = 0;
@@ -549,7 +576,9 @@ int shot_tick(shot *s, const shot_def *def, const shot_scene *scene, uint32_t *s
                 float damage_scale = 1.0f;
                 s->hit_object = 1;
                 s->hit_object_this_tick = 1;
-                set_target_damage_modifiers(s, def, scene, 0);
+                s->hit_node_index = hit_node;
+                s->hit_damage_part = hit_part;
+                set_target_damage_modifiers(s, def, scene, 0, damage_index);
                 if (def->final_velocity != f32(def->velocity_bits)) {
                     float initial_speed = fabsf(f32(def->velocity_bits));
                     damage_scale = (impact_speed - def->final_velocity) /
@@ -623,7 +652,7 @@ int shot_tick(shot *s, const shot_def *def, const shot_scene *scene, uint32_t *s
                     material >= 0 && material < SHOT_MATERIALS ? def->parallel_friction[material] : 0.0f,
                     material >= 0 && material < SHOT_MATERIALS ? def->perpendicular_friction[material] : 0.0f);
             } else if (response == SHOT_ATTACH) {
-                if (object_hit) set_target_damage_modifiers(s, def, scene, 1);
+                if (object_hit) set_target_damage_modifiers(s, def, scene, 1, -1);
                 new_velocity[0] = new_velocity[1] = new_velocity[2] = 0.0f;
                 s->velocity[0] = s->velocity[1] = s->velocity[2] = 0.0f;
                 s->attached = 1;

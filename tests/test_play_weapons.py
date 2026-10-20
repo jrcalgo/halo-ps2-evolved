@@ -483,6 +483,7 @@ class PlayWeapons(unittest.TestCase):
                  str(ROOT / "tests/play_fp_trigger_main.c"),
                  str(ROOT / "src/game/play_fp.c"), str(ROOT / "src/game/gun.c"),
                  str(ROOT / "src/game/shot.c"), str(ROOT / "src/game/collide.c"),
+                 str(ROOT / "src/game/collpack.c"),
                  str(ROOT / "src/game/vital.c"), "-lm",
                  "-Wl,--gc-sections", "-o", str(exe)], check=True, capture_output=True)
             result = subprocess.run([str(exe)], cwd=temp_path,

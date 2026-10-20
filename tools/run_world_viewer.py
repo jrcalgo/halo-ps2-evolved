@@ -403,8 +403,8 @@ def main():
                         raise RuntimeError("Pad-camera waypoint flight did not finish")
                     result["camera_span"] = span
                 if args.combat_smoke:
-                    damage_events = re.findall(r"\[play\] probe damage ([0-9.]+) shield ([0-9.]+) body (-?[0-9.]+) dead (\d+)", text)
-                    deaths = [event for event in damage_events if event[3] == "1"]
+                    damage_events = re.findall(r"\[play\] probe damage ([0-9.]+) node (-?\d+) part (-?\d+) resistance (-?\d+) shield ([0-9.]+) body (-?[0-9.]+) dead (\d+)", text)
+                    deaths = [event for event in damage_events if event[6] == "1"]
                     fires = re.findall(r"\[play\] fire PISTOL (\d+) pellets (\d+)", text)
                     hits = re.findall(r"\[play\] hit 1 ", text)
                     if (not fire_released or not deaths or len(fires) != 6 or
@@ -412,9 +412,11 @@ def main():
                         raise RuntimeError("Integrated play combat did not fire, hit, and kill the probe target")
                     result["combat_smoke"] = {
                         "weapon": "PISTOL", "fire_events": len(fires), "probe_damage_events": len(damage_events),
-                        "final_damage": float(deaths[-1][0]), "final_shield": float(deaths[-1][1]),
-                        "final_body": float(deaths[-1][2]), "target_dead": True,
-                        "target": "fixed diagnostic sphere; not a retail actor"}
+                        "final_damage": float(deaths[-1][0]), "final_shield": float(deaths[-1][4]),
+                        "final_body": float(deaths[-1][5]), "target_dead": True,
+                        "hit_node": int(damage_events[-1][1]), "hit_damage_part": int(damage_events[-1][2]),
+                        "hit_resistance_index": int(damage_events[-1][3]),
+                        "target": "retail cyborg collision mesh in a fixed bind-pose probe placement; not a live actor"}
                 if args.grenade_smoke:
                     throws = re.findall(r"\[play\] grenade throw frag carried (\d+) slot (\d+) mode player eye (-?[0-9.]+) (-?[0-9.]+) (-?[0-9.]+) aim (-?[0-9.]+) (-?[0-9.]+) (-?[0-9.]+)", text)
                     explosions = re.findall(r"\[play\] grenade explosion frag slot (\d+)(?: damage ([0-9.]+) distance ([0-9.]+) shield ([0-9.]+) body (-?[0-9.]+) dead (\d+)| outside ([0-9.]+))", text)

@@ -44,6 +44,18 @@ def bullet(path, name):
 
 
 class Shot(unittest.TestCase):
+    def test_actor_mesh_hit_preserves_ce_node_and_resistance_indices(self):
+        with tempfile.TemporaryDirectory() as temp:
+            exe = Path(temp) / "shot-actor"
+            subprocess.run(
+                ["cc", "-std=c11", "-Wall", "-Wextra", "-Werror",
+                 "-I" + str(ROOT / "src"), str(ROOT / "tests/shot_actor_main.c"),
+                 str(ROOT / "src/game/shot.c"), str(ROOT / "src/game/collpack.c"),
+                 str(ROOT / "src/game/collide.c"), "-lm", "-o", str(exe)],
+                check=True, capture_output=True)
+            output = subprocess.run([str(exe)], check=True, capture_output=True, text=True).stdout
+        self.assertIn("actor shot node=0 part=2 resistance=2 damage=25.0", output)
+
     def test_weapon_replay_independent_of_presentation_work(self):
         with tempfile.TemporaryDirectory() as temp:
             exe = Path(temp) / "weapon-replay"
@@ -51,6 +63,7 @@ class Shot(unittest.TestCase):
                 ["cc", "-std=c11", "-Wall", "-Wextra", "-Werror",
                  "-I" + str(ROOT / "src"), str(ROOT / "tests/weapon_replay_main.c"),
                  str(ROOT / "src/game/gun.c"), str(ROOT / "src/game/shot.c"),
+                 str(ROOT / "src/game/collpack.c"),
                  str(ROOT / "src/game/collide.c"), str(ROOT / "src/game/vital.c"),
                  str(ROOT / "src/game/grenade.c"),
                  "-lm", "-o", str(exe)],
@@ -72,6 +85,7 @@ class Shot(unittest.TestCase):
                 ["cc", "-std=c11", "-Wall", "-Wextra", "-Werror",
                  "-I" + str(ROOT / "src"), str(ROOT / "tests/weapon_damage_main.c"),
                  str(ROOT / "src/game/gun.c"), str(ROOT / "src/game/shot.c"),
+                 str(ROOT / "src/game/collpack.c"),
                  str(ROOT / "src/game/collide.c"), str(ROOT / "src/game/vital.c"),
                  "-lm", "-o", str(exe)],
                 check=True, capture_output=True, text=True)
@@ -95,7 +109,8 @@ class Shot(unittest.TestCase):
             subprocess.run(
                 ["cc", "-std=c11", "-Wall", "-Wextra", "-Werror", "-ffp-contract=off",
                  "-I" + str(ROOT / "src"), str(ROOT / "tests/shot_cone_pack_main.c"),
-                 str(ROOT / "src/game/shot.c"), str(ROOT / "src/game/collide.c"),
+                 str(ROOT / "src/game/shot.c"), str(ROOT / "src/game/collpack.c"),
+                 str(ROOT / "src/game/collide.c"),
                  "-lm", "-o", str(exe)],
                 check=True, capture_output=True)
             command = [str(exe), str(ROOT / "build/play-objects/weapons.fp")]
@@ -140,6 +155,7 @@ class Shot(unittest.TestCase):
             subprocess.run(
                 ["cc", "-std=c11", "-Wall", "-Wextra", "-Werror", "-I" + str(ROOT / "src"),
                  str(ROOT / "tests/shot_main.c"), str(ROOT / "src/game/shot.c"),
+                 str(ROOT / "src/game/collpack.c"),
                  str(ROOT / "src/game/collide.c"), "-lm", "-o", str(exe)],
                 check=True, capture_output=True)
             out = subprocess.run([str(exe)], check=True, capture_output=True, text=True).stdout
@@ -275,6 +291,7 @@ class Shot(unittest.TestCase):
             subprocess.run(
                 ["cc", "-std=c11", "-Wall", "-Wextra", "-Werror", "-I" + str(ROOT / "src"),
                  str(ROOT / "tests/shot_main.c"), str(ROOT / "src/game/shot.c"),
+                 str(ROOT / "src/game/collpack.c"),
                  str(ROOT / "src/game/collide.c"), "-lm", "-o", str(exe)], check=True)
             output = subprocess.run([str(exe)], check=True, capture_output=True, text=True).stdout
         row = next(line.split() for line in output.splitlines() if line.startswith("detonate_response "))
