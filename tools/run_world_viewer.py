@@ -603,17 +603,18 @@ def main():
                         "reference": "Halo CE Universal weapon magazine reload completion/chaining; PS2 gun state machine uses fixed-size state and no heap"}
                 if args.grenade_smoke:
                     throws = re.findall(r"\[play\] grenade throw frag carried (\d+) slot (\d+) mode player eye (-?[0-9.]+) (-?[0-9.]+) (-?[0-9.]+) aim (-?[0-9.]+) (-?[0-9.]+) (-?[0-9.]+)", text)
-                    explosions = re.findall(r"\[play\] grenade explosion frag slot (\d+)(?: damage ([0-9.]+) distance ([0-9.]+) shield ([0-9.]+) body (-?[0-9.]+) dead (\d+)| outside ([0-9.]+))", text)
+                    explosions = re.findall(r"\[play\] grenade explosion frag slot (\d+) target (actor|probe)(?: damage ([0-9.]+) distance ([0-9.]+) shield ([0-9.]+) body (-?[0-9.]+) dead (\d+)| outside ([0-9.]+))", text)
                     if (not grenade_released or len(throws) != 1 or not explosions or
-                            float(throws[0][7]) >= 0.0):
-                        raise RuntimeError("EE grenade smoke did not throw from the collision player and detonate one frag grenade")
+                            float(throws[0][7]) >= 0.0 or
+                            any(row[1] != "actor" for row in explosions)):
+                        raise RuntimeError("EE grenade smoke did not throw from the collision player and detonate against the live scenario biped")
                     result["grenade_smoke"] = {
                         "throws": len(throws), "carried_after_throw": int(throws[0][0]),
                         "slot": int(throws[0][1]), "throw_origin_eye": [float(v) for v in throws[0][2:5]],
                         "throw_aim": [float(v) for v in throws[0][5:8]],
                         "control": "collision-resolved player (mover_tick_map); freecam disabled",
                         "explosions": len(explosions),
-                        "target": "fixed diagnostic sphere; not a retail actor"}
+                        "target": "live scenario biped collision/vitality state"}
                 time.sleep(.5);capture(window,run/"visible-final.png")
                 focus(window);keyboard_shot=Input();keyboard_shot.key("F8",True);time.sleep(.1);keyboard_shot.key("F8",False);keyboard_shot.close()
                 status = "route-completed" if args.route else "freecam-completed" if args.freecam else "diagnostic-completed"

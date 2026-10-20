@@ -657,22 +657,25 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
         for (slot = 0; slot < PLAY_GRENADE_CAPACITY; ++slot) {
             grenade *item = &s_grenades[slot];
             if (item->alive && grenade_tick_bsp(item, &GRENADE_FRAG, &s_bsp, &s_seed)) {
-                float dx = item->position[0] - s_probe_target_center[0];
-                float dy = item->position[1] - s_probe_target_center[1];
-                float dz = item->position[2] - s_probe_target_center[2];
+                vital *target = actor_live ? &s_live_actor_vital : &s_probe_target;
+                const float *target_center = actor_live ? s_live_actor_center : s_probe_target_center;
+                const char *target_name = actor_live ? "actor" : "probe";
+                float dx = item->position[0] - target_center[0];
+                float dy = item->position[1] - target_center[1];
+                float dz = item->position[2] - target_center[2];
                 float distance = sqrtf(dx * dx + dy * dy + dz * dz);
                 if (distance < GRENADE_FRAG.cutoff) {
                     float damage = grenade_damage(&GRENADE_FRAG, distance, &s_seed);
-                    vital_hurt_profile(&s_probe_target, damage, VITAL_BODY,
+                    vital_hurt_profile(target, damage, VITAL_BODY,
                         &s_probe_damage_profile,
                         GRENADE_FRAG.damage_material_modifier_21,
                         GRENADE_FRAG.damage_material_modifier_22, 0);
-                    printf("[play] grenade explosion frag slot %d damage %.2f distance %.2f shield %.3f body %.3f dead %d\n",
-                        slot, damage, distance, s_probe_target.shield,
-                        s_probe_target.body, s_probe_target.dead);
+                    printf("[play] grenade explosion frag slot %d target %s damage %.2f distance %.2f shield %.3f body %.3f dead %d\n",
+                        slot, target_name, damage, distance, target->shield,
+                        target->body, target->dead);
                 } else {
-                    printf("[play] grenade explosion frag slot %d outside %.2f\n",
-                        slot, distance);
+                    printf("[play] grenade explosion frag slot %d target %s outside %.2f\n",
+                        slot, target_name, distance);
                 }
             }
         }
