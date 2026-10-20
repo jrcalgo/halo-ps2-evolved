@@ -1,6 +1,26 @@
-# Source audit — M02 baseline frozen
+# Source audit — M02 baseline and HCU migration decision
 
 Pins and upstream identities are recorded in `config/dependencies.json`. Findings below are source observations at those pins, not PS2 runtime evidence.
+
+## HCU gameplay migration decision — 2026-10-20
+
+The project has selected the pinned `halo-ce-universal` fork as the production gameplay source, subject to the closure, ABI, memory, and runtime gates in [`5.hcu-remake.md`](../plans/5.hcu-remake.md). This changes the earlier M02 classification below: HCU is no longer comparison-only as an architectural decision, but it is **not yet integrated or accepted as the production runtime**. The pinned source is `7524ba61689a912bdec234d9687b178f0b0e7389` ([dependency record](../config/dependencies.json#L23)).
+
+| Responsibility | Intended owner | Evidence and boundary |
+|---|---|---|
+| Object identity/lifecycle, units, movement, physics, collision, weapons, projectiles, damage | `submodules/halo-ce-universal/source/` | `game_tick` orders units, actors, first-person state, game rules, scripts, and objects ([game tick](../submodules/halo-ce-universal/source/game/game.c#L330)); datum handles carry object identity ([datum lookup](../submodules/halo-ce-universal/source/memory/data.c#L145)). This remains a target decision until the R5900 closure passes. |
+| AI, scripts, effect simulation, HUD decisions, local game modes | HCU fork, port-marked | AI and scripts execute in the source tick ([actor update](../submodules/halo-ce-universal/source/ai/actors.c#L4200), [script update](../submodules/halo-ce-universal/source/hs/hs.c#L13544)); no Halo-64 campaign cuts are accepted. |
+| PS2 rendering, VU1, DMA, video, pad, timer, profiling | Parent and `halo-ps2` | `tools/ee-world.mk` links the existing renderer and platform objects ([EE object list](../tools/ee-world.mk#L5)); the render-oriented object table is currently a parent simulation prototype and must become a snapshot reader ([object table](../submodules/halo-ps2/engine/src/sim/objects.h#L1)). |
+| HP2/world/stream readers, offline geometry/bitmap conversion, fixed boot allocation | Parent and `halo-ps2` | HP2 validates bounded sections/CRCs ([HP2 loader](../submodules/halo-ps2/engine/src/stream/hp2.c#L18)); parent memory is arena-based ([arena allocator](../submodules/halo-ps2/engine/src/core/mem.c#L12)). A separate, measured runtime tag-image path is still required. |
+| Render/HUD/effect snapshots and PS2 sound playback | Parent adapter; decisions remain HCU-owned | Add a read-only post-tick snapshot and one-way sound requests. Do not let GS/VU1 or SPU2 callbacks become simulation authorities. |
+| Current parent `src/game/` simulation | Temporary parity oracle, then retired from production | The play target currently links the duplicate modules ([play link set](../tools/ee-world.mk#L43)); the runtime also imports them directly ([play imports](../src/game/play_ee.c#L1)). Keep them until equivalent HCU fixtures pass. |
+| OpenCE desktop/online implementation and Halo-64-only platform services | Excluded from the EE build | Build a dedicated `port/ps2` source set rather than importing the Linux manifest’s SDL/platform dependencies ([Linux manifest](../submodules/halo-ce-universal/port/linux/port.json#L3)). Do not transplant Halo-64’s big-endian ABI or broad empty stubs ([N64 prefix](../submodules/halo-64/port/n64/include/halo_n64_prefix.h#L4), [N64 stubs](../submodules/halo-64/tools/n64_stubs.py#L6)). |
+
+The single-owner rule applies to collision as well as object identity: CE collision becomes authoritative only after its BSP/model data is available from the converted map image and its R5900 call closure is measured. Parent collision modules remain comparison code until then. The parent plan's local multiplayer, bots, AI, and campaign scope is unchanged ([governing scope](../plans/0.native-ps2-halo-hybrid-port.md#L67)).
+
+Special-weapon ownership is also fixed: the supplied CE map tags drive the fuel rod through HCU's generic weapon/projectile system; the parent fuel-rod pose fallback is not retained. The energy sword and gravity rifle remain supported port features, with gameplay in HCU and only PS2 presentation adaptation in the parent ([tag inventory](../docs/combat.md#L23), [special pose mapping](../src/game/hold_pose.h#L31)).
+
+**M0 progress:** source ownership is recorded; the full compile/link closure, ABI assertions, runtime tag-image design, and initial R5900 linked slice remain open. Nothing in this decision table claims PS2 execution or parity.
 
 | Component and source | Disposition | Dependency/platform assumptions | Validation required |
 |---|---|---|---|
@@ -11,7 +31,7 @@ Pins and upstream identities are recorded in `config/dependencies.json`. Finding
 | PS2 renderer: `halo-ps2/engine/Makefile`, `src/render/`, `src/vu1/` | Adapt in PS2 fork behind parent interface | PS2SDK EE/GS/VIF APIs, DVP assembler and VU1; renderer owns DMA/GS, gameplay layer must not | Toolchains are built; EE/VU runtime checks and physical PS2 gates remain pending |
 | Pack readers/converters: `halo-ps2/tools/halo2ps2/`, `engine/src/stream/hp2.c`, `engine/src/world/` | Reuse/adapt candidate | Host Python and user-supplied Halo maps; runtime consumes converted pointer-free PS2 layouts | Synthetic converter suite passes. Blood Gulch now converts twice to identical packs inside the assigned regions; retail bytes stay untracked |
 | Arenas: `halo-ps2/engine/src/core/mem.c` | Reuse candidate | PS2 EE alignment and fixed 32 MiB memory ceiling; no unbounded runtime heap | Review overflow, lifetime and alignment; add accounting/high-water/exhaustion tests before integration |
-| Gameplay comparison: pinned `halo-ce-universal/source/` | Independent comparison source, not a blanket replacement | Different source revisions and declarations; selected candidate hashes and direct includes are in `config/gameplay-probe-candidates.json` | Expand the comparison to the selected transitive closure and resolve behavioral/source differences individually |
+| Gameplay source: pinned `halo-ce-universal/source/` | Selected production implementation target; not yet linked or accepted | Pinned decompilation and port fork require an R5900-specific ABI/platform layer; the Linux source manifest is not the PS2 build list | Generate the selected full compile/link closure, port and validate ABI/layout, load converted tags, then pass integrated source-parity and hardware-budget gates |
 | N64 graphics/audio: `halo-64/port/n64/src/n64_render.c`, `n64_sound.c`, `xdk_*.c` | Reference only | N64 RSP/RDP, tiny3d, cartridge and sound APIs do not match PS2 services | Do not transplant; use only source-portability and scheduling observations |
 | N64 campaign experiment: `halo-64/port/n64/game/n64_campaign.c` | Exclude from this port | Simplified campaign experiment, not the original campaign closure | Do not treat it as the campaign implementation |
 | VU1 programs: `halo-ps2/engine/src/vu1/world.vsm`, `bsp.vsm`, `model.vsm` | Adapt in its dedicated fork | DVP assembler; gameplay must not own VU state | `world.vsm` assembly matched across environments; VU execution is untested |
