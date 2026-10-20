@@ -493,6 +493,7 @@ int main(void)
     if (strcmp(play_fp_path(), "weapons\\needler\\needler") != 0 || !primary_shot ||
         primary_shot->maximum_range != 20.0f || primary_shot->timer_upper_bound != 0.75f ||
         primary_shot->timer_lower_bound != 0.75f || primary_shot->projectile_flags != 0x0bu ||
+        primary_shot->attached_damage_flags != 0 ||
         primary_shot->detonation_timer_starts != 2 ||
         primary_shot->attached_damage_minimum != 10.0f ||
         primary_shot->attached_damage_lower != 10.0f ||
@@ -524,6 +525,11 @@ int main(void)
         primary_shot->water_gravity_scale != 0.4f ||
         primary_shot->water_damage_range_lower_bound != 0.0f ||
         primary_shot->water_damage_range_upper_bound != 10.0f) return 76;
+    for (i = 0; i < play_fp_count() &&
+         strcmp(play_fp_path(), "weapons\\pistol\\pistol") != 0; i++) play_fp_cycle();
+    primary_shot = play_fp_trigger_shot(0);
+    if (strcmp(play_fp_path(), "weapons\\pistol\\pistol") != 0 || !primary_shot ||
+        primary_shot->damage_flags != 0x2u) return 77;
     puts("selected TRG1/PRJ2 lifecycle/MAG2/WMD1/FEF1 traces and CE charge/release verified");
     return 0;
 }

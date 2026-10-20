@@ -29,6 +29,7 @@ typedef struct {
     int16_t object_index, node_index, damage_part, region_index, resistance_index;
     int16_t body_material_type, shield_material_type;
     uint8_t material_types_valid;
+    uint16_t damage_flags;
     float damage, body_modifier, shield_modifier;
 } shot_impact_event;
 
@@ -66,6 +67,8 @@ typedef struct {
     float water_damage_range_lower_bound;
     float water_damage_range_upper_bound;
     uint32_t projectile_flags;
+    uint16_t damage_flags;
+    uint16_t attached_damage_flags;
     int16_t detonation_timer_starts;
     float attached_damage_minimum;
     float attached_damage_lower;

@@ -28,7 +28,7 @@ from halo2ps2.scenconv import (  # noqa: E402
 )
 from halo_random_directions import direction_table  # noqa: E402
 
-STAMP = "30"
+STAMP = "33"
 BUDGET = 6815744  # resident_gameplay in config/memory-budget.json
 OUT = ROOT / "build/play-objects"
 MAPS = ROOT / "data/retail/weapon-audit-maps"
@@ -416,10 +416,11 @@ def projectiles(paths: list[str]) -> list[dict]:
                 "deceleration_end": 0.0, "range": 0.0, "gravity": 0.0,
                 "timer_upper_bound": 0.0, "minimum_velocity": 0.0,
                 "maximum_damage_distance": 0.0,
-                "projectile_flags": 0, "detonation_timer_starts": 0, "timer_lower_bound": 0.0,
+                "projectile_flags": 0, "damage_flags": 0,
+                "detonation_timer_starts": 0, "timer_lower_bound": 0.0,
                 "attached_damage_minimum": 0.0, "attached_damage_lower": 0.0,
                 "attached_damage_upper": 0.0, "attached_damage_material_21": 0.0,
-                "attached_damage_material_22": 0.0,
+                "attached_damage_material_22": 0.0, "attached_damage_flags": 0,
                 "water_gravity_scale": 0.0, "water_damage_range_lower_bound": 0.0,
                 "water_damage_range_upper_bound": 0.0,
                 "guided_angular_velocity": 0.0,
@@ -495,20 +496,25 @@ def projectiles(paths: list[str]) -> list[dict]:
                         "<5f", response_at + 40)
             damage_id = region.u("<I", base + 180)[0]
             minimum = lower = upper = material_21 = material_22 = 0.0
+            damage_flags = 0
             material_modifiers = (0.0,) * PROJECTILE_MATERIALS
             damage = region.entry(damage_id)
             if damage is not None:
-                minimum, lower, upper = region.u("<3f", region.block(damage) + 464)
-                material_modifiers = region.u("<33f", region.block(damage) + 512)
-                material_21 = region.u("<f", region.block(damage) + 512 + 21 * 4)[0]
-                material_22 = region.u("<f", region.block(damage) + 512 + 22 * 4)[0]
+                damage_base = region.block(damage)
+                damage_flags = region.u("<I", damage_base + 456)[0]
+                minimum, lower, upper = region.u("<3f", damage_base + 464)
+                material_modifiers = region.u("<33f", damage_base + 512)
+                material_21 = region.u("<f", damage_base + 512 + 21 * 4)[0]
+                material_22 = region.u("<f", damage_base + 512 + 22 * 4)[0]
             attached_damage_id = region.u("<I", base + 164)[0]
             attached_damage = region.entry(attached_damage_id)
             attached_minimum = attached_lower = attached_upper = 0.0
             attached_material_21 = attached_material_22 = 0.0
+            attached_damage_flags = 0
             attached_material_modifiers = (0.0,) * PROJECTILE_MATERIALS
             if attached_damage is not None and attached_damage.group == "jpt!":
                 attached_base = region.block(attached_damage)
+                attached_damage_flags = region.u("<I", attached_base + 456)[0]
                 attached_minimum, attached_lower, attached_upper = region.u("<3f", attached_base + 464)
                 attached_material_modifiers = region.u("<33f", attached_base + 512)
                 attached_material_21 = region.u("<f", attached_base + 512 + 21 * 4)[0]
@@ -522,12 +528,14 @@ def projectiles(paths: list[str]) -> list[dict]:
                 "minimum_velocity": minimum_velocity,
                 "maximum_damage_distance": maximum_damage_distance,
                 "projectile_flags": projectile_flags,
+                "damage_flags": damage_flags,
                 "detonation_timer_starts": detonation_timer_starts,
                 "attached_damage_minimum": attached_minimum,
                 "attached_damage_lower": attached_lower,
                 "attached_damage_upper": attached_upper,
                 "attached_damage_material_21": attached_material_21,
                 "attached_damage_material_22": attached_material_22,
+                "attached_damage_flags": attached_damage_flags,
                 "water_gravity_scale": water_gravity_scale,
                 "water_damage_range_lower_bound": water_damage_lower,
                 "water_damage_range_upper_bound": water_damage_upper,
@@ -649,10 +657,11 @@ def _empty_projectile(pellets: int) -> dict:
         "deceleration_end": 0.0, "range": 0.0, "gravity": 0.0,
         "timer_upper_bound": 0.0, "minimum_velocity": 0.0,
         "maximum_damage_distance": 0.0,
-        "projectile_flags": 0, "detonation_timer_starts": 0, "timer_lower_bound": 0.0,
+        "projectile_flags": 0, "damage_flags": 0,
+        "detonation_timer_starts": 0, "timer_lower_bound": 0.0,
         "attached_damage_minimum": 0.0, "attached_damage_lower": 0.0,
         "attached_damage_upper": 0.0, "attached_damage_material_21": 0.0,
-        "attached_damage_material_22": 0.0,
+        "attached_damage_material_22": 0.0, "attached_damage_flags": 0,
         "water_gravity_scale": 0.0, "water_damage_range_lower_bound": 0.0,
         "water_damage_range_upper_bound": 0.0, "guided_angular_velocity": 0.0,
         "damage_minimum": 0.0, "damage_lower": 0.0, "damage_upper": 0.0,
@@ -723,20 +732,25 @@ def _projectile_record(region: Region, projectile_id: int, pellets: int) -> dict
              potential_velocity_lower[index], potential_velocity_upper[index]) = region.u("<5f", response_at + 40)
     damage_id = region.u("<I", base + 180)[0]
     minimum = lower = upper = material_21 = material_22 = 0.0
+    damage_flags = 0
     material_modifiers = (0.0,) * PROJECTILE_MATERIALS
     damage = region.entry(damage_id)
     if damage is not None:
-        minimum, lower, upper = region.u("<3f", region.block(damage) + 464)
-        material_modifiers = region.u("<33f", region.block(damage) + 512)
-        material_21 = region.u("<f", region.block(damage) + 512 + 21 * 4)[0]
-        material_22 = region.u("<f", region.block(damage) + 512 + 22 * 4)[0]
+        damage_base = region.block(damage)
+        damage_flags = region.u("<I", damage_base + 456)[0]
+        minimum, lower, upper = region.u("<3f", damage_base + 464)
+        material_modifiers = region.u("<33f", damage_base + 512)
+        material_21 = region.u("<f", damage_base + 512 + 21 * 4)[0]
+        material_22 = region.u("<f", damage_base + 512 + 22 * 4)[0]
     attached_damage_id = region.u("<I", base + 164)[0]
     attached_damage = region.entry(attached_damage_id)
     attached_minimum = attached_lower = attached_upper = 0.0
     attached_material_21 = attached_material_22 = 0.0
+    attached_damage_flags = 0
     attached_material_modifiers = (0.0,) * PROJECTILE_MATERIALS
     if attached_damage is not None and attached_damage.group == "jpt!":
         attached_base = region.block(attached_damage)
+        attached_damage_flags = region.u("<I", attached_base + 456)[0]
         attached_minimum, attached_lower, attached_upper = region.u("<3f", attached_base + 464)
         attached_material_modifiers = region.u("<33f", attached_base + 512)
         attached_material_21 = region.u("<f", attached_base + 512 + 21 * 4)[0]
@@ -749,12 +763,14 @@ def _projectile_record(region: Region, projectile_id: int, pellets: int) -> dict
         "minimum_velocity": minimum_velocity,
         "maximum_damage_distance": maximum_damage_distance,
         "projectile_flags": projectile_flags,
+        "damage_flags": damage_flags,
         "detonation_timer_starts": detonation_timer_starts,
         "attached_damage_minimum": attached_minimum,
         "attached_damage_lower": attached_lower,
         "attached_damage_upper": attached_upper,
         "attached_damage_material_21": attached_material_21,
         "attached_damage_material_22": attached_material_22,
+        "attached_damage_flags": attached_damage_flags,
         "damage_material_modifiers": material_modifiers,
         "attached_damage_material_modifiers": attached_material_modifiers,
         "water_gravity_scale": water_gravity_scale,
@@ -845,9 +861,12 @@ def attach_ammo(blob: bytes) -> bytes:
             shot["velocity"], shot["final_velocity"], shot["deceleration_start"],
             shot["deceleration_end"], shot["range"], shot["gravity"],
             shot["damage_minimum"], shot["damage_lower"], shot["damage_upper"], shot["response"],
-            shot["has"], shot["pellets"], 0, shot["damage_material_21"], shot["damage_material_22"],
+            shot["has"], shot["pellets"],
+            ((shot["attached_damage_flags"] >> 1) & 1) |
+            ((shot["attached_damage_flags"] >> 10) & 2),
+            shot["damage_material_21"], shot["damage_material_22"],
             shot["timer_upper_bound"], shot["minimum_velocity"], shot["maximum_damage_distance"],
-            shot["projectile_flags"], shot["detonation_timer_starts"], 0,
+            shot["projectile_flags"], shot["detonation_timer_starts"], shot["damage_flags"] & 0xFFFF,
             shot["timer_lower_bound"], shot["attached_damage_minimum"],
             shot["attached_damage_lower"], shot["attached_damage_upper"],
             shot["attached_damage_material_21"], shot["attached_damage_material_22"],
@@ -890,9 +909,12 @@ def attach_ammo(blob: bytes) -> bytes:
                 shot["velocity"], shot["final_velocity"], shot["deceleration_start"],
                 shot["deceleration_end"], shot["range"], shot["gravity"],
                 shot["damage_minimum"], shot["damage_lower"], shot["damage_upper"], shot["response"],
-                shot["has"], shot["pellets"], 0, shot["damage_material_21"], shot["damage_material_22"],
+                shot["has"], shot["pellets"],
+                ((shot["attached_damage_flags"] >> 1) & 1) |
+                ((shot["attached_damage_flags"] >> 10) & 2),
+                shot["damage_material_21"], shot["damage_material_22"],
                 shot["timer_upper_bound"], shot["minimum_velocity"], shot["maximum_damage_distance"],
-                shot["projectile_flags"], shot["detonation_timer_starts"], 0,
+                shot["projectile_flags"], shot["detonation_timer_starts"], shot["damage_flags"] & 0xFFFF,
                 shot["timer_lower_bound"], shot["attached_damage_minimum"],
                 shot["attached_damage_lower"], shot["attached_damage_upper"],
                 shot["attached_damage_material_21"], shot["attached_damage_material_22"],

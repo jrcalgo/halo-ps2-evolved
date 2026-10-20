@@ -340,7 +340,8 @@ int combat_targets_apply_impact(combat_target_registry *registry,
                 vital_hurt_material_region_profile(&target->health, impact->damage,
                     vital_part, target->profile, impact->resistance_index,
                     impact->region_index, impact->body_modifier,
-                    impact->shield_modifier, headshot);
+                    impact->shield_modifier,
+                    headshot || (impact->damage_flags & (1u << 1)) != 0);
             return 1;
         }
     }

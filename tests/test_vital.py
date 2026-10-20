@@ -30,10 +30,11 @@ def cyborg(path):
     materials = []
     for i in range(count):
         raw = region[address - index.base + i * 0x48:address - index.base + (i + 1) * 0x48]
+        flags, = struct.unpack_from("<I", raw, 0x20)
         material_type, = struct.unpack_from("<h", raw, 0x24)
         leak, shield_multiplier = struct.unpack_from("<ff", raw, 0x28)
         body_multiplier, = struct.unpack_from("<f", raw, 0x3C)
-        materials.append((material_type, leak, shield_multiplier, body_multiplier))
+        materials.append((flags, material_type, leak, shield_multiplier, body_multiplier))
     region_count, region_address = struct.unpack_from("<II", region, data + 0x240)
     region_thresholds = [struct.unpack_from("<f", region,
         region_address - index.base + i * 0x54 + 0x28)[0] for i in range(region_count)]
@@ -64,9 +65,10 @@ class Vital(unittest.TestCase):
         self.assertEqual(indirect_material, 1)
         self.assertEqual(shield_material, 22)
         self.assertEqual(region_thresholds, [0.0])
-        self.assertEqual(materials[1], (21, 0.0, 1.0, 1.0))
-        self.assertEqual(materials[2], (21, 0.0, 1.0, struct.unpack("<f", struct.pack("<I", 0x3F4CCCCD))[0]))
-        self.assertTrue(all(item[1] == 0.0 and item[2] == 1.0 for item in materials))
+        self.assertEqual(materials[0][0] & 1, 1, "the source cyborg head resistance material carries CE's head flag")
+        self.assertEqual(materials[1], (0, 21, 0.0, 1.0, 1.0))
+        self.assertEqual(materials[2], (0, 21, 0.0, 1.0, struct.unpack("<f", struct.pack("<I", 0x3F4CCCCD))[0]))
+        self.assertTrue(all(item[2] == 0.0 and item[3] == 1.0 for item in materials))
         self.assertEqual(mods[r"weapons\pistol\bullet"], (0x2, 1.5, 1.0))
         self.assertEqual(mods[r"weapons\assault rifle\bullet"], (0, 1.0, 1.0))
         with tempfile.TemporaryDirectory() as temp:

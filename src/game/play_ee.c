@@ -688,8 +688,13 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
                     int object_index = impact->object_index;
                     combat_target *target = play_combat_target_find(object_index);
                     int applied;
+                    /* CE permits instant headshot kills on non-player units
+                     * in single-player. This runtime has no game-engine
+                     * multiplayer state, so do not classify its scenario
+                     * player biped as an AI headshot target. */
                     applied = combat_targets_apply_impact(&s_combat_targets,
-                        impact, VITAL_BODY, 0);
+                        impact, impact->damage_part == 2 ? VITAL_HEAD : VITAL_BODY,
+                        object_index != s_live_actor_index);
                     if (applied) object_hit = 1;
                     if (target && applied && object_index == s_live_actor_index)
                         s_live_actor_vital = target->health;

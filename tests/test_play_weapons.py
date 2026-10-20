@@ -368,6 +368,8 @@ class PlayWeapons(unittest.TestCase):
         from play_weapons import PROJ, trigger_projectiles
         trigger_shots = trigger_projectiles(list(ORDER))
         self.assertEqual(len(trigger_shots), 23)
+        self.assertEqual(trigger_shots[ORDER.index(r"weapons\pistol\pistol")][0]["damage_flags"], 0x2)
+        self.assertEqual(trigger_shots[ORDER.index(r"weapons\assault rifle\assault rifle")][0]["damage_flags"], 0)
         for weapon_index, pair in enumerate(trigger_shots):
             for trigger_index, shot in enumerate(pair):
                 offset = prj2_at + 8 + (weapon_index * 2 + trigger_index) * PROJ.size
@@ -375,9 +377,13 @@ class PlayWeapons(unittest.TestCase):
                     shot["velocity"], shot["final_velocity"], shot["deceleration_start"],
                     shot["deceleration_end"], shot["range"], shot["gravity"],
                     shot["damage_minimum"], shot["damage_lower"], shot["damage_upper"], shot["response"],
-                    shot["has"], shot["pellets"], 0, shot["damage_material_21"], shot["damage_material_22"],
+                    shot["has"], shot["pellets"],
+                    ((shot["attached_damage_flags"] >> 1) & 1) |
+                    ((shot["attached_damage_flags"] >> 10) & 2),
+                    shot["damage_material_21"], shot["damage_material_22"],
                     shot["timer_upper_bound"], shot["minimum_velocity"], shot["maximum_damage_distance"],
-                    shot["projectile_flags"], shot["detonation_timer_starts"], 0,
+                    shot["projectile_flags"], shot["detonation_timer_starts"],
+                    shot["damage_flags"] & 0xFFFF,
                     shot["timer_lower_bound"], shot["attached_damage_minimum"],
                     shot["attached_damage_lower"], shot["attached_damage_upper"],
                     shot["attached_damage_material_21"], shot["attached_damage_material_22"],

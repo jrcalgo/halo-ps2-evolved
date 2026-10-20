@@ -107,6 +107,21 @@ int main(void)
     vital_hurt_material_region_profile(&v, 10.0f, VITAL_BODY, &profile,
         0, 0, 1.0f, 1.0f, 0);
     if (v.region_damage[0] != 34) return 2;
+    /* CE headshots require both the projectile damage flag and the selected
+     * resistance material's head bit; node damage-part metadata alone is not
+     * sufficient once a material profile is present. */
+    vital_init(&v);
+    v.shield = 0.0f;
+    profile.material[0].flags = 1u;
+    vital_hurt_material_region_profile(&v, 5.0f, VITAL_BODY, &profile,
+        0, -1, 1.0f, 1.0f, 1);
+    if (!v.dead || v.body >= 0.0f) return 3;
+    vital_init(&v);
+    v.shield = 0.0f;
+    profile.material[0].flags = 0;
+    vital_hurt_material_region_profile(&v, 5.0f, VITAL_HEAD, &profile,
+        0, -1, 1.0f, 1.0f, 1);
+    if (v.dead || v.body >= 1.0f) return 4;
     printf("region_damage byte=%u destroyed=%u\n", v.region_damage[0],
         (unsigned)(v.regions_destroyed_flags & 1u));
     return 0;

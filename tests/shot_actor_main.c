@@ -85,10 +85,12 @@ int main(void)
         shot_def penetrate_def = SHOT_PISTOL;
         shot penetrating;
         penetrate_def.response[22] = 3;
+        penetrate_def.damage_flags = 2;
         shot_spawn(&penetrating, origin, direction, &penetrate_def);
         shot_tick(&penetrating, &penetrate_def, &scene, &seed);
         if (penetrating.impact_count != 2 || penetrating.impacts[0].object_index != 13 ||
             penetrating.impacts[1].object_index != 14 ||
+            penetrating.impacts[0].damage_flags != 2 || penetrating.impacts[1].damage_flags != 2 ||
             penetrating.impacts[0].damage <= 0.0f || penetrating.impacts[1].damage <= 0.0f)
             return 5;
         printf("actor penetration impacts=%u objects=%d,%d\n", penetrating.impact_count,

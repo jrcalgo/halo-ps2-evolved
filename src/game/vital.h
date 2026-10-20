@@ -36,6 +36,7 @@ typedef struct {
 
 typedef struct {
     int16_t material_type;
+    uint16_t flags;
     float shield_leak_fraction;
     float shield_damage_multiplier;
     float body_damage_multiplier;

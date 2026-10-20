@@ -256,6 +256,7 @@ def _cyborg_vitality(data) -> bytes:
         region_thresholds.append(threshold)
     for index in range(material_count):
         item = material_base + index * 0x48
+        material_flags, = st.unpack_from("<I", region, item + 0x20)
         material_type = st.unpack_from("<h", region, item + 0x24)[0]
         shield_leak, shield_multiplier = st.unpack_from("<2f", region, item + 0x28)
         body_multiplier = st.unpack_from("<f", region, item + 0x3C)[0]
@@ -263,10 +264,11 @@ def _cyborg_vitality(data) -> bytes:
             material_type = -1
         if not all(math.isfinite(value) for value in (shield_leak, shield_multiplier, body_multiplier)):
             raise ValueError(f"player cyborg damage material {index} has invalid values")
-        records += st.pack("<h3f", material_type, shield_leak, shield_multiplier, body_multiplier)
-    # VIT1 v2: v1 profile fields, region count/reserved, source-ordered region
-    # damage thresholds, then source-ordered damage-resistance materials.
-    return (st.pack("<4sHHhh5fHH", b"VIT1", 2, material_count, indirect_index,
+        records += st.pack("<hH3f", material_type, material_flags & 0xFFFF,
+                           shield_leak, shield_multiplier, body_multiplier)
+    # VIT1 v3 carries damage_resistance_material flags alongside the source
+    # material type and multipliers (bit 0 marks headshot material in CE).
+    return (st.pack("<4sHHhh5fHH", b"VIT1", 3, material_count, indirect_index,
                     shield_material_type, *profile, region_count, 0) +
             st.pack("<" + "f" * region_count, *region_thresholds) + bytes(records))
 

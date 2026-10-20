@@ -63,6 +63,7 @@ int main(int argc, char **argv)
         profile.indirect_material_index != 1 || profile.material_count != 4 ||
         profile.region_count != 1 || profile.region_damage_threshold[0] != 0.0f ||
         profile.material[1].material_type != 21 ||
+        !(profile.material[0].flags & 1u) ||
         profile.material[1].shield_leak_fraction != 0.0f ||
         profile.material[1].body_damage_multiplier != 1.0f ||
         profile.material[2].material_type != 21 ||

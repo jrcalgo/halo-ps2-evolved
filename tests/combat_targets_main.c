@@ -190,6 +190,21 @@ int main(void)
         combat_targets_add_pose(&registry, matrices, UINT16_MAX, &objects[1], &defs[1],
             &models[1], &poses[1], &resolved[1]) != COMBAT_TARGET_REJECT_DEFINITION) return 11;
 
+    /* The source headshot bit is coupled to the target material's head flag,
+     * not just the collision node's damage-part number. */
+    registry.target[0].health.shield = 0.0f;
+    profiles[0].material[0].flags = 1u;
+    {
+        shot_impact_event headshot = {0};
+        headshot.object_index = 4; headshot.damage = 10.0f;
+        headshot.resistance_index = 0; headshot.damage_flags = 1u << 1;
+        headshot.body_material_type = 21; headshot.shield_material_type = 22;
+        headshot.material_types_valid = 1; headshot.body_modifier = 1.0f;
+        headshot.shield_modifier = 1.0f;
+        if (combat_targets_apply_impact(&registry, &headshot, VITAL_BODY, 0) != 1 ||
+            !registry.target[0].health.dead) return 14;
+    }
+
     /* Exercise the real object_table -> objects_pose bridge, then move the
      * posed root and prove vitality survives the rebuilt pose cache. */
     memset(&table, 0, sizeof table); table.count = 1; table.obj[0] = objects[0];

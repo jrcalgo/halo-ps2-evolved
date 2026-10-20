@@ -316,7 +316,7 @@ int collpack_vital_profile(const uint8_t *payload, size_t length,
 {
     uint16_t version, material_count, region_count, reserved;
     int16_t indirect_index, shield_type, body_type = -1;
-    uint32_t index, offset;
+    uint32_t index, offset, material_stride;
     float maximum_body, maximum_shield, minimum_stun, stun_seconds, recharge_step;
     float shield_leak, shield_multiplier, body_multiplier;
     const uint8_t *record;
@@ -329,9 +329,11 @@ int collpack_vital_profile(const uint8_t *payload, size_t length,
     memcpy(&region_count, payload + 32, 2);
     memcpy(&reserved, payload + 34, 2);
     offset = 36u + (uint32_t)region_count * 4u;
-    if (version != 2 || material_count == 0 || material_count > 40 ||
+    if ((version != 2 && version != 3) || material_count == 0 || material_count > 40 ||
         region_count > VITAL_DAMAGE_REGION_MAX || reserved != 0 || indirect_index < 0 ||
-        indirect_index >= material_count || length != (size_t)offset + (size_t)material_count * 14u ||
+        indirect_index >= material_count) return -1;
+    material_stride = version == 3 ? 16u : 14u;
+    if (length != (size_t)offset + (size_t)material_count * material_stride ||
         shield_type < -1 || shield_type >= COLL_RUNTIME_MATERIAL_TYPES) return -1;
     memcpy(&maximum_body, payload + 12, 4);
     memcpy(&maximum_shield, payload + 16, 4);
@@ -354,11 +356,11 @@ int collpack_vital_profile(const uint8_t *payload, size_t length,
     }
     for (index = 0; index < material_count; index++) {
         int16_t type;
-        record = payload + offset + index * 14u;
+        record = payload + offset + index * material_stride;
         memcpy(&type, record, 2);
-        memcpy(&shield_leak, record + 2, 4);
-        memcpy(&shield_multiplier, record + 6, 4);
-        memcpy(&body_multiplier, record + 10, 4);
+        memcpy(&shield_leak, record + (version == 3 ? 4 : 2), 4);
+        memcpy(&shield_multiplier, record + (version == 3 ? 8 : 6), 4);
+        memcpy(&body_multiplier, record + (version == 3 ? 12 : 10), 4);
         if (type < -1 || type >= COLL_RUNTIME_MATERIAL_TYPES ||
             !finite_float(shield_leak) || !finite_float(shield_multiplier) ||
             !finite_float(body_multiplier) || shield_leak < 0.0f || shield_leak > 1.0f ||
@@ -366,10 +368,10 @@ int collpack_vital_profile(const uint8_t *payload, size_t length,
         if (index == (uint32_t)indirect_index) body_type = type;
     }
     if (body_type < 0) return -1;
-    record = payload + offset + (uint32_t)indirect_index * 14u;
-    memcpy(&shield_leak, record + 2, 4);
-    memcpy(&shield_multiplier, record + 6, 4);
-    memcpy(&body_multiplier, record + 10, 4);
+    record = payload + offset + (uint32_t)indirect_index * material_stride;
+    memcpy(&shield_leak, record + (version == 3 ? 4 : 2), 4);
+    memcpy(&shield_multiplier, record + (version == 3 ? 8 : 6), 4);
+    memcpy(&body_multiplier, record + (version == 3 ? 12 : 10), 4);
     profile->maximum_body = maximum_body;
     profile->maximum_shield = maximum_shield;
     profile->shield_leak_fraction = shield_leak;
@@ -381,11 +383,13 @@ int collpack_vital_profile(const uint8_t *payload, size_t length,
     profile->indirect_material_index = indirect_index;
     profile->material_count = material_count;
     for (index = 0; index < material_count; index++) {
-        record = payload + offset + index * 14u;
+        record = payload + offset + index * material_stride;
         memcpy(&profile->material[index].material_type, record, 2);
-        memcpy(&profile->material[index].shield_leak_fraction, record + 2, 4);
-        memcpy(&profile->material[index].shield_damage_multiplier, record + 6, 4);
-        memcpy(&profile->material[index].body_damage_multiplier, record + 10, 4);
+        if (version == 3) memcpy(&profile->material[index].flags, record + 2, 2);
+        else profile->material[index].flags = 0;
+        memcpy(&profile->material[index].shield_leak_fraction, record + (version == 3 ? 4 : 2), 4);
+        memcpy(&profile->material[index].shield_damage_multiplier, record + (version == 3 ? 8 : 6), 4);
+        memcpy(&profile->material[index].body_damage_multiplier, record + (version == 3 ? 12 : 10), 4);
     }
     *body_material_type = body_type;
     *shield_material_type = shield_type;

@@ -85,7 +85,11 @@ void vital_hurt_material_region_profile(vital *v, float amount, int part,
      * a coarse body-part enum: CE selects this value from a collision material. */
     damage_amount = resistance_body_multiplier * total;
     actual = damage_amount / profile->maximum_body * body_material_modifier;
-    if (part == VITAL_HEAD && damage_amount > 0.0f && headshot) v->body = 0.0f;
+    if (damage_amount > 0.0f && headshot &&
+        ((material && (material->flags & 1u)) || (!material && part == VITAL_HEAD))) {
+        v->body = 0.0f;
+        v->dead = 1;
+    }
     if (damage_amount > 0.0f && region_index >= 0 &&
         profile->region_count <= VITAL_DAMAGE_REGION_MAX &&
         (unsigned)region_index < profile->region_count &&

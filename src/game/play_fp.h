@@ -38,7 +38,7 @@ typedef struct {
     uint8_t response[33];
     uint8_t has_projectile;
     uint8_t pellets;
-    uint8_t pad;
+    uint8_t attached_damage_flags; /* bit 0=headshot, bit 1=multiplayer headshot */
     float damage_material_modifier_21;
     float damage_material_modifier_22;
     float timer_upper_bound;
@@ -46,7 +46,7 @@ typedef struct {
     float maximum_damage_distance;
     uint32_t projectile_flags;
     int16_t detonation_timer_starts;
-    uint16_t timer_pad;
+    uint16_t damage_flags;
     float timer_lower_bound;
     float attached_damage_minimum;
     float attached_damage_lower;
@@ -139,6 +139,9 @@ static inline void play_fp_apply_proj(shot_def *def, const play_fp_proj *proj)
     def->maximum_damage_distance = proj->maximum_damage_distance;
     for (i = 0; i < 33; i++) def->response[i] = proj->response[i];
     def->projectile_flags = proj->projectile_flags;
+    def->damage_flags = proj->damage_flags;
+    def->attached_damage_flags = (uint16_t)((proj->attached_damage_flags & 1u) << 1) |
+        (uint16_t)((proj->attached_damage_flags & 2u) << 10);
     def->detonation_timer_starts = proj->detonation_timer_starts;
     def->timer_lower_bound = proj->timer_lower_bound;
     def->attached_damage_minimum = proj->attached_damage_minimum;
