@@ -14,6 +14,7 @@ import uuid
 from test_emulator import ROOT, OUTPUT, prepare, stop_previous, sha, save
 from test_probe_emulator import require_platform
 from emulator_window import windows, focus, capture, Input
+from qualify_grenade_smoke import parse_grenade_smoke
 
 
 # Inside the converted Blood Gulch bounds, with margin. Times are seconds at 30 fps.
@@ -602,19 +603,7 @@ def main():
                         "source_profile": "retail Blood Gulch shotgun tag: 12-round magazine, one shell per reload step",
                         "reference": "Halo CE Universal weapon magazine reload completion/chaining; PS2 gun state machine uses fixed-size state and no heap"}
                 if args.grenade_smoke:
-                    throws = re.findall(r"\[play\] grenade throw frag carried (\d+) slot (\d+) mode player eye (-?[0-9.]+) (-?[0-9.]+) (-?[0-9.]+) aim (-?[0-9.]+) (-?[0-9.]+) (-?[0-9.]+)", text)
-                    explosions = re.findall(r"\[play\] grenade explosion frag slot (\d+) target (actor|probe)(?: damage ([0-9.]+) distance ([0-9.]+) shield ([0-9.]+) body (-?[0-9.]+) dead (\d+)| outside ([0-9.]+))", text)
-                    if (not grenade_released or len(throws) != 1 or not explosions or
-                            float(throws[0][7]) >= 0.0 or
-                            any(row[1] != "actor" for row in explosions)):
-                        raise RuntimeError("EE grenade smoke did not throw from the collision player and detonate against the live scenario biped")
-                    result["grenade_smoke"] = {
-                        "throws": len(throws), "carried_after_throw": int(throws[0][0]),
-                        "slot": int(throws[0][1]), "throw_origin_eye": [float(v) for v in throws[0][2:5]],
-                        "throw_aim": [float(v) for v in throws[0][5:8]],
-                        "control": "collision-resolved player (mover_tick_map); freecam disabled",
-                        "explosions": len(explosions),
-                        "target": "live scenario biped collision/vitality state"}
+                    result["grenade_smoke"] = parse_grenade_smoke(text, grenade_released)
                 time.sleep(.5);capture(window,run/"visible-final.png")
                 focus(window);keyboard_shot=Input();keyboard_shot.key("F8",True);time.sleep(.1);keyboard_shot.key("F8",False);keyboard_shot.close()
                 status = "route-completed" if args.route else "freecam-completed" if args.freecam else "diagnostic-completed"
