@@ -325,34 +325,66 @@ int combat_targets_ray(const combat_target_registry *registry,
     return found;
 }
 
-int combat_targets_apply_projectile(combat_target_registry *registry,
-    uint16_t object_index, shot *projectile, int vital_part, int headshot,
-    float body_material_modifier, float shield_material_modifier)
+int combat_targets_apply_impact(combat_target_registry *registry,
+    const shot_impact_event *impact, int vital_part, int headshot)
 {
     unsigned i;
-    if (!registry || !projectile || !projectile->hit_object_this_tick) return 0;
+    if (!registry || !impact || impact->object_index < 0) return 0;
     for (i = 0; i < registry->count; i++) {
         combat_target *target = &registry->target[i];
-        if (target->object_index == object_index) {
+        if (target->object_index == (uint16_t)impact->object_index) {
             /* CE's damage path consumes the collision event even if vitality
              * is already zero; a corpse cannot replay that event next tick. */
-            projectile->hit_object_this_tick = 0;
             if (target->health.dead) return 1;
-            if (projectile->damage_material_types_valid &&
-                projectile->damage_body_material_type == target->body_damage_material_type &&
-                projectile->damage_shield_material_type == target->shield_damage_material_type) {
-                body_material_modifier = projectile->damage_body_modifier;
-                shield_material_modifier = projectile->damage_shield_modifier;
-            }
-            if (projectile->damage > 0.0f)
-                vital_hurt_material_region_profile(&target->health, projectile->damage,
-                    vital_part, target->profile, projectile->damage_resistance_index,
-                    projectile->hit_region_index, body_material_modifier,
-                    shield_material_modifier, headshot);
+            if (impact->damage > 0.0f)
+                vital_hurt_material_region_profile(&target->health, impact->damage,
+                    vital_part, target->profile, impact->resistance_index,
+                    impact->region_index, impact->body_modifier,
+                    impact->shield_modifier, headshot);
             return 1;
         }
     }
     return 0;
+}
+
+int combat_targets_apply_projectile(combat_target_registry *registry,
+    uint16_t object_index, shot *projectile, int vital_part, int headshot,
+    float body_material_modifier, float shield_material_modifier)
+{
+    shot_impact_event impact;
+    if (!registry || !projectile || !projectile->hit_object_this_tick) return 0;
+    memset(&impact, 0, sizeof impact);
+    impact.object_index = (int16_t)object_index;
+    impact.node_index = projectile->hit_node_index;
+    impact.damage_part = projectile->hit_damage_part;
+    impact.region_index = projectile->hit_region_index;
+    impact.resistance_index = projectile->damage_resistance_index;
+    impact.body_material_type = projectile->damage_body_material_type;
+    impact.shield_material_type = projectile->damage_shield_material_type;
+    impact.material_types_valid = projectile->damage_material_types_valid;
+    impact.damage = projectile->damage;
+    impact.body_modifier = body_material_modifier;
+    impact.shield_modifier = shield_material_modifier;
+    {
+        unsigned i;
+        for (i = 0; i < registry->count; i++) {
+            const combat_target *target = &registry->target[i];
+            if (target->object_index != object_index) continue;
+            if (impact.material_types_valid &&
+                impact.body_material_type == target->body_damage_material_type &&
+                impact.shield_material_type == target->shield_damage_material_type) {
+                impact.body_modifier = projectile->damage_body_modifier;
+                impact.shield_modifier = projectile->damage_shield_modifier;
+            } else {
+                impact.body_material_type = target->body_damage_material_type;
+                impact.shield_material_type = target->shield_damage_material_type;
+                impact.material_types_valid = 1;
+            }
+            break;
+        }
+    }
+    projectile->hit_object_this_tick = 0;
+    return combat_targets_apply_impact(registry, &impact, vital_part, headshot);
 }
 
 void combat_targets_tick(combat_target_registry *registry)

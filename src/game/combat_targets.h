@@ -97,6 +97,9 @@ int combat_targets_ray(const combat_target_registry *registry,
 int combat_targets_apply_projectile(combat_target_registry *registry,
     uint16_t object_index, shot *projectile, int vital_part, int headshot,
     float body_material_modifier, float shield_material_modifier);
+/* Apply one immutable per-impact event; caller owns event ordering. */
+int combat_targets_apply_impact(combat_target_registry *registry,
+    const shot_impact_event *impact, int vital_part, int headshot);
 
 void combat_targets_tick(combat_target_registry *registry);
 

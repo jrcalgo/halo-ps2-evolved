@@ -685,24 +685,11 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
                 unsigned impact_index;
                 for (impact_index = 0; impact_index < s_fly[slot].impact_count; impact_index++) {
                     const shot_impact_event *impact = &s_fly[slot].impacts[impact_index];
-                    shot attributed = s_fly[slot];
                     int object_index = impact->object_index;
                     combat_target *target = play_combat_target_find(object_index);
                     int applied;
-                    attributed.hit_object_this_tick = 1;
-                    attributed.hit_object_index = impact->object_index;
-                    attributed.hit_node_index = impact->node_index;
-                    attributed.hit_damage_part = impact->damage_part;
-                    attributed.hit_region_index = impact->region_index;
-                    attributed.damage_resistance_index = impact->resistance_index;
-                    attributed.damage_body_material_type = impact->body_material_type;
-                    attributed.damage_shield_material_type = impact->shield_material_type;
-                    attributed.damage_material_types_valid = impact->material_types_valid;
-                    attributed.damage = impact->damage;
-                    attributed.damage_body_modifier = impact->body_modifier;
-                    attributed.damage_shield_modifier = impact->shield_modifier;
-                    applied = combat_targets_apply_projectile(&s_combat_targets,
-                        (uint16_t)object_index, &attributed, VITAL_BODY, 0, 1.0f, 1.0f);
+                    applied = combat_targets_apply_impact(&s_combat_targets,
+                        impact, VITAL_BODY, 0);
                     if (applied) object_hit = 1;
                     if (target && applied && object_index == s_live_actor_index)
                         s_live_actor_vital = target->health;

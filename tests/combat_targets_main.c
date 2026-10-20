@@ -162,6 +162,24 @@ int main(void)
     if (combat_targets_apply_projectile(&registry, 9, &projectile, VITAL_BODY, 0, 1.0f, 1.0f) != 1 ||
         projectile.hit_object_this_tick || registry.target[1].health.shield != 0.9f ||
         registry.target[0].health.shield != 1.0f) return 5;
+    {
+        shot_impact_event impacts[2] = {{0}};
+        impacts[0].object_index = 4; impacts[0].resistance_index = 0;
+        impacts[0].region_index = 0; impacts[0].body_material_type = 21;
+        impacts[0].shield_material_type = 22; impacts[0].material_types_valid = 1;
+        impacts[0].damage = 10.0f; impacts[0].body_modifier = 1.0f;
+        impacts[0].shield_modifier = 1.0f;
+        impacts[1] = impacts[0]; impacts[1].object_index = 9;
+        int first_applied = combat_targets_apply_impact(&registry, &impacts[0], VITAL_BODY, 0);
+        int second_applied = combat_targets_apply_impact(&registry, &impacts[1], VITAL_BODY, 0);
+        if (first_applied != 1 || second_applied != 1 ||
+            registry.target[0].health.shield < 0.79f || registry.target[0].health.shield > 0.81f ||
+            registry.target[1].health.shield < 0.79f || registry.target[1].health.shield > 0.81f) {
+            fprintf(stderr, "impact dispatch %d/%d shields %.6f %.6f\n", first_applied,
+                second_applied, registry.target[0].health.shield, registry.target[1].health.shield);
+            return 13;
+        }
+    }
     registry.target[1].health.dead = 1;
     projectile.hit_object_this_tick = 1;
     if (combat_targets_apply_projectile(&registry, 9, &projectile, VITAL_BODY, 0, 1.0f, 1.0f) != 1 ||
