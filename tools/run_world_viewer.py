@@ -76,6 +76,9 @@ def main():
         args.variant = "play"
         args.objects = True
         args.frames = 300
+        # The player wrapper starts at the retail map spawn, not the viewer
+        # camera. Place chiefcam's test biped relative to that same start.
+        args.camera = [98.49, -157.64, 3.10, 76.1, 0.0]
     if args.grenade_smoke:
         if args.freecam or args.freecam_toggle:
             raise RuntimeError("--grenade-smoke must run with player collision; freecam options are not allowed")
@@ -170,6 +173,10 @@ def main():
         lines.append("cache_route 1")
     if args.objects:
         lines += ["obj bloodgulch.obj.hp2", "objects 1", "sky3d 1", "skyfog 1", "objanim 0"]
+    if args.actor_ray_smoke:
+        # The engine spawns the scenario's declared player biped three units
+        # ahead of the start camera. This smoke must hit that live object.
+        lines.append("chiefcam 1")
     if args.motion:
         keys = [line.strip() for line in args.motion.read_text().splitlines() if line.strip()]
         if not keys or len(keys) > 24:
@@ -434,19 +441,27 @@ def main():
                         "target": "retail cyborg collision mesh in a fixed bind-pose probe placement; not a live actor"}
                 if args.actor_ray_smoke:
                     fires = re.findall(r"\[play\] fire SHOTGUN (?:trigger \d+|\d+) pellets (\d+)", text)
+                    live_actors = re.findall(r"\[play\] live-actor object (\d+) def (\d+) model-tag ([0-9a-fA-F]+) nodes (\d+)", text)
+                    actor_damage = re.findall(r"\[play\] actor damage object (\d+) def (\d+) amount ([0-9.]+) node (-?\d+) part (-?\d+) resistance (-?\d+) shield ([0-9.]+) body (-?[0-9.]+) dead (\d+)", text)
                     windows_cost = re.findall(r"\[play\] shot-cost samples (\d+) avg-ms ([0-9.]+) max-shot-ms ([0-9.]+) max-tick-ms ([0-9.]+) max-calls-per-tick (\d+)", text)
-                    if not fires or int(fires[0]) != 15 or not windows_cost or max(int(row[4]) for row in windows_cost) < 15:
-                        raise RuntimeError("Shotgun actor-ray smoke did not exercise all 15 pellets in one simulation tick")
+                    if (not fires or int(fires[0]) != 15 or not live_actors or not actor_damage or
+                            not windows_cost or max(int(row[4]) for row in windows_cost) < 15):
+                        raise RuntimeError("Shotgun actor-ray smoke did not damage the live scenario biped with all 15 pellets in one simulation tick")
                     if int(done[2]) != 0:
                         raise RuntimeError("Shotgun actor-ray smoke dropped emulator frames")
                     result["actor_ray_smoke"] = {
                         "weapon": "SHOTGUN", "pellets": int(fires[0]),
+                        "live_actor": {"object_index": int(live_actors[0][0]), "definition_index": int(live_actors[0][1]),
+                                       "model_tag": int(live_actors[0][2], 16), "node_count": int(live_actors[0][3])},
+                        "actor_damage_events": len(actor_damage),
+                        "last_actor_hit": {"node": int(actor_damage[-1][3]), "damage_part": int(actor_damage[-1][4]),
+                                           "resistance_index": int(actor_damage[-1][5]), "dead": actor_damage[-1][8] == "1"},
                         "shot_tick_cost_windows": [
                             {"samples": int(row[0]), "avg_ms": float(row[1]),
                              "max_shot_ms": float(row[2]), "max_tick_ms": float(row[3]),
                              "max_calls_per_tick": int(row[4])}
                             for row in windows_cost],
-                        "target": "retail cyborg mesh at fixed bind pose; emulator counter is not physical PS2 timing"}
+                        "target": "scenario player biped at live animated pose; target-specific vitality; emulator counter is not physical PS2 timing"}
                 if args.grenade_smoke:
                     throws = re.findall(r"\[play\] grenade throw frag carried (\d+) slot (\d+) mode player eye (-?[0-9.]+) (-?[0-9.]+) (-?[0-9.]+) aim (-?[0-9.]+) (-?[0-9.]+) (-?[0-9.]+)", text)
                     explosions = re.findall(r"\[play\] grenade explosion frag slot (\d+)(?: damage ([0-9.]+) distance ([0-9.]+) shield ([0-9.]+) body (-?[0-9.]+) dead (\d+)| outside ([0-9.]+))", text)

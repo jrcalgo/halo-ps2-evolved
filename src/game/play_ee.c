@@ -11,6 +11,7 @@
 #include "core/mat.h"
 #include "sim/objects.h"
 #include "sim/skeleton.h"
+#include "world/model.h"
 #include "platform/profiler.h"
 #include "platform/timer.h"
 #include "render/bsp_render.h"
@@ -80,6 +81,14 @@ static unsigned s_shot_tick_max_calls;
 static object_table_t *s_engine_objects;
 static const object_world_t *s_engine_object_world;
 static unsigned s_engine_object_tick;
+static object_nodes_t s_live_actor_pose;
+static float s_live_actor_node_to_world[64][12];
+static vital s_live_actor_vital;
+static int s_live_actor_vital_ready;
+static int s_live_actor_index = -1;
+static int s_live_actor_def = -1;
+static float s_live_actor_center[3];
+static unsigned s_live_actor_pose_tick;
 
 static int play_actor_bind_pose(void)
 {
@@ -140,6 +149,72 @@ void __wrap_objects_tick(object_table_t *table, const object_world_t *world)
     s_engine_objects = table;
     s_engine_object_world = world;
     s_engine_object_tick++;
+}
+
+/* The current actor pack is deliberately cyborg-only. Bind it only to the
+ * scenario's declared player biped after confirming its model tag and node
+ * count; never silently collide arbitrary bipeds against this mesh. */
+static int play_pose_live_player_actor(void)
+{
+    scen_player player;
+    unsigned i, node, row, column, placed_count, skipped_count;
+    if (!s_engine_objects || !s_engine_object_world || !s_engine_object_world->scen ||
+        !s_engine_object_world->models || s_engine_object_tick == 0) return 0;
+    if (s_live_actor_pose_tick == s_engine_object_tick) return s_live_actor_index >= 0;
+    s_live_actor_pose_tick = s_engine_object_tick;
+    s_live_actor_index = -1;
+    player = scen_get_player(s_engine_object_world->scen);
+    if (player.biped_def == 0) return 0;
+    skipped_count = s_engine_objects->skipped_no_model + s_engine_objects->skipped_hidden +
+        s_engine_objects->skipped_cap + s_engine_objects->skipped_other_bsp;
+    if (skipped_count > s_engine_object_world->scen->placement_count) return 0;
+    placed_count = s_engine_object_world->scen->placement_count - skipped_count;
+    for (i = placed_count;
+         i < s_engine_objects->count; i++) {
+        object_t *object = &s_engine_objects->obj[i];
+        scen_def definition;
+        model_info model;
+        unsigned count;
+        if (object->type != SCEN_BIPED || object->def < 0 ||
+            (uint32_t)object->def + 1u != player.biped_def || object->model < 0) continue;
+        definition = scen_get_def(s_engine_object_world->scen, (uint32_t)object->def);
+        model = model_get(s_engine_object_world->models, (uint32_t)object->model);
+        if (model.tag_id == 0 || model.tag_id != definition.model_tag ||
+            model.node_count != s_actor_collision.node_count) continue;
+        /* The actor-ray diagnostic uses chiefcam's appended scenario-player
+         * object. Keep it in the clear one unit in front of the collision
+         * player, before the spawn-adjacent BSP lip; ordinary placed actors
+         * are excluded by the counted placed-object lower bound above. */
+        object->pos[0] = s_body.pos[0] + cosf(s_yaw) * 1.0f;
+        object->pos[1] = s_body.pos[1] + sinf(s_yaw) * 1.0f;
+        object->pos[2] = s_body.pos[2];
+        object->root.m[3][0] = object->pos[0];
+        object->root.m[3][1] = object->pos[1];
+        object->root.m[3][2] = object->pos[2];
+        count = objects_pose(object, s_engine_object_world, &s_live_actor_pose);
+        if (count != s_actor_collision.node_count || count > 64) continue;
+        for (node = 0; node < count; node++) {
+            for (row = 0; row < 3; row++) {
+                for (column = 0; column < 3; column++)
+                    s_live_actor_node_to_world[node][row * 4 + column] =
+                        s_live_actor_pose.world[node].m[column][row];
+                s_live_actor_node_to_world[node][row * 4 + 3] =
+                    s_live_actor_pose.world[node].m[3][row];
+            }
+        }
+        s_live_actor_index = (int)i;
+        s_live_actor_def = object->def;
+        memcpy(s_live_actor_center, object->pos, sizeof s_live_actor_center);
+        if (!s_live_actor_vital_ready) {
+            vital_init(&s_live_actor_vital);
+            s_live_actor_vital_ready = 1;
+            printf("[play] live-actor object %d def %d model-tag %08lx nodes %u pos %.3f %.3f %.3f\n",
+                s_live_actor_index, s_live_actor_def, (unsigned long)model.tag_id, count,
+                object->pos[0], object->pos[1], object->pos[2]);
+        }
+        return 1;
+    }
+    return 0;
 }
 
 static void play_select_weapon(void)
@@ -333,6 +408,7 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
     move_cmd cmd;
     struct padButtonStatus buttons;
     unsigned held = 0;
+    int actor_live;
     collide_pill_stats stats;
     if (s_failed) {
         __real_flycam_update(cam, in, dt);
@@ -370,7 +446,9 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
     pad_to_command(&pad, &cmd, &s_yaw, &s_pitch);
     /* The combat probe follows the same fixed 30 Hz simulation tick as
      * projectiles. Advance stun/recharge before this tick's damage events. */
+    actor_live = play_pose_live_player_actor();
     vital_tick_profile(&s_probe_target, &s_probe_damage_profile);
+    if (actor_live) vital_tick_profile(&s_live_actor_vital, &s_probe_damage_profile);
     mover_tick_map(&s_body, &cmd, s_yaw, &s_bsp, s_scratch, s_scratch_bytes, 0, &stats);
     s_last = stats;
     if ((held & PAD_L2) && !s_grenade_button) {
@@ -428,19 +506,23 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
     }
     {
         shot_scene scene;
+        actor_live = play_pose_live_player_actor();
         int slot, flying = 0, hits = 0, ended = 0, shot_calls = 0;
         float hit_at[3], shot_tick_ms = 0.0f;
         memset(&scene, 0, sizeof scene);
         scene.bsp = &s_bsp;
         scene.directions = play_fp_directions();
         scene.direction_count = play_fp_direction_count();
-        if (!s_probe_target.dead) {
+        if ((actor_live && !s_live_actor_vital.dead) ||
+            (!actor_live && !s_probe_target.dead)) {
             scene.target = 1;
             scene.target_is_unit = 1;
-            memcpy(scene.target_center, s_probe_target_center, sizeof scene.target_center);
+            memcpy(scene.target_center, actor_live ? s_live_actor_center : s_probe_target_center,
+                sizeof scene.target_center);
             scene.target_radius = 0.0f;
             scene.actor_mesh = &s_actor_collision;
-            scene.actor_node_to_world = (const float (*)[12])s_probe_node_to_world;
+            scene.actor_node_to_world = (const float (*)[12])(actor_live ?
+                s_live_actor_node_to_world : s_probe_node_to_world);
             scene.target_material = 0;
             scene.target_body_damage_material_type = s_probe_body_damage_material_type;
             scene.target_shield_damage_material_type = s_probe_shield_damage_material_type;
@@ -465,15 +547,29 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
             if (shot_ms > s_shot_tick_time_max_ms) s_shot_tick_time_max_ms = shot_ms;
             shot_calls++;
             s_shot_tick_samples++;
-            object_hit = vital_apply_projectile_hit_profile(&s_probe_target, &s_fly[slot],
-                VITAL_BODY, &s_probe_damage_profile,
-                s_fly_def[slot]->damage_material_modifier_21,
-                s_fly_def[slot]->damage_material_modifier_22, 0);
-            if (object_hit && s_fly[slot].damage > 0.0f) {
-                printf("[play] probe damage %.2f node %d part %d resistance %d shield %.3f body %.3f dead %d\n",
-                    s_fly[slot].damage, s_fly[slot].hit_node_index,
-                    s_fly[slot].hit_damage_part, s_fly[slot].damage_resistance_index,
-                    s_probe_target.shield, s_probe_target.body, s_probe_target.dead);
+            if (actor_live) {
+                object_hit = vital_apply_projectile_hit_profile(&s_live_actor_vital, &s_fly[slot],
+                    VITAL_BODY, &s_probe_damage_profile,
+                    s_fly_def[slot]->damage_material_modifier_21,
+                    s_fly_def[slot]->damage_material_modifier_22, 0);
+                if (object_hit && s_fly[slot].damage > 0.0f) {
+                    printf("[play] actor damage object %d def %d amount %.2f node %d part %d resistance %d shield %.3f body %.3f dead %d\n",
+                        s_live_actor_index, s_live_actor_def, s_fly[slot].damage,
+                        s_fly[slot].hit_node_index, s_fly[slot].hit_damage_part,
+                        s_fly[slot].damage_resistance_index, s_live_actor_vital.shield,
+                        s_live_actor_vital.body, s_live_actor_vital.dead);
+                }
+            } else {
+                object_hit = vital_apply_projectile_hit_profile(&s_probe_target, &s_fly[slot],
+                    VITAL_BODY, &s_probe_damage_profile,
+                    s_fly_def[slot]->damage_material_modifier_21,
+                    s_fly_def[slot]->damage_material_modifier_22, 0);
+                if (object_hit && s_fly[slot].damage > 0.0f) {
+                    printf("[play] probe damage %.2f node %d part %d resistance %d shield %.3f body %.3f dead %d\n",
+                        s_fly[slot].damage, s_fly[slot].hit_node_index,
+                        s_fly[slot].hit_damage_part, s_fly[slot].damage_resistance_index,
+                        s_probe_target.shield, s_probe_target.body, s_probe_target.dead);
+                }
             }
             if (s_fly[slot].alive) flying = 1;
             else if (was && (object_hit || s_fly[slot].hit_surface)) {
