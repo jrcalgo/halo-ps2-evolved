@@ -24,9 +24,9 @@
       "path": "submodules/halo-ce-universal",
       "upstream": "https://github.com/cybersecurity/halo-ce-universal.git",
       "upstream_commit": "7524ba61689a912bdec234d9687b178f0b0e7389",
-      "commit": "7524ba61689a912bdec234d9687b178f0b0e7389",
+      "commit": "c406a4149ddebae4f45462ce4c1e8d9cce0567c2",
       "branch": "ps2-port",
-      "bundle_sha256": "ecc27c723edae4db1447a5ce7a6bf2dd76139dba080fd525164495fe27ba29e1"
+      "bundle_sha256": "1368a2a44a4750e14c90a55f5190e4200d95c126a216a04d9aeb7084f8bf87ef"
     },
     {
       "name": "ps2dev",

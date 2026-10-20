@@ -20,7 +20,37 @@ The single-owner rule applies to collision as well as object identity: CE collis
 
 Special-weapon ownership is also fixed: the supplied CE map tags drive the fuel rod through HCU's generic weapon/projectile system; the parent fuel-rod pose fallback is not retained. The energy sword and gravity rifle remain supported port features, with gameplay in HCU and only PS2 presentation adaptation in the parent ([tag inventory](../docs/combat.md#L23), [special pose mapping](../src/game/hold_pose.h#L31)).
 
-**M0 progress:** source ownership is recorded; the full compile/link closure, ABI assertions, runtime tag-image design, and initial R5900 linked slice remain open. Nothing in this decision table claims PS2 execution or parity.
+## M0 source/owner matrix
+
+This starts from the component-source table in [`5.hcu-remake.md`](../plans/5.hcu-remake.md). The Halo-64 column names the port file that shows the method, or marks the N64 behavior as non-transferable. An HCU source change needs a `port:` comment and `HALO_PS2`.
+
+| Component | Production source | Halo-64 method |
+|---|---|---|
+| Object identity, datums, units, and movement | halo-ce-universal `source/objects/`, `source/units/`, `source/memory/data.c` | Compile those sources. Replace `physical_memory_map.c` in `port/n64/game/n64_game.c`. `halo_n64_limits.h` pool sizes are non-transferable. |
+| Physics and collision | halo-ce-universal `source/physics/` | `source/physics/` stays in the N64 link. There is no N64 collision replacement. |
+| Weapons, projectiles, damage, grenades, and the fuel rod | halo-ce-universal `source/items/`, `source/objects/damage.c` | `source/items/` stays in the N64 link. No dedicated fuel-rod port. |
+| Energy sword and gravity rifle gameplay | modified halo-ce-universal | No N64 counterpart. |
+| Energy sword and gravity rifle view orientation | hybrid: modified HCU state, halo-ps2 draw, parent pose adapter | `port/n64/src/n64_render.c` is non-transferable. The seam note is `port/n64/NOTES.md`. |
+| AI, HaloScript, scenarios, devices, cutscenes, and local game modes | halo-ce-universal `source/ai/`, `source/hs/`, `source/scenario/`, `source/devices/`, `source/cutscene/`, `source/game/` | `port/n64/port.json` drops `source/ai/`, `source/hs/`, and `source/cutscene/`. That omission is non-transferable. Local startup is `n64_game_setup` in `port/n64/game/n64_game.c`. |
+| Effect simulation, HUD decisions, and first-person weapon simulation | halo-ce-universal `source/effects/`, `source/interface/` | Those trees stay, aside from the Xbox widget list. `port/n64/game/n64_campaign.c` is non-transferable. |
+| Effect sprites, HUD quads, and first-person draw | hybrid: HCU decisions, halo-ps2 GS/VU1 | `n64_hud.c`, `n64_particles.c`, and `n64_render.c` are non-transferable. |
+| GS/VU1/DMA renderer and video | halo-ps2 `engine/src/render/`, `engine/src/vu1/` | `n64_render.c` is non-transferable. |
+| Pad, timer, and profiler | halo-ps2 `engine/src/platform/pad.c`, `timer.h`, `profiler.c` | The method shape is `port/n64/src/xdk_input.c` and the time services in `n64_main.c`. The N64 implementations are non-transferable. |
+| HP2, world, and stream readers | halo-ps2 `engine/src/stream/hp2.c`, `engine/src/world/` | The method is the preconverted image loaded from `n64_game.c`. The cartridge format is non-transferable. |
+| Fixed boot arenas | halo-ps2 `engine/src/core/mem.c` | `n64_game.c` replaces the Xbox memory map and owns the bases. The N64 heap is non-transferable. |
+| Offline geometry and bitmap conversion | halo-ps2 `tools/halo2ps2/` | `tools/n64/convert.py` converts ahead of time. N64 mesh reductions are non-transferable. |
+| Runtime CE tag image | hybrid: HCU tag layout, modified halo-ps2 converter, halo-ps2 HP2 load | `tools/n64/convert.py` and the cache replacement in `n64_game.c`. |
+| `port/ps2` manifest, prefix, XDK replacements, and local session | modified halo-ce-universal `port/ps2/` | `port/n64/port.json`, `halo_n64_prefix.h`, `port/n64/src/platform.h`, `n64_game.c`. Copy the split, not the ABI, limits, or stubs. |
+| Simulation allocation bases | hybrid: modified HCU memory map, halo-ps2 arenas | `physical_memory_get_*` in `n64_game.c`. |
+| `sim/objects`, `sim/skeleton`, and `sim/fpview` | modified halo-ps2 | No N64 render-object table. Node matrices are computed on the tick (`port/n64/NOTES.md`). |
+| Post-tick snapshot | hybrid: modified HCU publishes, modified halo-ps2 consumes | The render-seam note in `port/n64/NOTES.md`. The N64 renderer is non-transferable. |
+| Sound choice and priority | halo-ce-universal `source/sound/` | `port/n64/port.json` drops `source/sound/` and `tools/n64_stubs.py` fills the calls. That omission is non-transferable. |
+| Sound staging and SPU2 playback | hybrid: HCU requests, halo-ps2 playback | `port/n64/src/n64_sound.c` is non-transferable. |
+| Machine startup into the CE shell | hybrid: halo-ps2 services, modified HCU shell entry | `port/n64/port.json` renames `shell_xbox.c` `main`, and `n64_main.c` calls `halo_shell_main`. |
+
+Collision has one owner, HCU `source/physics/`. Object identity has one owner, HCU datum state in `source/memory/data.c` and `source/objects/`. Parent `sim/objects` remains a snapshot reader once that closure is linked. Parent `collide.c` and `collpack.c` stay comparison code until the parity fixtures pass.
+
+**M0 progress:** the source/owner matrix, `port/ps2/port.json`, and the rooted closure passed. Code and constants are 1,642,528 bytes in `elf_static`. `.bss` is 551,763 bytes in `resident_gameplay`. See [`hcu-ps2-closure.md`](hcu-ps2-closure.md). No unresolved symbol is simulation. This is not PS2 execution or parity.
 
 | Component and source | Disposition | Dependency/platform assumptions | Validation required |
 |---|---|---|---|
