@@ -88,5 +88,26 @@ int main(void)
     vital_init(&v);
     vital_melee(&v);
     dump("melee", &v);
+
+    /* CE adds normalized actual body damage into an 8-bit per-region
+     * accumulator and destroys only after crossing a positive tag threshold. */
+    profile.maximum_body = 75.0f;
+    profile.material_count = 1;
+    profile.indirect_material_index = 0;
+    profile.material[0].body_damage_multiplier = 1.0f;
+    profile.material[0].shield_damage_multiplier = 1.0f;
+    profile.material[0].shield_leak_fraction = 0.0f;
+    profile.region_count = 1;
+    profile.region_damage_threshold[0] = 0.1f;
+    vital_init(&v);
+    v.shield = 0.0f;
+    vital_hurt_material_region_profile(&v, 10.0f, VITAL_BODY, &profile,
+        0, 0, 1.0f, 1.0f, 0);
+    if (v.region_damage[0] != 34 || !(v.regions_destroyed_flags & 1u)) return 1;
+    vital_hurt_material_region_profile(&v, 10.0f, VITAL_BODY, &profile,
+        0, 0, 1.0f, 1.0f, 0);
+    if (v.region_damage[0] != 34) return 2;
+    printf("region_damage byte=%u destroyed=%u\n", v.region_damage[0],
+        (unsigned)(v.regions_destroyed_flags & 1u));
     return 0;
 }

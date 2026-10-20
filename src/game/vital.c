@@ -2,9 +2,13 @@
 #include <string.h>
 
 const vital_damage_profile VITAL_CYBORG_INDIRECT_PROFILE = {
-    75.0f, 75.0f, 0.0f, 1.0f, 1.0f,
-    VITAL_MINIMUM_SHIELD_STUN_DAMAGE, VITAL_STUN_TICKS, 0.008333333767950535f,
-    0, 0, {{0, 0.0f, 1.0f, 1.0f}}
+    .maximum_shield = 75.0f, .maximum_body = 75.0f,
+    .shield_leak_fraction = 0.0f, .shield_damage_multiplier = 1.0f,
+    .body_damage_multiplier = 1.0f,
+    .minimum_shield_stun_damage = VITAL_MINIMUM_SHIELD_STUN_DAMAGE,
+    .shield_stun_ticks = VITAL_STUN_TICKS,
+    .shield_recharge_step = 0.008333333767950535f,
+    .indirect_material_index = 0, .material_count = 0
 };
 
 static float recharge_step(void)
@@ -17,10 +21,9 @@ static float recharge_step(void)
 
 void vital_init(vital *v)
 {
+    memset(v, 0, sizeof *v);
     v->shield = 1.0f;
     v->body = 1.0f;
-    v->stun = 0;
-    v->dead = 0;
 }
 
 void vital_hurt_profile(vital *v, float amount, int part,
@@ -34,6 +37,14 @@ void vital_hurt_profile(vital *v, float amount, int part,
 
 void vital_hurt_material_profile(vital *v, float amount, int part,
     const vital_damage_profile *profile, int damage_material_index,
+    float body_material_modifier, float shield_material_modifier, int headshot)
+{
+    vital_hurt_material_region_profile(v, amount, part, profile, damage_material_index,
+        -1, body_material_modifier, shield_material_modifier, headshot);
+}
+
+void vital_hurt_material_region_profile(vital *v, float amount, int part,
+    const vital_damage_profile *profile, int damage_material_index, int region_index,
     float body_material_modifier, float shield_material_modifier, int headshot)
 {
     float total = amount;
@@ -75,6 +86,19 @@ void vital_hurt_material_profile(vital *v, float amount, int part,
     damage_amount = resistance_body_multiplier * total;
     actual = damage_amount / profile->maximum_body * body_material_modifier;
     if (part == VITAL_HEAD && damage_amount > 0.0f && headshot) v->body = 0.0f;
+    if (damage_amount > 0.0f && region_index >= 0 &&
+        profile->region_count <= VITAL_DAMAGE_REGION_MAX &&
+        (unsigned)region_index < profile->region_count &&
+        !(v->regions_destroyed_flags & (uint16_t)(1u << region_index))) {
+        float accumulated = actual * 255.0f + (float)v->region_damage[region_index];
+        if (accumulated >= 0.0f && accumulated < 16777216.0f) {
+            v->region_damage[region_index] = (uint8_t)((uint32_t)accumulated & 0xffu);
+            if (profile->region_damage_threshold[region_index] > 0.0f &&
+                (float)v->region_damage[region_index] * (1.0f / 255.0f) >
+                    profile->region_damage_threshold[region_index])
+                v->regions_destroyed_flags |= (uint16_t)(1u << region_index);
+        }
+    }
     if (damage_amount > 0.0f) v->body -= actual;
     if (v->body < 0.0f) v->dead = 1;
 }
@@ -106,9 +130,9 @@ int vital_apply_projectile_hit_profile(vital *v, shot *projectile, int part,
     }
     projectile->hit_object_this_tick = 0;
     if (projectile->damage > 0.0f) {
-        vital_hurt_material_profile(v, projectile->damage, part, profile,
-            projectile->damage_resistance_index, body_material_modifier,
-            shield_material_modifier, headshot);
+        vital_hurt_material_region_profile(v, projectile->damage, part, profile,
+            projectile->damage_resistance_index, projectile->hit_region_index,
+            body_material_modifier, shield_material_modifier, headshot);
     }
     return 1;
 }

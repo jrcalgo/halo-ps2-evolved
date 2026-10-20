@@ -246,20 +246,24 @@ int collpack_vital_profile(const uint8_t *payload, size_t length,
     vital_damage_profile *profile, int16_t *body_material_type,
     int16_t *shield_material_type)
 {
-    uint16_t version, material_count;
+    uint16_t version, material_count, region_count, reserved;
     int16_t indirect_index, shield_type, body_type = -1;
-    uint32_t index, offset = 32;
+    uint32_t index, offset;
     float maximum_body, maximum_shield, minimum_stun, stun_seconds, recharge_step;
     float shield_leak, shield_multiplier, body_multiplier;
     const uint8_t *record;
-    if (!payload || !profile || !body_material_type || !shield_material_type || length < 32 ||
+    if (!payload || !profile || !body_material_type || !shield_material_type || length < 36 ||
         memcmp(payload, "VIT1", 4) != 0) return -1;
     memcpy(&version, payload + 4, 2);
     memcpy(&material_count, payload + 6, 2);
     memcpy(&indirect_index, payload + 8, 2);
     memcpy(&shield_type, payload + 10, 2);
-    if (version != 1 || material_count == 0 || material_count > 40 || indirect_index < 0 ||
-        indirect_index >= material_count || length != 32u + (size_t)material_count * 14u ||
+    memcpy(&region_count, payload + 32, 2);
+    memcpy(&reserved, payload + 34, 2);
+    offset = 36u + (uint32_t)region_count * 4u;
+    if (version != 2 || material_count == 0 || material_count > 40 ||
+        region_count > VITAL_DAMAGE_REGION_MAX || reserved != 0 || indirect_index < 0 ||
+        indirect_index >= material_count || length != (size_t)offset + (size_t)material_count * 14u ||
         shield_type < -1 || shield_type >= COLL_RUNTIME_MATERIAL_TYPES) return -1;
     memcpy(&maximum_body, payload + 12, 4);
     memcpy(&maximum_shield, payload + 16, 4);
@@ -271,6 +275,15 @@ int collpack_vital_profile(const uint8_t *payload, size_t length,
         !finite_float(recharge_step) || maximum_body <= 0.0f || maximum_shield <= 0.0f ||
         minimum_stun < 0.0f || stun_seconds < 0.0f || stun_seconds * 30.0f > 32767.0f ||
         recharge_step < 0.0f || recharge_step > 1.0f) return -1;
+    profile->region_count = region_count;
+    for (index = 0; index < VITAL_DAMAGE_REGION_MAX; index++) {
+        float threshold = 0.0f;
+        if (index < region_count) {
+            memcpy(&threshold, payload + 36 + index * 4u, 4);
+            if (!finite_float(threshold) || threshold < 0.0f) return -1;
+        }
+        profile->region_damage_threshold[index] = threshold;
+    }
     for (index = 0; index < material_count; index++) {
         int16_t type;
         record = payload + offset + index * 14u;

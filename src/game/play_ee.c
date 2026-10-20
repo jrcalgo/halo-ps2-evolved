@@ -553,9 +553,10 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
                     s_fly_def[slot]->damage_material_modifier_21,
                     s_fly_def[slot]->damage_material_modifier_22, 0);
                 if (object_hit && s_fly[slot].damage > 0.0f) {
-                    printf("[play] actor damage object %d def %d amount %.2f node %d part %d resistance %d shield %.3f body %.3f dead %d\n",
+                    printf("[play] actor damage object %d def %d amount %.2f node %d region %d part %d resistance %d shield %.3f body %.3f dead %d\n",
                         s_live_actor_index, s_live_actor_def, s_fly[slot].damage,
-                        s_fly[slot].hit_node_index, s_fly[slot].hit_damage_part,
+                        s_fly[slot].hit_node_index, s_fly[slot].hit_region_index,
+                        s_fly[slot].hit_damage_part,
                         s_fly[slot].damage_resistance_index, s_live_actor_vital.shield,
                         s_live_actor_vital.body, s_live_actor_vital.dead);
                 }

@@ -442,7 +442,7 @@ def main():
                 if args.actor_ray_smoke:
                     fires = re.findall(r"\[play\] fire SHOTGUN (?:trigger \d+|\d+) pellets (\d+)", text)
                     live_actors = re.findall(r"\[play\] live-actor object (\d+) def (\d+) model-tag ([0-9a-fA-F]+) nodes (\d+)", text)
-                    actor_damage = re.findall(r"\[play\] actor damage object (\d+) def (\d+) amount ([0-9.]+) node (-?\d+) part (-?\d+) resistance (-?\d+) shield ([0-9.]+) body (-?[0-9.]+) dead (\d+)", text)
+                    actor_damage = re.findall(r"\[play\] actor damage object (\d+) def (\d+) amount ([0-9.]+) node (-?\d+) region (-?\d+) part (-?\d+) resistance (-?\d+) shield ([0-9.]+) body (-?[0-9.]+) dead (\d+)", text)
                     windows_cost = re.findall(r"\[play\] shot-cost samples (\d+) avg-ms ([0-9.]+) max-shot-ms ([0-9.]+) max-tick-ms ([0-9.]+) max-calls-per-tick (\d+)", text)
                     if (not fires or int(fires[0]) != 15 or not live_actors or not actor_damage or
                             not windows_cost or max(int(row[4]) for row in windows_cost) < 15):
@@ -454,8 +454,9 @@ def main():
                         "live_actor": {"object_index": int(live_actors[0][0]), "definition_index": int(live_actors[0][1]),
                                        "model_tag": int(live_actors[0][2], 16), "node_count": int(live_actors[0][3])},
                         "actor_damage_events": len(actor_damage),
-                        "last_actor_hit": {"node": int(actor_damage[-1][3]), "damage_part": int(actor_damage[-1][4]),
-                                           "resistance_index": int(actor_damage[-1][5]), "dead": actor_damage[-1][8] == "1"},
+                        "last_actor_hit": {"node": int(actor_damage[-1][3]), "region": int(actor_damage[-1][4]),
+                                           "damage_part": int(actor_damage[-1][5]),
+                                           "resistance_index": int(actor_damage[-1][6]), "dead": actor_damage[-1][9] == "1"},
                         "shot_tick_cost_windows": [
                             {"samples": int(row[0]), "avg_ms": float(row[1]),
                              "max_shot_ms": float(row[2]), "max_tick_ms": float(row[3]),

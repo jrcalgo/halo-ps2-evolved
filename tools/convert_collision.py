@@ -148,10 +148,14 @@ def _cyborg_vitality(data) -> bytes:
     shield_stun_seconds = st.unpack_from("<f", region, base + 272)[0]
     recharge_step = st.unpack_from("<f", region, base + 448)[0]
     material_count, material_address = st.unpack_from("<II", region, base + 564)
+    region_count, region_address = st.unpack_from("<II", region, base + 0x240)
     material_base = material_address - data.base
+    region_base = region_address - data.base
     if (material_count == 0 or material_count > 40 or indirect_index < 0 or
             indirect_index >= material_count or material_base < 0 or
-            material_base + material_count * 0x48 > len(region)):
+            material_base + material_count * 0x48 > len(region) or
+            region_count > 16 or (region_count and (region_base < 0 or
+            region_base + region_count * 0x54 > len(region)))):
         raise ValueError("player cyborg damage_resistance materials are malformed")
     if shield_material_type < 0 or shield_material_type >= 26:
         shield_material_type = -1
@@ -160,6 +164,12 @@ def _cyborg_vitality(data) -> bytes:
     if not all(math.isfinite(value) for value in profile) or maximum_body <= 0.0 or maximum_shield <= 0.0:
         raise ValueError("player cyborg damage_resistance profile has invalid values")
     records = bytearray()
+    region_thresholds = []
+    for index in range(region_count):
+        threshold = st.unpack_from("<f", region, region_base + index * 0x54 + 0x28)[0]
+        if not math.isfinite(threshold) or threshold < 0.0:
+            raise ValueError(f"player cyborg damage region {index} has invalid threshold")
+        region_thresholds.append(threshold)
     for index in range(material_count):
         item = material_base + index * 0x48
         material_type = st.unpack_from("<h", region, item + 0x24)[0]
@@ -170,10 +180,11 @@ def _cyborg_vitality(data) -> bytes:
         if not all(math.isfinite(value) for value in (shield_leak, shield_multiplier, body_multiplier)):
             raise ValueError(f"player cyborg damage material {index} has invalid values")
         records += st.pack("<h3f", material_type, shield_leak, shield_multiplier, body_multiplier)
-    # VIT1 v1: magic/version/count/indirect index/shield material, resistance
-    # maxima/stun/recharge, followed by source-ordered damage-material records.
-    return st.pack("<4sHHhh5f", b"VIT1", 1, material_count, indirect_index,
-                   shield_material_type, *profile) + bytes(records)
+    # VIT1 v2: v1 profile fields, region count/reserved, source-ordered region
+    # damage thresholds, then source-ordered damage-resistance materials.
+    return (st.pack("<4sHHhh5fHH", b"VIT1", 2, material_count, indirect_index,
+                    shield_material_type, *profile, region_count, 0) +
+            st.pack("<" + "f" * region_count, *region_thresholds) + bytes(records))
 
 
 def _cyborg_actor_collision(data) -> bytes:

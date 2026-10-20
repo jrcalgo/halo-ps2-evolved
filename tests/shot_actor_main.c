@@ -60,9 +60,10 @@ int main(void)
     shot_tick(&projectile, &SHOT_PISTOL, &scene, &seed);
     if (!projectile.hit_object || !projectile.hit_object_this_tick ||
         projectile.hit_node_index != 0 || projectile.hit_damage_part != 2 ||
-        projectile.damage_resistance_index != 2 || projectile.damage <= 0.0f) return 2;
-    printf("actor shot node=%d part=%d resistance=%d damage=%.1f\n",
-        projectile.hit_node_index, projectile.hit_damage_part,
-        projectile.damage_resistance_index, projectile.damage);
+        projectile.hit_region_index != 0 || projectile.damage_resistance_index != 2 ||
+        projectile.damage <= 0.0f) return 2;
+    printf("actor shot node=%d region=%d part=%d resistance=%d damage=%.1f\n",
+        projectile.hit_node_index, projectile.hit_region_index,
+        projectile.hit_damage_part, projectile.damage_resistance_index, projectile.damage);
     return 0;
 }

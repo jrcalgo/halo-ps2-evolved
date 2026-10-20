@@ -101,6 +101,7 @@ typedef struct {
     uint8_t damage_material_types_valid;
     int16_t hit_node_index;
     int16_t hit_damage_part;
+    int16_t hit_region_index;
 } shot;
 
 typedef struct {

@@ -23,12 +23,15 @@
 #define VITAL_STUN_TICKS 120
 #define VITAL_RECHARGE_BITS 0x3c088889u
 #define VITAL_DAMAGE_MATERIAL_MAX 40
+#define VITAL_DAMAGE_REGION_MAX 16
 
 typedef struct {
     float shield;
     float body;
     short stun;
     int dead;
+    uint16_t regions_destroyed_flags;
+    uint8_t region_damage[VITAL_DAMAGE_REGION_MAX];
 } vital;
 
 typedef struct {
@@ -53,6 +56,8 @@ typedef struct {
     int16_t indirect_material_index;
     uint16_t material_count;
     vital_damage_material material[VITAL_DAMAGE_MATERIAL_MAX];
+    uint16_t region_count;
+    float region_damage_threshold[VITAL_DAMAGE_REGION_MAX];
 } vital_damage_profile;
 
 extern const vital_damage_profile VITAL_CYBORG_INDIRECT_PROFILE;
@@ -69,6 +74,11 @@ void vital_hurt_profile(vital *v, float amount, int part,
 void vital_hurt_material_profile(vital *v, float amount, int part,
     const vital_damage_profile *profile, int damage_material_index,
     float body_material_modifier, float shield_material_modifier, int headshot);
+/* Actor path additionally applies CE's per-region byte accumulator/threshold. */
+void vital_hurt_material_region_profile(vital *v, float amount, int part,
+    const vital_damage_profile *profile, int damage_material_index,
+    int region_index, float body_material_modifier, float shield_material_modifier,
+    int headshot);
 /* material_modifier is the damage definition's modifier for target material
  * 21. part currently selects headshot handling only; source damage-material
  * attribution is not available on the diagnostic sphere. */

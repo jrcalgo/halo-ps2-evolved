@@ -34,6 +34,9 @@ def cyborg(path):
         leak, shield_multiplier = struct.unpack_from("<ff", raw, 0x28)
         body_multiplier, = struct.unpack_from("<f", raw, 0x3C)
         materials.append((material_type, leak, shield_multiplier, body_multiplier))
+    region_count, region_address = struct.unpack_from("<II", region, data + 0x240)
+    region_thresholds = [struct.unpack_from("<f", region,
+        region_address - index.base + i * 0x54 + 0x28)[0] for i in range(region_count)]
     mods = {}
     for name in (r"weapons\pistol\bullet", r"weapons\assault rifle\bullet"):
         effect = next(item for item in index.entries if item.group == "jpt!" and item.path == name)
@@ -43,7 +46,7 @@ def cyborg(path):
         modifier_shield = struct.unpack_from("<f", region, point + 512 + 22 * 4)[0]
         mods[name] = (flags, modifier_body, modifier_shield)
     return (body, shield, recharge, minimum_stun, stun_seconds, materials, mods,
-            indirect_material, shield_material)
+            indirect_material, shield_material, region_thresholds)
 
 
 class Vital(unittest.TestCase):
@@ -51,7 +54,7 @@ class Vital(unittest.TestCase):
         if not MAP.is_file():
             self.skipTest("decompressed Blood Gulch is not in the tree")
         (body, shield, recharge, minimum_stun, stun_seconds, materials, mods,
-         indirect_material, shield_material) = cyborg(MAP)
+         indirect_material, shield_material, region_thresholds) = cyborg(MAP)
         self.assertEqual((body, shield), (75.0, 75.0))
         self.assertEqual(recharge, 0x3C088889)
         self.assertEqual((minimum_stun, stun_seconds), (6.0, 4.0))
@@ -60,6 +63,7 @@ class Vital(unittest.TestCase):
         # it relies on; other target profiles need the generic CE path.
         self.assertEqual(indirect_material, 1)
         self.assertEqual(shield_material, 22)
+        self.assertEqual(region_thresholds, [0.0])
         self.assertEqual(materials[1], (21, 0.0, 1.0, 1.0))
         self.assertEqual(materials[2], (21, 0.0, 1.0, struct.unpack("<f", struct.pack("<I", 0x3F4CCCCD))[0]))
         self.assertTrue(all(item[1] == 0.0 and item[2] == 1.0 for item in materials))
