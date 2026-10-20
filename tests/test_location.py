@@ -31,6 +31,7 @@ class Location(unittest.TestCase):
             "cc", "-std=c11", "-Wall", "-Wextra", "-Werror",
             "-I" + str(ROOT / "src"), str(ROOT / "tests/location_main.c"),
             str(ROOT / "src/game/collide.c"), str(ROOT / "src/game/collpack.c"),
+            str(ROOT / "src/game/gun.c"),
             "-lm", "-o", str(cls.exe),
         ], check=True, capture_output=True)
 
@@ -129,7 +130,8 @@ class Location(unittest.TestCase):
                               (cluster_refs[cluster] & 0x7FFF) < planes)
             result = self.run_fixture(payload, water_leaf)
             self.assertEqual(result.returncode, 0, f"{name}: {result.stderr}")
-            self.assertEqual(result.stdout.strip(), "water-plane 1 0", name)
+            self.assertEqual(result.stdout.splitlines(), [
+                "water-plane 1 0", "underwater-fire 0 dry-fire 1"], name)
 
 
 if __name__ == "__main__":

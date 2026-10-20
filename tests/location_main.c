@@ -1,4 +1,5 @@
 #include "game/collpack.h"
+#include "game/gun.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -16,6 +17,10 @@ static int test_water_leaf(collide_bsp *bsp, uint32_t nodes[9],
     uint32_t terminal;
     unsigned axis;
     int water_below, water_above;
+    gun_trigger_profile profile[GUN_TRIGGER_MAX] = {{0}};
+    gun_trigger_pair trigger;
+    int16_t loaded[GUN_TRIGGER_MAGAZINES] = {0, 0};
+    unsigned underwater_fired, dry_fired;
     if (leaf >= location->leaf_count) return 5;
     memcpy(&cluster, location->leaf_clusters + (size_t)leaf * 2, 2);
     if (cluster < 0 || (uint32_t)cluster >= location->cluster_count) return 5;
@@ -43,7 +48,20 @@ static int test_water_leaf(collide_bsp *bsp, uint32_t nodes[9],
     water_below = collide_location_underwater(bsp, location, below);
     water_above = collide_location_underwater(bsp, location, above);
     printf("water-plane %d %d\n", water_below, water_above);
-    return water_below == 1 && water_above == 0 ? 0 : 7;
+    profile[0].magazine_index = GUN_TRIGGER_NONE;
+    profile[0].rate_initial = 30.0f;
+    profile[0].rate_final = 30.0f;
+    gun_trigger_pair_init(&trigger, loaded);
+    trigger.can_begin_firing = (uint8_t)!water_below;
+    underwater_fired = gun_trigger_pair_tick_controls_seeded(&trigger, profile, 1,
+        GUN_SECONDARY_TRIGGER_NORMAL, 0, 0.0f, 1, 0, 1, 0, 0, NULL);
+    gun_trigger_pair_init(&trigger, loaded);
+    trigger.can_begin_firing = (uint8_t)!water_above;
+    dry_fired = gun_trigger_pair_tick_controls_seeded(&trigger, profile, 1,
+        GUN_SECONDARY_TRIGGER_NORMAL, 0, 0.0f, 1, 0, 1, 0, 0, NULL);
+    printf("underwater-fire %u dry-fire %u\n", underwater_fired, dry_fired);
+    return water_below == 1 && water_above == 0 && underwater_fired == 0 &&
+        dry_fired == 1 ? 0 : 7;
 }
 
 int main(int argc, char **argv)
