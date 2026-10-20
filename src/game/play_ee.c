@@ -9,6 +9,7 @@
 #include "game/shot.h"
 #include "game/vital.h"
 #include "core/mat.h"
+#include "sim/objects.h"
 #include "sim/skeleton.h"
 #include "platform/profiler.h"
 #include "platform/timer.h"
@@ -24,6 +25,7 @@
 #include <unistd.h>
 
 void __real_flycam_update(camera_t *cam, const fly_input *in, float dt);
+void __real_objects_tick(object_table_t *table, const object_world_t *world);
 
 static uint8_t *s_pack;
 static collide_bsp s_bsp;
@@ -72,6 +74,12 @@ static float s_shot_tick_time_max_ms;
 static float s_shot_tick_time_max_tick_ms;
 static unsigned s_shot_tick_samples;
 static unsigned s_shot_tick_max_calls;
+/* The engine owns these fixed-lifetime objects. Capturing them after its tick
+ * lets the following play callback inspect the pose rendered on the prior
+ * frame without reaching into main.c's private statics. */
+static object_table_t *s_engine_objects;
+static const object_world_t *s_engine_object_world;
+static unsigned s_engine_object_tick;
 
 static int play_actor_bind_pose(void)
 {
@@ -124,6 +132,14 @@ static int play_actor_bind_pose(void)
         }
     }
     return 0;
+}
+
+void __wrap_objects_tick(object_table_t *table, const object_world_t *world)
+{
+    __real_objects_tick(table, world);
+    s_engine_objects = table;
+    s_engine_object_world = world;
+    s_engine_object_tick++;
 }
 
 static void play_select_weapon(void)

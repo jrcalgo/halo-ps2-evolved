@@ -48,7 +48,7 @@ EE_OBJS += $(WORLD_OUTPUT)/play_ee.o \
 	$(WORLD_OUTPUT)/game/move.o $(WORLD_OUTPUT)/game/pad.o $(WORLD_OUTPUT)/game/pill.o \
 	$(WORLD_OUTPUT)/game/play_fp.o
 EE_LDFLAGS += -Wl,--wrap,flycam_update -Wl,--wrap,profiler_overlay -Wl,--wrap,fpview_place \
-	-Wl,--wrap,fpview_tick -Wl,--wrap,objects_pose_model
+	-Wl,--wrap,fpview_tick -Wl,--wrap,objects_pose_model -Wl,--wrap,objects_tick
 endif
 
 $(WORLD_OUTPUT)/hybrid/%.o: src/stream/%.c
