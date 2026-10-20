@@ -199,6 +199,8 @@ class Gun(unittest.TestCase):
                          "single charge start shots=1")
         self.assertEqual([line for line in reports if line.startswith("heat rifle")][0],
                          "heat rifle shots=25 overheat_events=7 heat=0.81")
+        self.assertEqual([line for line in reports if line.startswith("underwater trigger")][0],
+                         "underwater trigger blocked state=0 idle=127")
 
 
 if __name__ == "__main__":

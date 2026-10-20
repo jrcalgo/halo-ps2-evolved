@@ -385,5 +385,24 @@ int main(void)
         printf("trigger-pair heat threshold=%.2f overheated=%u\n",
             heat_pair.heat, heat_pair.overheated);
     }
+    {
+        gun_trigger_profile water_profile[GUN_TRIGGER_MAX] = {{0}};
+        gun_trigger_pair water_pair;
+        int16_t loaded[GUN_TRIGGER_MAGAZINES] = {0, 0};
+        water_profile[0].magazine_index = GUN_TRIGGER_NONE;
+        water_profile[0].rate_initial = 30.0f;
+        water_profile[0].rate_final = 30.0f;
+        gun_trigger_pair_init(&water_pair, loaded);
+        water_pair.can_begin_firing = 0;
+        if (gun_trigger_pair_tick_controls_seeded(&water_pair, water_profile, 1,
+                GUN_SECONDARY_TRIGGER_NORMAL, 0, 0.0f, 1, 0, 1, 0, 0, NULL) != 0 ||
+            water_pair.trigger[0].state != GUN_TRIG_IDLE ||
+            water_pair.trigger[0].idle_ticks != 127) {
+            fprintf(stderr, "underwater trigger began firing\n");
+            return 1;
+        }
+        printf("underwater trigger blocked state=%d idle=%d\n",
+            water_pair.trigger[0].state, water_pair.trigger[0].idle_ticks);
+    }
     return 0;
 }
