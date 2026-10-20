@@ -50,22 +50,31 @@ def load_segment_sizes(program_headers: str) -> tuple[int, int]:
     return int(match.group(1), 16), int(match.group(2), 16)
 
 
-def load_segment_interval(program_headers: str) -> dict[str, int]:
-    """Read the actual EE PT_LOAD range, including its NOBITS tail."""
-    match = re.search(
+def load_segment_intervals(program_headers: str) -> list[dict[str, int]]:
+    """Read every EE PT_LOAD range, including each NOBITS tail."""
+    pattern = re.compile(
         r"^\s*LOAD\s+(0x[0-9a-fA-F]+)\s+(0x[0-9a-fA-F]+)\s+"
         r"(0x[0-9a-fA-F]+)\s+(0x[0-9a-fA-F]+)\s+"
-        r"(0x[0-9a-fA-F]+)\s+", program_headers, re.M)
-    if not match:
+        r"(0x[0-9a-fA-F]+)\s+", re.M)
+    matches = list(pattern.finditer(program_headers))
+    if not matches:
         raise RuntimeError("linked probe ELF has no LOAD segment")
-    offset, virtual, physical, file_bytes, memory_bytes = (
-        int(value, 16) for value in match.groups())
-    if virtual != physical or file_bytes > memory_bytes:
-        raise RuntimeError("unexpected EE PT_LOAD address or extent")
-    return {"file_offset": offset, "start": physical,
-            "file_end": physical + file_bytes,
-            "memory_end": physical + memory_bytes,
-            "file_bytes": file_bytes, "memory_bytes": memory_bytes}
+    intervals = []
+    for match in matches:
+        offset, virtual, physical, file_bytes, memory_bytes = (
+            int(value, 16) for value in match.groups())
+        if virtual != physical or file_bytes > memory_bytes:
+            raise RuntimeError("unexpected EE PT_LOAD address or extent")
+        intervals.append({"file_offset": offset, "start": physical,
+                          "file_end": physical + file_bytes,
+                          "memory_end": physical + memory_bytes,
+                          "file_bytes": file_bytes, "memory_bytes": memory_bytes})
+    return sorted(intervals, key=lambda item: item["start"])
+
+
+def load_segment_interval(program_headers: str) -> dict[str, int]:
+    """Compatibility view of the first EE PT_LOAD interval."""
+    return load_segment_intervals(program_headers)[0]
 
 
 def named_symbols(nm_output: str, names: set[str]) -> dict[str, int]:
@@ -80,9 +89,11 @@ def named_symbols(nm_output: str, names: set[str]) -> dict[str, int]:
     return found
 
 
-def physical_placement(segment: dict[str, int], symbols: dict[str, int],
+def physical_placement(segment: dict[str, int] | list[dict[str, int]], symbols: dict[str, int],
                        layout_bytes: int = 24_117_248) -> dict[str, object]:
     """Necessary physical-capacity proof; actual malloc placement is a guest check."""
+    segments = segment if isinstance(segment, list) else [segment]
+    first, last = segments[0], segments[-1]
     text, bss, end = (symbols[name] for name in ("_ftext", "_fbss", "_end"))
     static_end = 0x00300000
     reserve_start = 0x01a00000
@@ -91,25 +102,35 @@ def physical_placement(segment: dict[str, int], symbols: dict[str, int],
     stack_symbol = symbols.get("_stack")
     stack_size = symbols.get("_stack_size")
     heap_size_symbol = symbols.get("_heap_size")
+    guarded_slack = (9 + 1) * (16 + 15)
+    boot_request_bytes = backing_bytes + guarded_slack
     # The allocator may place the pointer *after* _end. This lower bound
     # intentionally excludes malloc metadata and must not be called a pass.
-    minimum_boot_end = end + backing_bytes + 15
+    minimum_boot_end = end + boot_request_bytes
     errors = []
-    if text < 0x00100000 or segment["start"] != text:
+    if text < 0x00100000 or first["start"] != text:
         errors.append("ELF load begins outside the 1 MiB user-image base")
-    if not (segment["file_end"] <= bss <= end == segment["memory_end"]):
+    if not (last["file_end"] <= bss <= end == last["memory_end"]):
         errors.append("PT_LOAD file/BSS extents disagree with linker symbols")
+    for left, right in zip(segments, segments[1:]):
+        if left["memory_end"] > right["start"]:
+            errors.append("PT_LOAD physical intervals overlap")
+    if any(row["start"] < 0x00100000 or row["memory_end"] > 0x02000000
+           for row in segments):
+        errors.append("PT_LOAD interval escapes the EE user image range")
     if bss > static_end:
         errors.append("file-backed ELF exceeds elf_static physical boundary")
     if bss_bytes > 6_815_744:
         errors.append("ELF BSS exceeds resident_gameplay capacity")
     if backing_bytes < 0 or minimum_boot_end > reserve_start:
         errors.append("minimum boot backing overlaps untouched reserve")
-    return {"load": segment, "symbols": symbols,
+    return {"load": first, "load_intervals": segments, "symbols": symbols,
             "nobits": {"start": bss, "end": end, "bytes": bss_bytes},
             "elf_static_end": static_end, "reserve_start": reserve_start,
             "bss_charged_to_resident": bss_bytes,
             "boot_backing_bytes_excluding_alignment_slack": backing_bytes,
+            "guarded_alignment_slack_bytes": guarded_slack,
+            "boot_malloc_request_bytes": boot_request_bytes,
             "minimum_boot_end_excluding_allocator_metadata": minimum_boot_end,
             "minimum_headroom_before_reserve": reserve_start - minimum_boot_end,
             "crt_heap": {"base": end, "size_symbol": heap_size_symbol,
@@ -256,7 +277,7 @@ def main() -> None:
         run([str(nm), "-n", str(gameplay_elf)], env=env),
         {"_ftext", "_fbss", "_end", "_stack", "_stack_size", "_heap_size"})
     gameplay_physical = physical_placement(
-        load_segment_interval(gameplay_program_headers), gameplay_boundaries)
+        load_segment_intervals(gameplay_program_headers), gameplay_boundaries)
     gameplay_memory_audit = output / f"{gameplay_name}-memory-audit.json"
     run([sys.executable, str(ROOT / "tools/hcu_ps2_memory_audit.py"),
          "--elf", str(gameplay_elf), "--map", str(gameplay_map),

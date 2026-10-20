@@ -6,7 +6,8 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from hcu_parent_link_probe import (load_segment_interval, load_segment_sizes,
+from hcu_parent_link_probe import (load_segment_interval, load_segment_intervals,
+                                   load_segment_sizes,
                                    named_symbols, physical_placement,
                                    section_sizes)  # noqa: E402
 
@@ -39,6 +40,18 @@ def test_load_segment_parser_distinguishes_file_bytes_from_bss_memory():
         "memory_end": 0x100000 + 4121904,
         "file_bytes": 2069508, "memory_bytes": 4121904,
     }
+    assert load_segment_intervals(sample) == [load_segment_interval(sample)]
+
+
+def test_physical_placement_rejects_overlapping_load_intervals():
+    segments = [
+        {"start": 0x100000, "file_end": 0x180000, "memory_end": 0x210000},
+        {"start": 0x200000, "file_end": 0x280000, "memory_end": 0x300000},
+    ]
+    symbols = {"_ftext": 0x100000, "_fbss": 0x280000, "_end": 0x300000}
+    report = physical_placement(segments, symbols)
+    assert not report["necessary_conditions_pass"]
+    assert "PT_LOAD physical intervals overlap" in report["errors"]
 
 
 def test_physical_placement_rejects_file_overage_and_reserve_overlap():
@@ -53,6 +66,18 @@ def test_physical_placement_rejects_file_overage_and_reserve_overlap():
     assert report["actual_boot_pointer_guest_verified"] is False
 
 
+def test_file_backed_fit_cannot_hide_boot_backing_reserve_overlap():
+    segment = {"start": 0x100000, "file_end": 0x200000,
+               "memory_end": 0x300000}
+    symbols = {"_ftext": 0x100000, "_fbss": 0x200000,
+               "_end": 0x300000, "_stack": 0xffffffff,
+               "_stack_size": 131072, "_heap_size": 0xffffffff}
+    report = physical_placement(segment, symbols, layout_bytes=25 * 1024 * 1024)
+    assert segment["file_end"] <= report["elf_static_end"]
+    assert not report["necessary_conditions_pass"]
+    assert "minimum boot backing overlaps untouched reserve" in report["errors"]
+
+
 def test_physical_placement_keeps_dynamic_crt_heap_and_kernel_stack_unresolved():
     segment = {"start": 0x100000, "file_end": 0x200000,
                "memory_end": 0x300000}
@@ -62,6 +87,8 @@ def test_physical_placement_keeps_dynamic_crt_heap_and_kernel_stack_unresolved()
     report = physical_placement(segment, symbols)
     assert report["nobits"] == {"start": 0x200000, "end": 0x300000,
                                  "bytes": 0x100000}
+    assert report["guarded_alignment_slack_bytes"] == 310
+    assert report["boot_malloc_request_bytes"] == 24_117_248 - 0x100000 + 310
     assert report["crt_heap"]["size_is_runtime_dynamic"]
     assert report["thread_stack"]["kernel_assigned"]
     assert not report["thread_stack"]["physical_bounds_guest_verified"]

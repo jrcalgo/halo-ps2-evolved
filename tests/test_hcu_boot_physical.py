@@ -1,10 +1,13 @@
 import sys
 from pathlib import Path
+import hashlib
+import json
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from test_hcu_boot import failed_guest_evidence, physical_memory_evidence  # noqa: E402
+from test_hcu_boot import (failed_guest_evidence, linked_physical_evidence,
+                           physical_memory_evidence)  # noqa: E402
 
 
 CAPS = {
@@ -98,3 +101,33 @@ def test_later_guest_halt_retains_m1_boundary_and_physical_evidence():
     assert result["failure_after_m1_boundary"]
     assert not result["reached_success_marker"]
     assert result["physical_memory"]["nonoverlapping"]
+
+
+def test_guest_physical_intervals_are_bound_to_exact_linked_image(tmp_path):
+    boot = 0x004FC900
+    end = boot + sum(CAPS.values())
+    elf_end = 0x004FC800
+    log = (f"HALO_PS2_LOCAL memory-physical elf_end=0x{elf_end:x} "
+           f"boot=0x{boot:x} boot_end=0x{end:x} reserve=0x1a00000 "
+           f"allocator_gap={boot - elf_end}\n" + arena_markers(boot) + "\n" +
+           kernel_markers() + "\nHALO_PS2_LOCAL memory-ready canaries=10\n")
+    physical = physical_memory_evidence(log)
+    elf = tmp_path / "machine.elf"
+    elf.write_bytes(b"synthetic ELF identity")
+    probe = tmp_path / "probe.json"
+    probe.write_text(json.dumps({"hcu_gameplay_machine": {
+        "elf": {"sha256": hashlib.sha256(elf.read_bytes()).hexdigest()},
+        "physical_placement": {
+            "nobits": {"bytes": 2114532},
+            "symbols": {"_end": elf_end},
+            "boot_malloc_request_bytes": end - boot,
+            "necessary_conditions_pass": True,
+            "load_intervals": [{"memory_end": elf_end}],
+        },
+        "memory_ledger": {"map_sha256": "fixture"},
+    }}))
+    assert linked_physical_evidence(physical, elf, probe)["passed"]
+    corrupted = dict(physical, boot_end=end + 16)
+    assert not linked_physical_evidence(corrupted, elf, probe)["passed"]
+    elf.write_bytes(b"different image")
+    assert not linked_physical_evidence(physical, elf, probe)["passed"]

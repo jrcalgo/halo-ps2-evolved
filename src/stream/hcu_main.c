@@ -21,6 +21,10 @@
 
 static hcu_map_service s_map_service;
 
+/* The host link/guest placement gate budgets this exact worst-case padding. */
+_Static_assert(MEM_LAYOUT_V2_GUARDED_SLACK == 310u,
+	"update the M1 physical placement probe when guard layout changes");
+
 static const char *const s_region_names[MEM_LAYOUT_V2_REGION_COUNT] = {
 	"resident_gameplay", "current_bsp", "texture_cache",
 	"dynamic_simulation", "dma_commands", "streaming", "checkpoint",
@@ -139,7 +143,7 @@ int main(int argc, char **argv)
 	 * allocator-owned address. The link/runtime ledger includes this slack. */
 	/* Bypass HCU's post-boot malloc arena wrapper for the single machine-owned
 	 * backing allocation. The linked HCU profile supplies --wrap=malloc/free. */
-	backing = __real_malloc((unsigned long)(backing_bytes + 15u));
+	backing = __real_malloc((unsigned long)(backing_bytes + MEM_LAYOUT_V2_GUARDED_SLACK));
 	if (!backing)
 	{
 		printf("[err] cannot allocate budget-v2 backing\n");
@@ -153,7 +157,8 @@ int main(int argc, char **argv)
 		ee_physical_address(&_fbss) > 0x00300000u ||
 		ee_physical_address(backing) < ee_physical_address(&_end) ||
 		ee_physical_address(backing) > 0x01a00000u ||
-		backing_bytes + 15u > 0x01a00000u - ee_physical_address(backing))
+		backing_bytes + MEM_LAYOUT_V2_GUARDED_SLACK >
+			0x01a00000u - ee_physical_address(backing))
 	{
 		printf("[err] ELF/boot backing exceeds EE fixed budget\n");
 		__real_free(backing);
@@ -164,9 +169,10 @@ int main(int argc, char **argv)
 		__real_free(backing);
 		return 1;
 	}
-	arena_init(&boot, "boot", backing, backing_bytes + 15u);
-	if (mem_layout_v2_init_charged(&layout, &boot,
-		resident_static_bytes) != 0 ||
+	arena_init(&boot, "boot", backing,
+		backing_bytes + MEM_LAYOUT_V2_GUARDED_SLACK);
+	if (mem_layout_v2_init_charged_guarded(&layout, &boot,
+		resident_static_bytes, 0xA5u) != 0 ||
 		hcu_memory_bind_parent_v2(&layout, (size_t)HALO_HCU_TAG_CACHE_BYTES) != 0)
 	{
 		printf("[err] cannot bind CE fixed memory regions\n");
@@ -175,18 +181,22 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	if (report_and_validate_regions(&layout,
-		ee_physical_address(backing), backing_bytes + 15u) != 0) {
-		printf("[err] budget-v2 arena intervals overlap or escape boot backing\n");
+		ee_physical_address(backing),
+		backing_bytes + MEM_LAYOUT_V2_GUARDED_SLACK) != 0 ||
+		!mem_layout_v2_guards_intact(&layout)) {
+		printf("[err] budget-v2 intervals or boundary canaries invalid\n");
 		physical_memory_free();
 		__real_free(backing);
 		return 1;
 	}
-	printf("HALO_PS2_LOCAL memory-layout bss=%u backing=%u\n",
-		(unsigned)resident_static_bytes, (unsigned)backing_bytes);
+	printf("HALO_PS2_LOCAL memory-layout bss=%u backing=%u guard_slack=%u\n",
+		(unsigned)resident_static_bytes, (unsigned)backing_bytes,
+		(unsigned)MEM_LAYOUT_V2_GUARDED_SLACK);
 	printf("HALO_PS2_LOCAL memory-physical elf_end=0x%x boot=0x%x boot_end=0x%x reserve=0x1a00000 allocator_gap=%u\n",
 		(unsigned)ee_physical_address(&_end),
 		(unsigned)ee_physical_address(backing),
-		(unsigned)(ee_physical_address(backing) + backing_bytes + 15u),
+		(unsigned)(ee_physical_address(backing) + backing_bytes +
+			MEM_LAYOUT_V2_GUARDED_SLACK),
 		(unsigned)(ee_physical_address(backing) -
 			ee_physical_address(&_end)));
 	physical_memory_allocate();
@@ -197,6 +207,14 @@ int main(int argc, char **argv)
 		__real_free(backing);
 		return 1;
 	}
+	if (!mem_layout_v2_guards_intact(&layout)) {
+		printf("[err] budget-v2 boundary canary corrupted during CE bind\n");
+		physical_memory_free();
+		__real_free(backing);
+		return 1;
+	}
+	printf("HALO_PS2_LOCAL memory-ready canaries=%u\n",
+		(unsigned)(MEM_LAYOUT_V2_REGION_COUNT + 1));
 	if (!pad_init())
 	{
 		printf("[err] PS2 pad service initialization failed\n");
@@ -227,6 +245,10 @@ int main(int argc, char **argv)
 	printf("HALO_PS2_LOCAL memory-and-input-ready (cache=%u bytes; bootstrap only)\n",
 		(unsigned)HALO_HCU_TAG_CACHE_BYTES);
 	result = halo_shell_main();
+	if (!mem_layout_v2_guards_intact(&layout)) {
+		printf("HALO_PS2_FAIL budget-v2 boundary canary corrupted\n");
+		result = 1;
+	}
 	hcu_map_service_shutdown(&s_map_service);
 	physical_memory_free();
 	__real_free(backing);
