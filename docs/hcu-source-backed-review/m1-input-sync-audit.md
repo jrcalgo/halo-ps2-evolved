@@ -17,14 +17,18 @@ port-2 disconnect and removal, same-port reconnect/insertion, and continued
 state on unaffected ports (`tests/hcu_input_bridge_main.c:17` and `:57`). The
 PS2 adapter itself accepts logical ports 0–3 and only the no-slot XInput device
 contract (`submodules/halo-ce-universal/port/ps2/src/ps2_input.c:112`).
+The host libpad shim also compiles the real `pad.c` and verifies both supported
+physical topologies: port-0 multitap at slots 0–3, and port-0 single pad plus
+port-1 multitap at slots 0–2 (`tests/hcu_pad_poll_main.c:65`,
+`tests/test_hcu_ps2_input.py:16`).
 
 `halo-ps2` maps four players as port-0 slots 0–3 when multitap 0 is present;
 otherwise it maps port-0 slot 0, then port-1 slots 0–2 (provided multitap 1 is
 present for slots 1–2) in `submodules/halo-ps2/engine/src/platform/pad.c:116`.
-The current host bridge fixture mocks the final four logical samples; it does
-not exercise `pad_poll_players()`'s physical port/slot selection or libpad
-hotplug state machine. Real DS2/multitap and PCSX2 controller qualification
-remain open, as do pressed/held/released transitions through CE's full
+The parent bridge integration fixture mocks the final four logical samples;
+the separate real-`pad.c` host shim covers physical port/slot selection but not
+the libpad hotplug state machine. Real DS2/multitap and PCSX2 controller
+qualification remain open, as do pressed/held/released transitions through CE's full
 `input_get_device_states()` state machine (not merely the XInput layer).
 
 ## Time and synchronization owners
@@ -49,9 +53,10 @@ those proofs and must trigger a fresh closure/caller audit.
 
 ## Verification and remaining work
 
-- `PYTHONPATH=. pytest -q tests/test_hcu_ps2_input.py`: 3 passed after expanding
-  the host bridge scenario.
+- `PYTHONPATH=. pytest -q tests/test_hcu_ps2_input.py`: 4 passed, 2 subtests
+  passed after expanding the bridge scenario and compiling real `pad.c` against
+  fake libpad/libmtap services.
 - The focused parent/HCU physical-memory and allocation suite remains green:
   22 passed, 1 skipped, 549 subtests passed.
-- Not yet qualified: actual DS2, multitap 0/1, CE pressed/held/released frame
+- Not yet qualified: actual DS2/multitap hardware, CE pressed/held/released frame
   snapshots, OPL/PCSX2 input-device behavior, or a future worker-thread profile.
