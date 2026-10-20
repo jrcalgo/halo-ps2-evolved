@@ -133,9 +133,11 @@ def location_payload(source: Path) -> bytes:
         palette, = st.unpack_from("<h", block, region_start + i * 0x28 + 0x24)
         underwater, plane_distance = 0, 0.0
         if 0 <= palette < palette_count:
-            group, tag_id = data.region.tagref(palette_start + palette * 0x88 + 0x20)
+            reference = palette_start + palette * 0x88 + 0x20
+            group = block[reference:reference + 4][::-1].decode("ascii", "replace")
+            tag_id, = st.unpack_from("<I", block, reference + 12)
             fog = data.by_id.get(tag_id) if tag_id != 0xFFFFFFFF else None
-            if group == "fog " and fog is not None and fog.group == "fog":
+            if group == "fog " and fog is not None and fog.group == "fog ":
                 fog_base = fog.data_address - data.base
                 flags, = st.unpack_from("<B", data.region, fog_base)
                 plane_distance, = st.unpack_from("<f", data.region, fog_base + 0x74)
