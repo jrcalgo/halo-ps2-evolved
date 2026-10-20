@@ -95,6 +95,62 @@ static int finite_float(float value)
     return value == value && value > -1.0e20f && value < 1.0e20f;
 }
 
+int collpack_actor_collision(const uint8_t *payload, size_t length,
+    collpack_actor_collision_view *view)
+{
+    uint16_t version, node_count;
+    uint32_t triangle_count, node_stride, cursor, i;
+    const uint32_t triangle_stride = 46;
+    if (!payload || !view || length < 16 || memcmp(payload, "ACL1", 4) != 0) return -1;
+    memcpy(&version, payload + 4, 2);
+    memcpy(&node_count, payload + 6, 2);
+    triangle_count = rd32(payload + 8);
+    node_stride = rd32(payload + 12);
+    if (version != 2 || node_count == 0 || node_count > 64 || node_stride != 36 ||
+        triangle_count > 8192) return -1;
+    cursor = 16;
+    if ((size_t)cursor + (size_t)node_count * node_stride > length) return -1;
+    view->nodes = payload + cursor;
+    for (i = 0; i < node_count; i++) {
+        const uint8_t *node = view->nodes + i * node_stride;
+        int16_t index, parent;
+        float values[8], norm;
+        unsigned j;
+        memcpy(&index, node, 2);
+        memcpy(&parent, node + 2, 2);
+        if (index != (int16_t)i || parent < -1 || parent >= (int16_t)node_count || parent == index)
+            return -1;
+        memcpy(values, node + 4, sizeof values);
+        norm = values[3] * values[3] + values[4] * values[4] +
+            values[5] * values[5] + values[6] * values[6];
+        if (!finite_float(norm) || norm < 0.9f || norm > 1.1f) return -1;
+        for (j = 0; j < 8; j++) if (!finite_float(values[j])) return -1;
+    }
+    cursor += node_count * node_stride;
+    if ((size_t)cursor + (size_t)triangle_count * triangle_stride != length) return -1;
+    view->triangles = payload + cursor;
+    for (i = 0; i < triangle_count; i++) {
+        const uint8_t *triangle = view->triangles + i * triangle_stride;
+        int16_t node, region, part, material, surface;
+        float xyz[9];
+        unsigned j;
+        memcpy(&node, triangle, 2);
+        memcpy(&region, triangle + 2, 2);
+        memcpy(&part, triangle + 4, 2);
+        memcpy(&material, triangle + 6, 2);
+        memcpy(&surface, triangle + 8, 2);
+        memcpy(xyz, triangle + 10, sizeof xyz);
+        if (node < 0 || node >= (int16_t)node_count || region < 0 || part < 0 ||
+            material < 0 || surface < 0) return -1;
+        for (j = 0; j < 9; j++) if (!finite_float(xyz[j])) return -1;
+    }
+    view->node_count = node_count;
+    view->triangle_count = triangle_count;
+    view->node_stride = node_stride;
+    view->triangle_stride = triangle_stride;
+    return 0;
+}
+
 int collpack_vital_profile(const uint8_t *payload, size_t length,
     vital_damage_profile *profile, int16_t *body_material_type,
     int16_t *shield_material_type)

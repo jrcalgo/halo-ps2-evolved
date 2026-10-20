@@ -3,7 +3,9 @@ from collections import Counter
 from pathlib import Path
 import math
 import struct
+import subprocess
 import sys
+import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -73,6 +75,15 @@ class ActorCollision(unittest.TestCase):
                 self.assertEqual((stored, raw, codec), (len(payload), len(payload), 0))
                 actor_section = pack[offset:offset + raw]
         self.assertEqual(actor_section, payload, "HP2 must carry the extracted actor collision section")
+
+        with tempfile.TemporaryDirectory() as temp:
+            exe = Path(temp) / "collpack_actor"
+            subprocess.run(
+                ["cc", "-std=c11", "-Wall", "-Wextra", "-Werror", "-I" + str(ROOT / "src"),
+                 str(ROOT / "tests/collpack_actor_main.c"), str(ROOT / "src/game/collpack.c"),
+                 "-o", str(exe)], check=True, capture_output=True)
+            output = subprocess.run([str(exe)], check=True, capture_output=True, text=True).stdout
+        self.assertIn("actor collision pack view ok", output)
 
 
 if __name__ == "__main__":
