@@ -27,6 +27,8 @@ int main(void)
     float origin[3] = {0, 0, 1}, direction[3] = {0, 0, -1};
     shot_scene scene = {0};
     shot projectile, attached_projectile;
+    shot_target_view target_view = {0};
+    vital_damage_profile target_profile = {0};
     shot_def attach_def;
     uint32_t seed = 123;
     memcpy(payload, "ACL1", 4);
@@ -55,24 +57,34 @@ int main(void)
     scene.target_body_damage_material_type = 21;
     scene.target_shield_damage_material_type = 22;
     scene.target_damage_material_types_valid = 1;
-    scene.actor_mesh = &actor;
-    scene.actor_node_to_world = matrix;
+    target_view.object_index = 13;
+    target_view.body_damage_material_type = 21;
+    target_view.shield_damage_material_type = 22;
+    target_view.mesh = &actor;
+    target_profile.material_count = 3;
+    target_profile.material[2].material_type = 22; /* physics material, not resistance index */
+    target_view.vitality_profile = &target_profile;
+    target_view.node_to_world = (const float (*)[12])matrix;
+    scene.targets = &target_view;
+    scene.target_count = 1;
     shot_spawn(&projectile, origin, direction, &SHOT_PISTOL);
     shot_tick(&projectile, &SHOT_PISTOL, &scene, &seed);
     if (!projectile.hit_object || !projectile.hit_object_this_tick ||
         projectile.hit_node_index != 0 || projectile.hit_damage_part != 2 ||
         projectile.hit_region_index != 0 || projectile.damage_resistance_index != 2 ||
+        projectile.hit_material_type != 22 || projectile.hit_object_index != 13 ||
         projectile.damage <= 0.0f) return 2;
     printf("actor shot node=%d region=%d part=%d resistance=%d damage=%.1f\n",
         projectile.hit_node_index, projectile.hit_region_index,
         projectile.hit_damage_part, projectile.damage_resistance_index, projectile.damage);
     attach_def = SHOT_PISTOL;
-    attach_def.response[0] = 4; /* Halo material response enum: attach. */
+    attach_def.response[22] = 4; /* CE damage material -> global physics material -> response. */
     shot_spawn(&attached_projectile, origin, direction, &attach_def);
     shot_tick(&attached_projectile, &attach_def, &scene, &seed);
     if (!attached_projectile.alive || !attached_projectile.attached ||
         !attached_projectile.attached_target || !attached_projectile.attached_node_valid ||
-        attached_projectile.attached_node_index != 0) return 3;
+        attached_projectile.attached_node_index != 0 ||
+        attached_projectile.attached_object_index != 13) return 3;
     matrix[0][3] = 10.0f;
     shot_tick(&attached_projectile, &attach_def, &scene, &seed);
     if (attached_projectile.position[0] < 9.99f || attached_projectile.position[0] > 10.01f)

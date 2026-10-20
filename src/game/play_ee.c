@@ -1,6 +1,7 @@
 /* Replaces the free camera when this object is linked.
  * The pad steps the collision biped and the view is its eye. */
 #include "game/collpack.h"
+#include "game/combat_targets.h"
 #include "game/gun.h"
 #include "game/grenade.h"
 #include "game/move.h"
@@ -94,6 +95,11 @@ static int s_live_actor_index = -1;
 static int s_live_actor_def = -1;
 static float s_live_actor_center[3];
 static unsigned s_live_actor_pose_tick;
+static combat_target_registry s_combat_targets;
+static float s_combat_target_matrices[COMBAT_TARGET_MAX][COMBAT_TARGET_MAX_NODES][12];
+static object_nodes_t s_combat_target_workspace;
+static shot_target_view s_combat_target_views[COMBAT_TARGET_MAX];
+static unsigned s_combat_target_view_count;
 
 static int play_actor_bind_pose(void)
 {
@@ -220,6 +226,76 @@ static int play_pose_live_player_actor(void)
         return 1;
     }
     return 0;
+}
+
+static combat_target *play_combat_target_find(int object_index)
+{
+    unsigned i;
+    if (object_index < 0) return NULL;
+    for (i = 0; i < s_combat_targets.count; i++)
+        if (s_combat_targets.target[i].object_index == (uint16_t)object_index)
+            return &s_combat_targets.target[i];
+    return NULL;
+}
+
+static int play_resolve_combat_target(void *user, uint32_t object_tag_id,
+    uint32_t model_tag_id, combat_target_definition *out)
+{
+    const scen_section *scen = (const scen_section *)user;
+    scen_player player;
+    scen_def player_definition;
+    if (!scen || !out) return -1;
+    player = scen_get_player(scen);
+    if (player.biped_def == 0 || player.biped_def > scen->def_count) return -1;
+    player_definition = scen_get_def(scen, player.biped_def - 1u);
+    /* The currently exported ACOL/VITA pair is cyborg-only. Match both object
+     * and model tag identities; node-count coincidence alone is insufficient. */
+    if (player_definition.type != SCEN_BIPED ||
+        object_tag_id != player_definition.tag_id ||
+        model_tag_id != player_definition.model_tag ||
+        !s_actor_collision.node_count || !s_probe_damage_profile.maximum_body)
+        return -1;
+    out->mesh = &s_actor_collision;
+    out->vitality = &s_probe_damage_profile;
+    out->body_damage_material_type = s_probe_body_damage_material_type;
+    out->shield_damage_material_type = s_probe_shield_damage_material_type;
+    return 0;
+}
+
+static void play_update_combat_targets(void)
+{
+    unsigned i;
+    if (!s_engine_objects || !s_engine_object_world || !s_engine_object_world->scen) {
+        s_combat_target_view_count = 0;
+        return;
+    }
+    combat_targets_update(&s_combat_targets, s_combat_target_matrices,
+        s_engine_objects, s_engine_object_world, &s_combat_target_workspace,
+        play_resolve_combat_target, (void *)s_engine_object_world->scen);
+    s_combat_target_view_count = s_combat_targets.count;
+    for (i = 0; i < s_combat_target_view_count; i++) {
+        const combat_target *target = &s_combat_targets.target[i];
+        shot_target_view *view = &s_combat_target_views[i];
+        view->object_index = (int16_t)target->object_index;
+        view->body_damage_material_type = target->body_damage_material_type;
+        view->shield_damage_material_type = target->shield_damage_material_type;
+        view->mesh = target->mesh;
+        view->vitality_profile = target->profile;
+        view->node_to_world = (const float (*)[12])target->node_to_world;
+        memcpy(view->center, target->object->pos, sizeof view->center);
+        memcpy(view->bounds_min, target->bounds_min, sizeof view->bounds_min);
+        memcpy(view->bounds_max, target->bounds_max, sizeof view->bounds_max);
+    }
+    if (s_live_actor_vital_ready && s_live_actor_index >= 0) {
+        combat_target *target = play_combat_target_find(s_live_actor_index);
+        if (target) s_live_actor_vital = target->health;
+    }
+}
+
+static void play_store_live_target_health(void)
+{
+    combat_target *target = play_combat_target_find(s_live_actor_index);
+    if (target && s_live_actor_vital_ready) target->health = s_live_actor_vital;
 }
 
 static void play_select_weapon(void)
@@ -467,8 +543,14 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
     /* The combat probe follows the same fixed 30 Hz simulation tick as
      * projectiles. Advance stun/recharge before this tick's damage events. */
     actor_live = play_pose_live_player_actor();
+    play_update_combat_targets();
     vital_tick_profile(&s_probe_target, &s_probe_damage_profile);
-    if (actor_live) vital_tick_profile(&s_live_actor_vital, &s_probe_damage_profile);
+    combat_targets_tick(&s_combat_targets);
+    if (actor_live) {
+        combat_target *target = play_combat_target_find(s_live_actor_index);
+        if (target) s_live_actor_vital = target->health;
+        else vital_tick_profile(&s_live_actor_vital, &s_probe_damage_profile);
+    }
     mover_tick_map(&s_body, &cmd, s_yaw, &s_bsp, s_scratch, s_scratch_bytes, 0, &stats);
     s_last = stats;
     if ((held & PAD_L2) && !s_grenade_button) {
@@ -547,8 +629,25 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
         scene.bsp = &s_bsp;
         scene.directions = play_fp_directions();
         scene.direction_count = play_fp_direction_count();
-        if ((actor_live && !s_live_actor_vital.dead) ||
-            (!actor_live && !s_probe_target.dead)) {
+        if (s_combat_target_view_count > 0) {
+            const combat_target *first = &s_combat_targets.target[0];
+            scene.target = 1;
+            scene.target_is_unit = 1;
+            memcpy(scene.target_center, first->object->pos, sizeof scene.target_center);
+            scene.target_radius = 0.0f;
+            scene.targets = s_combat_target_views;
+            scene.target_count = s_combat_target_view_count;
+            scene.actor_mesh = NULL;
+            scene.actor_node_to_world = NULL;
+            scene.target_material = 0;
+            scene.target_body_damage_material_type = first->body_damage_material_type;
+            scene.target_shield_damage_material_type = first->shield_damage_material_type;
+            scene.target_damage_material_types_valid = 1;
+            scene.target_damage_resistance_index = first->profile->indirect_material_index;
+            scene.target_damage_resistance_index_valid = 1;
+            scene.target_vitality_profile = first->profile;
+        } else if ((actor_live && !s_live_actor_vital.dead) ||
+                   (!actor_live && !s_probe_target.dead)) {
             scene.target = 1;
             scene.target_is_unit = 1;
             memcpy(scene.target_center, actor_live ? s_live_actor_center : s_probe_target_center,
@@ -557,12 +656,11 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
             scene.actor_mesh = &s_actor_collision;
             scene.actor_node_to_world = (const float (*)[12])(actor_live ?
                 s_live_actor_node_to_world : s_probe_node_to_world);
+            scene.target_vitality_profile = &s_probe_damage_profile;
             scene.target_material = 0;
             scene.target_body_damage_material_type = s_probe_body_damage_material_type;
             scene.target_shield_damage_material_type = s_probe_shield_damage_material_type;
             scene.target_damage_material_types_valid = 1;
-            /* The probe has no modeled actor surface, so use the same indirect
-             * resistance index CE selects for an unclassified object hit. */
             scene.target_damage_resistance_index = s_probe_damage_profile.indirect_material_index;
             scene.target_damage_resistance_index_valid = 1;
         }
@@ -583,7 +681,20 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
             if (shot_ms > s_shot_tick_time_max_ms) s_shot_tick_time_max_ms = shot_ms;
             shot_calls++;
             s_shot_tick_samples++;
-            if (actor_live) {
+            if (s_fly[slot].hit_object_index >= 0) {
+                int object_index = s_fly[slot].hit_object_index;
+                combat_target *target = play_combat_target_find(object_index);
+                object_hit = combat_targets_apply_projectile(&s_combat_targets,
+                    (uint16_t)object_index, &s_fly[slot], VITAL_BODY, 0, 1.0f, 1.0f);
+                if (target && object_hit && object_index == s_live_actor_index)
+                    s_live_actor_vital = target->health;
+                if (target && object_hit && s_fly[slot].damage > 0.0f)
+                    printf("[play] actor damage object %d def %d amount %.2f node %d region %d part %d resistance %d shield %.3f body %.3f dead %d\n",
+                        object_index, target->definition_index, s_fly[slot].damage,
+                        s_fly[slot].hit_node_index, s_fly[slot].hit_region_index,
+                        s_fly[slot].hit_damage_part, s_fly[slot].damage_resistance_index,
+                        target->health.shield, target->health.body, target->health.dead);
+            } else if (actor_live) {
                 object_hit = vital_apply_projectile_hit_profile(&s_live_actor_vital, &s_fly[slot],
                     VITAL_BODY, &s_probe_damage_profile,
                     s_fly_def[slot]->damage_material_modifier_21,
@@ -680,6 +791,7 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
             }
         }
     }
+    play_store_live_target_health();
     cam->pos[0] = s_body.pos[0];
     cam->pos[1] = s_body.pos[1];
     cam->pos[2] = s_body.pos[2] + s_body.eye;

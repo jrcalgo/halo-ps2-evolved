@@ -22,6 +22,7 @@
 #define SHOT_ATTACH 5
 
 struct collpack_actor_collision_view;
+struct vital_damage_profile;
 
 typedef struct {
     uint32_t velocity_bits;
@@ -107,7 +108,23 @@ typedef struct {
     int16_t hit_node_index;
     int16_t hit_damage_part;
     int16_t hit_region_index;
+    int16_t hit_object_index;
+    int16_t attached_object_index;
+    int16_t ignored_object_index;
 } shot;
+
+/* Optional multi-object collision views supplied by the bounded play-runtime
+ * actor registry. The identity is the stable object-table slot for the map. */
+typedef struct {
+    int16_t object_index;
+    int16_t body_damage_material_type;
+    int16_t shield_damage_material_type;
+    const struct collpack_actor_collision_view *mesh;
+    const struct vital_damage_profile *vitality_profile;
+    const float (*node_to_world)[12];
+    float center[3];
+    float bounds_min[3], bounds_max[3];
+} shot_target_view;
 
 typedef struct {
     const collide_bsp *bsp;
@@ -129,6 +146,9 @@ typedef struct {
     int target_damage_material_types_valid;
     const struct collpack_actor_collision_view *actor_mesh;
     const float (*actor_node_to_world)[12];
+    const struct vital_damage_profile *target_vitality_profile;
+    const shot_target_view *targets;
+    unsigned target_count;
     int underwater;
     const float (*directions)[3];
     unsigned direction_count;

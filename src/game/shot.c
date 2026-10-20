@@ -1,4 +1,5 @@
 #include "game/shot.h"
+#include "game/vital.h"
 #include "game/collpack.h"
 #include <math.h>
 #include <string.h>
@@ -31,6 +32,27 @@ static float f32(uint32_t bits)
 static float dot3(const float *a, const float *b)
 {
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
+static int segment_hits_bounds(const float origin[3], const float delta[3],
+    const float minimum[3], const float maximum[3], float max_t)
+{
+    float near_t = 0.0f, far_t = max_t;
+    unsigned axis;
+    for (axis = 0; axis < 3; axis++) {
+        if (fabsf(delta[axis]) < 1.0e-12f) {
+            if (origin[axis] < minimum[axis] || origin[axis] > maximum[axis]) return 0;
+        } else {
+            float a = (minimum[axis] - origin[axis]) / delta[axis];
+            float b = (maximum[axis] - origin[axis]) / delta[axis];
+            float swap;
+            if (a > b) { swap = a; a = b; b = swap; }
+            if (a > near_t) near_t = a;
+            if (b < far_t) far_t = b;
+            if (near_t > far_t) return 0;
+        }
+    }
+    return far_t > 0.0f;
 }
 
 static float length3(const float *v)
@@ -161,6 +183,9 @@ void shot_spawn(shot *s, const float origin[3], const float forward[3], const sh
     s->hit_node_index = -1;
     s->hit_damage_part = -1;
     s->hit_region_index = -1;
+    s->hit_object_index = -1;
+    s->attached_object_index = -1;
+    s->ignored_object_index = -1;
 }
 
 void shot_spawn_seeded(shot *s, const float origin[3], const float forward[3],
@@ -288,8 +313,24 @@ static float damage_material_modifier(const shot_def *def, int material, int att
 }
 
 static void set_target_damage_modifiers(shot *s, const shot_def *def,
-    const shot_scene *scene, int attached, int damage_index)
+    const shot_scene *scene, int attached, int damage_index, int object_index)
 {
+    unsigned i;
+    if (scene && object_index >= 0 && scene->targets) {
+        for (i = 0; i < scene->target_count; i++) {
+            const shot_target_view *target = &scene->targets[i];
+            if (target->object_index != object_index) continue;
+            s->damage_resistance_index = damage_index >= 0 ? (int16_t)damage_index : -1;
+            s->damage_body_material_type = target->body_damage_material_type;
+            s->damage_shield_material_type = target->shield_damage_material_type;
+            s->damage_body_modifier = damage_material_modifier(def,
+                target->body_damage_material_type, attached);
+            s->damage_shield_modifier = damage_material_modifier(def,
+                target->shield_damage_material_type, attached);
+            s->damage_material_types_valid = 1;
+            return;
+        }
+    }
     if (!scene || !scene->target_damage_material_types_valid) return;
     s->damage_resistance_index = damage_index >= 0 ? (int16_t)damage_index :
         (scene->target_damage_resistance_index_valid ? scene->target_damage_resistance_index : -1);
@@ -300,6 +341,16 @@ static void set_target_damage_modifiers(shot *s, const shot_def *def,
     s->damage_shield_modifier = damage_material_modifier(def,
         s->damage_shield_material_type, attached);
     s->damage_material_types_valid = 1;
+}
+
+static int target_collision_material(const struct vital_damage_profile *profile,
+    int damage_index, int fallback)
+{
+    if (profile && damage_index >= 0 && damage_index < profile->material_count) {
+        int material_type = profile->material[damage_index].material_type;
+        if (material_type >= 0 && material_type < SHOT_MATERIALS) return material_type;
+    }
+    return fallback;
 }
 
 static int potential_response_of(const shot_def *def, int material, int object_is_unit,
@@ -340,7 +391,8 @@ static void reflect_with_friction(float velocity[3], const float normal[3],
 static int nearest_hit(
     const shot *s, const shot_scene *scene,
     const float end[3], float *t, float normal[3], int *object_hit, int *material,
-    int *damage_index, int16_t *node_index, int16_t *damage_part, int16_t *region_index)
+    int *damage_index, int16_t *node_index, int16_t *damage_part, int16_t *region_index,
+    int16_t *object_index)
 {
     float segment[3], best;
     int found = 0, i;
@@ -348,6 +400,7 @@ static int nearest_hit(
     *node_index = -1;
     *damage_part = -1;
     *region_index = -1;
+    *object_index = -1;
     for (i = 0; i < 3; i++) segment[i] = end[i] - s->position[i];
     best = 2.0f;
     if (scene && scene->bsp) {
@@ -412,7 +465,8 @@ static int nearest_hit(
         if (collpack_actor_ray(scene->actor_mesh, scene->actor_node_to_world,
                 s->position, segment, best, &hit) == 1 && hit.distance > 0.0f && hit.distance < best) {
             best = hit.distance;
-            *material = scene->target_material;
+            *material = target_collision_material(scene->target_vitality_profile,
+                hit.resistance_index, scene->target_material);
             *object_hit = 1;
             *damage_index = hit.resistance_index;
             *node_index = hit.node_index;
@@ -422,6 +476,34 @@ static int nearest_hit(
             normal[1] = hit.normal[1];
             normal[2] = hit.normal[2];
             found = 1;
+        }
+    }
+    if (scene && scene->targets) {
+        unsigned target_index;
+        for (target_index = 0; target_index < scene->target_count; target_index++) {
+            const shot_target_view *target = &scene->targets[target_index];
+            collpack_actor_hit hit;
+            if (!target->mesh || !target->node_to_world || target->object_index < 0 ||
+                (s->ignore_target && s->ignored_object_index == target->object_index)) continue;
+            if (!segment_hits_bounds(s->position, segment, target->bounds_min,
+                    target->bounds_max, best)) continue;
+            if (collpack_actor_ray(target->mesh, target->node_to_world,
+                    s->position, segment, best, &hit) == 1 && hit.distance > 0.0f &&
+                hit.distance < best) {
+                best = hit.distance;
+                *material = target_collision_material(target->vitality_profile,
+                    hit.resistance_index, scene->target_material);
+                *object_hit = 1;
+                *damage_index = hit.resistance_index;
+                *node_index = hit.node_index;
+                *damage_part = hit.damage_part;
+                *region_index = hit.region_index;
+                *object_index = target->object_index;
+                normal[0] = hit.normal[0];
+                normal[1] = hit.normal[1];
+                normal[2] = hit.normal[2];
+                found = 1;
+            }
         }
     }
     *t = best;
@@ -455,16 +537,38 @@ int shot_tick(shot *s, const shot_def *def, const shot_scene *scene, uint32_t *s
     s->hit_object_this_tick = 0;
     s->attached_damage_event = 0;
     if (s->attached) {
-        if (s->attached_target && scene && scene->target) {
-            if (s->attached_node_valid && scene->actor_node_to_world && scene->actor_mesh &&
-                s->attached_node_index >= 0 &&
-                (unsigned)s->attached_node_index < scene->actor_mesh->node_count) {
-                affine_local_to_world(scene->actor_node_to_world[s->attached_node_index],
-                    s->attached_local_position, s->position);
-            } else {
-                s->position[0] = scene->target_center[0] + s->attached_target_offset[0];
-                s->position[1] = scene->target_center[1] + s->attached_target_offset[1];
-                s->position[2] = scene->target_center[2] + s->attached_target_offset[2];
+        if (s->attached_target && scene) {
+            int followed = 0;
+            if (s->attached_object_index >= 0 && scene->targets) {
+                unsigned target_index;
+                for (target_index = 0; target_index < scene->target_count; target_index++) {
+                    const shot_target_view *target = &scene->targets[target_index];
+                    if (target->object_index != s->attached_object_index) continue;
+                    if (s->attached_node_valid && target->node_to_world && target->mesh &&
+                        s->attached_node_index >= 0 &&
+                        (unsigned)s->attached_node_index < target->mesh->node_count) {
+                        affine_local_to_world(target->node_to_world[s->attached_node_index],
+                            s->attached_local_position, s->position);
+                    } else {
+                        s->position[0] = target->center[0] + s->attached_target_offset[0];
+                        s->position[1] = target->center[1] + s->attached_target_offset[1];
+                        s->position[2] = target->center[2] + s->attached_target_offset[2];
+                    }
+                    followed = 1;
+                    break;
+                }
+            }
+            if (!followed && scene->target && s->attached_object_index < 0) {
+                if (s->attached_node_valid && scene->actor_node_to_world && scene->actor_mesh &&
+                    s->attached_node_index >= 0 &&
+                    (unsigned)s->attached_node_index < scene->actor_mesh->node_count) {
+                    affine_local_to_world(scene->actor_node_to_world[s->attached_node_index],
+                        s->attached_local_position, s->position);
+                } else {
+                    s->position[0] = scene->target_center[0] + s->attached_target_offset[0];
+                    s->position[1] = scene->target_center[1] + s->attached_target_offset[1];
+                    s->position[2] = scene->target_center[2] + s->attached_target_offset[2];
+                }
             }
         }
         s->detonation_timer += s->detonation_timer_delta;
@@ -476,6 +580,7 @@ int shot_tick(shot *s, const shot_def *def, const shot_scene *scene, uint32_t *s
                     def->attached_damage_lower;
                 s->damage = (1.0f - scale) * def->attached_damage_minimum + random_damage * scale;
                 s->hit_object_this_tick = 1;
+                s->hit_object_index = s->attached_object_index;
                 s->attached_damage_event = 1;
                 s->damage_modifier_21 = def->attached_damage_material_modifier_21;
                 s->damage_modifier_22 = def->attached_damage_material_modifier_22;
@@ -507,6 +612,7 @@ int shot_tick(shot *s, const shot_def *def, const shot_scene *scene, uint32_t *s
         float hit_t, normal[3];
         int object_hit = 0, material = 0, hit, damage_index;
         int16_t hit_node = -1, hit_part = -1, hit_region = -1;
+        int16_t hit_object_index = -1;
         if (f32(def->velocity_bits) != def->final_velocity &&
             damage_range_upper != damage_range_lower) {
             float initial_speed = f32(def->velocity_bits);
@@ -597,7 +703,7 @@ int shot_tick(shot *s, const shot_def *def, const shot_scene *scene, uint32_t *s
         }
         for (i = 0; i < 3; i++) end[i] = s->position[i] + average[i] * fraction * time_left;
         hit = nearest_hit(s, scene, end, &hit_t, normal, &object_hit, &material,
-            &damage_index, &hit_node, &hit_part, &hit_region);
+            &damage_index, &hit_node, &hit_part, &hit_region, &hit_object_index);
         if (hit) {
             float traveled[3];
             int response, object_overpenetrated = 0;
@@ -620,7 +726,8 @@ int shot_tick(shot *s, const shot_def *def, const shot_scene *scene, uint32_t *s
                 s->hit_node_index = hit_node;
                 s->hit_damage_part = hit_part;
                 s->hit_region_index = hit_region;
-                set_target_damage_modifiers(s, def, scene, 0, damage_index);
+                s->hit_object_index = hit_object_index;
+                set_target_damage_modifiers(s, def, scene, 0, damage_index, hit_object_index);
                 if (def->final_velocity != f32(def->velocity_bits)) {
                     float initial_speed = fabsf(f32(def->velocity_bits));
                     damage_scale = (impact_speed - def->final_velocity) /
@@ -686,6 +793,7 @@ int shot_tick(shot *s, const shot_def *def, const shot_scene *scene, uint32_t *s
                 /* projectile_collision sets ignore_object_index after applying
                  * initial_friction, preventing a second hit on the same object. */
                 s->ignore_target = 1;
+                s->ignored_object_index = hit_object_index;
                 s->action = SHOT_NONE;
                 object_overpenetrated = 1;
             }
@@ -695,9 +803,27 @@ int shot_tick(shot *s, const shot_def *def, const shot_scene *scene, uint32_t *s
                     material >= 0 && material < SHOT_MATERIALS ? def->perpendicular_friction[material] : 0.0f);
             } else if (response == SHOT_ATTACH) {
                 if (object_hit) {
-                    set_target_damage_modifiers(s, def, scene, 1, -1);
-                    if (scene && scene->target) {
-                        unsigned axis;
+                    unsigned target_index, axis;
+                    s->attached_object_index = hit_object_index;
+                    set_target_damage_modifiers(s, def, scene, 1, -1, hit_object_index);
+                    if (scene && scene->targets && hit_object_index >= 0) {
+                        for (target_index = 0; target_index < scene->target_count; target_index++) {
+                            const shot_target_view *target = &scene->targets[target_index];
+                            if (target->object_index != hit_object_index) continue;
+                            if (target->node_to_world && target->mesh && hit_node >= 0 &&
+                                (unsigned)hit_node < target->mesh->node_count &&
+                                affine_world_to_local(target->node_to_world[hit_node],
+                                    s->position, s->attached_local_position)) {
+                                s->attached_node_index = hit_node;
+                                s->attached_node_valid = 1;
+                            } else {
+                                for (axis = 0; axis < 3; axis++)
+                                    s->attached_target_offset[axis] = s->position[axis] -
+                                        target->center[axis];
+                            }
+                            break;
+                        }
+                    } else if (scene && scene->target) {
                         if (scene->actor_node_to_world && scene->actor_mesh && hit_node >= 0 &&
                             (unsigned)hit_node < scene->actor_mesh->node_count &&
                             affine_world_to_local(scene->actor_node_to_world[hit_node],

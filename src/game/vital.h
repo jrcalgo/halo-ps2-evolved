@@ -44,7 +44,7 @@ typedef struct {
 /* Runtime subset of CE damage_resistance + damage_resistance_material.
  * Damage-definition modifiers are supplied per impact because they depend
  * on the target material selected by collision. */
-typedef struct {
+typedef struct vital_damage_profile {
     float maximum_shield;
     float maximum_body;
     float shield_leak_fraction;
