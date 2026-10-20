@@ -35,7 +35,7 @@ typedef enum {
     COMBAT_TARGET_REJECT_CAPACITY
 } combat_target_reject;
 
-typedef struct {
+typedef struct combat_target {
     uint16_t object_index;       /* stable slot in this object_table_t lifetime */
     int16_t definition_index;
     int16_t model_index;

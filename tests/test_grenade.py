@@ -33,8 +33,10 @@ def read_map():
         effect = next(item for item in index.entries if item.group == "jpt!" and item.path == name)
         point = effect.data_address - index.base
         falloff, cutoff = struct.unpack_from("<ff", region, point)
+        damage_flags = struct.unpack_from("<I", region, point + 456)[0]
+        core_radius = struct.unpack_from("<f", region, point + 460)[0]
         minimum, lower, upper = struct.unpack_from("<fff", region, point + 464)
-        blasts[name] = (falloff, cutoff, minimum, lower, upper)
+        blasts[name] = (falloff, cutoff, damage_flags, core_radius, minimum, lower, upper)
         blast_materials[name] = (struct.unpack_from("<f", region, point + 512 + 21 * 4)[0],
                                  struct.unpack_from("<f", region, point + 512 + 22 * 4)[0])
     fuses = {}
@@ -58,6 +60,20 @@ def read_map():
 
 
 class Grenade(unittest.TestCase):
+    def test_ce_style_blast_registry_target(self):
+        with tempfile.TemporaryDirectory() as temp:
+            exe = Path(temp) / "grenade-blast"
+            subprocess.run(
+                ["cc", "-std=c11", "-Wall", "-Wextra", "-Werror", "-I" + str(ROOT / "src"),
+                 "-I" + str(ROOT / "submodules/halo-ps2/engine/src"),
+                 str(ROOT / "tests/grenade_blast_main.c"), str(ROOT / "src/game/grenade_blast.c"),
+                 str(ROOT / "src/game/grenade.c"), str(ROOT / "src/game/collide.c"),
+                 str(ROOT / "src/game/vital.c"), "-lm", "-o", str(exe)],
+                check=True, capture_output=True)
+            out = subprocess.run([str(exe)], check=True, capture_output=True, text=True).stdout
+        self.assertIn("falloff distance=1.00 damage=120.0 body=0.600", out)
+        self.assertIn("owner immunity and retail self-damage passed", out)
+
     def test_throw_fuse_and_blast(self):
         if not MAP.is_file():
             self.skipTest("decompressed Blood Gulch is not in the tree")
@@ -65,8 +81,12 @@ class Grenade(unittest.TestCase):
         self.assertEqual((velocity, kind, count, melee_damage), (10.0, 0, 4, 1000.0))
         self.assertEqual(fuses[r"weapons\frag grenade\frag grenade"], 0.5)
         self.assertEqual(fuses[r"weapons\plasma grenade\plasma grenade"], 2.0)
-        self.assertEqual(blasts[r"weapons\frag grenade\explosion"], (1.5, 2.5, 80.0, 120.0, 120.0))
-        self.assertEqual(blasts[r"weapons\plasma grenade\explosion"][:2], (0.5, 2.0))
+        self.assertEqual(blasts[r"weapons\frag grenade\explosion"][:3], (1.5, 2.5, 0x20))
+        self.assertAlmostEqual(blasts[r"weapons\frag grenade\explosion"][3], 0.4, places=6)
+        self.assertEqual(blasts[r"weapons\frag grenade\explosion"][4:], (80.0, 120.0, 120.0))
+        self.assertEqual(blasts[r"weapons\plasma grenade\explosion"][:3], (0.5, 2.0, 0x20))
+        self.assertAlmostEqual(blasts[r"weapons\plasma grenade\explosion"][3], 0.4, places=6)
+        self.assertEqual(blasts[r"weapons\plasma grenade\explosion"][4:], (80.0, 120.0, 120.0))
         self.assertEqual(blast_materials[r"weapons\frag grenade\explosion"], (1.0, 1.0))
         self.assertEqual(blast_materials[r"weapons\plasma grenade\explosion"], (1.0, 1.0))
         with tempfile.TemporaryDirectory() as temp:

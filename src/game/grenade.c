@@ -85,8 +85,18 @@ static const grenade_material PLASMA_MATERIAL[33] = {
     {2, 0, 0, 0.899999976f, 0.949999988f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
 };
 
-const grenade_def GRENADE_FRAG = {0.5f, 1.5f, 2.5f, 80.0f, 120.0f, 120.0f, 1.0f, 1.0f, 0};
-const grenade_def GRENADE_PLASMA = {2.0f, 0.5f, 2.0f, 80.0f, 120.0f, 120.0f, 1.0f, 1.0f, 1};
+const grenade_def GRENADE_FRAG = {
+    .fuse_seconds = 0.5f, .falloff = 1.5f, .cutoff = 2.5f,
+    .damage_minimum = 80.0f, .damage_lower = 120.0f, .damage_upper = 120.0f,
+    .damage_material_modifier_21 = 1.0f, .damage_material_modifier_22 = 1.0f,
+    .core_radius = 0.4f, .damage_flags = 0x20u, .fixed_fuse = 0
+};
+const grenade_def GRENADE_PLASMA = {
+    .fuse_seconds = 2.0f, .falloff = 0.5f, .cutoff = 2.0f,
+    .damage_minimum = 80.0f, .damage_lower = 120.0f, .damage_upper = 120.0f,
+    .damage_material_modifier_21 = 1.0f, .damage_material_modifier_22 = 1.0f,
+    .core_radius = 0.4f, .damage_flags = 0x20u, .fixed_fuse = 1
+};
 
 static const grenade_material *table_for(const grenade_def *def)
 {
@@ -190,6 +200,7 @@ int grenade_throw(grenade *g, const grenade_def *def, const float origin[3],
     g->alive = 1;
     g->exploded = 0;
     g->bounces = 0;
+    g->owner_object_index = -1;
     return 1;
 }
 

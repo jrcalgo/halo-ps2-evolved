@@ -44,7 +44,8 @@ ifeq ($(WORLD_PLAY),1)
 EE_OBJS += $(WORLD_OUTPUT)/play_ee.o \
 	$(WORLD_OUTPUT)/game/collpack.o $(WORLD_OUTPUT)/game/collide.o \
 	$(WORLD_OUTPUT)/game/gun.o $(WORLD_OUTPUT)/game/shot.o $(WORLD_OUTPUT)/game/vital.o \
-	$(WORLD_OUTPUT)/game/grenade.o $(WORLD_OUTPUT)/game/combat_targets.o \
+	$(WORLD_OUTPUT)/game/grenade.o $(WORLD_OUTPUT)/game/grenade_blast.o \
+	$(WORLD_OUTPUT)/game/combat_targets.o \
 	$(WORLD_OUTPUT)/game/move.o $(WORLD_OUTPUT)/game/pad.o $(WORLD_OUTPUT)/game/pill.o \
 	$(WORLD_OUTPUT)/game/play_fp.o
 EE_LDFLAGS += -Wl,--wrap,flycam_update -Wl,--wrap,profiler_overlay -Wl,--wrap,fpview_place \

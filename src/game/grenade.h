@@ -21,6 +21,8 @@ typedef struct {
     float damage_upper;
     float damage_material_modifier_21;
     float damage_material_modifier_22;
+    float core_radius;
+    uint32_t damage_flags;
     int fixed_fuse;
 } grenade_def;
 
@@ -33,7 +35,10 @@ typedef struct {
     int alive;
     int exploded;
     int bounces;
+    int16_t owner_object_index;
 } grenade;
+
+struct combat_target;
 
 typedef struct {
     float normal[3];
@@ -73,5 +78,11 @@ int grenade_tick_bsp(grenade *g, const grenade_def *def,
     const collide_bsp *bsp, uint32_t *seed);
 /* 0 outside the cutoff. Otherwise the scaled damage, and the seed advances. */
 float grenade_damage(const grenade_def *def, float distance, uint32_t *seed);
+/* CE area-damage query for one already-enumerated target. Returns 1 when the
+ * target is inside cutoff and passes LOS/ownership checks; outputs the exact
+ * center distance and rolled falloff damage. No per-event storage or heap. */
+int grenade_blast_target(const grenade *g, const grenade_def *def,
+    const collide_bsp *bsp, struct combat_target *target,
+    int owner_object_index, uint32_t *seed, float *distance, float *damage);
 int grenade_material_profile_get(int plasma, int material, grenade_material_profile *out);
 #endif
