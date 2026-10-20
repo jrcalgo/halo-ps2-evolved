@@ -34,3 +34,6 @@
 [submodule "submodules/Assembly"]
 	path = submodules/Assembly
 	url = https://github.com/XboxChaos/Assembly.git
+[submodule "submodules/opl"]
+	path = submodules/opl
+	url = https://github.com/ps2homebrew/Open-PS2-Loader.git

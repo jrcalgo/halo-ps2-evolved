@@ -11,24 +11,42 @@ sys.path.insert(0, str(ROOT / "tools"))
 from hcu_ps2_m1_physical_gate import evaluate  # noqa: E402
 
 
-RUNS = [
-    ROOT / "build/hcu-ps2-closure/emulator-m1-recompiler-43f894e003384917b1d2b58687ce15a2/result.json",
-    ROOT / "build/hcu-ps2-closure/emulator-m1-interpreter-cf28668ca6084700ad30d91e0f66d246/result.json",
-]
 PROBE = ROOT / "build/hcu-parent-link-probe/result.json"
 
 
+def current_runs():
+    """Select current-hash evidence, not a previously hard-coded ELF run."""
+    if not PROBE.is_file():
+        return []
+    probe = json.loads(PROBE.read_text())
+    elf_hash = probe["hcu_gameplay_machine"]["elf"]["sha256"]
+    candidates = []
+    for path in (ROOT / "build/hcu-ps2-closure").glob("emulator-m1-*/result.json"):
+        try:
+            result = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        if result.get("elf_sha256") == elf_hash:
+            candidates.append((path.stat().st_mtime_ns, result.get("mode"), path))
+    selected = {}
+    for _, mode, path in sorted(candidates):
+        if mode in {"interpreter", "recompiler"}:
+            selected[mode] = path
+    return [selected["recompiler"], selected["interpreter"]] if len(selected) == 2 else []
+
+
 def test_current_guarded_image_passes_both_guest_modes(tmp_path):
-    if not PROBE.is_file() or any(not path.is_file() for path in RUNS):
+    runs = current_runs()
+    if not runs:
         pytest.skip("build the combined ELF and run PCSX2 in both modes first")
-    result = evaluate(PROBE, RUNS)
+    result = evaluate(PROBE, runs)
     assert result["gate"] == "closed", result["errors"]
     assert min(run["headroom_before_reserve_bytes"] for run in result["runs"]) > 0
 
-    wrong = json.loads(RUNS[0].read_text())
+    wrong = json.loads(runs[0].read_text())
     wrong["elf_sha256"] = "0" * 64
     tampered = tmp_path / "wrong-hash.json"
     tampered.write_text(json.dumps(wrong))
-    rejected = evaluate(PROBE, [tampered, RUNS[1]])
+    rejected = evaluate(PROBE, [tampered, runs[1]])
     assert rejected["gate"] == "open"
     assert any("different ELF" in error for error in rejected["errors"])
