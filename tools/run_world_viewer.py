@@ -51,6 +51,8 @@ def main():
                         help="fire one retail shotgun burst through the cyborg mesh and measure per-tick actor-ray work")
     parser.add_argument("--actor-pistol-smoke", action="store_true",
                         help="fire the retail pistol at the live scenario biped until its tag-profiled vitality reaches death")
+    parser.add_argument("--actor-ar-smoke", action="store_true",
+                        help="sustain retail assault-rifle fire into the live biped and record simulation-tick cadence/ammo")
     parser.add_argument("--grenade-smoke", action="store_true",
                         help="bounded EE frag throw, BSP bounce/fuse and blast diagnostic")
     parser.add_argument("--fuel-still", action="store_true",
@@ -82,6 +84,11 @@ def main():
         # camera. Place chiefcam's test biped relative to that same start.
         args.camera = [98.49, -157.64, 3.10, 76.1, 0.0]
     if args.actor_pistol_smoke:
+        args.variant = "play"
+        args.objects = True
+        args.frames = 300
+        args.camera = [98.49, -157.64, 3.10, 76.1, 0.0]
+    if args.actor_ar_smoke:
         args.variant = "play"
         args.objects = True
         args.frames = 300
@@ -134,7 +141,7 @@ def main():
         if sha(packs / ("bloodgulch" + suffix)) != converted["pack_sha256"][kind]:
             raise RuntimeError("Converted pack hash differs: " + kind)
     stop_previous()
-    play_boot = args.play or args.fuel_still or args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.grenade_smoke
+    play_boot = args.play or args.fuel_still or args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.actor_ar_smoke or args.grenade_smoke
     label = "world-stream" if args.variant == "stream" else "world-portal" if args.variant == "portal" else "world"
     run = OUTPUT / "runs" / f"{label}-{args.mode}-{uuid.uuid4().hex}"
     boot = run / "boot"
@@ -159,7 +166,9 @@ def main():
         (boot / "fpstill.txt").write_text("weapons\\shotgun\\shotgun\n")
     if args.actor_pistol_smoke:
         (boot / "fpstill.txt").write_text("weapons\\pistol\\pistol\n")
-    if args.play or args.fuel_still or args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.grenade_smoke:
+    if args.actor_ar_smoke:
+        (boot / "fpstill.txt").write_text("weapons\\assault rifle\\assault rifle\n")
+    if args.play or args.fuel_still or args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.actor_ar_smoke or args.grenade_smoke:
         sys.path.insert(0, str(ROOT / "tools"))
         from convert_collision import build_pack
         decompressed = ROOT / "data/retail/convert/bloodgulch/decompressed/bloodgulch.map"
@@ -182,7 +191,7 @@ def main():
         lines.append("cache_route 1")
     if args.objects:
         lines += ["obj bloodgulch.obj.hp2", "objects 1", "sky3d 1", "skyfog 1", "objanim 0"]
-    if args.actor_ray_smoke or args.actor_pistol_smoke:
+    if args.actor_ray_smoke or args.actor_pistol_smoke or args.actor_ar_smoke:
         # The engine spawns the scenario's declared player biped three units
         # ahead of the start camera. This smoke must hit that live object.
         lines.append("chiefcam 1")
@@ -199,7 +208,7 @@ def main():
     display = os.environ.get("DISPLAY") or config["display"]
     visible_display = display == config["display"]
     ini = prepare(config, run, args.mode)
-    if args.play or args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.grenade_smoke:
+    if args.play or args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.actor_ar_smoke or args.grenade_smoke:
         pad = configparser.ConfigParser(interpolation=None)
         pad.optionxform = str
         pad.read(ini)
@@ -227,7 +236,7 @@ def main():
     save(path,result)
     # Validate that input/capture can reach the visible desktop before starting
     # PCSX2; otherwise a display-access failure leaves an orphaned emulator.
-    keyboard = Input() if args.freecam or args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.grenade_smoke or args.freecam_toggle else None
+    keyboard = Input() if args.freecam or args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.actor_ar_smoke or args.grenade_smoke or args.freecam_toggle else None
     try:
         process = subprocess.Popen(command,cwd=boot,env={**os.environ,"DISPLAY":display,"QT_QPA_PLATFORM":"xcb","APPIMAGE_EXTRACT_AND_RUN":"1"},stdout=(run/"launcher.log").open("w"),stderr=subprocess.STDOUT,start_new_session=True)
     except Exception:
@@ -242,6 +251,7 @@ def main():
     fire_next_at = 0.0
     fire_release_at = 0.0
     fire_released = False
+    actor_ar_start_tick = None
     grenade_started = False
     grenade_aim_started = False
     grenade_aim_release_at = 0.0
@@ -313,7 +323,11 @@ def main():
                 print("Collision walk is live. The window stays open.", flush=True)
                 print("W S walk, A D strafe, arrows look, G jump, Control crouch, 4 toggles freecam.", flush=True)
                 return
-            if (args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke) and window and "[play] ready" in text and not fire_started:
+            actor_ar_ticks = [int(match) for match in re.findall(
+                r"\[play\] fire ASSAULT RIFLE (?:trigger \d+|\d+) pellets \d+ tick (\d+)", text)]
+            if args.actor_ar_smoke and actor_ar_ticks and actor_ar_start_tick is None:
+                actor_ar_start_tick = actor_ar_ticks[0]
+            if (args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.actor_ar_smoke) and window and "[play] ready" in text and not fire_started:
                 focus(window)
                 keyboard.key("f", False)
                 time.sleep(.1)
@@ -321,14 +335,21 @@ def main():
                 fire_held = True
                 fire_started = True
                 fire_next_at = time.monotonic() + (1.4 if args.combat_smoke or args.actor_pistol_smoke else 1.0e9)
-                fire_release_at = time.monotonic() + .15
+                fire_release_at = time.monotonic() + (3600.0 if args.actor_ar_smoke else .15)
                 print("Combat smoke: pulsing pistol fire on the fixed probe target." if args.combat_smoke
                       else "Actor-pistol smoke: pulsing pistol fire into the live scenario biped." if args.actor_pistol_smoke
+                      else "Actor assault-rifle smoke: sustaining fire against the live biped." if args.actor_ar_smoke
                       else "Actor-ray smoke: firing one shotgun burst into the live scenario biped.", flush=True)
-            if (args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke) and fire_held and not fire_released and time.monotonic() >= fire_release_at:
+            actor_ar_release_due = (args.actor_ar_smoke and actor_ar_start_tick is not None and
+                actor_ar_ticks and actor_ar_ticks[-1] - actor_ar_start_tick >= 96)
+            if (args.combat_smoke or args.actor_ray_smoke or args.actor_pistol_smoke or args.actor_ar_smoke) and fire_held and not fire_released and (
+                    actor_ar_release_due if args.actor_ar_smoke else time.monotonic() >= fire_release_at):
                 focus(window)
                 keyboard.key("f", False)
                 fire_held = False
+                if args.actor_ar_smoke:
+                    fire_released = True
+                    print("Actor assault-rifle smoke: released after 96 simulation ticks.", flush=True)
             actor_target_dead = args.actor_pistol_smoke and bool(re.search(
                 r"\[play\] actor damage .* dead 1", text))
             if (args.actor_pistol_smoke and actor_target_dead and not fire_released and window):
@@ -492,6 +513,30 @@ def main():
                     result["actor_pistol_smoke"] = {
                         "weapon": "PISTOL", "fire_events": len(fires),
                         "actor_damage_events": len(actor_damage), "target_dead": True,
+                        "live_actor": {"object_index": int(live_actors[0][0]), "definition_index": int(live_actors[0][1]),
+                                       "model_tag": int(live_actors[0][2], 16), "node_count": int(live_actors[0][3])},
+                        "last_actor_hit": {"node": int(deaths[-1][3]), "region": int(deaths[-1][4]),
+                                           "damage_part": int(deaths[-1][5]), "resistance_index": int(deaths[-1][6]),
+                                           "shield": float(deaths[-1][7]), "body": float(deaths[-1][8])},
+                        "target": "scenario player biped with ACOL pose and cyborg-tagged vitality"}
+                if args.actor_ar_smoke:
+                    fire_lines = re.findall(r"\[play\] fire ASSAULT RIFLE (?:trigger \d+|\d+) pellets (\d+) tick (\d+)(?: magazine \d+ loaded (\d+)| loaded (\d+))", text)
+                    live_actors = re.findall(r"\[play\] live-actor object (\d+) def (\d+) model-tag ([0-9a-fA-F]+) nodes (\d+)", text)
+                    actor_damage = re.findall(r"\[play\] actor damage object (\d+) def (\d+) amount ([0-9.]+) node (-?\d+) region (-?\d+) part (-?\d+) resistance (-?\d+) shield ([0-9.]+) body (-?[0-9.]+) dead (\d+)", text)
+                    deaths = [event for event in actor_damage if event[9] == "1"]
+                    ticks = [int(row[1]) for row in fire_lines]
+                    loaded = [int(row[2] or row[3]) for row in fire_lines]
+                    if (not fire_released or len(fire_lines) < 45 or not live_actors or not deaths or
+                            int(done[2]) != 0 or any(int(row[0]) != 1 for row in fire_lines) or
+                            ticks[-1] - ticks[0] < 90 or
+                            any(b - a != 2 for a, b in zip(ticks, ticks[1:])) or
+                            any(b != a - 1 for a, b in zip(loaded, loaded[1:]))):
+                        raise RuntimeError("Assault-rifle actor smoke failed sustained 15-round/s cadence, one-round ammo consumption, target damage/death, or frame validation")
+                    result["actor_ar_smoke"] = {
+                        "weapon": "ASSAULT RIFLE", "sustain_simulation_ticks": ticks[-1] - ticks[0],
+                        "projectiles": len(fire_lines), "simulation_ticks": ticks,
+                        "magazine_loaded_after_each_shot": loaded,
+                        "target_dead": True,
                         "live_actor": {"object_index": int(live_actors[0][0]), "definition_index": int(live_actors[0][1]),
                                        "model_tag": int(live_actors[0][2], 16), "node_count": int(live_actors[0][3])},
                         "last_actor_hit": {"node": int(deaths[-1][3]), "region": int(deaths[-1][4]),

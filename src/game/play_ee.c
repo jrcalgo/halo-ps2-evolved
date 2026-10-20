@@ -68,6 +68,7 @@ static int16_t s_probe_body_damage_material_type = 21;
 static int16_t s_probe_shield_damage_material_type = 22;
 static float s_probe_target_center[3];
 static uint32_t s_seed = 1;
+static uint32_t s_play_sim_tick;
 static int s_mark; /* 0 none, 1 flying, 2 surface, 3 range */
 static int s_triangle;
 static float s_shot_tick_time_sum_ms;
@@ -319,8 +320,12 @@ static void play_tick_trigger_pair(unsigned held)
             source->values[PLAY_FP_TRIGGER_DISTRIBUTION_ANGLE]);
         if (spawned) {
             s_mark = 1;
-            printf("[play] fire %s trigger %d pellets %d\n",
-                play_fp_name(), trigger, spawned);
+            printf("[play] fire %s trigger %d pellets %d tick %u magazine %d loaded %d\n",
+                play_fp_name(), trigger, spawned, (unsigned)s_play_sim_tick,
+                s_trigger_profile[trigger].magazine_index,
+                s_trigger_profile[trigger].magazine_index >= 0 &&
+                    s_trigger_profile[trigger].magazine_index < GUN_TRIGGER_MAGAZINES ?
+                    s_trigger_pair.magazine_loaded[s_trigger_profile[trigger].magazine_index] : -1);
         }
         if (spawned < pellets)
             printf("[play] projectile pool full capacity %d dropped %d\n",
@@ -436,6 +441,7 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
         __real_flycam_update(cam, in, dt);
         return;
     }
+    s_play_sim_tick++;
     memset(&pad, 0, sizeof pad);
     pad.left_x = (int16_t)(in->move_x * 32767.0f);
     pad.left_y = (int16_t)(in->move_y * 32767.0f);
@@ -495,8 +501,9 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
                     source ? source->values[PLAY_FP_TRIGGER_DISTRIBUTION_ANGLE] : 0.0f);
                 if (spawned) {
                     s_mark = 1;
-                    printf("[play] fire %s %d pellets %d\n",
-                        play_fp_name(), s_gun.loaded, spawned);
+                    printf("[play] fire %s %d pellets %d tick %u loaded %d\n",
+                        play_fp_name(), s_gun.loaded, spawned,
+                        (unsigned)s_play_sim_tick, s_gun.loaded);
                 }
                 if (spawned < pellets)
                     printf("[play] projectile pool full capacity %d dropped %d\n",
