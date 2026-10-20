@@ -86,6 +86,88 @@ def collision_payload(source: Path) -> tuple[bytes, dict[str, float]]:
     return payload, tags
 
 
+def location_payload(source: Path) -> bytes:
+    """LOC1: CE BSP leaf/cluster/fog data needed for point media lookup.
+
+    This intentionally follows scenario_location_from_point and
+    scenario_location_underwater; collision material types are not a water
+    proxy. Offsets/strides are pinned in halo-ce-universal's structure BSP,
+    collision BSP, and fog definitions.
+    """
+    import math
+    import struct as st
+
+    data, raw, loc = _decompressed(source)
+    block = raw[loc.file_offset:loc.file_offset + loc.size]
+    address = loc.address
+    root = st.unpack_from("<I", block, 0)[0] - address
+
+    def table(offset: int, stride: int, name: str):
+        count, pointer = st.unpack_from("<II", block, root + offset)
+        start = pointer - address if count else 0
+        if count > 1_000_000 or (count and (start < 0 or start + count * stride > len(block))):
+            raise ValueError(f"structure BSP {name} block is out of range")
+        return count, start
+
+    leaf_count, leaf_start = table(0xE0, 0x10, "leaves")
+    cluster_count, cluster_start = table(0x134, 0x68, "clusters")
+    plane_count, plane_start = table(0x178, 0x20, "fog planes")
+    region_count, region_start = table(0x184, 0x28, "fog regions")
+    palette_count, palette_start = table(0x190, 0x88, "fog palette")
+    if leaf_count > 32767 or cluster_count > 32767 or plane_count > 32767 or region_count > 32767:
+        raise ValueError("structure BSP location table exceeds signed CE indices")
+
+    leaves = []
+    for i in range(leaf_count):
+        cluster, = st.unpack_from("<h", block, leaf_start + i * 0x10 + 8)
+        if cluster < -1 or cluster >= cluster_count:
+            cluster = -1
+        leaves.append(cluster)
+    clusters = []
+    for i in range(cluster_count):
+        reference, = st.unpack_from("<h", block, cluster_start + i * 0x68 + 2)
+        clusters.append(reference)
+
+    regions = []
+    for i in range(region_count):
+        palette, = st.unpack_from("<h", block, region_start + i * 0x28 + 0x24)
+        underwater, plane_distance = 0, 0.0
+        if 0 <= palette < palette_count:
+            group, tag_id = data.region.tagref(palette_start + palette * 0x88 + 0x20)
+            fog = data.by_id.get(tag_id) if tag_id != 0xFFFFFFFF else None
+            if group == "fog " and fog is not None and fog.group == "fog":
+                fog_base = fog.data_address - data.base
+                flags, = st.unpack_from("<B", data.region, fog_base)
+                plane_distance, = st.unpack_from("<f", data.region, fog_base + 0x74)
+                if math.isfinite(plane_distance):
+                    underwater = flags & 1
+                else:
+                    plane_distance = 0.0
+        regions.append((underwater, plane_distance))
+
+    planes = []
+    for i in range(plane_count):
+        at = plane_start + i * 0x20
+        region, = st.unpack_from("<h", block, at)
+        equation = st.unpack_from("<4f", block, at + 4)
+        if (region < -1 or region >= region_count or
+                not all(math.isfinite(value) for value in equation)):
+            region, equation = -1, (0.0, 0.0, 0.0, 0.0)
+        planes.append((region, *equation))
+
+    # Every count and stride is explicit; location views point into this
+    # immutable pack section and require no allocations on EE.
+    payload = bytearray(st.pack("<4sHHIIII", b"LOC1", 1, 0,
+                                leaf_count, cluster_count, plane_count, region_count))
+    payload += st.pack("<" + "h" * leaf_count, *leaves)
+    payload += st.pack("<" + "h" * cluster_count, *clusters)
+    for plane in planes:
+        payload += st.pack("<h4f", *plane)
+    for underwater, plane_distance in regions:
+        payload += st.pack("<B3xf", underwater, plane_distance)
+    return bytes(payload)
+
+
 def _tags(data) -> dict[str, float]:
     import math
     import struct as st
@@ -316,6 +398,7 @@ def build_pack(source: Path) -> bytes:
     payload, tags = collision_payload(source)
     data, _raw, _loc = _decompressed(source)
     return build("bloodgulch", [("COLL", payload), ("TAGS", tags_payload(tags)),
+                                 ("LOC1", location_payload(source)),
                                  ("VITA", _cyborg_vitality(data)),
                                  ("ACOL", _cyborg_actor_collision(data))], compress=False)
 

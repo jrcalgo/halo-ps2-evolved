@@ -174,6 +174,7 @@ typedef struct {
     float heat;
     float overcharged;
     uint8_t overheated;
+    uint8_t can_begin_firing;
 } gun_trigger_pair;
 
 typedef struct {

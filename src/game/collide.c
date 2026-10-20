@@ -251,3 +251,57 @@ int collide_test_vector(
     t1 = maximum_t < 0.0f ? 0.0f : (maximum_t > 1.0f ? 1.0f : maximum_t);
     return walk_node(&w, 0, 0.0f, t1);
 }
+
+int collide_location_underwater(const collide_bsp *bsp,
+    const collide_location_view *location, const float point[3])
+{
+    uint32_t node = 0, step, leaf, cluster, encoded;
+    int32_t fog_region = -1;
+    float plane_distance = 0.0f;
+    int has_plane = 0;
+    if (!bsp || !location || !point || !bsp->nodes || !bsp->planes ||
+        !location->leaf_clusters || !location->cluster_fog || bsp->node_count == 0)
+        return 0;
+    for (step = 0; step < bsp->node_count; step++) {
+        uint32_t plane_index;
+        const float *plane;
+        float distance;
+        if (node & LONG_MIN_BIT) break;
+        if (node >= bsp->node_count) return 0;
+        plane_index = bsp->nodes[(size_t)node * 3];
+        if (plane_index >= bsp->plane_count) return 0;
+        plane = bsp->planes + (size_t)plane_index * 4;
+        distance = plane[0] * point[0] + plane[1] * point[1] +
+                   plane[2] * point[2] - plane[3];
+        node = bsp->nodes[(size_t)node * 3 + (distance >= 0.0f ? 2 : 1)];
+    }
+    if (!(node & LONG_MIN_BIT) || node == NONE) return 0;
+    leaf = node & 0x7FFFFFFFu;
+    if (leaf >= location->leaf_count) return 0;
+    cluster = (uint16_t)rd_i16(location->leaf_clusters + (size_t)leaf * 2);
+    if ((int16_t)cluster < 0 || cluster >= location->cluster_count) return 0;
+    encoded = (uint16_t)rd_i16(location->cluster_fog + (size_t)cluster * 2);
+    if (encoded == 0xFFFFu) return 0;
+    if (encoded & 0x8000u) {
+        uint32_t plane_index = encoded & 0x7FFFu;
+        const uint8_t *fog_plane;
+        float equation[4];
+        float fog_distance = 0.0f;
+        if (plane_index >= location->fog_plane_count) return 0;
+        fog_plane = location->fog_planes + (size_t)plane_index * 18;
+        fog_region = rd_i16(fog_plane);
+        memcpy(equation, fog_plane + 2, sizeof equation);
+        if (fog_region < 0 || (uint32_t)fog_region >= location->fog_region_count) return 0;
+        if (location->fog_regions[(size_t)fog_region * 8] & 1u) {
+            memcpy(&fog_distance, location->fog_regions + (size_t)fog_region * 8 + 4, 4);
+            plane_distance = equation[0] * point[0] + equation[1] * point[1] +
+                             equation[2] * point[2] - equation[3] + fog_distance;
+            has_plane = 1;
+        }
+    } else {
+        fog_region = (int32_t)(encoded & 0x7FFFu);
+        if ((uint32_t)fog_region >= location->fog_region_count) return 0;
+    }
+    if (fog_region < 0 || !(location->fog_regions[(size_t)fog_region * 8] & 1u)) return 0;
+    return !has_plane || plane_distance < 0.0f;
+}

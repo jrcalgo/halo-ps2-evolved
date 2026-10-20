@@ -35,6 +35,16 @@ typedef struct {
     int32_t plane;
 } collide_hit;
 
+/* CE scenario location lookup: collision-BSP leaf -> structure leaf cluster
+ * -> cluster fog reference -> optional fog plane and fog-region definition. */
+typedef struct {
+    const uint8_t *leaf_clusters; /* leaf_count * s16 */
+    const uint8_t *cluster_fog;   /* cluster_count * s16, encoded reference */
+    const uint8_t *fog_planes;    /* plane_count * (s16 region, f32 plane[4]) */
+    const uint8_t *fog_regions;   /* region_count * (u8 flags, 3 pad, f32 plane distance) */
+    uint32_t leaf_count, cluster_count, fog_plane_count, fog_region_count;
+} collide_location_view;
+
 /* 1 if the segment point + t*vector, t in [0, 1], hits a surface.
  * flags are the collision_bsp_test_vector bits above. */
 int collide_test_vector(
@@ -89,4 +99,9 @@ int collide_move_pill(
 
 /* 1 when the point is in an empty collision leaf. 0 for solid or outside. */
 int collide_point_empty(const collide_bsp *bsp, const float point[3]);
+
+/* Mirrors CE scenario_location_from_point + scenario_location_underwater.
+ * Invalid/out-of-world leaf, cluster, plane, or fog indices fail dry. */
+int collide_location_underwater(const collide_bsp *bsp,
+    const collide_location_view *location, const float point[3]);
 #endif

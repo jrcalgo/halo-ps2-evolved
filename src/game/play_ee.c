@@ -30,6 +30,7 @@ void __real_objects_tick(object_table_t *table, const object_world_t *world);
 
 static uint8_t *s_pack;
 static collide_bsp s_bsp;
+static collide_location_view s_location;
 static mover s_body;
 static float s_yaw, s_pitch;
 static void *s_scratch;
@@ -295,6 +296,13 @@ static void play_tick_trigger_pair(unsigned held)
     unsigned fired;
     int trigger;
     if (!policy) return;
+    /* CE checks scenario_location_underwater at the weapon position when
+     * beginning a trigger. The player weapon origin follows the view origin. */
+    {
+        float weapon_position[3] = {s_body.pos[0], s_body.pos[1], s_body.pos[2] + s_body.eye};
+        s_trigger_pair.can_begin_firing =
+            !collide_location_underwater(&s_bsp, &s_location, weapon_position);
+    }
     fired = gun_trigger_pair_tick_controls_seeded(&s_trigger_pair, s_trigger_profile,
         GUN_TRIGGER_MAX, policy->secondary_trigger_mode, policy->flags,
         policy->age_rate_of_fire_penalty, (held & PAD_R1) != 0,
@@ -359,7 +367,8 @@ static uint8_t *load_file(const char *path, size_t *size)
 static int play_init(void)
 {
     size_t pack_size, coll_size, tag_size, vita_size, acol_size;
-    const uint8_t *coll, *tag, *vita, *acol;
+    size_t location_size;
+    const uint8_t *coll, *tag, *vita, *acol, *location;
     float pose[4], tags[COLL_TAG_FLOATS];
     s_pack = load_file("host:/collision.hp2", &pack_size);
     if (!s_pack) {
@@ -373,7 +382,9 @@ static int play_init(void)
         collpack_tags(tag, tag_size, tags) != 0 ||
         collpack_section(s_pack, pack_size, "VITA", &vita, &vita_size) != 0 ||
         collpack_vital_profile(vita, vita_size, &s_probe_damage_profile,
-            &s_probe_body_damage_material_type, &s_probe_shield_damage_material_type) != 0) {
+            &s_probe_body_damage_material_type, &s_probe_shield_damage_material_type) != 0 ||
+        collpack_section(s_pack, pack_size, "LOC1", &location, &location_size) != 0 ||
+        collpack_location(location, location_size, &s_location) != 0) {
         printf("[play] collision pack rejected\n");
         return -1;
     }
@@ -491,9 +502,11 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
         if (s_trigger_pair_active) {
             play_tick_trigger_pair(held);
         } else {
+            float weapon_position[3] = {s_body.pos[0], s_body.pos[1], s_body.pos[2] + s_body.eye};
+            int can_begin_firing = !collide_location_underwater(&s_bsp, &s_location, weapon_position);
             int requires_weapon_origin = play_fp_trigger_uses_weapon_origin(0);
             if (def && def->has_trigger && !requires_weapon_origin &&
-                gun_tick_seeded(&s_gun, def, (held & PAD_R1) != 0,
+                gun_tick_seeded(&s_gun, def, (held & PAD_R1) != 0 && can_begin_firing,
                          (held & PAD_SQUARE) != 0, &s_seed) && bullet && !s_gun.misfired) {
                 const play_fp_cone *cone = play_fp_spread();
                 int pellets = def->projectiles_per_shot > 0 ? def->projectiles_per_shot : 1;
@@ -560,6 +573,8 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
             float shot_ms;
             if (!s_fly[slot].alive || !s_fly_def[slot]) continue;
             was = 1;
+            scene.underwater = (uint8_t)collide_location_underwater(
+                &s_bsp, &s_location, s_fly[slot].position);
             shot_start = timer_cycles();
             shot_tick(&s_fly[slot], s_fly_def[slot], &scene, &s_seed);
             shot_ms = timer_ms(shot_start, timer_cycles());

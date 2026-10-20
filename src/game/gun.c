@@ -466,6 +466,7 @@ static int trigger_begin(gun_trigger_pair *pair,
 {
     const gun_trigger_profile *definition = &profile[index];
     gun_trigger_runtime *runtime = &pair->trigger[index];
+    if (!pair->can_begin_firing) return 0;
     if (pair->overheated) return 0;
     if (!trigger_magazine_valid(definition)) return 0;
     if (definition->magazine_index != GUN_TRIGGER_NONE &&
@@ -519,6 +520,7 @@ void gun_trigger_pair_init(gun_trigger_pair *pair, const int16_t loaded[GUN_TRIG
         pair->trigger[i].idle_ticks = 127;
         pair->trigger[i].released_since_shot = 1;
     }
+    pair->can_begin_firing = 1;
     for (i = 0; i < GUN_TRIGGER_MAGAZINES; i++) pair->magazine_loaded[i] = loaded ? loaded[i] : 0;
 }
 

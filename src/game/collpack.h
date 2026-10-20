@@ -14,6 +14,7 @@ int collpack_section(const uint8_t *pack, size_t size, const char tag[4],
 
 /* Fills bsp with pointers into the COLL payload. Returns 0 on success. */
 int collpack_collision(const uint8_t *payload, size_t length, collide_bsp *bsp);
+int collpack_location(const uint8_t *payload, size_t length, collide_location_view *location);
 
 uint32_t collpack_spawn_count(const uint8_t *payload);
 /* out is x, y, z, yaw radians. Returns 0 on success. */

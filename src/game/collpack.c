@@ -9,6 +9,8 @@ static uint32_t rd32(const uint8_t *p)
     return v;
 }
 
+static int finite_float(float value);
+
 int collpack_section(const uint8_t *pack, size_t size, const char tag[4],
     const uint8_t **data, size_t *length)
 {
@@ -83,6 +85,72 @@ int collpack_collision(const uint8_t *payload, size_t length, collide_bsp *bsp)
         memcpy(&type, payload + cursor + index * 2, sizeof type);
         if (type < -1 || type >= COLL_RUNTIME_MATERIAL_TYPES) return -1;
     }
+    return 0;
+}
+
+int collpack_location(const uint8_t *payload, size_t length, collide_location_view *location)
+{
+    uint16_t version, reserved;
+    uint32_t leaf_count, cluster_count, plane_count, region_count, cursor;
+    uint32_t i;
+    if (!payload || !location || length < 24 || memcmp(payload, "LOC1", 4) != 0) return -1;
+    memcpy(&version, payload + 4, 2);
+    memcpy(&reserved, payload + 6, 2);
+    leaf_count = rd32(payload + 8);
+    cluster_count = rd32(payload + 12);
+    plane_count = rd32(payload + 16);
+    region_count = rd32(payload + 20);
+    if (version != 1 || reserved != 0 || leaf_count > 32767 ||
+        cluster_count > 32767 || plane_count > 32767 || region_count > 32767) return -1;
+    cursor = 24;
+    if ((size_t)cursor + (size_t)leaf_count * 2 > length) return -1;
+    location->leaf_clusters = payload + cursor;
+    cursor += leaf_count * 2;
+    for (i = 0; i < leaf_count; i++) {
+        int16_t cluster;
+        memcpy(&cluster, payload + 24 + i * 2, 2);
+        if (cluster < -1 || cluster >= (int32_t)cluster_count) return -1;
+    }
+    if ((size_t)cursor + (size_t)cluster_count * 2 > length) return -1;
+    location->cluster_fog = payload + cursor;
+    for (i = 0; i < cluster_count; i++) {
+        uint16_t reference;
+        memcpy(&reference, payload + cursor + i * 2, 2);
+        if (reference == 0xFFFFu) continue;
+        if (reference & 0x8000u) {
+            if ((reference & 0x7FFFu) >= plane_count) return -1;
+        } else if (reference >= region_count) return -1;
+    }
+    cursor += cluster_count * 2;
+    if ((size_t)cursor + (size_t)plane_count * 18 > length) return -1;
+    location->fog_planes = payload + cursor;
+    for (i = 0; i < plane_count; i++) {
+        const uint8_t *row = location->fog_planes + i * 18;
+        int16_t region;
+        float plane[4];
+        unsigned j;
+        memcpy(&region, row, 2);
+        memcpy(plane, row + 2, sizeof plane);
+        if (region < -1 || region >= (int32_t)region_count) return -1;
+        for (j = 0; j < 4; j++)
+            if (!finite_float(plane[j])) return -1;
+    }
+    cursor += plane_count * 18;
+    if ((size_t)cursor + (size_t)region_count * 8 > length) return -1;
+    location->fog_regions = payload + cursor;
+    for (i = 0; i < region_count; i++) {
+        const uint8_t *row = location->fog_regions + i * 8;
+        float distance;
+        if (row[0] & ~1u) return -1;
+        memcpy(&distance, row + 4, 4);
+        if (!finite_float(distance)) return -1;
+    }
+    cursor += region_count * 8;
+    if (cursor != length) return -1;
+    location->leaf_count = leaf_count;
+    location->cluster_count = cluster_count;
+    location->fog_plane_count = plane_count;
+    location->fog_region_count = region_count;
     return 0;
 }
 
