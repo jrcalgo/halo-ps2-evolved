@@ -38,6 +38,28 @@ static float length3(const float *v)
     return sqrtf(dot3(v, v));
 }
 
+static int affine_world_to_local(const float matrix[12], const float world[3], float local[3])
+{
+    float a = matrix[0], b = matrix[1], c = matrix[2];
+    float d = matrix[4], e = matrix[5], f = matrix[6];
+    float g = matrix[8], h = matrix[9], i = matrix[10];
+    float x = world[0] - matrix[3], y = world[1] - matrix[7], z = world[2] - matrix[11];
+    float determinant = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+    if (!isfinite(determinant) || fabsf(determinant) < 1.0e-8f) return 0;
+    local[0] = ((e * i - f * h) * x + (c * h - b * i) * y + (b * f - c * e) * z) / determinant;
+    local[1] = ((f * g - d * i) * x + (a * i - c * g) * y + (c * d - a * f) * z) / determinant;
+    local[2] = ((d * h - e * g) * x + (b * g - a * h) * y + (a * e - b * d) * z) / determinant;
+    return isfinite(local[0]) && isfinite(local[1]) && isfinite(local[2]);
+}
+
+static void affine_local_to_world(const float matrix[12], const float local[3], float world[3])
+{
+    unsigned row;
+    for (row = 0; row < 3; row++)
+        world[row] = matrix[row * 4] * local[0] + matrix[row * 4 + 1] * local[1] +
+            matrix[row * 4 + 2] * local[2] + matrix[row * 4 + 3];
+}
+
 static float seed_range(uint32_t *seed, float lower, float upper)
 {
     float unit;
@@ -119,6 +141,10 @@ void shot_spawn(shot *s, const float origin[3], const float forward[3], const sh
     s->ignore_target = 0;
     s->attached = 0;
     s->attached_target = 0;
+    s->attached_node_index = -1;
+    s->attached_node_valid = 0;
+    memset(s->attached_local_position, 0, sizeof s->attached_local_position);
+    memset(s->attached_target_offset, 0, sizeof s->attached_target_offset);
     s->collided_once = 0;
     s->stopped_after_collision = 0;
     s->detonation_timer = 0.0f;
@@ -429,6 +455,18 @@ int shot_tick(shot *s, const shot_def *def, const shot_scene *scene, uint32_t *s
     s->hit_object_this_tick = 0;
     s->attached_damage_event = 0;
     if (s->attached) {
+        if (s->attached_target && scene && scene->target) {
+            if (s->attached_node_valid && scene->actor_node_to_world && scene->actor_mesh &&
+                s->attached_node_index >= 0 &&
+                (unsigned)s->attached_node_index < scene->actor_mesh->node_count) {
+                affine_local_to_world(scene->actor_node_to_world[s->attached_node_index],
+                    s->attached_local_position, s->position);
+            } else {
+                s->position[0] = scene->target_center[0] + s->attached_target_offset[0];
+                s->position[1] = scene->target_center[1] + s->attached_target_offset[1];
+                s->position[2] = scene->target_center[2] + s->attached_target_offset[2];
+            }
+        }
         s->detonation_timer += s->detonation_timer_delta;
         if (s->detonation_timer >= 1.0f) {
             if (s->attached_target) {
@@ -656,7 +694,23 @@ int shot_tick(shot *s, const shot_def *def, const shot_scene *scene, uint32_t *s
                     material >= 0 && material < SHOT_MATERIALS ? def->parallel_friction[material] : 0.0f,
                     material >= 0 && material < SHOT_MATERIALS ? def->perpendicular_friction[material] : 0.0f);
             } else if (response == SHOT_ATTACH) {
-                if (object_hit) set_target_damage_modifiers(s, def, scene, 1, -1);
+                if (object_hit) {
+                    set_target_damage_modifiers(s, def, scene, 1, -1);
+                    if (scene && scene->target) {
+                        unsigned axis;
+                        if (scene->actor_node_to_world && scene->actor_mesh && hit_node >= 0 &&
+                            (unsigned)hit_node < scene->actor_mesh->node_count &&
+                            affine_world_to_local(scene->actor_node_to_world[hit_node],
+                                s->position, s->attached_local_position)) {
+                            s->attached_node_index = hit_node;
+                            s->attached_node_valid = 1;
+                        } else {
+                            for (axis = 0; axis < 3; axis++)
+                                s->attached_target_offset[axis] = s->position[axis] -
+                                    scene->target_center[axis];
+                        }
+                    }
+                }
                 new_velocity[0] = new_velocity[1] = new_velocity[2] = 0.0f;
                 s->velocity[0] = s->velocity[1] = s->velocity[2] = 0.0f;
                 s->attached = 1;

@@ -86,6 +86,11 @@ typedef struct {
     int ignore_target;
     int attached;
     int attached_target;
+    int16_t attached_node_index;
+    uint8_t attached_node_valid;
+    uint8_t attached_pad;
+    float attached_local_position[3];
+    float attached_target_offset[3];
     int collided_once;
     int stopped_after_collision;
     float detonation_timer;

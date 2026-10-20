@@ -26,7 +26,8 @@ int main(void)
     float matrix[1][12] = { {1,0,0,0, 0,1,0,0, 0,0,1,0} };
     float origin[3] = {0, 0, 1}, direction[3] = {0, 0, -1};
     shot_scene scene = {0};
-    shot projectile;
+    shot projectile, attached_projectile;
+    shot_def attach_def;
     uint32_t seed = 123;
     memcpy(payload, "ACL1", 4);
     put16(payload + 4, 2);
@@ -48,8 +49,8 @@ int main(void)
     put_float(payload + 78, -1.0f);
     put_float(payload + 90, 1.0f);
     if (collpack_actor_collision(payload, sizeof payload, &actor) != 0) return 1;
-    scene.target = 1;
     scene.target_is_unit = 1;
+    scene.target = 1;
     scene.target_material = 0;
     scene.target_body_damage_material_type = 21;
     scene.target_shield_damage_material_type = 22;
@@ -65,5 +66,18 @@ int main(void)
     printf("actor shot node=%d region=%d part=%d resistance=%d damage=%.1f\n",
         projectile.hit_node_index, projectile.hit_region_index,
         projectile.hit_damage_part, projectile.damage_resistance_index, projectile.damage);
+    attach_def = SHOT_PISTOL;
+    attach_def.response[0] = 4; /* Halo material response enum: attach. */
+    shot_spawn(&attached_projectile, origin, direction, &attach_def);
+    shot_tick(&attached_projectile, &attach_def, &scene, &seed);
+    if (!attached_projectile.alive || !attached_projectile.attached ||
+        !attached_projectile.attached_target || !attached_projectile.attached_node_valid ||
+        attached_projectile.attached_node_index != 0) return 3;
+    matrix[0][3] = 10.0f;
+    shot_tick(&attached_projectile, &attach_def, &scene, &seed);
+    if (attached_projectile.position[0] < 9.99f || attached_projectile.position[0] > 10.01f)
+        return 4;
+    printf("actor attach node=%d follows-x=%.1f\n", attached_projectile.attached_node_index,
+        attached_projectile.position[0]);
     return 0;
 }
