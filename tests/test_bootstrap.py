@@ -40,13 +40,20 @@ class Restoration(unittest.TestCase):
             bundle = bundles / "fixture.bundle"
             git(source, "bundle", "create", str(bundle), "--all")
             git(source, "reset", "--hard", upstream)
-            (parent / ".gitmodules").write_text('[submodule "fixture"]\n path = submodules/fixture\n url = https://example.invalid/unreachable.git\n')
+            (parent / ".gitmodules").write_text(
+                '[submodule "fixture"]\n path = submodules/fixture\n'
+                ' url = https://example.invalid/unreachable.git\n'
+                '[submodule "opl"]\n path = submodules/opl\n'
+                ' url = https://example.invalid/opl-reference.git\n')
             git(parent, "update-index", "--add", "--cacheinfo", "160000," + commit + ",submodules/fixture")
+            git(parent, "update-index", "--add", "--cacheinfo", "160000," + upstream + ",submodules/opl")
             (parent / "config").mkdir()
             (parent / "config/dependencies.json").write_text(json.dumps({"dependencies": [{
                 "name": "fixture", "path": "submodules/fixture", "commit": commit,
                 "upstream": "https://example.invalid/unreachable.git",
-                "bundle_sha256": hashlib.sha256(bundle.read_bytes()).hexdigest()}]}))
+                "bundle_sha256": hashlib.sha256(bundle.read_bytes()).hexdigest()}],
+                "reference_submodules": [{"name": "opl", "path": "submodules/opl",
+                    "commit": upstream, "role": "read-only-reference"}]}))
             old_root = bootstrap.ROOT
             bootstrap.ROOT = parent
             try:
@@ -55,6 +62,10 @@ class Restoration(unittest.TestCase):
                 work = parent / "submodules/fixture"
                 self.assertEqual(git(work, "rev-parse", "HEAD"), commit)
                 self.assertEqual((work / "file").read_text(), "fork-only\n")
+                # The optional reference gitlink is recorded but bootstrap does
+                # not initialize, fetch, or require it.
+                self.assertFalse((parent / "submodules/opl").exists())
+                self.assertNotIn("submodule.opl.url", git(parent, "config", "--list"))
                 (work / "file").write_text("user edit\n")
                 with self.assertRaisesRegex(RuntimeError, "dirty worktree"):
                     bootstrap.bootstrap()

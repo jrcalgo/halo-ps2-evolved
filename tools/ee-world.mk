@@ -53,6 +53,7 @@ EE_LDFLAGS += -Wl,--wrap,malloc -Wl,--wrap,free -Wl,--wrap,calloc -Wl,--wrap,rea
 EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_main.o \
 	$(WORLD_OUTPUT)/stream/hcu_file_bridge.o \
 	$(WORLD_OUTPUT)/stream/hcu_input_bridge.o \
+	$(WORLD_OUTPUT)/stream/hcu_render_snapshot.o \
 	$(WORLD_OUTPUT)/stream/hcu_storage_boot.o \
 	$(WORLD_OUTPUT)/stream/hcu_map_service.o \
 	$(WORLD_OUTPUT)/stream/hcu_filexio_irx.o \
@@ -168,6 +169,11 @@ $(WORLD_OUTPUT)/stream/hcu_input_bridge.o: src/stream/hcu_input_bridge.c
 		-I$(HCU_ROOT)/port/include -fshort-wchar -I$(HCU_ROOT)/source/cseries -DHALO_PS2=1 \
 		-include $(HCU_ROOT)/port/ps2/include/halo_ps2_prefix.h \
 		-c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_render_snapshot.o: src/stream/hcu_render_snapshot.c
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
+		-I$(HCU_ROOT)/port/ps2/include -c $< -o $@
 endif
 
 $(WORLD_OUTPUT)/stream/hcu_memory_bind.o: src/stream/hcu_memory_bind.c

@@ -51,6 +51,7 @@ PS2_SERVICES = {
     "display_error_deferred", "display_error_text_when_main_menu_loaded",
     "display_error_when_main_menu_loaded", "display_errors_deferred_until_cinematic_stop",
     "display_scenario_help", "interrupt_result",
+    "halo_ps2_render_snapshot_begin", "halo_ps2_render_snapshot_commit",
 }
 PS2_SERVICE_PREFIXES = (
     "cache_file_", "cache_files_", "texture_cache_", "sound_cache_", "_texture_cache_", "_sound_cache_",

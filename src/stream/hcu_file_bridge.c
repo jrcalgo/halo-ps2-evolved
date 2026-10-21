@@ -118,3 +118,43 @@ int hcu_file_bridge_stat(const char *path, unsigned long *size_out,
 	if (directory_out) *directory_out = kind == 2;
 	return 1;
 }
+
+int hcu_file_bridge_probe(const char *path, unsigned long *size_out,
+	const char **failed_stage)
+{
+	unsigned long stat_size = 0, open_size = 0, got = 0;
+	int directory = 0, token = -1, ok = 0;
+	uint8_t first_byte;
+	long position;
+	const char *stage = "stat";
+	if (size_out) *size_out = 0;
+	if (failed_stage) *failed_stage = NULL;
+	if (!path || !path[0]) goto done;
+	if (!hcu_file_bridge_stat(path, &stat_size, &directory)) goto done;
+	if (directory || stat_size == 0) { stage = "validate-file"; goto done; }
+	stage = "open";
+	token = hcu_file_bridge_open(path, &open_size);
+	if (token < 0) goto done;
+	if (open_size != stat_size) { stage = "size"; goto done; }
+	stage = "seek-start";
+	if (hcu_file_bridge_seek(token, 0, 0) != 0) goto done;
+	stage = "read-first-byte";
+	if (!hcu_file_bridge_read(token, &first_byte, 1, &got) || got != 1)
+		goto done;
+	stage = "seek-eof";
+	position = hcu_file_bridge_seek(token, 0, 2);
+	if (position < 0 || (unsigned long)position != stat_size) goto done;
+	stage = "read-eof";
+	got = 1;
+	if (!hcu_file_bridge_read(token, &first_byte, 1, &got) || got != 0)
+		goto done;
+	stage = "close";
+	if (!hcu_file_bridge_close(token)) { token = -1; goto done; }
+	token = -1;
+	if (size_out) *size_out = stat_size;
+	ok = 1;
+done:
+	if (token >= 0 && !hcu_file_bridge_close(token)) stage = "close";
+	if (!ok && failed_stage) *failed_stage = stage;
+	return ok;
+}

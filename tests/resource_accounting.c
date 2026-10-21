@@ -5,6 +5,8 @@
 #include <string.h>
 
 static int g_failures;
+static unsigned char g_layout_storage[MEM_LAYOUT_V2_BYTES + 64u]
+	__attribute__((aligned(64)));
 
 static void expect(const char *name, int pass)
 {
@@ -23,6 +25,57 @@ static int release_checked(arena_t *arena, size_t mark, size_t *used_after)
 	return mark <= before && arena->used == mark ? 0 : -1;
 }
 
+static mem_layout_v2_t g_layout;
+
+static void test_memory_layout_v2(void)
+{
+	static const size_t expected[MEM_LAYOUT_V2_REGION_COUNT] = {
+		6815744u, 6291456u, 4194304u, 2621440u, 1179648u,
+		1572864u, 524288u, 524288u, 393216u
+	};
+	static const char *names[MEM_LAYOUT_V2_REGION_COUNT] = {
+		"resident_gameplay", "current_bsp", "texture_cache",
+		"dynamic_simulation", "dma_commands", "streaming", "checkpoint",
+		"audio", "frame_scratch"
+	};
+	arena_t backing, too_small;
+	mem_layout_v2_t untouched, before;
+	int i, contiguous = 1;
+
+	memset(&g_layout, 0xA5, sizeof g_layout);
+	untouched = g_layout;
+	arena_init(&too_small, "short", g_layout_storage + 1,
+		MEM_LAYOUT_V2_BYTES);
+	expect("v2-layout-reject-short-backing", mem_layout_v2_init(&g_layout, &too_small) == -1);
+	expect("v2-layout-failure-is-atomic", too_small.used == 0 && too_small.high == 0 &&
+		memcmp(&g_layout, &untouched, sizeof g_layout) == 0);
+
+	arena_init(&backing, "ee-managed", g_layout_storage + 1,
+		MEM_LAYOUT_V2_BYTES + 15u);
+	expect("v2-layout-exact-capacity", mem_layout_v2_init(&g_layout, &backing) == 0 &&
+		backing.used == MEM_LAYOUT_V2_BYTES + 15u);
+	for (i = 0; i < MEM_LAYOUT_V2_REGION_COUNT; i++) {
+		const arena_t *region = mem_layout_v2_get_const(&g_layout,
+			(mem_layout_v2_region_t)i);
+		if (!region || region->cap != expected[i] ||
+			((uintptr_t)region->base & 15u) != 0 || region->used != 0 ||
+			strcmp(region->name, names[i]) != 0)
+			contiguous = 0;
+		if (i > 0 && g_layout.regions[i - 1].base + g_layout.regions[i - 1].cap !=
+			g_layout.regions[i].base)
+			contiguous = 0;
+	}
+	expect("v2-layout-names-capacities-and-disjoint-order", contiguous);
+	expect("v2-layout-invalid-region-rejected",
+		mem_layout_v2_get(&g_layout, (mem_layout_v2_region_t)-1) == NULL &&
+		mem_layout_v2_get_const(&g_layout, MEM_LAYOUT_V2_REGION_COUNT) == NULL);
+	before = g_layout;
+	expect("v2-layout-second-carve-fails-atomically",
+		mem_layout_v2_init(&g_layout, &backing) == -1 &&
+		backing.used == MEM_LAYOUT_V2_BYTES + 15u &&
+		memcmp(&g_layout, &before, sizeof g_layout) == 0);
+}
+
 int main(void)
 {
 	unsigned char storage[256];
@@ -30,17 +83,29 @@ int main(void)
 	arena_t arena;
 	arena_t child;
 	arena_t overflow;
+	arena_t invalid_base;
+	arena_t address_overflow;
 	void *aligned;
 	void *rejected;
 	size_t mark;
 	size_t used_after = 0;
 	size_t high_before_reset;
 	uintptr_t address;
+	int i;
 
 	memset(storage, 0x5a, sizeof storage);
 	arena_init(&arena, "fixture", storage, sizeof storage);
 	printf("{\n \"abi\":{\"pointer\":%u,\"size\":%u},\n \"checks\":[\n",
 	       (unsigned)sizeof(void *), (unsigned)sizeof(size_t));
+	expect("reject-null-arena", arena_alloc(NULL, 1, 1) == NULL);
+	arena_init(&invalid_base, "null-base", NULL, 16);
+	expect("reject-null-base", arena_alloc(&invalid_base, 1, 1) == NULL &&
+		invalid_base.used == 0);
+	arena_init(&address_overflow, "address-overflow",
+		(void *)(uintptr_t)(UINTPTR_MAX - 7u), 32);
+	expect("reject-address-range-overflow",
+		arena_alloc(&address_overflow, 1, 16) == NULL &&
+		address_overflow.used == 0 && address_overflow.high == 0);
 
 	aligned = arena_alloc(&arena, 1, 16);
 	address = (uintptr_t)aligned;
@@ -65,7 +130,16 @@ int main(void)
 
 	arena_init(&overflow, "overflow", tiny, sizeof tiny);
 	expect("size-overflow", arena_alloc(&overflow, SIZE_MAX, 1) == NULL && overflow.used == 0);
+	test_memory_layout_v2();
 
-	printf("  {\"check\":\"sentinel\",\"pass\":true}\n ],\n \"failures\":%d\n}\n", g_failures);
+	printf("  {\"check\":\"sentinel\",\"pass\":true}\n ],\n \"layout_v2\":[\n");
+	for (i = 0; i < MEM_LAYOUT_V2_REGION_COUNT; i++) {
+		const arena_t *region = mem_layout_v2_get_const(&g_layout,
+			(mem_layout_v2_region_t)i);
+		printf("  {\"name\":\"%s\",\"bytes\":%u}%s\n", region->name,
+			(unsigned)region->cap,
+			i + 1 == MEM_LAYOUT_V2_REGION_COUNT ? "" : ",");
+	}
+	printf(" ],\n \"failures\":%d\n}\n", g_failures);
 	return g_failures == 0 ? 0 : 1;
 }

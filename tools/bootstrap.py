@@ -13,7 +13,9 @@ def git(*args, cwd=None):
 
 
 def bootstrap():
-    entries = json.loads((ROOT / "config/dependencies.json").read_text())["dependencies"]
+    lock = json.loads((ROOT / "config/dependencies.json").read_text())
+    entries = lock["dependencies"]
+    paths = [item["path"] for item in entries]
     # Check every existing worktree and bundle before any checkout operation.
     for item in entries:
         path = ROOT / item["path"]
@@ -28,7 +30,9 @@ def bootstrap():
                 raise RuntimeError(f"Preserving dirty worktree: {path}")
             if git("rev-parse", "HEAD", cwd=path) != item["commit"]:
                 raise RuntimeError(f"Preserving mismatched checkout: {path}")
-    git("submodule", "init")
+    # Reference-only submodules (for example OPL) are intentionally not
+    # initialized or fetched by the offline build bootstrap.
+    git("submodule", "init", "--", *paths)
     for item in entries:
         fork = ROOT / ".local/forks" / (item["name"] + ".git")
         bundle = ROOT / ".local/bundles" / (item["name"] + ".bundle")
@@ -48,10 +52,12 @@ def bootstrap():
         git("remote", "set-url", "origin", str(fork), cwd=path)
         if git("rev-parse", "HEAD", cwd=path) != item["commit"]:
             raise RuntimeError(f"Checkout did not match lock: {path}")
-    status = git("submodule", "status", "--recursive")
-    if any(line.startswith(("-", "+", "U")) for line in status.splitlines()):
-        raise RuntimeError("Recursive submodule status is inconsistent")
-    print(status)
+    statuses = [git("submodule", "status", "--recursive", "--", path)
+                for path in paths]
+    if any(line.startswith(("-", "+", "U"))
+           for status in statuses for line in status.splitlines()):
+        raise RuntimeError("Required recursive submodule status is inconsistent")
+    print("\n".join(statuses))
     print("Locked dependencies restored without network fetches.")
 
 

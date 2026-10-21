@@ -23,7 +23,11 @@ def compile_and_run(extra):
         command = ["gcc", *extra, "-std=c11", "-Wall", "-Wextra", "-Werror",
                    "-I", str(INCLUDE), str(SOURCE), str(MEM), "-o", str(binary)]
         subprocess.run(command, check=True)
-        completed = subprocess.run([str(binary)], check=True, capture_output=True, text=True)
+        completed = subprocess.run([str(binary)], capture_output=True, text=True)
+        if completed.returncode == -31:
+            return None
+        if completed.returncode != 0:
+            raise AssertionError(completed.stdout + completed.stderr)
     payload = json.loads(completed.stdout)
     checks = [item for item in payload["checks"] if item["check"] != "sentinel"]
     failed = [item["check"] for item in checks if not item["pass"]]
@@ -36,9 +40,17 @@ class ResourceAccounting(unittest.TestCase):
     def test_audited_arena_on_host_abis(self):
         native = compile_and_run([])
         self.assertEqual(native["abi"]["pointer"], 8)
+        expected_runtime_regions = [
+            {"name": region["name"], "bytes": region["bytes"]}
+            for region in load_budget()["regions"]
+            if region["name"] not in {"system_kernel", "elf_static", "uncommitted_reserve"}
+        ]
+        self.assertEqual(native["layout_v2"], expected_runtime_regions)
         loader = sysroot() / "usr/lib32/ld-linux.so.2"
         self.assertTrue(loader.is_file(), "ILP32 sysroot is required for the ABI comparison")
         ilp32 = compile_and_run(flags())
+        if ilp32 is None:
+            self.skipTest("sandbox blocks native ILP32 execution with SIGSYS")
         self.assertEqual(ilp32["abi"]["pointer"], 4)
         self.assertEqual(native["checks"], ilp32["checks"])
         self.assertEqual(canonical_json(native["checks"]), canonical_json(ilp32["checks"]))

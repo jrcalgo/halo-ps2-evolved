@@ -1,5 +1,14 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "reference_submodules": [
+    {
+      "name": "opl",
+      "path": "submodules/opl",
+      "upstream": "https://github.com/ps2homebrew/Open-PS2-Loader.git",
+      "commit": "b3a2199795fe89ba7e2dd7b843354472dff2c3eb",
+      "role": "read-only-reference"
+    }
+  ],
   "dependencies": [
     {
       "name": "halo-64",

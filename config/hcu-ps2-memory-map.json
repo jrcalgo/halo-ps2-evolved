@@ -18,6 +18,7 @@
     "hcu_file_bridge.o": "resident_gameplay",
     "hcu_storage_boot.o": "resident_gameplay",
     "hcu_map_service.o": "resident_gameplay",
+    "hcu_render_snapshot.o": "resident_gameplay",
     "section.o": "resident_gameplay",
     "pad.o": "resident_gameplay",
     "file.o": "resident_gameplay",

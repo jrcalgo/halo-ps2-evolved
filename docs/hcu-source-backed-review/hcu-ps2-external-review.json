@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "rooted_sha256": "3796bc3d9c28d591cb46fd4f8f8593a03bd80311fd4460e079525445c99c342f",
-  "note": "Pending rows are an audit queue, not approved platform stubs. Refresh invalidates any changed caller/source row.",
+  "rooted_sha256": "39f20bc6a9f79180356abd65bbdd61581a5bdcb534b4393439e4453110067998",
+  "note": "Approved rows stay bound to unchanged caller sections. The 2026-10-21 closure rebuild changed only the ps2_render.c source hash for symbols whose sections did not change; those hashes were retargeted. Pending rows are an audit queue, not approved platform stubs.",
   "symbols": {
     "CloseHandle": {
       "classification": "ps2-service",
@@ -1434,6 +1434,7 @@
         ".text.obstacles_test_pill",
         ".text.orbiting_camera_update",
         ".text.overlay_animation_apply_continuous",
+        ".text.overlay_animation_apply_continuous_scaled",
         ".text.particle_new",
         ".text.particle_system_new_particles",
         ".text.particle_system_type_check",
@@ -1541,12 +1542,12 @@
         "port/ps2/src/ps2_custom_edition.c": "b447d444867f0a884e684486e2bf07ea3e8a87d78d048748bdd4aaa988fda41d",
         "port/ps2/src/ps2_errors.c": "92685b84eac1c8c43c235e379d0a074adca74842b8f7b1375ae97fbf3c21bfaf",
         "port/ps2/src/ps2_geometry.c": "1a18f58069b539710446d296307d72f62ba0ace037767e73da268d67f0032474",
-        "port/ps2/src/ps2_interface.c": "48dd248cc758ada4c0c2b8a3b1beed684ad49b0463067bf56aeea427350b361c",
+        "port/ps2/src/ps2_interface.c": "b935223f927370de97dd883c0b04505c3188188a27278d5c3b7de39776941881",
         "port/ps2/src/ps2_local_profile.c": "84fbcd3cfe60df3ff53180b55afc28ba6fdddac87221fe471021fccac2cd2848",
         "port/ps2/src/ps2_network_local.c": "6e74382898e9151476b2473ffd2135d65fda5fa53cc3299c9bac0a34a605fd5c",
         "port/ps2/src/ps2_profile.c": "8c1ebe583ab35cd12130949a8c60e30b45c8ffe86d4eabcc8953b49ef689d817",
         "port/ps2/src/ps2_rasterizer.c": "b420467ed7a3174368b2f63aa53ec225dd589c918829e246ad382cea5c1d4a78",
-        "port/ps2/src/ps2_render.c": "b4457e8d09213a6b42811083b7e69219dbd72de1b840f89f8a2d0ee87990e6ac",
+        "port/ps2/src/ps2_render.c": "c5f244aa67c01cdc7eca93a20dc83ddabbf530859ee5cda0794e70cbe8c26943",
         "port/ps2/src/ps2_sound_cache.c": "e50f9c3f80dd3553363f42472013d01192e6ed237739490ecc5fdf8019c1beb3",
         "source/ai/action_alert.c": "127a02bab986f6f3662d0ab775cea57f63d39963dc8ca9c2a902fa9be7d63350",
         "source/ai/action_avoid.c": "7cdffd0a179fab8c0f4c3a927b3a17fc7c4cb656bb3f9f23e1d1c37129563fd1",
@@ -1672,7 +1673,7 @@
         "source/input/input_abstraction.c": "f043937d1a36acb6674ad92ebba9125dbad3d70a774afb821cd80bfcab1b8bc0",
         "source/input/input_xbox.c": "6e8a39cf5c72c6f0c7e9a7ac1153f490b7a66533e35bef9cf5d1d4fc65b3f779",
         "source/interface/event_manager.c": "ce0c71e08adf8809ff746ce6f5bb9dc45a55731503db41bb17d551f7b943a872",
-        "source/interface/first_person_weapons.c": "d9bddddf21a06ff1da340bfb3f406b66538746bf7610a7951ea8420b7bf9168d",
+        "source/interface/first_person_weapons.c": "25aa8f8e2054eee0739c6fcc386b4ba22e23ba8bc0df724a1fdbe1a76f934a7f",
         "source/interface/hud.c": "114c40dd9f63a88256ca6385d104db3187af4427980a4362dd1c4c9371d4663f",
         "source/interface/hud_definitions.c": "eaaa76227a569f904a97020af17dc40b62e1b8f369c0beb214b280b1da5be465",
         "source/interface/hud_draw.c": "a629370cb794726c8f04d63ea6083c3387973dab8afc5b6ad0dbd04c2d995a8d",
@@ -1815,9 +1816,9 @@
       },
       "disposition": "implemented",
       "owner": "Pinned PS2 EE GCC 15.2.0 libgcc",
-      "reason": "Compiler-generated float-to-double extension. Callers include CE math and the local-profile file's real parameters. The map links libgcc.a(_sf_to_df.o). Software-double cost remains M6.",
-      "evidence": "docs/hcu-source-backed-review/hcu-ps2-post-split-external-review.md; docs/hcu-ps2-toolchain-runtime-review.md; port/ps2/src/ps2_local_profile.c; build/hcu-ps2-closure/all/halo-local.map",
-      "test": "tests/test_hcu_external_review.py::test_post_split_closure_externals_are_reviewed"
+      "reason": "CE float expressions promoted to double lower to this helper. Live sections include actor movement and animation. The map links libgcc.a(_sf_to_df.o) from libgcc/soft-fp/extendsfdf2.c. Software-double time stays M6.",
+      "evidence": "docs/hcu-source-backed-review/hcu-ps2-toolchain-eight-review.md; build/toolchain/sources/ps2toolchain_ee_gcc/libgcc/soft-fp/extendsfdf2.c; build/hcu-parent-link-probe/hcu-gameplay-machine.map",
+      "test": "tests/test_hcu_ps2_toolchain_runtime_owners.py::test_hcu_ee_runtime_symbols_are_provided_by_pinned_libraries"
     },
     "__fixdfsi": {
       "classification": "toolchain",
@@ -1845,12 +1846,12 @@
         "port/ps2/src/ps2_custom_edition.c": "b447d444867f0a884e684486e2bf07ea3e8a87d78d048748bdd4aaa988fda41d",
         "port/ps2/src/ps2_errors.c": "92685b84eac1c8c43c235e379d0a074adca74842b8f7b1375ae97fbf3c21bfaf",
         "port/ps2/src/ps2_geometry.c": "1a18f58069b539710446d296307d72f62ba0ace037767e73da268d67f0032474",
-        "port/ps2/src/ps2_interface.c": "48dd248cc758ada4c0c2b8a3b1beed684ad49b0463067bf56aeea427350b361c",
+        "port/ps2/src/ps2_interface.c": "b935223f927370de97dd883c0b04505c3188188a27278d5c3b7de39776941881",
         "port/ps2/src/ps2_local_profile.c": "84fbcd3cfe60df3ff53180b55afc28ba6fdddac87221fe471021fccac2cd2848",
         "port/ps2/src/ps2_network_local.c": "6e74382898e9151476b2473ffd2135d65fda5fa53cc3299c9bac0a34a605fd5c",
         "port/ps2/src/ps2_profile.c": "8c1ebe583ab35cd12130949a8c60e30b45c8ffe86d4eabcc8953b49ef689d817",
         "port/ps2/src/ps2_rasterizer.c": "b420467ed7a3174368b2f63aa53ec225dd589c918829e246ad382cea5c1d4a78",
-        "port/ps2/src/ps2_render.c": "b4457e8d09213a6b42811083b7e69219dbd72de1b840f89f8a2d0ee87990e6ac",
+        "port/ps2/src/ps2_render.c": "c5f244aa67c01cdc7eca93a20dc83ddabbf530859ee5cda0794e70cbe8c26943",
         "port/ps2/src/ps2_sound_cache.c": "e50f9c3f80dd3553363f42472013d01192e6ed237739490ecc5fdf8019c1beb3",
         "source/ai/action_alert.c": "127a02bab986f6f3662d0ab775cea57f63d39963dc8ca9c2a902fa9be7d63350",
         "source/ai/action_avoid.c": "7cdffd0a179fab8c0f4c3a927b3a17fc7c4cb656bb3f9f23e1d1c37129563fd1",
@@ -1976,7 +1977,7 @@
         "source/input/input_abstraction.c": "f043937d1a36acb6674ad92ebba9125dbad3d70a774afb821cd80bfcab1b8bc0",
         "source/input/input_xbox.c": "6e8a39cf5c72c6f0c7e9a7ac1153f490b7a66533e35bef9cf5d1d4fc65b3f779",
         "source/interface/event_manager.c": "ce0c71e08adf8809ff746ce6f5bb9dc45a55731503db41bb17d551f7b943a872",
-        "source/interface/first_person_weapons.c": "d9bddddf21a06ff1da340bfb3f406b66538746bf7610a7951ea8420b7bf9168d",
+        "source/interface/first_person_weapons.c": "25aa8f8e2054eee0739c6fcc386b4ba22e23ba8bc0df724a1fdbe1a76f934a7f",
         "source/interface/hud.c": "114c40dd9f63a88256ca6385d104db3187af4427980a4362dd1c4c9371d4663f",
         "source/interface/hud_definitions.c": "eaaa76227a569f904a97020af17dc40b62e1b8f369c0beb214b280b1da5be465",
         "source/interface/hud_draw.c": "a629370cb794726c8f04d63ea6083c3387973dab8afc5b6ad0dbd04c2d995a8d",
@@ -2119,9 +2120,9 @@
       },
       "disposition": "implemented",
       "owner": "Pinned PS2 EE GCC 15.2.0 libgcc",
-      "reason": "Compiler-generated double-to-int conversion. Callers include fast_ftol, the color converters, and the local-profile file. The map links libgcc.a(_df_to_si.o).",
-      "evidence": "docs/hcu-source-backed-review/hcu-ps2-post-split-external-review.md; docs/hcu-ps2-toolchain-runtime-review.md; port/ps2/src/ps2_local_profile.c; build/hcu-ps2-closure/all/halo-local.map",
-      "test": "tests/test_hcu_external_review.py::test_post_split_closure_externals_are_reviewed"
+      "reason": "fast_ftol and the two color converters are the live sections, plus dsound_volume_from_gain. fast_ftol casts through __builtin_rint((double)value). The map links libgcc.a(_df_to_si.o).",
+      "evidence": "docs/hcu-source-backed-review/hcu-ps2-toolchain-eight-review.md; source/cseries/cseries.h; build/toolchain/sources/ps2toolchain_ee_gcc/libgcc/soft-fp/fixdfsi.c; build/hcu-parent-link-probe/hcu-gameplay-machine.map",
+      "test": "tests/test_hcu_ps2_toolchain_runtime_owners.py::test_hcu_ee_runtime_symbols_are_provided_by_pinned_libraries"
     },
     "__floatdidf": {
       "classification": "toolchain",
@@ -2420,6 +2421,7 @@
         ".text.obstacles_disc_tangents",
         ".text.obstacles_test_pill",
         ".text.overlay_animation_apply_continuous",
+        ".text.overlay_animation_apply_continuous_scaled",
         ".text.particle_system_new_particles",
         ".text.path_attractor_weight",
         ".text.path_smooth",
@@ -2494,11 +2496,11 @@
         "port/ps2/src/ps2_custom_edition.c": "b447d444867f0a884e684486e2bf07ea3e8a87d78d048748bdd4aaa988fda41d",
         "port/ps2/src/ps2_errors.c": "92685b84eac1c8c43c235e379d0a074adca74842b8f7b1375ae97fbf3c21bfaf",
         "port/ps2/src/ps2_geometry.c": "1a18f58069b539710446d296307d72f62ba0ace037767e73da268d67f0032474",
-        "port/ps2/src/ps2_interface.c": "48dd248cc758ada4c0c2b8a3b1beed684ad49b0463067bf56aeea427350b361c",
+        "port/ps2/src/ps2_interface.c": "b935223f927370de97dd883c0b04505c3188188a27278d5c3b7de39776941881",
         "port/ps2/src/ps2_local_profile.c": "84fbcd3cfe60df3ff53180b55afc28ba6fdddac87221fe471021fccac2cd2848",
         "port/ps2/src/ps2_network_local.c": "6e74382898e9151476b2473ffd2135d65fda5fa53cc3299c9bac0a34a605fd5c",
         "port/ps2/src/ps2_rasterizer.c": "b420467ed7a3174368b2f63aa53ec225dd589c918829e246ad382cea5c1d4a78",
-        "port/ps2/src/ps2_render.c": "b4457e8d09213a6b42811083b7e69219dbd72de1b840f89f8a2d0ee87990e6ac",
+        "port/ps2/src/ps2_render.c": "c5f244aa67c01cdc7eca93a20dc83ddabbf530859ee5cda0794e70cbe8c26943",
         "port/ps2/src/ps2_sound_cache.c": "e50f9c3f80dd3553363f42472013d01192e6ed237739490ecc5fdf8019c1beb3",
         "source/ai/action_alert.c": "127a02bab986f6f3662d0ab775cea57f63d39963dc8ca9c2a902fa9be7d63350",
         "source/ai/action_avoid.c": "7cdffd0a179fab8c0f4c3a927b3a17fc7c4cb656bb3f9f23e1d1c37129563fd1",
@@ -2610,7 +2612,7 @@
         "source/hs/hs_runtime.c": "2e09d6938eb307613c9eee00781828b7bf171e2e0e2c4dc1df41cf41d2951c23",
         "source/input/input_abstraction.c": "f043937d1a36acb6674ad92ebba9125dbad3d70a774afb821cd80bfcab1b8bc0",
         "source/input/input_xbox.c": "6e8a39cf5c72c6f0c7e9a7ac1153f490b7a66533e35bef9cf5d1d4fc65b3f779",
-        "source/interface/first_person_weapons.c": "d9bddddf21a06ff1da340bfb3f406b66538746bf7610a7951ea8420b7bf9168d",
+        "source/interface/first_person_weapons.c": "25aa8f8e2054eee0739c6fcc386b4ba22e23ba8bc0df724a1fdbe1a76f934a7f",
         "source/interface/hud.c": "114c40dd9f63a88256ca6385d104db3187af4427980a4362dd1c4c9371d4663f",
         "source/interface/hud_definitions.c": "eaaa76227a569f904a97020af17dc40b62e1b8f369c0beb214b280b1da5be465",
         "source/interface/hud_draw.c": "a629370cb794726c8f04d63ea6083c3387973dab8afc5b6ad0dbd04c2d995a8d",
@@ -2708,9 +2710,9 @@
       },
       "disposition": "implemented",
       "owner": "Pinned PS2 EE GCC 15.2.0 libgcc",
-      "reason": "Compiler-generated double-to-float truncation. Callers include CE math and the local-profile file. The map links libgcc.a(_df_to_sf.o).",
-      "evidence": "docs/hcu-source-backed-review/hcu-ps2-post-split-external-review.md; docs/hcu-ps2-toolchain-runtime-review.md; port/ps2/src/ps2_local_profile.c; build/hcu-ps2-closure/all/halo-local.map",
-      "test": "tests/test_hcu_external_review.py::test_post_split_closure_externals_are_reviewed"
+      "reason": "The same CE math promotions that extend to double truncate back to single through this helper. The map links libgcc.a(_df_to_sf.o).",
+      "evidence": "docs/hcu-source-backed-review/hcu-ps2-toolchain-eight-review.md; build/toolchain/sources/ps2toolchain_ee_gcc/libgcc/soft-fp/truncdfsf2.c; build/hcu-parent-link-probe/hcu-gameplay-machine.map",
+      "test": "tests/test_hcu_ps2_toolchain_runtime_owners.py::test_hcu_ee_runtime_symbols_are_provided_by_pinned_libraries"
     },
     "__udivdi3": {
       "classification": "toolchain",
@@ -4225,7 +4227,8 @@
         ".text.game_time_update",
         ".text.king_engine_post_rasterize",
         ".text.object_compute_function_values",
-        ".text.overlay_animation_apply_continuous"
+        ".text.overlay_animation_apply_continuous",
+        ".text.overlay_animation_apply_continuous_scaled"
       ],
       "caller_sources": {
         "source/effects/decals.c": "0144c0f24c7a572a69b1a0c01e2106a3a6a0999e2c0908370ba6b0f7611a8a9b",
@@ -4239,9 +4242,9 @@
       },
       "disposition": "implemented",
       "owner": "Pinned PS2 EE Newlib 4.6.0 libm",
-      "reason": "CE animation/effect math uses standard downward integer-bound rounding; the exact rooted implementation is the pinned Newlib libm routine. Numeric edge parity remains M6.",
-      "evidence": "docs/hcu-ps2-libm-review.md; build/hcu-ps2-closure/all/halo-local.map: libm_a-s_floor.o; config/toolchain-sources.json:19-24",
-      "test": "tests/test_hcu_external_review.py::test_pinned_newlib_libm_helpers_resolve_to_exact_archive_members"
+      "reason": "animation_get_keyframe_* takes floor of the frame index before fast_ftol. game_time_update, decals, and the lens-flare grid are the other live sections. The map links libm_a-s_floor.o.",
+      "evidence": "docs/hcu-source-backed-review/hcu-ps2-toolchain-eight-review.md; source/models/model_animations.c; build/toolchain/sources/ps2toolchain_ee_newlib/newlib/libm/math/s_floor.c; build/hcu-parent-link-probe/hcu-gameplay-machine.map",
+      "test": "tests/test_hcu_ps2_toolchain_runtime_owners.py::test_hcu_ee_runtime_symbols_are_provided_by_pinned_libraries"
     },
     "fmod": {
       "classification": "toolchain",
@@ -4253,13 +4256,14 @@
         ".text.object_compute_function_values",
         ".text.object_new",
         ".text.overlay_animation_apply_continuous",
+        ".text.overlay_animation_apply_continuous_scaled",
         ".text.periodic_function_build_table",
         ".text.periodic_function_evaluate",
         ".text.transition_function_evaluate",
         ".text.vehicle_update"
       ],
       "caller_sources": {
-        "source/interface/first_person_weapons.c": "d9bddddf21a06ff1da340bfb3f406b66538746bf7610a7951ea8420b7bf9168d",
+        "source/interface/first_person_weapons.c": "25aa8f8e2054eee0739c6fcc386b4ba22e23ba8bc0df724a1fdbe1a76f934a7f",
         "source/math/periodic_functions.c": "15d9c7e7e23e771a4e30ac345247f298aad7169922d447fc715f331166f12cfd",
         "source/models/model_animations.c": "46db2484cc1f4143c2cf17b8b0e9ab1ec69726bfaf74e02e49fc796f8c9534d0",
         "source/objects/objects.c": "7e00e9dad7f2423b5707c257705701796f31ea02db9e9dd211afa8943b96fd1d",
@@ -4268,9 +4272,9 @@
       },
       "disposition": "implemented",
       "owner": "Pinned PS2 EE Newlib 4.6.0 libm",
-      "reason": "CE first-person periodic animation and math paths use standard floating remainder; the exact rooted implementation is the pinned target libm wrapper and IEEE operation. Numerical parity remains M6.",
-      "evidence": "docs/hcu-ps2-libm-review.md; build/hcu-ps2-closure/all/halo-local.map: libm_a-w_fmod.o and libm_a-e_fmod.o; config/toolchain-sources.json:19-24",
-      "test": "tests/test_hcu_external_review.py::test_pinned_newlib_libm_helpers_resolve_to_exact_archive_members"
+      "reason": "first_person_weapons_update wraps the overcharge jitter frame. vehicle_update wraps tread and wheel by wheel_circumference. periodic_function_evaluate and the glow wraps are the other live sections. The map links libm_a-w_fmod.o.",
+      "evidence": "docs/hcu-source-backed-review/hcu-ps2-toolchain-eight-review.md; source/interface/first_person_weapons.c; source/units/vehicles.c; build/hcu-parent-link-probe/hcu-gameplay-machine.map",
+      "test": "tests/test_hcu_ps2_toolchain_runtime_owners.py::test_hcu_ee_runtime_symbols_are_provided_by_pinned_libraries"
     },
     "fopen": {
       "classification": "toolchain",
@@ -4404,6 +4408,34 @@
       "reason": "GetSystemTime converts time(NULL) through gmtime_r and zeros SYSTEMTIME when the conversion fails.",
       "evidence": "docs/hcu-source-backed-review/hcu-ps2-post-split-external-review.md; port/ps2/src/ps2_time.c; build/hcu-ps2-closure/all/halo-local.map",
       "test": "tests/test_hcu_external_review.py::test_post_split_closure_externals_are_reviewed"
+    },
+    "halo_ps2_render_snapshot_begin": {
+      "classification": "ps2-service",
+      "caller_sections": [
+        ".text.render_frame"
+      ],
+      "caller_sources": {
+        "port/ps2/src/ps2_render.c": "c5f244aa67c01cdc7eca93a20dc83ddabbf530859ee5cda0794e70cbe8c26943"
+      },
+      "disposition": "state-adapter",
+      "owner": "Parent PS2 render snapshot bridge: src/stream/hcu_render_snapshot.c",
+      "reason": "HCU render_frame requests the inactive parent-owned fixed snapshot bank before copying CE camera/object/first-person presentation state. The double-buffer begin path performs no allocation and does not modify the active published bank.",
+      "evidence": "docs/hcu-source-backed-review/m4-render-snapshot-bridge-review.md; src/stream/hcu_render_snapshot.c; submodules/halo-ce-universal/port/ps2/src/ps2_render.c:130-131",
+      "test": "tests/test_hcu_render_snapshot.py::test_ce_ps2_renderer_publishes_frame_after_camera_and_first_person_update"
+    },
+    "halo_ps2_render_snapshot_commit": {
+      "classification": "ps2-service",
+      "caller_sections": [
+        ".text.render_frame"
+      ],
+      "caller_sources": {
+        "port/ps2/src/ps2_render.c": "c5f244aa67c01cdc7eca93a20dc83ddabbf530859ee5cda0794e70cbe8c26943"
+      },
+      "disposition": "state-adapter",
+      "owner": "Parent PS2 render snapshot bridge: src/stream/hcu_render_snapshot.c",
+      "reason": "The parent validates the completed pointer-free snapshot, bounded counts, finite transforms/camera planes, and writer-bank identity before publishing it with a sequence number. It does not stand in for drawing or accept truncated state.",
+      "evidence": "docs/hcu-source-backed-review/m4-render-snapshot-bridge-review.md; src/stream/hcu_render_snapshot.c; submodules/halo-ce-universal/port/ps2/src/ps2_render.c:192-198",
+      "test": "tests/test_hcu_render_snapshot.py::test_ce_matrix_snapshot_reaches_parent_vu1_palette (C fixture exercises double-buffer publication/rejection)"
     },
     "halo_screen_width": {
       "classification": "excluded-feature",
@@ -4744,7 +4776,7 @@
         "port/ps2/src/ps2_cbsp.c": "99bef414bc0d906ce5b3679a7727f355a87e2663719e934d720a7fd322da4856",
         "port/ps2/src/ps2_ctag.c": "ffd6c743ec3e8d5b7b69738acceb43dbdce9fe0f84a3f9a8ce402ee66be057cd",
         "port/ps2/src/ps2_input.c": "4d14b7df447afd44831d81bcc92d688650db6ece0244f8adab30c156b63f8d4f",
-        "port/ps2/src/ps2_render.c": "b4457e8d09213a6b42811083b7e69219dbd72de1b840f89f8a2d0ee87990e6ac",
+        "port/ps2/src/ps2_render.c": "c5f244aa67c01cdc7eca93a20dc83ddabbf530859ee5cda0794e70cbe8c26943",
         "source/ai/action_alert.c": "127a02bab986f6f3662d0ab775cea57f63d39963dc8ca9c2a902fa9be7d63350",
         "source/ai/action_flee.c": "d376657ccb0c56a889e548c40fb2dd26d4951462c28e58fff429f5f2f9be6976",
         "source/ai/action_guard.c": "b6fb7fb886543e9eaa8579c42e19395f7219a34c3831f7a8afc24b21404453e7",
@@ -4825,9 +4857,9 @@
       },
       "disposition": "implemented",
       "owner": "Pinned PS2 EE Newlib 4.6.0 libc",
-      "reason": "memcpy is the pinned Newlib member. Callers include the tag schema walkers, ps2_cache.c, ps2_cbsp.c, ps2_ctag.c, and ps2_input.c.",
-      "evidence": "docs/hcu-source-backed-review/hcu-ps2-post-split-external-review.md; docs/hcu-ps2-libc-memory-review.md; build/hcu-ps2-closure/all/halo-local.map",
-      "test": "tests/test_hcu_external_review.py::test_post_split_closure_externals_are_reviewed"
+      "reason": "Newlib memcpy.c copies n bytes and leaves overlap undefined. csmemcpy asserts non-NULL, a bounded size, and non-overlapping ranges before the call. The other live sections are those non-overlapping object, actor, input, and animation copies. The map links libc_a-memcpy.o.",
+      "evidence": "docs/hcu-source-backed-review/hcu-ps2-toolchain-eight-review.md; source/cseries/cseries.c; build/toolchain/sources/ps2toolchain_ee_newlib/newlib/libc/string/memcpy.c; build/hcu-parent-link-probe/hcu-gameplay-machine.map",
+      "test": "tests/test_hcu_ps2_toolchain_runtime_owners.py::test_hcu_ee_runtime_symbols_are_provided_by_pinned_libraries"
     },
     "memmove": {
       "classification": "toolchain",
@@ -6095,12 +6127,12 @@
         "port/ps2/src/ps2_custom_edition.c": "b447d444867f0a884e684486e2bf07ea3e8a87d78d048748bdd4aaa988fda41d",
         "port/ps2/src/ps2_errors.c": "92685b84eac1c8c43c235e379d0a074adca74842b8f7b1375ae97fbf3c21bfaf",
         "port/ps2/src/ps2_geometry.c": "1a18f58069b539710446d296307d72f62ba0ace037767e73da268d67f0032474",
-        "port/ps2/src/ps2_interface.c": "48dd248cc758ada4c0c2b8a3b1beed684ad49b0463067bf56aeea427350b361c",
+        "port/ps2/src/ps2_interface.c": "b935223f927370de97dd883c0b04505c3188188a27278d5c3b7de39776941881",
         "port/ps2/src/ps2_local_profile.c": "84fbcd3cfe60df3ff53180b55afc28ba6fdddac87221fe471021fccac2cd2848",
         "port/ps2/src/ps2_network_local.c": "6e74382898e9151476b2473ffd2135d65fda5fa53cc3299c9bac0a34a605fd5c",
         "port/ps2/src/ps2_profile.c": "8c1ebe583ab35cd12130949a8c60e30b45c8ffe86d4eabcc8953b49ef689d817",
         "port/ps2/src/ps2_rasterizer.c": "b420467ed7a3174368b2f63aa53ec225dd589c918829e246ad382cea5c1d4a78",
-        "port/ps2/src/ps2_render.c": "b4457e8d09213a6b42811083b7e69219dbd72de1b840f89f8a2d0ee87990e6ac",
+        "port/ps2/src/ps2_render.c": "c5f244aa67c01cdc7eca93a20dc83ddabbf530859ee5cda0794e70cbe8c26943",
         "port/ps2/src/ps2_sound_cache.c": "e50f9c3f80dd3553363f42472013d01192e6ed237739490ecc5fdf8019c1beb3",
         "source/ai/action_alert.c": "127a02bab986f6f3662d0ab775cea57f63d39963dc8ca9c2a902fa9be7d63350",
         "source/ai/action_avoid.c": "7cdffd0a179fab8c0f4c3a927b3a17fc7c4cb656bb3f9f23e1d1c37129563fd1",
@@ -6226,7 +6258,7 @@
         "source/input/input_abstraction.c": "f043937d1a36acb6674ad92ebba9125dbad3d70a774afb821cd80bfcab1b8bc0",
         "source/input/input_xbox.c": "6e8a39cf5c72c6f0c7e9a7ac1153f490b7a66533e35bef9cf5d1d4fc65b3f779",
         "source/interface/event_manager.c": "ce0c71e08adf8809ff746ce6f5bb9dc45a55731503db41bb17d551f7b943a872",
-        "source/interface/first_person_weapons.c": "d9bddddf21a06ff1da340bfb3f406b66538746bf7610a7951ea8420b7bf9168d",
+        "source/interface/first_person_weapons.c": "25aa8f8e2054eee0739c6fcc386b4ba22e23ba8bc0df724a1fdbe1a76f934a7f",
         "source/interface/hud.c": "114c40dd9f63a88256ca6385d104db3187af4427980a4362dd1c4c9371d4663f",
         "source/interface/hud_definitions.c": "eaaa76227a569f904a97020af17dc40b62e1b8f369c0beb214b280b1da5be465",
         "source/interface/hud_draw.c": "a629370cb794726c8f04d63ea6083c3387973dab8afc5b6ad0dbd04c2d995a8d",
@@ -6367,11 +6399,11 @@
         "source/units/units.c": "8a7f5d3a016f0a9de5cc2696b6e7289b40f954b7f7a744cb29127996c52e90b9",
         "source/units/vehicles.c": "3f2e2a57d488f4dcf497716c3aafd19343bb9f346c66dd153bd49d5e4d44c7cb"
       },
-      "disposition": "state-adapter",
+      "disposition": "implemented",
       "owner": "Pinned PS2 EE Newlib 4.6.0 libm",
-      "reason": "rint is the pinned Newlib round. _control87 does not reprogram the R5900, so fast_ftol, the color converters, and the local-profile file keep the default rounding mode.",
-      "evidence": "docs/hcu-source-backed-review/hcu-ps2-post-split-external-review.md; docs/hcu-ps2-libm-review.md; port/ps2/src/ps2_crt.c; port/ps2/src/ps2_local_profile.c; build/hcu-ps2-closure/all/halo-local.map",
-      "test": "tests/test_hcu_external_review.py::test_post_split_closure_externals_are_reviewed"
+      "reason": "The only live sections are fast_ftol and the two color converters. fast_ftol documents round-to-nearest under the default control word. Newlib s_rint.c implements that with the TWO52 sequence and does not read an x87 word. _control87 does not reprogram it.",
+      "evidence": "docs/hcu-source-backed-review/hcu-ps2-toolchain-eight-review.md; source/cseries/cseries.h; build/toolchain/sources/ps2toolchain_ee_newlib/newlib/libm/common/s_rint.c; build/hcu-parent-link-probe/hcu-gameplay-machine.map",
+      "test": "tests/test_hcu_ps2_toolchain_runtime_owners.py::test_hcu_ee_runtime_symbols_are_provided_by_pinned_libraries"
     },
     "sin": {
       "classification": "toolchain",
@@ -6677,11 +6709,11 @@
         "port/ps2/src/ps2_custom_edition.c": "b447d444867f0a884e684486e2bf07ea3e8a87d78d048748bdd4aaa988fda41d",
         "port/ps2/src/ps2_errors.c": "92685b84eac1c8c43c235e379d0a074adca74842b8f7b1375ae97fbf3c21bfaf",
         "port/ps2/src/ps2_geometry.c": "1a18f58069b539710446d296307d72f62ba0ace037767e73da268d67f0032474",
-        "port/ps2/src/ps2_interface.c": "48dd248cc758ada4c0c2b8a3b1beed684ad49b0463067bf56aeea427350b361c",
+        "port/ps2/src/ps2_interface.c": "b935223f927370de97dd883c0b04505c3188188a27278d5c3b7de39776941881",
         "port/ps2/src/ps2_local_profile.c": "84fbcd3cfe60df3ff53180b55afc28ba6fdddac87221fe471021fccac2cd2848",
         "port/ps2/src/ps2_network_local.c": "6e74382898e9151476b2473ffd2135d65fda5fa53cc3299c9bac0a34a605fd5c",
         "port/ps2/src/ps2_rasterizer.c": "b420467ed7a3174368b2f63aa53ec225dd589c918829e246ad382cea5c1d4a78",
-        "port/ps2/src/ps2_render.c": "b4457e8d09213a6b42811083b7e69219dbd72de1b840f89f8a2d0ee87990e6ac",
+        "port/ps2/src/ps2_render.c": "c5f244aa67c01cdc7eca93a20dc83ddabbf530859ee5cda0794e70cbe8c26943",
         "port/ps2/src/ps2_sound_cache.c": "e50f9c3f80dd3553363f42472013d01192e6ed237739490ecc5fdf8019c1beb3",
         "source/ai/action_alert.c": "127a02bab986f6f3662d0ab775cea57f63d39963dc8ca9c2a902fa9be7d63350",
         "source/ai/action_avoid.c": "7cdffd0a179fab8c0f4c3a927b3a17fc7c4cb656bb3f9f23e1d1c37129563fd1",
@@ -6793,7 +6825,7 @@
         "source/hs/hs_runtime.c": "2e09d6938eb307613c9eee00781828b7bf171e2e0e2c4dc1df41cf41d2951c23",
         "source/input/input_abstraction.c": "f043937d1a36acb6674ad92ebba9125dbad3d70a774afb821cd80bfcab1b8bc0",
         "source/input/input_xbox.c": "6e8a39cf5c72c6f0c7e9a7ac1153f490b7a66533e35bef9cf5d1d4fc65b3f779",
-        "source/interface/first_person_weapons.c": "d9bddddf21a06ff1da340bfb3f406b66538746bf7610a7951ea8420b7bf9168d",
+        "source/interface/first_person_weapons.c": "25aa8f8e2054eee0739c6fcc386b4ba22e23ba8bc0df724a1fdbe1a76f934a7f",
         "source/interface/hud.c": "114c40dd9f63a88256ca6385d104db3187af4427980a4362dd1c4c9371d4663f",
         "source/interface/hud_definitions.c": "eaaa76227a569f904a97020af17dc40b62e1b8f369c0beb214b280b1da5be465",
         "source/interface/hud_draw.c": "a629370cb794726c8f04d63ea6083c3387973dab8afc5b6ad0dbd04c2d995a8d",
@@ -6891,9 +6923,9 @@
       },
       "disposition": "implemented",
       "owner": "Pinned PS2 EE Newlib 4.6.0 libm",
-      "reason": "sqrt is the pinned libm member. Callers are distance, actor, physics, projectile math, and the local-profile file.",
-      "evidence": "docs/hcu-source-backed-review/hcu-ps2-post-split-external-review.md; docs/hcu-ps2-libm-review.md; port/ps2/src/ps2_local_profile.c; build/hcu-ps2-closure/all/halo-local.map",
-      "test": "tests/test_hcu_external_review.py::test_post_split_closure_externals_are_reviewed"
+      "reason": "distance2d, distance3d, fast_normalize2d, and fast_normalize3d are live sections, with actor movement and collision pill tests. Those lengths feed simulation. The map links libm_a-w_sqrt.o.",
+      "evidence": "docs/hcu-source-backed-review/hcu-ps2-toolchain-eight-review.md; build/hcu-parent-link-probe/hcu-gameplay-machine.map",
+      "test": "tests/test_hcu_ps2_toolchain_runtime_owners.py::test_hcu_ee_runtime_symbols_are_provided_by_pinned_libraries"
     },
     "stack_walk": {
       "classification": "ps2-service",

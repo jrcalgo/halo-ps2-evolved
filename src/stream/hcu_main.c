@@ -5,6 +5,7 @@
 #include "platform/video.h"
 #include "stream/hcu_memory_bind.h"
 #include "stream/hcu_map_service.h"
+#include "stream/hcu_file_bridge.h"
 #include "stream/hcu_storage_boot.h"
 
 #include <kernel.h>
@@ -36,7 +37,7 @@ static const char *const s_region_names[MEM_LAYOUT_V2_REGION_COUNT] = {
 long halo_screen_width(void) { return VIDEO_WIDTH; }
 long halo_ps2_display_height(void) { return VIDEO_HEIGHT; }
 
-void ps2_abi_check(void);
+int ps2_abi_check(void);
 void physical_memory_allocate(void);
 int physical_memory_ready(void);
 void physical_memory_free(void);
@@ -126,7 +127,10 @@ int main(int argc, char **argv)
 
 	setbuf(stdout, NULL);
 	printf("HALO_PS2_LOCAL machine entry\n");
-	ps2_abi_check();
+	if (!ps2_abi_check()) {
+		printf("HALO_PS2_FAIL CE ABI runtime smoke failed\n");
+		return 1;
+	}
 	/* CRT clears this NOBITS span before main. Charge it to resident_gameplay
 	 * so the one boot allocation covers only the rest of the v2 layout. */
 	if ((uintptr_t)&_end < (uintptr_t)&_fbss) {
@@ -241,6 +245,22 @@ int main(int argc, char **argv)
 		physical_memory_free();
 		__real_free(backing);
 		return 1;
+	}
+	{
+		unsigned long asset_bytes = 0;
+		const char *failed_stage = NULL;
+		if (!hcu_file_bridge_probe("D:\\maps\\ui.map", &asset_bytes,
+			&failed_stage)) {
+			printf("[err] asset root %s failed read-only maps/ui.map probe at %s\n",
+				HALO_HCU_ASSET_ROOT,
+				failed_stage ? failed_stage : "unknown");
+			hcu_map_service_shutdown(&s_map_service);
+			physical_memory_free();
+			__real_free(backing);
+			return 1;
+		}
+		printf("HALO_PS2_LOCAL asset-probe-ready root=%s bytes=%u\n",
+			HALO_HCU_ASSET_ROOT, (unsigned)asset_bytes);
 	}
 	printf("HALO_PS2_LOCAL memory-and-input-ready (cache=%u bytes; bootstrap only)\n",
 		(unsigned)HALO_HCU_TAG_CACHE_BYTES);

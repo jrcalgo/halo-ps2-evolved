@@ -29,15 +29,26 @@ extern const uint32_t halo_filexio_irx_size;
 
 #define HCU_FILEXIO_BIND_POLLS 100
 #define HCU_FILEXIO_BIND_DELAY_US 10000
+#define HCU_MAX_IOP_MODULE_ID 0xFFFF
+
+/* IOP Loadcore stores module indices in a 16-bit field. PCSX2's HLE
+ * SearchModuleByName has been observed returning 0x40800000 for a missing
+ * module; accepting any positive integer mistakes that sentinel for a live
+ * IOMANX instance and makes the subsequent FILEXIO load fail. */
+static int valid_module_id(int module_id)
+{
+	return module_id > 0 && module_id <= HCU_MAX_IOP_MODULE_ID;
+}
 
 /* PS2SDK's blocking fileXioInit can wait forever if the IOP server never
  * registers. Probe asynchronously first so a bad module/service state is a
  * bounded startup error instead of a frozen machine. */
-static int filexio_server_ready(void)
+static int filexio_server_ready(int *bind_result_out)
 {
 	static SifRpcClientData_t probe;
 	int poll, result;
 	result = sceSifBindRpc(&probe, FILEXIO_IRX, SIF_RPC_M_NOWAIT);
+	if (bind_result_out) *bind_result_out = result;
 	if (result < 0) return result;
 	for (poll = 0; poll < HCU_FILEXIO_BIND_POLLS; ++poll) {
 		if (probe.server) return 1;
@@ -49,7 +60,7 @@ static int filexio_server_ready(void)
 static int ensure_module(const char *name, const char *legacy_name,
 	const unsigned char *image, size_t image_size)
 {
-	int id, module_start_result = 0;
+	int id, module_start_result = 0, legacy_id;
 	HCU_TRACE("HALO_PS2_LOCAL storage-search %s\n", name);
 	id = SifSearchModuleByName(name);
 	HCU_TRACE("HALO_PS2_LOCAL storage-search-done %s id=%d\n", name, id);
@@ -58,17 +69,27 @@ static int ensure_module(const char *name, const char *legacy_name,
 	 * it as the empty/not-found sentinel before returning its error code), and
 	 * accepting it can skip loading an RPC server that fileXioInit then waits
 	 * for forever in sceSifBindRpc. */
-	if (id > 0) return 0;
+	if (valid_module_id(id)) {
+		printf("HALO_PS2_LOCAL storage-module-reused name=%s id=%d\n", name, id);
+		return 0;
+	}
 	/* Some IOMANX builds retain the legacy IRX_ID namespace. */
 	if (legacy_name) {
 		HCU_TRACE("HALO_PS2_LOCAL storage-search-legacy %s\n", legacy_name);
-		if (SifSearchModuleByName(legacy_name) > 0) return 0;
+		legacy_id = SifSearchModuleByName(legacy_name);
+		if (valid_module_id(legacy_id)) {
+			printf("HALO_PS2_LOCAL storage-module-reused name=%s id=%d\n",
+				legacy_name, legacy_id);
+			return 0;
+		}
 	}
 	if (!image || image_size == 0 || image_size > UINT32_MAX) return -1;
 	HCU_TRACE("HALO_PS2_LOCAL storage-load-begin %s bytes=%u\n", name,
 		(unsigned)image_size);
 	id = SifExecModuleBuffer((void *)image, (u32)image_size, 0, NULL,
 		&module_start_result);
+	printf("HALO_PS2_LOCAL storage-module-loaded name=%s id=%d start=%d\n",
+		name, id, module_start_result);
 	HCU_TRACE("HALO_PS2_LOCAL storage-load-result %s id=%d start=%d\n",
 		name, id, module_start_result);
 	if (id <= 0 || module_start_result != 0)
@@ -83,10 +104,13 @@ static int ensure_module(const char *name, const char *legacy_name,
 
 int hcu_storage_boot_init(void)
 {
-	int lmb_patch_result;
+	int lmb_patch_result, bind_result, server_result;
 	/* Reuse an OPL/launcher-provided RPC server before touching its IOP state. */
 	printf("HALO_PS2_LOCAL storage-filexio-bind-probe\n");
-	if (filexio_server_ready() > 0) {
+	server_result = filexio_server_ready(&bind_result);
+	printf("HALO_PS2_LOCAL storage-filexio-bind-result phase=initial status=%d rpc=%d\n",
+		server_result, bind_result);
+	if (server_result > 0) {
 		printf("HALO_PS2_LOCAL storage-filexio-existing-server\n");
 		if (file_reader_filexio_init() != 0) {
 			printf("[err] FILEXIO client initialization failed\n");
@@ -118,8 +142,12 @@ int hcu_storage_boot_init(void)
 		return -1;
 	}
 	printf("HALO_PS2_LOCAL storage-filexio-bind-probe-after-load\n");
-	if (filexio_server_ready() <= 0) {
-		printf("[err] FILEXIO RPC server did not bind within 1 second\n");
+	server_result = filexio_server_ready(&bind_result);
+	printf("HALO_PS2_LOCAL storage-filexio-bind-result phase=post-load status=%d rpc=%d\n",
+		server_result, bind_result);
+	if (server_result <= 0) {
+		printf("[err] FILEXIO RPC server did not bind within 1 second (status=%d rpc=%d)\n",
+			server_result, bind_result);
 		return -1;
 	}
 	printf("HALO_PS2_LOCAL storage-filexio-rpc-begin\n");

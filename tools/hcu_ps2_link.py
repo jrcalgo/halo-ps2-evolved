@@ -19,6 +19,7 @@ OUT = ROOT / "build/hcu-ps2-closure/all"
 COMMENT = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
 PREPROC = re.compile(r"^\s*#.*?(?<!\\)$", re.M | re.S)
 SKIP = {
+	"halo_ps2_render_snapshot_begin", "halo_ps2_render_snapshot_commit",
     "physical_memory_allocate", "physical_memory_verify", "physical_memory_free",
     "physical_memory_bind_game_state", "physical_memory_bind_tag_cache",
     "physical_memory_bind_structure_bsp_cache", "physical_memory_bind_texture_cache",
@@ -70,8 +71,10 @@ SKIP = {
     "render_initialize", "render_initialize_for_new_map",
     "render_interpolation_camera", "render_interpolation_fraction",
     "render_interpolation_frame_begin", "render_interpolation_frame_end",
-    "render_interpolation_object_node_matrices", "render_interpolation_reset",
+	"render_interpolation_first_person",
+	"render_interpolation_object_node_matrices", "render_interpolation_reset",
     "render_interpolation_tick",
+	"pal_tags_first_person_fraction",
     "render_particle_systems_enabled", "render_particles_enabled", "render_shadows",
     "render_weather_particle_systems_enabled",
     "reset_last_player1_profile_index",

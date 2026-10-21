@@ -38,8 +38,9 @@ def inventory():
              "makeinfo", "flex", "bison", "gawk")
     dependencies = {}
     lock_path = ROOT / "config/dependencies.json"
-    locked = {item["name"]: item["commit"] for item in
-              json.loads(lock_path.read_text())["dependencies"]} if lock_path.exists() else {}
+    lock = json.loads(lock_path.read_text()) if lock_path.exists() else {}
+    locked = {item["name"]: item["commit"]
+              for item in lock.get("dependencies", [])}
     for name in dict.fromkeys((*REPOSITORIES, *locked)):
         path = ROOT / "submodules" / name
         head = command("git", "-C", str(path), "rev-parse", "HEAD") if (path / ".git").exists() else {}
@@ -59,9 +60,31 @@ def inventory():
         blockers.append("Writable parent Git metadata has not been established.")
     if any(item["verified_pin"] is None for item in dependencies.values()):
         blockers.append("Dependency gitlinks and full commit pins are unverified.")
+    references = {}
+    for item in lock.get("reference_submodules", []):
+        path = ROOT / item["path"]
+        head = command("git", "-C", str(path), "rev-parse", "HEAD") if (path / ".git").exists() else {}
+        index = command("git", "ls-files", "--stage", "--", item["path"])
+        fields = index.get("detail", "").split()
+        gitlink_matches = fields[:3] == ["160000", item["commit"], "0"]
+        checkout_matches = bool(head.get("ok") and head["detail"] == item["commit"])
+        clean = None
+        if (path / ".git").exists():
+            status = command("git", "-C", str(path), "status", "--porcelain")
+            clean = status.get("ok") and not status["detail"]
+        references[item["name"]] = {
+            "path": item["path"],
+            "role": item.get("role", "reference-only"),
+            "present": path.is_dir(),
+            "initialized": (path / ".git").exists(),
+            "gitlink_matches_pin": gitlink_matches,
+            "checkout_matches_pin": checkout_matches if head.get("ok") else None,
+            "checkout_clean": clean,
+        }
     return {"workspace": str(ROOT), "git": git,
             "tools": {name: shutil.which(name, path=tool_env["PATH"]) for name in names},
-            "dependencies": dependencies, "blockers": blockers,
+            "dependencies": dependencies, "optional_references": references,
+            "blockers": blockers,
             "network": "Not probed by doctor; no network operations are performed.",
             "limits": "Tool paths do not establish version compatibility, Docker daemon access, emulator configuration, or runtime correctness."}
 

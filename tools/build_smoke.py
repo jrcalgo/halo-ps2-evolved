@@ -12,6 +12,10 @@ from build_toolchain import ROOT, environment, run_stages, save
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--vu", action="store_true", help="Assemble the existing VU1 renderer program only")
+    parser.add_argument("--source", type=Path, default=ROOT / "tests/fixtures/ee_smoke.c",
+                        help="EE smoke source (default: tests/fixtures/ee_smoke.c)")
+    parser.add_argument("--output", type=Path, default=None,
+                        help="output directory for the EE ELF")
     args = parser.parse_args()
     selected = os.environ.get("BUILD_ENV", "native")
     if selected not in ("native", "container"):
@@ -43,10 +47,11 @@ def main():
     reader = prefix / "ee/bin/mips64r5900el-ps2-elf-readelf"
     if not compiler.is_file() or not (prefix / "ps2sdk/samples/Makefile.eeglobal").is_file():
         raise RuntimeError("Compiler/SDK installation is incomplete; finish make toolchain first")
-    output = build / "platform-smoke"
+    output = args.output.resolve() if args.output else build / "platform-smoke"
     report_path = output / "result.json"
     report = run_stages([("compile-ee-smoke", ["make", "-f", "tools/ee-smoke.mk",
-                         f"SMOKE_OUTPUT={output}", "all"], ROOT)], env, report_path,
+                         f"SMOKE_OUTPUT={output}", f"EE_SMOKE_SOURCE={args.source.resolve()}",
+                         "all"], ROOT)], env, report_path,
                         {"compiler": subprocess.check_output([str(compiler), "--version"], text=True).splitlines()[0]})
     elf = output / "halo-smoke.elf"
     report["elf_sha256"] = hashlib.sha256(elf.read_bytes()).hexdigest()

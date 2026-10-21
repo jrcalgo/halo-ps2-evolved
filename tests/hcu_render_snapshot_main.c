@@ -1,0 +1,155 @@
+#include "core/mat.h"
+#include "render/chain.h"
+#include "sim/skeleton.h"
+#include "stream/hcu_render_snapshot.h"
+
+#include <assert.h>
+#include <math.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <string.h>
+
+/* Compile the test against the actual pinned HCU matrix declaration without
+ * pulling in its machine runtime. These type aliases match cseries.h. */
+typedef float real;
+typedef unsigned char byte;
+typedef unsigned char boolean;
+typedef unsigned short word;
+typedef unsigned long dword;
+#define TRUE 1
+#define FALSE 0
+#define NONE -1
+#define _x 0
+#define _y 1
+#define _z 2
+#define __inline static inline
+#define match_assert(file, line, condition) ((void)0)
+#define PIN(value, low, high) ((value) < (low) ? (low) : \
+	((value) > (high) ? (high) : (value)))
+#include "math/real_math.h"
+
+_Static_assert(sizeof(real_matrix4x3) == HCU_CE_MATRIX4X3_BYTES,
+	"pinned CE real_matrix4x3 wire size changed");
+_Static_assert(offsetof(real_matrix4x3, scale) == 0 &&
+	offsetof(real_matrix4x3, forward) == 4 &&
+	offsetof(real_matrix4x3, left) == 16 &&
+	offsetof(real_matrix4x3, up) == 28 &&
+	offsetof(real_matrix4x3, position) == 40,
+	"pinned CE real_matrix4x3 wire offsets changed");
+
+static uint32_t s_chain_words[64] __attribute__((aligned(16)));
+
+static void near(float actual, float expected)
+{
+	assert(fabsf(actual - expected) < 0.0001f);
+}
+
+int main(void)
+{
+	real_matrix4x3 ce = { 0 };
+	halo_ps2_render_snapshot *snapshot;
+	halo_ps2_render_snapshot const *published;
+	mat4 node, clip;
+	float point[3] = { 3.0f, 4.0f, 5.0f }, transformed[3];
+	float light[3] = { 0.0f, 0.0f, -1.0f }, palette[5][4];
+	uint32_t *payload;
+	float *dma_palette;
+	chain_t chain;
+
+	ce.scale = 2.0f;
+	ce.forward.i = 0.0f; ce.forward.j = 1.0f; ce.forward.k = 0.0f;
+	ce.left.i = -1.0f; ce.left.j = 0.0f; ce.left.k = 0.0f;
+	ce.up.i = 0.0f; ce.up.j = 0.0f; ce.up.k = 1.0f;
+	ce.position.x = 10.0f; ce.position.y = -2.0f; ce.position.z = 4.0f;
+	assert(hcu_render_snapshot_matrix_from_ce(&ce, &node) == 0);
+	mat4_transform_point(&node, point, transformed);
+	/* CE matrix4x3_transform_point() semantics, including matrix scale. */
+	near(transformed[0], 2.0f);
+	near(transformed[1], 4.0f);
+	near(transformed[2], 14.0f);
+	near(node.m[3][0], ce.position.x);
+	near(node.m[3][1], ce.position.y);
+	near(node.m[3][2], ce.position.z);
+
+	mat4_identity(&clip);
+	skel_palette_entry(palette, &node, clip.m, light);
+	chain_init(&chain, s_chain_words, 64);
+	payload = (uint32_t *)chain_cnt(&chain, 1 + 5 + 1, 0);
+	assert(payload != NULL);
+	dma_palette = (float *)(payload + 4);
+	assert(((uintptr_t)dma_palette & 15u) == 0);
+	memcpy(dma_palette, palette, sizeof palette);
+	assert(chain_qwords(&chain) == 8);
+	near(dma_palette[12], 10.0f);
+	near(dma_palette[13], -2.0f);
+	near(dma_palette[14], 4.0f);
+
+	ce.scale = NAN;
+	assert(hcu_render_snapshot_matrix_from_ce(&ce, &node) == -1);
+	assert(hcu_render_snapshot_matrix_from_ce(NULL, &node) == -1);
+	assert(hcu_render_snapshot_matrix_from_ce(&ce, NULL) == -1);
+
+	/* Exercise the same two-bank pointer-free publication API the CE PS2
+	 * render adapter calls, including immutability of the previous frame. */
+	snapshot = halo_ps2_render_snapshot_begin();
+	assert(snapshot != NULL);
+	snapshot->frame_index = 10;
+	snapshot->time_delta_since_tick_sec = 1.0f / 30.0f;
+	snapshot->window_index = 0;
+	snapshot->local_player_index = 0;
+	snapshot->camera.forward[0] = 1.0f;
+	snapshot->camera.up[2] = 1.0f;
+	snapshot->camera.vertical_field_of_view = 1.2f;
+	snapshot->camera.z_near = 0.1f;
+	snapshot->camera.z_far = 1000.0f;
+	snapshot->object_count = 1;
+	snapshot->objects[0].datum_index = 0x10001u;
+	snapshot->objects[0].definition_index = 12;
+	snapshot->objects[0].type = 5;
+	snapshot->objects[0].world.scale = 1.0f;
+	snapshot->objects[0].world.forward[0] = 1.0f;
+	snapshot->objects[0].world.left[1] = 1.0f;
+	snapshot->objects[0].world.up[2] = 1.0f;
+	assert(halo_ps2_render_snapshot_commit(snapshot) == 0);
+	published = hcu_render_snapshot_latest();
+	assert(published != NULL && published->sequence == 1);
+	assert(published->frame_index == 10 && published->object_count == 1);
+	assert(published->objects[0].datum_index == 0x10001u);
+
+	snapshot = halo_ps2_render_snapshot_begin();
+	assert(snapshot != NULL && snapshot != published);
+	snapshot->frame_index = 11;
+	snapshot->time_delta_since_tick_sec = 1.0f / 60.0f;
+	snapshot->local_player_index = -1;
+	assert(halo_ps2_render_snapshot_commit(snapshot) == 0);
+	assert(published->sequence == 1 && published->frame_index == 10);
+	assert(hcu_render_snapshot_latest()->sequence == 2);
+
+	snapshot = halo_ps2_render_snapshot_begin();
+	snapshot->object_count = HALO_PS2_RENDER_MAX_OBJECTS + 1u;
+	assert(halo_ps2_render_snapshot_commit(snapshot) == -1);
+	assert(hcu_render_snapshot_latest()->sequence == 2);
+
+	snapshot = halo_ps2_render_snapshot_begin();
+	snapshot->time_delta_since_tick_sec = 0.0f;
+	snapshot->local_player_index = -1;
+	snapshot->object_count = 1;
+	snapshot->objects[0].world.scale = 2.0f;
+	snapshot->objects[0].world.forward[1] = 1.0f;
+	snapshot->objects[0].world.left[0] = -1.0f;
+	snapshot->objects[0].world.up[2] = 1.0f;
+	snapshot->objects[0].world.position[0] = 10.0f;
+	snapshot->objects[0].world.position[1] = -2.0f;
+	snapshot->objects[0].world.position[2] = 4.0f;
+	assert(halo_ps2_render_snapshot_commit(snapshot) == 0);
+	assert(hcu_render_snapshot_publish_dma() == 5);
+	assert(hcu_render_snapshot_dma_qwords() == 5);
+	assert(((uintptr_t)hcu_render_snapshot_dma_words() & 15u) == 0);
+	assert(hcu_render_snapshot_dma_words()[3] ==
+		((uint32_t)0x6Cu << 24 | 4u << 16));
+	dma_palette = (float *)(hcu_render_snapshot_dma_words() + 4);
+	near(dma_palette[12], 10.0f);
+	near(dma_palette[13], -2.0f);
+	near(dma_palette[14], 4.0f);
+	return 0;
+}

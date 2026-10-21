@@ -9,21 +9,53 @@ host runtime or physical-console test. The checker is defined in
 `tools/hcu_ps2_abi_host.py:25` and compiles the same HCU TU twice at
 `tools/hcu_ps2_abi_host.py:45` and `tools/hcu_ps2_abi_host.py:64`.
 
-`port/ps2/src/ps2_abi.c` now asserts the 32-bit pointer/long and 16-bit
+`port/ps2/src/ps2_abi.c` asserts the 32-bit pointer/long and 16-bit
 `wchar_t` ABI; `data_array` size and signature/data offsets; `datum_header`;
 tag-block and tag-reference sizes/critical pointers; 420-byte object, 1,060-byte
 unit, 1,148-byte vehicle, 636-byte weapon, and 552-byte projectile datums; and
 damage flags/regions, unit player index, weapon primary trigger, projectile
 target, and projectile arming-time offsets. It also retains a synthetic aligned
-16-byte DMA-record check. The PS2 parent calls `ps2_abi_check()` during startup
-at `src/stream/hcu_main.c:129`, and the diagnostic entry does likewise at
-`submodules/halo-ce-universal/port/ps2/src/ps2_main.c:18`.
+16-byte DMA-record check. `ps2_abi_check()` now performs a target-side read/write
+round-trip for `data_array`, tag-block/reference pointers, and object, unit,
+vehicle, weapon, and projectile fields. The parent and diagnostic entries fail
+early if it returns false (`src/stream/hcu_main.c:130`,
+`submodules/halo-ce-universal/port/ps2/src/ps2_main.c:18`). The host/target ABI
+driver remains compile-only. The user's PCSX2 run reached `memory-ready` for
+ELF `2eb1f907d781bcfe4fb6170ba698f05d58090510b818c595acb8f2921fb1c54e`, but
+target disassembly then showed that the optimizer had reduced
+`ps2_abi_check()` to an unconditional `return 1`; that run is not ABI
+load/store evidence. The probe records are now volatile so those accesses and
+comparisons survive optimization. Current ELF SHA-256 is
+`7833c801a8084d0f549f5e598a11667cf6393ed9579402b9ff813cda5f5d716d`; target
+disassembly includes the stack record writes and `lw`/`lwc1` comparisons, and
+the image remains zero-undefined and within file-backed `elf_static`. A fresh
+PCSX2 run of this new hash is still required to execute the corrected probe.
 
-This synthetic DMA record does not establish that render snapshots or actual
-DMA payloads are correctly aligned. `real_matrix4x3` is 52 bytes and must be
-repacked only at a DMA/snapshot boundary, as detailed in
+The synthetic DMA-record assertion does not by itself establish a render
+payload. `tests/test_hcu_dma_palette.py` now compiles and runs the pinned
+halo-ps2 `chain.c`, `skeleton.c`, and `mat.c` path; its fixture allocates the
+same CNT-chain payload layout used in `engine/src/render/obj_render.c:100-105`,
+checks the 80-byte VU1 palette starts on a 16-byte boundary, verifies the
+five-quadword content, and verifies chain QWC accounting. It tests the parent
+renderer’s existing matrix-to-VU1-palette boundary, not a CE-to-parent object
+snapshot: no production HCU `real_matrix4x3` snapshot consumer is connected
+yet. `real_matrix4x3` is 52 bytes and must be repacked only at a DMA/snapshot
+boundary, as detailed in
 `docs/investigations/final_milestone_plan.md` under “DMA prep” and “M3 render
 snapshot.” CE object/datum pool alignment must remain unchanged.
+
+The parent now has a pointer-free conversion API in
+`src/stream/hcu_render_snapshot.c`: it copies the pinned CE 13-float
+`real_matrix4x3` wire representation, applies CE's separate uniform scale to
+the forward/left/up basis, and writes halo-ps2's row-basis `mat4` convention.
+`tests/test_hcu_render_snapshot.py` feeds that record through the real parent
+matrix transform, VU1 palette, and aligned DMA-chain construction, checking
+translation, nontrivial rotation, scale, and malformed non-finite input. This
+test passed with the existing palette test (2 passed). The R5900 combined-link
+probe compiled the new object, but its adapter symbol is discarded by section
+GC because the production renderer still has no snapshot caller. This is
+stronger than the prior synthetic palette-only fixture, but does not yet
+complete the production snapshot-consumer requirement or render a CE object.
 
 ## Soft-double relocation inventory
 
@@ -60,8 +92,10 @@ as a measured optimization decision.
 
 ## Gate state
 
-ABI compile checks pass. The current memory-ready PCSX2 run links and calls the
-ABI check but does not execute every datum-consuming simulation path, so M4
-step 1 remains partial until a guest fixture exercises representative object,
-unit, weapon, projectile, and tag/datum accesses and an actual DMA-facing
-snapshot boundary is qualified. No math parity or performance claim is made.
+`python3 tools/hcu_ps2_abi_host.py` passes host ILP32 and R5900 compile-only
+assertions; `pytest -q tests/test_hcu_dma_palette.py` passes. The current
+combined gameplay ELF includes the runtime ABI smoke and has zero undefined
+imports, but PCSX2 was unavailable in the current session because no X display
+could be reached. M4 step 1 therefore remains partial until the exact ELF
+executes the smoke and the HCU-to-parent object snapshot has a real consumer at
+the DMA boundary. No math parity or performance claim is made.

@@ -10,3 +10,7 @@ int hcu_file_bridge_size(int token, unsigned long *size_out);
 long hcu_file_bridge_seek(int token, long distance, unsigned long origin);
 int hcu_file_bridge_stat(const char *path, unsigned long *size_out,
 	int *directory_out);
+/* Exercise the selected read-only root without allocating or retaining a
+ * handle. failed_stage receives a stable diagnostic token on failure. */
+int hcu_file_bridge_probe(const char *path, unsigned long *size_out,
+	const char **failed_stage);
