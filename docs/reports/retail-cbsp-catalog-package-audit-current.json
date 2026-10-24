@@ -1,0 +1,202 @@
+{
+  "bsp_count": 82,
+  "format": "retail-ce-hp2-cbsp-catalog-audit-v1",
+  "interpretation": "Every catalog maps each audited retail BSP extent to one valid CBSP section; no memory-fit or runtime-load claim.",
+  "map_count": 24,
+  "maps": [
+    {
+      "bsp_count": 9,
+      "cbsp_payload_bytes": 55303008,
+      "map": "a10",
+      "package_bytes": 38885376,
+      "package_sha256": "7f68401d460d27d47799151497406a563c4a78c41d26af3d95ee16c31157a8bc",
+      "source_sha256": "1ce33954aa12a2e0c21a07e20d0dc652b1b403e4ef1b98c067439a15545d9971"
+    },
+    {
+      "bsp_count": 2,
+      "cbsp_payload_bytes": 13406680,
+      "map": "a30",
+      "package_bytes": 14704640,
+      "package_sha256": "e5c62bb98625edd56556149d12d908636fb5c26895135b64d9dbadc7642beeae",
+      "source_sha256": "287959f34a7379a1dbec5fec15b4d94d17fe97ccd861f5c0c8fc80148b7ed293"
+    },
+    {
+      "bsp_count": 4,
+      "cbsp_payload_bytes": 25207124,
+      "map": "a50",
+      "package_bytes": 22167552,
+      "package_sha256": "9c4efa82cba708146f69ae4ff111d863d949f090fef6512463c45757b3fcb417",
+      "source_sha256": "d7a3e80a86f2b0f23d855ce353aed3c0eb252145697797d87f25623dc470f38d"
+    },
+    {
+      "bsp_count": 2,
+      "cbsp_payload_bytes": 10664372,
+      "map": "b30",
+      "package_bytes": 12404736,
+      "package_sha256": "2778958f03ccdf6ba5719afdec4595e3e06c9312fccda9a8e07655a22a5275f7",
+      "source_sha256": "74020202d3930ee52c1ee96a7d8e3ee4020ce31a434b3f870d71df72b9c3e4dd"
+    },
+    {
+      "bsp_count": 13,
+      "cbsp_payload_bytes": 42087260,
+      "map": "b40",
+      "package_bytes": 32641024,
+      "package_sha256": "18a5b2a296640edd5c05b7e5fc60825dab8520b0ee6f52dfc92f75c8fba2ea5a",
+      "source_sha256": "8c5e4aecbd0bc7e063feb7d0c6a3f6d8cff65bf1abec75286070ef9c85fd927b"
+    },
+    {
+      "bsp_count": 1,
+      "cbsp_payload_bytes": 730200,
+      "map": "beavercreek",
+      "package_bytes": 2316288,
+      "package_sha256": "98521d791c45aea272b0052316491d462aa3fb0d7e25c20f63d20d39b85d42b1",
+      "source_sha256": "eaf90b2abc4fd295469eb2d640063618b0d14396f28e7d7f1758e834c061c50a"
+    },
+    {
+      "bsp_count": 1,
+      "cbsp_payload_bytes": 1303092,
+      "map": "bloodgulch",
+      "package_bytes": 2830336,
+      "package_sha256": "a4c8781a46ffa4ec6b1e4984730056b662f1bfa4e9dc43df7cf4fa20a49ea557",
+      "source_sha256": "9eb0374cbe4571af640ae0d2e0ebf6119543cdbbece44d49543b4748c4cf0dc1"
+    },
+    {
+      "bsp_count": 1,
+      "cbsp_payload_bytes": 1354156,
+      "map": "boardingaction",
+      "package_bytes": 2682880,
+      "package_sha256": "42fba3b8da60673090fd1b2aef85bed5698100cd51289fa1d0f45ea1f530cf12",
+      "source_sha256": "34ddf961973b6aaf05f40f26bd9ad536ca97f8af503995611535ccf6ce911522"
+    },
+    {
+      "bsp_count": 6,
+      "cbsp_payload_bytes": 31398656,
+      "map": "c10",
+      "package_bytes": 26454016,
+      "package_sha256": "a1c04fb52f78bef0662ff665249a69464220cdda0048c5d006e026aed27b9405",
+      "source_sha256": "423d50a4d7fb7b3c280d7e0806d67e136b2b6a51468ed0be6ee9415e5f129e7d"
+    },
+    {
+      "bsp_count": 4,
+      "cbsp_payload_bytes": 31722572,
+      "map": "c20",
+      "package_bytes": 22646784,
+      "package_sha256": "e92003e0c6cc9f185c4dd6314f6474c24e819d8672392952ad0b94d6b3676b77",
+      "source_sha256": "1c1c9a8ca882636a3e78cb1d14e25a09c4a11388f6381c5f74212d468b70e654"
+    },
+    {
+      "bsp_count": 13,
+      "cbsp_payload_bytes": 42511236,
+      "map": "c40",
+      "package_bytes": 32765952,
+      "package_sha256": "f07b72bef9260298996a1742f332aeca21e1ec863cb18402ce7e30e4eefeaa87",
+      "source_sha256": "d7465f07a675a86785a329b9ab3d8a5a20b25b7ca7d05bafeb7ca87b02b20be9"
+    },
+    {
+      "bsp_count": 1,
+      "cbsp_payload_bytes": 515248,
+      "map": "carousel",
+      "package_bytes": 2099200,
+      "package_sha256": "87628a63d40c9bef463bdd279eac24dc22c8e863aa06ff3535b8e18c3ce5b68d",
+      "source_sha256": "3e4be29a7952af0b3f19a7540e454fd0deece6d6078c256cde70a734beba55e1"
+    },
+    {
+      "bsp_count": 1,
+      "cbsp_payload_bytes": 573416,
+      "map": "chillout",
+      "package_bytes": 2140160,
+      "package_sha256": "ec23a2c3a0e766185e62d816361fd298e6eca12922d5351ecf31714b7b602d05",
+      "source_sha256": "52bc3e23b9142cf479770d1d601fe08b13d78fe3eb05eca72d313b7ebbd21ffb"
+    },
+    {
+      "bsp_count": 5,
+      "cbsp_payload_bytes": 31312464,
+      "map": "d20",
+      "package_bytes": 25513984,
+      "package_sha256": "23248186901f0cb7dbd0f3210b126b2c4707ed5a9d0db0f8e31cf4f19b3774a4",
+      "source_sha256": "30d8fc02bcd209a7ce03174d8cf6cf771dd3621837d9a2d02111718dcc5e792c"
+    },
+    {
+      "bsp_count": 10,
+      "cbsp_payload_bytes": 53844764,
+      "map": "d40",
+      "package_bytes": 39002112,
+      "package_sha256": "4c0672a57300dbcb6fdf24ca4757ab26d737f0c297eb8734fa0a6a753843cde0",
+      "source_sha256": "438452ef1896dd5bc2d3210b279f76e71b775f7eb2b7a8f8e29f4e5471d59a76"
+    },
+    {
+      "bsp_count": 1,
+      "cbsp_payload_bytes": 1326816,
+      "map": "damnation",
+      "package_bytes": 2670592,
+      "package_sha256": "b2de61099b9f78ec7603bb29182dbf02c28c666eac0352765697b0f40e8a48dd",
+      "source_sha256": "87bd92c1821ff20bed03c559d7be5ac43baeb44aa68342ffdbb5a8cd978f711c"
+    },
+    {
+      "bsp_count": 1,
+      "cbsp_payload_bytes": 595848,
+      "map": "hangemhigh",
+      "package_bytes": 2154496,
+      "package_sha256": "5b971cf25c752b9e616664bfe45c2eb20f5d138706f99a0da5edcdddb8ac8832",
+      "source_sha256": "e3e4b25ed36178926f0df11f3cd82b07e2071f6aa0efaa77f0cfde8f8480981f"
+    },
+    {
+      "bsp_count": 1,
+      "cbsp_payload_bytes": 377388,
+      "map": "longest",
+      "package_bytes": 2039808,
+      "package_sha256": "988672a19e7753c71c6c2ed9f0d1a9552ad6303418c8b87f14a3cd29ee5c6b3e",
+      "source_sha256": "e045b0843f4a167a516f050161a651610fafc94ccc8c5f2c5d5725d108d5d1b9"
+    },
+    {
+      "bsp_count": 1,
+      "cbsp_payload_bytes": 888336,
+      "map": "prisoner",
+      "package_bytes": 2361344,
+      "package_sha256": "17865a39c58fa0f8f878ae5d27108effcfd377b5da7c0f5214a28638b386903c",
+      "source_sha256": "85ff2fdc117b7640bda85a490b30c662f2626bd6d0685e41832935422891c307"
+    },
+    {
+      "bsp_count": 1,
+      "cbsp_payload_bytes": 1643044,
+      "map": "putput",
+      "package_bytes": 2762752,
+      "package_sha256": "a06e85da80fd0fe3829a8ce84b070560f16fa214eff3ad17c115c9c676f4a5e6",
+      "source_sha256": "efbe723188f34053d318105f20c7046f263171fbb937fbad45e3d00f8437f243"
+    },
+    {
+      "bsp_count": 1,
+      "cbsp_payload_bytes": 550804,
+      "map": "ratrace",
+      "package_bytes": 2142208,
+      "package_sha256": "b5e1e63f303a41addcf156f63b6e15cc6a826f294f771b2fe86c317bb4598f0f",
+      "source_sha256": "577886f949f2648f04cf99e354fb04ca08d7b9199636c2f9fe1a161ccdaa4b1e"
+    },
+    {
+      "bsp_count": 1,
+      "cbsp_payload_bytes": 1993740,
+      "map": "sidewinder",
+      "package_bytes": 3164160,
+      "package_sha256": "e660cdab8e0f82ce5eee7f744488debfcd7dc190d8c5ea5f7802379fea3cb669",
+      "source_sha256": "995561a68c8c5b142f13f1967730ce8c08d4f0db9574db8e987d915f2b118dcc"
+    },
+    {
+      "bsp_count": 1,
+      "cbsp_payload_bytes": 2288,
+      "map": "ui",
+      "package_bytes": 284672,
+      "package_sha256": "123aa5d390b6db2b5f2e022d949dc45f40c657b39e6b5b4560919b96fb898d2b",
+      "source_sha256": "8556b647b82742d07282fe4e6db0cf847b542c046484e91e71ec31fea5f5fd7e"
+    },
+    {
+      "bsp_count": 1,
+      "cbsp_payload_bytes": 556944,
+      "map": "wizard",
+      "package_bytes": 2138112,
+      "package_sha256": "1d226c7b8a7085169384443c09336435f41df4a327cfb61b69a563ffdd938bce",
+      "source_sha256": "978539ff70085998485870a15d4ec81d3811442ac48f9265db668a396f6ff1eb"
+    }
+  ],
+  "total_cbsp_payload_bytes": 349869456,
+  "total_package_bytes": 298973184
+}
