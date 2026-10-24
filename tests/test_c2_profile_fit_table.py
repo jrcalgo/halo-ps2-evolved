@@ -111,6 +111,7 @@ class ProfileFitMatchingTests(unittest.TestCase):
             "HALO_PS2_LOCAL partition-selected name=map_a_session qualified=1",
             "HALO_PS2_LOCAL profile-runtime row=map_a_session map=map_a profile=7",
             "HALO_PS2_LOCAL owner-telemetry phase=map name=streaming kind=backing parent=- bound=1 cap=100 used=25 high=50 failures=0 resets=1",
+            "HALO_PS2_LOCAL owner-telemetry phase=map name=gs_texture kind=nested parent=gs_window bound=1 cap=80 used=25 high=50 failures=0 resets=1 domain=gs",
             "HALO_PS2_LOCAL cache-owner phase=map name=tags current=10 peak=20 failures=0 resets=0",
             "HALO_PS2_LOCAL arena name=streaming_map_owner cap=100 used=25 high=50 alloc_failures=0 resets=1",
             "HALO_PS2_LOCAL render-storage-bound snapshot-cap=1 renderer-workspace-cap=1 renderer-dma-cap=1 geometry-chain-qw=1 upload-chain-qw=1 frame-parent-used=1 frame-parent-high=1 streaming-map-cap=100 section-scratch-base=0x1 section-scratch-cap=1",
@@ -138,6 +139,7 @@ class ProfileFitMatchingTests(unittest.TestCase):
                 if expected:
                     self.assertEqual(len(result["provenance"]["boot_diagnostics"]), 1)
                     self.assertEqual(result["provenance"]["errors"], [])
+                    self.assertEqual(result["owners"]["gs_texture"][0]["domain"], "gs")
                 found = matched_owner({"name":"map_a_session", "map":"map_a", "hcp_package_sha256":"a"*64,
                                        "hcp_package_sha256_matches_manifest":True,"profile_id":7},
                                       result, "streaming", "capacity")

@@ -17,7 +17,8 @@ ARENA = re.compile(r"HALO_PS2_LOCAL arena name=(\S+).*?cap=(\d+) used=(\d+) high
 REQUIRED = ("machine-entry", "partition-selected", "profile-runtime", "owner-telemetry", "cache-owner", "arena",
             "render-storage-bound", "map-lifecycle")
 OWNER_NAMES = ("game_state", "object_pool", "actor_pool", "widget_pool", "dynamic_simulation", "tags", "bsp",
-               "render_chunks", "render_texture", "streaming", "scratch", "dma", "audio_requests")
+               "render_chunks", "render_texture", "gs_window", "gs_texture", "streaming", "scratch", "dma",
+               "audio_requests")
 
 
 def sha(path):
@@ -117,6 +118,8 @@ def extract(run, run_path):
             sample=dict(phase=phase, kind=kind, parent=parent,
                 bound=int(bound), capacity=int(cap), current=int(used), peak=int(high),
                 failures=int(failures), resets=int(resets))
+            domain = re.search(r"\bdomain=(\S+)", line)
+            if domain: sample["domain"] = domain.group(1)
             owners.setdefault(name, []).append(sample)
             if phase == "map-loaded": pending_loaded_owners.append({"owner":name,**sample})
             elif phase == "map-released" and active_map is not None:
