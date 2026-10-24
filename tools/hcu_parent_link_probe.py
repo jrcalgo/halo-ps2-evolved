@@ -204,7 +204,11 @@ def main() -> None:
                         default=ROOT / "build/m2-c2-r3-selected-packages/pkg",
                         help="package row directory passed to the generated image-header builder")
     parser.add_argument("--headless-runtime-guest", action="store_true",
-                        help="run CE's selected Sidewinder load/BSP lifecycle before any render frame")
+                        help="run CE's selected row scenario/BSP load and release before any render frame")
+    parser.add_argument("--output-dir", type=Path,
+                        help=("write every probe output under this directory (inside the build root) "
+                              "instead of build/hcu-parent-link-probe; the shared HCU closure "
+                              "directory is still rewritten, so hold the link lock around the run"))
     args = parser.parse_args()
     if args.m2_ui_lifecycle_test and args.m3_render_clear_test:
         parser.error("the M2 lifecycle and M3 render-clear diagnostics are separate ELF profiles")
@@ -222,9 +226,8 @@ def main() -> None:
         parser.error("use either --asset-root or --asset-profile, not both")
     if args.partition_profile and not re.fullmatch(r"[a-z0-9_]+", args.partition_profile):
         parser.error("--partition-profile must be a lowercase row identifier")
-    if args.headless_runtime_guest and args.partition_profile not in (
-            "sidewinder_marine_shotgun_4p4bot", "bots_sidewinder"):
-        parser.error("--headless-runtime-guest requires the Sidewinder survival or bots row")
+    if args.headless_runtime_guest and not args.partition_profile:
+        parser.error("--headless-runtime-guest requires a selected --partition-profile row")
     if args.headless_runtime_guest and (args.asset_profile != "host" or args.asset_root):
         parser.error("--headless-runtime-guest requires the host asset profile")
     if (args.tag_cache_bytes <= 0 or args.tag_cache_bytes >= 6291456 or
@@ -240,6 +243,10 @@ def main() -> None:
     optimization = "-Oz"
     build, prefix, env, _jobs = environment()
     output = build / "hcu-parent-link-probe"
+    if args.output_dir:
+        output = (args.output_dir if args.output_dir.is_absolute() else ROOT / args.output_dir).resolve()
+        if build not in output.parents:
+            parser.error(f"--output-dir must be inside the build root {build}")
     output.mkdir(parents=True, exist_ok=True)
     profile_suffix = (f"-step8-mp-workload-{args.step8_mp_workload_players}p" if args.step8_mp_workload_only else
                       "-step8-mp-capacity" if args.step8_mp_capacity_diagnostic else
