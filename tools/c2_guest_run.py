@@ -106,6 +106,42 @@ def sha256(path):
     return digest.hexdigest()
 
 
+EMU_MODES = ("interpreter", "recompiler")
+RECOMPILER_SWITCHES = ("EnableEE", "EnableIOP", "EnableVU0", "EnableVU1")
+
+
+def apply_emu_mode(data_dir: Path, mode: str) -> None:
+    """Set the run's PCSX2.ini execution mode.
+
+    interpreter (default): the template's switches are left as they are (all false).
+    recompiler: EnableEE, EnableIOP, EnableVU0 and EnableVU1 are set to true in the
+    [EmuCore/CPU/Recompiler] section of this run's copied config only.
+    """
+    if mode not in EMU_MODES:
+        raise ValueError(f"unknown emu mode {mode!r}")
+    if mode == "interpreter":
+        return
+    ini = data_dir / "PCSX2/inis/PCSX2.ini"
+    lines = ini.read_text(errors="replace").splitlines(keepends=True)
+    section, seen = None, set()
+    for index, raw in enumerate(lines):
+        line = raw.strip()
+        if line.startswith("[") and line.endswith("]"):
+            section = line[1:-1]
+            continue
+        if section != "EmuCore/CPU/Recompiler" or "=" not in line:
+            continue
+        key = line.split("=", 1)[0].strip()
+        if key in RECOMPILER_SWITCHES:
+            newline = "\n" if raw.endswith("\n") else ""
+            lines[index] = f"{key} = true{newline}"
+            seen.add(key)
+    missing = [key for key in RECOMPILER_SWITCHES if key not in seen]
+    if missing:
+        raise RuntimeError(f"PCSX2.ini has no [EmuCore/CPU/Recompiler] entries for {missing}")
+    ini.write_text("".join(lines))
+
+
 def pcsx2_config_identity(data_dir: Path) -> dict:
     """Describe the exact copied PCSX2 config and selected BIOS bytes."""
     ini = data_dir / "PCSX2/inis/PCSX2.ini"
@@ -467,14 +503,16 @@ def capture_root(display, base):
 def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
               maps_dir=PROBE / "maps", production_tuple=None,
               guest_package_root="build/m2-c2-r3-selected-packages", stage_paths=(),
-              capture_dir=None, capture_markers=()):
+              capture_dir=None, capture_markers=(), emu_mode="interpreter"):
     lane_run = out_dir / "runs" / which
     if lane_run.exists():
         shutil.rmtree(lane_run)
     lane_run.mkdir(parents=True)
     data = lane_run / "data"
     shutil.copytree(PROFILE_TEMPLATE, data)
+    apply_emu_mode(data, emu_mode)
     config_identity = pcsx2_config_identity(data)
+    config_identity["emu_mode"] = emu_mode
     elf_copy = lane_run / Path(elf_info["path"]).name
     shutil.copy2(elf_info["path"], elf_copy)
     # PCSX2's host: root is the ELF's directory, which must hold the probe's maps/.
@@ -578,6 +616,9 @@ def main():
                         help="C3: save an `xwd -root` PNG of the guest display here when a --capture-marker appears in the log")
     parser.add_argument("--capture-marker", action="append", default=[],
                         help="log substring that triggers one capture (repeatable)")
+    parser.add_argument("--emu-mode", choices=EMU_MODES, default="interpreter",
+                        help="PCSX2 execution: interpreter (default, template config) or "
+                             "recompiler (EE, IOP, VU0, VU1 recompilers enabled in this run's PCSX2.ini)")
     parser.add_argument("--production-row", default="sidewinder_marine_shotgun_4p4bot")
     parser.add_argument("--production-map", default="sidewinder")
     parser.add_argument("--production-release-map",
@@ -684,7 +725,8 @@ def main():
                                                      "released_map": args.production_release_map}
                                                     if args.production_elf else None),
                                                    args.guest_package_root, args.stage_path,
-                                                   args.capture_dir, args.capture_marker))
+                                                   args.capture_dir, args.capture_marker,
+                                                   emu_mode=args.emu_mode))
             except Exception as error:  # record the failure and keep the partial manifest
                 manifest["runs"].append({"run": which, "error": f"{type(error).__name__}: {error}"})
             write_manifest(manifest_path, manifest)

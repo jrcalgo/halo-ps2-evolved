@@ -828,6 +828,11 @@ def link_row(row: str, package_root: Path, out: Path, cycles: int = 1, ticks: in
     return elf, ""
 
 
+# PCSX2 execution mode for every guest run of this invocation (--emu-mode). The
+# interpreter is the default; recompiler sets the four Enable switches in each run's ini.
+EMU_MODE = "interpreter"
+
+
 def guest_row(row: str, elf: Path, plan: dict, out: Path, timeout: int = GUEST_TIMEOUT,
               process_timeout: int = GUEST_PROCESS_TIMEOUT, extra_stage_paths=(),
               released_map: str | None = None, capture_markers=()) -> tuple[bool, str]:
@@ -836,7 +841,8 @@ def guest_row(row: str, elf: Path, plan: dict, out: Path, timeout: int = GUEST_T
                "--production-elf", str(elf), "--package-tree", str(plan["package_tree"]),
                "--guest-package-root", plan["guest_package_root"],
                "--production-row", row, "--production-map", plan["map"],
-               "--production-profile-id", str(plan["profile_id"])]
+               "--production-profile-id", str(plan["profile_id"]),
+               "--emu-mode", EMU_MODE]
     if released_map:
         command += ["--production-release-map", released_map]
     if capture_markers:
@@ -1127,7 +1133,12 @@ def main(argv=None) -> int:
                               "then a retry loads"))
     parser.add_argument("--successor-ticks", type=int, default=SUCCESSOR_TICKS,
                         help="in-map CE ticks run on the surviving map (default %(default)s)")
+    parser.add_argument("--emu-mode", choices=("interpreter", "recompiler"), default="interpreter",
+                        help=("PCSX2 execution for every guest run: interpreter (default) or recompiler "
+                              "(EnableEE/IOP/VU0/VU1 = true in each run's PCSX2.ini)"))
     args = parser.parse_args(argv)
+    global EMU_MODE
+    EMU_MODE = args.emu_mode
     if args.output_root is not None:
         OUTPUT_ROOT = (ROOT / args.output_root if not args.output_root.is_absolute() else args.output_root).resolve()
     if args.successor:
