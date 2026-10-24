@@ -1,0 +1,67 @@
+{
+  "format": "hcu-m2-c2-lane-report-v1",
+  "lane": "telemetry",
+  "requirement": "C2.6",
+  "date": "2026-10-23",
+  "scope": "Owner telemetry registry, snapshot and BACKING-only totals; staging request/reset counters. Production owner wiring (game state, actor pool, tags, BSP, streaming, scratch, audio) is NOT yet connected to hcu_main.c.",
+  "files_changed": [
+    "src/stream/hcu_owner_telemetry.h",
+    "src/stream/hcu_owner_telemetry.c",
+    "tests/hcu_owner_telemetry_main.c",
+    "src/stream/staging.c",
+    "src/stream/staging.h",
+    "tests/staging.c"
+  ],
+  "owner_model": {
+    "backing": ["game_state", "dynamic_simulation", "tags", "bsp", "render_chunks", "streaming", "scratch", "dma", "audio_requests"],
+    "nested": [
+      {"owner": "object_pool", "parent": "game_state"},
+      {"owner": "actor_pool", "parent": "game_state"},
+      {"owner": "render_texture", "parent": "render_chunks"}
+    ],
+    "rule": "Only BACKING owners are summed into backing_capacity/used/high/failures/resets. Nested rows are reported and validated (capacity <= parent capacity) but never added."
+  },
+  "hook_signatures_for_renderer_lane": {
+    "note": "Renderer lane (dma-lifecycle) implements these; it must not edit hcu_owner_telemetry.* ",
+    "sampler_type": "int (*hcu_owner_sampler_fn)(void *ctx, hcu_owner_sample_t *out)",
+    "bind": "int hcu_owner_telemetry_bind_sampler(hcu_owner_telemetry_t *t, hcu_owner_id_t id, hcu_owner_sampler_fn sampler, void *ctx)",
+    "required_owners": ["HCU_OWNER_RENDER_CHUNKS", "HCU_OWNER_RENDER_TEXTURE", "HCU_OWNER_DMA"],
+    "sample_contract": "capacity, used, high (peak since last reset), failures and resets from the owner's own live counters; return 0 if not bound"
+  },
+  "cross_lane_wiring": {
+    "file": "src/stream/hcu_main.c",
+    "status": "NOT EDITED (owned by orchestrator/other lane)",
+    "needed": [
+      "hcu_owner_telemetry_init(&g_owner_telemetry) at boot before any owner is bound",
+      "hcu_owner_telemetry_note_capacity for game_state, dynamic_simulation, tags, bsp, streaming, scratch, dma, audio_requests from the bound profile",
+      "hcu_owner_telemetry_bind_sampler for render_chunks and render_texture (renderer lane) and dma (renderer lane)",
+      "hcu_owner_telemetry_snapshot + a single log line at shutdown and at each map boundary"
+    ]
+  },
+  "staging_telemetry": {
+    "fields": ["request_failures", "reset_count", "reset_failures", "high_water"],
+    "reset_semantics": "staging_reset refuses while any slot is non-FREE (counts reset_failures); quiescent reset preserves serials so stale tickets cannot alias reused slots",
+    "high_water_unit": "bytes of occupied slot stride, not requested bytes (pre-existing semantics)"
+  },
+  "tests_run": [
+    {"command": "gcc -std=c11 -Wall -Wextra -Werror -Isrc -Isubmodules/halo-ps2/engine/src tests/staging.c src/stream/staging.c", "outcome": "pass (STAGING_OK)"},
+    {"command": "gcc -std=c11 -Wall -Wextra -Werror -Isubmodules/halo-ps2/engine/src tests/resource_accounting.c submodules/halo-ps2/engine/src/core/mem.c", "outcome": "pass (RES_OK)"},
+    {"command": "gcc -std=c11 -Wall -Wextra -Werror -pedantic -Isrc -Isubmodules/halo-ps2/engine/src tests/hcu_owner_telemetry_main.c src/stream/hcu_owner_telemetry.c", "outcome": "pass: hcu_owner_telemetry: all checks passed"},
+    {"command": "build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-gcc -c -Wall -Wextra -Werror -std=gnu11 -Isrc src/stream/hcu_owner_telemetry.c", "outcome": "pass (compiles for EE)"},
+    {"command": "gcc -m32 ... tests/hcu_owner_telemetry_main.c", "outcome": "not run: host lacks 32-bit libgcc (ld: cannot find -lgcc); ILP32 check remains open"},
+    {"command": "git diff --check (repo, submodules/halo-ps2, submodules/halo-ce-universal)", "outcome": "clean, no output"}
+  ],
+  "requirement_results": [
+    {
+      "id": "C2.6",
+      "result": "partial",
+      "evidence": "Host-tested owner registry with nested-vs-backing separation and exact totals; staging request/reset/high counters tested; EE compile of registry passes.",
+      "remaining_limitation": "No production owner is connected yet: game-state/object/actor pool counters live only in opt-in CE diagnostics, not in this registry; tags/BSP/streaming/scratch/audio have no snapshot producers (ps2_cache counters, texcache per-frame counters, audio requests absent); render chunks, render texture and DMA need the renderer lane's samplers; no ILP32 run; no target workload high-water measurement; actors.c/game_state.c/ps2_cache counters were not edited in this lane pass."
+    }
+  ],
+  "bugs_found": [],
+  "needed_cross_lane_changes": [
+    "src/stream/hcu_main.c: init, note_capacity/used wiring and shutdown snapshot as listed in cross_lane_wiring",
+    "renderer lane: implement hcu_owner_sampler_fn for HCU_OWNER_RENDER_CHUNKS, HCU_OWNER_RENDER_TEXTURE and HCU_OWNER_DMA"
+  ]
+}
