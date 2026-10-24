@@ -1,0 +1,49 @@
+# M3 diagnostic GS clear: first visible pixel, not a Halo scene
+
+**Result:** the isolated HCU machine profile initializes the PS2 video output, submits a bounded GIF clear packet, flips a framebuffer, and displays the expected blue clear in PCSX2. This closes only the “prove the parent display can present a known pixel” subtask of M3 Step 13. It does not render CE/Halo geometry, consume the CE snapshot, qualify a BSP renderer, or close M3.
+
+## Implementation and ownership
+
+The opt-in `WORLD_HCU_RENDER_CLEAR_TEST=1` switch is default-off in [`tools/ee-world.mk`](../../tools/ee-world.mk). The build helper creates a distinct `-m3-render-clear` gameplay object directory, ELF, and result file through `--m3-render-clear-test` in [`tools/hcu_parent_link_probe.py`](../../tools/hcu_parent_link_probe.py); it rejects combining this with the separate M2 lifecycle profile. The ordinary production HCU profile does not define `HALO_PS2_M3_RENDER_CLEAR_TEST`.
+
+The diagnostic implementation in [`src/stream/hcu_main.c`](../../src/stream/hcu_main.c) uses `video_init`, `video_add_setup_env`, `video_add_clear`, `draw_finish`, `dma_channel_send_packet2`, and `video_present` from the pinned PS2 renderer platform. The packet descriptor is stack-local, and its qwords occupy a cache-line-aligned 1 KiB slice after `hcu_render_snapshot_dma_storage_required()` bytes at the start of the `dma_commands` arena. Bounds checks reject missing or insufficient arena storage. After packet construction it checks nonzero aligned qword usage against the descriptor's 64-qword capacity. It validates the four GS extents returned for two color buffers, Z, and the texture base: allocation failure (`-1`/`UINT32_MAX`), out-of-range spans, and pairwise overlap are rejected before clear submission. It intentionally avoids `packet2_create()` and `packet2_create_from()`: the former allocates its data and descriptor; the latter still allocates a descriptor, while `packet2_free()` frees the buffer base. This diagnostic neither adds a static EE buffer nor uses `malloc` after boot.
+
+## Exact guest evidence
+
+| Item | Value |
+|---|---|
+| Parent / HCU / halo-ps2 pins | `70e2ed0cf2145a45d23aa07414a3a88c05155d4c` / `6933490b2d16bb1c637295b6a0f3880ba23a7d56` / `71183bb0a9adc586cd267b2780c82bbc12cfd95b` |
+| Diagnostic ELF | `build/hcu-parent-link-probe/hcu-gameplay-machine-m3-render-clear.elf`; SHA-256 `01b65ade39b5e8ecbe48fc12ae58604e982632680f6911b5eeb0c239341f7b90` |
+| Link map / probe result | map SHA-256 `6a038dcce5c37f8e80b1dd88441bcc8112527e0fac1d93945399d28d102894d1`; result SHA-256 `3f69c862e9284e8ff954cba3495e66f03405fe2352b1b62a9c6d3634ad412212` |
+| Data ISO | `build/hcu-m1-disc-data.iso`, SHA-256 `79f2855a5953483637ca060e778589a9f8c54e5fc4cda4a69347f22484457d79`; mounted as data, not booted |
+| PCSX2 mode and observation | The final ELF passed interpreter and recompiler with 25.067 s and 40.153 s stable marker observations. Screenshots were captured after delayed GS output settled. |
+| Interpreter evidence | Run `emulator-m1-interpreter-745deb4a37f242c096760da284e13b4c`; result SHA-256 `b6b7f55ff5e00ab15eeb49fa5796a807c54afe2889bf888aca82ad4e69a322a3`; log SHA-256 `1be6a039ae1af1c5ed4c25999aad00bf9509375559cf7aa7c3f5c6bc254856d6`; screenshot [`pcsx2-render-clear-late.png`](../../build/hcu-ps2-closure/emulator-m1-interpreter-745deb4a37f242c096760da284e13b4c/pcsx2-render-clear-late.png), SHA-256 `4ac63219629ebe3382e027245b1019375754a314683329debe126ffb23633bd2` |
+| Recompiler evidence | Run `emulator-m1-recompiler-c3fe4c2843b146b786ee98eac2d55a10`; result SHA-256 `a6b855ec14e6cab0a640427958a7612fd552a9f6d2144065664777b79c4017ea`; log SHA-256 `1d8b9901b117a35a99d10e2cd9f5c6dcbe925c5094aaa285a96901e2c45a55d6`; screenshot [`pcsx2-render-clear-final.png`](../../build/hcu-ps2-closure/emulator-m1-recompiler-c3fe4c2843b146b786ee98eac2d55a10/pcsx2-render-clear-final.png), SHA-256 `9e0ecc7ed844ca879ca7c6b23ec0214476a724a5e79defe9a25733af515c8d49` |
+| Memory-budget definition | [`memory-budget.json`](../../config/memory-budget.json), SHA-256 `67ef6d6085de71c22e3998a355cb2f79a8123837b7b14e89593a0d497de21b74` |
+
+The logs report `memory-ready canaries=10`, framebuffer/Z allocation at GS addresses `0`, `114688`, and `229376`, `video_init`'s 512x448 mode, then `m3-render-clear-presented color=24,72,120 frames=1`, followed by `game-initialize-done`. The UI asset hashes remained unchanged. In interpreter mode, captures taken immediately after the marker and after shell initialization were black; a later capture near the end of its 25-second stable observation showed the expected blue. This delayed behavior is why the evidence uses the late screenshot. The probe result is still `linked-diagnostic`, with no M3/gameplay acceptance claim.
+
+## Capacity constraint and next implementation boundary
+
+The independent [renderer memory audit](m3-renderer-memory-audit-2026-10-21.md) shows the full halo-ps2 renderer's configured ping-pong buffers total exactly 1,179,648 bytes: two 512 KiB geometry chains and two 64 KiB texture-upload chains. That equals the whole `dma_commands` budget, before the HCU snapshot's 4,128-byte VIF payload, packet descriptors, guards, or any other DMA work. The tiny diagnostic works because it needs only that snapshot payload plus a 1 KiB packet, but its slice does not solve the production BSP renderer allocation conflict.
+
+Before `bsp_render_init()` is wired into HCU, produce a measured global EE allocator partition for the renderer, snapshot, packet metadata, scratch, and map lifetime. Preserve GS eDRAM as a distinct store from EE DMA memory. The eventual production path must consume an immutable snapshot, retain CE object ownership, fence DMA/GIF/GS use before reusing banks, and shut down before map arenas are released. Required subsequent evidence remains snapshot consumer invariance, accepted BSP residency, actual BSP/VU1 submission, map unload/reinit safety, and a guest screenshot containing world geometry.
+
+## REA artifact corroboration and data-disc inventory
+
+REA's `open_binary` identifies the ordinary HCU image as MIPS ELF SHA-256 `c1e83f7515a7a6a97b68bad75a9811aaf7fddd0564cb3bdd8722d16bab8d6386`. The configured deep providers reject MIPS for this machine-specific ELF, so no Ghidra/IDA decompilation is claimed. REA's GNU objdump-backed symbol inspections are available and complete (`output_truncated=false`) for both images: ordinary ELF symbol Evidence `ev_40581af98d6db1926fd96ae7c9347b922df70a44345ddc99b255138c42397857`; diagnostic ELF Evidence `ev_69ab9ef55eafc97852fcb34253060d314db751ec200037ade3ed7783a0a8c46b`. Both contain `main`, `halo_shell_main`, and `render_frame`. The ordinary image contains no `video_init` or `video_present`; diagnostic image adds both, and still contains no `bsp_render_init`, `bsp_render_build`, or `bsp_render_kick`. This artifact evidence independently matches the source/link audit: the production HCU path reaches CE's frame snapshot adapter but has no PS2 framebuffer present path, while the isolated diagnostic adds only a clear/present path.
+
+REA's section-header Evidence is complete for the same exact hashes (`ev_c25e0de6119333b1a1441e7e6f63a475dd1903e1e3074561e27a05f777f046ec` ordinary; `ev_70b1ce599d16b124675068bb292d04087a17d1b466a35cd86b870389f999d0a1` diagnostic). The diagnostic adds `0x5c8` bytes of `.text` and `0x7b8` bytes of `.rodata`; `.bss` is unchanged at `0x20441c` bytes. This is consistent with an opt-in code-only clear feature plus its constants, not a hidden scene-renderer or map-asset change. It is static artifact evidence, not execution; the blue PCSX2 screenshots/logs above supply the runtime/pixel observation.
+
+The data ISO SHA-256 is `79f2855a5953483637ca060e778589a9f8c54e5fc4cda4a69347f22484457d79`. REA's binary target opener rejects ISO9660 as an unsupported binary format, so ISO contents were inventoried with read-only `isoinfo`/`xorriso` instead: volume `ISOIMAGE`, 2,048-byte sectors, 16,719 sectors, with exactly `/MAPS/UI.HP2` (282,624 bytes) and `/MAPS/UI.MAP` (33,582,080 bytes). It has no `SYSTEM.CNF` or boot ELF, and was mounted as data by direct-ELF PCSX2 tests rather than booted. Thus this package can test UI map loading but supplies no accepted gameplay BSP/render scene; it cannot explain or repair the black production viewport.
+
+## Verification
+
+- `python3 -m pytest -q tests/test_hcu_m3_render_clear.py` — **2 passed**.
+- Current focused regression set: `python3 -m pytest -q tests/test_hcu_m3_render_clear.py tests/test_hcu_render_snapshot.py tests/test_hcu_render_frame_invariance.py tests/test_hcu_boot_physical.py` — **16 passed**.
+- `python3 tools/hcu_parent_link_probe.py --asset-profile host --m3-render-clear-test` — diagnostic ELF linked with zero undefined symbols. The combined parent diagnostic remains `acceptance=false` as expected.
+- `APPIMAGE_EXTRACT_AND_RUN=1 python3 tools/test_hcu_boot.py --mode both --stage m3-render-clear --stable-seconds 25 ...` — PCSX2 interpreter and recompiler passed the marker; delayed captures visually show the expected blue output. A separate 40-second recompiler observation also passed.
+- REA GNU objdump symbol/section inspections completed for both exact ELFs; deep MIPS decompilation unavailable for the configured providers. ISO9660 member inventory completed via `isoinfo`/`xorriso` after REA rejected ISO as a binary target.
+- The production profile is unchanged unless the opt-in build switch is supplied; this test does not qualify ordinary production rendering.
+
+Implementation citations: the bounded diagnostic and validation path is in [`hcu_main.c:58-110`](../../src/stream/hcu_main.c#L58); profile isolation is in [`ee-world.mk:45-64`](../../tools/ee-world.mk#L45) and [`hcu_parent_link_probe.py:176-200`](../../tools/hcu_parent_link_probe.py#L176); the boot harness marker is declared in [`test_hcu_boot.py:45-52`](../../tools/test_hcu_boot.py#L45).
