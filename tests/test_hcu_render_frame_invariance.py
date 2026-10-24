@@ -123,7 +123,6 @@ static struct real_matrix4x3 matrices_before[2];
 static unsigned char state_sentinel[64], sentinel_before[sizeof(state_sentinel)];
 static struct ps2_animation_trace_event trace_events[8];
 static struct ps2_animation_trace_context trace_contexts[8];
-static uint32_t dma_storage[1040] __attribute__((aligned(16)));
 extern halo_ps2_render_snapshot *halo_ps2_render_snapshot_begin(void)
   __attribute__((weak));
 extern int halo_ps2_render_snapshot_commit(halo_ps2_render_snapshot *)
@@ -184,8 +183,7 @@ int main(void) {
   assert(ps2_animation_trace_bind(trace_events, 8));
   assert(ps2_animation_trace_bind_contexts(trace_contexts, 8));
   ps2_animation_trace_reset();
-  assert(hcu_render_snapshot_bind(storage, sizeof(storage), dma_storage,
-    sizeof(dma_storage)) == 0);
+  assert(hcu_render_snapshot_bind(storage, sizeof(storage)) == 0);
   objects[0].definition_index = 7; objects[0].object.type = 2;
   objects[0].object.render_flags = 3;
   objects[1].definition_index = 11; objects[1].object.type = 4;
@@ -241,7 +239,7 @@ int main(void) {
       assert(published->objects[1].definition_index == 11);
       assert(published->objects[0].world.position[0] == 10.0f);
       assert(published->objects[1].world.position[0] == 11.0f);
-      assert(hcu_render_snapshot_publish_dma() > 0);
+      assert(published->sequence > 0);
       assert(memcmp(objects, objects_before, sizeof(objects)) == 0);
       assert(memcmp(matrices, matrices_before, sizeof(matrices)) == 0);
       assert(memcmp(state_sentinel, sentinel_before,
@@ -291,6 +289,7 @@ int main(void) {
             str(harness),
             str(ROOT / "submodules/halo-ce-universal/port/ps2/src/ps2_animation_trace.c"),
             "src/stream/hcu_render_snapshot.c",
+            str(engine / "render/chain.c"),
             str(engine / "core/mat.c"), "-lm", "-o", str(executable),
         ], cwd=ROOT, capture_output=True, text=True)
         assert built.returncode == 0, built.stdout + built.stderr

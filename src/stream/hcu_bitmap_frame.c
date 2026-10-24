@@ -22,6 +22,7 @@ static int profile_unchanged(const hcu_bitmap_frame_owner *owner)
 	const hcu_asset_profile_view *b = &owner->profile_snapshot;
 	uint8_t digest[32];
 	if (!a || a->profile_id != b->profile_id || a->total_bytes != b->total_bytes ||
+		a->version != b->version || a->record_bytes != b->record_bytes ||
 		a->chunk_count != b->chunk_count || a->directory_bytes != b->directory_bytes ||
 		a->read_at != b->read_at || a->reader_context != b->reader_context ||
 		a->memory_image != b->memory_image || !owner->bindings || !owner->binding_count)

@@ -12,8 +12,12 @@ BSP = ENGINE / "render/bsp_render.c"
 
 def test_renderer_dma_budget_unchanged():
     text = BSP.read_text()
-    chain_qw = int(re.search(r"#define CHAIN_QW\s+(\d+)", text).group(1))
-    upload_qw = int(re.search(r"#define UPLOAD_QW\s+(\d+)", text).group(1))
+    # CHAIN_QW and UPLOAD_QW name the storage.h layout macros (or a literal at HEAD).
+    storage = (ENGINE / "render/storage.h").read_text()
+    chain_qw = int(re.search(r"#define BSP_RENDER_GEOMETRY_CHAIN_QW\s+(\d+)", storage).group(1))
+    upload_qw = int(re.search(r"#define BSP_RENDER_UPLOAD_CHAIN_QW\s+(\d+)", storage).group(1))
+    assert re.search(r"#define CHAIN_QW\s+BSP_RENDER_GEOMETRY_CHAIN_QW", text)
+    assert re.search(r"#define UPLOAD_QW\s+BSP_RENDER_UPLOAD_CHAIN_QW", text)
     assert (chain_qw, upload_qw) == (32768, 4096)
     # Two geometry chains and two upload chains, 16-byte quadwords.
     assert 2 * chain_qw * 16 + 2 * upload_qw * 16 == 1179648

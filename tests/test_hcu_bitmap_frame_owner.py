@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import hashlib
 import json
+import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,7 +29,8 @@ def test_frame_owner_lifecycle(tmp_path):
     descriptor_body = hud_text.split(marker, 1)[1].split("};", 1)[0]
     assert "HALO_PS2_BITMAP_FRAME_PRODUCER_INTERFACE" in descriptor_body
     assert "HALO_PS2_BITMAP_FRAME_PRODUCER_WIDGETS" not in descriptor_body
-    artifact_dir = ROOT / "build/m2-c1-bitmap-frame-owner"
+    artifact_dir = Path(os.environ.get("HCU_BITMAP_FRAME_OWNER_ARTIFACTS",
+                                       ROOT / "build/m2-c1-bitmap-frame-owner")).resolve()
     artifact_dir.mkdir(parents=True, exist_ok=True)
     version = subprocess.run([compiler, "--version"], capture_output=True, text=True)
     cases = []

@@ -3,6 +3,7 @@
 #include <string.h>
 #include "render/bsp_render.h"
 #include "stream/hcu_bitmap_renderer.h"
+#include "stream/hcu_render_snapshot.h"
 
 /* The engine's hook table uses u32 and chain_t; these wrappers keep the exact engine signatures. */
 static int32_t attach_begin(void *user, u32 frame)
@@ -10,9 +11,14 @@ static int32_t attach_begin(void *user, u32 frame)
 	return hcu_bitmap_renderer_hook_begin(user, (uint32_t)frame);
 }
 
+/* port: C2.7 snapshot matrices are appended to the idle geometry chain before the bitmap drain, so they share the
+ * build window with the BSP packets. The drain always runs, so a failed snapshot append does not seal the batch; the
+ * failure is returned as this emit's status and counted by bsp_render_emit_failures. */
 static int32_t attach_emit(void *user, u32 frame, chain_t *geometry, chain_t *upload, tc_t *cache)
 {
-	return hcu_bitmap_renderer_hook_emit(user, (uint32_t)frame, geometry, upload, cache);
+	int snapshot_failed = geometry && hcu_render_snapshot_emit_chain(geometry) < 0;
+	int32_t status = hcu_bitmap_renderer_hook_emit(user, (uint32_t)frame, geometry, upload, cache);
+	return snapshot_failed ? HCU_BITMAP_FRAME_E_QUEUE : status;
 }
 
 static void attach_submit(void *user, u32 frame, u32 kick_seq)

@@ -33,6 +33,7 @@ def test_ps2_render_frame_state_with_synthetic_windows():
 	fixture = r"""
 #include <assert.h>
 #define NONE -1
+#define HALO_PS2_BITMAP_FRAME_NOT_READY -3
 typedef float real;
 typedef unsigned char boolean;
 typedef struct { float x, y, z; } point2d;
@@ -50,6 +51,9 @@ struct render_globals {
 	short local_player_index;
 	struct test_camera camera;
 } render;
+int s_bitmap_frame_consumer_registered;
+int s_bitmap_frame_status;
+unsigned s_bitmap_frame_failures;
 """;
 	main = r"""
 int main(void)

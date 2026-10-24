@@ -117,7 +117,8 @@ def test_actual_ce_ui_request_runs_through_final_profile_and_real_upload_pipelin
     assert "ctag_reader=end-hook" in result.stdout
     assert "leases=held" in result.stdout and "upload_qw=16" in result.stdout and "geometry_qw=102" in result.stdout
     assert bindings["package"]["sha256"] == hashlib.sha256(package.read_bytes()).hexdigest()
-    artifact_dir = ROOT / "build/m2-c1-bitmap-live-dispatch"
+    artifact_dir = Path(os.environ.get("HCU_BITMAP_DISPATCH_ARTIFACTS",
+                                       ROOT / "build/m2-c1-bitmap-live-dispatch")).resolve()
     artifact_dir.mkdir(parents=True, exist_ok=True)
     durable_exe = artifact_dir / "hcu-bitmap-dispatch-fixture"
     durable_compile = artifact_dir / "compile.json"
