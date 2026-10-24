@@ -53,16 +53,16 @@ def test_report_includes_governing_source_and_output_pins():
 
 def test_survival_scan_covers_all_non2d_roles_from_exact_ctag():
     result = audit_survival(
-        ROOT / "build/m2-c1-survival-dedup/survival-beavercreek.failure.json",
-        ROOT / "build/m2-c1-survival-dedup/survival-beavercreek.unadmitted.ctag",
+        ROOT / "build/m2-c2-residual-packages/survival-diag/survival-beavercreek.failure.json",
+        ROOT / "build/m2-c2-residual-packages/survival-diag/survival-beavercreek.unadmitted.ctag",
         ROOT / "build/hcu-ps2-closure/all-no-bootstrap-memory/halo-local.elf",
     )
     assert result["status"] == "partial"
     assert result["runtime_admitted"] is False
-    assert result["non2d_image_occurrence_count"] == 184
+    assert result["non2d_image_occurrence_count"] == 186
     roles = {o["owner_group"] + "." + o["field"] for r in result["roles"] for o in r["owners"]}
-    # The original diagnostic predates BSP-owned dependency roots.
-    assert roles == {f"{g}.{f}" for g, f in FIELD_RULES if g != 'swat'}
+    # The regenerated diagnostic includes the BSP-owned dependency roots (swat).
+    assert roles == {f"{g}.{f}" for g, f in FIELD_RULES}
     assert all(r["owners"] and r["source_occurrences"] for r in result["roles"])
     assert all(r["classification"] == "role_gated_no_current_ps2_payload_consumer" for r in result["roles"])
 
@@ -83,7 +83,7 @@ def test_bsp_owned_water_reflection_has_source_backed_role():
 
 
 def test_survival_source_map_hash_change_invalidates_scan(tmp_path):
-    diagnostic = json.loads((ROOT / "build/m2-c1-survival-dedup/survival-beavercreek.failure.json").read_text())
+    diagnostic = json.loads((ROOT / "build/m2-c2-residual-packages/survival-diag/survival-beavercreek.failure.json").read_text())
     first_key = sorted(diagnostic["source_maps"])[0]
     original = ROOT / diagnostic["source_maps"][first_key]["path"]
     changed = tmp_path / "changed.map"
@@ -93,5 +93,5 @@ def test_survival_source_map_hash_change_invalidates_scan(tmp_path):
     diag_path.write_text(json.dumps(diagnostic))
     with pytest.raises(ValueError, match="source-map pin mismatch"):
         audit_survival(diag_path,
-            ROOT / "build/m2-c1-survival-dedup/survival-beavercreek.unadmitted.ctag",
+            ROOT / "build/m2-c2-residual-packages/survival-diag/survival-beavercreek.unadmitted.ctag",
             ROOT / "build/hcu-ps2-closure/all-no-bootstrap-memory/halo-local.elf")
