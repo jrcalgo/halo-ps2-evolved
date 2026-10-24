@@ -632,6 +632,9 @@ static int profile_preflight_successor(hcu_map_service *service,
 		hcu_profile_mount_init(&service->profile_candidate);
 		return 0;
 	}
+	printf("HALO_PS2_LOCAL map-replacement phase=candidate-validated old=%s new=%s readers=%u\n",
+		service->profile_mount.source_identity_snapshot.map_name,
+		entry->identity.map_name, (unsigned)service->reader_count);
 	/* Candidate bytes and metadata are now fully validated in storage disjoint
 	 * from the live owner. Only now may the actual renderer release old-map
 	 * readers; failure leaves CE and the mounted owner intact. */
@@ -703,6 +706,9 @@ static int profile_preflight(hcu_map_service *service,
 			printf("HALO_PS2_LOCAL profile-preflight rejected reason=live-metadata-pin\n");
 			return 0;
 		}
+		printf("HALO_PS2_LOCAL map-replacement phase=candidate-validated old=%s new=%s readers=%u same-map=1\n",
+			service->profile_mount.source_identity_snapshot.map_name,
+			entry->identity.map_name, (unsigned)service->reader_count);
 		if (!profile_quiesce_renderer(service, rt,
 			entry->identity.map_name)) {
 			discard_profile_candidate(service);

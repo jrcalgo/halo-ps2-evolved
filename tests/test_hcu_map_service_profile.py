@@ -140,6 +140,9 @@ class MapServiceProfileLifecycleTest(unittest.TestCase):
             self.assertEqual(run.stdout.count("PASS "), 29, run.stdout)
             self.assertIn("corrupt package, metadata and bindings rejected before live teardown", run.stdout)
             self.assertIn("repeated preflight revalidates and discards a corrupted empty stage", run.stdout)
+            candidate = run.stdout.index("map-replacement phase=candidate-validated old=ui new=beavercreek")
+            quiesce = run.stdout.index("map-replacement phase=quiesce-begin old=ui new=beavercreek")
+            self.assertLess(candidate, quiesce, run.stdout)
             self.assertIn("reason=metadata", run.stdout)
             self.assertIn("map-service-profile-lifecycle passed", run.stdout)
             retained = Path(os.environ.get("HCU_MAP_SERVICE_PROFILE_ARTIFACTS",
