@@ -22,8 +22,8 @@ int32_t hcu_bitmap_renderer_init(hcu_bitmap_renderer *r,
 	uint16_t screen_w, uint16_t screen_h)
 {
 	if (!r || !dispatch || !cache || !cache_readers || cache_reader_count < cache->max_keys ||
-		cache_reader_count > TC_MAX_KEYS || !source_storage || !slot_stride || !slot_count ||
-		slot_stride > UINT32_MAX / slot_count || slot_stride * slot_count > source_storage_bytes ||
+		cache_reader_count > TC_MAX_KEYS || !source_storage || !source_storage_bytes ||
+		!slot_stride || !slot_count ||
 		!staging_buffer || staging_buffer_bytes < slot_stride || !slots || !leases ||
 		!lease_capacity || !screen_w || !screen_h || !aligned16(source_storage) ||
 		!aligned16(staging_buffer))

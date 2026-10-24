@@ -25,7 +25,8 @@ typedef struct {
 	uint32_t chunk_id;
 	uint16_t cache_key;
 	uint16_t reserved;
-	uint32_t bytes;
+	uint32_t storage_offset;
+	uint32_t storage_bytes;
 	uint16_t readers;
 	uint8_t valid;
 	uint8_t reserved8;
@@ -50,9 +51,12 @@ typedef enum {
 	HCU_BITMAP_DISPATCH_E_UNSUPPORTED = -7
 } hcu_bitmap_dispatch_status;
 
-/* Every backing store is caller-owned. `source_storage` is slot_count * slot_stride;
- * slot_stride bounds one serialized TEXS chunk. `cache_backup` is transaction scratch
- * for the existing shared tc_t. Keep a lease until both upload and draw DMA have fenced. */
+/* Every backing store is caller-owned. `source_storage` packs only the pixel and
+ * CLUT bytes referenced by successful uploads, up to its total byte capacity;
+ * `slot_stride` bounds the one serialized TEXS chunk read through staging. This
+ * keeps the per-frame source retention bounded by the texcache upload budget.
+ * `cache_backup` is transaction scratch for the existing shared tc_t. Keep a
+ * lease until both upload and draw DMA have fenced. */
 hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 	const halo_ps2_bitmap_request *request,
 	const hcu_bitmap_binding *bindings, uint32_t binding_count,

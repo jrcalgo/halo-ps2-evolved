@@ -38,7 +38,9 @@ static uint8_t s_upl_mem[64 * 16] __attribute__((aligned(16)));
 static uint8_t s_geom2_mem[64 * 16] __attribute__((aligned(16)));
 static uint8_t s_upl2_mem[64 * 16] __attribute__((aligned(16)));
 static uint16_t s_readers[TC_MAX_KEYS];
-static uint8_t s_source[4 * 256] __attribute__((aligned(16)));
+/* Packed retained image bytes share one budgeted pool; it need not be
+ * slot_count * slot_stride (slot_stride is the staging-chunk bound). */
+static uint8_t s_source[256] __attribute__((aligned(16)));
 static uint8_t s_staging[256] __attribute__((aligned(16)));
 static hcu_bitmap_source_slot s_slots[4];
 static hcu_bitmap_lease s_leases[4];

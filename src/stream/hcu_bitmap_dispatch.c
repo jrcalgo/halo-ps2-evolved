@@ -60,6 +60,7 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 	tex_mip_view mip;
 	const uint8_t *clut;
 	uint32_t clut_bytes, clut_w, clut_h, pages, tbw, tbp, cbp;
+	uint32_t retained_bytes;
 	const tc_entry *entry;
 	tc_result acquired;
 	chain_t upload_before, geometry_before;
@@ -72,8 +73,8 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 		!binding_count || !slot_count || !source_storage || !slot_stride || !staging_buffer || !upload_chain ||
 		!geometry_chain || !lease || lease->active || !screen_w || !screen_h ||
 		slot_count > UINT16_MAX || cache_reader_count < cache->max_keys ||
-		cache_reader_count > TC_MAX_KEYS || slot_stride > UINT32_MAX / slot_count ||
-		slot_stride * slot_count > source_storage_bytes || slot_stride > staging_buffer_bytes ||
+		cache_reader_count > TC_MAX_KEYS || !source_storage_bytes ||
+		!slot_stride || slot_stride > staging_buffer_bytes ||
 		(slot_stride & 15u) ||
 		((uintptr_t)source_storage & 15u))
 		return HCU_BITMAP_DISPATCH_E_ARGUMENT;
@@ -149,12 +150,34 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 	cbp = clut_base_words / 64u + entry->clut_slot * 4u;
 	if (tbp > 0x3FFFu || cbp > 0x3FFFu) goto rollback;
 	if (acquired == TC_UPLOAD) {
-		memcpy((uint8_t *)source_storage + slot_index * slot_stride, raw, read_bytes);
-		raw = (uint8_t *)source_storage + slot_index * slot_stride;
-		if (tex_open(&section, raw, read_bytes) != TEX_OK) goto rollback;
-		image = tex_get(&section, binding->image_index);
-		if (!tex_mip(&section, &image, 0, &mip)) goto rollback;
-		clut = tex_clut(&section, &image);
+		/* Keep only the bytes the GIF upload chain references. HCP2 may make a
+		 * TEXS resource much larger than its selected image; retaining the whole
+		 * resource per lease would make storage scale with queue capacity instead
+		 * of the existing per-frame tc upload budget. */
+		retained_bytes = mip.bytes + clut_bytes;
+		if (retained_bytes > source_storage_bytes) goto rollback;
+		/* Each successful tc upload is charged against cache->budget_bytes. The
+		 * packed cursor is monotonic until the actual paired-chain fence. */
+		{
+			uint32_t offset = 0;
+			for (i = 0; i < slot_count; ++i) {
+				uint32_t end;
+				if (!slots[i].valid) continue;
+				if (slots[i].storage_offset > source_storage_bytes ||
+					slots[i].storage_bytes > source_storage_bytes - slots[i].storage_offset)
+					goto rollback;
+				end = slots[i].storage_offset + slots[i].storage_bytes;
+				if (end > offset) offset = end;
+			}
+			if (offset > source_storage_bytes || retained_bytes > source_storage_bytes - offset)
+				goto rollback;
+			memcpy((uint8_t *)source_storage + offset, mip.pixels, mip.bytes);
+			memcpy((uint8_t *)source_storage + offset + mip.bytes, clut, clut_bytes);
+			mip.pixels = (const uint8_t *)source_storage + offset;
+			clut = (const uint8_t *)source_storage + offset + mip.bytes;
+			slot->storage_offset = offset;
+			slot->storage_bytes = retained_bytes;
+		}
 		if (gs_upload_pair(upload_chain, mip.pixels, mip.bytes, tbp, tbw, image.psm,
 			image.width, image.height, clut, clut_bytes, cbp, clut_w, clut_h))
 			goto rollback;
@@ -177,7 +200,7 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 		goto rollback;
 	if (acquired == TC_UPLOAD) {
 		slot->chunk_id = binding->chunk_id; slot->cache_key = binding->cache_key;
-		slot->bytes = read_bytes; slot->valid = 1;
+		slot->storage_bytes = retained_bytes; slot->valid = 1;
 		slot->readers++;
 	}
 	cache_readers[binding->cache_key]++;
@@ -193,7 +216,7 @@ rollback:
 	*upload_chain = upload_before;
 	*geometry_chain = geometry_before;
 	memcpy(cache, cache_backup, sizeof(*cache));
-	if (upload_source) memset(slot, 0, sizeof(*slot));
+	if (upload_source && slot) memset(slot, 0, sizeof(*slot));
 	return HCU_BITMAP_DISPATCH_E_CAPACITY;
 }
 

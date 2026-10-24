@@ -181,6 +181,16 @@ int main(int argc, char **argv)
 	dispatched_image = tex_get(&section, 0);
 	{
 		uint64_t *geo = (uint64_t *)(s_geometry_memory + 32);
+		tex_mip_view retained_mip;
+		const uint8_t *retained_clut;
+		uint32_t retained_clut_bytes = (uint32_t)dispatched_image.clut_entries * 4u;
+		const hcu_bitmap_source_slot *slot = &s_slots[s_leases[0].slot];
+		const uint8_t *retained = s_source_storage + slot->storage_offset;
+		if (!tex_mip(&section, &dispatched_image, 0, &retained_mip) ||
+			!(retained_clut = tex_clut(&section, &dispatched_image)) ||
+			slot->storage_bytes != retained_mip.bytes + retained_clut_bytes ||
+			memcmp(retained, retained_mip.pixels, retained_mip.bytes) ||
+			memcmp(retained + retained_mip.bytes, retained_clut, retained_clut_bytes)) return 11;
 		if (geo[6] != GS_ALPHA(2,1,0,1,0) ||
 			geo[52] != GS_ALPHA(0,2,2,1,128) || /* CE enum 7's second pass */
 			geo[102] != GS_ALPHA(0,1,0,1,0) ||
