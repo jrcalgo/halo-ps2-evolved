@@ -7,6 +7,7 @@
 #include "stream/ctag_ps2_backend.h"
 #include "stream/ctag_resource_index.h"
 #include "stream/sha256.h"
+#include "stream/hcu_load_trace.h"
 #include "world/section.h"
 #ifdef HALO_PS2_M2_ANIMATION_TRACE
 #include "ps2_animation_trace.h"
@@ -73,18 +74,39 @@ static int verify_source_hash(hcu_map_service *service,
 static int verify_profile_package_hash(hcu_asset_profile_read_at reader,
 	void *context, uint32_t size, const uint8_t expected[32])
 {
-	uint8_t scratch[512], digest[32];
+	/* Package identity is checked against mutable backing storage each time. */
+	uint8_t small[512], digest[32];
+	uint8_t *scratch = small;
+	uint32_t cap = (uint32_t)sizeof(small);
+	size_t mark = 0;
+	int from_arena = 0;
 	sha256_context sha;
 	uint32_t offset = 0;
 	if (!reader || !expected || !size) return 0;
+	if (s_service && s_service->section_scratch) {
+		size_t free_bytes = arena_free(s_service->section_scratch);
+		if (free_bytes > 65536u) free_bytes = 65536u;
+		if (free_bytes >= 65536u) {
+			mark = arena_mark(s_service->section_scratch);
+			scratch = (uint8_t *)arena_alloc(s_service->section_scratch, free_bytes, 64);
+			if (scratch) { cap = (uint32_t)free_bytes; from_arena = 1; }
+			else { scratch = small; cap = (uint32_t)sizeof(small); }
+		}
+	}
 	sha256_init(&sha);
 	while (offset < size) {
 		uint32_t take = size - offset;
-		if (take > sizeof(scratch)) take = (uint32_t)sizeof(scratch);
-		if (reader(context, offset, scratch, take) != 0) return 0;
+		if (take > cap) take = cap;
+		if (reader(context, offset, scratch, take) != 0) {
+			if (from_arena) arena_release(s_service->section_scratch, mark);
+			return 0;
+		}
+		HCU_LOAD_TRACE_READ(take);
 		sha256_update(&sha, scratch, take);
 		offset += take;
 	}
+	HCU_LOAD_TRACE_HASH("package", size);
+	if (from_arena) arena_release(s_service->section_scratch, mark);
 	sha256_final(&sha, digest);
 	return memcmp(digest, expected, sizeof(digest)) == 0;
 }
@@ -748,7 +770,9 @@ static int profile_load(hcu_map_service *service, const char *map_name)
 	service->profile_mount = service->profile_candidate;
 	hcu_profile_mount_init(&service->profile_candidate);
 	service->profile_candidate_ready = 0;
+	HCU_LOAD_TRACE_BEGIN("mount-load");
 	if (hcu_profile_mount_load(&service->profile_mount) != HCU_PROFILE_MOUNT_OK) {
+	HCU_LOAD_TRACE_END("mount-load");
 		hcu_profile_residency_stats released_stats;
 		/* Safe empty state: no backend is published and no stage remains. The
 		 * registered runtime stays available, so a later corrected preflight may
@@ -777,6 +801,7 @@ static int profile_load(hcu_map_service *service, const char *map_name)
 	ps2_animation_trace_map_epoch_advance();
 #endif
 	service->boundary_cycle++;
+	HCU_LOAD_TRACE_END("mount-load");
 	notify_boundary(service, "map-loaded");
 	return 1;
 }
@@ -1107,7 +1132,42 @@ static void fail_preflight_for_entry(hcu_map_service *service,
 		clear_staged_request(service);
 }
 
+/* Per-load package preflight with 64 KiB reads from section_scratch when free. */
+static int preflight_package_reader(hcu_map_service *service, hcu_asset_profile_view *candidate)
+{
+	uint8_t small[512];
+	size_t mark, free_bytes;
+	uint8_t *scratch;
+	int rc;
+	if (!service->section_scratch) return hcu_asset_profile_preflight_reader(service->profile_read_at,
+		service->profile_reader_context, service->profile_image_size, service->expected_profile_id, candidate);
+	free_bytes = arena_free(service->section_scratch);
+	if (free_bytes > 65536u) free_bytes = 65536u;
+	if (free_bytes < 65536u) return hcu_asset_profile_preflight_reader(service->profile_read_at,
+		service->profile_reader_context, service->profile_image_size, service->expected_profile_id, candidate);
+	mark = arena_mark(service->section_scratch);
+	scratch = (uint8_t *)arena_alloc(service->section_scratch, free_bytes, 64);
+	if (!scratch) { (void)small; return hcu_asset_profile_preflight_reader(service->profile_read_at,
+		service->profile_reader_context, service->profile_image_size, service->expected_profile_id, candidate); }
+	rc = hcu_asset_profile_preflight_reader_scratch(service->profile_read_at,
+		service->profile_reader_context, service->profile_image_size, service->expected_profile_id,
+		candidate, scratch, (uint32_t)free_bytes);
+	arena_release(service->section_scratch, mark);
+	return rc;
+}
+
+static int hcu_map_service_preflight_impl(const char *map_name);
+
 int hcu_map_service_preflight(const char *map_name)
+{
+	int ok;
+	HCU_LOAD_TRACE_BEGIN("preflight");
+	ok = hcu_map_service_preflight_impl(map_name);
+	HCU_LOAD_TRACE_END("preflight");
+	return ok;
+}
+
+static int hcu_map_service_preflight_impl(const char *map_name)
 {
 	hcu_map_service *service = s_service;
 	const hcu_map_catalog_entry *entry;
@@ -1127,9 +1187,7 @@ int hcu_map_service_preflight(const char *map_name)
 	if (service->profile_requested) {
 		hcu_asset_profile_view candidate;
 		if (strcmp(service->profile_map_name, entry->identity.map_name) != 0 ||
-			hcu_asset_profile_preflight_reader(service->profile_read_at,
-				service->profile_reader_context, service->profile_image_size,
-				service->expected_profile_id, &candidate) != HCU_ASSET_PROFILE_OK ||
+			preflight_package_reader(service, &candidate) != HCU_ASSET_PROFILE_OK ||
 			!verify_profile_package_hash(service->profile_read_at,
 				service->profile_reader_context, service->profile_image_size,
 				service->expected_profile_sha256) ||

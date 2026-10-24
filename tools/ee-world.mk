@@ -214,6 +214,7 @@ $(WORLD_OUTPUT)/stream/hcu_map_service.o: src/stream/hcu_map_service.c
 $(WORLD_OUTPUT)/stream/hcu_profile_mount.o: src/stream/hcu_profile_mount.c src/stream/hcu_profile_mount.h
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
+		$(if $(filter 1,$(HCU_LOAD_TRACE)),-DHCU_LOAD_TRACE=1,) \
 		-I$(HCU_ROOT)/port/ps2/include -I$(HCU_ROOT)/source \
 		-I$(HCU_ROOT)/port/include -fshort-wchar \
 		-I$(HCU_ROOT)/source/cseries -DHALO_PS2=1 \

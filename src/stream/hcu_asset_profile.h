@@ -35,6 +35,9 @@ typedef struct {
 int hcu_asset_profile_preflight_reader(hcu_asset_profile_read_at read_at,
 	void *reader_context, uint32_t image_size,
 	uint32_t expected_profile_id, hcu_asset_profile_view *view);
+int hcu_asset_profile_preflight_reader_scratch(hcu_asset_profile_read_at read_at,
+	void *reader_context, uint32_t image_size, uint32_t expected_profile_id,
+	hcu_asset_profile_view *view, uint8_t *scratch, uint32_t scratch_bytes);
 int hcu_asset_profile_preflight(const void *image, size_t image_size,
 	uint32_t expected_profile_id, hcu_asset_profile_view *view);
 int hcu_asset_profile_lookup(const hcu_asset_profile_view *view, uint32_t type,

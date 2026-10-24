@@ -1,6 +1,30 @@
 #include "stream/hcu_asset_profile.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+typedef struct {
+	unsigned char *image;
+	uint32_t payload_at;
+	uint32_t payload_size;
+	unsigned payload_reads;
+	int mutate_second_payload_read;
+} mutating_reader;
+
+static int read_mutating(void *context, uint32_t offset, void *destination,
+	uint32_t size)
+{
+	mutating_reader *reader = (mutating_reader *)context;
+	if (offset > UINT32_MAX - size) return -1;
+	if (offset < reader->payload_at + reader->payload_size &&
+		reader->payload_at < offset + size) {
+		reader->payload_reads++;
+		if (reader->mutate_second_payload_read && reader->payload_reads == 2)
+			reader->image[reader->payload_at] ^= 1;
+	}
+	memcpy(destination, reader->image + offset, size);
+	return 0;
+}
 
 int main(int argc,char **argv)
 {
@@ -21,6 +45,27 @@ int main(int argc,char **argv)
 		p[n-1]^=1; for(i=0;i<sizeof(destination);i++) destination[i]=0xA5;
 		rc=hcu_asset_profile_read_chunk(&v,HCU_ASSET_CHUNK_SOUND_META,0,destination,sizeof(destination));
 		if(rc!=HCU_ASSET_PROFILE_E_HASH || destination[0]!=0xA5) return 95;
+		p[n-1]^=1;
+		{
+			mutating_reader reader;
+			hcu_asset_profile_view file_view;
+			hcu_asset_chunk_view sound;
+			memset(&reader, 0, sizeof(reader));
+			reader.image = p;
+			if (hcu_asset_profile_preflight_reader(read_mutating, &reader,
+				(uint32_t)n, (uint32_t)expected, &file_view) != HCU_ASSET_PROFILE_OK ||
+				hcu_asset_profile_lookup(&file_view, HCU_ASSET_CHUNK_SOUND_META, 0,
+					&sound) != HCU_ASSET_PROFILE_OK) return 96;
+			reader.payload_at = sound.offset;
+			reader.payload_size = sound.size;
+			reader.payload_reads = 0;
+			reader.mutate_second_payload_read = 1;
+			for(i=0;i<sizeof(destination);i++) destination[i]=0xA5;
+			rc=hcu_asset_profile_read_chunk(&file_view,HCU_ASSET_CHUNK_SOUND_META,0,
+				destination,sizeof(destination));
+			if(rc!=HCU_ASSET_PROFILE_E_HASH || reader.payload_reads < 2 ||
+				destination[0] != 0) return 97;
+		}
 	} else printf("ERR %d\n",rc);
 	free(p); return 0;
 }
