@@ -1079,7 +1079,46 @@ def successor_stage_paths(plan: dict, succ_plan: dict, succ_row: str, succ_root:
     return list(dict.fromkeys(paths))
 
 
-def run_successor(row: str, succ_row: str, fault: str = "none", ticks: int = SUCCESSOR_TICKS) -> dict:
+def rendered_successor_checks(lines: list[str], old_map: str, new_map: str, mode: int,
+                               views: int, captures: list[dict]) -> dict:
+    """Rendered transaction diagnostics; in-flight and both-mode qualification remain separate."""
+    ready = [fields_of(line) for line in lines if line.startswith(PREFIX + "c3-render-ready ")]
+    expected_maps = [old_map] if mode == 2 else [old_map, new_map]
+    boundaries = [(index, fields_of(line)) for index, line in enumerate(lines)
+                  if line.startswith(PREFIX + "map-replacement ")]
+    begin = [(index, row) for index, row in boundaries if row.get("phase") == "quiesce-begin"]
+    validated = [(index, row) for index, row in boundaries if row.get("phase") == "candidate-validated"]
+    drained = [(index, row) for index, row in boundaries if row.get("phase") == "quiesce-end"]
+    dispose = [index for index, line in enumerate(lines)
+               if line.startswith(PREFIX + "production-ce-successor-step step=dispose ")]
+    checks = {
+        "rendered_maps": [row.get("map") for row in ready] == expected_maps,
+        "rendered_view_counts": bool(ready) and all(row.get("views") == str(views) for row in ready),
+        "render_failure_free": not any("HALO_PS2_FAIL c3-" in line for line in lines),
+        "replacement_captures_visible": len(captures) == 2 and all(
+            (capture.get("nonblack_fraction") or 0) >= 0.01 and not capture.get("error")
+            for capture in captures),
+    }
+    if mode == 2:
+        checks["failed_preflight_preserves_renderer"] = not begin and not validated and not drained
+    else:
+        checks["candidate_before_quiesce_before_dispose"] = bool(begin) and all(
+            any(vindex < bindex and v.get("new") == row.get("new") for vindex, v in validated)
+            and any(bindex < dindex < pindex and d.get("drained") == "1" and d.get("readers") == "0"
+                    for dindex, d in drained for pindex in dispose)
+            for bindex, row in begin)
+        checks["old_renderer_reader_present"] = any(
+            row.get("old") == old_map and (_int(row.get("readers")) or 0) > 0
+            for _, row in begin)
+    return {"checks": checks,
+            "reasons": [f"rendered successor check failed: {name}" for name, passed in checks.items() if not passed],
+            "c3_11_qualified": False,
+            "remaining_requirement": "Verify actual in-flight uploads/draw source references and both emulator modes on the exact tuple."}
+
+
+def run_successor(row: str, succ_row: str, fault: str = "none", ticks: int = SUCCESSOR_TICKS,
+                  *, package_root_override: Path | None = None, render_views: int = 0,
+                  render_frames: int = 300, workload_players: int = 0) -> dict:
     """Link and run one guest successor sequence; results go to build/m2-c2-foreign/<row>/<succ>-<case>/.
 
     The selected row's map A is loaded by the production path; CE then runs the successor
@@ -1087,7 +1126,9 @@ def run_successor(row: str, succ_row: str, fault: str = "none", ticks: int = SUC
     Never touches build/m2-c2-matrix/summary.json.
     """
     mode, label = SUCCESSOR_CASES[fault]
-    out = FOREIGN_ROOT / row / f"{succ_row}-{label}"
+    root = OUTPUT_ROOT if OUTPUT_ROOT is not None else (
+        C3_ROOT.parent / "replacement" if render_views else FOREIGN_ROOT)
+    out = root / row / f"{succ_row}-{label}"
     out.mkdir(parents=True, exist_ok=True)
     started = time.time()
     result: dict = {"row": row, "successor_row": succ_row, "successor_fault": fault, "mode": mode,
@@ -1097,8 +1138,8 @@ def run_successor(row: str, succ_row: str, fault: str = "none", ticks: int = SUC
     try:
         if row == succ_row:
             raise RuntimeError("the successor row must differ from the selected row")
-        package_root = package_root_for(row)
-        succ_root = package_root_for(succ_row)
+        package_root = package_root_override or package_root_for(row)
+        succ_root = package_root_override or package_root_for(succ_row)
         if package_root is None or succ_root is None:
             raise RuntimeError(f"no selected package for {row if package_root is None else succ_row}")
         plan = stage_plan(row, package_root)
@@ -1115,25 +1156,46 @@ def run_successor(row: str, succ_row: str, fault: str = "none", ticks: int = SUC
         if header.returncode:
             raise RuntimeError(f"row header failed: {header.stderr.strip()}")
         include_dir = write_successor_includes(out, succ_row, succ_root, mode, ticks)
-        elf, why = link_row(row, package_root, out, include_dir=include_dir)
+        elf, why = link_row(row, package_root, out, include_dir=include_dir,
+                            ticks=render_frames + 5 if render_views else 0,
+                            render_views=render_views, render_frames=render_frames,
+                            workload_players=workload_players)
         if elf is None:
             raise RuntimeError(why)
         result["elf"] = str(elf.relative_to(ROOT))
+        attempt_started_ns = time.time_ns()
         ok, why = guest_row(row, elf, plan, out, SUCCESSOR_GUEST_TIMEOUT, SUCCESSOR_PROCESS_TIMEOUT,
                             successor_stage_paths(plan, succ_plan, succ_row, succ_root),
-                            released_map=plan["map"] if mode == 2 else succ_plan["map"])
+                            released_map=plan["map"] if mode == 2 else succ_plan["map"],
+                            capture_markers=("c3-render-held ", "production-ce-successor-usable result=1 ")
+                            if render_views else ())
+        if not ok:
+            raise RuntimeError(why)
+        guest_run, provenance_error = validate_guest_provenance(
+            out, attempt_started_ns, EMU_MODE, expected_captures=2 if render_views else 0)
+        if guest_run is None:
+            raise RuntimeError(provenance_error)
+        result["guest_launch_id"] = guest_run["launch_id"]
+        result["emu_mode_verified"] = guest_run["pcsx2_config"]["emu_mode_verified"]
         log_path = out / "guest/runs/partition-selected/halo_ps2_local.txt"
         lines = read_guest_lines(log_path)
         result["guest_log"] = str(log_path.relative_to(ROOT))
         result["guest_line_count"] = len(lines)
         parsed = parse_successor_log(lines, row, plan["map"], succ_row, succ_plan["map"], mode, ticks)
         result.update(parsed)
+        if render_views:
+            result["captures"] = guest_run.get("captures", [])
+            checks = rendered_successor_checks(lines, plan["map"], succ_plan["map"], mode,
+                                                render_views, result["captures"])
+            result["render_replacement"] = checks
+            result["failing_checks"] += [name for name, passed in checks["checks"].items() if not passed]
+            result["reasons"] += checks["reasons"]
         result["ce_failure_lines"] = ce_failure_lines(out / "guest/runs/partition-selected/emu.txt")
-        if parsed["failing_checks"] and result["ce_failure_lines"]:
+        if result["failing_checks"] and result["ce_failure_lines"]:
             result["reasons"].append("CE reported: " + " | ".join(result["ce_failure_lines"][:2]))
         if not ok:
             result["reasons"].insert(0, why)
-        result["pass"] = bool(ok and not parsed["failing_checks"])
+        result["pass"] = bool(ok and not result["failing_checks"])
     except Exception as error:  # record the failure
         result["reasons"].append(f"{type(error).__name__}: {error}")
         result["pass"] = False
@@ -1220,6 +1282,14 @@ def main(argv=None) -> int:
     EMU_MODE = args.emu_mode
     if args.output_root is not None:
         OUTPUT_ROOT = (ROOT / args.output_root if not args.output_root.is_absolute() else args.output_root).resolve()
+    if args.render_views and not args.c3:
+        parser.error("--render-views needs --c3")
+    if args.render_views and (args.render_frames < 30 or args.render_frames % 30):
+        parser.error("--render-frames must be a positive multiple of 30")
+    if args.c3_workload != "none" and not args.c3:
+        parser.error("--c3-workload needs --c3")
+    if args.package_root and not args.c3:
+        parser.error("--package-root needs --c3")
     if args.successor:
         if not args.rows or "," in args.rows:
             parser.error("--successor needs exactly one --rows row")
@@ -1230,7 +1300,17 @@ def main(argv=None) -> int:
         known = profile_rows()
         if args.rows not in known or args.successor not in known:
             parser.error(f"--rows and --successor must be rows in {PROFILE_SOURCE.name}")
-        result = run_successor(args.rows, args.successor, args.successor_fault, args.successor_ticks)
+        if args.c3:
+            if not args.render_views:
+                parser.error("--c3 --successor requires --render-views for a live renderer consumer")
+            os.environ["HCU_C3"] = "1"
+            args.package_root = args.package_root or prepare_render_tree()
+            result = run_successor(args.rows, args.successor, args.successor_fault,
+                                   args.successor_ticks, package_root_override=args.package_root,
+                                   render_views=args.render_views, render_frames=args.render_frames,
+                                   workload_players=WORKLOAD_PLAYERS[args.c3_workload])
+        else:
+            result = run_successor(args.rows, args.successor, args.successor_fault, args.successor_ticks)
         print(f"{args.rows} -> {args.successor} [{result['case']}]: {'PASS' if result['pass'] else 'FAIL'} "
               f"{'; '.join(result['reasons'][:2])}", flush=True)
         return 0 if result["pass"] else 1
@@ -1260,8 +1340,6 @@ def main(argv=None) -> int:
     if args.c3:
         if (args.cycles != 1 or args.ticks) and not args.render_views:
             parser.error("--c3 runs the default single-cycle rows only")
-        if args.successor:
-            parser.error("--c3 cannot be combined with --successor")
         # Every subprocess (closure, link probe, guest runner) inherits HCU_C3=1.
         os.environ["HCU_C3"] = "1"
         RESULT_ROOT = C3_ROOT
