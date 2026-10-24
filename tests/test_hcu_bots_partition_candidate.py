@@ -13,8 +13,13 @@ def test_bots_sidewinder_candidate_provenance_and_static_accounting():
     data = json.loads(FIXTURE.read_text())
     assert data["status"] == "static-candidate-not-measured-fit"
     provenance = data["provenance"]
-    assert provenance["package_sha256"] == "bdf9559fec754b9007825e133d38d1e619a730f4b8ceaa87273d1c492ef5dea3"
-    assert provenance["package_manifest_file_sha256"] == "38eb0c4633bcf5b6b43a0f9b04c0bf8a95d3eefee9350d11ae808a0e8eafde02"
+    assert provenance["package_sha256"] == "f355796e20d75f22223dd4c5315c83c19e7b70af597237a06cc236268511aa89"
+    assert provenance["package_manifest_file_sha256"] == "b354f7b7c8fc4354a6cead35ff375fc9351c0dc1907e2b13d5781295f48e6f31"
+    # The superseded migrated package carried 19 sound extents from c40/a50
+    # that lay outside the mounted sidewinder.map (CE: "game_load() failed.").
+    assert provenance["superseded_package"]["package_sha256"] == \
+        "bdf9559fec754b9007825e133d38d1e619a730f4b8ceaa87273d1c492ef5dea3"
+    assert provenance["rebuild_normalizations"]["external_source_sample_metadata_only"] == 19
 
     inputs = data["static_inputs"]
     row = data["partition"]
@@ -67,3 +72,21 @@ def test_bots_sidewinder_candidate_provenance_and_static_accounting():
         row["tag_cache_bytes"], row["structure_bsp_bytes"],
         row["render_texture_bytes"], row["residency_bytes"],
     )
+
+
+def test_bots_sidewinder_package_has_no_extent_outside_mounted_source():
+    """Every retained file-data extent must lie in the mounted sidewinder.map."""
+    fixture = json.loads(FIXTURE.read_text())["provenance"]
+    manifest_path = ROOT / fixture["source_manifest"]
+    if not manifest_path.exists():
+        return  # build artifact not present in this checkout
+    assert hashlib.sha256(manifest_path.read_bytes()).hexdigest() == fixture["package_manifest_file_sha256"]
+    manifest = json.loads(manifest_path.read_text())
+    mounted = manifest["profile"]["map"]
+    length = 48048128  # build/retail-maps/decompressed/sidewinder.map
+    assert manifest["resources"]
+    for resource in manifest["resources"]:
+        assert resource["source"] == mounted, resource["tag"]
+        assert resource["source_offset"] + resource["bytes"] <= length, resource["tag"]
+    policies = [row["policy"] for row in manifest["runtime_normalizations"]]
+    assert policies.count("external_source_sample_metadata_only") == 19

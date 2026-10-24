@@ -3,19 +3,36 @@
   "status": "static-candidate-not-measured-fit",
   "partition_name": "bots_sidewinder",
   "provenance": {
-    "source_manifest": "build/m2-c2-resume-runtime-guest/bots-package-tree/pkg/bots_sidewinder/bots_sidewinder.json",
-    "package": "build/m2-c2-resume-runtime-guest/bots-package-tree/pkg/bots_sidewinder/bots_sidewinder.hcp",
-    "package_sha256": "bdf9559fec754b9007825e133d38d1e619a730f4b8ceaa87273d1c492ef5dea3",
+    "source_manifest": "build/m2-c2-gaps-bots/tree/pkg/bots_sidewinder/bots_sidewinder.json",
+    "package": "build/m2-c2-gaps-bots/tree/pkg/bots_sidewinder/bots_sidewinder.hcp",
+    "package_sha256": "f355796e20d75f22223dd4c5315c83c19e7b70af597237a06cc236268511aa89",
     "package_format": "HCP2",
     "profile_kind": "bots",
     "map": "sidewinder",
     "profile_id": 13,
-    "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
-    "migration": "HCP1-to-HCP2-envelope-only-v1",
-    "migration_sha256": "daeb6892723916b680795017c12878c6ebdf696a93a580e19ddf7c86efead4f7",
-    "source_package_sha256": "5571144b6f5558e0c5463b308f76fd12f5eac426221a01414c2337c5575e0209",
-    "package_manifest_file_sha256": "38eb0c4633bcf5b6b43a0f9b04c0bf8a95d3eefee9350d11ae808a0e8eafde02",
-    "producer_source_manifest_sha256": "18842875328e2708628b8caa4ac0761fc9a00aaa4a6365a1eb7ae1eb877489f3"
+    "schema_elf_sha256": "1b7e191b171710f5a5c0ae04d24fc1a8b8a3733b34481aa4f93fb15a580b5acf",
+    "migration": "none-native-hcp2-rebuild",
+    "package_manifest_file_sha256": "b354f7b7c8fc4354a6cead35ff375fc9351c0dc1907e2b13d5781295f48e6f31",
+    "producer_source_manifest_sha256": "2612dcdbc40a96e04077d03183c7556e4dc38a73688c02cfc86275d0755e6623",
+    "rebuild_driver": "build/m2-c2-gaps-bots/build_bots_sidewinder.py",
+    "staging": "build/m2-c2-gaps-bots/stage_tree.py (profile.name bots-sidewinder -> bots_sidewinder only)",
+    "superseded_package": {
+      "source_manifest": "build/m2-c2-resume-runtime-guest/bots-package-tree/pkg/bots_sidewinder/bots_sidewinder.json",
+      "package": "build/m2-c2-resume-runtime-guest/bots-package-tree/pkg/bots_sidewinder/bots_sidewinder.hcp",
+      "package_sha256": "bdf9559fec754b9007825e133d38d1e619a730f4b8ceaa87273d1c492ef5dea3",
+      "package_format": "HCP2",
+      "migration": "HCP1-to-HCP2-envelope-only-v1",
+      "migration_sha256": "daeb6892723916b680795017c12878c6ebdf696a93a580e19ddf7c86efead4f7",
+      "source_package_sha256": "5571144b6f5558e0c5463b308f76fd12f5eac426221a01414c2337c5575e0209",
+      "package_manifest_file_sha256": "38eb0c4633bcf5b6b43a0f9b04c0bf8a95d3eefee9350d11ae808a0e8eafde02",
+      "producer_source_manifest_sha256": "18842875328e2708628b8caa4ac0761fc9a00aaa4a6365a1eb7ae1eb877489f3",
+      "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+      "defect": "19 sound_permutation file_data extents from c40 (18) and a50 (1) retained as sidewinder-file reads; offsets such as 0x08975a00 lie beyond the 48,048,128-byte sidewinder.map, so CE tag validation refused the map (game_load() failed.). Built before importer commit 693fc49 added the mounted-source guard."
+    },
+    "rebuild_normalizations": {
+      "external_source_sample_metadata_only": 19,
+      "owning_sound_tag_identity_relocation": 1912
+    }
   },
   "static_inputs": {
     "resident_recipe_bytes": 4584878,
