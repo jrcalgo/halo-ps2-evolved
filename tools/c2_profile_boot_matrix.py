@@ -32,10 +32,14 @@ MATRIX = ROOT / "build/m2-c2-matrix"
 PROFILE_SOURCE = ROOT / "src/stream/hcu_memory_profile.c"
 DEFAULT_PACKAGE_ROOT = ROOT / "build/m2-c2-r3-selected-packages/pkg"
 LINK_LOCK = ROOT / "build/.hcu-parent-link-probe.lock"
+REUSE_ROOT = ROOT / "build/m2-c2-gaps-reuse"  # output root for --cycles/--ticks runs
 
 # Rows whose selected package is not in the default corpus tree.
 EXTRA_PACKAGE_ROOTS = {
     "bots_sidewinder": ROOT / "build/m2-c2-resume-runtime-guest/bots-package-tree-v2/pkg",
+    # The UI package (scenario levels/ui/ui). Its manifest is the hcp2-primary ui manifest with
+    # memory.package_file_bytes set to the HCP2 file size, as tools/repack_hcu_profiles_hcp2.py does.
+    "ui": ROOT / "build/m2-c2-gaps-ui/tree/pkg",
 }
 
 RESERVE = 0x1A40000          # budget v3 reserve start (kernel-reservation reserve=)
@@ -196,6 +200,110 @@ def parse_guest_log(lines: list[str], row: str, map_name: str, reserve: int = RE
             "values": values, "peaks": owner_peaks(lines)}
 
 
+def _phase_rows(lines: list[str], start: int, phase: str) -> dict:
+    """Owner rows, header and cache-owner rows of one phase that follow a boundary line."""
+    out: dict = {"owners": {}, "backing": {}, "cache": {}}
+    for line in lines[start + 1:]:
+        fields = fields_of(line)
+        if fields.get("phase") != phase:
+            break
+        if line.startswith(PREFIX + "owner-telemetry "):
+            if "name" in fields:
+                out["owners"][fields["name"]] = {k: _int(fields.get(k)) for k in ("used", "high", "failures", "resets")}
+            else:
+                out["backing"] = {k: _int(fields.get(k)) for k in ("backing_used", "backing_high", "backing_resets")}
+        elif line.startswith(PREFIX + "cache-owner "):
+            out["cache"][fields.get("name", "?")] = {
+                k: _int(fields.get(k)) for k in ("current", "peak", "publications", "unmounts", "resets")}
+    return out
+
+
+def parse_cycles(lines: list[str], map_name: str, cycles: int, ticks: int = 0) -> dict:
+    """Per-cycle load/release checks plus the storage-reuse comparison across cycles 2..N."""
+    checks: dict[str, bool] = {}
+    reasons: list[str] = []
+    per_cycle: list[dict] = []
+
+    def require(name: str, ok: bool, why: str) -> None:
+        checks[name] = bool(ok)
+        if not ok:
+            reasons.append(why)
+
+    def marker(name: str, cycle: int) -> str | None:
+        return next((line for line in lines if line.startswith(PREFIX + name + " ")
+                     and fields_of(line).get("cycle") == str(cycle)), None)
+
+    def boundary(phase: str, cycle: int) -> int | None:
+        return next((i for i, line in enumerate(lines)
+                     if line.startswith(PREFIX + "m2-cycle-boundary ")
+                     and fields_of(line).get("phase") == phase
+                     and fields_of(line).get("cycle") == str(cycle)), None)
+
+    for cycle in range(1, cycles + 1):
+        # Cycles before the last print production-ce-map-released-cycle so the host runner keeps going.
+        loaded = marker("production-ce-map-loaded", cycle)
+        released = marker("production-ce-map-released", cycle) or marker("production-ce-map-released-cycle", cycle)
+        ld, rl = fields_of(loaded or ""), fields_of(released or "")
+        ok_loaded = (ld.get("result") == "1" and ld.get("map") == map_name and ld.get("scenario") == "1"
+                     and ld.get("tag-table") == "1" and (_int(ld.get("tag-count")) or 0) > 0
+                     and (_int(ld.get("tag-bytes")) or 0) > 0 and (_int(ld.get("bsp-bytes")) or 0) > 0
+                     and ld.get("cycles") == str(cycles))
+        ok_released = (rl.get("result") == "1" and rl.get("map") == map_name and rl.get("mounted") == "0"
+                       and rl.get("tag-bytes") == "0" and rl.get("bsp-bytes") == "0"
+                       and rl.get("cycles") == str(cycles))
+        ok_ticks = True
+        tick_line = marker("production-ce-ticks", cycle)
+        if ticks:
+            tk = fields_of(tick_line or "")
+            ok_ticks = tk.get("result") == "1" and tk.get("ticks") == str(ticks)
+        bl, br = boundary("map-loaded", cycle), boundary("map-released", cycle)
+        released_rows = _phase_rows(lines, br, "map-released") if br is not None else {}
+        loaded_rows = _phase_rows(lines, bl, "map-loaded") if bl is not None else {}
+        row = {"cycle": cycle, "loaded": ok_loaded, "released": ok_released, "ticks_ok": ok_ticks,
+               "tag_bytes": _int(ld.get("tag-bytes")), "bsp_bytes": _int(ld.get("bsp-bytes")),
+               "tick_line": tick_line, "boundary_loaded": bl is not None, "boundary_released": br is not None,
+               "at_load": loaded_rows, "at_release": released_rows}
+        per_cycle.append(row)
+        require(f"cycle_{cycle}_loaded", ok_loaded, f"cycle {cycle}: production-ce-map-loaded incomplete: {loaded}")
+        require(f"cycle_{cycle}_released", ok_released, f"cycle {cycle}: production-ce-map-released incomplete: {released}")
+        require(f"cycle_{cycle}_boundary", bl is not None and br is not None and bool(released_rows.get("owners")),
+                f"cycle {cycle}: m2-cycle-boundary map-loaded/map-released telemetry missing")
+        if ticks:
+            require(f"cycle_{cycle}_ticks", ok_ticks, f"cycle {cycle}: production-ce-ticks result=1 ticks={ticks} missing: {tick_line}")
+
+    # resets increment per cycle on the map owners
+    for cycle in range(2, cycles + 1):
+        cur, prev = per_cycle[cycle - 1]["at_release"], per_cycle[cycle - 2]["at_release"]
+        for kind, name in (("owners", "game_state"), ("owners", "tags"), ("owners", "bsp"),
+                           ("cache", "tags"), ("cache", "bsp")):
+            a = (cur.get(kind, {}).get(name) or {}).get("resets")
+            b = (prev.get(kind, {}).get(name) or {}).get("resets")
+            require(f"resets_increment_{cycle}_{kind}_{name}", a is not None and b is not None and a > b,
+                    f"cycle {cycle}: {kind} {name} resets {b} -> {a} did not increase")
+
+    # storage reuse: cycles 2..N identical (peak and used), cycle 1 reported
+    def signature(cycle_row: dict) -> dict:
+        rel = cycle_row["at_release"]
+        sig = {f"owner:{n}:{k}": v[k] for n, v in sorted(rel.get("owners", {}).items()) for k in ("used", "high", "failures")}
+        sig.update({f"cache:{n}:{k}": v[k] for n, v in sorted(rel.get("cache", {}).items()) for k in ("current", "peak")})
+        sig.update({f"backing:{k}": v for k, v in rel.get("backing", {}).items() if k != "backing_resets"})
+        return sig
+    signatures = [signature(r) for r in per_cycle]
+    drift: list[str] = []
+    if cycles >= 3:
+        for cycle in range(3, cycles + 1):
+            for key, value in signatures[1].items():
+                if signatures[cycle - 1].get(key) != value:
+                    drift.append(f"{key}: cycle2={value} cycle{cycle}={signatures[cycle - 1].get(key)}")
+    require("storage_reused_cycles_2_to_n", cycles >= 2 and bool(signatures[1]) and not drift,
+            "storage grew or drifted across cycles 2..N: " + "; ".join(drift[:5]) if drift else
+            "need --cycles >= 2 with release telemetry for every cycle")
+    cycle1_diff = ([k for k, v in signatures[0].items() if signatures[1].get(k) != v]
+                   if cycles >= 2 and signatures[0] and signatures[1] else [])
+    return {"checks": checks, "failing_checks": [n for n, ok in checks.items() if not ok], "reasons": reasons,
+            "per_cycle": per_cycle, "cycle1_vs_cycle2_differences": cycle1_diff}
+
+
 def owner_peaks(lines: list[str]) -> dict:
     """Largest observed high/peak per owner across every telemetry phase."""
     owners: dict[str, int] = {}
@@ -274,7 +382,7 @@ def run_group(command: list[str], *, log: Path, timeout: int, env: dict | None =
             return -9, True
 
 
-def link_row(row: str, package_root: Path, out: Path) -> tuple[Path | None, str]:
+def link_row(row: str, package_root: Path, out: Path, cycles: int = 1, ticks: int = 0) -> tuple[Path | None, str]:
     """Link the row's runtime-guest ELF under out/link, holding the shared link lock."""
     link_dir = out / "link"
     LINK_LOCK.parent.mkdir(parents=True, exist_ok=True)
@@ -282,9 +390,18 @@ def link_row(row: str, package_root: Path, out: Path) -> tuple[Path | None, str]
                "--asset-profile", "host", "--partition-profile", row,
                "--profile-package-root", str(package_root),
                "--headless-runtime-guest", "--output-dir", str(link_dir)]
+    env = None
+    if cycles != 1 or ticks:
+        # main.c includes <hcu_c2_cycles.h> when it exists; no build script has a flag for it.
+        include_dir = out / "cycles-inc"
+        include_dir.mkdir(parents=True, exist_ok=True)
+        (include_dir / "hcu_c2_cycles.h").write_text(
+            f"#define HALO_PS2_C2_PRODUCTION_RUNTIME_CYCLES {cycles}\n"
+            f"#define HALO_PS2_C2_PRODUCTION_RUNTIME_TICKS {ticks}\n")
+        env = dict(os.environ, C_INCLUDE_PATH=str(include_dir))
     with LINK_LOCK.open("w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
-        rc, timed_out = run_group(command, log=out / "link.log", timeout=LINK_TIMEOUT)
+        rc, timed_out = run_group(command, log=out / "link.log", timeout=LINK_TIMEOUT, env=env)
     elf = link_dir / f"hcu-gameplay-machine-partition-{row}-headless-runtime-guest.elf"
     if timed_out:
         return None, f"link timed out after {LINK_TIMEOUT}s"
@@ -310,11 +427,12 @@ def guest_row(row: str, elf: Path, plan: dict, out: Path) -> tuple[bool, str]:
     return True, ""
 
 
-def run_row(row: str, package_root_override: Path | None = None) -> dict:
-    out = MATRIX / row
+def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1, ticks: int = 0) -> dict:
+    out = (MATRIX if cycles == 1 and not ticks else REUSE_ROOT) / row
     out.mkdir(parents=True, exist_ok=True)
     started = time.time()
-    result: dict = {"row": row, "pass": False, "reasons": [], "started_unix": int(started)}
+    result: dict = {"row": row, "pass": False, "reasons": [], "started_unix": int(started),
+                    "cycles": cycles, "ticks": ticks}
     (out / "result.json").write_text(json.dumps({**result, "state": "running"}, indent=2) + "\n")
     try:
         package_root = package_root_override or package_root_for(row)
@@ -328,7 +446,7 @@ def run_row(row: str, package_root_override: Path | None = None) -> dict:
             cwd=ROOT, capture_output=True, text=True)
         if header.returncode:
             raise RuntimeError(f"row header failed: {header.stderr.strip()}")
-        elf, why = link_row(row, package_root, out)
+        elf, why = link_row(row, package_root, out, cycles, ticks)
         if elf is None:
             raise RuntimeError(why)
         result["elf"] = str(elf.relative_to(ROOT))
@@ -339,6 +457,12 @@ def run_row(row: str, package_root_override: Path | None = None) -> dict:
         result["guest_line_count"] = len(lines)
         parsed = parse_guest_log(lines, row, plan["map"])
         result.update(parsed)
+        if cycles != 1 or ticks:
+            multi = parse_cycles(lines, plan["map"], cycles, ticks)
+            result["cycle_checks"] = multi
+            parsed = {**parsed, "failing_checks": parsed["failing_checks"] + multi["failing_checks"]}
+            result["failing_checks"] = parsed["failing_checks"]
+            result["reasons"].extend(multi["reasons"])
         result["ce_failure_lines"] = ce_failure_lines(out / "guest/runs/partition-selected/emu.txt")
         if parsed["failing_checks"] and result["ce_failure_lines"]:
             result["reasons"].append("CE reported: " + " | ".join(result["ce_failure_lines"][:2]))
@@ -367,12 +491,19 @@ def main(argv=None) -> int:
     parser.add_argument("--jobs-link", type=int, default=1,
                         help=("link concurrency; links always take the shared parent-link lock because every link "
                               "rewrites the common HCU closure directory, so they stay serialized"))
+    parser.add_argument("--cycles", type=int, default=1,
+                        help=("load/map-loaded/release cycles the guest repeats (default 1); above 1 every cycle must "
+                              "pass and storage must be reused; results go to build/m2-c2-gaps-reuse/<row>"))
+    parser.add_argument("--ticks", type=int, default=0,
+                        help="in-map CE ticks to run per cycle (default 0)")
     parser.add_argument("--skip-existing", action="store_true", help="skip rows whose result.json already passed")
     args = parser.parse_args(argv)
     rows = [r for r in (args.rows.split(",") if args.rows else default_rows()) if r]
     unknown = [r for r in rows if r not in profile_rows()]
     if unknown:
         parser.error(f"rows not in {PROFILE_SOURCE.name}: {', '.join(unknown)}")
+    if args.cycles < 1 or args.ticks < 0:
+        parser.error("--cycles must be at least 1 and --ticks at least 0")
     if args.jobs_link < 1:
         parser.error("--jobs-link must be at least 1")
     summary = []
@@ -380,9 +511,11 @@ def main(argv=None) -> int:
         if args.skip_existing and previously_passed(row):
             print(f"{row}: skipped (previous pass)")
             continue
-        result = run_row(row)
+        result = run_row(row, cycles=args.cycles, ticks=args.ticks)
         summary.append(result)
         print(f"{row}: {'PASS' if result['pass'] else 'FAIL'} {'; '.join(result['reasons'][:2])}", flush=True)
+    if args.cycles != 1 or args.ticks:
+        return 0 if all(r["pass"] for r in summary) else 1
     MATRIX.mkdir(parents=True, exist_ok=True)
     (MATRIX / "summary.json").write_text(json.dumps(
         {"rows": [{"row": r["row"], "pass": r["pass"], "reasons": r["reasons"][:3]} for r in summary]},

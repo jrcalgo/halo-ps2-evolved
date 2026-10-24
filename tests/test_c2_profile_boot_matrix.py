@@ -148,3 +148,89 @@ def test_ce_failure_lines_come_from_the_emulator_log(tmp_path):
     log.write_text("[ 1.0] Unknown device 'd'\n[ 168.4] game_load() failed.\n[ 168.5] failed to find/create 'z:saved' directory\n")
     assert matrix.ce_failure_lines(log) == ["game_load() failed."]
     assert matrix.ce_failure_lines(tmp_path / "missing.txt") == []
+
+
+def test_ui_row_is_in_profile_table_and_resolves_to_its_package_tree():
+    assert "ui" in matrix.profile_rows()
+    root = matrix.package_root_for("ui")
+    if root is None:  # build artifact absent on this checkout
+        return
+    plan = matrix.stage_plan("ui", root)
+    assert plan["map"] == "ui" and plan["scenario"] == "levels\\ui\\ui"
+    assert plan["guest_package_root"].endswith("m2-c2-gaps-ui/tree")
+
+
+def test_ui_log_passes_with_ui_map_and_scenario():
+    lines = good_log(row="ui", map_name="ui")
+    assert parse(lines, row="ui", map_name="ui")["failing_checks"] == []
+
+
+# ---- --cycles: per-cycle parsing and storage reuse ----
+
+def cycle_lines(cycles, map_name="sidewinder", ticks=0, used=3107696, high=(6913928, 6913928, 6913928),
+                bsp_high=1984512, resets_step=1):
+    lines = []
+    for c in range(1, cycles + 1):
+        r = c * resets_step
+        h = high[min(c - 1, len(high) - 1)]
+        lines += [
+            P + f"m2-cycle-boundary phase=map-loaded cycle={c}",
+            P + f"production-ce-map-loaded result=1 map={map_name} scenario=1 tag-table=1 tag-count=2901 "
+                f"tag-bytes=6913928 bsp-bytes=1984512 cycle={c} cycles={cycles}",
+        ]
+        if ticks:
+            lines.append(P + f"production-ce-ticks result=1 map={map_name} cycle={c} ticks={ticks} local-players=1")
+        lines += [
+            P + f"m2-cycle-boundary phase=map-released cycle={c}",
+            P + f"owner-telemetry phase=map-released partition=x backing_cap=1 backing_used=3382400 backing_high=8335214 backing_failures=0 backing_resets={r}",
+            P + f"owner-telemetry phase=map-released name=game_state kind=backing parent=- bound=1 cap=1 used={used} high={used} failures=0 resets={r}",
+            P + f"owner-telemetry phase=map-released name=tags kind=backing parent=- bound=1 cap=1 used=0 high={h} failures=0 resets={r}",
+            P + f"owner-telemetry phase=map-released name=bsp kind=backing parent=- bound=1 cap=1 used=0 high={bsp_high} failures=0 resets={r}",
+            P + f"cache-owner phase=map-released name=tags current=0 peak={h} publications={c} failures=0 unmounts={r} resets={r}",
+            P + f"cache-owner phase=map-released name=bsp current=0 peak={bsp_high} publications={c} failures=0 unmounts={r} resets={r} lease_failures=0",
+            P + f"{'production-ce-map-released' if c == cycles else 'production-ce-map-released-cycle'} result=1 map={map_name} mounted=0 tag-bytes=0 bsp-bytes=0 cycle={c} cycles={cycles}",
+        ]
+    return lines
+
+
+def test_three_cycles_with_reused_storage_pass():
+    parsed = matrix.parse_cycles(cycle_lines(3), "sidewinder", 3)
+    assert parsed["failing_checks"] == [], parsed["reasons"]
+    assert [c["cycle"] for c in parsed["per_cycle"]] == [1, 2, 3]
+    assert parsed["checks"]["storage_reused_cycles_2_to_n"]
+
+
+def test_peak_growth_in_cycle_three_is_flagged():
+    parsed = matrix.parse_cycles(cycle_lines(3, high=(6913928, 6913928, 6913984)), "sidewinder", 3)
+    assert "storage_reused_cycles_2_to_n" in parsed["failing_checks"]
+    assert any("owner:tags:high" in r for r in parsed["reasons"])
+
+
+def test_cycle_one_difference_is_reported_not_failed():
+    parsed = matrix.parse_cycles(cycle_lines(3, high=(6000000, 6913928, 6913928)), "sidewinder", 3)
+    assert parsed["failing_checks"] == []
+    assert any("tags" in key for key in parsed["cycle1_vs_cycle2_differences"])
+
+
+def test_missing_cycle_or_stale_cycle_count_fails():
+    lines = cycle_lines(2)
+    assert "cycle_3_loaded" in matrix.parse_cycles(lines, "sidewinder", 3)["failing_checks"]
+    stale = matrix.parse_cycles(cycle_lines(1), "sidewinder", 2)
+    assert "cycle_2_loaded" in stale["failing_checks"]
+
+
+def test_resets_must_increment_each_cycle():
+    parsed = matrix.parse_cycles(cycle_lines(3, resets_step=0), "sidewinder", 3)
+    assert any(name.startswith("resets_increment_") for name in parsed["failing_checks"])
+
+
+def test_ticks_required_when_requested():
+    assert matrix.parse_cycles(cycle_lines(2, ticks=300), "sidewinder", 2, 300)["failing_checks"] == []
+    missing = matrix.parse_cycles(cycle_lines(2), "sidewinder", 2, 300)
+    assert "cycle_1_ticks" in missing["failing_checks"]
+
+
+def test_failed_cycle_marker_fails():
+    lines = [l.replace("result=1", "result=0", 1)
+             if "production-ce-map-released" in l and " cycle=2 " in l else l for l in cycle_lines(3)]
+    assert "cycle_2_released" in matrix.parse_cycles(lines, "sidewinder", 3)["failing_checks"]
