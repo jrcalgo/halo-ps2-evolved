@@ -4,173 +4,353 @@
 #include <string.h>
 
 #define HCP_HEADER_SIZE 32u
-#define HCP_RECORD_SIZE 48u
+#define HCP1_RECORD_SIZE 48u
+#define HCP2_RECORD_SIZE 96u
 #define HCP_ALIGNMENT 16u
 #define HCP_SCRATCH 512u
 
 static uint32_t le32(const uint8_t *p)
 { return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24; }
-static int read_bytes(hcu_asset_profile_read_at r, void *c, uint32_t o, void *d, uint32_t n)
-{ return r(c, o, d, n) == 0; }
-static int read_entry(const hcu_asset_profile_view *v, uint32_t i, hcu_asset_chunk_view *e)
+static int rd(hcu_asset_profile_read_at r, void *c,uint32_t o,void *d,uint32_t n)
+{ return r(c,o,d,n)==0; }
+static uint32_t row_size(const hcu_asset_profile_view *v) { return v->record_bytes; }
+static int read_entry(const hcu_asset_profile_view *v,uint32_t i,hcu_asset_chunk_view *e)
 {
-	uint8_t b[HCP_RECORD_SIZE];
-	if (i >= v->chunk_count) return 0;
-	if (v->memory_image) memcpy(b, v->memory_image + HCP_HEADER_SIZE + i * HCP_RECORD_SIZE, sizeof(b));
-	else if (!read_bytes(v->read_at, v->reader_context,
-		HCP_HEADER_SIZE + i * HCP_RECORD_SIZE, b, sizeof(b))) return 0;
-	e->type=le32(b); e->chunk_id=le32(b+4); e->offset=le32(b+8); e->size=le32(b+12);
-	memcpy(e->sha256,b+16,32); return 1;
+	uint8_t b[HCP2_RECORD_SIZE]; uint32_t z,at; uint64_t dirend;
+	if(!v||!e)return 0;
+	z=row_size(v);
+	if(i>=v->chunk_count || (v->version==1?z!=HCP1_RECORD_SIZE:(v->version==2?z!=HCP2_RECORD_SIZE:1))) return 0;
+	dirend=(uint64_t)HCP_HEADER_SIZE+(uint64_t)v->chunk_count*z;
+	if(dirend>v->total_bytes||dirend!=v->directory_bytes)return 0;
+	at=HCP_HEADER_SIZE+i*z;
+	if(v->memory_image) memcpy(b,v->memory_image+at,z);
+	else if(!rd(v->read_at,v->reader_context,at,b,z)) return 0;
+	e->type=le32(b); e->chunk_id=le32(b+4);
+	if(v->version==1) { e->offset=le32(b+8); e->size=le32(b+12); e->first_segment=i; e->segment_count=1; memcpy(e->sha256,b+16,32); }
+	else {
+		uint32_t index=le32(b+24), segment_size=le32(b+12), segment_count=le32(b+28);
+		if(index>i || !segment_count || segment_size>HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES)return 0;
+		e->offset=le32(b+8); e->size=le32(b+20); e->first_segment=i-index; e->segment_count=segment_count; memcpy(e->sha256,b+64,32);
+		if(e->first_segment>=v->chunk_count || segment_count>v->chunk_count-e->first_segment)return 0;
+		if(e->offset>v->total_bytes || segment_size>v->total_bytes-e->offset)return 0;
+	}
+	if(!e->size)return 0;
+	if(v->version==1&&(e->offset>v->total_bytes||e->size>v->total_bytes-e->offset ||
+		(e->type==HCU_ASSET_CHUNK_MEDIA&&e->size>HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES)))return 0;
+	return 1;
 }
+static int rawread(const hcu_asset_profile_view *v,uint32_t at,void *dst,uint32_t n)
+{ if(!v||(!dst&&n)||at>v->total_bytes||n>v->total_bytes-at)return 0; if(v->memory_image) { memcpy(dst,v->memory_image+at,n); return 1; } return v->read_at&&rd(v->read_at,v->reader_context,at,dst,n); }
+static int zeroes(const hcu_asset_profile_view *v,uint32_t at,uint32_t n)
+{ uint8_t b[HCP_SCRATCH]; while(n) { uint32_t k=n<sizeof(b)?n:(uint32_t)sizeof(b),i; if(!rawread(v,at,b,k)) return 0; for(i=0;i<k;i++) if(b[i]) return 0; at+=k; n-=k; } return 1; }
 
-int hcu_asset_profile_preflight_reader(hcu_asset_profile_read_at reader, void *context,
-	uint32_t image_size, uint32_t expected_profile_id, hcu_asset_profile_view *view)
+int hcu_asset_profile_preflight_reader(hcu_asset_profile_read_at reader,void *context,uint32_t image_size,uint32_t expected,hcu_asset_profile_view *view)
 {
-	uint8_t h[HCP_HEADER_SIZE], row[HCP_RECORD_SIZE], scratch[HCP_SCRATCH], digest[32];
-	uint32_t profile,count,dir_off,dir_size,total,last_end,i,prev_type=0,prev_id=0;
-	if (!reader || !view) return HCU_ASSET_PROFILE_E_ARGUMENT;
-	if (image_size < HCP_HEADER_SIZE || !read_bytes(reader,context,0,h,sizeof(h))) return HCU_ASSET_PROFILE_E_BOUNDS;
-	if (memcmp(h,"HCP1",4) || le32(h+4)!=1 || le32(h+8)!=HCP_HEADER_SIZE) return HCU_ASSET_PROFILE_E_FORMAT;
-	profile=le32(h+12); count=le32(h+16); dir_off=le32(h+20); dir_size=le32(h+24); total=le32(h+28);
-	if (!profile || !count || count>HCU_ASSET_PROFILE_MAX_CHUNKS || dir_off!=HCP_HEADER_SIZE ||
-		dir_size!=count*HCP_RECORD_SIZE || total!=image_size || dir_size>total-dir_off)
-		return HCU_ASSET_PROFILE_E_FORMAT;
-	if (profile!=expected_profile_id) return HCU_ASSET_PROFILE_E_PROFILE;
-	last_end=dir_off+dir_size;
+	uint8_t h[32],row[96],buf[HCP_SCRATCH],dig[32],expected_logical[32]; uint32_t ver,rs,profile,count,doff,dsize,total,last_end,i,pt=0,pi=0,prev_index=0,logical_off=0,logical_size=0,seg_count=0; uint64_t expect;
+	sha256_context logical_sha; int in_logical=0;
+	if(!reader||!view) return HCU_ASSET_PROFILE_E_ARGUMENT;
+	if(image_size<32||!rd(reader,context,0,h,32)) return HCU_ASSET_PROFILE_E_BOUNDS;
+	ver=le32(h+4); rs=ver==1?48u:ver==2?96u:0u;
+	if(!rs || (ver==1?memcmp(h,"HCP1",4):memcmp(h,"HCP2",4)) || le32(h+8)!=32) return HCU_ASSET_PROFILE_E_FORMAT;
+	profile=le32(h+12); count=le32(h+16); doff=le32(h+20); dsize=le32(h+24); total=le32(h+28);
+	expect=(uint64_t)count*rs;
+	if(!profile||!count||count>HCU_ASSET_PROFILE_MAX_CHUNKS||doff!=32||expect!=dsize||total!=image_size||dsize>total-doff) return HCU_ASSET_PROFILE_E_FORMAT;
+	if(profile!=expected) return HCU_ASSET_PROFILE_E_PROFILE;
+	last_end=doff+dsize;
 	for(i=0;i<count;i++) {
-		uint32_t type,id,offset,size,at,remaining;
-		sha256_context sha;
-		if(!read_bytes(reader,context,dir_off+i*HCP_RECORD_SIZE,row,sizeof(row))) return HCU_ASSET_PROFILE_E_BOUNDS;
-		type=le32(row); id=le32(row+4); offset=le32(row+8); size=le32(row+12);
-		if((type<1 || type>3) || (type!=HCU_ASSET_CHUNK_MEDIA && id!=0) ||
-			(i && (type<prev_type || (type==prev_type && id<=prev_id))) || !size ||
-			(offset&(HCP_ALIGNMENT-1u)) || offset<last_end || offset>total || size>total-offset)
-			return HCU_ASSET_PROFILE_E_BOUNDS;
-		sha256_init(&sha); at=offset; remaining=size;
-		while(remaining) {
-			uint32_t take=remaining<sizeof(scratch)?remaining:(uint32_t)sizeof(scratch);
-			if(!read_bytes(reader,context,at,scratch,take)) return HCU_ASSET_PROFILE_E_BOUNDS;
-			sha256_update(&sha,scratch,take); at+=take; remaining-=take;
+		uint32_t type,id,off,n,lo=0,ls=0,idx=0,nseg=1,at,rem; sha256_context segsha;
+		if(!rd(reader,context,doff+i*rs,row,rs)) return HCU_ASSET_PROFILE_E_BOUNDS;
+		type=le32(row); id=le32(row+4); off=le32(row+8);
+		if(ver==1) n=le32(row+12);
+		else { n=le32(row+12); lo=le32(row+16); ls=le32(row+20); idx=le32(row+24); nseg=le32(row+28); }
+		uint64_t canonical=((uint64_t)last_end+15u)&~(uint64_t)15u;
+		if(type<1||type>3||(type!=2&&id)||!n||(ver==1&&type==2&&n>65536u)||
+			(off&15u)||off!=canonical||off>total||n>total-off) return HCU_ASSET_PROFILE_E_BOUNDS;
+		if(!zeroes(&(hcu_asset_profile_view){.read_at=reader,.reader_context=context,.total_bytes=total},last_end,off-last_end)) return HCU_ASSET_PROFILE_E_FORMAT;
+		if(ver==1) {
+			if(i&&(type<pt||(type==pt&&id<=pi))) return HCU_ASSET_PROFILE_E_FORMAT;
+			sha256_init(&segsha); at=off; rem=n;
+			while(rem) { uint32_t k=rem<sizeof(buf)?rem:(uint32_t)sizeof(buf); if(!rd(reader,context,at,buf,k)) return HCU_ASSET_PROFILE_E_BOUNDS; sha256_update(&segsha,buf,k); at+=k; rem-=k; }
+			sha256_final(&segsha,dig); if(memcmp(dig,row+16,32)) return HCU_ASSET_PROFILE_E_HASH;
+		} else {
+			if(!ls||!nseg||nseg>count||idx>=nseg||n>65536u||lo>ls||n>ls-lo) return HCU_ASSET_PROFILE_E_FORMAT;
+			if(!i || type!=pt || id!=pi) {
+				if(in_logical && (prev_index+1!=seg_count || logical_off!=logical_size)) return HCU_ASSET_PROFILE_E_FORMAT;
+				if(i&&(type<pt||(type==pt&&id<=pi))) return HCU_ASSET_PROFILE_E_FORMAT;
+				if(idx!=0||lo!=0) return HCU_ASSET_PROFILE_E_FORMAT;
+				logical_size=ls; logical_off=0; seg_count=nseg; prev_index=0; in_logical=1; memcpy(expected_logical,row+64,32); sha256_init(&logical_sha);
+			} else if(idx!=prev_index+1||lo!=logical_off||ls!=logical_size||nseg!=seg_count||memcmp(expected_logical,row+64,32)) return HCU_ASSET_PROFILE_E_FORMAT;
+			sha256_init(&segsha); at=off; rem=n;
+			while(rem) { uint32_t k=rem<sizeof(buf)?rem:(uint32_t)sizeof(buf); if(!rd(reader,context,at,buf,k)) return HCU_ASSET_PROFILE_E_BOUNDS; sha256_update(&segsha,buf,k); sha256_update(&logical_sha,buf,k); at+=k; rem-=k; }
+			sha256_final(&segsha,dig); if(memcmp(dig,row+32,32)) return HCU_ASSET_PROFILE_E_HASH;
+			logical_off+=n; prev_index=idx;
+			if(idx+1==nseg) { sha256_final(&logical_sha,dig); if(logical_off!=logical_size||memcmp(dig,row+64,32)) return HCU_ASSET_PROFILE_E_HASH; in_logical=0; }
 		}
-		sha256_final(&sha,digest);
-		if(memcmp(digest,row+16,32)) return HCU_ASSET_PROFILE_E_HASH;
-		last_end=offset+size; prev_type=type; prev_id=id;
+		last_end=off+n; pt=type; pi=id;
 	}
-	if(last_end!=total) return HCU_ASSET_PROFILE_E_FORMAT;
-	/* Publish only after validating roots, using a local candidate until then. */
+	if(in_logical||last_end!=total) return HCU_ASSET_PROFILE_E_FORMAT;
 	{
-		hcu_asset_profile_view candidate;
-		candidate.read_at=reader; candidate.reader_context=context; candidate.memory_image=0;
-		candidate.profile_id=profile; candidate.total_bytes=total; candidate.chunk_count=count;
-		candidate.directory_bytes=dir_off+dir_size;
-	{
-		hcu_asset_chunk_view e;
-		if(hcu_asset_profile_lookup(&candidate,HCU_ASSET_CHUNK_CE,0,&e)!=HCU_ASSET_PROFILE_OK ||
-			hcu_asset_profile_lookup(&candidate,HCU_ASSET_CHUNK_SOUND_META,0,&e)!=HCU_ASSET_PROFILE_OK)
-			return HCU_ASSET_PROFILE_E_FORMAT;
-	}
-		*view=candidate;
+		hcu_asset_profile_view v; hcu_asset_chunk_view e;
+		memset(&v,0,sizeof(v)); v.profile_id=profile; v.total_bytes=total; v.chunk_count=count; v.directory_bytes=doff+dsize; v.version=ver; v.record_bytes=rs; v.read_at=reader; v.reader_context=context;
+		if(hcu_asset_profile_lookup(&v,1,0,&e)||hcu_asset_profile_lookup(&v,3,0,&e)) return HCU_ASSET_PROFILE_E_FORMAT;
+		*view=v;
 	}
 	return HCU_ASSET_PROFILE_OK;
 }
+typedef struct { const uint8_t *p; size_t n; } memr;
+static int memread(void *c,uint32_t o,void *d,uint32_t n) { memr*m=c; if(o>m->n||n>m->n-o)return -1; memcpy(d,m->p+o,n);return 0; }
+int hcu_asset_profile_preflight(const void *p,size_t n,uint32_t id,hcu_asset_profile_view *v)
+{ memr m; hcu_asset_profile_view t; int r; if(!p||n>0xffffffffu)return HCU_ASSET_PROFILE_E_ARGUMENT; m.p=p;m.n=n;r=hcu_asset_profile_preflight_reader(memread,&m,(uint32_t)n,id,&t);if(r)return r;t.memory_image=p;t.read_at=0;t.reader_context=0;*v=t;return 0; }
 
-typedef struct { const uint8_t *bytes; size_t size; } memory_reader;
-static int memory_read(void *context,uint32_t offset,void *destination,uint32_t size)
-{
-	memory_reader *m=(memory_reader *)context;
-	if(offset>m->size || size>m->size-offset) return -1;
-	memcpy(destination,m->bytes+offset,size); return 0;
-}
-int hcu_asset_profile_preflight(const void *image,size_t size,uint32_t profile,hcu_asset_profile_view *view)
-{
-	int rc;
-	if(!image || size>0xffffffffu) return HCU_ASSET_PROFILE_E_ARGUMENT;
-	{
-		memory_reader m; hcu_asset_profile_view candidate;
-		m.bytes=(const uint8_t *)image; m.size=size;
-		rc=hcu_asset_profile_preflight_reader(memory_read,&m,(uint32_t)size,profile,&candidate);
-		if(rc!=HCU_ASSET_PROFILE_OK) return rc;
-		candidate.memory_image=(const uint8_t *)image; candidate.read_at=0; candidate.reader_context=0;
-		*view=candidate;
-	}
-	return HCU_ASSET_PROFILE_OK;
-}
 int hcu_asset_profile_lookup(const hcu_asset_profile_view *v,uint32_t type,uint32_t id,hcu_asset_chunk_view *out)
 {
-	uint32_t low=0,high;
-	if(!v || !out) return HCU_ASSET_PROFILE_E_ARGUMENT;
-	high=v->chunk_count;
-	/* The preflight proved strict (type,id) ordering. Stream O(log N) records
-	 * instead of retaining the roster directory or scanning it per request. */
-	while(low<high) {
-		uint32_t middle=low+(high-low)/2u;
-		hcu_asset_chunk_view entry;
-		if(!read_entry(v,middle,&entry)) return HCU_ASSET_PROFILE_E_BOUNDS;
-		if(entry.type==type && entry.chunk_id==id) { *out=entry; return HCU_ASSET_PROFILE_OK; }
-		if(entry.type<type || (entry.type==type && entry.chunk_id<id)) low=middle+1u;
-		else high=middle;
+	uint32_t lo=0,hi; if(!v||!out)return HCU_ASSET_PROFILE_E_ARGUMENT; hi=v->chunk_count;
+	while(lo<hi) { uint32_t m=lo+(hi-lo)/2; hcu_asset_chunk_view e; if(!read_entry(v,m,&e))return HCU_ASSET_PROFILE_E_BOUNDS;
+		if(e.type==type&&e.chunk_id==id) {
+			if(v->version==2) { uint32_t first=e.first_segment; hcu_asset_chunk_view start;
+				if(first>m||!read_entry(v,first,&start)||start.type!=type||start.chunk_id!=id||start.first_segment!=first)return HCU_ASSET_PROFILE_E_BOUNDS;
+				e=start;
+			}
+			*out=e;return 0; }
+		if(e.type<type||(e.type==type&&e.chunk_id<id))lo=m+1;else hi=m;
+	} return HCU_ASSET_PROFILE_E_FORMAT;
+}
+static int read_range_unchecked(const hcu_asset_profile_view*v,const hcu_asset_chunk_view*e,uint32_t offset,uint8_t*dst,uint32_t size)
+{
+	uint32_t first=e->first_segment,count=e->segment_count,end=offset+size,lo=0,hi=count,done=0,i;
+	if(first>v->chunk_count||count>v->chunk_count-first||!count)return 0;
+	/* HCP2 logical offsets are contiguous and sorted, so locate the first
+	 * intersecting segment in logarithmic time before reading the requested span. */
+	if(v->version==2) while(lo<hi) { uint32_t mid=lo+(hi-lo)/2u,row=first+mid,base,n;uint8_t b[96];
+		uint32_t ra=HCP_HEADER_SIZE+row*v->record_bytes;
+		if(v->memory_image)memcpy(b,v->memory_image+ra,v->record_bytes);else if(!rd(v->read_at,v->reader_context,ra,b,v->record_bytes))return 0;
+		if(le32(b)!=e->type||le32(b+4)!=e->chunk_id||le32(b+24)!=mid||le32(b+28)!=count||le32(b+20)!=e->size)return 0;
+		base=le32(b+16);n=le32(b+12);
+		if(!n||n>HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES||base>e->size||n>e->size-base)return 0;
+		if(base+n<=offset)lo=mid+1;else hi=mid;
 	}
-	return HCU_ASSET_PROFILE_E_FORMAT;
+	for(i=lo;i<count&&done<size;i++) { uint8_t b[96];uint32_t row=first+i,off,n,base=0,seglo,take,ra;
+		ra=HCP_HEADER_SIZE+row*v->record_bytes;
+		if(v->memory_image)memcpy(b,v->memory_image+ra,v->record_bytes);else if(!rd(v->read_at,v->reader_context,ra,b,v->record_bytes))return 0;
+		if(le32(b)!=e->type||le32(b+4)!=e->chunk_id)return 0;
+		off=le32(b+8);n=v->version==1?le32(b+12):le32(b+12);
+		if(v->version==2){base=le32(b+16);if(!n||n>HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES||le32(b+24)!=i||le32(b+28)!=count||le32(b+20)!=e->size||base>e->size||n>e->size-base)return 0;}
+		if(end<=base)break;
+		if(offset>=base+n)continue;
+		seglo=offset>base?offset:base;{uint32_t segend=end<base+n?end:base+n;take=segend-seglo;}
+		if(off>v->total_bytes||n>v->total_bytes-off||take>n-(seglo-base))return 0;
+		if(v->memory_image)memcpy(dst+done,v->memory_image+off+(seglo-base),take);else if(!rd(v->read_at,v->reader_context,off+(seglo-base),dst+done,take))return 0;
+		done+=take;
+	}
+	return done==size;
+}
+int hcu_asset_profile_read_range(const hcu_asset_profile_view*v,uint32_t type,uint32_t id,uint32_t off,void*dst,uint32_t n)
+{ hcu_asset_chunk_view e; if(!v||(!dst&&n))return HCU_ASSET_PROFILE_E_ARGUMENT; if(hcu_asset_profile_lookup(v,type,id,&e))return HCU_ASSET_PROFILE_E_FORMAT; if(off>e.size||n>e.size-off)return HCU_ASSET_PROFILE_E_BOUNDS; return read_range_unchecked(v,&e,off,(uint8_t*)dst,n)?0:HCU_ASSET_PROFILE_E_BOUNDS; }
+/* Reload one directory record using bounds derived from the preflighted view,
+ * then prove it still belongs to this logical chunk before trusting its extent. */
+static int read_segment_record(const hcu_asset_profile_view *v,
+	const hcu_asset_chunk_view *e, uint32_t relative_index, uint8_t row[HCP2_RECORD_SIZE])
+{
+	uint32_t physical_index, row_at, offset, segment_size, logical_size, logical_offset;
+	if(!v || !e || v->version!=2 || v->record_bytes!=HCP2_RECORD_SIZE ||
+		e->first_segment>=v->chunk_count || !e->segment_count ||
+		e->segment_count>v->chunk_count-e->first_segment || relative_index>=e->segment_count)
+		return 0;
+	physical_index=e->first_segment+relative_index;
+	row_at=HCP_HEADER_SIZE+physical_index*HCP2_RECORD_SIZE;
+	if(row_at>v->directory_bytes || HCP2_RECORD_SIZE>v->directory_bytes-row_at ||
+		row_at>v->total_bytes || HCP2_RECORD_SIZE>v->total_bytes-row_at)
+		return 0;
+	if(!rawread(v,row_at,row,HCP2_RECORD_SIZE))return 0;
+	offset=le32(row+8); segment_size=le32(row+12); logical_offset=le32(row+16);
+	logical_size=le32(row+20);
+	if(le32(row)!=e->type || le32(row+4)!=e->chunk_id ||
+		le32(row+24)!=relative_index || le32(row+28)!=e->segment_count ||
+		logical_size!=e->size || memcmp(row+64,e->sha256,32) ||
+		!segment_size || segment_size>HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES ||
+		logical_offset>logical_size || segment_size>logical_size-logical_offset ||
+		offset>v->total_bytes || segment_size>v->total_bytes-offset)
+		return 0;
+	return 1;
 }
 
-int hcu_asset_profile_read_chunk(const hcu_asset_profile_view *v,uint32_t type,uint32_t id,
-	void *destination,uint32_t capacity)
+static int verify_segment_hashes(const hcu_asset_profile_view*v,const hcu_asset_chunk_view*e)
 {
-	hcu_asset_chunk_view e; uint8_t scratch[HCP_SCRATCH],digest[32];
-	sha256_context sha; uint32_t at,remaining,written=0; uint8_t copied_digest[32];
-	if(!v || !destination) return HCU_ASSET_PROFILE_E_ARGUMENT;
-	if(hcu_asset_profile_lookup(v,type,id,&e)!=HCU_ASSET_PROFILE_OK) return HCU_ASSET_PROFILE_E_FORMAT;
-	if(capacity<e.size) return HCU_ASSET_PROFILE_E_MEMORY;
-	sha256_init(&sha); at=e.offset; remaining=e.size;
-	while(remaining) {
-		uint32_t take=remaining<sizeof(scratch)?remaining:(uint32_t)sizeof(scratch);
-		int ok;
-		if(v->memory_image) { memcpy(scratch,v->memory_image+at,take); ok=1; }
-		else ok=read_bytes(v->read_at,v->reader_context,at,scratch,take);
-		if(!ok) return HCU_ASSET_PROFILE_E_BOUNDS;
-		sha256_update(&sha,scratch,take);
-		at+=take; remaining-=take;
+	uint8_t row[HCP2_RECORD_SIZE],buf[HCP_SCRATCH],digest[32];
+	uint32_t i,expected_offset=0;
+	sha256_context sha;
+	if(v->version==1)return 1;
+	if(!e->segment_count || e->first_segment>=v->chunk_count ||
+		e->segment_count>v->chunk_count-e->first_segment)return 0;
+	for(i=0;i<e->segment_count;i++) {
+		uint32_t offset,segment_size,at,remaining;
+		if(!read_segment_record(v,e,i,row))return 0;
+		offset=le32(row+8); segment_size=le32(row+12);
+		if(le32(row+16)!=expected_offset)return 0;
+		at=offset; remaining=segment_size; sha256_init(&sha);
+		while(remaining) {
+			uint32_t take=remaining<sizeof(buf)?remaining:(uint32_t)sizeof(buf);
+			if(!rawread(v,at,buf,take))return 0;
+			sha256_update(&sha,buf,take); at+=take; remaining-=take;
+		}
+		sha256_final(&sha,digest);
+		if(memcmp(digest,row+32,32))return 0;
+		expected_offset+=segment_size;
 	}
-	sha256_final(&sha,digest);
-	if(memcmp(digest,e.sha256,32)) return HCU_ASSET_PROFILE_E_HASH;
-	/* Integrity is established before caller-visible bytes are copied. */
-	at=e.offset; remaining=e.size;
-	sha256_init(&sha);
-	while(remaining) {
-		uint32_t take=remaining<sizeof(scratch)?remaining:(uint32_t)sizeof(scratch);
-		int ok;
-		if(v->memory_image) { memcpy(scratch,v->memory_image+at,take); ok=1; }
-		else ok=read_bytes(v->read_at,v->reader_context,at,scratch,take);
-		if(!ok) return HCU_ASSET_PROFILE_E_BOUNDS;
-		sha256_update(&sha,scratch,take);
-		memcpy((uint8_t *)destination+written,scratch,take);
-		written+=take; at+=take; remaining-=take;
-	}
-	sha256_final(&sha,copied_digest);
-	if(memcmp(copied_digest,e.sha256,32)) {
-		memset(destination,0,e.size);
-		return HCU_ASSET_PROFILE_E_HASH;
-	}
+	return expected_offset==e->size;
+}
+int hcu_asset_profile_read_chunk(const hcu_asset_profile_view*v,uint32_t type,uint32_t id,void*dst,uint32_t cap)
+{
+	hcu_asset_chunk_view e;uint8_t b[HCP_SCRATCH],dig[32];sha256_context s;uint32_t at=0;
+	if(!v||!dst)return HCU_ASSET_PROFILE_E_ARGUMENT;
+	if(hcu_asset_profile_lookup(v,type,id,&e))return HCU_ASSET_PROFILE_E_FORMAT;
+	if(v->version==1&&type==2&&e.size>65536u)return HCU_ASSET_PROFILE_E_BOUNDS;
+	if(cap<e.size)return HCU_ASSET_PROFILE_E_MEMORY;
+	if(!verify_segment_hashes(v,&e))return HCU_ASSET_PROFILE_E_HASH;
+	sha256_init(&s);while(at<e.size){uint32_t k=e.size-at<sizeof(b)?e.size-at:(uint32_t)sizeof(b);if(!read_range_unchecked(v,&e,at,b,k))return HCU_ASSET_PROFILE_E_BOUNDS;sha256_update(&s,b,k);at+=k;}sha256_final(&s,dig);if(memcmp(dig,e.sha256,32))return HCU_ASSET_PROFILE_E_HASH;
+	at=0;sha256_init(&s);while(at<e.size){uint32_t k=e.size-at<sizeof(b)?e.size-at:(uint32_t)sizeof(b);if(!read_range_unchecked(v,&e,at,b,k)){memset(dst,0,e.size);return HCU_ASSET_PROFILE_E_BOUNDS;}sha256_update(&s,b,k);memcpy((uint8_t*)dst+at,b,k);at+=k;}sha256_final(&s,dig);if(memcmp(dig,e.sha256,32)||!verify_segment_hashes(v,&e)){memset(dst,0,e.size);return HCU_ASSET_PROFILE_E_HASH;}return 0;
+}
+int hcu_asset_profile_lifetime(uint32_t t,uint32_t*l){if(!l)return -1;if(t==1||t==3)*l=1;else if(t==2)*l=2;else return -3;return 0;}
+int hcu_asset_profile_accounting(const hcu_asset_profile_view*v,uint32_t t,uint32_t id,uint32_t*b)
+{hcu_asset_chunk_view e;uint64_t n;if(!v||!b)return -1;if(hcu_asset_profile_lookup(v,t,id,&e))return -3;n=((uint64_t)e.size+15)&~(uint64_t)15;if(n>0xffffffffu)return -6;*b=(uint32_t)n;return 0;}
+
+/* Residency: a fixed table of resident segments with independent CE pins, DMA/GS
+ * leases and gameplay references. Every transition is checked before mutation. */
+static hcu_asset_residency_entry *residency_find(hcu_asset_residency *t, uint32_t type, uint32_t id, uint32_t seg)
+{
+	uint32_t i;
+	for (i = 0; i < t->count; i++)
+		if (t->entries[i].type == type && t->entries[i].chunk_id == id && t->entries[i].segment == seg) return &t->entries[i];
+	return 0;
+}
+static const hcu_asset_residency_entry *residency_find_const(const hcu_asset_residency *t, uint32_t type, uint32_t id, uint32_t seg)
+{ return residency_find((hcu_asset_residency *)t, type, id, seg); }
+
+int hcu_asset_profile_segment_info(const hcu_asset_profile_view *v, uint32_t type, uint32_t id,
+	uint32_t seg, uint32_t *bytes, uint32_t *logical_offset)
+{
+	hcu_asset_chunk_view e; uint8_t row[HCP2_RECORD_SIZE];
+	if (!v || !bytes || !logical_offset) return HCU_ASSET_PROFILE_E_ARGUMENT;
+	if (v->version != 2) return HCU_ASSET_PROFILE_E_PROFILE;
+	if (hcu_asset_profile_lookup(v, type, id, &e)) return HCU_ASSET_PROFILE_E_FORMAT;
+	if (!read_segment_record(v, &e, seg, row)) return HCU_ASSET_PROFILE_E_BOUNDS;
+	*bytes = le32(row+12); *logical_offset = le32(row+16);
 	return HCU_ASSET_PROFILE_OK;
 }
-int hcu_asset_profile_lifetime(uint32_t type,uint32_t *lifetime)
+
+int hcu_asset_profile_read_segment(const hcu_asset_profile_view *v, uint32_t type, uint32_t id,
+	uint32_t seg, void *dst, uint32_t capacity)
 {
-	if(!lifetime) return HCU_ASSET_PROFILE_E_ARGUMENT;
-	if(type==HCU_ASSET_CHUNK_CE || type==HCU_ASSET_CHUNK_SOUND_META)
-		*lifetime=HCU_ASSET_LIFETIME_MAP_UNLOAD;
-	else if(type==HCU_ASSET_CHUNK_MEDIA) *lifetime=HCU_ASSET_LIFETIME_REQUEST;
-	else return HCU_ASSET_PROFILE_E_FORMAT;
+	hcu_asset_chunk_view e; uint8_t row[HCP2_RECORD_SIZE], digest[32]; sha256_context sha;
+	uint32_t offset, size;
+	if (!v || !dst) return HCU_ASSET_PROFILE_E_ARGUMENT;
+	if (v->version != 2) return HCU_ASSET_PROFILE_E_PROFILE;
+	if (hcu_asset_profile_lookup(v, type, id, &e)) return HCU_ASSET_PROFILE_E_FORMAT;
+	if (!read_segment_record(v, &e, seg, row)) return HCU_ASSET_PROFILE_E_BOUNDS;
+	offset = le32(row+8); size = le32(row+12);
+	if (size > HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES) return HCU_ASSET_PROFILE_E_BOUNDS;
+	if (capacity < size) return HCU_ASSET_PROFILE_E_MEMORY;
+	if (!rawread(v, offset, dst, size)) return HCU_ASSET_PROFILE_E_BOUNDS;
+	sha256_init(&sha); sha256_update(&sha, dst, size); sha256_final(&sha, digest);
+	if (memcmp(digest, row+32, 32)) { memset(dst, 0, size); return HCU_ASSET_PROFILE_E_HASH; }
 	return HCU_ASSET_PROFILE_OK;
 }
-int hcu_asset_profile_accounting(const hcu_asset_profile_view *v,uint32_t type,uint32_t id,uint32_t *bytes)
+
+int hcu_asset_residency_init(hcu_asset_residency *t, hcu_asset_residency_entry *entries, uint32_t capacity)
 {
-	hcu_asset_chunk_view e; uint64_t total;
-	if(!v || !bytes) return HCU_ASSET_PROFILE_E_ARGUMENT;
-	if(hcu_asset_profile_lookup(v,type,id,&e)!=HCU_ASSET_PROFILE_OK) return HCU_ASSET_PROFILE_E_FORMAT;
-	/* The directory stays in the source. Charge the resident view once under
-	 * its owner; this query reports one independently aligned decode target. */
-	total=0;
-	total+=((uint64_t)e.size+HCP_ALIGNMENT-1u)&~(uint64_t)(HCP_ALIGNMENT-1u);
-	if(total>0xffffffffu) return HCU_ASSET_PROFILE_E_MEMORY;
-	*bytes=(uint32_t)total; return HCU_ASSET_PROFILE_OK;
+	if (!t || (!entries && capacity)) return HCU_ASSET_PROFILE_E_ARGUMENT;
+	memset(t, 0, sizeof(*t));
+	t->entries = entries; t->capacity = capacity;
+	if (entries && capacity) memset(entries, 0, sizeof(*entries) * capacity);
+	return HCU_ASSET_PROFILE_OK;
+}
+
+int hcu_asset_residency_pin(hcu_asset_residency *t, const hcu_asset_profile_view *v,
+	uint32_t type, uint32_t id, uint32_t seg, void *storage, uint32_t capacity)
+{
+	hcu_asset_residency_entry *e; int rc, created = 0; uint32_t bytes, logical;
+	if (!t || !v) return HCU_ASSET_PROFILE_E_ARGUMENT;
+	e = residency_find(t, type, id, seg);
+	if (e && e->resident) {
+		if (e->pin_count == UINT32_MAX) return HCU_ASSET_PROFILE_E_STATE;
+		e->pin_count++; return HCU_ASSET_PROFILE_OK;
+	}
+	rc = hcu_asset_profile_segment_info(v, type, id, seg, &bytes, &logical);
+	if (rc) return rc;
+	if (!storage || capacity < bytes) return HCU_ASSET_PROFILE_E_MEMORY;
+	if (t->resident_bytes > UINT32_MAX - bytes) return HCU_ASSET_PROFILE_E_MEMORY;
+	if (!e) {
+		uint32_t i;
+		/* An evicted entry with no reader is free; reuse it before growing. */
+		for (i = 0; i < t->count && !e; ++i)
+			if (!t->entries[i].resident && !t->entries[i].pin_count &&
+				!t->entries[i].lease_count && !t->entries[i].gameplay_refs)
+				e = &t->entries[i];
+		if (!e) {
+			if (t->count >= t->capacity) { t->refused_pins++; return HCU_ASSET_PROFILE_E_MEMORY; }
+			e = &t->entries[t->count++];
+			created = 1;
+		}
+		memset(e, 0, sizeof(*e));
+		e->type = type; e->chunk_id = id; e->segment = seg;
+	}
+	rc = hcu_asset_profile_read_segment(v, type, id, seg, storage, capacity);
+	if (rc) { t->verify_failures++; if (created) t->count--; return rc; }
+	e->bytes = bytes; e->storage = storage; e->resident = 1; e->pin_count = 1;
+	t->resident_bytes += bytes;
+	if (t->resident_bytes > t->resident_high_water) t->resident_high_water = t->resident_bytes;
+	return HCU_ASSET_PROFILE_OK;
+}
+
+int hcu_asset_residency_unpin(hcu_asset_residency *t, uint32_t type, uint32_t id, uint32_t seg)
+{
+	hcu_asset_residency_entry *e = t ? residency_find(t, type, id, seg) : 0;
+	if (!e || !e->resident || !e->pin_count) return HCU_ASSET_PROFILE_E_STATE;
+	e->pin_count--; return HCU_ASSET_PROFILE_OK;
+}
+
+int hcu_asset_residency_lease(hcu_asset_residency *t, uint32_t type, uint32_t id, uint32_t seg)
+{
+	hcu_asset_residency_entry *e = t ? residency_find(t, type, id, seg) : 0;
+	if (!e || !e->resident) return HCU_ASSET_PROFILE_E_STATE;
+	if (e->lease_count == UINT32_MAX) return HCU_ASSET_PROFILE_E_STATE;
+	e->lease_count++; return HCU_ASSET_PROFILE_OK;
+}
+
+int hcu_asset_residency_release_lease(hcu_asset_residency *t, uint32_t type, uint32_t id, uint32_t seg)
+{
+	hcu_asset_residency_entry *e = t ? residency_find(t, type, id, seg) : 0;
+	if (!e || !e->lease_count) return HCU_ASSET_PROFILE_E_STATE;
+	e->lease_count--; return HCU_ASSET_PROFILE_OK;
+}
+
+int hcu_asset_residency_gameplay_ref(hcu_asset_residency *t, uint32_t type, uint32_t id, uint32_t seg, int delta)
+{
+	hcu_asset_residency_entry *e = t ? residency_find(t, type, id, seg) : 0;
+	if (!e || !e->resident) return HCU_ASSET_PROFILE_E_STATE;
+	if (delta > 0) { if (e->gameplay_refs == UINT32_MAX) return HCU_ASSET_PROFILE_E_STATE; e->gameplay_refs++; return HCU_ASSET_PROFILE_OK; }
+	if (delta < 0) { if (!e->gameplay_refs) return HCU_ASSET_PROFILE_E_STATE; e->gameplay_refs--; return HCU_ASSET_PROFILE_OK; }
+	return HCU_ASSET_PROFILE_E_ARGUMENT;
+}
+
+int hcu_asset_residency_evict(hcu_asset_residency *t, uint32_t type, uint32_t id, uint32_t seg, void **storage_out)
+{
+	hcu_asset_residency_entry *e = t ? residency_find(t, type, id, seg) : 0;
+	if (!e || !e->resident) return HCU_ASSET_PROFILE_E_STATE;
+	if (e->pin_count || e->lease_count || e->gameplay_refs) { t->refused_evictions++; return HCU_ASSET_PROFILE_E_BUSY; }
+	if (storage_out) *storage_out = e->storage;
+	t->resident_bytes -= e->bytes;
+	e->resident = 0; e->bytes = 0; e->storage = 0;
+	t->evictions++;
+	return HCU_ASSET_PROFILE_OK;
+}
+
+int hcu_asset_residency_state(const hcu_asset_residency *t, uint32_t type, uint32_t id, uint32_t seg,
+	const hcu_asset_residency_entry **entry)
+{
+	const hcu_asset_residency_entry *e;
+	if (!t || !entry) return HCU_ASSET_PROFILE_E_ARGUMENT;
+	e = residency_find_const(t, type, id, seg);
+	if (!e) return HCU_ASSET_PROFILE_E_STATE;
+	*entry = e; return HCU_ASSET_PROFILE_OK;
 }
