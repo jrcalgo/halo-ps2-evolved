@@ -1,0 +1,1057 @@
+{
+  "current_target_settings_investigation": [
+    {
+      "current_run_ini_path": "build/hcu-ps2-closure/emulator-m1-interpreter-c98db8627d234473a8dc263c3288852d/data/PCSX2/inis/PCSX2.ini",
+      "current_run_ini_sha256": "1e17dddb254825cf2b8c485fdcd6516d84210c4670f5a3e66d2dbaa4cb8a448e",
+      "matching_retained_paths": [],
+      "mode": "interpreter",
+      "reported_sha256": "6544719db660b6be9b277f983a5a270ff9eb83ccf66c2e77d38a164ee6383a85",
+      "status": "unavailable"
+    },
+    {
+      "current_run_ini_path": "build/hcu-ps2-closure/emulator-m1-recompiler-5b536c94e7b44a4ca19636cc2cfecacd/data/PCSX2/inis/PCSX2.ini",
+      "current_run_ini_sha256": "68ed8b98c02e5bce971365c6e26322f781b58dc3af980b45b262fe9a0faa0530",
+      "matching_retained_paths": [],
+      "mode": "recompiler",
+      "reported_sha256": "29091d26012bf2b9470f2abcdd10b7cca2e8d7ae6e2c6fc2f4134348c52540a2",
+      "status": "unavailable"
+    }
+  ],
+  "file_hash_checks": 53,
+  "format": "hcu-m2-step7-step8-target-identity-bindings-v1",
+  "identity_policy": "A binding is recorded only when the current bytes at the named path reproduce the digest. External BIOS/AppImage paths are read and hashed in place; no proprietary bytes are copied into the repository. Historical ELF/build-report pins stay unbound unless their original bytes are found.",
+  "ledger_path": "docs/reports/m2-step7-step8-closure-ledger-2026-10-22.json",
+  "ledger_sha256": "e26aa9b9c5f146d1066bd302f9fd20c12cb2d7f24fe4cfc40da2aa7c1513ec7b",
+  "limitation": "This artifact adds identity references only. It does not upgrade result/evidence levels, the all-map guest qualification, renderer acceptance, or Step 7/8 closure.",
+  "package_index_path": "build/m2-mp-render-assets/tag-bsp-capacity-floor-v2.json",
+  "package_index_sha256": "5130b6332f6e395481f70ea1445a3ac161845dcaa5fae228abac0a5bb788d19a",
+  "row_unresolved_count_after_expected_when_bindings_are_consumed": {
+    "4": 0,
+    "5": 2,
+    "9": 0,
+    "12": 2,
+    "13": 0,
+    "24": 2
+  },
+  "row_unresolved_count_before_from_current_audit": {},
+  "target_rows": [
+    4,
+    5,
+    9,
+    12,
+    13,
+    24
+  ],
+  "unavailable_or_unbound_historical_identities": [
+    {
+      "candidate_files_searched": 1639,
+      "core_row_index": 24,
+      "current_run_ini_path": "build/hcu-ps2-closure/emulator-m1-interpreter-c98db8627d234473a8dc263c3288852d/data/PCSX2/inis/PCSX2.ini",
+      "current_run_ini_sha256": "1e17dddb254825cf2b8c485fdcd6516d84210c4670f5a3e66d2dbaa4cb8a448e",
+      "matching_candidate_paths": [],
+      "reason": "no retained candidate settings file matches the report-pinned digest; run directory retains only a different current INI, so the historical settings bytes cannot be bound",
+      "role": "interpreter PCSX2 settings",
+      "sha256": "6544719db660b6be9b277f983a5a270ff9eb83ccf66c2e77d38a164ee6383a85"
+    },
+    {
+      "candidate_files_searched": 1639,
+      "core_row_index": 24,
+      "current_run_ini_path": "build/hcu-ps2-closure/emulator-m1-recompiler-5b536c94e7b44a4ca19636cc2cfecacd/data/PCSX2/inis/PCSX2.ini",
+      "current_run_ini_sha256": "68ed8b98c02e5bce971365c6e26322f781b58dc3af980b45b262fe9a0faa0530",
+      "matching_candidate_paths": [],
+      "reason": "no retained candidate settings file matches the report-pinned digest; run directory retains only a different current INI, so the historical settings bytes cannot be bound",
+      "role": "recompiler PCSX2 settings",
+      "sha256": "29091d26012bf2b9470f2abcdd10b7cca2e8d7ae6e2c6fc2f4134348c52540a2"
+    },
+    {
+      "core_row_index": 5,
+      "reason": "result manifests retain this ELF digest, but current ELF path bytes differ; no matching ELF file was found in the current build outputs",
+      "role": "all-map diagnostic ELF",
+      "sha256": "beee81293b9059ca2f51c04e6b49897e607e332750fe7f14fa201c2077258bf0"
+    },
+    {
+      "core_row_index": 12,
+      "reason": "result manifests retain this ELF digest, but current ELF path bytes differ; no matching ELF file was found in the current build outputs",
+      "role": "all-map diagnostic ELF",
+      "sha256": "beee81293b9059ca2f51c04e6b49897e607e332750fe7f14fa201c2077258bf0"
+    },
+    {
+      "core_row_index": 5,
+      "reason": "hash is cited in prose but no file with matching bytes is present in current build outputs",
+      "role": "all-map diagnostic build report",
+      "sha256": "613b3e3bf0f1cf5a45679050df9cb37839973379a5b0b644937af43c809e4c7c"
+    },
+    {
+      "core_row_index": 12,
+      "reason": "hash is cited in prose but no file with matching bytes is present in current build outputs",
+      "role": "all-map diagnostic build report",
+      "sha256": "613b3e3bf0f1cf5a45679050df9cb37839973379a5b0b644937af43c809e4c7c"
+    }
+  ],
+  "verified_binding_count": 57,
+  "verified_bindings": [
+    {
+      "basis": "current emulog.txt bytes match report-pinned guest-log SHA-256",
+      "bytes": 111440,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "log_hashes",
+        "reported_hash_pins"
+      ],
+      "core_row_index": 4,
+      "evidence_level": "PCSX2 recompiler",
+      "external_local_path": false,
+      "path": "build/hcu-ps2-closure/emulator-m1-recompiler-86589bd6ec8442599f1f40698d50abd5/emulog.txt",
+      "role": "PCSX2 guest log",
+      "sha256": "dd67e9d3a5ff447aad881e1079bfbac1f20888969bb305244cc47668c1656853",
+      "source_report": "docs/reports/m2-step8-mp-13-map-pcsx2-query-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query"
+    },
+    {
+      "basis": "current result.json bytes match report-pinned runner JSON SHA-256",
+      "bytes": 18551,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 4,
+      "evidence_level": "PCSX2 recompiler",
+      "external_local_path": false,
+      "path": "build/hcu-ps2-closure/emulator-m1-recompiler-86589bd6ec8442599f1f40698d50abd5/result.json",
+      "role": "PCSX2 run result manifest",
+      "sha256": "b72b3f69d8eeead6e87c227a1d0d98ab2351e3ed0560fad7cb8b72d0e308691f",
+      "source_report": "docs/reports/m2-step8-mp-13-map-pcsx2-query-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query"
+    },
+    {
+      "basis": "same exact BIOS bytes are path-bound by the paired current-target probe report",
+      "bytes": 4194304,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 4,
+      "evidence_level": "PCSX2 recompiler",
+      "external_local_path": true,
+      "path": "/home/ai/Documents/Halo/SCPH-30001.rom0",
+      "role": "PS2 BIOS ROM",
+      "sha256": "b0bf7184d50a209cf7ceb1ab0eb3a0c9b8c583f5f6b3c819e6536f282b93063b",
+      "source_report": "docs/reports/m2-step7-bsp-collision-pvs-current-target-probe-2026-10-22.json",
+      "step": 7,
+      "subcheck": "collision-pvs-query"
+    },
+    {
+      "basis": "path sourced from .local/emulator.json; bytes hash to the runner result.json pin and the report pin",
+      "bytes": 4194304,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 4,
+      "evidence_level": "PCSX2 recompiler",
+      "external_local_path": true,
+      "path": "/home/ai/Documents/Halo/SCPH-30001.rom0",
+      "role": "PS2 BIOS ROM",
+      "sha256": "b0bf7184d50a209cf7ceb1ab0eb3a0c9b8c583f5f6b3c819e6536f282b93063b",
+      "source_report": "docs/reports/m2-step8-mp-13-map-pcsx2-query-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query"
+    },
+    {
+      "basis": "path sourced from .local/emulator.json; bytes hash to the runner result.json pin and the report pin",
+      "bytes": 60119544,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 4,
+      "evidence_level": "PCSX2 recompiler",
+      "external_local_path": true,
+      "path": "/home/ai/.local/opt/pcsx2/pcsx2.AppImage",
+      "role": "PCSX2 AppImage",
+      "sha256": "0c46bb6a88aa2782b10853a7b07cf3387ba99cbef2b966372cd2315b8571abea",
+      "source_report": "docs/reports/m2-step8-mp-13-map-pcsx2-query-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2318336,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 5,
+      "evidence_level": "PCSX2 interpreter",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/beavercreek-all-bsps.hp2",
+      "role": "beavercreek all-BSP HP2 package",
+      "sha256": "4f95672c4233a63d30e94395010324076cb1454813facb54e48c065d7c776dfc",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query-interpreter"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2832384,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 5,
+      "evidence_level": "PCSX2 interpreter",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/bloodgulch-all-bsps.hp2",
+      "role": "bloodgulch all-BSP HP2 package",
+      "sha256": "ded2bca19058f51d7feed6b40149f421f7b1c2c7704f0918a42bacc5601dd011",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query-interpreter"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2684928,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 5,
+      "evidence_level": "PCSX2 interpreter",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/boardingaction-all-bsps.hp2",
+      "role": "boardingaction all-BSP HP2 package",
+      "sha256": "2c12e7c0cf555698b837397666b1f343a6864fe16deeffb0b0d4a007e869acd0",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query-interpreter"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2101248,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 5,
+      "evidence_level": "PCSX2 interpreter",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/carousel-all-bsps.hp2",
+      "role": "carousel all-BSP HP2 package",
+      "sha256": "e24191ed1e660dfb3c9c9bcd88abcff61c366690f6d903f3b0622eb2c2e751b4",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query-interpreter"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2142208,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 5,
+      "evidence_level": "PCSX2 interpreter",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/chillout-all-bsps.hp2",
+      "role": "chillout all-BSP HP2 package",
+      "sha256": "727abc7401a530892f1136f082a6254544915e0d85f2a068f63d9530189b1bf0",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query-interpreter"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2672640,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 5,
+      "evidence_level": "PCSX2 interpreter",
+      "external_local_path": false,
+      "path": "build/m2-mp-wind-package/damnation-all-bsps.hp2",
+      "role": "damnation all-BSP HP2 package",
+      "sha256": "ca41445cc9560035910fbc8c2fc7130175b707b1df2e8e51734d208c4ee2076d",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query-interpreter"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2156544,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 5,
+      "evidence_level": "PCSX2 interpreter",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/hangemhigh-all-bsps.hp2",
+      "role": "hangemhigh all-BSP HP2 package",
+      "sha256": "1e2a4df7a5ba17d0742bd30484fcfe63db011e6c47a87ac0f2d06ac6f5cab58f",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query-interpreter"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2041856,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 5,
+      "evidence_level": "PCSX2 interpreter",
+      "external_local_path": false,
+      "path": "build/m2-artifacts/longest-2fba411b-hcu6933490-all-bsps.hp2",
+      "role": "longest all-BSP HP2 package",
+      "sha256": "6f9c19feb4df9e7ec49e797ce3eb6f7cfbdef3c89c6363b12aab2f05359f5a5b",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query-interpreter"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2363392,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 5,
+      "evidence_level": "PCSX2 interpreter",
+      "external_local_path": false,
+      "path": "build/m2-mp-extra/prisoner-all-bsps.hp2",
+      "role": "prisoner all-BSP HP2 package",
+      "sha256": "3bb10f06c785da93fe0f7257be9f06519b7ccb6c155801a7a04a5e6d56352136",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query-interpreter"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2764800,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 5,
+      "evidence_level": "PCSX2 interpreter",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/putput-all-bsps.hp2",
+      "role": "putput all-BSP HP2 package",
+      "sha256": "6d66e4ecf9c51b3ae417d85356de9ff66c14bc9fc19dd4a2bd2a2954f6b4f3bd",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query-interpreter"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2144256,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 5,
+      "evidence_level": "PCSX2 interpreter",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/ratrace-all-bsps.hp2",
+      "role": "ratrace all-BSP HP2 package",
+      "sha256": "a735d4a5bef86cc7277ae888a1ef9da25f28f0ab6e45dff010da53dc41e685da",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query-interpreter"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 3166208,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 5,
+      "evidence_level": "PCSX2 interpreter",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/sidewinder-all-bsps.hp2",
+      "role": "sidewinder all-BSP HP2 package",
+      "sha256": "968ab65ea7ae6fbd15925ed28eb0f8eafc267c78f53150b59b4cc1dea2d017f5",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query-interpreter"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2140160,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 5,
+      "evidence_level": "PCSX2 interpreter",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/wizard-all-bsps.hp2",
+      "role": "wizard all-BSP HP2 package",
+      "sha256": "00bf468d4d8c96e234ef21e5bfb59b410cac7c3e8c9f4f848ea20fbfacf01c57",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query-interpreter"
+    },
+    {
+      "basis": "current run artifact bytes reproduce report-pinned digest; result status=failed; ELF pin=beee81293b9059ca2f51c04e6b49897e607e332750fe7f14fa201c2077258bf0",
+      "bytes": 18154,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 5,
+      "evidence_level": "PCSX2 interpreter",
+      "external_local_path": false,
+      "path": "build/hcu-ps2-closure/emulator-m1-recompiler-917db9651dd04ba7b358492437bec36b/result.json",
+      "role": "recompiler failed first attempt; timed out after 11 maps result manifest",
+      "sha256": "c92935e3a31c7ffb065717af7b44b77385c903d58466ba10140215313e25b921",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query-interpreter"
+    },
+    {
+      "basis": "current run artifact bytes reproduce report-pinned digest; result status=failed; ELF pin=beee81293b9059ca2f51c04e6b49897e607e332750fe7f14fa201c2077258bf0",
+      "bytes": 99153,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 5,
+      "evidence_level": "PCSX2 interpreter",
+      "external_local_path": false,
+      "path": "build/hcu-ps2-closure/emulator-m1-recompiler-917db9651dd04ba7b358492437bec36b/emulog.txt",
+      "role": "recompiler failed first attempt; timed out after 11 maps guest log",
+      "sha256": "65024d7763daeb3f44d83b45cde12e27ccc0421bae9c5926e0ba4e97a0c11787",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query-interpreter"
+    },
+    {
+      "basis": "current run artifact bytes reproduce report-pinned digest; result status=passed; ELF pin=beee81293b9059ca2f51c04e6b49897e607e332750fe7f14fa201c2077258bf0",
+      "bytes": 3598,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 5,
+      "evidence_level": "PCSX2 interpreter",
+      "external_local_path": false,
+      "path": "build/hcu-ps2-closure/emulator-m1-recompiler-067b2e2564d94f10b8bd3b956b7d2979/result.json",
+      "role": "recompiler successful all-13 recompiler run result manifest",
+      "sha256": "a8cc5da2c8c3a04b3aa5277456da743b370fe5dba69937bb5618292bcbd5a9a1",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query-interpreter"
+    },
+    {
+      "basis": "current run artifact bytes reproduce report-pinned digest; result status=passed; ELF pin=beee81293b9059ca2f51c04e6b49897e607e332750fe7f14fa201c2077258bf0",
+      "bytes": 110808,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 5,
+      "evidence_level": "PCSX2 interpreter",
+      "external_local_path": false,
+      "path": "build/hcu-ps2-closure/emulator-m1-recompiler-067b2e2564d94f10b8bd3b956b7d2979/emulog.txt",
+      "role": "recompiler successful all-13 recompiler run guest log",
+      "sha256": "d871200f50b2259f819f024a8f238951c783042aebe55c6fb411a3335b458a25",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query-interpreter"
+    },
+    {
+      "basis": "current run artifact bytes reproduce report-pinned digest; result status=passed; ELF pin=beee81293b9059ca2f51c04e6b49897e607e332750fe7f14fa201c2077258bf0",
+      "bytes": 3605,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 5,
+      "evidence_level": "PCSX2 interpreter",
+      "external_local_path": false,
+      "path": "build/hcu-ps2-closure/emulator-m1-interpreter-4567e94c92d245ffb74c31fcd26bf208/result.json",
+      "role": "interpreter successful all-13 interpreter run result manifest",
+      "sha256": "4d3c3b4c8cd1ff3e8bb53553c6aae526ba5bcd419ed6626f22c66dbaa66d4ade",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query-interpreter"
+    },
+    {
+      "basis": "current run artifact bytes reproduce report-pinned digest; result status=passed; ELF pin=beee81293b9059ca2f51c04e6b49897e607e332750fe7f14fa201c2077258bf0",
+      "bytes": 113006,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 5,
+      "evidence_level": "PCSX2 interpreter",
+      "external_local_path": false,
+      "path": "build/hcu-ps2-closure/emulator-m1-interpreter-4567e94c92d245ffb74c31fcd26bf208/emulog.txt",
+      "role": "interpreter successful all-13 interpreter run guest log",
+      "sha256": "7dae6dc1f90a62f9d60d4ca256faaa2f27e2852dfae44ab86efd2598600f0178",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 7,
+      "subcheck": "collision-pvs-query-interpreter"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2318336,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 12,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/beavercreek-all-bsps.hp2",
+      "role": "beavercreek all-BSP HP2 package",
+      "sha256": "4f95672c4233a63d30e94395010324076cb1454813facb54e48c065d7c776dfc",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-query-13"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2832384,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 12,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/bloodgulch-all-bsps.hp2",
+      "role": "bloodgulch all-BSP HP2 package",
+      "sha256": "ded2bca19058f51d7feed6b40149f421f7b1c2c7704f0918a42bacc5601dd011",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-query-13"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2684928,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 12,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/boardingaction-all-bsps.hp2",
+      "role": "boardingaction all-BSP HP2 package",
+      "sha256": "2c12e7c0cf555698b837397666b1f343a6864fe16deeffb0b0d4a007e869acd0",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-query-13"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2101248,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 12,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/carousel-all-bsps.hp2",
+      "role": "carousel all-BSP HP2 package",
+      "sha256": "e24191ed1e660dfb3c9c9bcd88abcff61c366690f6d903f3b0622eb2c2e751b4",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-query-13"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2142208,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 12,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/chillout-all-bsps.hp2",
+      "role": "chillout all-BSP HP2 package",
+      "sha256": "727abc7401a530892f1136f082a6254544915e0d85f2a068f63d9530189b1bf0",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-query-13"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2672640,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 12,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/m2-mp-wind-package/damnation-all-bsps.hp2",
+      "role": "damnation all-BSP HP2 package",
+      "sha256": "ca41445cc9560035910fbc8c2fc7130175b707b1df2e8e51734d208c4ee2076d",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-query-13"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2156544,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 12,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/hangemhigh-all-bsps.hp2",
+      "role": "hangemhigh all-BSP HP2 package",
+      "sha256": "1e2a4df7a5ba17d0742bd30484fcfe63db011e6c47a87ac0f2d06ac6f5cab58f",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-query-13"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2041856,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 12,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/m2-artifacts/longest-2fba411b-hcu6933490-all-bsps.hp2",
+      "role": "longest all-BSP HP2 package",
+      "sha256": "6f9c19feb4df9e7ec49e797ce3eb6f7cfbdef3c89c6363b12aab2f05359f5a5b",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-query-13"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2363392,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 12,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/m2-mp-extra/prisoner-all-bsps.hp2",
+      "role": "prisoner all-BSP HP2 package",
+      "sha256": "3bb10f06c785da93fe0f7257be9f06519b7ccb6c155801a7a04a5e6d56352136",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-query-13"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2764800,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 12,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/putput-all-bsps.hp2",
+      "role": "putput all-BSP HP2 package",
+      "sha256": "6d66e4ecf9c51b3ae417d85356de9ff66c14bc9fc19dd4a2bd2a2954f6b4f3bd",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-query-13"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2144256,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 12,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/ratrace-all-bsps.hp2",
+      "role": "ratrace all-BSP HP2 package",
+      "sha256": "a735d4a5bef86cc7277ae888a1ef9da25f28f0ab6e45dff010da53dc41e685da",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-query-13"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 3166208,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 12,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/sidewinder-all-bsps.hp2",
+      "role": "sidewinder all-BSP HP2 package",
+      "sha256": "968ab65ea7ae6fbd15925ed28eb0f8eafc267c78f53150b59b4cc1dea2d017f5",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-query-13"
+    },
+    {
+      "basis": "tag-bsp-capacity-floor-v2 package_path; current package bytes reproduce report-pinned package_sha256",
+      "bytes": 2140160,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 12,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/m2-mp-all-map-packages/wizard-all-bsps.hp2",
+      "role": "wizard all-BSP HP2 package",
+      "sha256": "00bf468d4d8c96e234ef21e5bfb59b410cac7c3e8c9f4f848ea20fbfacf01c57",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-query-13"
+    },
+    {
+      "basis": "current run artifact bytes reproduce report-pinned digest; result status=failed; ELF pin=beee81293b9059ca2f51c04e6b49897e607e332750fe7f14fa201c2077258bf0",
+      "bytes": 18154,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 12,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/hcu-ps2-closure/emulator-m1-recompiler-917db9651dd04ba7b358492437bec36b/result.json",
+      "role": "recompiler failed first attempt; timed out after 11 maps result manifest",
+      "sha256": "c92935e3a31c7ffb065717af7b44b77385c903d58466ba10140215313e25b921",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-query-13"
+    },
+    {
+      "basis": "current run artifact bytes reproduce report-pinned digest; result status=failed; ELF pin=beee81293b9059ca2f51c04e6b49897e607e332750fe7f14fa201c2077258bf0",
+      "bytes": 99153,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 12,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/hcu-ps2-closure/emulator-m1-recompiler-917db9651dd04ba7b358492437bec36b/emulog.txt",
+      "role": "recompiler failed first attempt; timed out after 11 maps guest log",
+      "sha256": "65024d7763daeb3f44d83b45cde12e27ccc0421bae9c5926e0ba4e97a0c11787",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-query-13"
+    },
+    {
+      "basis": "current run artifact bytes reproduce report-pinned digest; result status=passed; ELF pin=beee81293b9059ca2f51c04e6b49897e607e332750fe7f14fa201c2077258bf0",
+      "bytes": 3598,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 12,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/hcu-ps2-closure/emulator-m1-recompiler-067b2e2564d94f10b8bd3b956b7d2979/result.json",
+      "role": "recompiler successful all-13 recompiler run result manifest",
+      "sha256": "a8cc5da2c8c3a04b3aa5277456da743b370fe5dba69937bb5618292bcbd5a9a1",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-query-13"
+    },
+    {
+      "basis": "current run artifact bytes reproduce report-pinned digest; result status=passed; ELF pin=beee81293b9059ca2f51c04e6b49897e607e332750fe7f14fa201c2077258bf0",
+      "bytes": 110808,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 12,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/hcu-ps2-closure/emulator-m1-recompiler-067b2e2564d94f10b8bd3b956b7d2979/emulog.txt",
+      "role": "recompiler successful all-13 recompiler run guest log",
+      "sha256": "d871200f50b2259f819f024a8f238951c783042aebe55c6fb411a3335b458a25",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-query-13"
+    },
+    {
+      "basis": "current run artifact bytes reproduce report-pinned digest; result status=passed; ELF pin=beee81293b9059ca2f51c04e6b49897e607e332750fe7f14fa201c2077258bf0",
+      "bytes": 3605,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 12,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/hcu-ps2-closure/emulator-m1-interpreter-4567e94c92d245ffb74c31fcd26bf208/result.json",
+      "role": "interpreter successful all-13 interpreter run result manifest",
+      "sha256": "4d3c3b4c8cd1ff3e8bb53553c6aae526ba5bcd419ed6626f22c66dbaa66d4ade",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-query-13"
+    },
+    {
+      "basis": "current run artifact bytes reproduce report-pinned digest; result status=passed; ELF pin=beee81293b9059ca2f51c04e6b49897e607e332750fe7f14fa201c2077258bf0",
+      "bytes": 113006,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 12,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/hcu-ps2-closure/emulator-m1-interpreter-4567e94c92d245ffb74c31fcd26bf208/emulog.txt",
+      "role": "interpreter successful all-13 interpreter run guest log",
+      "sha256": "7dae6dc1f90a62f9d60d4ca256faaa2f27e2852dfae44ab86efd2598600f0178",
+      "source_report": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-query-13"
+    },
+    {
+      "basis": "current source bytes reproduce the report-pinned SHA-256",
+      "bytes": 7039,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 13,
+      "evidence_level": "host execution",
+      "external_local_path": false,
+      "path": "tools/test_halo_ps2_mp_render_cache_stress.py",
+      "role": "render stress runner",
+      "sha256": "14a1d05e95cc245fa2be901c2a29c25f232a67453c711316ebe0f640311b5cfe",
+      "source_report": "docs/reports/mp-step8-live-render-cache-stress-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-render-owner"
+    },
+    {
+      "basis": "current source bytes reproduce the report-pinned SHA-256",
+      "bytes": 6605,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "fixture_hashes",
+        "reported_hash_pins"
+      ],
+      "core_row_index": 13,
+      "evidence_level": "host execution",
+      "external_local_path": false,
+      "path": "tests/mp_render_cache_stress_main.c",
+      "role": "render stress C fixture",
+      "sha256": "e2c48ceb50749b55b02f2935960fca8aef0ce09bbac536d8bca4a2d7d269a4d9",
+      "source_report": "docs/reports/mp-step8-live-render-cache-stress-2026-10-22.md",
+      "step": 8,
+      "subcheck": "map-render-owner"
+    },
+    {
+      "basis": "current-target probe run record names exact output path and current bytes match its digest",
+      "bytes": 121564,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "log_hashes"
+      ],
+      "core_row_index": 24,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/hcu-ps2-closure/emulator-m1-interpreter-c98db8627d234473a8dc263c3288852d/emulog.txt",
+      "role": "interpreter current-target guest log",
+      "sha256": "c76264f7ede2b243c7709b260bdea488a7d87f5bf681a32e0b4fc552f7b8f2e9",
+      "source_report": "docs/reports/m2-step7-bsp-collision-pvs-current-target-probe-2026-10-22.json",
+      "step": 7,
+      "subcheck": "current-target-bsp-collision-pvs-path-13map"
+    },
+    {
+      "basis": "current-target probe run record names exact output path and current bytes match its digest",
+      "bytes": 4421988,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "executable_hashes"
+      ],
+      "core_row_index": 24,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/hcu-parent-link-probe/hcu-gameplay-machine-step8-mp-capacity-tagcache-4477120.elf",
+      "role": "interpreter current-target diagnostic ELF",
+      "sha256": "3f8efe1407f44a1f74d3a5f0d8c7c8941173d19f54ef17ffef258ce320ff93e3",
+      "source_report": "docs/reports/m2-step7-bsp-collision-pvs-current-target-probe-2026-10-22.json",
+      "step": 7,
+      "subcheck": "current-target-bsp-collision-pvs-path-13map"
+    },
+    {
+      "basis": "local emulator config path and current bytes match the paired target-run manifest pin",
+      "bytes": 4194304,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "log_hashes"
+      ],
+      "core_row_index": 24,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": true,
+      "path": "/home/ai/Documents/Halo/SCPH-30001.rom0",
+      "role": "interpreter PS2 BIOS ROM",
+      "sha256": "b0bf7184d50a209cf7ceb1ab0eb3a0c9b8c583f5f6b3c819e6536f282b93063b",
+      "source_report": "docs/reports/m2-step7-bsp-collision-pvs-current-target-probe-2026-10-22.json",
+      "step": 7,
+      "subcheck": "current-target-bsp-collision-pvs-path-13map"
+    },
+    {
+      "basis": "local emulator config path and current bytes match the paired target-run manifest pin",
+      "bytes": 60119544,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "executable_hashes"
+      ],
+      "core_row_index": 24,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": true,
+      "path": "/home/ai/.local/opt/pcsx2/pcsx2.AppImage",
+      "role": "interpreter PCSX2 executable",
+      "sha256": "0c46bb6a88aa2782b10853a7b07cf3387ba99cbef2b966372cd2315b8571abea",
+      "source_report": "docs/reports/m2-step7-bsp-collision-pvs-current-target-probe-2026-10-22.json",
+      "step": 7,
+      "subcheck": "current-target-bsp-collision-pvs-path-13map"
+    },
+    {
+      "basis": "current-target probe run record names exact output path and current bytes match its digest",
+      "bytes": 119059,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "log_hashes"
+      ],
+      "core_row_index": 24,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/hcu-ps2-closure/emulator-m1-recompiler-5b536c94e7b44a4ca19636cc2cfecacd/emulog.txt",
+      "role": "recompiler current-target guest log",
+      "sha256": "d3a24b7168e5e74db6dcccb9d5127a377d89b23b2a05c61f6a998a4d84fc736a",
+      "source_report": "docs/reports/m2-step7-bsp-collision-pvs-current-target-probe-2026-10-22.json",
+      "step": 7,
+      "subcheck": "current-target-bsp-collision-pvs-path-13map"
+    },
+    {
+      "basis": "current-target probe run record names exact output path and current bytes match its digest",
+      "bytes": 4421988,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "executable_hashes"
+      ],
+      "core_row_index": 24,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": false,
+      "path": "build/hcu-parent-link-probe/hcu-gameplay-machine-step8-mp-capacity-tagcache-4477120.elf",
+      "role": "recompiler current-target diagnostic ELF",
+      "sha256": "3f8efe1407f44a1f74d3a5f0d8c7c8941173d19f54ef17ffef258ce320ff93e3",
+      "source_report": "docs/reports/m2-step7-bsp-collision-pvs-current-target-probe-2026-10-22.json",
+      "step": 7,
+      "subcheck": "current-target-bsp-collision-pvs-path-13map"
+    },
+    {
+      "basis": "local emulator config path and current bytes match the paired target-run manifest pin",
+      "bytes": 4194304,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "log_hashes"
+      ],
+      "core_row_index": 24,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": true,
+      "path": "/home/ai/Documents/Halo/SCPH-30001.rom0",
+      "role": "recompiler PS2 BIOS ROM",
+      "sha256": "b0bf7184d50a209cf7ceb1ab0eb3a0c9b8c583f5f6b3c819e6536f282b93063b",
+      "source_report": "docs/reports/m2-step7-bsp-collision-pvs-current-target-probe-2026-10-22.json",
+      "step": 7,
+      "subcheck": "current-target-bsp-collision-pvs-path-13map"
+    },
+    {
+      "basis": "local emulator config path and current bytes match the paired target-run manifest pin",
+      "bytes": 60119544,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [
+        "executable_hashes"
+      ],
+      "core_row_index": 24,
+      "evidence_level": "PCSX2 interpreter and recompiler",
+      "external_local_path": true,
+      "path": "/home/ai/.local/opt/pcsx2/pcsx2.AppImage",
+      "role": "recompiler PCSX2 executable",
+      "sha256": "0c46bb6a88aa2782b10853a7b07cf3387ba99cbef2b966372cd2315b8571abea",
+      "source_report": "docs/reports/m2-step7-bsp-collision-pvs-current-target-probe-2026-10-22.json",
+      "step": 7,
+      "subcheck": "current-target-bsp-collision-pvs-path-13map"
+    },
+    {
+      "basis": "explicit target-run path and digest in the report, rehashed from current bytes",
+      "bytes": 8626,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [],
+      "core_row_index": 9,
+      "evidence_level": "PCSX2 recompiler",
+      "external_local_path": false,
+      "path": "build/hcu-ps2-closure/emulator-m1-recompiler-80c299fa2b81415889d742d698a8c116/step7-path-validation.json",
+      "role": "path-validation output",
+      "sha256": "aa1a711dfef03de8e09d7f6337d25050eb949d2355501eb56978b254bbdad3e2",
+      "source_report": "docs/reports/m2-step7-mp-target-astar-2026-10-22.md",
+      "step": 7,
+      "subcheck": "pathfinding-guest"
+    },
+    {
+      "basis": "explicit target-run path and digest in the report, rehashed from current bytes",
+      "bytes": 3623,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [],
+      "core_row_index": 9,
+      "evidence_level": "PCSX2 recompiler",
+      "external_local_path": false,
+      "path": "build/hcu-ps2-closure/emulator-m1-recompiler-80c299fa2b81415889d742d698a8c116/result.json",
+      "role": "pathfinding guest result manifest",
+      "sha256": "3e118a0f693b0737aa20f781ad300ca8f2ce211f7f77115425e223a986628e42",
+      "source_report": "docs/reports/m2-step7-mp-target-astar-2026-10-22.md",
+      "step": 7,
+      "subcheck": "pathfinding-guest"
+    },
+    {
+      "basis": "explicit target-run path and digest in the report, rehashed from current bytes",
+      "bytes": 119743,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [],
+      "core_row_index": 9,
+      "evidence_level": "PCSX2 recompiler",
+      "external_local_path": false,
+      "path": "build/hcu-ps2-closure/emulator-m1-recompiler-80c299fa2b81415889d742d698a8c116/emulog.txt",
+      "role": "pathfinding guest log",
+      "sha256": "5ddc2b0bb5b4be8795fa5eadcc92cf69db42e41f0837257f14bf085177158fd1",
+      "source_report": "docs/reports/m2-step7-mp-target-astar-2026-10-22.md",
+      "step": 7,
+      "subcheck": "pathfinding-guest"
+    },
+    {
+      "basis": "explicit target-run path and digest in the report, rehashed from current bytes",
+      "bytes": 4421988,
+      "bytes_match_reported_digest": true,
+      "categories_bound": [],
+      "core_row_index": 9,
+      "evidence_level": "PCSX2 recompiler",
+      "external_local_path": false,
+      "path": "build/hcu-parent-link-probe/hcu-gameplay-machine-step8-mp-capacity-tagcache-4477120.elf",
+      "role": "pathfinding guest ELF",
+      "sha256": "3f8efe1407f44a1f74d3a5f0d8c7c8941173d19f54ef17ffef258ce320ff93e3",
+      "source_report": "docs/reports/m2-step7-mp-target-astar-2026-10-22.md",
+      "step": 7,
+      "subcheck": "pathfinding-guest"
+    }
+  ]
+}
