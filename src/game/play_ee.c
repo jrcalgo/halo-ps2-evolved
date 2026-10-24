@@ -43,6 +43,7 @@ static collide_pill_stats s_last;
 #define PLAY_FLY 16
 #define PLAY_GRENADE_CAPACITY GRENADE_CARRY_MAX
 #define PLAY_WEAPON_SLOTS 32
+#define PLAY_EE_COMMITTED_BYTES 28049408u /* config/memory-budget.json v3 */
 
 static gun s_gun;
 static gun_trigger_pair s_trigger_pair;
@@ -845,7 +846,7 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
     s_was_out = s_body.out_of_world;
 }
 
-/* Top-left budget strip. 30 Hz frame is 33.3 ms. Committed EE RAM is 26.5 MiB
+/* Top-left budget strip. 30 Hz frame is 33.3 ms. Committed EE RAM is 28,049,408 B
  * of the 32 MiB machine. Texture upload cap is 1.5 MiB. Pill lists hold 256. */
 void __wrap_profiler_overlay(const profiler_t *p, text_batch_t *b)
 {
@@ -856,7 +857,7 @@ void __wrap_profiler_overlay(const profiler_t *p, text_batch_t *b)
     unsigned pages = bsp_render_cache_pages();
     float speed = s_body.vel[0] * s_body.vel[0] + s_body.vel[1] * s_body.vel[1];
     int over_frame = p->last_interval > 33.3f || p->dropped;
-    int over_mem = mem_kb > (27787264u / 1024u);
+    int over_mem = mem_kb > (PLAY_EE_COMMITTED_BYTES / 1024u);
     int over_gs = r->tex_failed || r->chain_overflow || (pages && r->pages_free == 0);
     text_batch_clear(b);
     snprintf(line, sizeof line, "FPS %.0f/30  MS %.1f/33.3  DROP %u",
@@ -866,7 +867,7 @@ void __wrap_profiler_overlay(const profiler_t *p, text_batch_t *b)
         p->prep_avg, p->gs_ms > 0.f ? p->gs_ms : 0.f, p->vif_ms, p->wait_avg);
     text_batch_print(b, 8, 16, p->prep_avg > 33.3f ? 0xFF6060 : 0xC0FFC0, line);
     snprintf(line, sizeof line, "RAM %u/%u KB  CAP %u KB",
-        mem_kb, 27787264u / 1024u, 32768u);
+        mem_kb, PLAY_EE_COMMITTED_BYTES / 1024u, 32768u);
     text_batch_print(b, 8, 24, over_mem ? 0xFF6060 : 0xC0FFC0, line);
     snprintf(line, sizeof line, "GS %u/%u PG  UP %u/%u KB%s",
         r->pages_free, pages, r->upload_bytes / 1024u, 1536u,

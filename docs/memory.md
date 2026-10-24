@@ -1,15 +1,15 @@
 # Memory record
 
-M11's memory acceptance is met by the measurements below. The versioned split is `config/memory-budget.json` version 2. A byte counted in two regions is a failed account, and the 5.5 MiB reserve was not spent.
+M11's memory acceptance is met by the measurements below. The versioned split is `config/memory-budget.json` version 3. A byte counted in two regions is a failed account. Version 3 spent 262,144 bytes of the reserve on `elf_static` (user-approved 2026-10-24); the reserve is now 5,505,024 bytes.
 
 ## Budget
 
-The contract is 26.5 MiB committed plus 5.5 MiB reserve, 32 MiB total (33,554,432 bytes). Host checks reject a total other than that and reject overlapping claims. Those checks do not run on the EE.
+The contract is 28,049,408 bytes committed plus a 5,505,024-byte reserve, 32 MiB total (33,554,432 bytes). Version 2 was 27,787,264 committed plus 5,767,168 reserve. Host checks reject a total other than that and reject overlapping claims. Those checks do not run on the EE.
 
 | Region | Bytes | Role |
 |---|---:|---|
 | system_kernel | 1,572,864 | kernel, stacks, IOP/EE buffers |
-| elf_static | 2,097,152 | executable sections, constants, static tables |
+| elf_static | 2,359,296 | executable sections, constants, static tables |
 | resident_gameplay | 6,815,744 | permanent data |
 | current_bsp | 6,291,456 | map data |
 | texture_cache | 4,194,304 | EE RAM for textures and lightmaps |
@@ -19,13 +19,15 @@ The contract is 26.5 MiB committed plus 5.5 MiB reserve, 32 MiB total (33,554,43
 | checkpoint | 524,288 | checkpoint storage |
 | audio | 524,288 | audio staging |
 | frame_scratch | 393,216 | frame scratch |
-| uncommitted_reserve | 5,767,168 | reserve |
+| uncommitted_reserve | 5,505,024 | reserve |
+
+`elf_static` holds only the file-backed ELF bytes (PROGBITS, allocated). ELF NOBITS (`_end - _fbss`) is charged to `resident_gameplay` at boot, not to `elf_static`. Physically the file-backed sections must end by 0x00340000 (1 MiB low kernel plus `elf_static`), the boot backing must end by the reserve start 0x01a40000, and the reserve is [0x01a40000, 0x01f80000). The top 512 KiB [0x01f80000, 0x02000000) holds the kernel stack. The version 3 note: 262,144 B moved from the uncommitted reserve to `elf_static` after the production gameplay ELF's file-backed bytes measured 2,193,924 B against 2,097,152 B. See `docs/reports/m2-c2-budget-v3-2026-10-24.md`.
 
 Stacks stay inside `system_kernel` until a measured split is versioned. GS VRAM is a separate 4 MiB store and is not one of these EE regions.
 
 ## Stream viewer image
 
-`build/world-stream-elf/world.elf` has 2,202,312 bytes of allocated ELF sections (`SHF_ALLOC`). That is 105,160 bytes above the 2,097,152-byte `elf_static` region. The previous build of this ELF, before the cache-miss callback, was 2,199,488; the 2,824-byte increase is code. An earlier snapshot, before the lightmap decode buffer, was 2,127,664. `.bss` remains dominated by the staging pool below. All three figures are allocated sections of one diagnostic ELF, not a full EE map.
+Historical v2 measurement: `build/world-stream-elf/world.elf` had 2,202,312 bytes of allocated ELF sections (`SHF_ALLOC`), 105,160 bytes above the former 2,097,152-byte region. The prior v2 builds measured 2,199,488 and 2,127,664 allocated bytes. These section totals include NOBITS and are not the v3 `elf_static` metric; v3 uses file-backed PT_LOAD bytes and charges NOBITS to `resident_gameplay`. `.bss` remains dominated by the staging pool below. These are diagnostic ELFs, not the selected production-profile image.
 
 Named diagnostic objects inside that `.bss`:
 
@@ -40,7 +42,7 @@ Named diagnostic objects inside that `.bss`:
 
 Those six objects are 1,133,688 bytes. They are the staging pool, the lightmap decode buffer, the worker stack, the pack header, the reader, and the one-shot GIF chain. An earlier snapshot of this ELF, before the lightmap decode buffer, was 2,127,664 allocated bytes. Both figures are the same kind of measurement: allocated sections of one diagnostic ELF, not a full EE map.
 
-Cause: the diagnostic keeps a 1 MiB staging pool and a 64 KiB decode buffer in `.bss` so their addresses stay valid for DMA. Effect: this ELF does not fit the 2 MiB `elf_static` region. Moving the 1,133,688 bytes onto the streaming region on paper, while they still occupy `.bss`, would count them twice. The reserve stays unspent. A budget edit has to follow a measurement that shows where those bytes actually sit.
+Historical v2 interpretation: the diagnostic keeps a 1 MiB staging pool and a 64 KiB decode buffer in `.bss` so their addresses stay valid for DMA. Under v2's section-total comparison, it exceeded 2 MiB. Those bytes must not also be charged to `streaming` while they remain in NOBITS. The separate v3 decision transfers 262,144 bytes to `elf_static` based on the selected image's file-backed PT_LOAD measurement; see the C2 v3 report.
 
 ## World arena
 
@@ -115,7 +117,7 @@ Host visibility storage for the 448-camera audit peaked at 4,034 bytes. That num
 
 ## Not yet measured
 
-Budget version 2 gives the measured DMA chains their own bytes. The stream ELF's 1,133,688 bytes of staging, decode buffer, worker stack, reader, and one-shot chain are charged to `streaming` (1,572,864). The other 1,068,624 allocated bytes fit in `elf_static`. Steady arena sections fit as well: BSP raw 611,856 in `current_bsp`, TEXS 406,016 plus lightmaps 33,120 in `texture_cache`, and models, scenario, animation, and object textures 3,734,272 in `resident_gameplay`. The OTEX load scratch is 1,089,940 bytes and fits in the spare of `current_bsp` while it is live; arena high water was 6,465,536. Those assignments are not double-counted.
+Historical v2 arena attribution gave the stream ELF's 1,133,688 bytes of staging, decode buffer, worker stack, reader, and one-shot chain to `streaming` (1,572,864), with the other 1,068,624 allocated bytes in `elf_static`. The measured arena sections were BSP raw 611,856 in `current_bsp`, TEXS 406,016 plus lightmaps 33,120 in `texture_cache`, and models, scenario, animation, and object textures 3,734,272 in `resident_gameplay`. OTEX load scratch was 1,089,940 bytes during its load; arena high water was 6,465,536. These are the viewer's v2 measurements and are not the C2 selected-image v3 accounting.
 
 ## Kernel, stack, and IOP-side EE buffers
 

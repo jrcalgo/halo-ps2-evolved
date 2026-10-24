@@ -1,13 +1,13 @@
 {
-  "version": 2,
+  "version": 3,
   "unit": "byte",
-  "committed_bytes": 27787264,
-  "reserve_bytes": 5767168,
+  "committed_bytes": 28049408,
+  "reserve_bytes": 5505024,
   "total_bytes": 33554432,
-  "notes": "Version 2 moves 131072 bytes from frame_scratch to dma_commands after the stream viewer measured two 4096-qword upload chains (1179648 bytes total). The 5.5 MiB reserve is unchanged. Staging bytes that live in the ELF image are accounted in streaming, not also in elf_static. See docs/memory.md.",
+  "notes": "Version 2 moved 131072 bytes from frame_scratch to dma_commands after the stream viewer measured two 4096-qword upload chains (1179648 bytes total). Version 3 (user-approved 2026-10-24) moves 262144 bytes from the uncommitted reserve to elf_static after production gameplay ELF file-backed bytes measured 2193924 B against 2097152 B. elf_static charges file-backed PT_LOAD bytes only; PT_LOAD NOBITS is charged to resident_gameplay. Non-ELF staging allocations remain charged to their runtime owner. See docs/memory.md and docs/reports/m2-c2-budget-v3-2026-10-24.md.",
   "regions": [
     {"name": "system_kernel", "role": "reservation", "bytes": 1572864, "accounts": ["kernel", "stacks", "iop_ee_buffers"]},
-    {"name": "elf_static", "role": "reservation", "bytes": 2097152, "accounts": ["executable_sections", "constants", "static_tables"]},
+    {"name": "elf_static", "role": "reservation", "bytes": 2359296, "accounts": ["executable_sections", "constants", "static_tables"]},
     {"name": "resident_gameplay", "role": "permanent", "bytes": 6815744, "accounts": ["permanent_data"]},
     {"name": "current_bsp", "role": "map", "bytes": 6291456, "accounts": ["map_data"]},
     {"name": "texture_cache", "role": "reservation", "bytes": 4194304, "accounts": ["ram_textures", "lightmaps"]},
@@ -17,6 +17,6 @@
     {"name": "checkpoint", "role": "reservation", "bytes": 524288, "accounts": ["checkpoint_storage"]},
     {"name": "audio", "role": "reservation", "bytes": 524288, "accounts": ["audio_staging"]},
     {"name": "frame_scratch", "role": "frame_scratch", "bytes": 393216, "accounts": ["frame_scratch"]},
-    {"name": "uncommitted_reserve", "role": "reserve", "bytes": 5767168, "accounts": ["reserve"]}
+    {"name": "uncommitted_reserve", "role": "reserve", "bytes": 5505024, "accounts": ["reserve"]}
   ]
 }

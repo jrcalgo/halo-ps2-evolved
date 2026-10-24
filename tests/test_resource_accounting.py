@@ -1,5 +1,6 @@
 """Host resource-accounting acceptance for the 32 MiB budget and audited arenas."""
 import json
+import re
 import subprocess
 import sys
 import tempfile
@@ -37,6 +38,13 @@ def compile_and_run(extra):
 
 
 class ResourceAccounting(unittest.TestCase):
+    def test_compiled_profiler_cap_matches_configured_committed_budget(self):
+        budget = load_budget()
+        source = (ROOT / "src/game/play_ee.c").read_text()
+        match = re.search(r"#define PLAY_EE_COMMITTED_BYTES (\d+)u", source)
+        self.assertIsNotNone(match)
+        self.assertEqual(int(match.group(1)), budget["committed_bytes"])
+
     def test_audited_arena_on_host_abis(self):
         native = compile_and_run([])
         self.assertEqual(native["abi"]["pointer"], 8)

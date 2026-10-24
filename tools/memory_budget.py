@@ -32,11 +32,11 @@ def validate_budget(budget):
     if total != budget["total_bytes"] or total != 32 * 1024 * 1024:
         raise BudgetError(f"budget totals {total}, not 32 MiB")
     reserve = next(region for region in regions if region["role"] == "reserve")
-    if reserve["bytes"] != budget["reserve_bytes"] or reserve["bytes"] != int(5.5 * 1024 * 1024):
-        raise BudgetError("5.5 MiB reserve was not preserved")
+    if reserve["bytes"] != budget["reserve_bytes"]:
+        raise BudgetError("reserve bytes disagree with config/memory-budget.json")
     committed = total - reserve["bytes"]
-    if committed != budget["committed_bytes"] or committed != int(26.5 * 1024 * 1024):
-        raise BudgetError("committed memory is not 26.5 MiB")
+    if committed != budget["committed_bytes"]:
+        raise BudgetError("committed bytes disagree with config/memory-budget.json")
     roles = {region["role"] for region in regions}
     missing = [role for role in POOL_ROLES if role not in roles]
     if missing:
