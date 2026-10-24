@@ -32,6 +32,7 @@ def main() -> int:
     source = ROOT / "tests/hcu_mp_production_bind_capacity_main.c"
     memory_source = HCU / "port/ps2/src/ps2_memory.c"
     parent_binder = ROOT / "src/stream/hcu_memory_bind.c"
+    memory_profile = ROOT / "src/stream/hcu_memory_profile.c"
     arena_source = ENGINE / "core/mem.c"
     command = [compiler, *host_abi32_flags(), "-isystem", "/usr/include",
                "-std=gnu99", "-O2", "-g", "-Wall", "-Wextra",
@@ -39,7 +40,7 @@ def main() -> int:
                "-I" + str(ROOT / "tests/hcu_ps2_memory_shim"),
                "-I" + str(ENGINE), "-I" + str(HCU / "port/ps2/include"),
                "-I" + str(ROOT / "src"), str(memory_source),
-               str(parent_binder), str(source), str(arena_source),
+               str(parent_binder), str(memory_profile), str(source), str(arena_source),
                "-Wl,-Map," + str(linkmap), "-o", str(binary)]
     built = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
     if built.returncode:
@@ -59,6 +60,10 @@ def main() -> int:
         "production-binder-recarved tag=4477120 bsp=1993712 "
         "map=6470832 texture=4014928 total=10485760 "
         "contiguous_views=1 parent_bytes_unchanged=1 guards=1 ready=1",
+        "profile-v1 tag=4685920 bsp=1993744 map_parent=6679680 internal_guard=16 texture=3806080 render_parent=3806080 claims=834960 bsp_alignment=0 texture_alignment=0",
+        "profile-v1-invalid version=1 alignment=1 bounds=1 used=1 adjacency=1 plan_atomic=1",
+        "profile-v1-provider-failure rollback=1 cursors=1 provider-spans=1 canary=1",
+        "provider-locked-rebind rejected=1 ready0=unchanged ready1=unchanged spans=unchanged cursors=unchanged contents=unchanged",
     )
     for marker in required:
         if marker not in run.stdout:
