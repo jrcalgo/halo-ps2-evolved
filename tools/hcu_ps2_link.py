@@ -319,7 +319,8 @@ def name_params(params: str) -> str:
     return ", ".join(named) or "void"
 
 
-def emit(names: list[str]) -> tuple[str, list[str]]:
+def emit(names: list[str], weak_names: set[str] | None = None) -> tuple[str, list[str]]:
+    weak_names = weak_names or set()
     texts = load_texts()
     tops = {path: top_level(text) for path, text in texts.items()}
     lines = [
@@ -338,6 +339,23 @@ def emit(names: list[str]) -> tuple[str, list[str]]:
     ]
     missing = []
     for name in names:
+        if name == "fast_ftol_C":
+            # Xbox FISTP helper behind cseries.h fast_ftol: round to nearest,
+            # ties to even. Not a libc symbol, so it cannot be left to the
+            # C library; implemented without libm because the link has no -lm.
+            # NaN and out-of-range inputs (including values that round to
+            # 2^31 or -2^31-1) return the x87 integer indefinite 0x80000000.
+            # The range test happens before any (long) cast, so no UB.
+            lines.append(
+                "long fast_ftol_C(real x) { double d = (double)x; long i; double r;"
+                " if (!(d > -2147483649.0 && d < 2147483648.0)) return (long)0x80000000UL;"
+                " i = (long)d; r = d - (double)i;"
+                " if (r > 0.5 || (r == 0.5 && (i & 1))) {"
+                " if (i == 2147483647L) return (long)0x80000000UL; i++; }"
+                " else if (r < -0.5 || (r == -0.5 && (i & 1))) {"
+                " if (i == -2147483647L - 1) return (long)0x80000000UL; i--; }"
+                " return i; }")
+            continue
         if name in SKIP or name in {"render_location_visible", "D3D__RenderState"} or name.startswith("__") or classify(name) == "toolchain":
             continue
         if name == "platform_log":
@@ -366,7 +384,8 @@ def emit(names: list[str]) -> tuple[str, list[str]]:
             body = ""
         else:
             body = f"{rtype} result; memset(&result, 0, sizeof(result)); return result;"
-        lines.append(f"{rtype} {name}({params}) {{ {body} }}")
+        linkage = "__attribute__((weak)) " if name in weak_names else ""
+        lines.append(f"{linkage}{rtype} {name}({params}) {{ {body} }}")
     return "\n".join(lines) + "\n", missing
 
 
@@ -375,9 +394,37 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--no-bootstrap-memory", action="store_true",
                         help="link the external-only memory provider profile")
+    parser.add_argument("--m2-ui-lifecycle-test", action="store_true",
+                        help="link the opt-in CE UI lifecycle diagnostic closure")
+    parser.add_argument("--step8-mp-capacity-diagnostic", action="store_true",
+                        help="link the isolated target-sized Sidewinder load/query diagnostic")
+    parser.add_argument("--step8-mp-workload-only", action="store_true",
+                        help="link the Step 8 CE local-player workload-only image")
+    parser.add_argument("--step8-mp-workload-players", type=int, choices=(2, 4), default=2,
+                        help="local split-screen players for workload-only image (2 or CE maximum 4)")
+    parser.add_argument("--m2-animation-trace", action="store_true",
+                        help="link the opt-in CE animation trace diagnostic closure")
     args = parser.parse_args()
     if args.no_bootstrap_memory:
         OUT = ROOT / "build/hcu-ps2-closure/all-no-bootstrap-memory"
+    if args.m2_ui_lifecycle_test:
+        if not args.no_bootstrap_memory:
+            parser.error("--m2-ui-lifecycle-test requires --no-bootstrap-memory")
+        OUT = ROOT / "build/hcu-ps2-closure/all-no-bootstrap-memory-m2-ui-lifecycle"
+    if args.step8_mp_capacity_diagnostic:
+        if not args.no_bootstrap_memory or not args.m2_ui_lifecycle_test:
+            parser.error("--step8-mp-capacity-diagnostic requires --no-bootstrap-memory and --m2-ui-lifecycle-test")
+        OUT = ROOT / "build/hcu-ps2-closure/all-no-bootstrap-memory-step8-mp-capacity"
+    if args.step8_mp_workload_only:
+        if not args.step8_mp_capacity_diagnostic:
+            parser.error("--step8-mp-workload-only requires --step8-mp-capacity-diagnostic")
+        OUT = ROOT / f"build/hcu-ps2-closure/all-no-bootstrap-memory-step8-mp-workload-{args.step8_mp_workload_players}p"
+    elif args.step8_mp_workload_players != 2:
+        parser.error("--step8-mp-workload-players requires --step8-mp-workload-only")
+    if args.m2_animation_trace:
+        if not args.no_bootstrap_memory or args.m2_ui_lifecycle_test:
+            parser.error("--m2-animation-trace requires --no-bootstrap-memory and is separate from lifecycle test")
+        OUT = ROOT / "build/hcu-ps2-closure/all-no-bootstrap-memory-m2-animation-trace"
     build, prefix, env, _jobs = environment()
     compiler = prefix / "ee/bin/mips64r5900el-ps2-elf-gcc"
     nm = prefix / "ee/bin/mips64r5900el-ps2-elf-nm"
@@ -413,8 +460,11 @@ def main() -> None:
     objects = []
     for source in units:
         obj = OUT / (source.stem + ".o")
-        extra = ["-DHALO_PS2_NO_BOOTSTRAP_MEMORY"] if (
-            args.no_bootstrap_memory and source.name == "ps2_memory.c") else []
+        extra = []
+        if args.no_bootstrap_memory and source.name == "ps2_memory.c":
+            extra.append("-DHALO_PS2_NO_BOOTSTRAP_MEMORY")
+        if args.step8_mp_capacity_diagnostic and source.name == "ps2_memory.c":
+            extra.append("-DHALO_PS2_STEP8_MEMORY_DIAGNOSTIC")
         run = subprocess.run([str(compiler), *flags, *extra, "-c", str(source), "-o", str(obj)],
                              cwd=ROOT, env=env, text=True, capture_output=True)
         if run.returncode:
@@ -422,7 +472,15 @@ def main() -> None:
         objects.append(obj)
     undefined = sorted({line.split()[-1] for line in subprocess.check_output(
         [str(nm), "-u", str(OUT / "rooted.o")], text=True).splitlines() if line.strip()})
-    generated, missing = emit(undefined)
+    excluded = ({"hcu_map_service_lifecycle_trace",
+                 "hcu_map_service_lifecycle_fail_preflight_once",
+                 "hcu_map_service_lifecycle_arm_deferred_failure_once",
+                 "hcu_map_service_lifecycle_consume_deferred_failure",
+                 "halo_ps2_step8_mp_candidate_guards_intact"}
+                if args.m2_ui_lifecycle_test else set())
+    if args.step8_mp_capacity_diagnostic:
+        excluded.add("physical_memory_get_malloc_diagnostics")
+    generated, missing = emit(undefined, excluded)
     platform = OUT / "ps2_platform.c"
     platform.write_text(generated)
     (OUT / "ps2_platform_missing.txt").write_text("\n".join(missing) + ("\n" if missing else ""))

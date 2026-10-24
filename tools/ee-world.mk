@@ -43,6 +43,11 @@ EE_OBJS = $(WORLD_OUTPUT)/platform/screenshot_sdk.o \
 	$(WORLD_OUTPUT)/world/world.o \
 	$(WORLD_OUTPUT)/vu1/world.o
 WORLD_HCU_GAMEPLAY ?= 0
+WORLD_HCU_RENDER_CLEAR_TEST ?= 0
+WORLD_HCU_ANIMATION_TRACE_TEST ?= 0
+WORLD_HCU_M2_UI_LIFECYCLE_TEST ?= 0
+WORLD_HCU_STEP8_MP_CAPACITY_DIAGNOSTIC ?= 0
+WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS ?= 2
 ifeq ($(WORLD_HCU_GAMEPLAY),1)
 # Optional CE machine path; the regular measured viewer remains the default.
 WORLD_HCU_MEMORY_BRIDGE := 1
@@ -56,6 +61,17 @@ EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_main.o \
 	$(WORLD_OUTPUT)/stream/hcu_render_snapshot.o \
 	$(WORLD_OUTPUT)/stream/hcu_storage_boot.o \
 	$(WORLD_OUTPUT)/stream/hcu_map_service.o \
+	$(WORLD_OUTPUT)/stream/hcu_profile_mount.o \
+	$(WORLD_OUTPUT)/stream/hcu_profile_metadata.o \
+	$(WORLD_OUTPUT)/stream/ps2_ctag.o \
+	$(WORLD_OUTPUT)/stream/hcu_asset_profile.o \
+	$(WORLD_OUTPUT)/stream/hcu_bitmap_quad.o \
+	$(WORLD_OUTPUT)/stream/hcu_pose_asset.o \
+	$(WORLD_OUTPUT)/stream/hcu_bitmap_dispatch.o \
+	$(WORLD_OUTPUT)/stream/hcu_bitmap_frame.o \
+	$(WORLD_OUTPUT)/stream/hcu_bitmap_renderer.o \
+	$(WORLD_OUTPUT)/stream/hcu_bitmap_attach.o \
+	$(WORLD_OUTPUT)/stream/hcu_map_catalog.o \
 	$(WORLD_OUTPUT)/stream/hcu_filexio_irx.o \
 	$(WORLD_OUTPUT)/stream/ctag_ps2_backend.o
 WORLD_FILEXIO := 1
@@ -132,6 +148,10 @@ $(WORLD_OUTPUT)/stream/hcu_main.o: src/stream/hcu_main.c hcu-profile-force
 		-I$(HCU_ROOT)/port/include -fshort-wchar -I$(HCU_ROOT)/source/cseries -DHALO_PS2=1 \
 		-DHALO_HCU_TAG_CACHE_BYTES=$(WORLD_HCU_TAG_CACHE_BYTES) \
 		-DHALO_HCU_ASSET_ROOT=\"$(WORLD_HCU_ASSET_ROOT)\" \
+		$(if $(filter 1,$(WORLD_HCU_RENDER_CLEAR_TEST)),-DHALO_PS2_M3_RENDER_CLEAR_TEST=1,) \
+		$(if $(filter 1,$(WORLD_HCU_STEP8_MP_CAPACITY_DIAGNOSTIC)),-DHALO_PS2_STEP8_MP_CAPACITY_DIAGNOSTIC=1,) \
+		$(if $(filter 2 4,$(WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS)),-DHALO_PS2_STEP8_MP_WORKLOAD_PLAYERS=$(WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS),) \
+		$(if $(filter 1,$(WORLD_HCU_ANIMATION_TRACE_TEST)),-DHALO_PS2_M2_ANIMATION_TRACE=1,) \
 		-include $(HCU_ROOT)/port/ps2/include/halo_ps2_prefix.h \
 		-c $< -o $@
 
@@ -145,8 +165,72 @@ $(WORLD_OUTPUT)/stream/hcu_map_service.o: src/stream/hcu_map_service.c
 		-I$(HCU_ROOT)/port/ps2/include -I$(HCU_ROOT)/source \
 		-I$(HCU_ROOT)/port/include -fshort-wchar \
 		-I$(HCU_ROOT)/source/cseries -DHALO_PS2=1 \
+		$(if $(filter 1,$(WORLD_HCU_M2_UI_LIFECYCLE_TEST)),-DHALO_PS2_M2_UI_LIFECYCLE_TEST=1,) \
+		$(if $(filter 1,$(WORLD_HCU_STEP8_MP_CAPACITY_DIAGNOSTIC)),-DHALO_PS2_STEP8_MP_CAPACITY_DIAGNOSTIC=1,) \
+		$(if $(filter 2 4,$(WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS)),-DHALO_PS2_STEP8_MP_WORKLOAD_PLAYERS=$(WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS),) \
 		-include $(HCU_ROOT)/port/ps2/include/halo_ps2_prefix.h \
 		-c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_profile_mount.o: src/stream/hcu_profile_mount.c src/stream/hcu_profile_mount.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
+		-I$(HCU_ROOT)/port/ps2/include -I$(HCU_ROOT)/source \
+		-I$(HCU_ROOT)/port/include -fshort-wchar \
+		-I$(HCU_ROOT)/source/cseries -DHALO_PS2=1 \
+		-include $(HCU_ROOT)/port/ps2/include/halo_ps2_prefix.h \
+		-c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_profile_metadata.o: src/stream/hcu_profile_metadata.c src/stream/hcu_profile_metadata.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
+		-I$(HCU_ROOT)/port/ps2/include -I$(HCU_ROOT)/source \
+		-I$(HCU_ROOT)/port/include -fshort-wchar \
+		-I$(HCU_ROOT)/source/cseries -DHALO_PS2=1 \
+		-include $(HCU_ROOT)/port/ps2/include/halo_ps2_prefix.h \
+		-c $< -o $@
+
+$(WORLD_OUTPUT)/stream/ps2_ctag.o: $(HCU_ROOT)/port/ps2/src/ps2_ctag.c $(HCU_ROOT)/port/ps2/include/ps2_ctag.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) \
+		-I$(HCU_ROOT)/port/ps2/include -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_asset_profile.o: src/stream/hcu_asset_profile.c
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -fshort-wchar \
+		-include $(HCU_ROOT)/port/ps2/include/halo_ps2_prefix.h \
+		-c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_bitmap_quad.o: src/stream/hcu_bitmap_quad.c src/stream/hcu_bitmap_quad.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) -std=c11 $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_pose_asset.o: src/stream/hcu_pose_asset.c src/stream/hcu_pose_asset.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_bitmap_dispatch.o: src/stream/hcu_bitmap_dispatch.c src/stream/hcu_bitmap_dispatch.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
+		-I$(HCU_ROOT)/port/ps2/include -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_bitmap_frame.o: src/stream/hcu_bitmap_frame.c src/stream/hcu_bitmap_frame.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
+		-I$(HCU_ROOT)/port/ps2/include -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_bitmap_renderer.o: src/stream/hcu_bitmap_renderer.c src/stream/hcu_bitmap_renderer.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
+		-I$(HCU_ROOT)/port/ps2/include -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_bitmap_attach.o: src/stream/hcu_bitmap_attach.c src/stream/hcu_bitmap_renderer.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
+		-I$(HCU_ROOT)/port/ps2/include -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_map_catalog.o: src/stream/hcu_map_catalog.c
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
 
 $(WORLD_OUTPUT)/stream/hcu_storage_boot.o: src/stream/hcu_storage_boot.c
 	@mkdir -p $(@D)
@@ -196,6 +280,7 @@ EE_LIBS = -ldraw -lgraph -lpacket2 -ldma -ldebug -lpad -lmtap -lm
 EE_INCS = -I$(ENGINE)/src
 EE_CFLAGS = -std=gnu11 -Wall -Wextra -Wno-unused-parameter -MMD -MP -G0 \
 	-ffile-prefix-map=$(PS2SDK)=/ps2sdk
+EE_CFLAGS += $(EE_OPTFLAGS)
 ifeq ($(WORLD_HCU_LINK_PROBE),1)
 # Diagnostic-only granularity lets the combined link discard unreferenced
 # parent functions/data; it does not alter behavior of retained sections.

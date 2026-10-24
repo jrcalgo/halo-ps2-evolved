@@ -291,8 +291,10 @@ class DetailPresentBoundTest(unittest.TestCase):
             "groups", "collision", "models", "objects", "render", "effects", "scenario")]
         sources += [ROOT / "src/stream" / f"{name}.c" for name in (
             "hcu_map_catalog", "ctag_mount", "ctag_ps2_backend", "cbsp_catalog",
-            "ctag_resource_index", "ctag_map_source", "sha256", "hmap")]
+            "ctag_resource_index", "ctag_map_source", "sha256", "hmap", "hcu_asset_profile")]
         sources.append(ROOT / "src/stream/hcu_map_service.c")
+        sources.append(ROOT / "src/stream/hcu_profile_mount.c")
+        sources.append(ROOT / "src/stream/hcu_profile_metadata.c")
         sources += [ROOT / "submodules/halo-ps2/engine/src" / relative for relative in (
             "world/section.c", "stream/hp2.c", "stream/file.c", "core/mem.c")]
         for source_path, alias in (

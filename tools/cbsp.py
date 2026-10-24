@@ -104,7 +104,7 @@ class CbspImage:
     source_file_offset: int
     source_file_size: int
 
-    def materialize(self, bsp_base: int, tag_base: int, tag_size: int) -> bytes:
+    def materialize(self, bsp_base: int, tag_base: int, tag_image: bytes) -> bytes:
         _validate(self.image, self.relocations, self.tag_relocations)
         if not 0 < bsp_base <= 0xFFFFFFFF or not 0 < tag_base <= 0xFFFFFFFF:
             raise CbspError("materialization bases must be nonzero 32-bit addresses")
@@ -112,8 +112,13 @@ class CbspImage:
             raise CbspError("materialization bases must be 16-byte aligned")
         if bsp_base + len(self.image) > 0x1_0000_0000:
             raise CbspError("BSP image wraps the 32-bit address space")
-        if tag_size < 0 or tag_base + tag_size > 0x1_0000_0000:
+        tag_size = len(tag_image)
+        if tag_base + tag_size > 0x1_0000_0000:
             raise CbspError("tag image extent wraps the 32-bit address space")
+        bsp_end = bsp_base + len(self.image)
+        tag_end = tag_base + tag_size
+        if bsp_base < tag_end and tag_base < bsp_end:
+            raise CbspError("BSP and tag image ranges overlap")
         result = bytearray(self.image)
         for field in self.relocations:
             target = struct.unpack_from("<I", result, field)[0]
@@ -125,6 +130,8 @@ class CbspImage:
         for field, target in self.tag_relocations:
             if target >= tag_size:
                 raise CbspError("tag-name relocation target leaves CTAG image")
+            if tag_image.find(b"\0", target, min(tag_size, target + 256)) < 0:
+                raise CbspError("tag-name relocation is not NUL-terminated within 256 bytes")
             address = tag_base + target
             if address > 0xFFFFFFFF:
                 raise CbspError("tag-name pointer overflows the 32-bit address space")
@@ -141,6 +148,8 @@ def _validate(image: bytes, relocations, tag_relocations) -> None:
     for field in relocations:
         if not isinstance(field, int) or field < 0 or field > len(image) - 4:
             raise CbspError("BSP relocation field leaves image")
+        if field & 3:
+            raise CbspError("BSP relocation field is not 4-byte aligned")
         target = struct.unpack_from("<I", image, field)[0]
         if target and target >= len(image):
             raise CbspError("BSP relocation target leaves image")
@@ -149,6 +158,8 @@ def _validate(image: bytes, relocations, tag_relocations) -> None:
         if (not isinstance(field, int) or field < 0 or field > len(image) - 4 or
                 not isinstance(target, int) or target < 0 or target > 0xFFFFFFFF):
             raise CbspError("tag-reference relocation is out of bounds")
+        if field & 3:
+            raise CbspError("tag-reference relocation field is not 4-byte aligned")
         if struct.unpack_from("<I", image, field)[0] != target:
             raise CbspError("tag-reference relocation does not match image value")
         slots.append(field)

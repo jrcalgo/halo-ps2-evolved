@@ -2,11 +2,18 @@
 
 #include "cache/physical_memory_map.h"
 #include "halo_ps2_cache.h"
+#include "stream/hcu_map_catalog.h"
 #include "ps2_ctag.h"
 #include "stream/ctag_ps2_backend.h"
 #include "stream/ctag_resource_index.h"
+#include "stream/sha256.h"
+#include "world/section.h"
+#ifdef HALO_PS2_M2_ANIMATION_TRACE
+#include "ps2_animation_trace.h"
+#endif
 
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 
 extern uint8_t *world_load_section_with_scratch(arena_t *owner,
@@ -20,6 +27,10 @@ extern uint8_t *world_load_section_with_scratch(arena_t *owner,
 #endif
 
 static hcu_map_service *s_service;
+#ifdef HALO_PS2_M2_UI_LIFECYCLE_TEST
+static int s_lifecycle_fail_preflight_once;
+static int s_lifecycle_deferred_failure_armed;
+#endif
 
 static int verify_source_hash(hcu_map_service *service,
 	const uint8_t expected[32])
@@ -51,16 +62,23 @@ static int verify_source_hash(hcu_map_service *service,
 	return result;
 }
 
-static int map_leaf(const char *map_name, char leaf[16])
+static int verify_profile_package_hash(hcu_asset_profile_read_at reader,
+	void *context, uint32_t size, const uint8_t expected[32])
 {
-	static const char ui_path[] = "levels\\ui\\ui";
-	static const char ui_path_slash[] = "levels/ui/ui";
-	memset(leaf, 0, 16);
-	if (!map_name || (strcmp(map_name, ui_path) != 0 &&
-		strcmp(map_name, ui_path_slash) != 0 && strcmp(map_name, "ui") != 0))
-		return 0;
-	memcpy(leaf, "ui", 3);
-	return 1;
+	uint8_t scratch[512], digest[32];
+	sha256_context sha;
+	uint32_t offset = 0;
+	if (!reader || !expected || !size) return 0;
+	sha256_init(&sha);
+	while (offset < size) {
+		uint32_t take = size - offset;
+		if (take > sizeof(scratch)) take = (uint32_t)sizeof(scratch);
+		if (reader(context, offset, scratch, take) != 0) return 0;
+		sha256_update(&sha, scratch, take);
+		offset += take;
+	}
+	sha256_final(&sha, digest);
+	return memcmp(digest, expected, sizeof(digest)) == 0;
 }
 
 static uint8_t *load_section(void *context, arena_t *owner,
@@ -68,37 +86,467 @@ static uint8_t *load_section(void *context, arena_t *owner,
 {
 	hcu_map_service *service = (hcu_map_service *)context;
 	uint8_t *result;
+	size_t mark;
 	printf("HALO_PS2_LOCAL map-preflight section-begin %s\n", tag);
+	mark = arena_mark(owner);
 	result = world_load_section_with_scratch(owner, service->section_scratch,
 		path, tag, size, optional);
+	if (result && strcmp(tag, "CBIX") == 0 &&
+		(!service->staged_entry ||
+		 !hcu_map_catalog_validate_bsp_catalog(service->staged_entry,
+			 result, *size))) {
+		printf("HALO_PS2_LOCAL map-preflight catalog-rejected section=CBIX map=%s\n",
+			service->staged_entry ?
+				service->staged_entry->identity.map_name : "unset");
+		arena_release(owner, mark);
+		result = NULL;
+		if (size) *size = 0;
+	}
 	printf("HALO_PS2_LOCAL map-preflight section-end %s bytes=%u ok=%d\n",
 		tag, size ? (unsigned)*size : 0u, result != NULL);
 	return result;
 }
 
+typedef struct {
+	ctag_bsp_sink_fn sink;
+	void *sink_context;
+} section_sink_adapter;
+
+typedef struct {
+	uint8_t header[52];
+	size_t header_bytes;
+	size_t received;
+	size_t maximum_image_size;
+	uint32_t maximum_relocations;
+	arena_t *owner;
+	ps2_ctag_stream_validator validator;
+	uint8_t *relocations;
+	size_t relocation_bytes;
+	int initialized;
+	int failed;
+} ctag_first_pass;
+
+static int visit_section_sink(void *context, uint32_t offset,
+	const uint8_t *bytes, size_t size)
+{
+	section_sink_adapter *adapter = (section_sink_adapter *)context;
+	/* halo-ps2 HP2 uses zero for success; the PS2 cache visitor uses
+	 * nonzero for success. Keep that convention conversion at this seam. */
+	return adapter && adapter->sink &&
+		adapter->sink(adapter->sink_context, offset, bytes, size) ? 0 : -1;
+}
+
+static int visit_section(void *context, const char *path, const char *tag,
+	ctag_bsp_sink_fn sink, void *sink_context, size_t *raw_size)
+{
+	hcu_map_service *service = (hcu_map_service *)context;
+	section_sink_adapter adapter;
+	if (!service || !service->section_scratch || !path || !tag || !sink ||
+		!raw_size)
+		return 0;
+	printf("HALO_PS2_LOCAL cbsp-section-visit begin tag=%s descriptor=%d scratch=%u/%u\n",
+		tag, service->source.reader.descriptor,
+		(unsigned)service->section_scratch->used,
+		(unsigned)service->section_scratch->cap);
+	{
+		adapter.sink = sink;
+		adapter.sink_context = sink_context;
+		hp2_status status = world_visit_section_with_scratch(service->section_scratch,
+		path, tag, raw_size, 0,
+		visit_section_sink, &adapter);
+		printf("HALO_PS2_LOCAL cbsp-section-visit end status=%d raw=%u\n",
+			(int)status, (unsigned)*raw_size);
+		return status == HP2_OK;
+	}
+}
+
+static int feed_ctag_first_pass(void *context, uint32_t offset,
+	const uint8_t *bytes, size_t size)
+{
+	ctag_first_pass *pass = (ctag_first_pass *)context;
+	size_t consumed = 0;
+	if (!pass || (!bytes && size) || offset != pass->received) return 0;
+	while (consumed < size && !pass->initialized) {
+		size_t take = sizeof(pass->header) - pass->header_bytes;
+		ps2_ctag_status status;
+		uint32_t relocation_count;
+		if (take > size - consumed) take = size - consumed;
+		memcpy(pass->header + pass->header_bytes, bytes + consumed, take);
+		pass->header_bytes += take;
+		consumed += take;
+		if (pass->header_bytes < sizeof(pass->header)) continue;
+		relocation_count = (uint32_t)pass->header[16] |
+			((uint32_t)pass->header[17] << 8) |
+			((uint32_t)pass->header[18] << 16) |
+			((uint32_t)pass->header[19] << 24);
+		if (relocation_count > pass->maximum_relocations) {
+			pass->failed = 1;
+			return 0;
+		}
+		pass->relocation_bytes = (size_t)relocation_count * 4u;
+		pass->relocations = (uint8_t *)arena_alloc(pass->owner,
+			pass->relocation_bytes, 4u);
+		if (!pass->relocations) {
+			printf("HALO_PS2_LOCAL map-preflight ctag-relocation-allocation-failed "
+				"bytes=%u used=%u cap=%u\n",
+				(unsigned)pass->relocation_bytes,
+				(unsigned)pass->owner->used,
+				(unsigned)pass->owner->cap);
+			pass->failed = 1;
+			return 0;
+		}
+		status = ps2_ctag_stream_validator_begin(&pass->validator,
+			pass->header, sizeof(pass->header), (size_t)-1,
+			pass->relocations, pass->relocation_bytes,
+			pass->maximum_image_size, pass->maximum_relocations);
+		if (status != PS2_CTAG_OK) {
+			pass->failed = 1;
+			return 0;
+		}
+		pass->initialized = 1;
+	}
+	if (consumed < size && ps2_ctag_stream_validator_write(
+		&pass->validator, (uint32_t)pass->received +
+			(uint32_t)consumed, bytes + consumed, size - consumed) !=
+		PS2_CTAG_OK) {
+		pass->failed = 1;
+		return 0;
+	}
+	pass->received += size;
+	return 1;
+}
+
+/* CTAG's HP2 section is replayed by bounded visitors rather than materialized
+ * beside HMAP/CRNG/CBIX. One visitor validates outer HP2 CRC, inner image CRC,
+ * CE tag table, and relocation field structure. Relative target values are
+ * checked by the complete parser/rebaser against the final tag-cache image
+ * before CE publishes any pointers. */
+static int preflight_ctag_stream(hcu_map_service *service,
+	const char *pack_path, size_t maximum_image_size,
+	arena_t *owner, ctag_stream_info *result)
+{
+	ps2_ctag_stream_info info;
+	ctag_first_pass first_pass;
+	size_t raw_size = 0, mark;
+	uint32_t maximum_relocations;
+	ps2_ctag_status status;
+	int ok = 0;
+	if (!service || !pack_path || !owner || !result ||
+		maximum_image_size < 36u)
+		return 0;
+	memset(&first_pass, 0, sizeof(first_pass));
+	maximum_relocations = (uint32_t)(maximum_image_size / 4u);
+	mark = arena_mark(owner);
+	first_pass.owner = owner;
+	first_pass.maximum_image_size = maximum_image_size;
+	first_pass.maximum_relocations = maximum_relocations;
+	status = PS2_CTAG_ERR_IO;
+	if (visit_section(service, pack_path, "CTAG", feed_ctag_first_pass,
+		&first_pass, &raw_size) && !first_pass.failed &&
+		first_pass.initialized && raw_size == first_pass.validator.payload_size) {
+		status = ps2_ctag_stream_validator_finish(&first_pass.validator, &info);
+		if (status == PS2_CTAG_OK) ok = 1;
+	}
+	if (ok) {
+		result->image_size = info.image_size;
+		result->relocation_count = info.relocation_count;
+		result->scenario_tag_index = info.scenario_tag_index;
+	} else {
+		printf("HALO_PS2_LOCAL map-preflight ctag-stream-rejected status=%d failed=%d\n",
+			(int)status, first_pass.failed);
+	}
+	arena_release(owner, mark);
+	return ok;
+}
+
+static void clear_staged_request(hcu_map_service *service)
+{
+	if (!service) return;
+	/* A live mount may still depend on its source reader. Failure cleanup may
+	 * close only a reader that is not owned by an active map mount. */
+	if (!service->mount.active && service->source.active)
+		ctag_map_source_close(&service->source);
+	service->preflight_ready = 0;
+	service->reload_pending = 0;
+	memset(&service->ctag_info, 0, sizeof(service->ctag_info));
+	service->staged_map[0] = 0;
+	service->staged_entry = NULL;
+}
+
+/* port: HCP runtime lifecycle. The live owner is service->profile_mount. A
+ * successor is prepared only into profile_candidate, which never aliases a live
+ * span, and it is copied into the live slot only after CE has unpublished the
+ * old owner. Every profile-path failure leaves either the untouched old owner
+ * or an empty owner with no stage. */
+static int span_overlaps(const void *left, size_t left_bytes,
+	const void *right, size_t right_bytes)
+{
+	uintptr_t a = (uintptr_t)left, b = (uintptr_t)right;
+	if (!left_bytes || !right_bytes) return 0;
+	/* Fail closed on address overflow. */
+	if (left_bytes > UINTPTR_MAX - a || right_bytes > UINTPTR_MAX - b) return 1;
+	return a < b + right_bytes && b < a + left_bytes;
+}
+
+static int runtime_spans_valid(const hcu_map_profile_runtime *runtime)
+{
+	const void *base[3];
+	size_t bytes[3];
+	int i, j;
+	base[0] = runtime->metadata_storage;
+	bytes[0] = runtime->metadata_storage_bytes;
+	base[1] = runtime->relocation_storage;
+	bytes[1] = runtime->relocation_storage_bytes;
+	base[2] = runtime->stream_scratch;
+	bytes[2] = runtime->stream_scratch_bytes;
+	for (i = 0; i < 3; ++i)
+		if (!base[i] || !bytes[i]) return 0;
+	for (i = 0; i < 3; ++i)
+		for (j = i + 1; j < 3; ++j)
+			if (span_overlaps(base[i], bytes[i], base[j], bytes[j])) return 0;
+	return 1;
+}
+
+/* The bitmap frame owner's own state is the lease drain hook: no frame in
+ * progress, no GPU work pending, and no dispatcher lease outstanding. A missing
+ * or unbound owner cannot prove drain, so it fails closed. */
+static int profile_readers_drained(const hcu_bitmap_frame_owner *owner)
+{
+	return owner && owner->bound && !owner->in_frame && !owner->gpu_pending &&
+		owner->dispatch && owner->dispatch->lease_count == 0;
+}
+
+static int profile_owner_live(const hcu_map_service *service)
+{
+	return service->profile_mount.active || service->profile_mount.backend_mounted;
+}
+
+static void discard_profile_candidate(hcu_map_service *service)
+{
+	hcu_profile_mount_init(&service->profile_candidate);
+	service->profile_candidate_ready = 0;
+	service->preflight_ready = 0;
+	service->reload_pending = 0;
+	service->staged_map[0] = 0;
+	service->staged_entry = NULL;
+}
+
+static int profile_preflight(hcu_map_service *service,
+	const hcu_map_catalog_entry *entry)
+{
+	const hcu_map_profile_runtime *rt = &service->runtime;
+	hcu_asset_profile_view candidate;
+	hcu_profile_metadata_view metadata;
+	if (!service->runtime_registered || !entry ||
+		strcmp(service->runtime_map_name, entry->identity.map_name) != 0)
+		return 0;
+	if (profile_owner_live(service)) {
+		/* Teardown is allowed only for an exact same-map reload whose bitmap readers
+		 * have released every lease. The loader repeats the full checks after the
+		 * old owner is gone. Any other map keeps the live owner untouched. */
+		if (strcmp(service->profile_mount.source_identity_snapshot.map_name,
+			entry->identity.map_name) != 0) {
+			printf("HALO_PS2_LOCAL profile-preflight rejected reason=owner-live map=%s\n",
+				entry->identity.map_name);
+			return 0;
+		}
+		if (!profile_readers_drained(rt->frame_owner)) {
+			printf("HALO_PS2_LOCAL profile-preflight rejected reason=bitmap-leases-outstanding\n");
+			return 0;
+		}
+		service->staged_entry = entry;
+		memcpy(service->staged_map, entry->identity.map_name,
+			strlen(entry->identity.map_name) + 1);
+		service->reload_pending = 1;
+		return 1;
+	}
+	if (!runtime_spans_valid(rt) || rt->maximum_tag_image_bytes == 0 ||
+		(unsigned long)rt->maximum_tag_image_bytes >
+			physical_memory_get_tag_cache_size()) {
+		printf("HALO_PS2_LOCAL profile-preflight rejected reason=capacity-or-spans\n");
+		return 0;
+	}
+	if (hcu_asset_profile_preflight_reader(rt->package_read_at,
+			rt->package_context, rt->package_size, rt->profile_id,
+			&candidate) != HCU_ASSET_PROFILE_OK ||
+		!verify_profile_package_hash(rt->package_read_at, rt->package_context,
+			rt->package_size, rt->package_sha256) ||
+		!rt->compatibility ||
+		!rt->compatibility(rt->compatibility_context, entry, &candidate)) {
+		printf("HALO_PS2_LOCAL profile-preflight rejected reason=package-gate map=%s\n",
+			entry->identity.map_name);
+		return 0;
+	}
+	service->profile_view = candidate;
+	if (hcu_profile_metadata_decode(rt->metadata_bytes, rt->metadata_size,
+			rt->metadata_sha256, rt->profile_id, rt->metadata_storage,
+			rt->metadata_storage_bytes, &metadata) != HCU_PROFILE_METADATA_OK ||
+		metadata.cbsp_count > 0xffffu) {
+		printf("HALO_PS2_LOCAL profile-preflight rejected reason=metadata\n");
+		return 0;
+	}
+	hcu_profile_mount_init(&service->profile_candidate);
+	if (hcu_profile_mount_prepare(&service->profile_candidate,
+			&service->profile_view, rt->profile_id, entry,
+			metadata.cbsp_bindings, (uint16_t)metadata.cbsp_count,
+			metadata.resource_ranges, metadata.resource_range_count,
+			rt->source_read, rt->source_context, service->backend,
+			rt->maximum_tag_image_bytes, rt->relocation_storage,
+			rt->relocation_storage_bytes, rt->stream_scratch,
+			rt->stream_scratch_bytes) != HCU_PROFILE_MOUNT_OK) {
+		printf("HALO_PS2_LOCAL profile-preflight rejected reason=mount-prepare map=%s\n",
+			entry->identity.map_name);
+		hcu_profile_mount_init(&service->profile_candidate);
+		return 0;
+	}
+	service->profile_candidate_ready = 1;
+	service->staged_entry = entry;
+	memcpy(service->staged_map, entry->identity.map_name,
+		strlen(entry->identity.map_name) + 1);
+	service->preflight_ready = 1;
+	printf("HALO_PS2_LOCAL profile-preflight result=1 map=%s\n", entry->identity.map_name);
+	return 1;
+}
+
+static int profile_load(hcu_map_service *service, const char *map_name)
+{
+	const hcu_map_catalog_entry *entry;
+	if (profile_owner_live(service)) {
+		printf("HALO_PS2_LOCAL profile-load rejected reason=owner-still-active\n");
+		if (service->reload_pending) discard_profile_candidate(service);
+		return 0;
+	}
+	if (service->reload_pending && !service->preflight_ready &&
+		!hcu_map_service_preflight(map_name)) {
+		discard_profile_candidate(service);
+		return 0;
+	}
+	if (!(entry = service->staged_entry) || !service->profile_candidate_ready ||
+		!map_name || strcmp(service->staged_map, entry->identity.map_name) != 0 ||
+		hcu_map_catalog_find(map_name) != entry) {
+		if (service->reload_pending) discard_profile_candidate(service);
+		return 0;
+	}
+	service->profile_mount = service->profile_candidate;
+	hcu_profile_mount_init(&service->profile_candidate);
+	service->profile_candidate_ready = 0;
+	if (hcu_profile_mount_load(&service->profile_mount) != HCU_PROFILE_MOUNT_OK) {
+		/* Safe empty state: no backend is published and no stage remains. The
+		 * registered runtime stays available, so a later corrected preflight may
+		 * retry. */
+		(void)hcu_profile_mount_unload(&service->profile_mount);
+		hcu_profile_mount_init(&service->profile_mount);
+		service->preflight_ready = 0;
+		service->reload_pending = 0;
+		service->staged_map[0] = 0;
+		service->staged_entry = NULL;
+		printf("HALO_PS2_LOCAL profile-load failed map=%s state=empty\n",
+			entry->identity.map_name);
+		return 0;
+	}
+	service->preflight_ready = 0;
+	service->reload_pending = 0;
+	service->staged_map[0] = 0;
+	service->staged_entry = NULL;
+#ifdef HALO_PS2_M2_ANIMATION_TRACE
+	ps2_animation_trace_map_epoch_advance();
+#endif
+	return 1;
+}
+
+static void profile_unload(hcu_map_service *service)
+{
+	int preserve_reload = service->reload_pending;
+	if (profile_owner_live(service)) {
+		/* CE's unloader cannot report failure. Keep the mount and its storage
+		 * published rather than unmount under a live bitmap reader; profile_load
+		 * refuses while the owner remains live. */
+		if (!profile_readers_drained(service->runtime.frame_owner)) {
+			printf("HALO_PS2_LOCAL profile-unload blocked reason=bitmap-leases-outstanding\n");
+			return;
+		}
+		if (hcu_profile_mount_unload(&service->profile_mount) != HCU_PROFILE_MOUNT_OK) {
+			printf("HALO_PS2_LOCAL profile-unload blocked reason=callbacks-active\n");
+			return;
+		}
+	}
+#ifdef HALO_PS2_M2_ANIMATION_TRACE
+	ps2_animation_trace_map_epoch_advance();
+#endif
+	service->preflight_ready = 0;
+	if (!preserve_reload) discard_profile_candidate(service);
+}
+
 static int map_loader(void *context, const char *map_name)
 {
 	hcu_map_service *service = (hcu_map_service *)context;
-	char leaf[16];
+	const hcu_map_catalog_entry *entry;
 	int result;
-	if (!service || !service->initialized || !map_leaf(map_name, leaf) ||
-		!service->preflight_ready || strcmp(service->staged_map, leaf) != 0)
+	if (!service || !service->initialized) return 0;
+	if (service->runtime_registered) return profile_load(service, map_name);
+	/* A deferred reload is legal only after CE has actually released the old
+	 * owner. Otherwise do not mistake the active map's same-map shortcut for a
+	 * fresh post-unload validation pass. */
+	if (service->reload_pending &&
+		(service->mount.active || service->source.active)) {
+		printf("HALO_PS2_LOCAL map-reload rejected reason=owner-still-active\n");
+		clear_staged_request(service);
 		return 0;
-	HCU_TRACE("HALO_PS2_LOCAL map-mount begin %s\n", leaf);
-	result = ctag_mount_hp2_verified_source_discover(&service->mount,
-		service->map_arena, NULL, "maps/ui.hp2", map_name,
-		&service->source, &service->identity, service->backend,
+	}
+	/* CE preflights before game_unload(). For a same-map reload the active
+	 * package was already qualified, but the full byte/CRC/source checks must
+	 * run again after its owner is released and before the new cache is mounted. */
+	if (service && service->reload_pending && !service->preflight_ready &&
+		!hcu_map_service_preflight(map_name)) {
+		clear_staged_request(service);
+		return 0;
+	}
+	if (!(entry = service->staged_entry) ||
+		!service->preflight_ready ||
+		strcmp(service->staged_map, entry->identity.map_name) != 0 ||
+		!map_name || hcu_map_catalog_find(map_name) != entry) {
+		/* A mismatched cache request must not consume a previously validated
+		 * request: CE may probe/reject another scenario before loading the
+		 * staged one. Only a deferred reload owns cleanup responsibility here. */
+		if (service->reload_pending)
+			clear_staged_request(service);
+		return 0;
+	}
+	HCU_TRACE("HALO_PS2_LOCAL map-mount begin %s\n",
+		entry->identity.map_name);
+	result = ctag_mount_hp2_stream_verified_source_discover(&service->mount,
+		service->map_arena, service->section_scratch,
+		entry->hp2_path, entry->scenario_name,
+		service->identity.tag_data_offset, service->identity.tag_data_size,
+		service->identity.file_length, ctag_map_source_read,
+		&service->source, ctag_map_source_close_context,
+		&service->identity, &service->ctag_info, service->backend,
 		load_section, service);
+	if (result == 0 &&
+		(!ctag_mount_set_ctag_section_visitor(&service->mount, visit_section) ||
+		 !ctag_mount_set_bsp_section_visitor(&service->mount, visit_section))) {
+		printf("HALO_PS2_LOCAL map-mount failed reason=section-visitor-registration\n");
+		ctag_mount_unload(&service->mount);
+		result = -1;
+	}
 	printf("HALO_PS2_LOCAL map-mount result=%d active=%d\n",
 		result, service->mount.active);
 	if (!result) {
 		service->preflight_ready = 0;
 		service->staged_map[0] = 0;
+		service->staged_entry = NULL;
+		service->reload_pending = 0;
+#ifdef HALO_PS2_M2_ANIMATION_TRACE
+		/* New mounted tag/object indices must not alias the prior map's trace. */
+		ps2_animation_trace_map_epoch_advance();
+#endif
 		return 1;
 	}
 	ctag_map_source_close(&service->source);
 	service->preflight_ready = 0;
 	service->staged_map[0] = 0;
+	service->staged_entry = NULL;
+	service->reload_pending = 0;
 	return 0;
 }
 
@@ -110,26 +558,74 @@ static int map_preflight(void *context, const char *map_name)
 static void map_unloader(void *context)
 {
 	hcu_map_service *service = (hcu_map_service *)context;
+	int preserve_reload;
 	if (!service) return;
+	if (service->runtime_registered) {
+		profile_unload(service);
+		return;
+	}
+	preserve_reload = service->reload_pending;
 	if (service->mount.active)
 		ctag_mount_unload(&service->mount);
 	else if (service->source.active)
 		ctag_map_source_close(&service->source);
+#ifdef HALO_PS2_M2_ANIMATION_TRACE
+	/* Advance even for an empty/deferred unload boundary: identity is diagnostic,
+	 * not a statement that the old map had gameplay pose data. */
+	ps2_animation_trace_map_epoch_advance();
+#endif
 	service->preflight_ready = 0;
-	service->staged_map[0] = 0;
+	if (!preserve_reload) {
+		service->staged_map[0] = 0;
+		service->staged_entry = NULL;
+	}
 }
 
-int hcu_map_service_init(hcu_map_service *service,
-	mem_layout_v2_t *layout, const char *asset_root)
+static int map_service_init(hcu_map_service *service,
+	mem_layout_v2_t *layout, const char *asset_root,
+	arena_t *map_owner, arena_t *section_scratch)
 {
+	arena_t *streaming, *frame_scratch;
+	uintptr_t stream_start, scratch_start, owner_start;
+	size_t scratch_offset;
 	if (!service || !layout || !asset_root || s_service) return -1;
 	memset(service, 0, sizeof(*service));
-	service->map_arena = mem_layout_v2_get(layout, MEM_LAYOUT_V2_STREAMING);
-	service->section_scratch = mem_layout_v2_get(layout,
-		MEM_LAYOUT_V2_FRAME_SCRATCH);
+	streaming = mem_layout_v2_get(layout, MEM_LAYOUT_V2_STREAMING);
+	service->map_arena = map_owner ? map_owner : streaming;
+	frame_scratch = mem_layout_v2_get(layout, MEM_LAYOUT_V2_FRAME_SCRATCH);
+	service->section_scratch = section_scratch ? section_scratch : frame_scratch;
 	service->backend = ctag_ps2_cache_backend();
-	if (!service->map_arena || !service->section_scratch ||
-		!service->map_arena->base || !service->section_scratch->base ||
+	stream_start = streaming ? (uintptr_t)streaming->base : 0;
+	owner_start = service->map_arena ? (uintptr_t)service->map_arena->base : 0;
+	scratch_start = service->section_scratch ?
+		(uintptr_t)service->section_scratch->base : 0;
+	if (!streaming || !streaming->base || !service->map_arena || !frame_scratch ||
+		!service->section_scratch ||
+		!service->map_arena->base || !frame_scratch->base ||
+		!service->section_scratch->base || !service->section_scratch->cap ||
+		service->map_arena->used > service->map_arena->cap ||
+		service->section_scratch->used > service->section_scratch->cap ||
+		owner_start < stream_start || scratch_start < stream_start)
+		return -1;
+	if (map_owner) {
+		size_t owner_offset = (size_t)(owner_start - stream_start);
+		size_t scratch_stream_offset = (size_t)(scratch_start - stream_start);
+		if (owner_offset > streaming->cap ||
+			service->map_arena->cap > streaming->cap - owner_offset ||
+			scratch_stream_offset > streaming->cap ||
+			service->section_scratch->cap > streaming->cap - scratch_stream_offset ||
+			(owner_offset < scratch_stream_offset + service->section_scratch->cap &&
+			scratch_stream_offset < owner_offset + service->map_arena->cap))
+			return -1;
+	} else {
+		uintptr_t frame_start = (uintptr_t)frame_scratch->base;
+		if (scratch_start < frame_start) return -1;
+		scratch_offset = (size_t)(scratch_start - frame_start);
+		if (scratch_offset > frame_scratch->cap ||
+			service->section_scratch->cap > frame_scratch->cap - scratch_offset)
+			return -1;
+	}
+	if (
 		!service->backend || !file_set_default_root(asset_root))
 		return -1;
 	ctag_mount_init(&service->mount);
@@ -147,62 +643,310 @@ int hcu_map_service_init(hcu_map_service *service,
 	return 0;
 }
 
+int hcu_map_service_init(hcu_map_service *service,
+	mem_layout_v2_t *layout, const char *asset_root)
+{
+	return map_service_init(service, layout, asset_root, NULL, NULL);
+}
+
+int hcu_map_service_init_with_scratch(hcu_map_service *service,
+	mem_layout_v2_t *layout, const char *asset_root,
+	arena_t *section_scratch)
+{
+	if (!section_scratch) return -1;
+	return map_service_init(service, layout, asset_root, NULL, section_scratch);
+}
+
+int hcu_map_service_init_with_arenas(hcu_map_service *service,
+	mem_layout_v2_t *layout, const char *asset_root,
+	arena_t *map_owner, arena_t *section_scratch)
+{
+	if (!map_owner || !section_scratch) return -1;
+	return map_service_init(service, layout, asset_root, map_owner, section_scratch);
+}
+
+/* A failed preflight for the staged map invalidates a validated stage
+ * (preflight_ready), so a later map_loader() for it must refuse. A failed
+ * preflight for any other map leaves the stage intact: CE may probe another
+ * scenario before loading the staged one. A same-map reuse stage (reload_pending
+ * without preflight_ready) is not a validated stage; map_loader() re-runs the
+ * full checks for it, so it is left untouched here. */
+static void fail_preflight_for_entry(hcu_map_service *service,
+	const hcu_map_catalog_entry *entry)
+{
+	if (service->staged_entry == entry && service->preflight_ready)
+		clear_staged_request(service);
+}
+
 int hcu_map_service_preflight(const char *map_name)
 {
 	hcu_map_service *service = s_service;
-	char leaf[16];
-	uint8_t *hmap_bytes, *ctag_bytes, *crng_bytes;
+	const hcu_map_catalog_entry *entry;
+	uint8_t *hmap_bytes, *crng_bytes, *cbix_bytes;
 	hmap_identity identity;
 	ctag_resource_index resource_index;
-	ps2_ctag_view ctag_view;
-	size_t mark, hmap_size = 0, ctag_size = 0, crng_size = 0;
+	ctag_stream_info ctag_info;
+	size_t mark, hmap_size = 0, crng_size = 0;
+	size_t cbix_size = 0;
 	unsigned long tag_cache_size;
 	int valid = 0;
-	if (!service || !service->initialized || !map_leaf(map_name, leaf))
+	if (!service || !service->initialized ||
+		!(entry = hcu_map_catalog_find(map_name)))
 		return 0;
+	/* The profile gate precedes same-map reuse, staging, source open, and arena
+	 * marks. Its reader is caller-owned and re-read on every CE pre-unload check. */
+	if (service->profile_requested) {
+		hcu_asset_profile_view candidate;
+		if (strcmp(service->profile_map_name, entry->identity.map_name) != 0 ||
+			hcu_asset_profile_preflight_reader(service->profile_read_at,
+				service->profile_reader_context, service->profile_image_size,
+				service->expected_profile_id, &candidate) != HCU_ASSET_PROFILE_OK ||
+			!verify_profile_package_hash(service->profile_read_at,
+				service->profile_reader_context, service->profile_image_size,
+				service->expected_profile_sha256) ||
+			!service->profile_compatibility ||
+			!service->profile_compatibility(service->profile_compatibility_context,
+				entry, &candidate)) {
+			printf("HALO_PS2_LOCAL map-preflight rejected reason=asset-profile-gate map=%s\n",
+				entry->identity.map_name);
+			fail_preflight_for_entry(service, entry);
+			return 0;
+		}
+		service->profile_view = candidate;
+	}
+#ifdef HALO_PS2_M2_UI_LIFECYCLE_TEST
+	if (s_lifecycle_fail_preflight_once) {
+		s_lifecycle_fail_preflight_once = 0;
+		printf("HALO_PS2_LOCAL m2-ui-lifecycle-injected preflight-before-unload\n");
+		fail_preflight_for_entry(service, entry);
+		return 0;
+	}
+#endif
 	if (service->preflight_ready)
-		return strcmp(service->staged_map, leaf) == 0;
-	if (service->mount.active || service->source.active) return 0;
+		return service->staged_entry == entry;
+	/* The full catalog is available for identity and extent checks, but no
+	 * gameplay map is enabled until its M2 resident/BSP peak is qualified.
+	 * This opt-in exists only for the isolated host D20 lifecycle oracle; it
+	 * must never be defined by the production EE manifest. */
+#if defined(HCU_M2_D20_HOST_ORACLE)
+	if (strcmp(entry->identity.map_name, "d20") != 0) {
+#elif defined(HCU_M2_MP_HOST_ORACLE)
+	/* Diagnostic-only oracle for the production-sized MP fixture cases.
+	 * This define is never in the EE profile or product map-admission gate. */
+	if (strcmp(entry->identity.map_name, "ui") != 0 &&
+		strcmp(entry->identity.map_name, "longest") != 0 &&
+		strcmp(entry->identity.map_name, "bloodgulch") != 0 &&
+		strcmp(entry->identity.map_name, "beavercreek") != 0) {
+#elif defined(HALO_PS2_STEP8_MP_CAPACITY_DIAGNOSTIC)
+	/* The corpus capacity probe is a separate ELF; the ordinary admission
+	 * branch below remains UI-only. */
+	if (strcmp(entry->identity.map_name, "ui") != 0 &&
+		strcmp(entry->identity.map_name, "beavercreek") != 0 &&
+		strcmp(entry->identity.map_name, "bloodgulch") != 0 &&
+		strcmp(entry->identity.map_name, "boardingaction") != 0 &&
+		strcmp(entry->identity.map_name, "carousel") != 0 &&
+		strcmp(entry->identity.map_name, "chillout") != 0 &&
+		strcmp(entry->identity.map_name, "damnation") != 0 &&
+		strcmp(entry->identity.map_name, "hangemhigh") != 0 &&
+		strcmp(entry->identity.map_name, "longest") != 0 &&
+		strcmp(entry->identity.map_name, "prisoner") != 0 &&
+		strcmp(entry->identity.map_name, "putput") != 0 &&
+		strcmp(entry->identity.map_name, "ratrace") != 0 &&
+		strcmp(entry->identity.map_name, "sidewinder") != 0 &&
+		strcmp(entry->identity.map_name, "wizard") != 0) {
+#else
+	if (strcmp(entry->identity.map_name, "ui") != 0) {
+#endif
+		printf("HALO_PS2_LOCAL map-preflight rejected map=%s reason=capacity-not-qualified\n",
+			entry->identity.map_name);
+		fail_preflight_for_entry(service, entry);
+		return 0;
+	}
+	if (service->runtime_registered)
+		return profile_preflight(service, entry);
+	if (service->mount.active || service->source.active) {
+		/* Do not allocate or overwrite a live owner's arena during CE's
+		 * preflight-before-unload transition. Reuse is safe only for the exact
+		 * currently mounted map; the loader repeats full checks after unload. */
+		if (service->mount.active &&
+			strcmp(service->identity.map_name, entry->identity.map_name) == 0) {
+			service->staged_entry = entry;
+			memcpy(service->staged_map, entry->identity.map_name,
+				strlen(entry->identity.map_name) + 1);
+			service->reload_pending = 1;
+			return 1;
+		}
+		fail_preflight_for_entry(service, entry);
+		return 0;
+	}
+	/* Stage the identity for the loader callback so CBIX can be checked before
+	 * CE tears down the currently published scenario. This is private pending
+	 * state only; no cache or scenario pointer is published here. */
+	service->staged_entry = entry;
+	memcpy(service->staged_map, entry->identity.map_name,
+		strlen(entry->identity.map_name) + 1);
 	printf("HALO_PS2_LOCAL map-preflight source-open-begin\n");
-	if (ctag_map_source_open_any(&service->source, "maps/ui.map") != 0) {
+	if (ctag_map_source_open_any(&service->source, entry->map_path) != 0) {
 		printf("HALO_PS2_LOCAL map-preflight source-open-failed\n");
+		clear_staged_request(service);
 		return 0;
 	}
 	printf("HALO_PS2_LOCAL map-preflight source-opened bytes=%u\n",
 		(unsigned)service->source.reader.size);
 	mark = arena_mark(service->map_arena);
 	HCU_TRACE("HALO_PS2_LOCAL map-preflight sections-begin\n");
-	hmap_bytes = load_section(service, service->map_arena, "maps/ui.hp2",
+	hmap_bytes = load_section(service, service->map_arena, entry->hp2_path,
 		"HMAP", &hmap_size, 0);
-	ctag_bytes = load_section(service, service->map_arena, "maps/ui.hp2",
-		"CTAG", &ctag_size, 0);
-	crng_bytes = load_section(service, service->map_arena, "maps/ui.hp2",
+	crng_bytes = load_section(service, service->map_arena, entry->hp2_path,
 		"CRNG", &crng_size, 0);
-	HCU_TRACE("HALO_PS2_LOCAL map-preflight sections-done hmap=%u ctag=%u crng=%u\n",
-		(unsigned)hmap_size, (unsigned)ctag_size, (unsigned)crng_size);
+	cbix_bytes = load_section(service, service->map_arena, entry->hp2_path,
+		"CBIX", &cbix_size, 0);
+	HCU_TRACE("HALO_PS2_LOCAL map-preflight sections-done hmap=%u crng=%u cbix=%u\n",
+		(unsigned)hmap_size, (unsigned)crng_size,
+		(unsigned)cbix_size);
 	tag_cache_size = physical_memory_get_tag_cache_size();
 	HCU_TRACE("HALO_PS2_LOCAL map-preflight validate-begin\n");
-	if (hmap_bytes && ctag_bytes && crng_bytes &&
-		hmap_open(&identity, hmap_bytes, hmap_size, leaf) &&
+	memset(&ctag_info, 0, sizeof(ctag_info));
+	if (hmap_bytes && crng_bytes && cbix_bytes &&
+		hcu_map_catalog_validate_hmap(entry, hmap_bytes, hmap_size,
+			&identity) &&
+		hcu_map_catalog_validate_bsp_catalog(entry, cbix_bytes, cbix_size) &&
 		identity.file_length == service->source.reader.size &&
 		ctag_resource_index_open_discover(&resource_index, crng_bytes,
 			crng_size, service->source.reader.size) &&
 		resource_index.tag_data_offset == identity.tag_data_offset &&
 		resource_index.tag_data_size == identity.tag_data_size &&
-		ps2_ctag_open(&ctag_view, ctag_bytes, ctag_size, tag_cache_size,
-			(uint32_t)(tag_cache_size / 4u)) == PS2_CTAG_OK &&
+		preflight_ctag_stream(service, entry->hp2_path, tag_cache_size,
+			service->map_arena, &ctag_info) &&
 		verify_source_hash(service,
 			identity.source_sha256))
 		valid = 1;
+#ifdef HALO_PS2_M2_UI_LIFECYCLE_TEST
+	/* Inject only after the complete post-unload validation has succeeded. This
+	 * is reached through CE's normal ps2_cache_preflight_map() call from
+	 * main_load_ui_scenario(), not by calling map_loader() from the diagnostic. */
+	if (valid && s_lifecycle_deferred_failure_armed) {
+		s_lifecycle_deferred_failure_armed = 0;
+		valid = 0;
+		printf("HALO_PS2_LOCAL m2-ui-lifecycle-injected preflight-after-unload\n");
+	}
+#endif
 	printf("HALO_PS2_LOCAL map-preflight result=%d\n", valid);
 	arena_release(service->map_arena, mark);
 	if (!valid) {
-		ctag_map_source_close(&service->source);
+		clear_staged_request(service);
 		return 0;
 	}
 	service->identity = identity;
-	memcpy(service->staged_map, leaf, sizeof(service->staged_map));
+	service->ctag_info = ctag_info;
 	service->preflight_ready = 1;
+	return 1;
+}
+
+int hcu_map_service_register_profile(hcu_map_service *service,
+	const char *map_name, uint32_t profile_id,
+	hcu_asset_profile_read_at read_at, void *reader_context,
+	uint32_t image_size, const uint8_t expected_package_sha256[32],
+	hcu_map_profile_compatibility_fn compatibility, void *compatibility_context)
+{
+	const hcu_map_catalog_entry *entry;
+	hcu_asset_profile_view candidate;
+	char canonical_name[sizeof(service->profile_map_name)];
+	if (!service || service != s_service || !service->initialized ||
+		service->runtime_registered ||
+		!map_name || !read_at || !profile_id || !expected_package_sha256 ||
+		!compatibility ||
+		!(entry = hcu_map_catalog_find(map_name)) ||
+		strcmp(map_name, entry->identity.map_name) != 0 ||
+		hcu_asset_profile_preflight_reader(read_at, reader_context, image_size,
+			profile_id, &candidate) != HCU_ASSET_PROFILE_OK ||
+		!verify_profile_package_hash(read_at, reader_context, image_size,
+		expected_package_sha256) ||
+		!compatibility(compatibility_context, entry, &candidate))
+		return 0;
+	if (strlen(entry->identity.map_name) >= sizeof(canonical_name)) return 0;
+	memset(canonical_name, 0, sizeof(canonical_name));
+	memcpy(canonical_name, entry->identity.map_name,
+		strlen(entry->identity.map_name) + 1);
+	/* Commit the new request only after map and every chunk have passed. */
+	service->profile_requested = 1;
+	service->expected_profile_id = profile_id;
+	service->profile_image_size = image_size;
+	memcpy(service->expected_profile_sha256, expected_package_sha256, 32);
+	service->profile_read_at = read_at;
+	service->profile_reader_context = reader_context;
+	service->profile_compatibility = compatibility;
+	service->profile_compatibility_context = compatibility_context;
+	service->profile_view = candidate;
+	memcpy(service->profile_map_name, canonical_name, sizeof(canonical_name));
+	return 1;
+}
+
+int hcu_map_service_unregister_profile(hcu_map_service *service)
+{
+	if (!service || service != s_service || !service->initialized ||
+		service->mount.active || service->source.active || service->reload_pending)
+		return 0;
+	service->profile_requested = 0;
+	service->expected_profile_id = 0;
+	service->profile_image_size = 0;
+	service->profile_read_at = NULL;
+	service->profile_reader_context = NULL;
+	service->profile_compatibility = NULL;
+	service->profile_compatibility_context = NULL;
+	memset(service->expected_profile_sha256, 0,
+		sizeof(service->expected_profile_sha256));
+	memset(&service->profile_view, 0, sizeof(service->profile_view));
+	memset(service->profile_map_name, 0, sizeof(service->profile_map_name));
+	return 1;
+}
+
+int hcu_map_service_register_runtime(hcu_map_service *service,
+	const char *map_name, const hcu_map_profile_runtime *runtime)
+{
+	const hcu_map_catalog_entry *entry;
+	hcu_asset_profile_view candidate;
+	if (!service || service != s_service || !service->initialized || !map_name ||
+		!runtime || service->runtime_registered || service->profile_requested ||
+		service->mount.active || service->source.active ||
+		profile_owner_live(service) || service->profile_candidate_ready ||
+		service->reload_pending || service->preflight_ready)
+		return 0;
+	if (!(entry = hcu_map_catalog_find(map_name)) ||
+		strcmp(map_name, entry->identity.map_name) != 0 ||
+		strlen(entry->identity.map_name) >= sizeof(service->runtime_map_name) ||
+		!runtime->package_read_at || !runtime->compatibility ||
+		!runtime->package_size || !runtime->profile_id ||
+		!runtime->metadata_bytes || !runtime->metadata_size ||
+		!runtime->source_read || !runtime->maximum_tag_image_bytes ||
+		!runtime_spans_valid(runtime) ||
+		hcu_asset_profile_preflight_reader(runtime->package_read_at,
+			runtime->package_context, runtime->package_size, runtime->profile_id,
+			&candidate) != HCU_ASSET_PROFILE_OK ||
+		!verify_profile_package_hash(runtime->package_read_at,
+			runtime->package_context, runtime->package_size,
+			runtime->package_sha256) ||
+		!runtime->compatibility(runtime->compatibility_context, entry, &candidate))
+		return 0;
+	service->runtime = *runtime;
+	memset(service->runtime_map_name, 0, sizeof(service->runtime_map_name));
+	memcpy(service->runtime_map_name, entry->identity.map_name,
+		strlen(entry->identity.map_name) + 1);
+	service->profile_view = candidate;
+	service->runtime_registered = 1;
+	return 1;
+}
+
+int hcu_map_service_unregister_runtime(hcu_map_service *service)
+{
+	if (!service || service != s_service || !service->initialized ||
+		!service->runtime_registered || profile_owner_live(service) ||
+		service->profile_candidate_ready || service->reload_pending)
+		return 0;
+	memset(&service->runtime, 0, sizeof(service->runtime));
+	memset(service->runtime_map_name, 0, sizeof(service->runtime_map_name));
+	memset(&service->profile_view, 0, sizeof(service->profile_view));
+	service->runtime_registered = 0;
 	return 1;
 }
 
@@ -210,9 +954,53 @@ void hcu_map_service_shutdown(hcu_map_service *service)
 {
 	if (!service) return;
 	map_unloader(service);
+	service->reload_pending = 0;
+	service->staged_map[0] = 0;
+	service->staged_entry = NULL;
+	if (service->runtime_registered && profile_owner_live(service)) {
+		/* Readers were not drained, so the owner and the caller-owned storage it
+		 * names stay published. The caller must not reclaim that storage. */
+		printf("HALO_PS2_LOCAL map-shutdown retained live profile owner\n");
+	} else {
+		service->runtime_registered = 0;
+		memset(&service->runtime, 0, sizeof(service->runtime));
+		memset(service->runtime_map_name, 0, sizeof(service->runtime_map_name));
+		discard_profile_candidate(service);
+	}
+	(void)hcu_map_service_unregister_profile(service);
 	ps2_cache_set_map_preflight(NULL, NULL);
 	ps2_cache_set_map_loader(NULL, NULL);
 	ps2_cache_set_map_unloader(NULL, NULL);
 	service->initialized = 0;
 	if (s_service == service) s_service = NULL;
 }
+
+void hcu_map_service_lifecycle_trace(const char *phase, unsigned int cycle)
+{
+	hcu_map_service *service = s_service;
+	if (!service || !phase) {
+		printf("HALO_PS2_LOCAL m2-ui-owner cycle=%u phase=%s service=unavailable\n",
+			cycle, phase ? phase : "unset");
+		return;
+	}
+	printf("HALO_PS2_LOCAL m2-ui-owner cycle=%u phase=%s base=%p cap=%u used=%u high=%u mount=%d source=%d descriptor=%d preflight=%d reload=%d staged=%s\n",
+		cycle, phase, (void *)service->map_arena->base,
+		(unsigned)service->map_arena->cap, (unsigned)service->map_arena->used,
+		(unsigned)service->map_arena->high, service->mount.active,
+		service->source.active, service->source.reader.descriptor,
+		service->preflight_ready, service->reload_pending,
+		service->staged_map[0] ? service->staged_map : "-");
+}
+
+#ifdef HALO_PS2_M2_UI_LIFECYCLE_TEST
+void hcu_map_service_lifecycle_fail_preflight_once(void)
+{
+	s_lifecycle_fail_preflight_once = 1;
+}
+
+void hcu_map_service_lifecycle_arm_deferred_failure_once(void)
+{
+	s_lifecycle_deferred_failure_armed = 1;
+}
+
+#endif

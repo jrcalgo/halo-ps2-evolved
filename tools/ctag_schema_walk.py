@@ -49,6 +49,7 @@ class StructureBspWalkResult:
     spans: tuple[tuple[int, int, str], ...]
     visited_bytes: int
     file_data_records: tuple[tuple[str, str, int, int, int], ...]
+    normalizations: tuple[tuple[int, int, int, str], ...]
 
 
 class Walker:
@@ -59,6 +60,8 @@ class Walker:
             raise SchemaWalkError("unsupported CE schema manifest")
         self.manifest = manifest
         self.image = bytearray(image)
+        self.source_image = bytes(image)
+        self.normalizations: list[tuple[int, int, int, str]] = []
         self.source_base = source_base
         if file_data_policy not in ("reject", "strip", "inventory"):
             raise SchemaWalkError("file_data_policy must be 'reject', 'strip', or 'inventory'")
@@ -116,11 +119,40 @@ class Walker:
         self.require(offset, 4, "i32")
         return struct.unpack_from("<i", self.image, offset)[0]
 
-    def write_u32(self, offset: int, value: int):
+    def write_u32(self, offset: int, value: int, reason: str = "internal-pointer"):
         self.require(offset, 4, "pointer field")
         if not 0 <= value <= 0xFFFFFFFF:
             raise SchemaWalkError("normalized pointer is outside u32")
+        previous = self.u32(offset)
         struct.pack_into("<I", self.image, offset, value)
+        self.normalizations.append((offset, previous, value, reason))
+
+    def verify_bsp_preservation(self):
+        """Require every byte change to be one explicit schema normalization.
+
+        Replay in order: an overlapping schema field cannot hide a second
+        unexplained write, and opaque/padding/payload bytes remain covered.
+        """
+        expected = bytearray(self.source_image)
+        external_names = set(self.external_reference_relocations)
+        for offset, previous, value, reason in self.normalizations:
+            if reason not in {"internal-pointer", "external-name", "empty-pointer",
+                              "runtime-definition", "file-data-pointer"}:
+                raise SchemaWalkError(f"unapproved BSP normalization {reason!r}")
+            if reason == "internal-pointer" and (
+                    offset not in self.relocations or
+                    value != (previous - self.source_base if previous else 0)):
+                raise SchemaWalkError(f"invalid BSP pointer normalization at {offset:#x}")
+            if reason == "external-name" and (
+                    offset, value) not in external_names:
+                raise SchemaWalkError(f"unregistered BSP tag name at {offset:#x}")
+            if reason in {"empty-pointer", "runtime-definition", "file-data-pointer"} and value:
+                raise SchemaWalkError(f"nonzero BSP reset at {offset:#x}")
+            if struct.unpack_from("<I", expected, offset)[0] != previous:
+                raise SchemaWalkError(f"unrecorded BSP write before {offset:#x}")
+            struct.pack_into("<I", expected, offset, value)
+        if expected != self.image:
+            raise SchemaWalkError("BSP bytes changed outside schema normalizations")
 
     def require(self, offset: int, size: int, what: str):
         if offset < 0 or size < 0 or offset > self.size or size > self.size - offset:
@@ -192,13 +224,17 @@ class Walker:
                     block = field_base + item * stride
                     block_count = self.i32(block)
                     address_field = block + 4
-                    self.write_u32(block + 8, 0)  # CE runtime definition pointer; validator resets it.
+                    self.write_u32(block + 8, 0, "runtime-definition")
                     if block_count < 0:
                         raise SchemaWalkError(f"negative tag_block count in {definition['name']}.{field['name']}")
                     if not block_count:
-                        self.write_u32(address_field, 0)
+                        self.write_u32(address_field, 0, "empty-pointer")
                         continue
                     target = self.pointer_target(address_field, required=True)
+                    if target & 3:
+                        raise SchemaWalkError(
+                            f"tag_block target {target:#x} is not 4-byte aligned in "
+                            f"{definition['name']}.{field['name']}")
                     maximum = field["maximum"]
                     if maximum > 0 and block_count > maximum:
                         raise SchemaWalkError(f"tag_block exceeds CE maximum in {definition['name']}.{field['name']}")
@@ -229,18 +265,22 @@ class Walker:
                                 self.stripped_file_data_bytes += data_size
                                 struct.pack_into("<i", self.image, data, 0)
                                 struct.pack_into("<i", self.image, data + 8, 0)
-                        self.write_u32(address_field, 0)
+                        self.write_u32(address_field, 0, "file-data-pointer")
                     else:
                         if not data_size:
-                            self.write_u32(address_field, 0)
+                            self.write_u32(address_field, 0, "empty-pointer")
                         else:
                             target = self.pointer_target(address_field, required=True)
+                            if target & 3:
+                                raise SchemaWalkError(
+                                    f"tag_data target {target:#x} is not 4-byte aligned in "
+                                    f"{definition['name']}.{field['name']}")
                             self.require(target, data_size, f"data {definition['name']}.{field['name']}")
                             self.add_span(target, data_size, f"data {definition['name']}.{field['name']}")
                             self.in_image_data_records.append((
                                 definition["name"], field["name"], data_size, target
                             ))
-                    self.write_u32(data + 16, 0)  # CE runtime definition pointer; validator resets it.
+                    self.write_u32(data + 16, 0, "runtime-definition")
             elif kind == "reference":
                 if stride != TAG_REFERENCE_SIZE:
                     raise SchemaWalkError(f"unexpected tag_reference stride {stride}")
@@ -255,7 +295,7 @@ class Walker:
                         if not isinstance(name, int) or name < 0 or name > 0xFFFFFFFF:
                             raise SchemaWalkError(
                                 f"external tag-reference name {name_value:#x} has no bounded tag-image mapping")
-                        self.write_u32(name_field, name)
+                        self.write_u32(name_field, name, "external-name")
                         self.external_reference_relocations.append((name_field, name))
                         external_name = True
                     else:
@@ -356,15 +396,20 @@ class Walker:
         if not group or not group.get("definition"):
             raise SchemaWalkError("manifest has no linked structure-BSP schema")
         root = self.pointer_target(0, required=True)
+        if root & 3:
+            raise SchemaWalkError("structure-BSP root target is not 4-byte aligned")
         definition = self.schema(group["definition"])
         self.add_span(root, definition["size"], "structure-BSP root")
         self.walk_definition(group["definition"], root)
         self.validate_spans()
+        if self.file_data_policy == "strip":
+            raise SchemaWalkError("BSP payload stripping is not a preservation policy")
+        self.verify_bsp_preservation()
         return StructureBspWalkResult(
             bytes(self.image), tuple(sorted(self.relocations)),
             tuple(sorted(self.external_reference_relocations)),
             tuple(sorted(self.spans)), sum(end - start for start, end, _owner in self.spans),
-            tuple(self.file_data_records))
+            tuple(self.file_data_records), tuple(self.normalizations))
 
 
 def walk_tag_image(manifest: dict, image: bytes, source_base: int = 0,

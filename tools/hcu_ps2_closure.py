@@ -285,6 +285,16 @@ def main() -> None:
                         help="a manifest layer name, or 'all' for every selected source")
     parser.add_argument("--no-bootstrap-memory", action="store_true",
                         help="compile the selected layer with caller-owned PS2 memory only")
+    parser.add_argument("--m2-ui-lifecycle-test", action="store_true",
+                        help="compile the opt-in CE UI unload/reload diagnostic variant")
+    parser.add_argument("--step8-mp-capacity-diagnostic", action="store_true",
+                        help="compile the isolated target-sized Sidewinder load/query diagnostic")
+    parser.add_argument("--step8-mp-workload-only", action="store_true",
+                        help="compile only the test-only CE local-player workload, skipping 13 map queries")
+    parser.add_argument("--step8-mp-workload-players", type=int, choices=(2, 4), default=2,
+                        help="local split-screen players for the workload-only diagnostic (2 or CE maximum 4)")
+    parser.add_argument("--m2-animation-trace", action="store_true",
+                        help="compile the opt-in bounded animation touch observer")
     args = parser.parse_args()
     manifest = json.loads(MANIFEST_PATH.read_text())
     if args.layer != "all" and args.layer not in manifest["layers"]:
@@ -301,6 +311,20 @@ def main() -> None:
     if not compiler.is_file():
         raise RuntimeError("Compiler installation is incomplete; finish make toolchain first")
     profile = "-no-bootstrap-memory" if args.no_bootstrap_memory else ""
+    if args.m2_ui_lifecycle_test:
+        profile += "-m2-ui-lifecycle"
+    if args.step8_mp_capacity_diagnostic:
+        if not args.no_bootstrap_memory or not args.m2_ui_lifecycle_test:
+            parser.error("--step8-mp-capacity-diagnostic requires --no-bootstrap-memory and --m2-ui-lifecycle-test")
+        profile = "-no-bootstrap-memory-step8-mp-capacity"
+    if args.step8_mp_workload_only:
+        if not args.step8_mp_capacity_diagnostic:
+            parser.error("--step8-mp-workload-only requires --step8-mp-capacity-diagnostic")
+        profile = f"-no-bootstrap-memory-step8-mp-workload-{args.step8_mp_workload_players}p"
+    elif args.step8_mp_workload_players != 2:
+        parser.error("--step8-mp-workload-players requires --step8-mp-workload-only")
+    if args.m2_animation_trace:
+        profile += "-m2-animation-trace"
     output = build / "hcu-ps2-closure" / (args.layer + profile)
     output.mkdir(parents=True, exist_ok=True)
     header = HCU / manifest["prefix"]
@@ -315,21 +339,43 @@ def main() -> None:
     includes = ["-I" + str(HCU / item) for item in manifest["include_dirs"]]
     includes.extend(("-I" + str(prefix / "ps2sdk/common/include"),
                      "-I" + str(prefix / "ps2sdk/ee/include")))
-    flags = [*FLAGS, *includes, "-include", str(header), "-include", str(semantics), "-c"]
+    source_flags = [("-Oz" if args.m2_ui_lifecycle_test and flag == "-Os" else flag)
+                    for flag in FLAGS]
+    flags = [*source_flags, *includes, "-include", str(header), "-include", str(semantics), "-c"]
     members = selected_sources(manifest)
     report = {
         "status": "layer-measured",
         "milestone": "M0",
         "gate": "open",
         "compiler": subprocess.check_output([str(compiler), "--version"], text=True).splitlines()[0],
-        "flags": FLAGS,
+        "flags": source_flags,
+        "base_flags": FLAGS,
         "prefix": manifest["prefix"],
         "prefix_sha256": digest(header),
         "manifest_sha256": digest(MANIFEST_PATH),
         "hcu_commit": subprocess.check_output(["git", "-C", str(HCU), "rev-parse", "HEAD"], text=True).strip(),
         "selected_source_count": len(members),
         "layer": args.layer,
-        "profile_defines": ["HALO_PS2_NO_BOOTSTRAP_MEMORY"] if args.no_bootstrap_memory else [],
+        "profile_defines": ((["HALO_PS2_NO_BOOTSTRAP_MEMORY"]
+                             if args.no_bootstrap_memory else []) +
+                            (["HALO_PS2_M2_UI_LIFECYCLE_TEST"]
+                             if args.m2_ui_lifecycle_test else []) +
+                            (["HALO_PS2_STEP8_MP_CAPACITY_DIAGNOSTIC"]
+                             if args.step8_mp_capacity_diagnostic else []) +
+                            (["HALO_PS2_TEST", "HALO_PS2_STEP8_MEMORY_DIAGNOSTIC"]
+                             if args.step8_mp_capacity_diagnostic else []) +
+                            (["HALO_PS2_STEP8_MP_WORKLOAD_ONLY"]
+                             if args.step8_mp_workload_only else []) +
+                            ([f"HALO_PS2_STEP8_MP_WORKLOAD_PLAYERS={args.step8_mp_workload_players}"]
+                             if args.step8_mp_workload_only else []) +
+                            (["HALO_PS2_M2_ANIMATION_TRACE"]
+                             if args.m2_animation_trace else [])),
+        "profile_source_overrides": ({
+            "source/main/main.c": ["HALO_PS2_M2_UI_LIFECYCLE_TEST"],
+            "source/scenario/scenario.c": ["-Oz"],
+            "source/main/ps2_m2_ui_lifecycle_test.c": [
+                "HALO_PS2_M2_UI_LIFECYCLE_TEST", "-Oz"],
+        } if args.m2_ui_lifecycle_test else {}),
         "limits": "One compile layer. Unresolved symbols are not stubs. Byte totals are the layer's object sections only.",
         "units": {},
     }
@@ -342,6 +388,31 @@ def main() -> None:
         extra = manifest["source_flags"].get(relative, "").split()
         if args.no_bootstrap_memory:
             extra.append("-DHALO_PS2_NO_BOOTSTRAP_MEMORY")
+        if args.m2_ui_lifecycle_test and relative in (
+                "source/main/main.c", "source/scenario/scenario.c",
+                "source/main/ps2_m2_ui_lifecycle_test.c"):
+            extra.append("-DHALO_PS2_M2_UI_LIFECYCLE_TEST")
+        if args.step8_mp_capacity_diagnostic and relative in (
+                "source/main/main.c", "source/main/ps2_m2_ui_lifecycle_test.c"):
+            extra.append("-DHALO_PS2_STEP8_MP_CAPACITY_DIAGNOSTIC")
+        if args.step8_mp_capacity_diagnostic and relative in (
+                "source/main/main.c", "source/main/ps2_m2_ui_lifecycle_test.c"):
+            extra.append("-DHALO_PS2_TEST")
+        if args.step8_mp_capacity_diagnostic and relative in (
+                "source/main/ps2_m2_ui_lifecycle_test.c",
+                "source/saved games/game_state.c", "source/objects/objects.c"):
+            extra.append("-DHALO_PS2_STEP8_MEMORY_DIAGNOSTIC")
+        if args.step8_mp_workload_only and relative == "source/main/ps2_m2_ui_lifecycle_test.c":
+            extra.append("-DHALO_PS2_STEP8_MP_WORKLOAD_ONLY")
+            extra.append(f"-DHALO_PS2_STEP8_MP_WORKLOAD_PLAYERS={args.step8_mp_workload_players}")
+        if args.m2_ui_lifecycle_test and relative in (
+                "source/scenario/scenario.c",
+                "source/main/ps2_m2_ui_lifecycle_test.c"):
+            # Keep diagnostic-only CE trace/orchestration small without
+            # changing the optimization profile of production code.
+            extra.append("-Oz")
+        if args.m2_animation_trace:
+            extra.append("-DHALO_PS2_M2_ANIMATION_TRACE")
         pending.append((relative, source, obj, extra))
     objects = []
     compiled_object_sources = []
@@ -403,7 +474,12 @@ def main() -> None:
             rooted = output / "rooted.o"
             roots = ["game_initialize", "game_tick", "halo_shell_main", "actors_update", "hs_update",
                      "ps2_cache_mount_ctag", "ps2_cache_mount_ctag_with_file_source",
+				     "ps2_cache_mount_ctag_stream", "ps2_cache_set_ctag_visitor",
+				     "ps2_ctag_stream_validator_begin",
+				     "ps2_ctag_stream_validator_write",
+				     "ps2_ctag_stream_validator_finish",
                      "ps2_cache_mount_cbsp_for_extent", "ps2_cache_set_bsp_loader",
+                     "ps2_cache_set_bsp_visitor",
                      "ps2_cache_set_map_loader", "ps2_cache_set_map_preflight",
                      "ps2_cache_preflight_map", "ps2_cache_set_map_unloader",
                      "ps2_cache_release_map_owner", "tag_validate_claims_buffer_ready",
@@ -417,6 +493,9 @@ def main() -> None:
                      "physical_memory_bind_malloc_arena",
                      "physical_memory_bind_tag_validation_scratch",
                      "ps2_input_poll_devices", "ps2_input_publish_dualshock"]
+            if args.m2_animation_trace:
+                roots.append("ps2_animation_trace_bind")
+                roots.append("ps2_animation_trace_bind_contexts")
             rooted_link = subprocess.run(
                 [str(linker), "-r", "--gc-sections", *[arg for name in roots for arg in ("-u", name)],
                  f"@{response}", "-o", str(rooted)],
@@ -464,7 +543,9 @@ def main() -> None:
         memory_object = output / "ps2_memory_no_bootstrap.o"
         code, log_text = compile_unit(
             compiler, flags, env, memory_source, memory_object,
-            ["-DHALO_PS2_NO_BOOTSTRAP_MEMORY"],
+            ["-DHALO_PS2_NO_BOOTSTRAP_MEMORY"] +
+            (["-DHALO_PS2_STEP8_MEMORY_DIAGNOSTIC"]
+             if args.step8_mp_capacity_diagnostic else []),
         )
         memory_result = {
             "source_sha256": digest(memory_source),

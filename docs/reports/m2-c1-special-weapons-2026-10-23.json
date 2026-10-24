@@ -1,0 +1,1622 @@
+{
+  "bitmap_image_count": 47,
+  "cube_layout_basis": "Six face mip chains, each padded to 256 B; observed extents validate exactly.",
+  "interpretation": "C40 root reaches two valid six-face cube payloads; reflection is omitted by explicit adapter policy.",
+  "presentation_policy": "Base/diffuse admitted; optional cube-map environment reflections omitted. No full visual parity claim.",
+  "presentation_provenance": {
+    "adapter_files": {
+      "src/game/carbine_idle.h": "3332bea1641ad5843c7ab36dcdf3a30606acd0d626979d0e280c59efa409f247",
+      "src/game/flak_idle.h": "267f33678b66132cf61f4ebdce7f9deab5514b75d0dd668de43a1e263540e0e5",
+      "src/game/hold_pose.h": "769af52dad6ab674c63cd1f9d5cc6041729bb1e10d63a103e96c3e2d1928e508",
+      "src/game/sword_idle.h": "1b1fb149f3a22bdd589e47af383c3b3616d35840541486fc10ec56c71568f05e",
+      "tools/extract_h2_hold.py": "af41fb89e50a7e7f111379a712db953a8d6355440fec7be67f7f89d6dc84ad59",
+      "tools/extract_sword_idle.py": "af237711512b33ecceeb6e1e991d3ed688ef1449304fffed10e4f3964a7ec0f2"
+    },
+    "energy_sword": {
+      "policy": "separate sword pose/handle adapter",
+      "pose": "Halo 2 Vista jmad 0xEE9B3436 first_person:idle, 89 frames",
+      "pose_header": "src/game/sword_idle.h"
+    },
+    "fuel_rod": {
+      "policy": "CE FP model/animation refs null; no FP weapon graph",
+      "pose": "Halo 2 Vista flak jmad 0xEDCC3367 first_person:idle, 73 frames; arms only",
+      "pose_header": "src/game/flak_idle.h"
+    },
+    "gravity_rifle": {
+      "policy": "carbine idle orientation/pose adapter",
+      "pose": "Halo 2 Vista carbine jmad 0xEC973232 first_person:idle, 89 frames",
+      "pose_header": "src/game/carbine_idle.h"
+    },
+    "source_animation_map": {
+      "path": "build/h2-reference/shared.map (not retained)",
+      "sha256": "6c0afbcf46ecd3a70ef5106e4f51d68414d5a389c1e0b1d14c47a2766abddfe0"
+    }
+  },
+  "reached_bitmap_tag_count": 47,
+  "root": {
+    "group": "weap",
+    "path": "weapons\\fuel rod gun\\fuel rod",
+    "tag_id": 3941468538
+  },
+  "schema": "hcu-c1-special-weapons-profile-v1",
+  "scope": "retained CE source roots, bitmap metadata and explicit first-person presentation provenance",
+  "source_map": "c40.map",
+  "source_map_sha256": "d7465f07a675a86785a329b9ab3d8a5a20b25b7ca7d05bafeb7ca87b02b20be9",
+  "undecodable_reached_records": [
+    {
+      "cube_storage": {
+        "actual_extent_bytes": 16896,
+        "expected_extent_bytes": 16896,
+        "extent_valid": true,
+        "faces": 6,
+        "mip_levels_per_face": 7
+      },
+      "decodable": false,
+      "depth": 1,
+      "error": "unsupported image shape/type/format: type=2, depth=1, format=14",
+      "extent": {
+        "bytes": 16896,
+        "offset": 49805312
+      },
+      "flags": 131,
+      "format": 14,
+      "format_name": "dxt1",
+      "index": 0,
+      "path": "vehicles\\banshee\\bitmaps\\cubemap banshee",
+      "presentation_policy": "omit optional environment reflection layer; preserve base/diffuse materials",
+      "tag_id": 3825664659,
+      "type": 2
+    },
+    {
+      "cube_storage": {
+        "actual_extent_bytes": 66048,
+        "expected_extent_bytes": 66048,
+        "extent_valid": true,
+        "faces": 6,
+        "mip_levels_per_face": 7
+      },
+      "decodable": false,
+      "depth": 1,
+      "error": "unsupported image shape/type/format: type=2, depth=1, format=6",
+      "extent": {
+        "bytes": 66048,
+        "offset": 52101632
+      },
+      "flags": 137,
+      "format": 6,
+      "format_name": "r5g6b5",
+      "index": 0,
+      "path": "characters\\grunt\\bitmaps\\reflection grunt diffuse",
+      "presentation_policy": "omit optional environment reflection layer; preserve base/diffuse materials",
+      "tag_id": 3842048909,
+      "type": 2
+    }
+  ],
+  "visual_admitted": true,
+  "weapon_roots": {
+    "energy_sword": {
+      "bitmap_records": [
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 43008,
+            "offset": 32359936
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "effects\\particles\\energy\\bitmaps\\cloud c fire",
+          "tag_id": 3864331489,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 43008,
+            "offset": 32402944
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 1,
+          "path": "effects\\particles\\energy\\bitmaps\\cloud c fire",
+          "tag_id": 3864331489,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 2688,
+            "offset": 32734208
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "effects\\particles\\energy\\bitmaps\\tracers c generic",
+          "tag_id": 3866690821,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 43008,
+            "offset": 32737280
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "effects\\particles\\energy\\bitmaps\\smoke c generic",
+          "tag_id": 3866952969,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 2688,
+            "offset": 32780288
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 1,
+          "path": "effects\\particles\\energy\\bitmaps\\smoke c generic",
+          "tag_id": 3866952969,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 2688,
+            "offset": 33081856
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "effects\\decals\\bullet holes\\bitmaps\\plasma burn outer glow",
+          "tag_id": 3870360893,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 768,
+            "offset": 33084928
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "effects\\decals\\bullet holes\\bitmaps\\plasma burn inner glow",
+          "tag_id": 3870426430,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 1408,
+            "offset": 35837440
+          },
+          "flags": 131,
+          "format": 15,
+          "format_name": "dxt3",
+          "index": 0,
+          "path": "effects\\decals\\bullet holes\\bitmaps\\plasma burn large",
+          "tag_id": 3895723712,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 11008,
+            "offset": 46259200
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "weapons\\energy sword\\bitmaps\\energy sword",
+          "tag_id": 3964734173,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 2688,
+            "offset": 46270464
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "rasterizer\\glow sprite",
+          "tag_id": 3965061858,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 10752,
+            "offset": 46273536
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "scenery\\halo_destroyed\\bitmaps\\halo_burning_debris",
+          "tag_id": 3965651691,
+          "type": 0
+        }
+      ],
+      "bitmap_unsupported_records": [],
+      "closure_tag_count": 34,
+      "converted": {
+        "ANIM": {
+          "bytes": 80,
+          "sha256": "2b55df63b06abd9a786d6732b85e39b64a36312a76fdd1f793554008898cd6c4"
+        },
+        "MODL": {
+          "bytes": 9616,
+          "sha256": "0cbf4f920c9798373880de6bcffb45d313ad40ef5d7bd4120fc70da771108194"
+        },
+        "OTEX": {
+          "bytes": 13152,
+          "sha256": "e97df131735ac5f329af2b5867876d65cc44d6cd35279c0498e5c85600bc3416"
+        }
+      },
+      "dependencies_by_group": {
+        "bitm": [
+          "effects\\decals\\bullet holes\\bitmaps\\plasma burn inner glow",
+          "effects\\decals\\bullet holes\\bitmaps\\plasma burn large",
+          "effects\\decals\\bullet holes\\bitmaps\\plasma burn outer glow",
+          "effects\\particles\\energy\\bitmaps\\cloud c fire",
+          "effects\\particles\\energy\\bitmaps\\smoke c generic",
+          "effects\\particles\\energy\\bitmaps\\tracers c generic",
+          "rasterizer\\glow sprite",
+          "scenery\\halo_destroyed\\bitmaps\\halo_burning_debris",
+          "weapons\\energy sword\\bitmaps\\energy sword"
+        ],
+        "deca": [
+          "effects\\decals\\bullet holes\\plasma burn inner glow large",
+          "effects\\decals\\bullet holes\\plasma burn large",
+          "effects\\decals\\bullet holes\\plasma burn outer glow large"
+        ],
+        "effe": [
+          "weapons\\energy sword\\energy sword detonation",
+          "weapons\\energy sword\\energy sword dispersal"
+        ],
+        "glw!": [
+          "weapons\\energy sword\\c energy sword glow",
+          "weapons\\energy sword\\c energy sword glow lower"
+        ],
+        "jpt!": [
+          "weapons\\energy sword\\melee"
+        ],
+        "ligh": [
+          "weapons\\energy sword\\energy sword dynamic",
+          "weapons\\plasma grenade\\explosion"
+        ],
+        "mode": [
+          "weapons\\energy sword\\energy sword"
+        ],
+        "part": [
+          "effects\\particles\\energy\\plasma particle debris",
+          "effects\\particles\\energy\\tracer c generic",
+          "weapons\\plasma grenade\\plasma grenade armed"
+        ],
+        "pctl": [
+          "weapons\\energy sword\\explosion"
+        ],
+        "pphy": [
+          "effects\\point physics\\cold smoke cloud",
+          "effects\\point physics\\cold smoke puff",
+          "effects\\point physics\\hot smoke cloud",
+          "scenery\\halo_destroyed\\effects\\space debris",
+          "weapons\\frag grenade\\effects\\fire explosion"
+        ],
+        "schi": [
+          "weapons\\energy sword\\shaders\\es blade bottom",
+          "weapons\\energy sword\\shaders\\es blade top"
+        ],
+        "snd!": [
+          "sound\\sfx\\impulse\\impacts\\elite_sword_boom"
+        ],
+        "soso": [
+          "weapons\\energy sword\\shaders\\es handle"
+        ],
+        "weap": [
+          "weapons\\energy sword\\energy sword"
+        ]
+      },
+      "root_tag": {
+        "group": "weap",
+        "path": "weapons\\energy sword\\energy sword",
+        "tag_id": 3964537562
+      },
+      "source_map": "a50.map",
+      "source_map_sha256": "d7a3e80a86f2b0f23d855ce353aed3c0eb252145697797d87f25623dc470f38d",
+      "unresolved_reference_count": 0,
+      "visual_admitted": true
+    },
+    "fuel_rod": {
+      "bitmap_records": [
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 21504,
+            "offset": 43843072
+          },
+          "flags": 131,
+          "format": 15,
+          "format_name": "dxt3",
+          "index": 0,
+          "path": "effects\\particles\\air\\bitmaps\\smoke tank cannon",
+          "tag_id": 3788767328,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 5376,
+            "offset": 43864576
+          },
+          "flags": 131,
+          "format": 15,
+          "format_name": "dxt3",
+          "index": 1,
+          "path": "effects\\particles\\air\\bitmaps\\smoke tank cannon",
+          "tag_id": 3788767328,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 5376,
+            "offset": 43876352
+          },
+          "flags": 131,
+          "format": 15,
+          "format_name": "dxt3",
+          "index": 0,
+          "path": "effects\\particles\\solid\\bitmaps\\metal chips",
+          "tag_id": 3789226087,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 43008,
+            "offset": 43881984
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "effects\\particles\\energy\\bitmaps\\smoke white c generic",
+          "tag_id": 3789488235,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 21504,
+            "offset": 43946496
+          },
+          "flags": 131,
+          "format": 15,
+          "format_name": "dxt3",
+          "index": 0,
+          "path": "effects\\particles\\air\\bitmaps\\smoke warthog gun",
+          "tag_id": 3790143605,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 21888,
+            "offset": 44044288
+          },
+          "flags": 137,
+          "format": 10,
+          "format_name": "x8r8g8b8",
+          "index": 0,
+          "path": "effects\\particles\\lens flare\\bitmaps\\flares_generic",
+          "tag_id": 3791585419,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 5504,
+            "offset": 44066304
+          },
+          "flags": 137,
+          "format": 10,
+          "format_name": "x8r8g8b8",
+          "index": 1,
+          "path": "effects\\particles\\lens flare\\bitmaps\\flares_generic",
+          "tag_id": 3791585419,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 1408,
+            "offset": 44071936
+          },
+          "flags": 137,
+          "format": 10,
+          "format_name": "x8r8g8b8",
+          "index": 2,
+          "path": "effects\\particles\\lens flare\\bitmaps\\flares_generic",
+          "tag_id": 3791585419,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 5504,
+            "offset": 44073472
+          },
+          "flags": 137,
+          "format": 10,
+          "format_name": "x8r8g8b8",
+          "index": 3,
+          "path": "effects\\particles\\lens flare\\bitmaps\\flares_generic",
+          "tag_id": 3791585419,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 5504,
+            "offset": 44079104
+          },
+          "flags": 137,
+          "format": 10,
+          "format_name": "x8r8g8b8",
+          "index": 4,
+          "path": "effects\\particles\\lens flare\\bitmaps\\flares_generic",
+          "tag_id": 3791585419,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 1408,
+            "offset": 44084736
+          },
+          "flags": 137,
+          "format": 10,
+          "format_name": "x8r8g8b8",
+          "index": 5,
+          "path": "effects\\particles\\lens flare\\bitmaps\\flares_generic",
+          "tag_id": 3791585419,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 21888,
+            "offset": 44086272
+          },
+          "flags": 137,
+          "format": 10,
+          "format_name": "x8r8g8b8",
+          "index": 6,
+          "path": "effects\\particles\\lens flare\\bitmaps\\flares_generic",
+          "tag_id": 3791585419,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 768,
+            "offset": 44453376
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "effects\\particles\\flash\\bitmaps\\flash h shield impact",
+          "tag_id": 3792765085,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 768,
+            "offset": 44454400
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 1,
+          "path": "effects\\particles\\flash\\bitmaps\\flash h shield impact",
+          "tag_id": 3792765085,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 11008,
+            "offset": 44455424
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "effects\\zmaps\\zmap_noisy_large",
+          "tag_id": 3792830622,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 5504,
+            "offset": 44466688
+          },
+          "flags": 131,
+          "format": 16,
+          "format_name": "dxt5",
+          "index": 0,
+          "path": "effects\\decals\\bullet holes\\bitmaps\\dirt pistol",
+          "tag_id": 3792961696,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 11008,
+            "offset": 45316608
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "effects\\zmaps\\zmap_noisy_small",
+          "tag_id": 3804954967,
+          "type": 0
+        },
+        {
+          "cube_storage": {
+            "actual_extent_bytes": 16896,
+            "expected_extent_bytes": 16896,
+            "extent_valid": true,
+            "faces": 6,
+            "mip_levels_per_face": 7
+          },
+          "decodable": false,
+          "depth": 1,
+          "error": "unsupported image shape/type/format: type=2, depth=1, format=14",
+          "extent": {
+            "bytes": 16896,
+            "offset": 49805312
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "vehicles\\banshee\\bitmaps\\cubemap banshee",
+          "presentation_policy": "omit optional environment reflection layer; preserve base/diffuse materials",
+          "tag_id": 3825664659,
+          "type": 2
+        },
+        {
+          "cube_storage": {
+            "actual_extent_bytes": 66048,
+            "expected_extent_bytes": 66048,
+            "extent_valid": true,
+            "faces": 6,
+            "mip_levels_per_face": 7
+          },
+          "decodable": false,
+          "depth": 1,
+          "error": "unsupported image shape/type/format: type=2, depth=1, format=6",
+          "extent": {
+            "bytes": 66048,
+            "offset": 52101632
+          },
+          "flags": 137,
+          "format": 6,
+          "format_name": "r5g6b5",
+          "index": 0,
+          "path": "characters\\grunt\\bitmaps\\reflection grunt diffuse",
+          "presentation_policy": "omit optional environment reflection layer; preserve base/diffuse materials",
+          "tag_id": 3842048909,
+          "type": 2
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 43008,
+            "offset": 52167680
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "effects\\particles\\energy\\bitmaps\\smoke c generic",
+          "tag_id": 3843228575,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 2688,
+            "offset": 52210688
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 1,
+          "path": "effects\\particles\\energy\\bitmaps\\smoke c generic",
+          "tag_id": 3843228575,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 5504,
+            "offset": 52468736
+          },
+          "flags": 137,
+          "format": 1,
+          "format_name": "y8",
+          "index": 0,
+          "path": "effects\\particles\\lens flare\\bitmaps\\flares weapon lens",
+          "tag_id": 3844735926,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 2688,
+            "offset": 52475392
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "effects\\decals\\bullet holes\\bitmaps\\plasma burn outer glow",
+          "tag_id": 3845456833,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 43008,
+            "offset": 52481024
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "effects\\particles\\energy\\bitmaps\\flash c generic muzzle",
+          "tag_id": 3845718981,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 43008,
+            "offset": 52524032
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 1,
+          "path": "effects\\particles\\energy\\bitmaps\\flash c generic muzzle",
+          "tag_id": 3845718981,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 1408,
+            "offset": 52588544
+          },
+          "flags": 131,
+          "format": 15,
+          "format_name": "dxt3",
+          "index": 0,
+          "path": "effects\\particles\\solid\\bitmaps\\gravel",
+          "tag_id": 3846177740,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 1408,
+            "offset": 52590080
+          },
+          "flags": 131,
+          "format": 15,
+          "format_name": "dxt3",
+          "index": 1,
+          "path": "effects\\particles\\solid\\bitmaps\\gravel",
+          "tag_id": 3846177740,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 1408,
+            "offset": 52591616
+          },
+          "flags": 131,
+          "format": 15,
+          "format_name": "dxt3",
+          "index": 2,
+          "path": "effects\\particles\\solid\\bitmaps\\gravel",
+          "tag_id": 3846177740,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 1408,
+            "offset": 52593152
+          },
+          "flags": 131,
+          "format": 15,
+          "format_name": "dxt3",
+          "index": 3,
+          "path": "effects\\particles\\solid\\bitmaps\\gravel",
+          "tag_id": 3846177740,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 43008,
+            "offset": 52644352
+          },
+          "flags": 131,
+          "format": 15,
+          "format_name": "dxt3",
+          "index": 0,
+          "path": "effects\\particles\\solid\\bitmaps\\wood chips",
+          "tag_id": 3847291869,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 2688,
+            "offset": 52687360
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "effects\\particles\\energy\\bitmaps\\sparks c energy",
+          "tag_id": 3847554017,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 2688,
+            "offset": 52690432
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 1,
+          "path": "effects\\particles\\energy\\bitmaps\\sparks c energy",
+          "tag_id": 3847554017,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 5376,
+            "offset": 52833280
+          },
+          "flags": 131,
+          "format": 15,
+          "format_name": "dxt3",
+          "index": 0,
+          "path": "effects\\particles\\air\\bitmaps\\bubbles",
+          "tag_id": 3849061368,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 2688,
+            "offset": 53065728
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "effects\\particles\\energy\\bitmaps\\tracers c generic",
+          "tag_id": 3851355163,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 768,
+            "offset": 53907456
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "effects\\decals\\bullet holes\\bitmaps\\plasma green inner glow",
+          "tag_id": 3863676119,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 1408,
+            "offset": 53908480
+          },
+          "flags": 131,
+          "format": 15,
+          "format_name": "dxt3",
+          "index": 0,
+          "path": "effects\\decals\\bullet holes\\bitmaps\\plasma burn large",
+          "tag_id": 3863741656,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 43008,
+            "offset": 53911040
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "effects\\particles\\energy\\bitmaps\\cloud c fire",
+          "tag_id": 3865642229,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 43008,
+            "offset": 53954048
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 1,
+          "path": "effects\\particles\\energy\\bitmaps\\cloud c fire",
+          "tag_id": 3865642229,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 21504,
+            "offset": 54018560
+          },
+          "flags": 131,
+          "format": 15,
+          "format_name": "dxt3",
+          "index": 0,
+          "path": "effects\\particles\\solid\\bitmaps\\stone bunch",
+          "tag_id": 3866297599,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 43776,
+            "offset": 55049728
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "weapons\\fuel rod gun\\bitmaps\\fuelrod gun",
+          "tag_id": 3874293113,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 43776,
+            "offset": 55093760
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "weapons\\fuel rod gun\\bitmaps\\fuel rod gun multipurpose",
+          "tag_id": 3874358650,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 768,
+            "offset": 55137792
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "weapons\\fuel rod gun\\bitmaps\\shadow beam contrail",
+          "tag_id": 3874489724,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 5504,
+            "offset": 55138816
+          },
+          "flags": 137,
+          "format": 10,
+          "format_name": "x8r8g8b8",
+          "index": 0,
+          "path": "effects\\particles\\lens flare\\bitmaps\\flares pr overcharge",
+          "tag_id": 3874817409,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 5376,
+            "offset": 55144448
+          },
+          "flags": 131,
+          "format": 15,
+          "format_name": "dxt3",
+          "index": 0,
+          "path": "effects\\particles\\solid\\bitmaps\\needler spike debris",
+          "tag_id": 3875276168,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 10752,
+            "offset": 55150080
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "effects\\particles\\energy\\bitmaps\\charge c energy",
+          "tag_id": 3875931538,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 10752,
+            "offset": 55160832
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 1,
+          "path": "effects\\particles\\energy\\bitmaps\\charge c energy",
+          "tag_id": 3875931538,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 43008,
+            "offset": 55618560
+          },
+          "flags": 137,
+          "format": 8,
+          "format_name": "a1r5g5b5",
+          "index": 0,
+          "path": "effects\\particles\\energy\\bitmaps\\plasma electric bolts",
+          "tag_id": 3881240035,
+          "type": 0
+        }
+      ],
+      "bitmap_unsupported_records": [
+        {
+          "cube_storage": {
+            "actual_extent_bytes": 16896,
+            "expected_extent_bytes": 16896,
+            "extent_valid": true,
+            "faces": 6,
+            "mip_levels_per_face": 7
+          },
+          "decodable": false,
+          "depth": 1,
+          "error": "unsupported image shape/type/format: type=2, depth=1, format=14",
+          "extent": {
+            "bytes": 16896,
+            "offset": 49805312
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "vehicles\\banshee\\bitmaps\\cubemap banshee",
+          "presentation_policy": "omit optional environment reflection layer; preserve base/diffuse materials",
+          "tag_id": 3825664659,
+          "type": 2
+        },
+        {
+          "cube_storage": {
+            "actual_extent_bytes": 66048,
+            "expected_extent_bytes": 66048,
+            "extent_valid": true,
+            "faces": 6,
+            "mip_levels_per_face": 7
+          },
+          "decodable": false,
+          "depth": 1,
+          "error": "unsupported image shape/type/format: type=2, depth=1, format=6",
+          "extent": {
+            "bytes": 66048,
+            "offset": 52101632
+          },
+          "flags": 137,
+          "format": 6,
+          "format_name": "r5g6b5",
+          "index": 0,
+          "path": "characters\\grunt\\bitmaps\\reflection grunt diffuse",
+          "presentation_policy": "omit optional environment reflection layer; preserve base/diffuse materials",
+          "tag_id": 3842048909,
+          "type": 2
+        }
+      ],
+      "closure_tag_count": 96,
+      "converted": {
+        "ANIM": {
+          "bytes": 80,
+          "sha256": "2b55df63b06abd9a786d6732b85e39b64a36312a76fdd1f793554008898cd6c4"
+        },
+        "MODL": {
+          "bytes": 105392,
+          "sha256": "a02e3bd716377bae8dfc814635c2397ff203607c2161420836bc1c4d8ddeb7da"
+        },
+        "OTEX": {
+          "bytes": 23008,
+          "sha256": "4af18f80c46fe6cce7fc1206be283fdec7c2ac705bc3ff411e3304f0e195dd3a"
+        }
+      },
+      "dependencies_by_group": {
+        "bitm": [
+          "characters\\grunt\\bitmaps\\reflection grunt diffuse",
+          "effects\\decals\\bullet holes\\bitmaps\\dirt pistol",
+          "effects\\decals\\bullet holes\\bitmaps\\plasma burn large",
+          "effects\\decals\\bullet holes\\bitmaps\\plasma burn outer glow",
+          "effects\\decals\\bullet holes\\bitmaps\\plasma green inner glow",
+          "effects\\particles\\air\\bitmaps\\bubbles",
+          "effects\\particles\\air\\bitmaps\\smoke tank cannon",
+          "effects\\particles\\air\\bitmaps\\smoke warthog gun",
+          "effects\\particles\\energy\\bitmaps\\charge c energy",
+          "effects\\particles\\energy\\bitmaps\\cloud c fire",
+          "effects\\particles\\energy\\bitmaps\\flash c generic muzzle",
+          "effects\\particles\\energy\\bitmaps\\plasma electric bolts",
+          "effects\\particles\\energy\\bitmaps\\smoke c generic",
+          "effects\\particles\\energy\\bitmaps\\smoke white c generic",
+          "effects\\particles\\energy\\bitmaps\\sparks c energy",
+          "effects\\particles\\energy\\bitmaps\\tracers c generic",
+          "effects\\particles\\flash\\bitmaps\\flash h shield impact",
+          "effects\\particles\\lens flare\\bitmaps\\flares pr overcharge",
+          "effects\\particles\\lens flare\\bitmaps\\flares weapon lens",
+          "effects\\particles\\lens flare\\bitmaps\\flares_generic",
+          "effects\\particles\\solid\\bitmaps\\gravel",
+          "effects\\particles\\solid\\bitmaps\\metal chips",
+          "effects\\particles\\solid\\bitmaps\\needler spike debris",
+          "effects\\particles\\solid\\bitmaps\\stone bunch",
+          "effects\\particles\\solid\\bitmaps\\wood chips",
+          "effects\\zmaps\\zmap_noisy_large",
+          "effects\\zmaps\\zmap_noisy_small",
+          "vehicles\\banshee\\bitmaps\\cubemap banshee",
+          "weapons\\fuel rod gun\\bitmaps\\fuel rod gun multipurpose",
+          "weapons\\fuel rod gun\\bitmaps\\fuelrod gun",
+          "weapons\\fuel rod gun\\bitmaps\\shadow beam contrail"
+        ],
+        "cont": [
+          "weapons\\fuel rod gun\\tail"
+        ],
+        "deca": [
+          "effects\\decals\\bullet holes\\grenade char",
+          "effects\\decals\\bullet holes\\plasma green burn large",
+          "effects\\decals\\bullet holes\\plasma green inner glow large",
+          "effects\\decals\\bullet holes\\plasma green outer glow large"
+        ],
+        "effe": [
+          "effects\\stone bunch death",
+          "weapons\\fuel rod gun\\effects\\explosion",
+          "weapons\\fuel rod gun\\effects\\fuel rod fire",
+          "weapons\\fuel rod gun\\effects\\fuel rod tail sparks",
+          "weapons\\fuel rod gun\\effects\\impact dirt",
+          "weapons\\fuel rod gun\\effects\\impact generic",
+          "weapons\\fuel rod gun\\effects\\impact metal",
+          "weapons\\fuel rod gun\\effects\\impact sand",
+          "weapons\\fuel rod gun\\effects\\impact stone",
+          "weapons\\fuel rod gun\\effects\\impact wood",
+          "weapons\\fuel rod gun\\fuel rod gun detonating"
+        ],
+        "jpt!": [
+          "weapons\\frag grenade\\shock wave",
+          "weapons\\fuel rod gun\\explosion"
+        ],
+        "lens": [
+          "weapons\\fuel rod gun\\fuel rod exhaust"
+        ],
+        "ligh": [
+          "weapons\\fuel rod gun\\fuel rod exhaust"
+        ],
+        "mgs2": [
+          "weapons\\fuel rod gun\\hunter fuel rod"
+        ],
+        "mode": [
+          "weapons\\fuel rod gun\\fuel rod gun",
+          "weapons\\fuel rod gun\\projectile\\projectile"
+        ],
+        "part": [
+          "effects\\particles\\air\\bubbles",
+          "effects\\particles\\air\\smoke h generic still",
+          "effects\\particles\\air\\smoke impact",
+          "effects\\particles\\energy\\charge c energy",
+          "effects\\particles\\energy\\flash c generic",
+          "effects\\particles\\energy\\flash c generic small",
+          "effects\\particles\\energy\\plasma electric bolts",
+          "effects\\particles\\energy\\smoke c generic",
+          "effects\\particles\\energy\\smoke white c generic",
+          "effects\\particles\\energy\\sparks energy trail",
+          "effects\\particles\\energy\\tracer c generic",
+          "effects\\particles\\flash\\flash h shield impact",
+          "effects\\particles\\lens flare\\flare h stealth cannon",
+          "effects\\particles\\solid\\gravel small",
+          "effects\\particles\\solid\\metal chips",
+          "effects\\particles\\solid\\needler spike debris",
+          "effects\\particles\\solid\\stone bunch",
+          "effects\\particles\\solid\\wood impact"
+        ],
+        "pctl": [
+          "weapons\\fuel rod gun\\effects\\hunter fuel rod explosion"
+        ],
+        "pphy": [
+          "effects\\point physics\\cold smoke cloud",
+          "effects\\point physics\\cold smoke puff",
+          "effects\\point physics\\hot smoke cloud",
+          "effects\\point physics\\hot smoke puff",
+          "effects\\point physics\\stone bunch",
+          "effects\\point physics\\stones",
+          "effects\\point physics\\vacuum particle",
+          "effects\\point physics\\wood",
+          "weapons\\frag grenade\\effects\\fire explosion"
+        ],
+        "proj": [
+          "weapons\\fuel rod gun\\fuel rod"
+        ],
+        "snd!": [
+          "sound\\sfx\\impulse\\impacts\\dirthits",
+          "sound\\sfx\\impulse\\impacts\\lrgrocks",
+          "sound\\sfx\\impulse\\impacts\\medrocks",
+          "sound\\sfx\\impulse\\impacts\\metal_chip_med",
+          "sound\\sfx\\impulse\\impacts\\metal_chips",
+          "sound\\sfx\\impulse\\impacts\\smallrock",
+          "sound\\sfx\\weapons\\fuel rod gun\\explosion",
+          "sound\\sfx\\weapons\\fuel rod gun\\fire"
+        ],
+        "soso": [
+          "weapons\\fuel rod gun\\shaders\\fuel rod ammo",
+          "weapons\\fuel rod gun\\shaders\\fuel rod case",
+          "weapons\\fuel rod gun\\shaders\\fuel rod dull",
+          "weapons\\fuel rod gun\\shaders\\fuel rod metal"
+        ],
+        "weap": [
+          "weapons\\fuel rod gun\\fuel rod"
+        ]
+      },
+      "presentation_policy": "Base/diffuse admitted; optional cube-map environment reflections omitted. No full visual parity claim.",
+      "root_tag": {
+        "group": "weap",
+        "path": "weapons\\fuel rod gun\\fuel rod",
+        "tag_id": 3941468538
+      },
+      "source_map": "c40.map",
+      "source_map_sha256": "d7465f07a675a86785a329b9ab3d8a5a20b25b7ca7d05bafeb7ca87b02b20be9",
+      "unresolved_reference_count": 0,
+      "visual_admitted": true
+    },
+    "gravity_rifle": {
+      "bitmap_records": [
+        {
+          "cube_storage": {
+            "actual_extent_bytes": 16896,
+            "expected_extent_bytes": 16896,
+            "extent_valid": true,
+            "faces": 6,
+            "mip_levels_per_face": 7
+          },
+          "decodable": false,
+          "depth": 1,
+          "error": "unsupported image shape/type/format: type=2, depth=1, format=14",
+          "extent": {
+            "bytes": 16896,
+            "offset": 4065792
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "weapons\\assault rifle\\fp\\bitmaps\\diffuse gunmetal",
+          "tag_id": 3788570717,
+          "type": 2
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 2688,
+            "offset": 14862848
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "effects\\decals\\bullet holes\\bitmaps\\impact flame thrower glow",
+          "tag_id": 3853780032,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 5376,
+            "offset": 14865920
+          },
+          "flags": 131,
+          "format": 15,
+          "format_name": "dxt3",
+          "index": 0,
+          "path": "effects\\decals\\bullet holes\\bitmaps\\impact flame thrower char",
+          "tag_id": 3853845569,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 10752,
+            "offset": 14871552
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "effects\\particles\\flash\\bitmaps\\burning flame",
+          "tag_id": 3853976643,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 10752,
+            "offset": 14882304
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 1,
+          "path": "effects\\particles\\flash\\bitmaps\\burning flame",
+          "tag_id": 3853976643,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 43776,
+            "offset": 14893056
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "weapons\\gravity rifle\\bitmaps\\gravity rifle",
+          "tag_id": 3854304328,
+          "type": 0
+        },
+        {
+          "cube_storage": null,
+          "decodable": true,
+          "depth": 1,
+          "error": null,
+          "extent": {
+            "bytes": 43776,
+            "offset": 14937088
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "weapons\\gravity rifle\\bitmaps\\gravity rifle multipurpose",
+          "tag_id": 3854369865,
+          "type": 0
+        }
+      ],
+      "bitmap_unsupported_records": [
+        {
+          "cube_storage": {
+            "actual_extent_bytes": 16896,
+            "expected_extent_bytes": 16896,
+            "extent_valid": true,
+            "faces": 6,
+            "mip_levels_per_face": 7
+          },
+          "decodable": false,
+          "depth": 1,
+          "error": "unsupported image shape/type/format: type=2, depth=1, format=14",
+          "extent": {
+            "bytes": 16896,
+            "offset": 4065792
+          },
+          "flags": 131,
+          "format": 14,
+          "format_name": "dxt1",
+          "index": 0,
+          "path": "weapons\\assault rifle\\fp\\bitmaps\\diffuse gunmetal",
+          "tag_id": 3788570717,
+          "type": 2
+        }
+      ],
+      "closure_tag_count": 20,
+      "converted": {
+        "ANIM": {
+          "bytes": 80,
+          "sha256": "2b55df63b06abd9a786d6732b85e39b64a36312a76fdd1f793554008898cd6c4"
+        },
+        "MODL": {
+          "bytes": 37104,
+          "sha256": "a8312f3db44f100510c0e43f9abf57adcc4755874834694c06a2d49a88162f38"
+        },
+        "OTEX": {
+          "bytes": 22976,
+          "sha256": "de40106158740473c3b019d413a4d3cdd168d4e0d77fc54ee9f49b8d1fbfa651"
+        }
+      },
+      "dependencies_by_group": {
+        "bitm": [
+          "effects\\decals\\bullet holes\\bitmaps\\impact flame thrower char",
+          "effects\\decals\\bullet holes\\bitmaps\\impact flame thrower glow",
+          "effects\\particles\\flash\\bitmaps\\burning flame",
+          "weapons\\assault rifle\\fp\\bitmaps\\diffuse gunmetal",
+          "weapons\\gravity rifle\\bitmaps\\gravity rifle",
+          "weapons\\gravity rifle\\bitmaps\\gravity rifle multipurpose"
+        ],
+        "deca": [
+          "effects\\decals\\bullet holes\\flame thrower char",
+          "effects\\decals\\bullet holes\\flame thrower glow"
+        ],
+        "effe": [
+          "weapons\\flamethrower\\effects\\flame char",
+          "weapons\\flamethrower\\effects\\flame detonation"
+        ],
+        "jpt!": [
+          "weapons\\flamethrower\\explosion"
+        ],
+        "ligh": [
+          "weapons\\assault rifle\\muzzle flash"
+        ],
+        "mode": [
+          "weapons\\gravity rifle\\gravity rifle"
+        ],
+        "part": [
+          "effects\\particles\\flash\\burning flame"
+        ],
+        "pphy": [
+          "effects\\point physics\\cold smoke puff"
+        ],
+        "proj": [
+          "weapons\\flamethrower\\flame"
+        ],
+        "soso": [
+          "weapons\\gravity rifle\\shaders\\gravity rifle dull",
+          "weapons\\gravity rifle\\shaders\\gravity rifle luminous",
+          "weapons\\gravity rifle\\shaders\\gravity rifle shell"
+        ],
+        "weap": [
+          "weapons\\gravity rifle\\gravity rifle"
+        ]
+      },
+      "root_tag": {
+        "group": "weap",
+        "path": "weapons\\gravity rifle\\gravity rifle",
+        "tag_id": 3854107717
+      },
+      "source_map": "beavercreek.map",
+      "source_map_sha256": "eaf90b2abc4fd295469eb2d640063618b0d14396f28e7d7f1758e834c061c50a",
+      "unresolved_reference_count": 0,
+      "visual_admitted": false
+    }
+  }
+}

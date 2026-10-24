@@ -1,6 +1,7 @@
 #include "stream/ctag_mount.h"
 
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 /* HCU's PS2 cache adapter stores one process-global mounted map. */
@@ -102,6 +103,57 @@ static int load_bsp_extent(void *context, uint32_t file_offset,
 	mount->bsp_scratch_mark = mark;
 	mount->bsp_active = 1;
 	return 1;
+}
+
+static int visit_bsp_extent(void *context, uint32_t file_offset,
+	uint32_t file_size, ctag_bsp_sink_fn sink, void *sink_context,
+	size_t *raw_size)
+{
+	ctag_mount *mount = (ctag_mount *)context;
+	cbsp_catalog_entry entry;
+	uint64_t bsp_end, tag_end;
+	if (raw_size) *raw_size = 0;
+	if (!mount || !mount->active || !mount->visit_section || !sink ||
+		!raw_size ||
+		!cbsp_catalog_find(&mount->bsp_catalog, file_offset, file_size, &entry))
+	{
+		printf("HALO_PS2_LOCAL cbsp-visit reject=catalog offset=%u size=%u active=%d visitor=%d\n",
+			(unsigned)file_offset, (unsigned)file_size,
+			mount ? mount->active : 0, mount && mount->visit_section != NULL);
+		return 0;
+	}
+	bsp_end = (uint64_t)file_offset + file_size;
+	tag_end = (uint64_t)mount->resource_index.tag_data_offset +
+		mount->resource_index.tag_data_size;
+	if (((uint64_t)file_offset < tag_end &&
+		(uint64_t)mount->resource_index.tag_data_offset < bsp_end) ||
+		ctag_resource_index_overlaps(&mount->resource_index, file_offset,
+			file_size))
+	{
+		printf("HALO_PS2_LOCAL cbsp-visit reject=overlap offset=%u size=%u tag=%u/%u\n",
+			(unsigned)file_offset, (unsigned)file_size,
+			(unsigned)mount->resource_index.tag_data_offset,
+			(unsigned)mount->resource_index.tag_data_size);
+		return 0;
+	}
+	/* The visitor completes (including outer HP2 CRC) before the cache adapter
+	 * can publish CE's completion flag. The callback bytes are transient. */
+	printf("HALO_PS2_LOCAL cbsp-visit begin tag=%s offset=%u size=%u\n",
+		entry.section_tag, (unsigned)file_offset, (unsigned)file_size);
+	return mount->visit_section(mount->load_context, mount->pack_path,
+		entry.section_tag, sink, sink_context, raw_size);
+}
+
+static int visit_ctag_payload(void *context, ctag_ctag_sink_fn sink,
+	void *sink_context, size_t *raw_size)
+{
+	ctag_mount *mount = (ctag_mount *)context;
+	if (raw_size) *raw_size = 0;
+	if (!mount || !mount->active || !mount->visit_ctag_section ||
+		!sink || !raw_size)
+		return 0;
+	return mount->visit_ctag_section(mount->load_context,
+		mount->pack_path, "CTAG", sink, sink_context, raw_size);
 }
 
 void ctag_mount_init(ctag_mount *mount)
@@ -287,4 +339,131 @@ void ctag_mount_unload(ctag_mount *mount)
 	if (s_active_mount == mount) s_active_mount = NULL;
 	arena_release(mount->owner, mount->arena_mark);
 	memset(mount, 0, sizeof(*mount));
+}
+
+int ctag_mount_set_bsp_section_visitor(ctag_mount *mount,
+	ctag_section_visit_fn visit_section)
+{
+	if (!mount || !mount->active || !visit_section || !mount->backend ||
+		!mount->backend->register_bsp_visitor ||
+		!mount->backend->register_bsp_loader)
+		return 0;
+	mount->visit_section = visit_section;
+	if (!mount->backend->register_bsp_visitor(mount->backend->context,
+		visit_bsp_extent, mount)) {
+		mount->visit_section = NULL;
+		return 0;
+	}
+	if (!mount->backend->register_bsp_loader(mount->backend->context,
+		NULL, NULL, NULL)) {
+		mount->backend->register_bsp_visitor(mount->backend->context,
+			NULL, NULL);
+		mount->visit_section = NULL;
+		return 0;
+	}
+	return 1;
+}
+
+int ctag_mount_hp2_stream_verified_source_discover(ctag_mount *mount,
+	arena_t *owner, arena_t *bsp_scratch, const char *pack_path,
+	const char *map_name, uint32_t tag_data_offset,
+	uint32_t tag_data_size, uint32_t file_length,
+	ctag_read_at_fn read_at, void *read_context,
+	void (*close_read_context)(void *context),
+	const hmap_identity *identity, const ctag_stream_info *ctag_info,
+	const ctag_mount_backend *backend, ctag_section_load_fn load_section,
+	void *load_context)
+{
+	size_t mark, crng_size = 0, catalog_size = 0, relocation_bytes;
+	uint8_t *crng_bytes, *catalog_bytes, *relocations = NULL;
+	ctag_resource_index resource_index;
+	cbsp_catalog bsp_catalog;
+	if (!mount || mount->active || s_active_mount || !owner || !owner->base ||
+		!pack_path || !map_name || !read_at || !identity || !ctag_info ||
+		!backend || !backend->mount_stream || !backend->unmount ||
+		!backend->register_ctag_visitor || !load_section ||
+		identity->file_length != file_length || file_length == 0 ||
+		tag_data_offset != identity->tag_data_offset ||
+		tag_data_size != identity->tag_data_size ||
+		ctag_info->image_size < 36u ||
+		ctag_info->image_size > tag_data_size ||
+		ctag_info->relocation_count == 0 ||
+		ctag_info->relocation_count > UINT32_MAX / 4u ||
+		(bsp_scratch && (!backend->mount_bsp || !backend->unmount_bsp ||
+			!backend->register_bsp_loader || !backend->register_bsp_visitor ||
+			!arenas_disjoint(owner, bsp_scratch))))
+		return -1;
+	relocation_bytes = (size_t)ctag_info->relocation_count * 4u;
+	mark = arena_mark(owner);
+	crng_bytes = load_section(load_context, owner, pack_path, "CRNG",
+		&crng_size, 0);
+	if (!crng_bytes || !crng_size ||
+		!payload_owned_by_transaction(owner, mark, crng_bytes, crng_size) ||
+		!ctag_resource_index_open(&resource_index, crng_bytes, crng_size,
+			file_length, tag_data_offset, tag_data_size))
+		goto fail;
+	catalog_bytes = NULL;
+	memset(&bsp_catalog, 0, sizeof(bsp_catalog));
+	if (bsp_scratch) {
+		catalog_bytes = load_section(load_context, owner, pack_path, "CBIX",
+			&catalog_size, 0);
+		if (!catalog_bytes || !catalog_size ||
+			!payload_owned_by_transaction(owner, mark, catalog_bytes,
+				catalog_size) ||
+			!cbsp_catalog_open(&bsp_catalog, catalog_bytes, catalog_size,
+				file_length))
+			goto fail;
+	}
+	if (relocation_bytes) {
+		relocations = (uint8_t *)arena_alloc(owner, relocation_bytes, 4u);
+		if (!relocations) goto fail;
+	}
+	if (!backend->mount_stream(backend->context, map_name, ctag_info,
+		relocations, relocation_bytes, tag_data_offset, file_length,
+		read_at, read_context))
+		goto fail;
+	mount->owner = owner;
+	mount->arena_mark = mark;
+	mount->backend = backend;
+	mount->read_context = read_context;
+	mount->close_read_context = close_read_context;
+	mount->source_read = read_at;
+	mount->ctag_stream_info = *ctag_info;
+	mount->ctag_relocations = relocations;
+	mount->ctag_relocation_bytes = relocation_bytes;
+	mount->resource_index_bytes = crng_bytes;
+	mount->resource_index_size = crng_size;
+	mount->resource_index = resource_index;
+	mount->bsp_catalog = bsp_catalog;
+	mount->bsp_scratch = bsp_scratch;
+	mount->load_section = load_section;
+	mount->load_context = load_context;
+	mount->pack_path = pack_path;
+	mount->active = 1;
+	s_active_mount = mount;
+	if (bsp_scratch && !backend->register_bsp_loader(backend->context,
+		load_bsp_extent, release_bsp_callback, mount)) {
+		ctag_mount_unload(mount);
+		return -1;
+	}
+	return 0;
+
+fail:
+	arena_release(owner, mark);
+	return -1;
+}
+
+int ctag_mount_set_ctag_section_visitor(ctag_mount *mount,
+	ctag_ctag_visit_fn visit_section)
+{
+	if (!mount || !mount->active || !visit_section || !mount->backend ||
+		!mount->backend->register_ctag_visitor)
+		return 0;
+	mount->visit_ctag_section = visit_section;
+	if (!mount->backend->register_ctag_visitor(mount->backend->context,
+		visit_ctag_payload, mount)) {
+		mount->visit_ctag_section = NULL;
+		return 0;
+	}
+	return 1;
 }

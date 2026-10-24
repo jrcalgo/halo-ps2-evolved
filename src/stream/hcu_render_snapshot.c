@@ -8,15 +8,88 @@ _Static_assert(sizeof(float) == 4, "CE render snapshots require 32-bit real");
 _Static_assert(sizeof(halo_ps2_snapshot_matrix4x3) == HCU_CE_MATRIX4X3_BYTES,
 	"snapshot wire matrix must match CE real_matrix4x3");
 
-static halo_ps2_render_snapshot s_snapshots[2];
+static halo_ps2_render_snapshot *s_snapshots[2];
+static void *s_snapshot_storage;
+static size_t s_snapshot_storage_bytes;
+static uint32_t *s_dma_words;
+static size_t s_dma_storage_bytes;
 static int s_published_snapshot = -1;
 static int s_writing_snapshot = -1;
+static uint32_t s_dma_qwords;
+
+#define HCU_DMA_MAX_MATRICES 64u
+#define HCU_DMA_WORDS ((1u + HCU_DMA_MAX_MATRICES * 4u + 1u) * 4u)
+
+static size_t align16_size(size_t value)
+{
+	return (value + 15u) & ~(size_t)15u;
+}
+
+size_t hcu_render_snapshot_storage_required(void)
+{
+	return align16_size(sizeof(halo_ps2_render_snapshot)) * 2u;
+}
+
+size_t hcu_render_snapshot_dma_storage_required(void)
+{
+	return HCU_DMA_WORDS * sizeof(uint32_t);
+}
+
+int hcu_render_snapshot_bind(void *frame_scratch, size_t frame_scratch_bytes,
+	void *dma_commands, size_t dma_commands_bytes)
+{
+	size_t bank_bytes = align16_size(sizeof(halo_ps2_render_snapshot));
+	if (!frame_scratch || !dma_commands ||
+		((uintptr_t)frame_scratch & 15u) != 0u ||
+		((uintptr_t)dma_commands & 15u) != 0u ||
+		frame_scratch_bytes < hcu_render_snapshot_storage_required() ||
+		dma_commands_bytes < hcu_render_snapshot_dma_storage_required())
+		return -1;
+
+	/* Binding is a boot-time operation. Refuse to invalidate pointers retained
+	 * by a renderer; callers must explicitly unbind at a frame/map boundary. */
+	if (s_snapshot_storage || s_dma_words)
+		return -1;
+	s_snapshot_storage = frame_scratch;
+	s_snapshot_storage_bytes = frame_scratch_bytes;
+	s_snapshots[0] = (halo_ps2_render_snapshot *)frame_scratch;
+	s_snapshots[1] = (halo_ps2_render_snapshot *)
+		((uint8_t *)frame_scratch + bank_bytes);
+	memset(s_snapshots[0], 0, sizeof *s_snapshots[0]);
+	memset(s_snapshots[1], 0, sizeof *s_snapshots[1]);
+	s_dma_words = (uint32_t *)dma_commands;
+	s_dma_storage_bytes = dma_commands_bytes;
+	s_published_snapshot = -1;
+	s_writing_snapshot = -1;
+	s_dma_qwords = 0;
+	return 0;
+}
+
+void hcu_render_snapshot_unbind(void)
+{
+	/* The owner must first stop CE and parent consumers. Clearing publication
+	 * makes stale data unavailable before the arena can be rewound. */
+	s_published_snapshot = -1;
+	s_writing_snapshot = -1;
+	s_snapshots[0] = NULL;
+	s_snapshots[1] = NULL;
+	s_snapshot_storage = NULL;
+	s_snapshot_storage_bytes = 0;
+	s_dma_words = NULL;
+	s_dma_storage_bytes = 0;
+	s_dma_qwords = 0;
+}
 
 halo_ps2_render_snapshot *halo_ps2_render_snapshot_begin(void)
 {
+	if (!s_snapshot_storage || s_snapshot_storage_bytes <
+		hcu_render_snapshot_storage_required())
+		return NULL;
 	int next = s_published_snapshot == 0 ? 1 : 0;
-	halo_ps2_render_snapshot *snapshot = &s_snapshots[next];
+	halo_ps2_render_snapshot *snapshot = s_snapshots[next];
 	s_writing_snapshot = next;
+	/* Reset the header/counts, not the large object tail. The producer must
+	 * fill every record below object_count before commit. */
 	memset(snapshot, 0, offsetof(halo_ps2_render_snapshot, objects));
 	return snapshot;
 }
@@ -41,7 +114,7 @@ int halo_ps2_render_snapshot_commit(halo_ps2_render_snapshot *snapshot)
 	unsigned i;
 	uint32_t sequence;
 	if (!snapshot || s_writing_snapshot < 0 ||
-		snapshot != &s_snapshots[s_writing_snapshot] ||
+		snapshot != s_snapshots[s_writing_snapshot] ||
 		snapshot->object_count > HALO_PS2_RENDER_MAX_OBJECTS ||
 		snapshot->first_person_node_count >
 			HALO_PS2_RENDER_MAX_FIRST_PERSON_NODES ||
@@ -69,7 +142,7 @@ int halo_ps2_render_snapshot_commit(halo_ps2_render_snapshot *snapshot)
 		if (!finite_matrix(&snapshot->objects[i].world))
 			return -1;
 	sequence = s_published_snapshot < 0 ? 1u :
-		s_snapshots[s_published_snapshot].sequence + 1u;
+		s_snapshots[s_published_snapshot]->sequence + 1u;
 	if (sequence == 0u)
 		sequence = 1u;
 	snapshot->sequence = sequence;
@@ -81,7 +154,7 @@ int halo_ps2_render_snapshot_commit(halo_ps2_render_snapshot *snapshot)
 halo_ps2_render_snapshot const *halo_ps2_render_snapshot_latest(void)
 {
 	return s_published_snapshot >= 0 ?
-		&s_snapshots[s_published_snapshot] : NULL;
+		s_snapshots[s_published_snapshot] : NULL;
 }
 
 halo_ps2_render_snapshot const *hcu_render_snapshot_latest(void)
@@ -127,11 +200,6 @@ int hcu_render_snapshot_matrix_from_ce(const void *ce_matrix4x3,
 		(uint32_t)((imm) & 0xFFFFu))
 #define HCU_VIF_NOP 0x00u
 #define HCU_VIF_UNPACK_V4_32 0x6Cu
-#define HCU_DMA_MAX_MATRICES 64u
-
-static uint32_t s_dma_words[(1u + HCU_DMA_MAX_MATRICES * 4u + 1u) * 4u]
-	__attribute__((aligned(16)));
-static uint32_t s_dma_qwords;
 
 static int append_matrix(uint32_t *cursor, const void *ce_matrix)
 {
@@ -150,6 +218,9 @@ int hcu_render_snapshot_publish_dma(void)
 	unsigned index;
 
 	s_dma_qwords = 0;
+	if (!s_dma_words || s_dma_storage_bytes <
+		hcu_render_snapshot_dma_storage_required())
+		return -1;
 	if (!snapshot || snapshot->first_person_node_count +
 		snapshot->object_count == 0) {
 		static int logged_empty;
@@ -159,6 +230,12 @@ int hcu_render_snapshot_publish_dma(void)
 		}
 		return 0;
 	}
+	/* The temporary packet currently contains one compact batch. Never emit a
+	 * plausible-looking prefix when a view needs more than this batch can hold;
+	 * the renderer must split large scenes into explicit batches. */
+	if ((unsigned)snapshot->first_person_node_count +
+		(unsigned)snapshot->object_count > HCU_DMA_MAX_MATRICES)
+		return -1;
 	payload = s_dma_words + 4;
 	for (index = 0; index < snapshot->first_person_node_count &&
 		packed < HCU_DMA_MAX_MATRICES; ++index, ++packed) {
@@ -181,7 +258,8 @@ int hcu_render_snapshot_publish_dma(void)
 		static int logged_packet;
 		if (!logged_packet) {
 			logged_packet = 1;
-			printf("HALO_PS2_LOCAL snapshot-dma qwords=%u\n", s_dma_qwords);
+			printf("HALO_PS2_LOCAL snapshot-dma qwords=%u\n",
+				(unsigned)s_dma_qwords);
 		}
 	}
 	return (int)s_dma_qwords;

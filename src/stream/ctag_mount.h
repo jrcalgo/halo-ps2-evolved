@@ -5,6 +5,7 @@
 #include "core/mem.h"
 #include "stream/cbsp_catalog.h"
 #include "stream/ctag_resource_index.h"
+#include "stream/hmap.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -17,6 +18,30 @@ typedef uint8_t *(*ctag_section_load_fn)(void *context, arena_t *owner,
 typedef int (*ctag_bsp_load_fn)(void *context, uint32_t file_offset,
 	uint32_t file_size);
 typedef void (*ctag_bsp_release_fn)(void *context);
+typedef int (*ctag_bsp_sink_fn)(void *context, uint32_t section_offset,
+	const uint8_t *bytes, size_t size);
+typedef int (*ctag_bsp_visitor_fn)(void *context, uint32_t file_offset,
+	uint32_t file_size, ctag_bsp_sink_fn sink, void *sink_context,
+	size_t *raw_size);
+typedef int (*ctag_section_visit_fn)(void *context, const char *pack_path,
+	const char *section_tag, ctag_bsp_sink_fn sink, void *sink_context,
+	size_t *raw_size);
+typedef int (*ctag_ctag_sink_fn)(void *context, uint32_t section_offset,
+	const uint8_t *bytes, size_t size);
+typedef int (*ctag_ctag_visit_fn)(void *context, const char *pack_path,
+	const char *section_tag, ctag_ctag_sink_fn sink, void *sink_context,
+	size_t *raw_size);
+typedef int (*ctag_ctag_payload_visit_fn)(void *context,
+	ctag_ctag_sink_fn sink, void *sink_context, size_t *raw_size);
+
+/* Parent-side metadata copied from the validated CTAG descriptor. Keep this
+ * transport type independent of HCU headers so the generic parent object can
+ * also build in the WORLD_PLAY profile. */
+typedef struct {
+	size_t image_size;
+	uint32_t relocation_count;
+	uint32_t scenario_tag_index;
+} ctag_stream_info;
 
 typedef struct {
 	void *context;
@@ -29,6 +54,14 @@ typedef struct {
 	void (*unmount_bsp)(void *context);
 	int (*register_bsp_loader)(void *context, ctag_bsp_load_fn load,
 		ctag_bsp_release_fn release, void *loader_context);
+	int (*register_bsp_visitor)(void *context, ctag_bsp_visitor_fn visit,
+		void *visitor_context);
+	int (*mount_stream)(void *context, const char *map_name,
+		const ctag_stream_info *info, uint8_t *relocations,
+		size_t relocation_bytes, uint32_t tag_data_offset,
+		uint32_t file_length, ctag_read_at_fn read_at, void *read_context);
+	int (*register_ctag_visitor)(void *context,
+		ctag_ctag_payload_visit_fn visit, void *visitor_context);
 	void (*unmount)(void *context);
 } ctag_mount_backend;
 
@@ -41,6 +74,9 @@ typedef struct {
 	ctag_read_at_fn source_read;
 	const uint8_t *payload;
 	size_t payload_size;
+	ctag_stream_info ctag_stream_info;
+	uint8_t *ctag_relocations;
+	size_t ctag_relocation_bytes;
 	const uint8_t *resource_index_bytes;
 	size_t resource_index_size;
 	ctag_resource_index resource_index;
@@ -48,6 +84,8 @@ typedef struct {
 	arena_t *bsp_scratch;
 	size_t bsp_scratch_mark;
 	ctag_section_load_fn load_section;
+	ctag_section_visit_fn visit_section;
+	ctag_ctag_visit_fn visit_ctag_section;
 	void *load_context;
 	const char *pack_path;
 	int bsp_active;
@@ -100,5 +138,24 @@ int ctag_mount_hp2_discover_with_bsp_catalog(ctag_mount *mount,
 /* Unmount first (so CE releases every pointer into payload), then restore the
  * arena to its pre-load mark. Safe to call on an initialized inactive handle. */
 void ctag_mount_unload(ctag_mount *mount);
+
+/* Replace the bounded complete-envelope diagnostic loader with a synchronous
+ * HP2 visitor. The caller remains responsible for matching request extents
+ * and retaining the section scratch arena until mount unload. */
+int ctag_mount_set_bsp_section_visitor(ctag_mount *mount,
+	ctag_section_visit_fn visit_section);
+/* Mount a validated CTAG descriptor without retaining its full HP2 payload.
+ * CTAG bytes are decoded at CE's final cache destination on the cache read. */
+int ctag_mount_hp2_stream_verified_source_discover(ctag_mount *mount,
+	arena_t *owner, arena_t *bsp_scratch, const char *pack_path,
+	const char *map_name, uint32_t tag_data_offset,
+	uint32_t tag_data_size, uint32_t file_length,
+	ctag_read_at_fn read_at, void *read_context,
+	void (*close_read_context)(void *context),
+	const hmap_identity *identity, const ctag_stream_info *ctag_info,
+	const ctag_mount_backend *backend, ctag_section_load_fn load_section,
+	void *load_context);
+int ctag_mount_set_ctag_section_visitor(ctag_mount *mount,
+	ctag_ctag_visit_fn visit_section);
 
 #endif

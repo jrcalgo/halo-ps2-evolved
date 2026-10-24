@@ -11,6 +11,22 @@
 
 #define HCU_CE_MATRIX4X3_BYTES 52u
 
+/* Snapshot banks and the transient VIF payload are borrowed from the named
+ * PS2 arenas. The caller must stop all readers before rebinding/unbinding.
+ * `frame_scratch` owns the two immutable snapshot banks; `dma_commands` owns
+ * the aligned VIF unpack buffer. No allocation or map/tag pointers are kept. */
+size_t hcu_render_snapshot_storage_required(void);
+size_t hcu_render_snapshot_dma_storage_required(void);
+int hcu_render_snapshot_bind(void *frame_scratch, size_t frame_scratch_bytes,
+	void *dma_commands, size_t dma_commands_bytes);
+void hcu_render_snapshot_unbind(void);
+
+/* The CE port's begin/commit hooks use the currently bound two-bank store.
+ * A begin returns NULL until bind succeeds. */
+halo_ps2_render_snapshot *halo_ps2_render_snapshot_begin(void);
+int halo_ps2_render_snapshot_commit(halo_ps2_render_snapshot *snapshot);
+halo_ps2_render_snapshot const *halo_ps2_render_snapshot_latest(void);
+
 /* Returns 0 and writes an engine mat4; rejects null/non-finite records. The
  * output matrix preserves CE's forward/left/up/position basis and scale. */
 int hcu_render_snapshot_matrix_from_ce(const void *ce_matrix4x3,
