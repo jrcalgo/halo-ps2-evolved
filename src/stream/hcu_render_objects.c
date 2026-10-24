@@ -97,6 +97,79 @@ int hcu_render_objects_select(const halo_ps2_frame_snapshot *snap, uint32_t view
 	return 0;
 }
 
+int hcu_render_objects_select_first_person(const halo_ps2_frame_snapshot *snap,
+	uint32_t view, const hcu_render_objects_model *models, uint32_t model_count,
+	hcu_render_first_person_draw out[2], uint32_t *count,
+	hcu_render_objects_counters *counters)
+{
+	const halo_ps2_frame_view *v;
+	uint16_t resource_slots[2];
+	uint16_t palette_first[2];
+	uint16_t palette_count[2];
+	const uint8_t kinds[2] = { HCU_OBJECTS_FP_WEAPON, HCU_OBJECTS_FP_HANDS };
+	uint32_t i, emitted = 0;
+	if (!snap || !out || !count || !counters) return HCU_RENDER_CONTENT_E_ARGUMENT;
+	*count = 0;
+	if (snap->version != HALO_PS2_FRAME_SNAPSHOT_VERSION ||
+		view >= snap->view_count || view >= HALO_PS2_FRAME_MAX_VIEWS ||
+		snap->resource_count > HALO_PS2_FRAME_MAX_RESOURCES ||
+		snap->palette_count > HALO_PS2_FRAME_MAX_PALETTE)
+		return HCU_RENDER_CONTENT_E_ARGUMENT;
+	if (!(snap->views[view].flags & HALO_PS2_FRAME_VIEW_ACTIVE)) return 0;
+	v = &snap->views[view];
+	if (!(v->flags & HALO_PS2_FRAME_VIEW_FIRST_PERSON)) return 0;
+	resource_slots[0] = v->first_person_weapon_resource_slot;
+	resource_slots[1] = v->first_person_hands_resource_slot;
+	palette_first[0] = v->first_person_weapon_palette_first;
+	palette_first[1] = v->first_person_hands_palette_first;
+	palette_count[0] = v->first_person_weapon_palette_count;
+	palette_count[1] = v->first_person_hands_palette_count;
+	for (i = 0; i < 2u; ++i) {
+		uint16_t resource_slot = resource_slots[i];
+		uint16_t first = palette_first[i];
+		uint16_t nodes = palette_count[i];
+		const halo_ps2_frame_resource *resource;
+		int slot;
+		if (resource_slot == HALO_PS2_FRAME_NONE_U16) continue;
+		if (resource_slot >= snap->resource_count ||
+			first > snap->palette_count || nodes > snap->palette_count - first ||
+			emitted >= 2u) {
+			counters->failures++;
+			continue;
+		}
+		resource = &snap->resources[resource_slot];
+		if (resource->generation != snap->map_generation) {
+			counters->first_person_stale_resources++;
+			counters->failures++;
+			continue;
+		}
+		slot = hcu_render_objects_find_model(models, model_count, resource->id);
+		if (slot < 0) {
+			counters->first_person_model_misses++;
+			counters->model_misses++;
+			counters->failures++;
+			continue;
+		}
+		if (!models[slot].node_count ||
+			models[slot].node_count > HALO_PS2_FRAME_MAX_FIRST_PERSON_NODES ||
+			nodes != models[slot].node_count) {
+			counters->failures++;
+			continue;
+		}
+		out[emitted].resource_id = resource->id;
+		out[emitted].model_slot = (uint16_t)slot;
+		out[emitted].palette_first = first;
+		out[emitted].palette_count = nodes;
+		out[emitted].kind = kinds[i];
+		out[emitted].reserved = 0u;
+		counters->first_person_model_hits++;
+		counters->model_hits++;
+		emitted++;
+	}
+	*count = emitted;
+	return 0;
+}
+
 /* ---- pin / unpin -------------------------------------------------------------------------------- */
 
 const halo_ps2_frame_snapshot *hcu_render_objects_pin(hcu_render_objects_pin_t *pin,
@@ -200,7 +273,7 @@ int hcu_render_synthetic_object_add(halo_ps2_frame_snapshot *s, uint32_t view,
 		if (s->resource_count >= HALO_PS2_FRAME_MAX_RESOURCES) return HCU_RENDER_CONTENT_E_FULL;
 		res = s->resource_count++;
 		s->resources[res].id = o->resource_id;
-		s->resources[res].generation = 1u;
+		s->resources[res].generation = s->map_generation;
 	}
 	/* Interned object: the first view that adds an index creates it; later views only reference it. */
 	if (object_index < s->object_count) {
@@ -283,6 +356,8 @@ static uint32_t s_pending_seq;
 static uint32_t s_frame;
 static hcu_render_object_draw s_draw[HCU_OBJECTS_MAX_DRAW];
 static uint32_t s_draw_count;
+static hcu_render_first_person_draw s_fp_draw[2];
+static uint32_t s_fp_draw_count;
 static hcu_render_parity_record s_parity_store[HCU_OBJECTS_MAX_PARITY];
 static hcu_render_parity_log s_parity;
 static uint32_t s_view_triangles, s_view_skinned, s_view_drawn;
@@ -458,6 +533,7 @@ static int entry_load(const hcu_asset_profile_view *view, uint32_t i, uint32_t f
 	s_meta[i].source_datum = e->source_datum;
 	s_meta[i].model_bytes = s->model_size;
 	s_meta[i].texture_count = (uint16_t)(s->has_tex ? s->tex.texture_count : 0);
+	s_meta[i].node_count = (uint16_t)model_get(&s->models, 0).node_count;
 	s_meta[i].loaded = 1;
 	s_res.loads++;
 	s_res.resident++;
@@ -522,7 +598,24 @@ static void residency_frame(const halo_ps2_frame_snapshot *snap, uint32_t frame)
 	memset(priority, 0xFF, sizeof priority);
 	for (v = 0; v < snap->view_count && v < HALO_PS2_FRAME_MAX_VIEWS; v++) {
 		const halo_ps2_frame_view *fv = &snap->views[v];
+		uint16_t first_person_slots[2];
+		unsigned fp;
 		if (!(fv->flags & HALO_PS2_FRAME_VIEW_ACTIVE)) continue;
+		first_person_slots[0] = fv->first_person_weapon_resource_slot;
+		first_person_slots[1] = fv->first_person_hands_resource_slot;
+		if (fv->flags & HALO_PS2_FRAME_VIEW_FIRST_PERSON)
+			for (fp = 0; fp < 2u; fp++) {
+				uint32_t rid, k;
+				if (first_person_slots[fp] >= snap->resource_count) continue;
+				rid = snap->resources[first_person_slots[fp]].id;
+				for (k = 0; k < s_slot_count; k++)
+					if (!s_slots[k].refused &&
+						(s_slots[k].entry->source_datum & 0xFFFFu) == rid) {
+						need[k] = 1;
+						priority[k] = 0u;
+						break;
+					}
+			}
 		for (ref = fv->view_ref_first; ref < fv->view_ref_first + fv->view_ref_count && ref < snap->view_ref_count; ref++) {
 			uint32_t oi = snap->view_refs[ref];
 			uint32_t rid, k, rank;
@@ -688,6 +781,91 @@ static void object_pass(void *user, render_ctx_t *rc)
 			s_view_counters.failures++;
 		}
 		s_view_triangles += s_objr.st_triangles;
+	}
+	/* CE has already selected these exact model tags and mapped its animation
+	 * graph pose into each model's node order. Draw arms and gun as separate
+	 * view-space model submissions, after world objects, using only the
+	 * snapshot's resource slots and palette ranges. */
+	for (i = 0; i < s_fp_draw_count; i++) {
+		const hcu_render_first_person_draw *fp = &s_fp_draw[i];
+		hcu_render_object_draw pose;
+		object_table_t table;
+		object_t *ob = &table.obj[0];
+		obj_slot *s;
+		model_info mi;
+		uint16_t perm[OBJ_MAX_REGIONS];
+		mat4 root;
+		if (fp->model_slot >= s_slot_count ||
+			fp->palette_count == 0u || !s_snapshot ||
+			(uint32_t)fp->palette_first + fp->palette_count > s_snapshot->palette_count) {
+			s_view_counters.failures++;
+			continue;
+		}
+		s = &s_slots[fp->model_slot];
+		if (!s->loaded) {
+			s_view_counters.first_person_model_misses++;
+			s_view_counters.model_misses++;
+			s_view_counters.failures++;
+			continue;
+		}
+		memset(&pose, 0, sizeof pose);
+		pose.slot = fp->model_slot;
+		pose.type = HCU_OBJECTS_TYPE_WEAPON;
+		pose.flags = HCU_OBJECTS_FLAG_SKINNED;
+		pose.resource_id = fp->resource_id;
+		pose.palette_first = fp->palette_first;
+		pose.palette_count = fp->palette_count;
+		root = mat_from_snapshot(&s_snapshot->palette[fp->palette_first]);
+		mi = model_get(&s->models, 0);
+		model_select_permutations(&s->models, &mi, NULL, perm);
+		memset(perm + (mi.region_count < OBJ_MAX_REGIONS ? mi.region_count : OBJ_MAX_REGIONS),
+			0, (OBJ_MAX_REGIONS - (mi.region_count < OBJ_MAX_REGIONS ? mi.region_count : OBJ_MAX_REGIONS)) * sizeof *perm);
+		{
+			unsigned region;
+			for (region = 0; region < mi.region_count && region < OBJ_MAX_REGIONS; region++)
+				if (perm[region] >= mi.permutation_count) perm[region] = 0;
+		}
+		memset(&table, 0, sizeof table);
+		memset(ob, 0, sizeof *ob);
+		ob->def = -1;
+		ob->type = HCU_OBJECTS_TYPE_WEAPON;
+		ob->flags = OBJ_F_VISIBLE | OBJ_F_ANIMATED;
+		ob->model = 0;
+		ob->graph = -1;
+		ob->anim = SCEN_NO_ANIM;
+		ob->region_count = mi.region_count < OBJ_MAX_REGIONS ? mi.region_count : OBJ_MAX_REGIONS;
+		ob->root = root;
+		ob->pos[0] = root.m[3][0]; ob->pos[1] = root.m[3][1]; ob->pos[2] = root.m[3][2];
+		ob->radius = mi.radius * s_snapshot->palette[fp->palette_first].scale;
+		memcpy(ob->perm, perm, sizeof ob->perm);
+		table.count = 1;
+		s_objr.table = &table;
+		s_objr.world.models = &s->models;
+		s_objr.world.scen = NULL;
+		s_objr.world.anims = NULL;
+		s_objr.textures = &s->src;
+		s_objr.draw_objects = 1;
+		s_objr.draw_fp = 0;
+		s_objr.fp = NULL;
+		s_objr.lod = NULL;
+		s_objr.bsp = NULL;
+		s_objr.bsp_index = 0;
+		s_objr.max_distance = 4000.0f;
+		s_objr.max_batches = OBJ_BUDGET;
+		s_objr.sky_model = -1;
+		s_objr.pose = pose_fn;
+		s_objr.pose_user = &pose;
+		obj_render_pass(&s_objr, rc);
+		s_view_triangles += s_objr.st_triangles;
+		s_view_skinned += fp->palette_count;
+		if (s_objr.st_visible) {
+			s_view_drawn++;
+			s_view_counters.objects_drawn++;
+			s_view_counters.first_person_draws++;
+			s_view_counters.triangles += s_objr.st_triangles;
+		} else {
+			s_view_counters.failures++;
+		}
 	}
 }
 
@@ -873,8 +1051,10 @@ const halo_ps2_frame_snapshot *hcu_render_objects_frame_begin(uint32_t frame, ui
 void hcu_render_objects_view_begin(uint32_t view)
 {
 	uint32_t n = 0;
+	uint32_t fp_n = 0;
 	int st;
 	s_draw_count = 0;
+	s_fp_draw_count = 0;
 	s_view_triangles = 0;
 	s_view_skinned = 0;
 	s_view_drawn = 0;
@@ -883,6 +1063,10 @@ void hcu_render_objects_view_begin(uint32_t view)
 		&n, &s_view_counters);
 	if (st != 0) { s_view_counters.failures++; n = 0; }
 	s_draw_count = n;
+	st = hcu_render_objects_select_first_person(s_snapshot, view, s_meta,
+		s_slot_count, s_fp_draw, &fp_n, &s_view_counters);
+	if (st != 0) { s_view_counters.failures++; fp_n = 0; }
+	s_fp_draw_count = fp_n;
 	if (s_frame == 0) {
 		if (!s_parity.records) hcu_render_parity_log_init(&s_parity, s_parity_store, HCU_OBJECTS_MAX_PARITY);
 		if (hcu_render_objects_parity(&s_parity, s_frame, s_draw, n, &s_view_counters) != HCU_RENDER_CONTENT_OK)
@@ -904,6 +1088,28 @@ void hcu_render_objects_view_end(uint32_t view, hcu_render_objects_view_stats *o
 		out->texture_hits = s_view_counters.texture_hits;
 		out->texture_misses = s_view_counters.texture_misses;
 		out->parity_records = s_parity.records ? s_parity.count : 0;
+		out->first_person_draws = s_view_counters.first_person_draws;
+		out->first_person_model_hits = s_view_counters.first_person_model_hits;
+		out->first_person_model_misses = s_view_counters.first_person_model_misses;
+		out->first_person_stale_resources = s_view_counters.first_person_stale_resources;
+		out->first_person_weapon_resource_id = 0u;
+		out->first_person_hands_resource_id = 0u;
+		out->first_person_weapon_resource_slot = HALO_PS2_FRAME_NONE_U16;
+		out->first_person_hands_resource_slot = HALO_PS2_FRAME_NONE_U16;
+		out->first_person_map_generation = s_snapshot ? s_snapshot->map_generation : 0u;
+		if (s_snapshot && view < s_snapshot->view_count) {
+			const halo_ps2_frame_view *fv = &s_snapshot->views[view];
+			if (fv->first_person_weapon_resource_slot < s_snapshot->resource_count) {
+				out->first_person_weapon_resource_slot = fv->first_person_weapon_resource_slot;
+				out->first_person_weapon_resource_id = s_snapshot->resources[
+					fv->first_person_weapon_resource_slot].id;
+			}
+			if (fv->first_person_hands_resource_slot < s_snapshot->resource_count) {
+				out->first_person_hands_resource_slot = fv->first_person_hands_resource_slot;
+				out->first_person_hands_resource_id = s_snapshot->resources[
+					fv->first_person_hands_resource_slot].id;
+			}
+		}
 	}
 	s_totals.objects_drawn += s_view_drawn;
 	s_totals.triangles += s_view_triangles;
@@ -913,12 +1119,20 @@ void hcu_render_objects_view_end(uint32_t view, hcu_render_objects_view_stats *o
 	s_totals.model_misses += s_view_counters.model_misses;
 	s_totals.texture_hits += s_view_counters.texture_hits;
 	s_totals.texture_misses += s_view_counters.texture_misses;
+	s_totals.first_person_draws += s_view_counters.first_person_draws;
+	s_totals.first_person_model_hits += s_view_counters.first_person_model_hits;
+	s_totals.first_person_model_misses += s_view_counters.first_person_model_misses;
+	s_totals.first_person_stale_resources += s_view_counters.first_person_stale_resources;
 	s_totals.deduped += s_view_counters.deduped;
 	s_view_counters.deduped = 0;
 	s_view_counters.failures = 0;
 	s_view_counters.model_hits = s_view_counters.model_misses = 0;
 	s_view_counters.texture_hits = s_view_counters.texture_misses = 0;
+	s_view_counters.first_person_draws = 0;
+	s_view_counters.first_person_model_hits = s_view_counters.first_person_model_misses = 0;
+	s_view_counters.first_person_stale_resources = 0;
 	s_draw_count = 0;
+	s_fp_draw_count = 0;
 }
 
 void hcu_render_objects_frame_end(void)

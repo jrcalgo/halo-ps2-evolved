@@ -107,6 +107,7 @@ halo_ps2_frame_snapshot *hcu_snapshot_bank_begin_write(void)
 	s_writing = slot;
 	memset(s_slots[slot], 0, offsetof(halo_ps2_frame_snapshot, views));
 	s_slots[slot]->version = HALO_PS2_FRAME_SNAPSHOT_VERSION;
+	s_slots[slot]->map_generation = s_map_generation;
 	return s_slots[slot];
 }
 
@@ -161,6 +162,11 @@ static int range_ok(unsigned first, unsigned count, unsigned limit)
 	return first <= limit && count <= limit - first;
 }
 
+static int resource_slot_ok(uint16_t slot, unsigned resource_count)
+{
+	return slot == HALO_PS2_FRAME_NONE_U16 || slot < resource_count;
+}
+
 static int validate_camera(const halo_ps2_snapshot_camera *camera)
 {
 	if (!finite3(camera->position) || !finite3(camera->forward) ||
@@ -190,6 +196,9 @@ static int validate_snapshot(const halo_ps2_frame_snapshot *s)
 	if (!isfinite(s->time_delta_since_tick_sec) ||
 		s->time_delta_since_tick_sec < 0.0f)
 		return 0;
+	for (i = 0; i < s->resource_count; ++i)
+		if (s->resources[i].generation != s->map_generation)
+			return 0;
 	for (i = 0; i < s->view_count; ++i) {
 		const halo_ps2_frame_view *v = &s->views[i];
 		if (!(v->flags & HALO_PS2_FRAME_VIEW_ACTIVE))
@@ -197,8 +206,18 @@ static int validate_snapshot(const halo_ps2_frame_snapshot *s)
 		if (!validate_camera(&v->camera) ||
 			!range_ok(v->palette_first, v->palette_count, s->palette_count) ||
 			!range_ok(v->view_ref_first, v->view_ref_count, s->view_ref_count) ||
-			!range_ok(v->first_person_palette_first,
-				v->first_person_palette_count, s->palette_count))
+			!range_ok(v->first_person_weapon_palette_first,
+				v->first_person_weapon_palette_count, s->palette_count) ||
+			!range_ok(v->first_person_hands_palette_first,
+				v->first_person_hands_palette_count, s->palette_count))
+			return 0;
+		if ((v->flags & HALO_PS2_FRAME_VIEW_FIRST_PERSON) &&
+			((v->first_person_weapon_resource_slot == HALO_PS2_FRAME_NONE_U16 &&
+			  v->first_person_hands_resource_slot == HALO_PS2_FRAME_NONE_U16) ||
+			 !resource_slot_ok(v->first_person_weapon_resource_slot,
+				s->resource_count) ||
+			 !resource_slot_ok(v->first_person_hands_resource_slot,
+				s->resource_count)))
 			return 0;
 	}
 	for (i = 0; i < s->view_ref_count; ++i)
@@ -256,6 +275,8 @@ static int validate_snapshot(const halo_ps2_frame_snapshot *s)
 
 int hcu_snapshot_bank_commit(halo_ps2_frame_snapshot *snapshot)
 {
+	if (snapshot && s_writing != BANK_NONE && snapshot == s_slots[s_writing])
+		snapshot->map_generation = s_map_generation;
 	if (!snapshot || s_writing == BANK_NONE || snapshot != s_slots[s_writing] ||
 		!validate_snapshot(snapshot)) {
 		s_stats.commit_rejects++;
@@ -263,7 +284,6 @@ int hcu_snapshot_bank_commit(halo_ps2_frame_snapshot *snapshot)
 			s_writing = BANK_NONE;
 		return -1;
 	}
-	snapshot->map_generation = s_map_generation;
 	snapshot->sequence = s_next_sequence++;
 	if (s_next_sequence == 0u)
 		s_next_sequence = 1u;

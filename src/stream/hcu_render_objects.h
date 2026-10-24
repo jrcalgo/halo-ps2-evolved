@@ -1,5 +1,5 @@
-/* C3.objects: draws the published CE object snapshot (players, bots, vehicles, weapons, one effect model)
- * through the halo-ps2 object pass, after the BSP pass of each view.
+/* C3.objects: draws the published CE object snapshot (players, bots, vehicles, weapons, effects, and
+ * the exact per-view first-person gun and arms models) through the halo-ps2 object pass, after the BSP pass.
  *
  * Parent contract: the parent reads immutable published data only. It never advances animation or
  * gameplay. Node palettes are the CE-computed skin matrices from the snapshot; the parent does not
@@ -45,9 +45,21 @@ typedef struct {
 	uint32_t model_bytes;
 	uint32_t texture_bytes;
 	uint16_t texture_count;
+	uint16_t node_count;
 	uint8_t loaded;
 	uint8_t pad;
 } hcu_render_objects_model;
+
+#define HCU_OBJECTS_FP_WEAPON 1u
+#define HCU_OBJECTS_FP_HANDS 2u
+typedef struct {
+	uint32_t resource_id;
+	uint16_t model_slot;
+	uint16_t palette_first;
+	uint16_t palette_count;
+	uint8_t kind;
+	uint8_t reserved;
+} hcu_render_first_person_draw;
 
 typedef struct {
 	uint32_t view;
@@ -78,6 +90,10 @@ typedef struct {
 	uint32_t unpins;
 	uint32_t pin_refusals;
 	uint32_t parity_dropped;
+	uint32_t first_person_draws;
+	uint32_t first_person_model_hits;
+	uint32_t first_person_model_misses;
+	uint32_t first_person_stale_resources;
 } hcu_render_objects_counters;
 
 typedef struct {
@@ -93,6 +109,12 @@ typedef struct {
 int hcu_render_objects_select(const halo_ps2_frame_snapshot *snap, uint32_t view,
 	const hcu_render_objects_model *models, uint32_t model_count,
 	hcu_render_object_draw *out, uint32_t capacity, uint32_t *count,
+	hcu_render_objects_counters *counters);
+/* Select CE's exact per-view first-person gun and hands resources and their
+ * already remapped model-node palettes, without deriving a proxy or sampling. */
+int hcu_render_objects_select_first_person(const halo_ps2_frame_snapshot *snap,
+	uint32_t view, const hcu_render_objects_model *models, uint32_t model_count,
+	hcu_render_first_person_draw out[2], uint32_t *count,
 	hcu_render_objects_counters *counters);
 
 /* Resident model lookup by MEDIA chunk id. Returns the slot or -1. */
@@ -120,7 +142,7 @@ int hcu_render_objects_parity(hcu_render_parity_log *log, uint32_t frame,
 
 /* ---- synthetic snapshot builder ----------------------------------------------------------------
  * Test-only producer used behind HCU_C3_OBJECTS_SYNTHETIC until the CE snapshot publisher fills the
- * bank. It writes a version-2 snapshot with the same layout the CE publisher uses. */
+ * bank. It writes a current-version snapshot with the same layout the CE publisher uses. */
 typedef struct {
 	uint32_t resource_id;
 	uint32_t definition_index;
@@ -176,6 +198,11 @@ typedef struct {
 	uint32_t drawn, triangles, skinned_nodes, failures, pins_before;
 	uint32_t model_hits, model_misses, texture_hits, texture_misses;
 	uint32_t parity_records;
+	uint32_t first_person_draws, first_person_model_hits, first_person_model_misses;
+	uint32_t first_person_stale_resources;
+	uint32_t first_person_map_generation;
+	uint16_t first_person_weapon_resource_slot, first_person_hands_resource_slot;
+	uint32_t first_person_weapon_resource_id, first_person_hands_resource_id;
 } hcu_render_objects_view_stats;
 
 /* Takes the rest of `arena` as the residency pool and checks the table's chunk sizes against the mounted

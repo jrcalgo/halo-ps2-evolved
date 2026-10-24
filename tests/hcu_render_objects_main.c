@@ -28,8 +28,8 @@ static halo_ps2_snapshot_matrix4x3 mat_at(float x, float y, float z)
 static void models_table(hcu_render_objects_model *m)
 {
 	memset(m, 0, sizeof(hcu_render_objects_model) * 2u);
-	m[0].resource_id = 100; m[0].loaded = 1;
-	m[1].resource_id = 200; m[1].loaded = 1;
+	m[0].resource_id = 100; m[0].loaded = 1; m[0].node_count = 3;
+	m[1].resource_id = 200; m[1].loaded = 1; m[1].node_count = 2;
 }
 
 static const halo_ps2_snapshot_camera kcam = {
@@ -132,6 +132,57 @@ static int test_select(void)
 	return 0;
 }
 
+static int test_first_person_select(void)
+{
+	halo_ps2_frame_snapshot s;
+	halo_ps2_snapshot_matrix4x3 pal[3];
+	hcu_render_objects_model models[HCU_OBJECTS_MAX_MODELS];
+	hcu_render_first_person_draw draw[2];
+	hcu_render_objects_counters c;
+	uint32_t n;
+	CHECK(build_two_views(&s, pal) == 0);
+	models_table(models);
+	/* CE selected model 200 as the gun and model 100 as the arms; these are
+	 * distinct tag resources and use separate model-order pose ranges. */
+	s.views[0].flags |= HALO_PS2_FRAME_VIEW_FIRST_PERSON;
+	s.views[0].first_person_weapon_resource_slot = 1u;
+	s.views[0].first_person_weapon_palette_first = 3u;
+	s.views[0].first_person_weapon_palette_count = 2u;
+	s.views[0].first_person_hands_resource_slot = 0u;
+	s.views[0].first_person_hands_palette_first = 5u;
+	s.views[0].first_person_hands_palette_count = 3u;
+	s.palette_count = 8u;
+	memset(&c, 0, sizeof c);
+	CHECK(hcu_render_objects_select_first_person(&s, 0, models, 2, draw, &n, &c) == 0);
+	CHECK(n == 2 && draw[0].kind == HCU_OBJECTS_FP_WEAPON &&
+		draw[0].resource_id == 200u && draw[0].model_slot == 1u &&
+		draw[0].palette_first == 3u && draw[0].palette_count == 2u);
+	CHECK(draw[1].kind == HCU_OBJECTS_FP_HANDS && draw[1].resource_id == 100u &&
+		draw[1].model_slot == 0u && draw[1].palette_first == 5u &&
+		draw[1].palette_count == 3u);
+	CHECK(c.first_person_model_hits == 2u && c.first_person_model_misses == 0u && c.failures == 0u);
+	s.resources[1].generation++;
+	memset(&c, 0, sizeof c);
+	CHECK(hcu_render_objects_select_first_person(&s, 0, models, 2, draw, &n, &c) == 0);
+	CHECK(n == 1 && draw[0].kind == HCU_OBJECTS_FP_HANDS &&
+		c.first_person_stale_resources == 1u && c.failures == 1u);
+	s.resources[1].generation--;
+
+	/* A resource miss is explicit and cannot fall back to the world weapon. */
+	s.resources[1].id = 999u;
+	memset(&c, 0, sizeof c);
+	CHECK(hcu_render_objects_select_first_person(&s, 0, models, 2, draw, &n, &c) == 0);
+	CHECK(n == 1 && draw[0].kind == HCU_OBJECTS_FP_HANDS &&
+		c.first_person_model_misses == 1u && c.first_person_model_hits == 1u &&
+		c.failures == 1u);
+	s.resources[1].id = 200u;
+	s.views[0].first_person_weapon_palette_count = 1u;
+	memset(&c, 0, sizeof c);
+	CHECK(hcu_render_objects_select_first_person(&s, 0, models, 2, draw, &n, &c) == 0);
+	CHECK(n == 1 && draw[0].kind == HCU_OBJECTS_FP_HANDS && c.failures == 1u);
+	return 0;
+}
+
 static int test_parity(void)
 {
 	hcu_render_parity_record store[4];
@@ -189,6 +240,7 @@ static int test_pin(void)
 	CHECK(hcu_render_objects_pin(&pin, &c) == NULL);          /* nothing published yet */
 	CHECK(c.pin_refusals == 1);
 	CHECK(build_two_views(&s, pal) == 0);
+	hcu_snapshot_bank_set_map_generation(s.map_generation);
 	{
 		halo_ps2_frame_snapshot *slot = hcu_snapshot_bank_begin_write();
 		CHECK(slot != NULL);
@@ -220,9 +272,10 @@ int main(void)
 {
 	if (test_builder()) return 1;
 	if (test_select()) return 2;
-	if (test_parity()) return 3;
-	if (test_residency_policy()) return 4;
-	if (test_pin()) return 5;
+	if (test_first_person_select()) return 3;
+	if (test_parity()) return 4;
+	if (test_residency_policy()) return 5;
+	if (test_pin()) return 6;
 	printf("hcu_render_objects tests passed\n");
 	return 0;
 }

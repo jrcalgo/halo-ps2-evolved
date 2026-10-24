@@ -91,14 +91,14 @@ static void test_bind_and_version(void)
 	s = hcu_snapshot_bank_begin_write();
 	assert(s);
 	assert(s->version == HALO_PS2_FRAME_SNAPSHOT_VERSION);
-	assert(s->version == 2u);
+	assert(s->version == 3u);
 	/* Wrong version must not publish. */
 	s->version = 1u;
 	assert(hcu_snapshot_bank_commit(s) == -1);
 	assert(hcu_snapshot_bank_latest() == NULL);
 	/* The rejected commit released the write slot. */
 	s = hcu_snapshot_bank_begin_write();
-	assert(s && s->version == 2u);
+	assert(s && s->version == 3u);
 	hcu_snapshot_bank_set_map_generation(41u);
 	assert(hcu_snapshot_bank_commit(s) == 0);
 	assert(hcu_snapshot_bank_latest()->map_generation == 41u);
@@ -224,8 +224,8 @@ static void test_four_view_capacity(void)
 		add_active_view(w, v, first, 256u);
 		w->views[v].palette_first = (uint16_t)(v * 160u);
 		w->views[v].palette_count = 160u;
-		w->views[v].first_person_palette_first = (uint16_t)(v * 160u + 128u);
-		w->views[v].first_person_palette_count = 32u;
+		w->views[v].first_person_weapon_palette_first = (uint16_t)(v * 160u + 128u);
+		w->views[v].first_person_weapon_palette_count = 32u;
 	}
 	for (v = 0; v < HALO_PS2_FRAME_MAX_PALETTE; ++v)
 		set_identity(&w->palette[v]);
@@ -336,6 +336,57 @@ static void test_bounds(void)
 	s->decals[0].lifetime_sec = 2.0f;
 	assert(hcu_snapshot_bank_commit(s) == 0);
 
+	/* v3 first-person resources and model-order palettes accept exact bounded
+	 * gun/arms ranges, then reject invalid ranges and resource slots. */
+	s = hcu_snapshot_bank_begin_write();
+	add_object(s, 3u);
+	s->view_ref_count = 1u;
+	s->view_refs[0] = 0u;
+	add_active_view(s, 0u, 0u, 1u);
+	s->resource_count = 2u;
+	s->resources[0].id = 17u;
+	s->resources[0].generation = s->map_generation;
+	s->resources[1].id = 23u;
+	s->resources[1].generation = s->map_generation;
+	s->palette_count = 2u;
+	set_identity(&s->palette[0]);
+	set_identity(&s->palette[1]);
+	s->views[0].first_person_weapon_resource_slot = 0u;
+	s->views[0].first_person_hands_resource_slot = 1u;
+	s->views[0].flags |= HALO_PS2_FRAME_VIEW_FIRST_PERSON;
+	s->views[0].first_person_weapon_palette_first = 0u;
+	s->views[0].first_person_weapon_palette_count = 1u;
+	s->views[0].first_person_hands_palette_first = 1u;
+	s->views[0].first_person_hands_palette_count = 1u;
+	assert(hcu_snapshot_bank_commit(s) == 0);
+
+	s = hcu_snapshot_bank_begin_write();
+	add_object(s, 3u);
+	s->resource_count = 1u;
+	s->resources[0].id = 17u;
+	s->resources[0].generation = s->map_generation ^ 1u;
+	assert(hcu_snapshot_bank_commit(s) == -1);
+
+	s = hcu_snapshot_bank_begin_write();
+	add_object(s, 3u);
+	s->view_ref_count = 1u;
+	s->view_refs[0] = 0u;
+	add_active_view(s, 0u, 0u, 1u);
+	s->palette_count = 1u;
+	set_identity(&s->palette[0]);
+	s->views[0].first_person_weapon_palette_first = 1u;
+	s->views[0].first_person_weapon_palette_count = 1u;
+	assert(hcu_snapshot_bank_commit(s) == -1);
+
+	s = hcu_snapshot_bank_begin_write();
+	add_object(s, 3u);
+	s->view_ref_count = 1u;
+	s->view_refs[0] = 0u;
+	add_active_view(s, 0u, 0u, 1u);
+	s->views[0].flags |= HALO_PS2_FRAME_VIEW_FIRST_PERSON;
+	s->views[0].first_person_weapon_resource_slot = 0u;
+	assert(hcu_snapshot_bank_commit(s) == -1);
+
 	/* Commit with no pending write, and a second begin while writing. */
 	assert(hcu_snapshot_bank_commit(s) == -1);
 	s = hcu_snapshot_bank_begin_write();
@@ -344,7 +395,7 @@ static void test_bounds(void)
 	hcu_snapshot_bank_abandon(s);
 
 	assert(hcu_snapshot_bank_unbind() == 0);
-	printf("bounds: ok (view/palette/ref/attachment/effect/decal/resource refused)\n");
+	printf("bounds: ok (views, palettes, v3 first-person ranges/slots, refs, attachments, effects, decals, resources)\n");
 }
 
 static void test_fits_frame_scratch(void)
@@ -352,7 +403,7 @@ static void test_fits_frame_scratch(void)
 	size_t bank = hcu_snapshot_bank_storage_required();
 	size_t frame_scratch = 393216u;
 	/* Pinned C2 owner: the v1 double bank must not be bound alongside. */
-	printf("bytes: v2 bank=%zu (3 slots, frame_scratch owner=%zu, share=%.1f%%)\n",
+	printf("bytes: v3 bank=%zu (3 slots, frame_scratch owner=%zu, share=%.1f%%)\n",
 		bank, frame_scratch, 100.0 * (double)bank / (double)frame_scratch);
 	assert(bank < frame_scratch);
 }
