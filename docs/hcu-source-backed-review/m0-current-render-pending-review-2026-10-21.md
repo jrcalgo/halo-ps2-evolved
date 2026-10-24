@@ -1,0 +1,90 @@
+# M0 pending render externals — source-backed review
+
+Review date: 2026-10-21
+
+Reviewer scope: report-only review of all 13 `classification: render`, `disposition: pending` rows in `docs/hcu-source-backed-review/hcu-ps2-external-review.json`. No ledger, plan, or production source was changed by this review.
+
+## Evidence identity and limits
+
+- Current rooted HCU object: `build/hcu-ps2-closure/all-no-bootstrap-memory/rooted.o`, SHA-256 `f1a169d679ee354044390083945b9e74319ca0b833b01da25ff904f3ea1f5e3a`.
+- Rooted closure result records HCU commit `6933490b2d16bb1c637295b6a0f3880ba23a7d56`; the selected HCU tree is locally modified, so this commit alone does not identify every port source used by a build. Halo-PS2 HEAD is `71183bb0a9adc586cd267b2780c82bbc12cfd95b`.
+- Current external-review ledger SHA-256: `323d6ebc0d1977ea9b5d355382c7085d5e27a79568aab9d734479906715b8f7b`. Its `rooted_sha256` names the object above. The twelve rows whose caller is `source/main/main.c` have expected source hash `8a12962678737c6590556ad5c8cf3622ea94a62c897d39d106694e131f0b9b2d`; both `render_debug_string` caller hashes also match their current files (`scenario.c` `ca2da9a1332a259c66046a444c9456572f21d1586bdef72b715ef9013fc61b91`, `sound_dsound_xbox.c` `af6f4c07b0df3568b7da8dd1485673d2141336d314df4b4d0563e9665936852b`). No caller-source hash drift was found for these 13 rows.
+- Fresh optical combined-map SHA-256: `f8e8f522751db06e8cd8caf15a661e94c1bac9efccb7b2d65a65c5f6621cf6b1`; result JSON SHA-256: `213f7dbbcb868a334e43e218b2475c1c3256c7ee1d89e723d4741abd9953db20`. The combined probe still reports `acceptance: false`; this map establishes current linked definitions, not behavioral correctness.
+- Relevant implementation source hashes: HCU `source/interface/ui_widget.c` `f8b8845a5d8baa8f14a4dc1ba8da4778e3c7a029155110c53286b9454becd489`; `source/render/render.c` `4ebd16924ab73a84afd371863a77dfc4787ee1b63b52c6be9c9db3baecd2cb75`; `source/render/render_debug.c` `a774f07689b17f288f0e79be9d7e2b85d70fff43d59eee3e30aeb55431530d44`; `source/rasterizer/rasterizer.c` `f306b55f34adfba603af46b173d804cb924ab3e9fd75e5ae25ff2c40c2eaf3f8`; `source/rasterizer/rasterizer_debug.c` `c46017aaa72ebf9af7b36b4fcaf6df64882c73fa658067a0107757f56b60a983`; `source/rasterizer/rasterizer_transparent_geometry.c` `af377630ea1368a37a430bb276b68ed2f17ee6012b66a1e8c49182cfd3e1d5ea`; PS2 `port/ps2/src/ps2_render.c` `c5f244aa67c01cdc7eca93a20dc83ddabbf530859ee5cda0794e70cbe8c26943`; PS2 `port/ps2/src/ps2_rasterizer.c` `b420467ed7a3174368b2f63aa53ec225dd589c918829e246ad382cea5c1d4a78`.
+
+The fresh map lists all 13 symbols at addresses in the `0x0010b7e4`–`0x0010bc8c` placeholder range. `tools/hcu_ps2_link.py:270-370` generates typed missing definitions; for `void` functions their generated body is empty (`emit`, approximately lines 323-360). Thus a successful link is not evidence that any of these operations works. Conversely, the M0 row's caller sections are useful evidence of *where* each placeholder is reached: the 11 `rasterizer_*` rows all list only `.text.halt_and_catch_fire`.
+
+## Disposition summary
+
+| Symbol | Rooted caller(s) | Source-backed semantic classification | Recommendation |
+|---|---|---|---|
+| `main_screen_shell_begin_fade` | `main_change_map_name` | UI/music/widget lifecycle state, not just drawing | Keep pending; implement CE-compatible UI state transition or prove transition unreachable in supported local mode. |
+| `rasterizer_debug_draw` | `halt_and_catch_fire` | Diagnostic geometry drawing only | Eligible for explicit fatal-overlay omission; not a generic approved stub until fatal-path policy/test is recorded. |
+| `rasterizer_draw_string` | `halt_and_catch_fire` | Diagnostic text drawing only | Eligible for explicit fatal-overlay omission; keep error log as owner/evidence, test fatal behavior. |
+| `rasterizer_frame_end` | `halt_and_catch_fire` | End-of-frame GPU/backend flush for fatal overlay | Fatal-overlay-only in this closure; explicitly omit with documented error-screen policy or implement PS2 backend semantics. |
+| `rasterizer_present` | `halt_and_catch_fire` | Presents error frame; distinct from ordinary CE present symbol | Fatal-overlay-only in this closure; not the ordinary `render_frame_present` bridge. Document omission or implement. |
+| `rasterizer_reset_state` | `halt_and_catch_fire` | Backend state reset before error overlay | Fatal-overlay-only; no gameplay result after fatal halt, but document explicit omission and guard recursion/error path. |
+| `rasterizer_transparent_geometry_draw` | `halt_and_catch_fire` | Optional diagnostic overlay geometry | Explicit fatal-overlay omission candidate; test no live gameplay caller and bounded halt loop. |
+| `rasterizer_window_begin` | `halt_and_catch_fire` | Sets up a camera/fog/target for rendering the fatal overlay | Fatal-only in current root; stateful render backend setup, so do not classify by name as universally drawing-only. Explicitly omit only under tested fatal-screen policy. |
+| `rasterizer_window_end` | `halt_and_catch_fire` | Closes the fatal overlay render window/backend target | Fatal-only in current root; explicit omission candidate under same policy. |
+| `rasterizer_windows_begin` | `halt_and_catch_fire` | Starts fatal overlay's window collection | Fatal-only in current root; explicit omission candidate under same policy. |
+| `rasterizer_windows_end` | `halt_and_catch_fire` | Ends fatal overlay's window collection | Fatal-only in current root; explicit omission candidate under same policy. |
+| `render_debug_string` | `scenario_get_sound_environment`, `dsound_end_scene` | Queues optional debug text behind a debug flag | Eligible for documented debug-only omission if CE debug cache cannot influence simulation; verify non-immediate call contract. |
+| `render_frame_present` | `main_present_frame`, `screenshot_render` | Frame presentation/screenshot handoff | Keep pending; determine active local-game presentation ownership and bridge to parent/PS2 display, or prove this caller is outside the accepted path. |
+
+“Eligible for explicit omission” is not final M0 approval. It means source evidence supports a narrowly scoped disposition that could close the row after the stated path and tests are recorded. No row should remain backed by an undocumented generated empty body.
+
+## Per-symbol evidence and required closure evidence
+
+### `main_screen_shell_begin_fade`
+
+The rooted caller is CE `main_change_map_name` (`source/main/main.c:1524-1534`, caller file hash above). When the main-menu scenario is loaded and the menu is active, it sets a one-second map-change timer, calls this function, inhibits widget processing, and sets fade value to zero. The CE body in `source/interface/ui_widget.c:3001-3026` stops menu music, writes each eligible active widget's auto-close fade/time fields, and disposes widget stacks. These are UI lifecycle and audio-selection/state changes; they are not the pixel fade itself. A no-op can leave menu widgets/music and stacks in a stale state across map transition.
+
+The PS2 `ps2_render.c` adapter does not implement this symbol. The fresh link map resolves it to the typed generated placeholder. Recommendation: **required stateful local-UI owner; keep pending**. Either include/adapt the CE body with real widget/audio owners or provide a source-backed proof the caller cannot execute under supported menu/map flow. Test active and error-dialog widgets, stack disposal, music-stop request, repeated fade start, and map transition. Test that a game-state update proceeds while visual alpha is delegated to the PS2/HCU UI rendering layer.
+
+### Fatal-error overlay rasterizer rows (11)
+
+All 11 symbols have only `.text.halt_and_catch_fire` in their rooted caller sections. The caller is CE `source/main/main.c:3149-3288`; it logs the error at `:3169-3170`, takes a recursion lock at `:3171-3172`, stops all connected controller rumblers at `:3175-3183`, constructs camera/frustum/window data at `:3204-3238`, draws a banner/error text and optional transparent/debug geometry at `:3240-3278`, closes the frame at `:3279-3282`, then calls `input_update()` inside an infinite loop at `:3283-3284`. There is no normal return to gameplay after this path begins.
+
+This proves these operations are not normal per-tick camera, HUD, or weapon-pose advancement in the current rooted profile. It does **not** prove that their state effects are intrinsically irrelevant: the CE source rasterizer wrappers delegate to backend routines (`source/rasterizer/rasterizer.c:714-760,1774-1804`), and the Xbox `_rasterizer_window_begin` copies the complete parameter block into `global_window_parameters` (`source/rasterizer/xbox/rasterizer_xbox.c:1721-1758`). They configure the fatal frame, not the live simulation. The focused CE diagnostic primitives are `source/rasterizer/rasterizer_debug.c:306-...` and `source/rasterizer/rasterizer_transparent_geometry.c:535-...`; these submit debug/transparent geometry. The PS2 adapter `port/ps2/src/ps2_rasterizer.c:415-465` provides global defaults and clip-state initialization, but does not define these 11 symbols. The PS2 `port/ps2/src/ps2_render.c:80-...` advances frame/camera/first-person state on its own normal render path, which is separate evidence and must not be credited to these fatal-only symbols.
+
+Per symbol:
+
+- `rasterizer_reset_state`: CE wrapper calls backend reset (`rasterizer.c:714-719`). Rooted use is only before fatal overlay frames. Recommendation: explicit fatal-only omission is viable if PS2 preserves logged fatal error and the loop cannot resume normal rendering; otherwise implement GS/PS2 reset. Test recursion and repeated fatal frame handling.
+- `rasterizer_debug_draw`: CE routine draws queued diagnostic primitives when enabled (`rasterizer_debug.c:306-...`). Rooted use is only the fatal overlay. Recommendation: explicit debug-draw omission candidate. Test no mutation of gameplay/actor state and record that the fatal screen is log-only if not drawn.
+- `rasterizer_draw_string`: CE rasterizer text interface is used by the fatal banner and error tail (`main.c:3240-3273`). Recommendation: explicit error-overlay omission candidate only if log reporting is accepted; otherwise provide GS text rendering. Test message survives through `HALO_PS2_LOCAL halt` diagnostics and that no bad font/tag accesses occur.
+- `rasterizer_transparent_geometry_draw`: CE transparent queue draw (`rasterizer_transparent_geometry.c:535-...`) is called with both water and non-water phases only inside the fatal loop (`main.c:3276-3277`). Recommendation: explicit fatal-overlay omission candidate; test it is not relied on to flush or update simulation outside that callsite.
+- `rasterizer_window_begin`: CE backend captures camera/frustum/fog/window parameters (Xbox backend `rasterizer_xbox.c:1721-1758`). Rooted call is fatal-only; it is stateful for the backend's rendering state, not game simulation. Recommendation: do not globally mark as “harmless no-op”; explicitly waive only the fatal-screen backend contract or implement a PS2 no-draw state consumer. Test no stale camera/snapshot path can invoke it outside fatal handling.
+- `rasterizer_window_end`: closes the same fatal render window (`rasterizer.c:1786-1791`; Xbox backend `rasterizer_xbox.c:1789-...`). Recommendation: same fatal-only disposition. Test balanced begin/end on the error path if implemented; if omitted, prove no resource is acquired by begin.
+- `rasterizer_windows_begin`: brackets only the fatal error window set (`main.c:3209`). CE wrapper delegates (`rasterizer.c:1793-1799`). Recommendation: explicit fatal-only omission candidate; pair with `windows_end` disposition and test no simulation update.
+- `rasterizer_windows_end`: closes that fatal-only set (`main.c:3280`; wrapper `rasterizer.c:1801-1804`). Recommendation: explicit fatal-only omission candidate; pair with begin, ensure no backend lock/resource remains if a PS2 implementation is later introduced.
+- `rasterizer_frame_end`: closes CE fatal frame (`main.c:3281`; wrapper `rasterizer.c:1774-1777`). Recommendation: explicit fatal-only omission candidate only if error frame is deliberately not displayed; otherwise it is a required backend flush for the diagnostic frame. Test the policy and no ordinary frame caller in the exact closure.
+- `rasterizer_present`: final fatal-frame submission (`main.c:3282`; wrapper `rasterizer.c:755-761`). This is not equivalent to `render_frame_present`'s ordinary game-loop call, because the rooted caller set is fatal-only. Recommendation: explicit fatal-overlay omission candidate under the same log-only policy; if error UI is required, add PS2 presentation owner and test it independently.
+
+The final error loop also calls `input_update()` each iteration and never returns. Whether the platform should continuously show a rendered error overlay is product policy not resolved by source. A robust M0 disposition must choose and record either (a) retain a visible fatal overlay via PS2 renderer, or (b) intentionally make fatal failures log-only on PS2 while guaranteeing the GS does not present corrupted/stale state as success. It must not silently pretend the CE error overlay is rendered.
+
+### `render_debug_string`
+
+The rooted callsites are gated diagnostics: scenario sound-environment text under `debug_sound_environment` (`source/scenario/scenario.c:1381-1387`) and sound channel debug output (`source/sound/sound_dsound_xbox.c:1559`). Both pass `FALSE`. CE `source/render/render_debug.c:1119-1152` routes a false `immediate` value into `render_debug_add_cache_entry`; only the `TRUE` path sets bitmap-font draw mode and calls `rasterizer_draw_string` (`:1128-1143`). The reviewed callsites therefore queue debug text and do not themselves alter sound selection, sound environment, or actor state. Current PS2 `ps2_render.c` has snapshot/frame-state behavior but no `render_debug_string` implementation; current linker map resolves the symbol to the generated empty void body.
+
+Recommendation: **debug-only omission candidate, pending proof of cache isolation**. Inspect/test that `render_debug_add_cache_entry` and cache exhaustion cannot affect simulation or sound. A proper disposition can be PS2 diagnostic logger or explicit disabled debug text; do not enable an empty implementation for `immediate == TRUE` callsites without review. Test both gated callsites in diagnostic-on/off cases and compare scenario sound environment and sound channel state hashes with debug text disabled/enabled.
+
+### `render_frame_present`
+
+CE `source/render/render.c:283-290` forwards screenshot bitmap/index directly to `rasterizer_present`. Its rooted callers include `main_present_frame` and the screenshot rendering function. `main_present_frame` is called from the ordinary local game path (`source/game/game.c:755-...` and `:888-...` during cache-progress rendering; the main loop also profiles it at `source/main/main.c:3752`). The CE implementation is not simulation logic by itself, but it is the point at which a composed CE frame or screenshot reaches the rasterizer. The PS2 `port/ps2/src/ps2_render.c` owns CE-side frame clock, camera, first-person update, and parent render-snapshot publication; it does not define `render_frame_present`. The external symbol is generated empty, so it cannot present a screenshot or make a CE-owned render frame visible.
+
+Recommendation: **presentation-owner gap; keep pending**. Decide from the accepted runtime call graph whether parent `play_ee` has already consumed/presented the snapshot before CE calls this function. If so, provide an explicit no-double-present adapter and evidence; if not, bridge to the parent GS renderer's present/frame-end operation. Preserve screenshots as a separately explicit unsupported feature if necessary; do not conflate their optional file output with normal frame presentation. Tests: call-order trace from accepted local-game startup through CE `main_present_frame`, parent snapshot consume, GS present/vsync; assert exactly one present per display frame; ensure presentation cadence is invariant to extra render calls; exercise screenshot requests or explicitly document their omission; capture PCSX2 image and GS/display evidence for the exact ELF.
+
+## Recommended M0 ledger treatment
+
+1. Keep `main_screen_shell_begin_fade` and `render_frame_present` pending: the first is stateful widget/music lifecycle; the second sits at an ordinary game-loop display boundary and currently has no proven parent-present replacement.
+2. For the 11 `rasterizer_*` error-overlay rows, group only for shared rationale, but retain individual ledger rows. Their exact rooted caller evidence supports a narrowly scoped fatal-overlay-only exclusion; approve only after product policy says fatal errors are log-only (or a complete PS2 fatal overlay owner exists), a source-backed callgraph check confirms no nonfatal callers in the pinned root, and tests exercise the halt/recursion/log contract.
+3. Keep `render_debug_string` pending until debug-cache isolation and gated-call behavior are tested. Then it may be explicitly disabled/redirected as diagnostics-only.
+4. Regenerate the ledger from the exact closure after any edits and require each row's caller section/provider to match the rooted object. Generated placeholders can remain only when they are transformed into explicit, named PS2 omissions with ownership, rationale, and tests—not merely because their return type is `void`.
+
+## Validation performed
+
+- Parsed the exact ledger and enumerated the 13 pending render rows.
+- Recomputed all caller source hashes from the current HCU submodule; all match the ledger values above.
+- Inspected current CE callsites and implementations, PS2 `ps2_render.c` / `ps2_rasterizer.c`, the typed-placeholder generator (`tools/hcu_ps2_link.py`), and fresh combined optical linker-map symbol definitions.
+- No functional tests or emulator run were performed for this report-only task. The referenced combined probe has `acceptance: false`, so it is not validation of these behaviors.
