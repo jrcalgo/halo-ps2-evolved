@@ -223,6 +223,8 @@ def import_profile(sources, roots, schema_manifest, *, source_priority=None, sce
     if scenario_root is not None:
         if isinstance(scenario_root,(tuple,list)): scenario_root={'source':scenario_root[0],'group':scenario_root[1],'path':scenario_root[2]}
         roots.append(scenario_root)
+    # The mounted map owns the only file-data extents a selected package can read.
+    mounted_source=None if scenario_root is None else str(scenario_root['source'])
     roots.sort(key=lambda r:(rank.get(str(r['source']),len(rank)),str(r['source']),r['group'],r['path']))
     for root in roots:
         sid=str(root['source']); src=sources.get(sid)
@@ -318,8 +320,21 @@ def import_profile(sources, roots, schema_manifest, *, source_priority=None, sce
             'stable_key':f"{e.group}:{e.path}#{identity[2]}",'output_datum':handle[identity],
             'source':src.id,'source_key':src.id,'source_sha256':src.sha256,'source_datum':e.tag_id,'content_sha256':identity[2],'root_offset':root_out,
             'source_aliases':sorted(row['aliases']), 'conflicts':row['conflicts']})
-        resources.extend({'tag':e.path,'source':src.id,'source_sha256':src.sha256,**r,
-            'output_descriptor_offset':output_offset(r['descriptor_offset'])} for r in w['resources'])
+        for r in w['resources']:
+            field=output_offset(r['descriptor_offset'])
+            if field is None: raise ImportError('resource descriptor not retained in output')
+            if mounted_source is not None and src.id!=mounted_source:
+                # Samples in another source map are not in the mounted map's
+                # files. Keep identity in normalizations, not as an unbacked extent.
+                struct.pack_into('<i',out,field,0); struct.pack_into('<i',out,field+8,0)
+                runtime_normalizations.append({'field':field,'definition':'sound_permutation',
+                    'member':r['field'],'source_key':src.id,'source_datum':e.tag_id,
+                    'source_value':r['bytes'],'output_datum':handle[identity],
+                    'source_offset':r['source_offset'],'payload_sha256':r['payload_sha256'],
+                    'policy':'external_source_sample_metadata_only'})
+                continue
+            resources.append({'tag':e.path,'source':src.id,'source_sha256':src.sha256,**r,
+                'output_descriptor_offset':field})
         for ref in w['refs']:
             if ref['path'] is None: raise ImportError('unresolved reference')
             target_key=(ref['group'],ref['path']); resolved=resolution.get((row['source'].id,*target_key))

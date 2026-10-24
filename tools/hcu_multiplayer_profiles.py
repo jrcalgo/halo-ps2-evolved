@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import hashlib
 import json
 from pathlib import Path
@@ -388,6 +389,8 @@ def main(argv=None):
     mode.add_argument('--spec-only',action='store_true')
     mode.add_argument('--all',action='store_true')
     mode.add_argument('--profile',action='append',default=[],help='profile name; repeat to build a subset')
+    mode.add_argument('--session-selection',type=Path,
+        help='build one complete HCP2 package from a hcu-session-roster-selection-v1 JSON')
     ap.add_argument('--report-failures',action='store_true',help='write diagnostics without emitting HCP packages for failures')
     ap.add_argument('--verify-rebuild',action='store_true',help='run a second independent import/conversion and compare outputs')
     ap.add_argument('--maps',type=Path,default=DEFAULT_MAPS)
@@ -405,6 +408,48 @@ def main(argv=None):
         args.output.parent.mkdir(parents=True,exist_ok=True)
         args.output.write_text(json.dumps(specs,sort_keys=True,indent=2)+'\n'); return 0
     selected=specs['profiles'] if args.all else [p for p in specs['profiles'] if p['name'] in set(args.profile)]
+    if args.session_selection:
+        selection=json.loads(args.session_selection.read_text())
+        if selection.get('format')!='hcu-session-roster-selection-v1':
+            raise ValueError('unsupported session selection format')
+        base=next((p for p in specs['profiles'] if p['name']==selection.get('scenario_profile')),None)
+        if base is None or base.get('kind')!='survival':
+            raise ValueError('session selection must name a retained C1 survival profile')
+        source_hashes={row['map']:row['sha256'] for row in roster.get('source_roots',[])}
+        available={(row['map'].casefold(),str(row['datum']),row['path'].casefold()):row
+                   for row in roster.get('variants',[])
+                   if (row.get('disposition')=='combat' and row.get('recipe')) or
+                      (row.get('disposition')=='mounted_occupant' and row.get('mounted_recipes'))}
+        selected_ids=set()
+        for identity in selection.get('selected_variants',[]):
+            key=(str(identity.get('source_map','')).casefold(),str(identity.get('source_datum')),
+                 str(identity.get('path','')).casefold())
+            row=available.get(key)
+            if row is None or identity.get('source_map_sha256')!=source_hashes.get(row['map']):
+                raise ValueError('session selection contains a missing or stale exact catalog identity')
+            selected_ids.add((row['map'].casefold(),row['path'].casefold()))
+        if not selected_ids:
+            raise ValueError('session selection has no selected variants')
+        actor_roots=[r for r in base.get('actor_roots',[]) if
+                     (r['source'].casefold(),r['path'].casefold()) in selected_ids]
+        if not actor_roots:
+            raise ValueError('session selection resolves to no profile actor roots')
+        parents={(r['source'].casefold(),r['parent_vehicle']['group'],r['parent_vehicle']['path'].casefold())
+                 for r in actor_roots if r.get('parent_vehicle')}
+        roots=[]
+        for root in base['roots']:
+            role=root.get('role','')
+            if role in ('combat_variant','mounted_variant'):
+                if (root['source'].casefold(),root['path'].casefold()) in selected_ids: roots.append(root)
+            elif role=='mounted_parent_vehicle':
+                if (root['source'].casefold(),root['group'],root['path'].casefold()) in parents: roots.append(root)
+            else: roots.append(root)
+        base=copy.deepcopy(base)
+        base['name']=str(selection.get('name',''))
+        if not base['name'] or any(c not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_' for c in base['name']):
+            raise ValueError('session selection name must be filename-safe')
+        base['actor_roots']=actor_roots; base['roots']=roots
+        selected=[base]
     if args.profile and len(selected)!=len(set(args.profile)): raise ValueError('unknown profile name in --profile')
     if not selected: raise ValueError('no profiles selected')
     manifest=SchemaManifest(Elf32(args.schema_elf)).build()
@@ -420,6 +465,9 @@ def main(argv=None):
         'weapon_report':{'path':_provenance_path(args.weapon_report),'sha256':sha_file(args.weapon_report)},
         'schema_elf':{'path':_provenance_path(args.schema_elf),'sha256':sha_file(args.schema_elf)},
     }
+    if args.session_selection:
+        source_inputs['session_selection']={'path':_provenance_path(args.session_selection),
+                                           'sha256':sha_file(args.session_selection)}
     consumer_exclusions=None
     if args.consumer_exclusions is not None:
         import hcu_profile_consumer_exclusions as _exclusion_rules  # noqa: E402
@@ -453,6 +501,19 @@ def main(argv=None):
             report_failures=args.report_failures,cache=cache,source_inputs=source_inputs,
             runtime_layout_probe=runtime_layout_evidence,presentation=cache.presentation,
             consumer_exclusions=consumer_exclusions)
+        if args.session_selection and package is not None:
+            catalog_rows=[r for r in roster.get('variants',[]) if
+                (r.get('disposition')=='combat' and r.get('recipe')) or
+                (r.get('disposition')=='mounted_occupant' and r.get('mounted_recipes'))]
+            if len(catalog_rows)!=255:
+                raise ValueError(f'retained selectable catalog must remain complete (255 occurrences), found {len(catalog_rows)}')
+            profile_manifest['selected_session_catalog']={
+                'selection_sha256':sha_file(args.session_selection),
+                'retained_roster_sha256':sha_file(args.roster),
+                'selectable_catalog_occurrences':len(catalog_rows),
+                'complete_catalog_availability_preserved':True,
+                'selected_variants':json.loads(args.session_selection.read_text())['selected_variants'],
+            }
         if args.verify_rebuild:
             package2,manifest2,artifacts2=build_one(spec,args.maps,manifest,producers,
                 report_failures=args.report_failures,cache=BuildCache(),source_inputs=source_inputs,
