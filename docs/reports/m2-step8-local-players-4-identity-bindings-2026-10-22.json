@@ -1,0 +1,196 @@
+{
+  "core_row_index": 15,
+  "format": "hcu-step8-local-player-4-identity-bindings-v1",
+  "historical_pin_availability_report": {
+    "path": "docs/reports/m2-step8-historical-workload-pin-availability-2026-10-22.json",
+    "pins_checked": [
+      "21188c9068a30a0fb5b4bda3c1ce35902745de51aa48e757c80c9c7ea9f8d6be",
+      "29091d26012bf2b9470f2abcdd10b7cca2e8d7ae6e2c6fc2f4134348c52540a2",
+      "4aaa2fb86459d77e4a5527b1109558cfcc17190517fa55e9006ba59b7ff59c9b",
+      "613b3e3bf0f1cf5a45679050df9cb37839973379a5b0b644937af43c809e4c7c",
+      "6544719db660b6be9b277f983a5a270ff9eb83ccf66c2e77d38a164ee6383a85",
+      "987af62554e1cc95b299ce361d743300c617f96a7cac24028c1a338c4da97d88",
+      "beee81293b9059ca2f51c04e6b49897e607e332750fe7f14fa201c2077258bf0",
+      "d3f36c62a3915c4565b0ab8b21de05f540a650a6cb1d727636a4fc5ec12a21df"
+    ],
+    "sha256": "b37f46bbc428ff457951522aeff95d5b9692d28c3dd2f4777355925ea10f3120"
+  },
+  "ledger_path": "docs/reports/m2-step7-step8-closure-ledger-2026-10-22.json",
+  "ledger_sha256": "e26aa9b9c5f146d1066bd302f9fd20c12cb2d7f24fe4cfc40da2aa7c1513ec7b",
+  "policy": "Bindings count only when SHA-256 of current file bytes equals the exact digest in the ledger row. Missing historical generated files remain unresolved; no result qualification is changed.",
+  "unbound_identities": [
+    {
+      "category": "executable_hashes",
+      "reported_label": "linker driver",
+      "sha256": "21188c9068a30a0fb5b4bda3c1ce35902745de51aa48e757c80c9c7ea9f8d6be"
+    },
+    {
+      "category": "input_hashes",
+      "reported_label": "SHA-256: CE diagnostic source",
+      "sha256": "d3f36c62a3915c4565b0ab8b21de05f540a650a6cb1d727636a4fc5ec12a21df"
+    },
+    {
+      "category": "reported_hash_pins",
+      "reported_label": "SHA-256: CE diagnostic source",
+      "sha256": "d3f36c62a3915c4565b0ab8b21de05f540a650a6cb1d727636a4fc5ec12a21df"
+    },
+    {
+      "category": "reported_hash_pins",
+      "reported_label": "closure",
+      "sha256": "4aaa2fb86459d77e4a5527b1109558cfcc17190517fa55e9006ba59b7ff59c9b"
+    },
+    {
+      "category": "reported_hash_pins",
+      "reported_label": "linker driver",
+      "sha256": "21188c9068a30a0fb5b4bda3c1ce35902745de51aa48e757c80c9c7ea9f8d6be"
+    },
+    {
+      "category": "source_hashes",
+      "reported_label": "SHA-256: CE diagnostic source",
+      "sha256": "d3f36c62a3915c4565b0ab8b21de05f540a650a6cb1d727636a4fc5ec12a21df"
+    }
+  ],
+  "verified_bindings": [
+    {
+      "basis": "SHA-256 of current file bytes equals the report-pinned identity",
+      "categories_bound": [
+        "executable_hashes",
+        "reported_hash_pins"
+      ],
+      "core_row_index": 15,
+      "path": "build/hcu-parent-link-probe/hcu-gameplay-machine-step8-mp-workload-4p-tagcache-4477120.elf",
+      "sha256": "c159c609f12c28a2532db848e5e699a64538fcdff8b27ee75e0907c47175541b"
+    },
+    {
+      "basis": "SHA-256 of current file bytes equals the report-pinned identity",
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 15,
+      "path": "build/hcu-parent-link-probe/hcu-gameplay-machine-step8-mp-workload-2p-tagcache-4477120.elf",
+      "sha256": "c46ab77bca066ff3f6283bb011d8bef94c4cc5de5d0aa8d0dd8cbdf293b010b1"
+    },
+    {
+      "basis": "SHA-256 of current file bytes equals the report-pinned identity",
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 15,
+      "path": "build/hcu-parent-link-probe/result-step8-mp-workload-4p-tagcache-4477120.json",
+      "sha256": "af1a132a0b9e1e16af3bae84df626fbb7a191e1bc75a18413963d2a8fda5e738"
+    },
+    {
+      "basis": "SHA-256 of current file bytes equals the report-pinned identity",
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 15,
+      "path": "build/hcu-parent-link-probe/result-step8-mp-workload-2p-tagcache-4477120.json",
+      "sha256": "f23210799016b3e4643bf2b22ae9bfe78a1abbc537814713b176822aeb44e8f5"
+    },
+    {
+      "basis": "SHA-256 of current file bytes equals the report-pinned identity",
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 15,
+      "path": "tools/hcu_parent_link_probe.py",
+      "sha256": "459fd20d0ff3f39412d1aae2d63584239d9fc1ffb672e012a657227fe5e3d9e5"
+    },
+    {
+      "basis": "SHA-256 of current file bytes equals the report-pinned identity",
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 15,
+      "path": "tools/ee-world.mk",
+      "sha256": "2b584e9830676e02653420434875d86682ee6025dad8bd23976c92a6f4bc0c9f"
+    },
+    {
+      "basis": "SHA-256 of current file bytes equals the report-pinned identity",
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 15,
+      "path": "tools/test_hcu_step8_mp_workload.py",
+      "sha256": "b2e7c2a85f2c95da7104d77d0ebdb4821df5c41a53ea486ce8eeb95146179d80"
+    },
+    {
+      "basis": "SHA-256 of current file bytes equals the report-pinned identity",
+      "categories_bound": [
+        "input_hashes",
+        "reported_hash_pins",
+        "harness_hashes"
+      ],
+      "core_row_index": 15,
+      "path": "tests/test_hcu_step8_mp_workload_source.py",
+      "sha256": "00297e3d8774b7476802acd807fbabbb41e3958fe99efd3e2eaf725644e83d2a"
+    },
+    {
+      "basis": "SHA-256 of current file bytes equals the report-pinned identity",
+      "categories_bound": [
+        "input_hashes",
+        "reported_hash_pins",
+        "harness_hashes"
+      ],
+      "core_row_index": 15,
+      "path": "tests/test_hcu_step8_mp_workload_runner.py",
+      "sha256": "b280778daf06315ed9f51b82ee2e0e43aec71ee342c625a67007ff6a00626658"
+    },
+    {
+      "basis": "SHA-256 of current file bytes equals the report-pinned identity",
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 15,
+      "path": "build/hcu-ps2-closure/emulator-m1-recompiler-3a78e285374b453f9cb18b6e2ae61fdf/result.json",
+      "sha256": "f1134c273bce827da8884c8dae80170845fdc8a701436a9fe0a7135076571c72"
+    },
+    {
+      "basis": "SHA-256 of current file bytes equals the report-pinned identity",
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 15,
+      "path": "build/hcu-ps2-closure/emulator-m1-recompiler-3a78e285374b453f9cb18b6e2ae61fdf/emulog.txt",
+      "sha256": "968869907e432bbf81a9c9aef8507298bd3019a3bdccff1f436556b2fc6398f7"
+    },
+    {
+      "basis": "SHA-256 of current file bytes equals the report-pinned identity",
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 15,
+      "path": "build/hcu-ps2-closure/emulator-m1-interpreter-15c010c1a47041618f6c159e1c41621e/result.json",
+      "sha256": "706c973eb040696c35c13e9ab813b80005f3650fce15bf8671284b5c6471c529"
+    },
+    {
+      "basis": "SHA-256 of current file bytes equals the report-pinned identity",
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 15,
+      "path": "build/hcu-ps2-closure/emulator-m1-interpreter-15c010c1a47041618f6c159e1c41621e/emulog.txt",
+      "sha256": "96298193eb2eb8d6db250288e221df2f4f37e080ae20de4c55d9f0a334c076ce"
+    },
+    {
+      "basis": "SHA-256 of current file bytes equals the report-pinned identity",
+      "categories_bound": [
+        "reported_hash_pins"
+      ],
+      "core_row_index": 15,
+      "path": "build/hcu-step8-mp-workload/interpreter-result.json",
+      "sha256": "e7ff8da70e9aede4316127a673d9f9db438360d0aec7197bca3d06a2a8cd2389"
+    },
+    {
+      "basis": "mode-specific guest report gives exact output path and current bytes reproduce digest",
+      "categories_bound": [
+        "log_hashes",
+        "reported_hash_pins"
+      ],
+      "core_row_index": 15,
+      "path": "build/hcu-ps2-closure/emulator-m1-interpreter-15c010c1a47041618f6c159e1c41621e/result.json",
+      "sha256": "706c973eb040696c35c13e9ab813b80005f3650fce15bf8671284b5c6471c529"
+    }
+  ]
+}
