@@ -338,7 +338,7 @@ def main() -> None:
         raise RuntimeError("parent build produced no object files")
     required_hcu = [
         "ps2_abi.o", "ps2_memory.o", "ps2_crt.o", "ps2_edge.o",
-        "ps2_platform.o", "rooted.o",
+        "ps2_platform.o", "ps2_sound_playback_bind.o", "rooted.o",
     ]
     hcu_objects = [hcu_closure / name for name in required_hcu]
     missing = [str(path) for path in hcu_objects if not path.is_file()]

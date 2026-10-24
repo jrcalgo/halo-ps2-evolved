@@ -21,6 +21,8 @@ COMMENT = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
 PREPROC = re.compile(r"^\s*#.*?(?<!\\)$", re.M | re.S)
 SKIP = {
 	"halo_ps2_render_snapshot_begin", "halo_ps2_render_snapshot_commit",
+	# The dedicated provider object is linked into both CE and combined parent links.
+	"halo_ps2_sound_playback_note", "halo_ps2_sound_playback_bind_sink",
 	# C3: weak writer hooks; the parent snapshot bank (src/stream/hcu_snapshot_bank.c) implements them.
 	"halo_ps2_frame_snapshot_begin", "halo_ps2_frame_snapshot_commit",
 	"halo_ps2_frame_snapshot_intern_object",
@@ -473,6 +475,7 @@ def main() -> None:
         HCU / "port/ps2/src/ps2_memory.c",
         HCU / "port/ps2/src/ps2_crt.c",
         HCU / "port/ps2/src/ps2_edge.c",
+        HCU / "port/ps2/src/ps2_sound_playback_bind.c",
     ]
     objects = []
     for source in units:

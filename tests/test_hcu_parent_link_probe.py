@@ -200,6 +200,17 @@ def test_partition_profile_option_is_forwarded_and_artifacts_are_scoped():
     assert 'f"WORLD_HCU_PARTITION_PROFILE={args.partition_profile or \'\'}"' in script
 
 
+def test_c3_sound_playback_provider_is_a_distinct_combined_link_input():
+    manifest = json.loads((ROOT / "submodules/halo-ce-universal/port/ps2/port.json").read_text())
+    assert "port/ps2/src/ps2_sound_playback.c" in manifest["port_sources"]
+    linker = (ROOT / "tools/hcu_ps2_link.py").read_text()
+    assert '"halo_ps2_sound_playback_note"' in linker
+    assert '"halo_ps2_sound_playback_bind_sink"' in linker
+    assert 'HCU / "port/ps2/src/ps2_sound_playback_bind.c"' in linker
+    probe = (ROOT / "tools/hcu_parent_link_probe.py").read_text()
+    assert '"ps2_sound_playback_bind.o"' in probe
+
+
 def test_nondefault_tag_cache_profile_artifact_is_isolated_and_diagnostic():
     result = json.loads((ROOT /
         "build/hcu-parent-link-probe/result-tagcache-4477120.json").read_text())
