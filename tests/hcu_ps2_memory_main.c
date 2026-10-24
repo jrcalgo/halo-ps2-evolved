@@ -91,6 +91,7 @@ static void bind_parent_layout_regions(void)
 	arena_t backing;
 	mem_layout_v2_t layout;
 	arena_t *resident;
+	arena_t *current_bsp;
 	size_t resident_mark;
 
 	arena_init(&backing, "parent-v2", parent_layout_storage,
@@ -146,6 +147,32 @@ static void bind_parent_layout_regions(void)
 	assert(physical_memory_get_sound_cache_size() == 524288u);
 	assert(physical_memory_get_malloc_arena_size() == 2621440u);
 	physical_memory_free();
+
+	/* Exercise the proposed boot-fixed Longest/Blood-Gulch candidate split.
+	 * This is layout/binder evidence, not a measured retail map fit: the claims
+	 * provider is still a fixture, while capacities come from the retail audit. */
+	validator_claims_bytes = 786432u; /* (6 MiB tag+BSP address space) / 8 */
+	arena_init(&backing, "parent-v2-retail-split", parent_layout_storage,
+		MEM_LAYOUT_V2_BYTES + 64u);
+	assert(mem_layout_v2_init(&layout, &backing) == 0);
+	resident = mem_layout_v2_get(&layout, MEM_LAYOUT_V2_RESIDENT_GAMEPLAY);
+	current_bsp = mem_layout_v2_get(&layout, MEM_LAYOUT_V2_CURRENT_BSP);
+	assert(resident && current_bsp);
+	assert(hcu_memory_bind_parent_v2(&layout, 4477120u) == 0);
+	assert(physical_memory_get_tag_cache_size() == 4477120u);
+	assert(physical_memory_get_structure_bsp_cache_size() == 1814336u);
+	assert(physical_memory_bind_tag_cache(parent_layout_storage, 4096u) == 0);
+	physical_memory_allocate();
+	assert(physical_memory_ready());
+	assert((uintptr_t)physical_memory_get_tag_cache_base_address() + 4477120u ==
+		(uintptr_t)physical_memory_get_structure_bsp_cache_base_address());
+	assert((uintptr_t)physical_memory_get_structure_bsp_cache_base_address() + 1814336u ==
+		(uintptr_t)current_bsp->base + current_bsp->cap);
+	assert(!physical_memory_bind_tag_cache(parent_layout_storage, 4096u));
+	assert(physical_memory_get_tag_cache_size() == 4477120u);
+	assert(physical_memory_get_structure_bsp_cache_size() == 1814336u);
+	physical_memory_free();
+	validator_claims_bytes = TEST_VALIDATOR_SCRATCH_BYTES;
 
 	/* The combined image charges its NOBITS bytes to resident_gameplay and
 	 * carves only the remaining budget from the boot backing allocation. */
@@ -232,6 +259,8 @@ int main(void)
 	assert(physical_memory_get_sound_cache_base_address() == sound);
 	assert(physical_memory_get_sound_cache_size() == TEST_SOUND_BYTES);
 	assert(physical_memory_get_malloc_arena_size() == TEST_MALLOC_BYTES);
+	/* The backing contract is frozen once CE can retain pointers into it. */
+	assert(!physical_memory_bind_tag_cache(tag, TEST_TAG_BYTES));
 	assert(!physical_memory_bind_texture_cache(arena, TEST_TEXTURE_BYTES));
 
 	allocation = __wrap_malloc(17);
