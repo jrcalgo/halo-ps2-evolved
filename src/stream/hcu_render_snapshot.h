@@ -12,6 +12,10 @@
 
 #define HCU_CE_MATRIX4X3_BYTES 52u
 
+/* C3 opt-in (HCU_C3_FRAME_SNAPSHOT): the versioned v2 frame snapshot and its
+ * triple bank live in hcu_snapshot_bank.h. The v1 double bank below is the C2
+ * production path and is not bound when the C3 flag is set. */
+
 /* Snapshot banks are borrowed from frame_scratch. DMA payloads are appended
  * to the caller's live renderer chain; this module owns no DMA storage. */
 size_t hcu_render_snapshot_storage_required(void);
