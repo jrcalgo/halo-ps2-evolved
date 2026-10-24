@@ -264,6 +264,7 @@ def build_one(spec, maps_dir:Path, manifest:dict, producers:dict, *, report_fail
             'source_maps':{k:{'path':_provenance_path(v.map.path),'sha256':cache.sha(v.map.path) if cache else sha_file(v.map.path)} for k,v in sorted(sources.items())}}, {})
     placements=actor_bindings(spec,result)
     memory=_profile_memory(result)
+    presentation_provenance=None  # the media-failure diagnostic reports it even if media failed first
     if not result.get('ctag'): raise ValueError(f"{spec['name']}: scenario import did not produce CTAG")
     try:
         bsp_assets=[]
