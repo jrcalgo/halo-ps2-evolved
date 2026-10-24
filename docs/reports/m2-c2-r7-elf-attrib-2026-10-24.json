@@ -1,0 +1,5163 @@
+{
+  "all_sources_bytes": {
+    "closure:ps2_abi.o": {
+      "text": 59816
+    },
+    "closure:ps2_crt.o": {
+      "bss": 4,
+      "rodata": 102,
+      "text": 2288
+    },
+    "closure:ps2_edge.o": {
+      "bss": 588,
+      "rodata": 528,
+      "text": 9636
+    },
+    "closure:ps2_memory.o": {
+      "bss": 144,
+      "rodata": 528,
+      "text": 4028
+    },
+    "closure:ps2_platform.o": {
+      "bss": 128,
+      "rodata": 24,
+      "text": 10732
+    },
+    "gcc-lib:crtbegin.o": {
+      "bss": 32,
+      "text": 408
+    },
+    "gcc-lib:crtend.o": {
+      "text": 96
+    },
+    "gcc-lib:libc.a(libc_a-__call_atexit.o)": {
+      "bss": 4,
+      "data": 4,
+      "text": 504
+    },
+    "gcc-lib:libc.a(libc_a-_isatty.o)": {
+      "text": 120
+    },
+    "gcc-lib:libc.a(libc_a-abort.o)": {
+      "text": 24
+    },
+    "gcc-lib:libc.a(libc_a-assert.o)": {
+      "text": 120
+    },
+    "gcc-lib:libc.a(libc_a-atof.o)": {
+      "text": 8
+    },
+    "gcc-lib:libc.a(libc_a-atoi.o)": {
+      "text": 32
+    },
+    "gcc-lib:libc.a(libc_a-callocr.o)": {
+      "text": 312
+    },
+    "gcc-lib:libc.a(libc_a-closer.o)": {
+      "text": 112
+    },
+    "gcc-lib:libc.a(libc_a-ctype_.o)": {
+      "rodata": 648
+    },
+    "gcc-lib:libc.a(libc_a-div.o)": {
+      "text": 48
+    },
+    "gcc-lib:libc.a(libc_a-dtoa.o)": {
+      "text": 7432
+    },
+    "gcc-lib:libc.a(libc_a-environ.o)": {
+      "bss": 4,
+      "data": 4
+    },
+    "gcc-lib:libc.a(libc_a-envlock.o)": {
+      "text": 32
+    },
+    "gcc-lib:libc.a(libc_a-errno.o)": {
+      "text": 16
+    },
+    "gcc-lib:libc.a(libc_a-exit.o)": {
+      "text": 56
+    },
+    "gcc-lib:libc.a(libc_a-fclose.o)": {
+      "text": 472
+    },
+    "gcc-lib:libc.a(libc_a-fflush.o)": {
+      "text": 1200
+    },
+    "gcc-lib:libc.a(libc_a-fgets.o)": {
+      "text": 560
+    },
+    "gcc-lib:libc.a(libc_a-fileno.o)": {
+      "text": 264
+    },
+    "gcc-lib:libc.a(libc_a-findfp.o)": {
+      "bss": 340,
+      "data": 12,
+      "text": 1336
+    },
+    "gcc-lib:libc.a(libc_a-fiprintf.o)": {
+      "text": 136
+    },
+    "gcc-lib:libc.a(libc_a-flags.o)": {
+      "text": 216
+    },
+    "gcc-lib:libc.a(libc_a-fopen.o)": {
+      "text": 488
+    },
+    "gcc-lib:libc.a(libc_a-fprintf.o)": {
+      "text": 136
+    },
+    "gcc-lib:libc.a(libc_a-fputc.o)": {
+      "text": 472
+    },
+    "gcc-lib:libc.a(libc_a-fputs.o)": {
+      "text": 408
+    },
+    "gcc-lib:libc.a(libc_a-fread.o)": {
+      "text": 1000
+    },
+    "gcc-lib:libc.a(libc_a-freer.o)": {
+      "text": 1200
+    },
+    "gcc-lib:libc.a(libc_a-fscanf.o)": {
+      "text": 136
+    },
+    "gcc-lib:libc.a(libc_a-fseek.o)": {
+      "text": 32
+    },
+    "gcc-lib:libc.a(libc_a-fseeko.o)": {
+      "text": 1576
+    },
+    "gcc-lib:libc.a(libc_a-fstatr.o)": {
+      "text": 120
+    },
+    "gcc-lib:libc.a(libc_a-fvwrite.o)": {
+      "text": 1392
+    },
+    "gcc-lib:libc.a(libc_a-fwalk.o)": {
+      "text": 200
+    },
+    "gcc-lib:libc.a(libc_a-gdtoa-gethex.o)": {
+      "rodata": 256,
+      "text": 3176
+    },
+    "gcc-lib:libc.a(libc_a-gdtoa-hexnan.o)": {
+      "text": 1424
+    },
+    "gcc-lib:libc.a(libc_a-getenv_r.o)": {
+      "text": 376
+    },
+    "gcc-lib:libc.a(libc_a-gettimeofdayr.o)": {
+      "text": 120
+    },
+    "gcc-lib:libc.a(libc_a-gettzinfo.o)": {
+      "data": 88,
+      "text": 16
+    },
+    "gcc-lib:libc.a(libc_a-gmtime_r.o)": {
+      "text": 1440
+    },
+    "gcc-lib:libc.a(libc_a-impure.o)": {
+      "data": 292
+    },
+    "gcc-lib:libc.a(libc_a-isalpha.o)": {
+      "text": 24
+    },
+    "gcc-lib:libc.a(libc_a-isattyr.o)": {
+      "text": 112
+    },
+    "gcc-lib:libc.a(libc_a-isspace.o)": {
+      "text": 24
+    },
+    "gcc-lib:libc.a(libc_a-iswspace.o)": {
+      "text": 8
+    },
+    "gcc-lib:libc.a(libc_a-iswspace_l.o)": {
+      "text": 40
+    },
+    "gcc-lib:libc.a(libc_a-lcltime.o)": {
+      "text": 16
+    },
+    "gcc-lib:libc.a(libc_a-lcltime_r.o)": {
+      "text": 1272
+    },
+    "gcc-lib:libc.a(libc_a-locale.o)": {
+      "data": 364,
+      "text": 320
+    },
+    "gcc-lib:libc.a(libc_a-localeconv.o)": {
+      "text": 40
+    },
+    "gcc-lib:libc.a(libc_a-lseekr.o)": {
+      "text": 120
+    },
+    "gcc-lib:libc.a(libc_a-makebuf.o)": {
+      "text": 512
+    },
+    "gcc-lib:libc.a(libc_a-malign.o)": {
+      "text": 24
+    },
+    "gcc-lib:libc.a(libc_a-malignr.o)": {
+      "text": 520
+    },
+    "gcc-lib:libc.a(libc_a-malloc.o)": {
+      "text": 32
+    },
+    "gcc-lib:libc.a(libc_a-mallocr.o)": {
+      "bss": 52,
+      "data": 1040,
+      "text": 2648
+    },
+    "gcc-lib:libc.a(libc_a-mbrtowc.o)": {
+      "text": 320
+    },
+    "gcc-lib:libc.a(libc_a-mbtowc_r.o)": {
+      "text": 96
+    },
+    "gcc-lib:libc.a(libc_a-memchr.o)": {
+      "text": 232
+    },
+    "gcc-lib:libc.a(libc_a-memcmp.o)": {
+      "text": 144
+    },
+    "gcc-lib:libc.a(libc_a-memcpy.o)": {
+      "text": 328
+    },
+    "gcc-lib:libc.a(libc_a-memmove.o)": {
+      "text": 504
+    },
+    "gcc-lib:libc.a(libc_a-memset.o)": {
+      "text": 280
+    },
+    "gcc-lib:libc.a(libc_a-mktime.o)": {
+      "rodata": 96,
+      "text": 2880
+    },
+    "gcc-lib:libc.a(libc_a-mlock.o)": {
+      "text": 32
+    },
+    "gcc-lib:libc.a(libc_a-month_lengths.o)": {
+      "rodata": 96
+    },
+    "gcc-lib:libc.a(libc_a-mprec.o)": {
+      "rodata": 296,
+      "text": 5600
+    },
+    "gcc-lib:libc.a(libc_a-openr.o)": {
+      "text": 120
+    },
+    "gcc-lib:libc.a(libc_a-perror.o)": {
+      "text": 656
+    },
+    "gcc-lib:libc.a(libc_a-printf.o)": {
+      "text": 152
+    },
+    "gcc-lib:libc.a(libc_a-putc.o)": {
+      "text": 640
+    },
+    "gcc-lib:libc.a(libc_a-puts.o)": {
+      "text": 448
+    },
+    "gcc-lib:libc.a(libc_a-qsort.o)": {
+      "text": 2880
+    },
+    "gcc-lib:libc.a(libc_a-rand.o)": {
+      "text": 184
+    },
+    "gcc-lib:libc.a(libc_a-readr.o)": {
+      "text": 120
+    },
+    "gcc-lib:libc.a(libc_a-realloc.o)": {
+      "text": 24
+    },
+    "gcc-lib:libc.a(libc_a-reallocr.o)": {
+      "text": 1776
+    },
+    "gcc-lib:libc.a(libc_a-reent.o)": {
+      "bss": 4
+    },
+    "gcc-lib:libc.a(libc_a-refill.o)": {
+      "text": 536
+    },
+    "gcc-lib:libc.a(libc_a-sbrkr.o)": {
+      "text": 112
+    },
+    "gcc-lib:libc.a(libc_a-sccl.o)": {
+      "text": 272
+    },
+    "gcc-lib:libc.a(libc_a-setbuf.o)": {
+      "text": 16
+    },
+    "gcc-lib:libc.a(libc_a-setenv.o)": {
+      "text": 40
+    },
+    "gcc-lib:libc.a(libc_a-setenv_r.o)": {
+      "bss": 4,
+      "text": 960
+    },
+    "gcc-lib:libc.a(libc_a-setvbuf.o)": {
+      "text": 784
+    },
+    "gcc-lib:libc.a(libc_a-signal.o)": {
+      "text": 1432
+    },
+    "gcc-lib:libc.a(libc_a-signalr.o)": {
+      "text": 128
+    },
+    "gcc-lib:libc.a(libc_a-siscanf.o)": {
+      "text": 280
+    },
+    "gcc-lib:libc.a(libc_a-snprintf.o)": {
+      "text": 376
+    },
+    "gcc-lib:libc.a(libc_a-sprint_r.o)": {
+      "text": 64
+    },
+    "gcc-lib:libc.a(libc_a-sprintf.o)": {
+      "text": 256
+    },
+    "gcc-lib:libc.a(libc_a-ssprint_r.o)": {
+      "text": 216
+    },
+    "gcc-lib:libc.a(libc_a-ssputs_r.o)": {
+      "text": 416
+    },
+    "gcc-lib:libc.a(libc_a-stdio.o)": {
+      "text": 376
+    },
+    "gcc-lib:libc.a(libc_a-strchr.o)": {
+      "text": 408
+    },
+    "gcc-lib:libc.a(libc_a-strcmp.o)": {
+      "text": 184
+    },
+    "gcc-lib:libc.a(libc_a-strcpy.o)": {
+      "text": 184
+    },
+    "gcc-lib:libc.a(libc_a-strerror.o)": {
+      "rodata": 572,
+      "text": 1120
+    },
+    "gcc-lib:libc.a(libc_a-strlcpy.o)": {
+      "text": 88
+    },
+    "gcc-lib:libc.a(libc_a-strlen.o)": {
+      "text": 200
+    },
+    "gcc-lib:libc.a(libc_a-strncat.o)": {
+      "text": 288
+    },
+    "gcc-lib:libc.a(libc_a-strncmp.o)": {
+      "text": 224
+    },
+    "gcc-lib:libc.a(libc_a-strncpy.o)": {
+      "text": 200
+    },
+    "gcc-lib:libc.a(libc_a-strnlen.o)": {
+      "text": 64
+    },
+    "gcc-lib:libc.a(libc_a-strrchr.o)": {
+      "text": 120
+    },
+    "gcc-lib:libc.a(libc_a-strstr.o)": {
+      "text": 3200
+    },
+    "gcc-lib:libc.a(libc_a-strtod.o)": {
+      "rodata": 296,
+      "text": 7848
+    },
+    "gcc-lib:libc.a(libc_a-strtok.o)": {
+      "text": 24
+    },
+    "gcc-lib:libc.a(libc_a-strtok_r.o)": {
+      "text": 208
+    },
+    "gcc-lib:libc.a(libc_a-strtol.o)": {
+      "text": 712
+    },
+    "gcc-lib:libc.a(libc_a-strtoll.o)": {
+      "text": 888
+    },
+    "gcc-lib:libc.a(libc_a-strtoul.o)": {
+      "text": 664
+    },
+    "gcc-lib:libc.a(libc_a-strtoull.o)": {
+      "text": 840
+    },
+    "gcc-lib:libc.a(libc_a-svfiscanf.o)": {
+      "rodata": 690,
+      "text": 9688
+    },
+    "gcc-lib:libc.a(libc_a-svfprintf.o)": {
+      "rodata": 400,
+      "text": 14264
+    },
+    "gcc-lib:libc.a(libc_a-sysfstat.o)": {
+      "text": 24
+    },
+    "gcc-lib:libc.a(libc_a-time.o)": {
+      "text": 96
+    },
+    "gcc-lib:libc.a(libc_a-tolower.o)": {
+      "text": 56
+    },
+    "gcc-lib:libc.a(libc_a-tzcalc_limits.o)": {
+      "text": 992
+    },
+    "gcc-lib:libc.a(libc_a-tzlock.o)": {
+      "text": 32
+    },
+    "gcc-lib:libc.a(libc_a-tzset.o)": {
+      "text": 56
+    },
+    "gcc-lib:libc.a(libc_a-tzset_r.o)": {
+      "bss": 36,
+      "text": 1984
+    },
+    "gcc-lib:libc.a(libc_a-tzvars.o)": {
+      "bss": 8,
+      "data": 8
+    },
+    "gcc-lib:libc.a(libc_a-u_strerr.o)": {
+      "text": 8
+    },
+    "gcc-lib:libc.a(libc_a-ungetc.o)": {
+      "text": 960
+    },
+    "gcc-lib:libc.a(libc_a-vfiprintf.o)": {
+      "rodata": 400,
+      "text": 6416
+    },
+    "gcc-lib:libc.a(libc_a-vfprintf.o)": {
+      "rodata": 400,
+      "text": 14616
+    },
+    "gcc-lib:libc.a(libc_a-vfscanf.o)": {
+      "rodata": 1010,
+      "text": 10592
+    },
+    "gcc-lib:libc.a(libc_a-vsnprintf.o)": {
+      "text": 336
+    },
+    "gcc-lib:libc.a(libc_a-vsprintf.o)": {
+      "text": 192
+    },
+    "gcc-lib:libc.a(libc_a-wbuf.o)": {
+      "text": 416
+    },
+    "gcc-lib:libc.a(libc_a-wcscmp.o)": {
+      "text": 56
+    },
+    "gcc-lib:libc.a(libc_a-wcslen.o)": {
+      "text": 48
+    },
+    "gcc-lib:libc.a(libc_a-wcsncpy.o)": {
+      "text": 120
+    },
+    "gcc-lib:libc.a(libc_a-wctomb_r.o)": {
+      "text": 72
+    },
+    "gcc-lib:libc.a(libc_a-writer.o)": {
+      "text": 120
+    },
+    "gcc-lib:libc.a(libc_a-wsetup.o)": {
+      "text": 448
+    },
+    "gcc-lib:libc.a(libm_a-s_frexp.o)": {
+      "text": 248
+    },
+    "gcc-lib:libc.a(libm_a-sf_nan.o)": {
+      "text": 16
+    },
+    "gcc-lib:libgcc.a(_addsub_df.o)": {
+      "text": 792
+    },
+    "gcc-lib:libgcc.a(_clz.o)": {
+      "rodata": 256
+    },
+    "gcc-lib:libgcc.a(_clzsi2.o)": {
+      "text": 128
+    },
+    "gcc-lib:libgcc.a(_df_to_sf.o)": {
+      "text": 88
+    },
+    "gcc-lib:libgcc.a(_df_to_si.o)": {
+      "text": 200
+    },
+    "gcc-lib:libgcc.a(_div_df.o)": {
+      "text": 392
+    },
+    "gcc-lib:libgcc.a(_eq_df.o)": {
+      "text": 120
+    },
+    "gcc-lib:libgcc.a(_fixdfdi.o)": {
+      "text": 72
+    },
+    "gcc-lib:libgcc.a(_fixunsdfdi.o)": {
+      "text": 128
+    },
+    "gcc-lib:libgcc.a(_fixunsdfsi.o)": {
+      "text": 104
+    },
+    "gcc-lib:libgcc.a(_floatdidf.o)": {
+      "text": 80
+    },
+    "gcc-lib:libgcc.a(_floatdisf.o)": {
+      "text": 144
+    },
+    "gcc-lib:libgcc.a(_fpcmp_parts_df.o)": {
+      "text": 312
+    },
+    "gcc-lib:libgcc.a(_ge_df.o)": {
+      "text": 120
+    },
+    "gcc-lib:libgcc.a(_gt_df.o)": {
+      "text": 120
+    },
+    "gcc-lib:libgcc.a(_le_df.o)": {
+      "text": 120
+    },
+    "gcc-lib:libgcc.a(_lt_df.o)": {
+      "text": 120
+    },
+    "gcc-lib:libgcc.a(_make_df.o)": {
+      "text": 56
+    },
+    "gcc-lib:libgcc.a(_make_sf.o)": {
+      "text": 56
+    },
+    "gcc-lib:libgcc.a(_mul_df.o)": {
+      "text": 688
+    },
+    "gcc-lib:libgcc.a(_ne_df.o)": {
+      "text": 120
+    },
+    "gcc-lib:libgcc.a(_pack_df.o)": {
+      "text": 472
+    },
+    "gcc-lib:libgcc.a(_pack_sf.o)": {
+      "text": 448
+    },
+    "gcc-lib:libgcc.a(_sf_to_df.o)": {
+      "text": 64
+    },
+    "gcc-lib:libgcc.a(_si_to_df.o)": {
+      "text": 152
+    },
+    "gcc-lib:libgcc.a(_thenan_df.o)": {
+      "rodata": 24
+    },
+    "gcc-lib:libgcc.a(_unord_df.o)": {
+      "text": 96
+    },
+    "gcc-lib:libgcc.a(_unpack_df.o)": {
+      "text": 240
+    },
+    "gcc-lib:libgcc.a(_unpack_sf.o)": {
+      "text": 232
+    },
+    "gcc-lib:libgcc.a(_usi_to_df.o)": {
+      "text": 120
+    },
+    "gcc-lib:libgcc.a(lib2funcs.o)": {
+      "text": 6584
+    },
+    "gcc-lib:libm.a(libm_a-e_acos.o)": {
+      "text": 1600
+    },
+    "gcc-lib:libm.a(libm_a-e_asin.o)": {
+      "text": 1352
+    },
+    "gcc-lib:libm.a(libm_a-e_atan2.o)": {
+      "rodata": 48,
+      "text": 688
+    },
+    "gcc-lib:libm.a(libm_a-e_fmod.o)": {
+      "rodata": 16,
+      "text": 1616
+    },
+    "gcc-lib:libm.a(libm_a-e_log.o)": {
+      "text": 1328
+    },
+    "gcc-lib:libm.a(libm_a-e_log10.o)": {
+      "text": 440
+    },
+    "gcc-lib:libm.a(libm_a-e_pow.o)": {
+      "text": 4392
+    },
+    "gcc-lib:libm.a(libm_a-e_rem_pio2.o)": {
+      "rodata": 392,
+      "text": 1448
+    },
+    "gcc-lib:libm.a(libm_a-e_sqrt.o)": {
+      "rodata": 16,
+      "text": 1064
+    },
+    "gcc-lib:libm.a(libm_a-k_cos.o)": {
+      "text": 840
+    },
+    "gcc-lib:libm.a(libm_a-k_rem_pio2.o)": {
+      "rodata": 80,
+      "text": 3552
+    },
+    "gcc-lib:libm.a(libm_a-k_sin.o)": {
+      "text": 512
+    },
+    "gcc-lib:libm.a(libm_a-k_tan.o)": {
+      "text": 1208
+    },
+    "gcc-lib:libm.a(libm_a-math_err.o)": {
+      "text": 648
+    },
+    "gcc-lib:libm.a(libm_a-s_atan.o)": {
+      "rodata": 64,
+      "text": 1136
+    },
+    "gcc-lib:libm.a(libm_a-s_ceil.o)": {
+      "text": 512
+    },
+    "gcc-lib:libm.a(libm_a-s_cos.o)": {
+      "text": 208
+    },
+    "gcc-lib:libm.a(libm_a-s_fabs.o)": {
+      "text": 32
+    },
+    "gcc-lib:libm.a(libm_a-s_finite.o)": {
+      "text": 24
+    },
+    "gcc-lib:libm.a(libm_a-s_floor.o)": {
+      "text": 552
+    },
+    "gcc-lib:libm.a(libm_a-s_nan.o)": {
+      "text": 16
+    },
+    "gcc-lib:libm.a(libm_a-s_rint.o)": {
+      "rodata": 16,
+      "text": 520
+    },
+    "gcc-lib:libm.a(libm_a-s_scalbn.o)": {
+      "text": 456
+    },
+    "gcc-lib:libm.a(libm_a-s_sin.o)": {
+      "text": 216
+    },
+    "gcc-lib:libm.a(libm_a-s_tan.o)": {
+      "text": 136
+    },
+    "gcc-lib:libm.a(libm_a-w_acos.o)": {
+      "text": 152
+    },
+    "gcc-lib:libm.a(libm_a-w_asin.o)": {
+      "text": 152
+    },
+    "gcc-lib:libm.a(libm_a-w_atan2.o)": {
+      "text": 8
+    },
+    "gcc-lib:libm.a(libm_a-w_fmod.o)": {
+      "text": 152
+    },
+    "gcc-lib:libm.a(libm_a-w_log10.o)": {
+      "text": 184
+    },
+    "gcc-lib:libm.a(libm_a-w_pow.o)": {
+      "text": 360
+    },
+    "gcc-lib:libm.a(libm_a-w_sqrt.o)": {
+      "text": 152
+    },
+    "other:ccaRr9Ju.ltrans0.ltrans.o": {
+      "bss": 3024,
+      "data": 28,
+      "rodata": 984,
+      "text": 15240
+    },
+    "other:map-residual": {
+      "bss": 501623,
+      "data": 1998,
+      "rodata": 259626,
+      "text": 136
+    },
+    "parent:60869cbb0e20/core/mem.c": {
+      "rodata": 90,
+      "text": 992
+    },
+    "parent:60869cbb0e20/platform/pad.c": {
+      "bss": 2070,
+      "rodata": 8,
+      "text": 1444
+    },
+    "parent:60869cbb0e20/render/bsp_render.c": {
+      "bss": 17848,
+      "text": 1164
+    },
+    "parent:60869cbb0e20/render/texcache.c": {
+      "text": 64
+    },
+    "parent:60869cbb0e20/stream/cbsp_catalog.c": {
+      "text": 952
+    },
+    "parent:60869cbb0e20/stream/ctag_map_source.c": {
+      "text": 660
+    },
+    "parent:60869cbb0e20/stream/ctag_mount.c": {
+      "bss": 4,
+      "text": 2848
+    },
+    "parent:60869cbb0e20/stream/ctag_ps2_backend.c": {
+      "rodata": 36,
+      "text": 220
+    },
+    "parent:60869cbb0e20/stream/ctag_resource_index.c": {
+      "text": 1112
+    },
+    "parent:60869cbb0e20/stream/file.c": {
+      "bss": 4,
+      "data": 64,
+      "text": 1284
+    },
+    "parent:60869cbb0e20/stream/hcu_asset_profile.c": {
+      "text": 6976
+    },
+    "parent:60869cbb0e20/stream/hcu_file_bridge.c": {
+      "bss": 256,
+      "text": 1516
+    },
+    "parent:60869cbb0e20/stream/hcu_filexio_irx.c": {
+      "rodata": 16072
+    },
+    "parent:60869cbb0e20/stream/hcu_input_bridge.c": {
+      "text": 112
+    },
+    "parent:60869cbb0e20/stream/hcu_main.c": {
+      "bss": 2132,
+      "data": 4,
+      "rodata": 36,
+      "text": 4568
+    },
+    "parent:60869cbb0e20/stream/hcu_map_catalog.c": {
+      "rodata": 3560,
+      "text": 648
+    },
+    "parent:60869cbb0e20/stream/hcu_map_service.c": {
+      "bss": 16,
+      "text": 7628
+    },
+    "parent:60869cbb0e20/stream/hcu_memory_bind.c": {
+      "text": 596
+    },
+    "parent:60869cbb0e20/stream/hcu_memory_profile.c": {
+      "text": 896
+    },
+    "parent:60869cbb0e20/stream/hcu_owner_telemetry.c": {
+      "rodata": 144,
+      "text": 564
+    },
+    "parent:60869cbb0e20/stream/hcu_profile_metadata.c": {
+      "text": 1240
+    },
+    "parent:60869cbb0e20/stream/hcu_profile_mount.c": {
+      "text": 6672
+    },
+    "parent:60869cbb0e20/stream/hcu_render_snapshot.c": {
+      "bss": 16,
+      "data": 8,
+      "rodata": 8,
+      "text": 900
+    },
+    "parent:60869cbb0e20/stream/hcu_render_telemetry.c": {
+      "text": 408
+    },
+    "parent:60869cbb0e20/stream/hcu_storage_boot.c": {
+      "bss": 40,
+      "text": 832
+    },
+    "parent:60869cbb0e20/stream/hmap.c": {
+      "text": 584
+    },
+    "parent:60869cbb0e20/stream/hp2.c": {
+      "text": 2984
+    },
+    "parent:60869cbb0e20/stream/sha256.c": {
+      "rodata": 288,
+      "text": 1252
+    },
+    "parent:60869cbb0e20/world/section.c": {
+      "bss": 4224,
+      "text": 2020
+    },
+    "port/linux/game/tag_schema_collision.c": {
+      "bss": 18448,
+      "rodata": 8660,
+      "text": 5268
+    },
+    "port/linux/game/tag_schema_effects.c": {
+      "bss": 262544,
+      "rodata": 17584,
+      "text": 6140
+    },
+    "port/linux/game/tag_schema_groups.c": {
+      "rodata": 28
+    },
+    "port/linux/game/tag_schema_models.c": {
+      "bss": 32767,
+      "rodata": 5120,
+      "text": 3564
+    },
+    "port/linux/game/tag_schema_objects.c": {
+      "rodata": 11336,
+      "text": 988
+    },
+    "port/linux/game/tag_schema_render.c": {
+      "rodata": 12034,
+      "text": 5900
+    },
+    "port/linux/game/tag_schema_scenario.c": {
+      "bss": 40378,
+      "rodata": 8024,
+      "text": 3812
+    },
+    "port/linux/game/tag_validate.c": {
+      "bss": 262273,
+      "data": 10,
+      "rodata": 25,
+      "text": 9108
+    },
+    "port/linux/game/tag_validate_report.c": {
+      "text": 20
+    },
+    "port/ps2/game/ps2_coop.c": {
+      "text": 308
+    },
+    "port/ps2/game/ps2_data.c": {
+      "bss": 44
+    },
+    "port/ps2/game/ps2_local.c": {
+      "bss": 49152,
+      "data": 4,
+      "text": 440
+    },
+    "port/ps2/src/ps2_bitmap_requests.c": {
+      "bss": 4,
+      "text": 844
+    },
+    "port/ps2/src/ps2_cache.c": {
+      "bss": 300,
+      "text": 7468
+    },
+    "port/ps2/src/ps2_cbsp.c": {
+      "text": 2828
+    },
+    "port/ps2/src/ps2_config.c": {
+      "text": 436
+    },
+    "port/ps2/src/ps2_ctag.c": {
+      "text": 6048
+    },
+    "port/ps2/src/ps2_custom_edition.c": {
+      "text": 376
+    },
+    "port/ps2/src/ps2_errors.c": {
+      "bss": 25,
+      "text": 376
+    },
+    "port/ps2/src/ps2_geometry.c": {
+      "text": 244
+    },
+    "port/ps2/src/ps2_input.c": {
+      "bss": 128,
+      "text": 1088
+    },
+    "port/ps2/src/ps2_interface.c": {
+      "bss": 18,
+      "data": 1,
+      "text": 632
+    },
+    "port/ps2/src/ps2_local_profile.c": {
+      "bss": 34,
+      "text": 512
+    },
+    "port/ps2/src/ps2_network_local.c": {
+      "bss": 1,
+      "text": 372
+    },
+    "port/ps2/src/ps2_owner_counters.c": {
+      "bss": 176,
+      "text": 1164
+    },
+    "port/ps2/src/ps2_profile.c": {
+      "bss": 6,
+      "text": 152
+    },
+    "port/ps2/src/ps2_rasterizer.c": {
+      "bss": 58517,
+      "data": 244,
+      "text": 1416
+    },
+    "port/ps2/src/ps2_render.c": {
+      "bss": 42,
+      "data": 5,
+      "text": 1932
+    },
+    "port/ps2/src/ps2_sound_cache.c": {
+      "bss": 6,
+      "text": 720
+    },
+    "port/ps2/src/ps2_time.c": {
+      "text": 420
+    },
+    "rooted.o:unresolved": {
+      "bss": 11708,
+      "rodata": 1780
+    },
+    "sdk:lib": {
+      "bss": 63790,
+      "data": 4220,
+      "rodata": 688,
+      "text": 41820
+    },
+    "source/ai/action_alert.c": {
+      "bss": 16,
+      "text": 9440
+    },
+    "source/ai/action_avoid.c": {
+      "text": 532
+    },
+    "source/ai/action_charge.c": {
+      "text": 6264
+    },
+    "source/ai/action_converse.c": {
+      "text": 1168
+    },
+    "source/ai/action_fight.c": {
+      "text": 1512
+    },
+    "source/ai/action_flee.c": {
+      "text": 4032
+    },
+    "source/ai/action_guard.c": {
+      "rodata": 40,
+      "text": 4956
+    },
+    "source/ai/action_obey.c": {
+      "rodata": 487,
+      "text": 12984
+    },
+    "source/ai/action_search.c": {
+      "text": 2560
+    },
+    "source/ai/action_sleep.c": {
+      "text": 44
+    },
+    "source/ai/action_uncover.c": {
+      "text": 2968
+    },
+    "source/ai/action_vehicle.c": {
+      "text": 5076
+    },
+    "source/ai/action_wait.c": {
+      "text": 1072
+    },
+    "source/ai/actions.c": {
+      "rodata": 936,
+      "text": 23044
+    },
+    "source/ai/actor_combat.c": {
+      "rodata": 20,
+      "text": 12712
+    },
+    "source/ai/actor_firing_position.c": {
+      "bss": 6,
+      "rodata": 124,
+      "text": 16772
+    },
+    "source/ai/actor_looking.c": {
+      "rodata": 168,
+      "text": 12344
+    },
+    "source/ai/actor_moving.c": {
+      "bss": 24,
+      "rodata": 492,
+      "text": 21704
+    },
+    "source/ai/actor_perception.c": {
+      "data": 4,
+      "rodata": 144,
+      "text": 33172
+    },
+    "source/ai/actor_stimulus.c": {
+      "text": 5896
+    },
+    "source/ai/actor_type_carrier.c": {
+      "data": 32,
+      "rodata": 36,
+      "text": 436
+    },
+    "source/ai/actor_type_crew.c": {
+      "data": 32,
+      "rodata": 44,
+      "text": 532
+    },
+    "source/ai/actor_type_elite.c": {
+      "data": 32,
+      "rodata": 44,
+      "text": 760
+    },
+    "source/ai/actor_type_engineer.c": {
+      "data": 32,
+      "rodata": 44,
+      "text": 532
+    },
+    "source/ai/actor_type_flood.c": {
+      "data": 32,
+      "rodata": 44,
+      "text": 1920
+    },
+    "source/ai/actor_type_grunt.c": {
+      "data": 32,
+      "rodata": 44,
+      "text": 700
+    },
+    "source/ai/actor_type_hunter.c": {
+      "data": 32,
+      "text": 432
+    },
+    "source/ai/actor_type_infection.c": {
+      "data": 32,
+      "rodata": 80,
+      "text": 5432
+    },
+    "source/ai/actor_type_jackal.c": {
+      "data": 32,
+      "rodata": 44,
+      "text": 688
+    },
+    "source/ai/actor_type_marine.c": {
+      "data": 32,
+      "rodata": 44,
+      "text": 584
+    },
+    "source/ai/actor_type_mounted_weapon.c": {
+      "data": 32,
+      "text": 292
+    },
+    "source/ai/actor_type_sentinel.c": {
+      "data": 32,
+      "rodata": 44,
+      "text": 440
+    },
+    "source/ai/actor_types.c": {
+      "data": 64,
+      "rodata": 64,
+      "text": 1272
+    },
+    "source/ai/actors.c": {
+      "bss": 24,
+      "data": 4,
+      "rodata": 10,
+      "text": 23776
+    },
+    "source/ai/ai.c": {
+      "data": 1528,
+      "rodata": 5,
+      "text": 14816
+    },
+    "source/ai/ai_communication.c": {
+      "bss": 20,
+      "data": 276,
+      "rodata": 6328,
+      "text": 31048
+    },
+    "source/ai/ai_debug.c": {
+      "bss": 36,
+      "text": 7280
+    },
+    "source/ai/ai_profile.c": {
+      "bss": 18,
+      "data": 224,
+      "rodata": 12,
+      "text": 860
+    },
+    "source/ai/ai_scenario_definitions.c": {
+      "data": 48,
+      "text": 700
+    },
+    "source/ai/ai_script.c": {
+      "text": 23884
+    },
+    "source/ai/encounters.c": {
+      "bss": 154,
+      "data": 400,
+      "rodata": 96,
+      "text": 25232
+    },
+    "source/ai/path.c": {
+      "text": 9868
+    },
+    "source/ai/path_obstacle_avoidance.c": {
+      "bss": 2,
+      "text": 6128
+    },
+    "source/ai/path_obstacles.c": {
+      "text": 3252
+    },
+    "source/ai/path_smoothing.c": {
+      "bss": 3,
+      "text": 3720
+    },
+    "source/ai/path_structure_bsp.c": {
+      "bss": 1,
+      "text": 3700
+    },
+    "source/ai/props.c": {
+      "data": 4,
+      "text": 3560
+    },
+    "source/bitmaps/bitmap_group.c": {
+      "text": 540
+    },
+    "source/bitmaps/bitmap_utilities.c": {
+      "rodata": 24,
+      "text": 2160
+    },
+    "source/bitmaps/bitmaps.c": {
+      "data": 1024,
+      "rodata": 91,
+      "text": 7180
+    },
+    "source/bitmaps/s3tc/s3tc.c": {
+      "text": 1204
+    },
+    "source/bungie_net/common/thread_win32.c": {
+      "bss": 1544,
+      "text": 1240
+    },
+    "source/cache/cache_files.c": {
+      "bss": 2097,
+      "text": 4932
+    },
+    "source/cache/predicted_resources.c": {
+      "bss": 1,
+      "text": 640
+    },
+    "source/camera/camera_scripting.c": {
+      "data": 64,
+      "text": 2912
+    },
+    "source/camera/dead_camera.c": {
+      "text": 2196
+    },
+    "source/camera/director.c": {
+      "bss": 1009,
+      "rodata": 166,
+      "text": 5628
+    },
+    "source/camera/editor_flying_camera.c": {
+      "bss": 105,
+      "data": 12,
+      "rodata": 24,
+      "text": 4236
+    },
+    "source/camera/first_person_camera.c": {
+      "text": 2940
+    },
+    "source/camera/flying_camera.c": {
+      "text": 1716
+    },
+    "source/camera/following_camera.c": {
+      "bss": 1,
+      "text": 3384
+    },
+    "source/camera/observer.c": {
+      "bss": 2676,
+      "rodata": 44,
+      "text": 11192
+    },
+    "source/camera/orbiting_camera.c": {
+      "text": 1252
+    },
+    "source/cseries/cseries.c": {
+      "bss": 8,
+      "data": 88,
+      "rodata": 272,
+      "text": 3252
+    },
+    "source/cseries/cseries_windows.c": {
+      "text": 300
+    },
+    "source/cseries/debug_memory.c": {
+      "data": 32,
+      "text": 3648
+    },
+    "source/cseries/errors.c": {
+      "bss": 21,
+      "data": 1,
+      "text": 1368
+    },
+    "source/cseries/sort.c": {
+      "text": 544
+    },
+    "source/cutscene/cinematics.c": {
+      "bss": 4,
+      "text": 1108
+    },
+    "source/cutscene/recorded_animation_definitions.c": {
+      "text": 248
+    },
+    "source/cutscene/recorded_animation_initialize.c": {
+      "data": 272,
+      "text": 364
+    },
+    "source/cutscene/recorded_animation_playback.c": {
+      "data": 272,
+      "rodata": 23,
+      "text": 4848
+    },
+    "source/cutscene/recorded_animation_playback_v1.c": {
+      "data": 304,
+      "rodata": 23,
+      "text": 2244
+    },
+    "source/cutscene/recorded_animations.c": {
+      "bss": 9,
+      "data": 18,
+      "rodata": 16,
+      "text": 2764
+    },
+    "source/devices/device_controls.c": {
+      "text": 708
+    },
+    "source/devices/device_light_fixtures.c": {
+      "text": 236
+    },
+    "source/devices/device_machines.c": {
+      "text": 1620
+    },
+    "source/devices/devices.c": {
+      "rodata": 24,
+      "text": 5420
+    },
+    "source/dialogs/edit_text.c": {
+      "text": 1656
+    },
+    "source/effects/contrails.c": {
+      "bss": 4,
+      "data": 4,
+      "text": 5288
+    },
+    "source/effects/decals.c": {
+      "bss": 30923,
+      "data": 1,
+      "rodata": 64,
+      "text": 13700
+    },
+    "source/effects/effects.c": {
+      "bss": 11,
+      "data": 1529,
+      "rodata": 24,
+      "text": 13936
+    },
+    "source/effects/material_effects.c": {
+      "bss": 1,
+      "text": 1020
+    },
+    "source/effects/particle_systems.c": {
+      "bss": 8,
+      "rodata": 20,
+      "text": 7812
+    },
+    "source/effects/particles.c": {
+      "bss": 76,
+      "data": 1536,
+      "text": 5852
+    },
+    "source/effects/player_effects.c": {
+      "bss": 5,
+      "rodata": 14,
+      "text": 6320
+    },
+    "source/effects/weather_particle_systems.c": {
+      "bss": 636,
+      "data": 1,
+      "text": 208
+    },
+    "source/game/aim_assist.c": {
+      "text": 5112
+    },
+    "source/game/cheats.c": {
+      "rodata": 64,
+      "text": 2492
+    },
+    "source/game/game.c": {
+      "bss": 40,
+      "data": 1544,
+      "text": 4328
+    },
+    "source/game/game_allegiance.c": {
+      "bss": 4,
+      "data": 40,
+      "rodata": 3,
+      "text": 2528
+    },
+    "source/game/game_engine.c": {
+      "bss": 54535,
+      "data": 28,
+      "rodata": 226,
+      "text": 48972
+    },
+    "source/game/game_engine_ctf.c": {
+      "bss": 60,
+      "data": 136,
+      "rodata": 64,
+      "text": 6600
+    },
+    "source/game/game_engine_king.c": {
+      "bss": 574,
+      "data": 136,
+      "text": 5676
+    },
+    "source/game/game_engine_list.c": {
+      "data": 32
+    },
+    "source/game/game_engine_multiplayer_sounds.c": {
+      "bss": 44,
+      "rodata": 43,
+      "text": 608
+    },
+    "source/game/game_engine_oddball.c": {
+      "bss": 264,
+      "data": 136,
+      "rodata": 40,
+      "text": 6068
+    },
+    "source/game/game_engine_race.c": {
+      "bss": 256,
+      "data": 136,
+      "rodata": 60,
+      "text": 7152
+    },
+    "source/game/game_engine_slayer.c": {
+      "bss": 128,
+      "data": 136,
+      "text": 3244
+    },
+    "source/game/game_engine_stub.c": {
+      "data": 136,
+      "text": 120
+    },
+    "source/game/game_globals.c": {
+      "data": 132,
+      "rodata": 70,
+      "text": 644
+    },
+    "source/game/game_statistics.c": {
+      "bss": 1,
+      "text": 1048
+    },
+    "source/game/game_time.c": {
+      "bss": 4,
+      "text": 2344
+    },
+    "source/game/player_control.c": {
+      "bss": 57,
+      "data": 1535,
+      "text": 12016
+    },
+    "source/game/player_queues_new.c": {
+      "bss": 84544,
+      "data": 4,
+      "text": 5428
+    },
+    "source/game/player_rumble.c": {
+      "bss": 4,
+      "text": 1812
+    },
+    "source/game/players.c": {
+      "bss": 723,
+      "data": 3100,
+      "rodata": 108,
+      "text": 26484
+    },
+    "source/hs/hs.c": {
+      "bss": 78595,
+      "data": 3518,
+      "rodata": 14204,
+      "text": 37856
+    },
+    "source/hs/hs_compile.c": {
+      "bss": 300,
+      "rodata": 196,
+      "text": 20192
+    },
+    "source/hs/hs_globals_external.c": {
+      "data": 7076,
+      "rodata": 445,
+      "text": 48
+    },
+    "source/hs/hs_library_external.c": {
+      "text": 5576
+    },
+    "source/hs/hs_runtime.c": {
+      "bss": 26,
+      "data": 9604,
+      "rodata": 568,
+      "text": 17404
+    },
+    "source/hs/object_lists.c": {
+      "bss": 8,
+      "text": 1548
+    },
+    "source/input/HaloAutoTest.c": {
+      "bss": 8,
+      "text": 576
+    },
+    "source/input/input_abstraction.c": {
+      "bss": 496,
+      "rodata": 28,
+      "text": 5560
+    },
+    "source/input/input_xbox.c": {
+      "bss": 1708,
+      "rodata": 784,
+      "text": 3696
+    },
+    "source/interface/event_manager.c": {
+      "bss": 360,
+      "text": 1224
+    },
+    "source/interface/first_person_weapons.c": {
+      "bss": 5,
+      "data": 16,
+      "rodata": 106,
+      "text": 9480
+    },
+    "source/interface/hud.c": {
+      "bss": 13,
+      "data": 14,
+      "rodata": 44,
+      "text": 7492
+    },
+    "source/interface/hud_definitions.c": {
+      "data": 20
+    },
+    "source/interface/hud_draw.c": {
+      "bss": 5,
+      "rodata": 122,
+      "text": 14688
+    },
+    "source/interface/hud_messaging.c": {
+      "bss": 10,
+      "data": 8,
+      "rodata": 14,
+      "text": 7128
+    },
+    "source/interface/hud_nav_points.c": {
+      "bss": 4,
+      "text": 6000
+    },
+    "source/interface/hud_sounds.c": {
+      "bss": 1,
+      "text": 696
+    },
+    "source/interface/hud_unit.c": {
+      "bss": 5,
+      "text": 7072
+    },
+    "source/interface/hud_weapon.c": {
+      "bss": 6,
+      "rodata": 72,
+      "text": 10968
+    },
+    "source/interface/interface.c": {
+      "data": 7338,
+      "rodata": 12,
+      "text": 2452
+    },
+    "source/interface/motion_sensor.c": {
+      "bss": 19,
+      "data": 24,
+      "rodata": 84,
+      "text": 5724
+    },
+    "source/interface/player_ui.c": {
+      "bss": 560,
+      "data": 4,
+      "rodata": 20,
+      "text": 2580
+    },
+    "source/interface/terminal.c": {
+      "bss": 37,
+      "data": 3,
+      "text": 1556
+    },
+    "source/items/equipment.c": {
+      "text": 308
+    },
+    "source/items/garbage.c": {
+      "text": 168
+    },
+    "source/items/items.c": {
+      "data": 1528,
+      "text": 5184
+    },
+    "source/items/projectile_definitions.c": {
+      "data": 160
+    },
+    "source/items/projectiles.c": {
+      "data": 1548,
+      "text": 12976
+    },
+    "source/items/weapon_definitions.c": {
+      "text": 304
+    },
+    "source/items/weapons.c": {
+      "data": 1536,
+      "rodata": 111,
+      "text": 20680
+    },
+    "source/main/console.c": {
+      "bss": 3525,
+      "rodata": 28,
+      "text": 2552
+    },
+    "source/main/debug_keys.c": {
+      "bss": 4,
+      "data": 200,
+      "text": 824
+    },
+    "source/main/main.c": {
+      "bss": 2671,
+      "data": 7,
+      "rodata": 40,
+      "text": 14772
+    },
+    "source/math/geometry.c": {
+      "rodata": 120,
+      "text": 6704
+    },
+    "source/math/integer_math.c": {
+      "text": 792
+    },
+    "source/math/matrix_math.c": {
+      "data": 14,
+      "text": 5532
+    },
+    "source/math/periodic_functions.c": {
+      "bss": 74,
+      "rodata": 64,
+      "text": 3108
+    },
+    "source/math/random_math.c": {
+      "bss": 20,
+      "text": 1316
+    },
+    "source/math/real_math.c": {
+      "data": 56,
+      "rodata": 144,
+      "text": 11956
+    },
+    "source/memory/array.c": {
+      "text": 376
+    },
+    "source/memory/byte_swapping.c": {
+      "data": 108
+    },
+    "source/memory/crc.c": {
+      "bss": 1025,
+      "text": 500
+    },
+    "source/memory/data.c": {
+      "bss": 4,
+      "text": 3512
+    },
+    "source/memory/memory_pool.c": {
+      "text": 2168
+    },
+    "source/models/model_animation_definitions.c": {
+      "bss": 16,
+      "data": 784,
+      "text": 520
+    },
+    "source/models/model_animations.c": {
+      "bss": 36,
+      "data": 1,
+      "text": 17444
+    },
+    "source/models/models.c": {
+      "bss": 136,
+      "text": 2316
+    },
+    "source/objects/damage.c": {
+      "bss": 81,
+      "text": 12296
+    },
+    "source/objects/object_deleted_procs.c": {
+      "data": 12,
+      "text": 76
+    },
+    "source/objects/object_lights.c": {
+      "bss": 45097,
+      "data": 17,
+      "rodata": 12,
+      "text": 7616
+    },
+    "source/objects/object_types.c": {
+      "bss": 9,
+      "data": 2608,
+      "text": 4928
+    },
+    "source/objects/objects.c": {
+      "bss": 45,
+      "data": 1534,
+      "rodata": 120,
+      "text": 39188
+    },
+    "source/objects/placeholder_definitions.c": {
+      "text": 56
+    },
+    "source/objects/scenery.c": {
+      "text": 844
+    },
+    "source/objects/widgets/antenna.c": {
+      "bss": 6101,
+      "text": 3796
+    },
+    "source/objects/widgets/flags.c": {
+      "bss": 5,
+      "rodata": 24,
+      "text": 7612
+    },
+    "source/objects/widgets/glow.c": {
+      "bss": 8,
+      "text": 7484
+    },
+    "source/objects/widgets/light_volumes.c": {
+      "bss": 180,
+      "text": 2356
+    },
+    "source/objects/widgets/lightning.c": {
+      "bss": 5,
+      "text": 5008
+    },
+    "source/objects/widgets/widgets.c": {
+      "bss": 4,
+      "data": 200,
+      "text": 1428
+    },
+    "source/physics/breakable_surfaces.c": {
+      "bss": 41,
+      "data": 1,
+      "text": 6240
+    },
+    "source/physics/bsp2d.c": {
+      "bss": 1,
+      "text": 336
+    },
+    "source/physics/bsp3d.c": {
+      "bss": 1,
+      "text": 284
+    },
+    "source/physics/collision_bsp.c": {
+      "bss": 21,
+      "text": 12372
+    },
+    "source/physics/collision_debug.c": {
+      "bss": 9,
+      "data": 9
+    },
+    "source/physics/collision_features.c": {
+      "text": 7912
+    },
+    "source/physics/collision_models.c": {
+      "bss": 10,
+      "text": 2172
+    },
+    "source/physics/collision_usage.c": {
+      "bss": 31,
+      "data": 3,
+      "text": 1128
+    },
+    "source/physics/collisions.c": {
+      "bss": 29,
+      "rodata": 204,
+      "text": 12688
+    },
+    "source/physics/physics.c": {
+      "bss": 3,
+      "data": 32,
+      "rodata": 12,
+      "text": 17204
+    },
+    "source/physics/physics_variables.c": {
+      "text": 784
+    },
+    "source/physics/point_physics.c": {
+      "bss": 10,
+      "text": 2420
+    },
+    "source/rasterizer/rasterizer_geometry.c": {
+      "text": 2344
+    },
+    "source/rasterizer/rasterizer_swizzle.c": {
+      "rodata": 128,
+      "text": 420
+    },
+    "source/render/render_cameras.c": {
+      "bss": 259,
+      "text": 3992
+    },
+    "source/saved games/game_state.c": {
+      "bss": 10277,
+      "data": 76,
+      "text": 4832
+    },
+    "source/saved games/game_state_xbox.c": {
+      "bss": 20,
+      "text": 3728
+    },
+    "source/saved games/player_profile.c": {
+      "bss": 108,
+      "rodata": 72,
+      "text": 2044
+    },
+    "source/saved games/playlist_profile.c": {
+      "bss": 116,
+      "text": 184
+    },
+    "source/saved games/saved_game_files.c": {
+      "bss": 284,
+      "text": 7768
+    },
+    "source/scenario/scenario.c": {
+      "bss": 905,
+      "data": 14,
+      "rodata": 92,
+      "text": 6800
+    },
+    "source/scenario/wind.c": {
+      "bss": 8,
+      "text": 2400
+    },
+    "source/shaders/shader_definitions.c": {
+      "data": 360,
+      "text": 136
+    },
+    "source/shaders/shaders.c": {
+      "bss": 12,
+      "rodata": 40,
+      "text": 460
+    },
+    "source/shell/shell.c": {
+      "bss": 1,
+      "text": 364
+    },
+    "source/shell/shell_xbox.c": {
+      "bss": 8,
+      "text": 472
+    },
+    "source/sound/game_sound.c": {
+      "bss": 4112,
+      "text": 7724
+    },
+    "source/sound/sound_classes.c": {
+      "bss": 5,
+      "data": 2448,
+      "text": 1676
+    },
+    "source/sound/sound_definitions.c": {
+      "bss": 132,
+      "rodata": 8,
+      "text": 1608
+    },
+    "source/sound/sound_dsound_xbox.c": {
+      "bss": 257,
+      "data": 60,
+      "text": 11744
+    },
+    "source/sound/sound_environment_definitions.c": {
+      "rodata": 72
+    },
+    "source/sound/sound_manager.c": {
+      "bss": 396,
+      "data": 1552,
+      "text": 18476
+    },
+    "source/sound/sound_preferences.c": {
+      "data": 28,
+      "text": 16
+    },
+    "source/sound/sound_scenery.c": {
+      "text": 56
+    },
+    "source/structures/cluster_partitions.c": {
+      "bss": 38,
+      "text": 2304
+    },
+    "source/structures/structure_bsp_definitions.c": {
+      "bss": 64,
+      "text": 1728
+    },
+    "source/structures/structure_detail_objects.c": {
+      "bss": 5,
+      "text": 212
+    },
+    "source/structures/structure_lens_flares.c": {
+      "text": 4868
+    },
+    "source/structures/structure_runtime_decals.c": {
+      "bss": 5,
+      "text": 1248
+    },
+    "source/structures/structure_visibility.c": {
+      "bss": 2,
+      "text": 20
+    },
+    "source/structures/structures.c": {
+      "bss": 2058,
+      "text": 4060
+    },
+    "source/tag_files/files.c": {
+      "text": 1808
+    },
+    "source/tag_files/files_windows.c": {
+      "data": 616,
+      "text": 4272
+    },
+    "source/tag_files/tag_files.c": {
+      "text": 100
+    },
+    "source/tag_files/tag_groups.c": {
+      "bss": 65536,
+      "text": 1120
+    },
+    "source/text/draw_string.c": {
+      "bss": 228,
+      "rodata": 28,
+      "text": 4436
+    },
+    "source/text/font_group.c": {
+      "text": 180
+    },
+    "source/text/international_strings.c": {
+      "bss": 2,
+      "rodata": 20,
+      "text": 1224
+    },
+    "source/text/text_group.c": {
+      "rodata": 592,
+      "text": 636
+    },
+    "source/text/unicode.c": {
+      "text": 1968
+    },
+    "source/units/biped_limp_noodle.c": {
+      "bss": 44808,
+      "text": 4980
+    },
+    "source/units/bipeds.c": {
+      "bss": 5,
+      "data": 1529,
+      "rodata": 324,
+      "text": 28544
+    },
+    "source/units/dialogue_definitions.c": {
+      "data": 1672,
+      "rodata": 418,
+      "text": 184
+    },
+    "source/units/unit_definitions.c": {
+      "text": 196
+    },
+    "source/units/unit_dialogue.c": {
+      "bss": 4,
+      "data": 44,
+      "rodata": 86,
+      "text": 5736
+    },
+    "source/units/unit_scripting_commands.c": {
+      "text": 1524
+    },
+    "source/units/units.c": {
+      "bss": 40974,
+      "data": 1563,
+      "rodata": 380,
+      "text": 67780
+    },
+    "source/units/vehicles.c": {
+      "data": 1528,
+      "rodata": 172,
+      "text": 18156
+    }
+  },
+  "candidate_analysis": {
+    "a1-editor-debug": {
+      "bytes_removed_if_blocked": 55588,
+      "candidate_bytes_reachable": 39591,
+      "example_root_paths": [
+        {
+          "node": ".rodata.ai_debug_render_actor.str1.8",
+          "object": "source_ai_ai_debug.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.debug_keys_initialize",
+            ".data.global_debug_key_list",
+            ".text.debug_key_select_next_encounter",
+            ".text.ai_debug_change_selected_encounter",
+            ".rodata.ai_debug_render_actor.str1.8"
+          ]
+        },
+        {
+          "node": ".text.ai_debug_update",
+          "object": "source_ai_ai_debug.c.o",
+          "path": [
+            ".text.game_tick",
+            ".text.ai_update",
+            ".text.ai_debug_update"
+          ]
+        },
+        {
+          "node": ".text.editor_camera_flying_update",
+          "object": "source_camera_editor_flying_camera.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.director_update",
+            ".text.director_choose_camera",
+            ".text.editor_camera_update",
+            ".rodata.update_funcs",
+            ".text.editor_camera_flying_update"
+          ]
+        },
+        {
+          "node": ".text.flying_camera_update",
+          "object": "source_camera_flying_camera.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.director_update",
+            ".text.director_choose_camera",
+            ".text.director_rotate_cameras",
+            ".text.flying_camera_update"
+          ]
+        },
+        {
+          "node": ".text.editor_camera_orbiting_update",
+          "object": "source_camera_editor_flying_camera.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.director_update",
+            ".text.director_choose_camera",
+            ".text.editor_camera_update",
+            ".rodata.update_funcs",
+            ".text.editor_camera_orbiting_update"
+          ]
+        },
+        {
+          "node": ".bss.player_names.1",
+          "object": "source_main_console.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.console_update",
+            ".text.console_complete",
+            ".bss.player_names.1"
+          ]
+        },
+        {
+          "node": ".text.game_statistics_record_kill",
+          "object": "source_game_game_statistics.c.o",
+          "path": [
+            ".text.game_tick",
+            ".text.players_update_before_game",
+            ".text.player_teleport",
+            ".text.player_teleport_internal",
+            ".text.game_statistics_record_kill"
+          ]
+        },
+        {
+          "node": ".text.console_complete",
+          "object": "source_main_console.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.console_update",
+            ".text.console_complete"
+          ]
+        },
+        {
+          "node": ".text.edit_text_handle_key",
+          "object": "source_dialogs_edit_text.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.terminal_update",
+            ".text.edit_text_handle_key"
+          ]
+        },
+        {
+          "node": ".text.debug_dump_memory_by_file",
+          "object": "source_cseries_debug_memory.c.o",
+          "path": [
+            ".text.hs_update",
+            ".data.hs_function_table",
+            ".rodata.debug_memory_by_file_definition",
+            ".text.debug_dump_memory_by_file_evaluate",
+            ".text.debug_dump_memory_by_file"
+          ]
+        },
+        {
+          "node": ".bss.console_globals",
+          "object": "source_main_console.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.console_update",
+            ".bss.console_globals"
+          ]
+        },
+        {
+          "node": ".text.console_update",
+          "object": "source_main_console.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.console_update"
+          ]
+        },
+        {
+          "node": ".text.ai_debug_communication_toggle_bits",
+          "object": "source_ai_ai_debug.c.o",
+          "path": [
+            ".text.hs_update",
+            ".data.hs_function_table",
+            ".rodata.ai_debug_communication_focus_definition",
+            ".text.hs_evaluate_debug_string",
+            ".rodata.CSWTCH.432",
+            ".text.ai_debug_communication_ignore",
+            ".text.ai_debug_communication_toggle_bits"
+          ]
+        },
+        {
+          "node": ".text.debug_realloc",
+          "object": "source_cseries_debug_memory.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.console_update",
+            ".text.hs_compile_and_evaluate",
+            ".text.hs_compile_and_evaluate_command",
+            ".text.hs_compile_source.isra.0",
+            ".text.hs_compile",
+            ".text.debug_realloc"
+          ]
+        },
+        {
+          "node": ".rodata",
+          "object": "source_ai_ai_debug.c.o",
+          "path": [
+            ".text.hs_update",
+            ".data.hs_function_table",
+            ".rodata.ai_debug_speak_list_definition",
+            ".text.ai_debug_speak_list_evaluate",
+            ".text.ai_debug_speak_list",
+            ".rodata"
+          ]
+        },
+        {
+          "node": ".text.cheat_objects",
+          "object": "source_game_cheats.c.o",
+          "path": [
+            ".text.hs_update",
+            ".data.hs_function_table",
+            ".rodata.cheat_all_weapons_definition",
+            ".text.cheat_all_weapons_evaluate",
+            ".text.cheat_all_weapons",
+            ".text.cheat_objects"
+          ]
+        },
+        {
+          "node": ".text.ai_debug_describe_actor",
+          "object": "source_ai_ai_debug.c.o",
+          "path": [
+            ".text.actors_update",
+            ".text.actor_look_update",
+            ".text.ai_debug_describe_actor"
+          ]
+        },
+        {
+          "node": ".text.editor_camera_update",
+          "object": "source_camera_editor_flying_camera.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.director_update",
+            ".text.director_choose_camera",
+            ".text.editor_camera_update"
+          ]
+        },
+        {
+          "node": ".text.terminal_printf",
+          "object": "source_interface_terminal.c.o",
+          "path": [
+            ".text.game_initialize",
+            ".text.weather_particle_systems_initialize",
+            ".text.error",
+            ".text.terminal_printf"
+          ]
+        },
+        {
+          "node": ".text.cheats_network_client_enforce",
+          "object": "source_game_cheats.c.o",
+          "path": [
+            ".text.game_tick",
+            ".text.cheats_network_client_enforce"
+          ]
+        }
+      ],
+      "external_callers_into_set": [
+        [
+          "source/hs/hs_globals_external.c",
+          147
+        ],
+        [
+          "source/ai/ai_script.c",
+          75
+        ],
+        [
+          "source/ai/ai.c",
+          25
+        ],
+        [
+          "source/ai/ai_communication.c",
+          24
+        ],
+        [
+          "source/hs/hs.c",
+          20
+        ],
+        [
+          "source/main/main.c",
+          16
+        ],
+        [
+          "source/ai/encounters.c",
+          14
+        ],
+        [
+          "source/ai/actor_looking.c",
+          13
+        ],
+        [
+          "source/game/game.c",
+          8
+        ],
+        [
+          "source/units/units.c",
+          8
+        ],
+        [
+          "source/ai/actor_moving.c",
+          7
+        ],
+        [
+          "source/camera/director.c",
+          7
+        ],
+        [
+          "source/game/players.c",
+          7
+        ],
+        [
+          "source/ai/action_uncover.c",
+          6
+        ],
+        [
+          "source/ai/actor_perception.c",
+          6
+        ],
+        [
+          "source/ai/actors.c",
+          6
+        ],
+        [
+          "source/saved games/game_state_xbox.c",
+          6
+        ],
+        [
+          "source/ai/actions.c",
+          5
+        ],
+        [
+          "source/units/bipeds.c",
+          5
+        ],
+        [
+          "source/units/unit_dialogue.c",
+          5
+        ],
+        [
+          "source/ai/actor_combat.c",
+          4
+        ],
+        [
+          "source/hs/hs_runtime.c",
+          4
+        ],
+        [
+          "source/objects/objects.c",
+          4
+        ],
+        [
+          "source/ai/action_obey.c",
+          3
+        ],
+        [
+          "source/cseries/errors.c",
+          3
+        ],
+        [
+          "source/hs/hs_compile.c",
+          3
+        ],
+        [
+          "source/input/input_xbox.c",
+          3
+        ],
+        [
+          "source/math/geometry.c",
+          3
+        ],
+        [
+          "source/objects/damage.c",
+          3
+        ],
+        [
+          "source/saved games/game_state.c",
+          3
+        ],
+        [
+          "source/ai/action_charge.c",
+          2
+        ],
+        [
+          "source/ai/actor_firing_position.c",
+          2
+        ],
+        [
+          "source/ai/actor_stimulus.c",
+          2
+        ],
+        [
+          "source/bitmaps/bitmaps.c",
+          2
+        ],
+        [
+          "source/cseries/cseries.c",
+          2
+        ],
+        [
+          "source/cutscene/recorded_animations.c",
+          2
+        ],
+        [
+          "source/game/game_engine.c",
+          2
+        ],
+        [
+          "source/hs/hs_library_external.c",
+          2
+        ],
+        [
+          "source/interface/interface.c",
+          2
+        ],
+        [
+          "source/math/periodic_functions.c",
+          2
+        ]
+      ],
+      "removed_by_source": [
+        [
+          "source/ai/ai_debug.c",
+          13612
+        ],
+        [
+          "source/camera/editor_flying_camera.c",
+          5559
+        ],
+        [
+          "source/hs/hs_compile.c",
+          5276
+        ],
+        [
+          "source/cseries/debug_memory.c",
+          4819
+        ],
+        [
+          "source/main/console.c",
+          4380
+        ],
+        [
+          "source/hs/hs.c",
+          4009
+        ],
+        [
+          "source/game/cheats.c",
+          2361
+        ],
+        [
+          "source/camera/flying_camera.c",
+          2331
+        ],
+        [
+          "source/tag_files/files_windows.c",
+          2197
+        ],
+        [
+          "source/interface/terminal.c",
+          1774
+        ],
+        [
+          "source/dialogs/edit_text.c",
+          1718
+        ],
+        [
+          "source/tag_files/files.c",
+          1303
+        ],
+        [
+          "source/main/debug_keys.c",
+          1288
+        ],
+        [
+          "source/game/game_statistics.c",
+          1089
+        ],
+        [
+          "source/game/players.c",
+          653
+        ],
+        [
+          "source/input/HaloAutoTest.c",
+          642
+        ],
+        [
+          "source/ai/encounters.c",
+          328
+        ],
+        [
+          "source/cseries/cseries_windows.c",
+          315
+        ],
+        [
+          "source/hs/hs_runtime.c",
+          310
+        ],
+        [
+          "source/input/input_xbox.c",
+          278
+        ],
+        [
+          "source/memory/data.c",
+          224
+        ],
+        [
+          "source/math/integer_math.c",
+          201
+        ],
+        [
+          "source/text/international_strings.c",
+          200
+        ],
+        [
+          "source/game/game_time.c",
+          168
+        ],
+        [
+          "source/ai/ai_communication.c",
+          128
+        ]
+      ],
+      "sources": [
+        "source/ai/ai_debug.c",
+        "source/camera/editor_flying_camera.c",
+        "source/camera/flying_camera.c",
+        "source/cseries/debug_memory.c",
+        "source/dialogs/edit_text.c",
+        "source/game/cheats.c",
+        "source/game/game_statistics.c",
+        "source/input/HaloAutoTest.c",
+        "source/interface/terminal.c",
+        "source/main/console.c",
+        "source/main/debug_keys.c",
+        "source/physics/collision_debug.c"
+      ]
+    },
+    "a2-xbox-platform": {
+      "bytes_removed_if_blocked": 276307,
+      "candidate_bytes_reachable": 36021,
+      "example_root_paths": [
+        {
+          "node": ".text.dsound_initialize",
+          "object": "source_sound_sound_dsound_xbox.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.shell_initialize",
+            ".text.sound_initialize",
+            ".data.platform_definitions",
+            ".data.platform_sound_dsound",
+            ".text.dsound_initialize"
+          ]
+        },
+        {
+          "node": ".bss.thread_globals",
+          "object": "source_bungie_net_common_thread_win32.c.o",
+          "path": [
+            ".text.game_initialize",
+            ".text.saved_game_files_initialize",
+            ".text.create_mutex",
+            ".bss.thread_globals"
+          ]
+        },
+        {
+          "node": ".text.input_get_device_states",
+          "object": "source_input_input_xbox.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.shell_initialize",
+            ".text.input_initialize",
+            ".text.input_get_device_states"
+          ]
+        },
+        {
+          "node": ".text.dsound_channel_set_properties",
+          "object": "source_sound_sound_dsound_xbox.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.shell_initialize",
+            ".text.sound_initialize",
+            ".data.platform_definitions",
+            ".data.platform_sound_dsound",
+            ".text.dsound_initialize",
+            ".text.dsound_channel_set_properties"
+          ]
+        },
+        {
+          "node": ".text.dsound_channel_set_location",
+          "object": "source_sound_sound_dsound_xbox.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.shell_initialize",
+            ".text.sound_initialize",
+            ".data.platform_definitions",
+            ".data.platform_sound_dsound",
+            ".text.dsound_virtual_set_location",
+            ".text.dsound_channel_set_location"
+          ]
+        },
+        {
+          "node": ".bss.input_globals",
+          "object": "source_input_input_xbox.c.o",
+          "path": [
+            ".text.game_initialize",
+            ".text.input_abstraction_initialize",
+            ".text.input_has_gamepad",
+            ".bss.input_globals"
+          ]
+        },
+        {
+          "node": ".text.dsound_set_listener_properties",
+          "object": "source_sound_sound_dsound_xbox.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.shell_initialize",
+            ".text.sound_initialize",
+            ".data.platform_definitions",
+            ".data.platform_sound_dsound",
+            ".text.dsound_set_listener_properties"
+          ]
+        },
+        {
+          "node": ".text.dsound_end_scene",
+          "object": "source_sound_sound_dsound_xbox.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.shell_initialize",
+            ".text.sound_initialize",
+            ".data.platform_definitions",
+            ".data.platform_sound_dsound",
+            ".text.dsound_end_scene"
+          ]
+        },
+        {
+          "node": ".text.input_update",
+          "object": "source_input_input_xbox.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.input_update"
+          ]
+        },
+        {
+          "node": ".text.dsound_channel_fill",
+          "object": "source_sound_sound_dsound_xbox.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.shell_initialize",
+            ".text.sound_initialize",
+            ".data.platform_definitions",
+            ".data.platform_sound_dsound",
+            ".text.dsound_virtual_queue_sound",
+            ".text.dsound_channel_fill"
+          ]
+        },
+        {
+          "node": ".text.find_files_next",
+          "object": "source_tag_files_files_windows.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.console_update",
+            ".text.hs_compile_and_evaluate",
+            ".text.hs_compile_and_evaluate_command",
+            ".text.hs_rebuild_source",
+            ".text.find_files",
+            ".text.find_files_next"
+          ]
+        },
+        {
+          "node": ".data.find_files_globals",
+          "object": "source_tag_files_files_windows.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.console_update",
+            ".text.hs_compile_and_evaluate",
+            ".text.hs_compile_and_evaluate_command",
+            ".text.hs_rebuild_source",
+            ".text.find_files",
+            ".text.find_files_start",
+            ".data.find_files_globals"
+          ]
+        },
+        {
+          "node": ".text.dsound_virtual_touch",
+          "object": "source_sound_sound_dsound_xbox.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.sound_render",
+            ".text.update_channels",
+            ".text.dsound_port_set_channel_stereo_position",
+            ".text.dsound_virtual_touch"
+          ]
+        },
+        {
+          "node": ".text.game_state_read_header_from_persistent_storage",
+          "object": "source_saved games_game_state_xbox.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.main_setup_connection",
+            ".text.main_new_map",
+            ".text.game_state_try_and_load_from_persistent_storage",
+            ".text.game_state_read_header_from_persistent_storage"
+          ]
+        },
+        {
+          "node": ".text.dsound_set_paused",
+          "object": "source_sound_sound_dsound_xbox.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.shell_initialize",
+            ".text.sound_initialize",
+            ".data.platform_definitions",
+            ".data.platform_sound_dsound",
+            ".text.dsound_set_paused"
+          ]
+        },
+        {
+          "node": ".rodata.virtual_key_to_key_code",
+          "object": "source_input_input_xbox.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.input_update",
+            ".rodata.virtual_key_to_key_code"
+          ]
+        },
+        {
+          "node": ".text.game_state_open_persistent_storage",
+          "object": "source_saved games_game_state_xbox.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.main_setup_connection",
+            ".text.main_new_map",
+            ".text.game_state_try_and_load_from_persistent_storage",
+            ".text.game_state_read_header_from_persistent_storage",
+            ".text.game_state_open_persistent_storage"
+          ]
+        },
+        {
+          "node": ".text.game_state_allocate_buffer",
+          "object": "source_saved games_game_state_xbox.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.shell_initialize",
+            ".text.game_state_initialize",
+            ".text.game_state_allocate_buffer"
+          ]
+        },
+        {
+          "node": ".text.game_state_read_from_file",
+          "object": "source_saved games_game_state_xbox.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.game_state_revert",
+            ".text.game_state_read_from_file"
+          ]
+        },
+        {
+          "node": ".rodata.dsound_virtual_touch.str1.8",
+          "object": "source_sound_sound_dsound_xbox.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.sound_render",
+            ".text.update_channels",
+            ".text.dsound_port_set_channel_stereo_position",
+            ".text.dsound_virtual_touch",
+            ".rodata.dsound_virtual_touch.str1.8"
+          ]
+        }
+      ],
+      "external_callers_into_set": [
+        [
+          "source/saved games/saved_game_files.c",
+          59
+        ],
+        [
+          "source/hs/hs_compile.c",
+          45
+        ],
+        [
+          "source/units/units.c",
+          35
+        ],
+        [
+          "source/objects/objects.c",
+          33
+        ],
+        [
+          "source/hs/hs_runtime.c",
+          32
+        ],
+        [
+          "source/ai/actions.c",
+          22
+        ],
+        [
+          "source/ai/encounters.c",
+          22
+        ],
+        [
+          "source/sound/sound_manager.c",
+          21
+        ],
+        [
+          "source/main/main.c",
+          20
+        ],
+        [
+          "source/tag_files/files.c",
+          20
+        ],
+        [
+          "source/game/game_engine.c",
+          18
+        ],
+        [
+          "source/models/model_animations.c",
+          18
+        ],
+        [
+          "source/ai/actor_perception.c",
+          17
+        ],
+        [
+          "source/ai/actors.c",
+          17
+        ],
+        [
+          "source/saved games/player_profile.c",
+          17
+        ],
+        [
+          "source/effects/decals.c",
+          16
+        ],
+        [
+          "source/ai/ai.c",
+          15
+        ],
+        [
+          "source/ai/ai_script.c",
+          15
+        ],
+        [
+          "source/bitmaps/bitmaps.c",
+          15
+        ],
+        [
+          "source/interface/hud_draw.c",
+          15
+        ],
+        [
+          "source/game/player_control.c",
+          14
+        ],
+        [
+          "source/saved games/game_state.c",
+          14
+        ],
+        [
+          "source/scenario/scenario.c",
+          14
+        ],
+        [
+          "source/cseries/cseries.c",
+          13
+        ],
+        [
+          "source/units/bipeds.c",
+          13
+        ],
+        [
+          "source/effects/effects.c",
+          12
+        ],
+        [
+          "source/game/player_queues_new.c",
+          12
+        ],
+        [
+          "source/game/players.c",
+          12
+        ],
+        [
+          "source/ai/actor_firing_position.c",
+          11
+        ],
+        [
+          "source/ai/ai_communication.c",
+          11
+        ],
+        [
+          "source/cseries/debug_memory.c",
+          11
+        ],
+        [
+          "source/cutscene/recorded_animation_playback_v1.c",
+          11
+        ],
+        [
+          "source/game/game_time.c",
+          11
+        ],
+        [
+          "source/items/weapons.c",
+          11
+        ],
+        [
+          "source/memory/data.c",
+          11
+        ],
+        [
+          "source/objects/object_lights.c",
+          11
+        ],
+        [
+          "source/sound/game_sound.c",
+          11
+        ],
+        [
+          "source/interface/hud_weapon.c",
+          10
+        ],
+        [
+          "source/physics/breakable_surfaces.c",
+          10
+        ],
+        [
+          "source/ai/path.c",
+          9
+        ]
+      ],
+      "removed_by_source": [
+        [
+          "source/game/game_engine.c",
+          24839
+        ],
+        [
+          "source/game/player_queues_new.c",
+          21526
+        ],
+        [
+          "source/sound/sound_dsound_xbox.c",
+          14943
+        ],
+        [
+          "source/interface/hud_draw.c",
+          14797
+        ],
+        [
+          "source/main/main.c",
+          13101
+        ],
+        [
+          "source/game/player_control.c",
+          9910
+        ],
+        [
+          "source/interface/hud_weapon.c",
+          8613
+        ],
+        [
+          "source/interface/hud.c",
+          7527
+        ],
+        [
+          "source/input/input_xbox.c",
+          6890
+        ],
+        [
+          "source/interface/motion_sensor.c",
+          6550
+        ],
+        [
+          "source/render/render_cameras.c",
+          5707
+        ],
+        [
+          "source/interface/hud_messaging.c",
+          5665
+        ],
+        [
+          "source/tag_files/files_windows.c",
+          5554
+        ],
+        [
+          "source/input/input_abstraction.c",
+          5461
+        ],
+        [
+          "source/text/draw_string.c",
+          5356
+        ],
+        [
+          "source/hs/hs_compile.c",
+          5276
+        ],
+        [
+          "source/interface/hud_unit.c",
+          5155
+        ],
+        [
+          "source/math/geometry.c",
+          4717
+        ],
+        [
+          "source/saved games/game_state_xbox.c",
+          4659
+        ],
+        [
+          "source/saved games/game_state.c",
+          4436
+        ],
+        [
+          "source/sound/sound_manager.c",
+          4309
+        ],
+        [
+          "source/hs/hs.c",
+          4309
+        ],
+        [
+          "source/main/console.c",
+          4036
+        ],
+        [
+          "source/effects/particles.c",
+          3840
+        ],
+        [
+          "source/game/players.c",
+          3734
+        ]
+      ],
+      "sources": [
+        "source/bungie_net/common/thread_win32.c",
+        "source/cseries/cseries_windows.c",
+        "source/input/input_xbox.c",
+        "source/saved games/game_state_xbox.c",
+        "source/shell/shell_xbox.c",
+        "source/sound/sound_dsound_xbox.c",
+        "source/tag_files/files_windows.c"
+      ]
+    },
+    "a3-campaign-ai-cutscene": {
+      "bytes_removed_if_blocked": 32046,
+      "candidate_bytes_reachable": 31629,
+      "example_root_paths": [
+        {
+          "node": ".text.infection_swarm_control",
+          "object": "source_ai_actor_type_infection.c.o",
+          "path": [
+            ".text.actors_update",
+            ".text.actor_type_swarm_control",
+            ".text.actor_type_definition_get",
+            ".rodata.actor_type_definitions",
+            ".data.actor_type_infection",
+            ".text.infection_swarm_control"
+          ]
+        },
+        {
+          "node": ".text.scripted_camera_update",
+          "object": "source_camera_camera_scripting.c.o",
+          "path": [
+            ".text.game_tick",
+            ".text.first_person_weapons_update",
+            ".text.director_get_perspective",
+            ".text.scripted_camera_update"
+          ]
+        },
+        {
+          "node": ".text.actor_type_flood_desire_shamble",
+          "object": "source_ai_actor_type_flood.c.o",
+          "path": [
+            ".text.actors_update",
+            ".text.actor_emotion_update",
+            ".text.actor_type_flood_desire_shamble"
+          ]
+        },
+        {
+          "node": ".text.recorded_animations_update",
+          "object": "source_cutscene_recorded_animations.c.o",
+          "path": [
+            ".text.game_tick",
+            ".text.recorded_animations_update"
+          ]
+        },
+        {
+          "node": ".text.infection_swarm_aim_jump",
+          "object": "source_ai_actor_type_infection.c.o",
+          "path": [
+            ".text.actors_update",
+            ".text.actor_type_swarm_control",
+            ".text.actor_type_definition_get",
+            ".rodata.actor_type_definitions",
+            ".data.actor_type_infection",
+            ".text.infection_swarm_aim_jump"
+          ]
+        },
+        {
+          "node": ".text.recorded_animation_play_internal",
+          "object": "source_cutscene_recorded_animations.c.o",
+          "path": [
+            ".text.hs_update",
+            ".data.hs_function_table",
+            ".rodata.recording_play_and_hover_definition",
+            ".text.recorded_animation_play_and_hover_evaluate",
+            ".text.recorded_animation_play_and_hover",
+            ".text.recorded_animation_play_internal"
+          ]
+        },
+        {
+          "node": ".text.recorded_animation_apply_event_stream",
+          "object": "source_cutscene_recorded_animation_playback.c.o",
+          "path": [
+            ".text.game_tick",
+            ".text.recorded_animations_update",
+            ".rodata.playback_codec",
+            ".data.current_playback",
+            ".text.recorded_animation_apply_event_stream"
+          ]
+        },
+        {
+          "node": ".text.apply_vector_char_difference",
+          "object": "source_cutscene_recorded_animation_playback.c.o",
+          "path": [
+            ".text.game_tick",
+            ".text.recorded_animations_update",
+            ".rodata.playback_codec",
+            ".data.current_playback",
+            ".text.recorded_animation_apply_event_stream",
+            ".data.data_002dcf20",
+            ".text.apply_vector_char_difference"
+          ]
+        },
+        {
+          "node": ".text.apply_vector_short_difference",
+          "object": "source_cutscene_recorded_animation_playback.c.o",
+          "path": [
+            ".text.game_tick",
+            ".text.recorded_animations_update",
+            ".rodata.playback_codec",
+            ".data.current_playback",
+            ".text.recorded_animation_apply_event_stream",
+            ".data.data_002dcf20",
+            ".text.apply_vector_short_difference"
+          ]
+        },
+        {
+          "node": ".text.engineer_decide_action",
+          "object": "source_ai_actor_type_engineer.c.o",
+          "path": [
+            ".text.actors_update",
+            ".text.actor_type_swarm_control",
+            ".text.actor_type_definition_get",
+            ".rodata.actor_type_definitions",
+            ".data.actor_type_engineer",
+            ".text.engineer_decide_action"
+          ]
+        },
+        {
+          "node": ".text.crew_decide_action",
+          "object": "source_ai_actor_type_crew.c.o",
+          "path": [
+            ".text.actors_update",
+            ".text.actor_type_swarm_control",
+            ".text.actor_type_definition_get",
+            ".rodata.actor_type_definitions",
+            ".data.actor_type_crew",
+            ".text.crew_decide_action"
+          ]
+        },
+        {
+          "node": ".text.recorded_animation_apply_event_stream_v1",
+          "object": "source_cutscene_recorded_animation_playback_v1.c.o",
+          "path": [
+            ".text.game_tick",
+            ".text.recorded_animations_update",
+            ".rodata.playback_codec",
+            ".data.v1_playback",
+            ".text.recorded_animation_apply_event_stream_v1"
+          ]
+        },
+        {
+          "node": ".text.flood_decide_action",
+          "object": "source_ai_actor_type_flood.c.o",
+          "path": [
+            ".text.actors_update",
+            ".text.actor_type_swarm_control",
+            ".text.actor_type_definition_get",
+            ".rodata.actor_type_definitions",
+            ".data.actor_type_flood",
+            ".text.flood_decide_action"
+          ]
+        },
+        {
+          "node": ".text.sentinel_decide_action",
+          "object": "source_ai_actor_type_sentinel.c.o",
+          "path": [
+            ".text.actors_update",
+            ".text.actor_type_swarm_control",
+            ".text.actor_type_definition_get",
+            ".rodata.actor_type_definitions",
+            ".data.actor_type_sentinel",
+            ".text.sentinel_decide_action"
+          ]
+        },
+        {
+          "node": ".text.carrier_decide_action",
+          "object": "source_ai_actor_type_carrier.c.o",
+          "path": [
+            ".text.actors_update",
+            ".text.actor_type_swarm_control",
+            ".text.actor_type_definition_get",
+            ".rodata.actor_type_definitions",
+            ".data.actor_type_carrier",
+            ".text.carrier_decide_action"
+          ]
+        },
+        {
+          "node": ".text.hunter_decide_action",
+          "object": "source_ai_actor_type_hunter.c.o",
+          "path": [
+            ".text.actors_update",
+            ".text.actor_type_swarm_control",
+            ".text.actor_type_definition_get",
+            ".rodata.actor_type_definitions",
+            ".data.actor_type_hunter",
+            ".text.hunter_decide_action"
+          ]
+        },
+        {
+          "node": ".text.apply_multi_vector",
+          "object": "source_cutscene_recorded_animation_playback_v1.c.o",
+          "path": [
+            ".text.game_tick",
+            ".text.recorded_animations_update",
+            ".rodata.playback_codec",
+            ".data.v1_playback",
+            ".text.recorded_animation_apply_event_stream_v1",
+            ".data.data_002dd030",
+            ".text.apply_multi_vector"
+          ]
+        },
+        {
+          "node": ".text.infection_decide_action",
+          "object": "source_ai_actor_type_infection.c.o",
+          "path": [
+            ".text.actors_update",
+            ".text.actor_type_swarm_control",
+            ".text.actor_type_definition_get",
+            ".rodata.actor_type_definitions",
+            ".data.actor_type_infection",
+            ".text.infection_decide_action"
+          ]
+        },
+        {
+          "node": ".text.apply_angle_vector",
+          "object": "source_cutscene_recorded_animation_playback_v1.c.o",
+          "path": [
+            ".text.game_tick",
+            ".text.recorded_animations_update",
+            ".rodata.playback_codec",
+            ".data.v1_playback",
+            ".text.recorded_animation_apply_event_stream_v1",
+            ".data.data_002dd030",
+            ".text.apply_angle_vector"
+          ]
+        },
+        {
+          "node": ".text.draw_quad",
+          "object": "source_cutscene_cinematics.c.o",
+          "path": [
+            ".text.halo_shell_main",
+            ".text.main_loop",
+            ".text.render_frame",
+            ".text.interface_draw_screen",
+            ".text.game_engine_post_rasterize",
+            ".text.game_engine_post_rasterize_in_game",
+            ".text.game_engine_rasterize_in_game_score",
+            ".text.draw_quad"
+          ]
+        }
+      ],
+      "external_callers_into_set": [
+        [
+          "source/hs/hs.c",
+          19
+        ],
+        [
+          "source/game/game.c",
+          9
+        ],
+        [
+          "source/ai/actor_types.c",
+          8
+        ],
+        [
+          "source/camera/director.c",
+          4
+        ],
+        [
+          "source/main/main.c",
+          4
+        ],
+        [
+          "source/ai/action_obey.c",
+          3
+        ],
+        [
+          "source/game/players.c",
+          3
+        ],
+        [
+          "source/units/bipeds.c",
+          3
+        ],
+        [
+          "source/game/player_control.c",
+          2
+        ],
+        [
+          "source/hs/hs_globals_external.c",
+          2
+        ],
+        [
+          "source/interface/hud_unit.c",
+          2
+        ],
+        [
+          "source/objects/object_types.c",
+          2
+        ],
+        [
+          "source/ai/actor_perception.c",
+          1
+        ],
+        [
+          "source/camera/editor_flying_camera.c",
+          1
+        ],
+        [
+          "source/game/game_engine.c",
+          1
+        ],
+        [
+          "source/interface/hud.c",
+          1
+        ],
+        [
+          "source/interface/hud_messaging.c",
+          1
+        ],
+        [
+          "source/saved games/game_state.c",
+          1
+        ]
+      ],
+      "removed_by_source": [
+        [
+          "source/ai/actor_type_infection.c",
+          6559
+        ],
+        [
+          "source/cutscene/recorded_animation_playback_v1.c",
+          4955
+        ],
+        [
+          "source/cutscene/recorded_animation_playback.c",
+          4921
+        ],
+        [
+          "source/cutscene/recorded_animations.c",
+          3739
+        ],
+        [
+          "source/camera/camera_scripting.c",
+          3694
+        ],
+        [
+          "source/ai/actor_type_flood.c",
+          2348
+        ],
+        [
+          "source/cutscene/cinematics.c",
+          1416
+        ],
+        [
+          "source/cutscene/recorded_animation_initialize.c",
+          666
+        ],
+        [
+          "source/ai/actor_type_engineer.c",
+          617
+        ],
+        [
+          "source/ai/actor_type_crew.c",
+          613
+        ],
+        [
+          "source/ai/actor_type_sentinel.c",
+          525
+        ],
+        [
+          "source/ai/actor_type_carrier.c",
+          518
+        ],
+        [
+          "source/ai/actor_type_hunter.c",
+          471
+        ],
+        [
+          "source/ai/actor_type_mounted_weapon.c",
+          339
+        ],
+        [
+          "source/cutscene/recorded_animation_definitions.c",
+          248
+        ],
+        [
+          "source/units/units.c",
+          144
+        ],
+        [
+          "source/memory/byte_swapping.c",
+          137
+        ],
+        [
+          "source/items/projectiles.c",
+          68
+        ],
+        [
+          "source/camera/first_person_camera.c",
+          48
+        ],
+        [
+          "port/ps2/src/ps2_rasterizer.c",
+          20
+        ]
+      ],
+      "sources": [
+        "source/ai/actor_type_carrier.c",
+        "source/ai/actor_type_crew.c",
+        "source/ai/actor_type_engineer.c",
+        "source/ai/actor_type_flood.c",
+        "source/ai/actor_type_hunter.c",
+        "source/ai/actor_type_infection.c",
+        "source/ai/actor_type_mounted_weapon.c",
+        "source/ai/actor_type_sentinel.c",
+        "source/camera/camera_scripting.c",
+        "source/cutscene/cinematics.c",
+        "source/cutscene/recorded_animation_definitions.c",
+        "source/cutscene/recorded_animation_initialize.c",
+        "source/cutscene/recorded_animation_playback.c",
+        "source/cutscene/recorded_animation_playback_v1.c",
+        "source/cutscene/recorded_animations.c"
+      ]
+    },
+    "union_of_classes": {
+      "bytes_removed_if_blocked": 357770,
+      "sources": [
+        "source/ai/actor_type_carrier.c",
+        "source/ai/actor_type_crew.c",
+        "source/ai/actor_type_engineer.c",
+        "source/ai/actor_type_flood.c",
+        "source/ai/actor_type_hunter.c",
+        "source/ai/actor_type_infection.c",
+        "source/ai/actor_type_mounted_weapon.c",
+        "source/ai/actor_type_sentinel.c",
+        "source/ai/ai_debug.c",
+        "source/bungie_net/common/thread_win32.c",
+        "source/camera/camera_scripting.c",
+        "source/camera/editor_flying_camera.c",
+        "source/camera/flying_camera.c",
+        "source/cseries/cseries_windows.c",
+        "source/cseries/debug_memory.c",
+        "source/cutscene/cinematics.c",
+        "source/cutscene/recorded_animation_definitions.c",
+        "source/cutscene/recorded_animation_initialize.c",
+        "source/cutscene/recorded_animation_playback.c",
+        "source/cutscene/recorded_animation_playback_v1.c",
+        "source/cutscene/recorded_animations.c",
+        "source/dialogs/edit_text.c",
+        "source/game/cheats.c",
+        "source/game/game_statistics.c",
+        "source/input/HaloAutoTest.c",
+        "source/input/input_xbox.c",
+        "source/interface/terminal.c",
+        "source/main/console.c",
+        "source/main/debug_keys.c",
+        "source/physics/collision_debug.c",
+        "source/saved games/game_state_xbox.c",
+        "source/shell/shell_xbox.c",
+        "source/sound/sound_dsound_xbox.c",
+        "source/tag_files/files_windows.c"
+      ]
+    }
+  },
+  "date": "2026-10-24",
+  "format": "hcu-c2-r7-elf-attrib-v1",
+  "inputs": {
+    "candidates": {
+      "path": "build/m2-c2-r7-elf-attrib/candidates.json",
+      "sha256": "8f1a22277bec9aa84be6f0c5bd8290235de826177f7aecebd4d9af6beea0f726"
+    },
+    "closure_result_json": {
+      "path": "build/m2-c2-r7-elf-attrib/closure-snapshot/result.json",
+      "sha256": "9b03be95284faf6b12e11335dfcd189334ad9bc83a3d8f4d19fa27d0693f12a6"
+    },
+    "map_copy": {
+      "path": "build/m2-c2-r7-elf-attrib/hcu-gameplay-machine.map",
+      "sha256": "abf25913998a63e4e831d35d2bfcf1b1326faa74f2159ad8e5f657235e1130c8"
+    },
+    "map_original": {
+      "path": "build/hcu-parent-link-probe/hcu-gameplay-machine.map",
+      "sha256": "bf698b3f6520fff1b6057a2dacfe78a28c5530eb0ffffdb8e99ca6eddd248ff3"
+    }
+  },
+  "lane": "elf-attrib",
+  "map_header_totals": {
+    "bss": 1825644,
+    "data": 73196,
+    "rodata": 384296,
+    "text": 1736232
+  },
+  "reachability": {
+    "reachable_nodes": 10105,
+    "roots_resolved": 35,
+    "roots_total": 35,
+    "roots_unresolved": []
+  },
+  "residual": {
+    "map-residual:bss": 501623,
+    "map-residual:data": 1998,
+    "map-residual:rodata": 259626,
+    "map-residual:text": 136
+  },
+  "retained_bytes_by_kind": {
+    "bss": 1825644,
+    "data": 73196,
+    "rodata": 384296,
+    "text": 1736232
+  },
+  "retained_sections": 8081,
+  "top_functions": [
+    {
+      "function": "vehicle_update",
+      "size": 11968,
+      "source": "source/units/vehicles.c"
+    },
+    {
+      "function": "ai_communication_event",
+      "size": 10520,
+      "source": "source/ai/ai_communication.c"
+    },
+    {
+      "function": "observer_update",
+      "size": 8868,
+      "source": "source/camera/observer.c"
+    },
+    {
+      "function": "actor_perception_update",
+      "size": 8720,
+      "source": "source/ai/actor_perception.c"
+    },
+    {
+      "function": "unit_update",
+      "size": 8460,
+      "source": "source/units/units.c"
+    },
+    {
+      "function": "projectile_update",
+      "size": 8440,
+      "source": "source/items/projectiles.c"
+    },
+    {
+      "function": "game_engine_rasterize_in_game_score",
+      "size": 7492,
+      "source": "source/game/game_engine.c"
+    },
+    {
+      "function": "object_compute_node_matrices",
+      "size": 7220,
+      "source": "source/objects/objects.c"
+    },
+    {
+      "function": "actor_move_update",
+      "size": 7056,
+      "source": "source/ai/actor_moving.c"
+    },
+    {
+      "function": "player_control_update",
+      "size": 6876,
+      "source": "source/game/player_control.c"
+    },
+    {
+      "function": "tag_block_get_element_fast",
+      "size": 6840,
+      "source": "source/ai/action_alert.c"
+    },
+    {
+      "function": "biped_update_physics",
+      "size": 6700,
+      "source": "source/units/bipeds.c"
+    },
+    {
+      "function": "actor_select_firing_position",
+      "size": 6632,
+      "source": "source/ai/actor_firing_position.c"
+    },
+    {
+      "function": "decal_new_from_collision",
+      "size": 6524,
+      "source": "source/effects/decals.c"
+    },
+    {
+      "function": "actor_look_update",
+      "size": 6272,
+      "source": "source/ai/actor_looking.c"
+    },
+    {
+      "function": "object_cause_damage",
+      "size": 5844,
+      "source": "source/objects/damage.c"
+    },
+    {
+      "function": "biped_update",
+      "size": 5672,
+      "source": "source/units/bipeds.c"
+    },
+    {
+      "function": "biped_update_moving",
+      "size": 5644,
+      "source": "source/units/bipeds.c"
+    },
+    {
+      "function": "physics_update",
+      "size": 5412,
+      "source": "source/physics/physics.c"
+    },
+    {
+      "function": "main_loop",
+      "size": 5180,
+      "source": "source/main/main.c"
+    },
+    {
+      "function": "collision_move_point",
+      "size": 5176,
+      "source": "source/physics/collisions.c"
+    },
+    {
+      "function": "effect_update",
+      "size": 5136,
+      "source": "source/effects/effects.c"
+    },
+    {
+      "function": "actor_combat_update",
+      "size": 5112,
+      "source": "source/ai/actor_combat.c"
+    },
+    {
+      "function": "players_update_before_game",
+      "size": 5088,
+      "source": "source/game/players.c"
+    },
+    {
+      "function": "actor_move_vector_avoidance",
+      "size": 5072,
+      "source": "source/ai/actor_moving.c"
+    },
+    {
+      "function": "normalize3d",
+      "size": 4888,
+      "source": "closure:ps2_abi.o"
+    },
+    {
+      "function": "weapon_update",
+      "size": 4832,
+      "source": "source/items/weapons.c"
+    },
+    {
+      "function": "build_structure_lens_flares",
+      "size": 4688,
+      "source": "source/structures/structure_lens_flares.c"
+    },
+    {
+      "function": "lightning_submit",
+      "size": 4464,
+      "source": "source/objects/widgets/lightning.c"
+    },
+    {
+      "function": "action_obey_command_begin",
+      "size": 4424,
+      "source": "source/ai/action_obey.c"
+    },
+    {
+      "function": "infection_swarm_control",
+      "size": 4136,
+      "source": "source/ai/actor_type_infection.c"
+    },
+    {
+      "function": "path_state_traverse",
+      "size": 4100,
+      "source": "source/ai/path.c"
+    },
+    {
+      "function": "breakable_surface_effect",
+      "size": 4060,
+      "source": "source/physics/breakable_surfaces.c"
+    },
+    {
+      "function": "glow_submit",
+      "size": 3852,
+      "source": "source/objects/widgets/glow.c"
+    },
+    {
+      "function": "hud_draw_screen",
+      "size": 3792,
+      "source": "source/interface/hud.c"
+    },
+    {
+      "function": "object_new",
+      "size": 3784,
+      "source": "source/objects/objects.c"
+    },
+    {
+      "function": "prop_status_refresh",
+      "size": 3740,
+      "source": "source/ai/actor_perception.c"
+    },
+    {
+      "function": "render_weapon_hud",
+      "size": 3716,
+      "source": "source/interface/hud_weapon.c"
+    },
+    {
+      "function": "vector_from_points3d",
+      "size": 3696,
+      "source": "closure:ps2_abi.o"
+    },
+    {
+      "function": "hud_render_unit_interface",
+      "size": 3648,
+      "source": "source/interface/hud_unit.c"
+    },
+    {
+      "function": "input_abstraction_update",
+      "size": 3636,
+      "source": "source/input/input_abstraction.c"
+    },
+    {
+      "function": "action_charge_perform",
+      "size": 3564,
+      "source": "source/ai/action_charge.c"
+    },
+    {
+      "function": "players_update_after_game",
+      "size": 3548,
+      "source": "source/game/players.c"
+    },
+    {
+      "function": "hud_draw_static_element",
+      "size": 3520,
+      "source": "source/interface/hud_draw.c"
+    },
+    {
+      "function": "update_channels",
+      "size": 3460,
+      "source": "source/sound/sound_manager.c"
+    },
+    {
+      "function": "hud_messaging_update",
+      "size": 3412,
+      "source": "source/interface/hud_messaging.c"
+    },
+    {
+      "function": "sound_render",
+      "size": 3356,
+      "source": "source/sound/sound_manager.c"
+    },
+    {
+      "function": "physics_compute_unit_collisions",
+      "size": 3340,
+      "source": "source/physics/physics.c"
+    },
+    {
+      "function": "encounter_update_status",
+      "size": 3288,
+      "source": "source/ai/encounters.c"
+    },
+    {
+      "function": "game_engine_update",
+      "size": 3256,
+      "source": "source/game/game_engine.c"
+    },
+    {
+      "function": "actor_emotion_update",
+      "size": 3216,
+      "source": "source/ai/actor_perception.c"
+    },
+    {
+      "function": "biped_limp_noodle_move_relax_and_constrain_positions",
+      "size": 3164,
+      "source": "source/units/biped_limp_noodle.c"
+    },
+    {
+      "function": "render_camera_build_frustum",
+      "size": 3132,
+      "source": "source/render/render_cameras.c"
+    },
+    {
+      "function": "startup.main",
+      "size": 3048,
+      "source": "parent:60869cbb0e20/stream/hcu_main.c"
+    },
+    {
+      "function": "cross_product3d",
+      "size": 2960,
+      "source": "closure:ps2_abi.o"
+    },
+    {
+      "function": "hcu_map_service_preflight",
+      "size": 2856,
+      "source": "parent:60869cbb0e20/stream/hcu_map_service.c"
+    },
+    {
+      "function": "particle_system_update",
+      "size": 2844,
+      "source": "source/effects/particle_systems.c"
+    },
+    {
+      "function": "magnitude_squared3d",
+      "size": 2808,
+      "source": "closure:ps2_abi.o"
+    },
+    {
+      "function": "crosshairs_draw",
+      "size": 2804,
+      "source": "source/interface/hud_weapon.c"
+    },
+    {
+      "function": "actor_action_handle_lost_contact",
+      "size": 2800,
+      "source": "source/ai/actions.c"
+    }
+  ],
+  "top_sources": {
+    "all": [
+      {
+        "bytes": {
+          "bss": 501623,
+          "data": 1998,
+          "rodata": 259626,
+          "text": 136
+        },
+        "source": "other:map-residual"
+      },
+      {
+        "bytes": {
+          "bss": 262544,
+          "rodata": 17584,
+          "text": 6140
+        },
+        "source": "port/linux/game/tag_schema_effects.c"
+      },
+      {
+        "bytes": {
+          "bss": 262273,
+          "data": 10,
+          "rodata": 25,
+          "text": 9108
+        },
+        "source": "port/linux/game/tag_validate.c"
+      },
+      {
+        "bytes": {
+          "bss": 78595,
+          "data": 3518,
+          "rodata": 14204,
+          "text": 37856
+        },
+        "source": "source/hs/hs.c"
+      },
+      {
+        "bytes": {
+          "bss": 40974,
+          "data": 1563,
+          "rodata": 380,
+          "text": 67780
+        },
+        "source": "source/units/units.c"
+      },
+      {
+        "bytes": {
+          "bss": 63790,
+          "data": 4220,
+          "rodata": 688,
+          "text": 41820
+        },
+        "source": "sdk:lib"
+      },
+      {
+        "bytes": {
+          "bss": 54535,
+          "data": 28,
+          "rodata": 226,
+          "text": 48972
+        },
+        "source": "source/game/game_engine.c"
+      },
+      {
+        "bytes": {
+          "bss": 84544,
+          "data": 4,
+          "text": 5428
+        },
+        "source": "source/game/player_queues_new.c"
+      },
+      {
+        "bytes": {
+          "bss": 65536,
+          "text": 1120
+        },
+        "source": "source/tag_files/tag_groups.c"
+      },
+      {
+        "bytes": {
+          "bss": 58517,
+          "data": 244,
+          "text": 1416
+        },
+        "source": "port/ps2/src/ps2_rasterizer.c"
+      },
+      {
+        "bytes": {
+          "text": 59816
+        },
+        "source": "closure:ps2_abi.o"
+      },
+      {
+        "bytes": {
+          "bss": 45097,
+          "data": 17,
+          "rodata": 12,
+          "text": 7616
+        },
+        "source": "source/objects/object_lights.c"
+      },
+      {
+        "bytes": {
+          "bss": 40378,
+          "rodata": 8024,
+          "text": 3812
+        },
+        "source": "port/linux/game/tag_schema_scenario.c"
+      },
+      {
+        "bytes": {
+          "bss": 44808,
+          "text": 4980
+        },
+        "source": "source/units/biped_limp_noodle.c"
+      },
+      {
+        "bytes": {
+          "bss": 49152,
+          "data": 4,
+          "text": 440
+        },
+        "source": "port/ps2/game/ps2_local.c"
+      },
+      {
+        "bytes": {
+          "bss": 30923,
+          "data": 1,
+          "rodata": 64,
+          "text": 13700
+        },
+        "source": "source/effects/decals.c"
+      },
+      {
+        "bytes": {
+          "bss": 32767,
+          "rodata": 5120,
+          "text": 3564
+        },
+        "source": "port/linux/game/tag_schema_models.c"
+      },
+      {
+        "bytes": {
+          "bss": 45,
+          "data": 1534,
+          "rodata": 120,
+          "text": 39188
+        },
+        "source": "source/objects/objects.c"
+      },
+      {
+        "bytes": {
+          "bss": 20,
+          "data": 276,
+          "rodata": 6328,
+          "text": 31048
+        },
+        "source": "source/ai/ai_communication.c"
+      },
+      {
+        "bytes": {
+          "data": 4,
+          "rodata": 144,
+          "text": 33172
+        },
+        "source": "source/ai/actor_perception.c"
+      },
+      {
+        "bytes": {
+          "bss": 18448,
+          "rodata": 8660,
+          "text": 5268
+        },
+        "source": "port/linux/game/tag_schema_collision.c"
+      },
+      {
+        "bytes": {
+          "bss": 723,
+          "data": 3100,
+          "rodata": 108,
+          "text": 26484
+        },
+        "source": "source/game/players.c"
+      },
+      {
+        "bytes": {
+          "bss": 5,
+          "data": 1529,
+          "rodata": 324,
+          "text": 28544
+        },
+        "source": "source/units/bipeds.c"
+      },
+      {
+        "bytes": {
+          "bss": 26,
+          "data": 9604,
+          "rodata": 568,
+          "text": 17404
+        },
+        "source": "source/hs/hs_runtime.c"
+      },
+      {
+        "bytes": {
+          "bss": 154,
+          "data": 400,
+          "rodata": 96,
+          "text": 25232
+        },
+        "source": "source/ai/encounters.c"
+      },
+      {
+        "bytes": {
+          "rodata": 936,
+          "text": 23044
+        },
+        "source": "source/ai/actions.c"
+      },
+      {
+        "bytes": {
+          "text": 23884
+        },
+        "source": "source/ai/ai_script.c"
+      },
+      {
+        "bytes": {
+          "bss": 24,
+          "data": 4,
+          "rodata": 10,
+          "text": 23776
+        },
+        "source": "source/ai/actors.c"
+      },
+      {
+        "bytes": {
+          "data": 1536,
+          "rodata": 111,
+          "text": 20680
+        },
+        "source": "source/items/weapons.c"
+      },
+      {
+        "bytes": {
+          "bss": 24,
+          "rodata": 492,
+          "text": 21704
+        },
+        "source": "source/ai/actor_moving.c"
+      },
+      {
+        "bytes": {
+          "bss": 300,
+          "rodata": 196,
+          "text": 20192
+        },
+        "source": "source/hs/hs_compile.c"
+      },
+      {
+        "bytes": {
+          "bss": 396,
+          "data": 1552,
+          "text": 18476
+        },
+        "source": "source/sound/sound_manager.c"
+      },
+      {
+        "bytes": {
+          "data": 1528,
+          "rodata": 172,
+          "text": 18156
+        },
+        "source": "source/units/vehicles.c"
+      },
+      {
+        "bytes": {
+          "bss": 3024,
+          "data": 28,
+          "rodata": 984,
+          "text": 15240
+        },
+        "source": "other:ccaRr9Ju.ltrans0.ltrans.o"
+      },
+      {
+        "bytes": {
+          "bss": 17848,
+          "text": 1164
+        },
+        "source": "parent:60869cbb0e20/render/bsp_render.c"
+      },
+      {
+        "bytes": {
+          "rodata": 12034,
+          "text": 5900
+        },
+        "source": "port/linux/game/tag_schema_render.c"
+      },
+      {
+        "bytes": {
+          "bss": 2671,
+          "data": 7,
+          "rodata": 40,
+          "text": 14772
+        },
+        "source": "source/main/main.c"
+      },
+      {
+        "bytes": {
+          "bss": 36,
+          "data": 1,
+          "text": 17444
+        },
+        "source": "source/models/model_animations.c"
+      },
+      {
+        "bytes": {
+          "bss": 3,
+          "data": 32,
+          "rodata": 12,
+          "text": 17204
+        },
+        "source": "source/physics/physics.c"
+      },
+      {
+        "bytes": {
+          "bss": 6,
+          "rodata": 124,
+          "text": 16772
+        },
+        "source": "source/ai/actor_firing_position.c"
+      },
+      {
+        "bytes": {
+          "data": 1528,
+          "rodata": 5,
+          "text": 14816
+        },
+        "source": "source/ai/ai.c"
+      },
+      {
+        "bytes": {
+          "rodata": 16072
+        },
+        "source": "parent:60869cbb0e20/stream/hcu_filexio_irx.c"
+      },
+      {
+        "bytes": {
+          "bss": 11,
+          "data": 1529,
+          "rodata": 24,
+          "text": 13936
+        },
+        "source": "source/effects/effects.c"
+      },
+      {
+        "bytes": {
+          "bss": 10277,
+          "data": 76,
+          "text": 4832
+        },
+        "source": "source/saved games/game_state.c"
+      },
+      {
+        "bytes": {
+          "rodata": 400,
+          "text": 14616
+        },
+        "source": "gcc-lib:libc.a(libc_a-vfprintf.o)"
+      },
+      {
+        "bytes": {
+          "bss": 5,
+          "rodata": 122,
+          "text": 14688
+        },
+        "source": "source/interface/hud_draw.c"
+      },
+      {
+        "bytes": {
+          "rodata": 400,
+          "text": 14264
+        },
+        "source": "gcc-lib:libc.a(libc_a-svfprintf.o)"
+      },
+      {
+        "bytes": {
+          "data": 1548,
+          "text": 12976
+        },
+        "source": "source/items/projectiles.c"
+      },
+      {
+        "bytes": {
+          "bss": 2676,
+          "rodata": 44,
+          "text": 11192
+        },
+        "source": "source/camera/observer.c"
+      },
+      {
+        "bytes": {
+          "bss": 57,
+          "data": 1535,
+          "text": 12016
+        },
+        "source": "source/game/player_control.c"
+      },
+      {
+        "bytes": {
+          "bss": 11708,
+          "rodata": 1780
+        },
+        "source": "rooted.o:unresolved"
+      },
+      {
+        "bytes": {
+          "rodata": 487,
+          "text": 12984
+        },
+        "source": "source/ai/action_obey.c"
+      },
+      {
+        "bytes": {
+          "bss": 29,
+          "rodata": 204,
+          "text": 12688
+        },
+        "source": "source/physics/collisions.c"
+      },
+      {
+        "bytes": {
+          "rodata": 20,
+          "text": 12712
+        },
+        "source": "source/ai/actor_combat.c"
+      },
+      {
+        "bytes": {
+          "rodata": 168,
+          "text": 12344
+        },
+        "source": "source/ai/actor_looking.c"
+      },
+      {
+        "bytes": {
+          "bss": 21,
+          "text": 12372
+        },
+        "source": "source/physics/collision_bsp.c"
+      },
+      {
+        "bytes": {
+          "bss": 81,
+          "text": 12296
+        },
+        "source": "source/objects/damage.c"
+      },
+      {
+        "bytes": {
+          "rodata": 11336,
+          "text": 988
+        },
+        "source": "port/linux/game/tag_schema_objects.c"
+      },
+      {
+        "bytes": {
+          "data": 56,
+          "rodata": 144,
+          "text": 11956
+        },
+        "source": "source/math/real_math.c"
+      },
+      {
+        "bytes": {
+          "bss": 257,
+          "data": 60,
+          "text": 11744
+        },
+        "source": "source/sound/sound_dsound_xbox.c"
+      }
+    ],
+    "bss": [
+      {
+        "bytes": 501623,
+        "source": "other:map-residual"
+      },
+      {
+        "bytes": 262544,
+        "source": "port/linux/game/tag_schema_effects.c"
+      },
+      {
+        "bytes": 262273,
+        "source": "port/linux/game/tag_validate.c"
+      },
+      {
+        "bytes": 84544,
+        "source": "source/game/player_queues_new.c"
+      },
+      {
+        "bytes": 78595,
+        "source": "source/hs/hs.c"
+      },
+      {
+        "bytes": 65536,
+        "source": "source/tag_files/tag_groups.c"
+      },
+      {
+        "bytes": 63790,
+        "source": "sdk:lib"
+      },
+      {
+        "bytes": 58517,
+        "source": "port/ps2/src/ps2_rasterizer.c"
+      },
+      {
+        "bytes": 54535,
+        "source": "source/game/game_engine.c"
+      },
+      {
+        "bytes": 49152,
+        "source": "port/ps2/game/ps2_local.c"
+      },
+      {
+        "bytes": 45097,
+        "source": "source/objects/object_lights.c"
+      },
+      {
+        "bytes": 44808,
+        "source": "source/units/biped_limp_noodle.c"
+      },
+      {
+        "bytes": 40974,
+        "source": "source/units/units.c"
+      },
+      {
+        "bytes": 40378,
+        "source": "port/linux/game/tag_schema_scenario.c"
+      },
+      {
+        "bytes": 32767,
+        "source": "port/linux/game/tag_schema_models.c"
+      },
+      {
+        "bytes": 30923,
+        "source": "source/effects/decals.c"
+      },
+      {
+        "bytes": 18448,
+        "source": "port/linux/game/tag_schema_collision.c"
+      },
+      {
+        "bytes": 17848,
+        "source": "parent:60869cbb0e20/render/bsp_render.c"
+      },
+      {
+        "bytes": 11708,
+        "source": "rooted.o:unresolved"
+      },
+      {
+        "bytes": 10277,
+        "source": "source/saved games/game_state.c"
+      },
+      {
+        "bytes": 6101,
+        "source": "source/objects/widgets/antenna.c"
+      },
+      {
+        "bytes": 4224,
+        "source": "parent:60869cbb0e20/world/section.c"
+      },
+      {
+        "bytes": 4112,
+        "source": "source/sound/game_sound.c"
+      },
+      {
+        "bytes": 3525,
+        "source": "source/main/console.c"
+      },
+      {
+        "bytes": 3024,
+        "source": "other:ccaRr9Ju.ltrans0.ltrans.o"
+      },
+      {
+        "bytes": 2676,
+        "source": "source/camera/observer.c"
+      },
+      {
+        "bytes": 2671,
+        "source": "source/main/main.c"
+      },
+      {
+        "bytes": 2132,
+        "source": "parent:60869cbb0e20/stream/hcu_main.c"
+      },
+      {
+        "bytes": 2097,
+        "source": "source/cache/cache_files.c"
+      },
+      {
+        "bytes": 2070,
+        "source": "parent:60869cbb0e20/platform/pad.c"
+      },
+      {
+        "bytes": 2058,
+        "source": "source/structures/structures.c"
+      },
+      {
+        "bytes": 1708,
+        "source": "source/input/input_xbox.c"
+      },
+      {
+        "bytes": 1544,
+        "source": "source/bungie_net/common/thread_win32.c"
+      },
+      {
+        "bytes": 1025,
+        "source": "source/memory/crc.c"
+      },
+      {
+        "bytes": 1009,
+        "source": "source/camera/director.c"
+      },
+      {
+        "bytes": 905,
+        "source": "source/scenario/scenario.c"
+      },
+      {
+        "bytes": 723,
+        "source": "source/game/players.c"
+      },
+      {
+        "bytes": 636,
+        "source": "source/effects/weather_particle_systems.c"
+      },
+      {
+        "bytes": 588,
+        "source": "closure:ps2_edge.o"
+      },
+      {
+        "bytes": 574,
+        "source": "source/game/game_engine_king.c"
+      },
+      {
+        "bytes": 560,
+        "source": "source/interface/player_ui.c"
+      },
+      {
+        "bytes": 496,
+        "source": "source/input/input_abstraction.c"
+      },
+      {
+        "bytes": 396,
+        "source": "source/sound/sound_manager.c"
+      },
+      {
+        "bytes": 360,
+        "source": "source/interface/event_manager.c"
+      },
+      {
+        "bytes": 340,
+        "source": "gcc-lib:libc.a(libc_a-findfp.o)"
+      },
+      {
+        "bytes": 300,
+        "source": "source/hs/hs_compile.c"
+      },
+      {
+        "bytes": 300,
+        "source": "port/ps2/src/ps2_cache.c"
+      },
+      {
+        "bytes": 284,
+        "source": "source/saved games/saved_game_files.c"
+      },
+      {
+        "bytes": 264,
+        "source": "source/game/game_engine_oddball.c"
+      },
+      {
+        "bytes": 259,
+        "source": "source/render/render_cameras.c"
+      },
+      {
+        "bytes": 257,
+        "source": "source/sound/sound_dsound_xbox.c"
+      },
+      {
+        "bytes": 256,
+        "source": "parent:60869cbb0e20/stream/hcu_file_bridge.c"
+      },
+      {
+        "bytes": 256,
+        "source": "source/game/game_engine_race.c"
+      },
+      {
+        "bytes": 228,
+        "source": "source/text/draw_string.c"
+      },
+      {
+        "bytes": 180,
+        "source": "source/objects/widgets/light_volumes.c"
+      },
+      {
+        "bytes": 176,
+        "source": "port/ps2/src/ps2_owner_counters.c"
+      },
+      {
+        "bytes": 154,
+        "source": "source/ai/encounters.c"
+      },
+      {
+        "bytes": 144,
+        "source": "closure:ps2_memory.o"
+      },
+      {
+        "bytes": 136,
+        "source": "source/models/models.c"
+      },
+      {
+        "bytes": 132,
+        "source": "source/sound/sound_definitions.c"
+      }
+    ],
+    "data": [
+      {
+        "bytes": 9604,
+        "source": "source/hs/hs_runtime.c"
+      },
+      {
+        "bytes": 7338,
+        "source": "source/interface/interface.c"
+      },
+      {
+        "bytes": 7076,
+        "source": "source/hs/hs_globals_external.c"
+      },
+      {
+        "bytes": 4220,
+        "source": "sdk:lib"
+      },
+      {
+        "bytes": 3518,
+        "source": "source/hs/hs.c"
+      },
+      {
+        "bytes": 3100,
+        "source": "source/game/players.c"
+      },
+      {
+        "bytes": 2608,
+        "source": "source/objects/object_types.c"
+      },
+      {
+        "bytes": 2448,
+        "source": "source/sound/sound_classes.c"
+      },
+      {
+        "bytes": 1998,
+        "source": "other:map-residual"
+      },
+      {
+        "bytes": 1672,
+        "source": "source/units/dialogue_definitions.c"
+      },
+      {
+        "bytes": 1563,
+        "source": "source/units/units.c"
+      },
+      {
+        "bytes": 1552,
+        "source": "source/sound/sound_manager.c"
+      },
+      {
+        "bytes": 1548,
+        "source": "source/items/projectiles.c"
+      },
+      {
+        "bytes": 1544,
+        "source": "source/game/game.c"
+      },
+      {
+        "bytes": 1536,
+        "source": "source/effects/particles.c"
+      },
+      {
+        "bytes": 1536,
+        "source": "source/items/weapons.c"
+      },
+      {
+        "bytes": 1535,
+        "source": "source/game/player_control.c"
+      },
+      {
+        "bytes": 1534,
+        "source": "source/objects/objects.c"
+      },
+      {
+        "bytes": 1529,
+        "source": "source/effects/effects.c"
+      },
+      {
+        "bytes": 1529,
+        "source": "source/units/bipeds.c"
+      },
+      {
+        "bytes": 1528,
+        "source": "source/ai/ai.c"
+      },
+      {
+        "bytes": 1528,
+        "source": "source/items/items.c"
+      },
+      {
+        "bytes": 1528,
+        "source": "source/units/vehicles.c"
+      },
+      {
+        "bytes": 1040,
+        "source": "gcc-lib:libc.a(libc_a-mallocr.o)"
+      },
+      {
+        "bytes": 1024,
+        "source": "source/bitmaps/bitmaps.c"
+      },
+      {
+        "bytes": 784,
+        "source": "source/models/model_animation_definitions.c"
+      },
+      {
+        "bytes": 616,
+        "source": "source/tag_files/files_windows.c"
+      },
+      {
+        "bytes": 400,
+        "source": "source/ai/encounters.c"
+      },
+      {
+        "bytes": 364,
+        "source": "gcc-lib:libc.a(libc_a-locale.o)"
+      },
+      {
+        "bytes": 360,
+        "source": "source/shaders/shader_definitions.c"
+      },
+      {
+        "bytes": 304,
+        "source": "source/cutscene/recorded_animation_playback_v1.c"
+      },
+      {
+        "bytes": 292,
+        "source": "gcc-lib:libc.a(libc_a-impure.o)"
+      },
+      {
+        "bytes": 276,
+        "source": "source/ai/ai_communication.c"
+      },
+      {
+        "bytes": 272,
+        "source": "source/cutscene/recorded_animation_initialize.c"
+      },
+      {
+        "bytes": 272,
+        "source": "source/cutscene/recorded_animation_playback.c"
+      },
+      {
+        "bytes": 244,
+        "source": "port/ps2/src/ps2_rasterizer.c"
+      },
+      {
+        "bytes": 224,
+        "source": "source/ai/ai_profile.c"
+      },
+      {
+        "bytes": 200,
+        "source": "source/main/debug_keys.c"
+      },
+      {
+        "bytes": 200,
+        "source": "source/objects/widgets/widgets.c"
+      },
+      {
+        "bytes": 160,
+        "source": "source/items/projectile_definitions.c"
+      },
+      {
+        "bytes": 136,
+        "source": "source/game/game_engine_ctf.c"
+      },
+      {
+        "bytes": 136,
+        "source": "source/game/game_engine_king.c"
+      },
+      {
+        "bytes": 136,
+        "source": "source/game/game_engine_oddball.c"
+      },
+      {
+        "bytes": 136,
+        "source": "source/game/game_engine_race.c"
+      },
+      {
+        "bytes": 136,
+        "source": "source/game/game_engine_slayer.c"
+      },
+      {
+        "bytes": 136,
+        "source": "source/game/game_engine_stub.c"
+      },
+      {
+        "bytes": 132,
+        "source": "source/game/game_globals.c"
+      },
+      {
+        "bytes": 108,
+        "source": "source/memory/byte_swapping.c"
+      },
+      {
+        "bytes": 88,
+        "source": "gcc-lib:libc.a(libc_a-gettzinfo.o)"
+      },
+      {
+        "bytes": 88,
+        "source": "source/cseries/cseries.c"
+      },
+      {
+        "bytes": 76,
+        "source": "source/saved games/game_state.c"
+      },
+      {
+        "bytes": 64,
+        "source": "parent:60869cbb0e20/stream/file.c"
+      },
+      {
+        "bytes": 64,
+        "source": "source/ai/actor_types.c"
+      },
+      {
+        "bytes": 64,
+        "source": "source/camera/camera_scripting.c"
+      },
+      {
+        "bytes": 60,
+        "source": "source/sound/sound_dsound_xbox.c"
+      },
+      {
+        "bytes": 56,
+        "source": "source/math/real_math.c"
+      },
+      {
+        "bytes": 48,
+        "source": "source/ai/ai_scenario_definitions.c"
+      },
+      {
+        "bytes": 44,
+        "source": "source/units/unit_dialogue.c"
+      },
+      {
+        "bytes": 40,
+        "source": "source/game/game_allegiance.c"
+      },
+      {
+        "bytes": 32,
+        "source": "source/ai/actor_type_carrier.c"
+      }
+    ],
+    "rodata": [
+      {
+        "bytes": 259626,
+        "source": "other:map-residual"
+      },
+      {
+        "bytes": 17584,
+        "source": "port/linux/game/tag_schema_effects.c"
+      },
+      {
+        "bytes": 16072,
+        "source": "parent:60869cbb0e20/stream/hcu_filexio_irx.c"
+      },
+      {
+        "bytes": 14204,
+        "source": "source/hs/hs.c"
+      },
+      {
+        "bytes": 12034,
+        "source": "port/linux/game/tag_schema_render.c"
+      },
+      {
+        "bytes": 11336,
+        "source": "port/linux/game/tag_schema_objects.c"
+      },
+      {
+        "bytes": 8660,
+        "source": "port/linux/game/tag_schema_collision.c"
+      },
+      {
+        "bytes": 8024,
+        "source": "port/linux/game/tag_schema_scenario.c"
+      },
+      {
+        "bytes": 6328,
+        "source": "source/ai/ai_communication.c"
+      },
+      {
+        "bytes": 5120,
+        "source": "port/linux/game/tag_schema_models.c"
+      },
+      {
+        "bytes": 3560,
+        "source": "parent:60869cbb0e20/stream/hcu_map_catalog.c"
+      },
+      {
+        "bytes": 1780,
+        "source": "rooted.o:unresolved"
+      },
+      {
+        "bytes": 1010,
+        "source": "gcc-lib:libc.a(libc_a-vfscanf.o)"
+      },
+      {
+        "bytes": 984,
+        "source": "other:ccaRr9Ju.ltrans0.ltrans.o"
+      },
+      {
+        "bytes": 936,
+        "source": "source/ai/actions.c"
+      },
+      {
+        "bytes": 784,
+        "source": "source/input/input_xbox.c"
+      },
+      {
+        "bytes": 690,
+        "source": "gcc-lib:libc.a(libc_a-svfiscanf.o)"
+      },
+      {
+        "bytes": 688,
+        "source": "sdk:lib"
+      },
+      {
+        "bytes": 648,
+        "source": "gcc-lib:libc.a(libc_a-ctype_.o)"
+      },
+      {
+        "bytes": 592,
+        "source": "source/text/text_group.c"
+      },
+      {
+        "bytes": 572,
+        "source": "gcc-lib:libc.a(libc_a-strerror.o)"
+      },
+      {
+        "bytes": 568,
+        "source": "source/hs/hs_runtime.c"
+      },
+      {
+        "bytes": 528,
+        "source": "closure:ps2_memory.o"
+      },
+      {
+        "bytes": 528,
+        "source": "closure:ps2_edge.o"
+      },
+      {
+        "bytes": 492,
+        "source": "source/ai/actor_moving.c"
+      },
+      {
+        "bytes": 487,
+        "source": "source/ai/action_obey.c"
+      },
+      {
+        "bytes": 445,
+        "source": "source/hs/hs_globals_external.c"
+      },
+      {
+        "bytes": 418,
+        "source": "source/units/dialogue_definitions.c"
+      },
+      {
+        "bytes": 400,
+        "source": "gcc-lib:libc.a(libc_a-vfiprintf.o)"
+      },
+      {
+        "bytes": 400,
+        "source": "gcc-lib:libc.a(libc_a-svfprintf.o)"
+      },
+      {
+        "bytes": 400,
+        "source": "gcc-lib:libc.a(libc_a-vfprintf.o)"
+      },
+      {
+        "bytes": 392,
+        "source": "gcc-lib:libm.a(libm_a-e_rem_pio2.o)"
+      },
+      {
+        "bytes": 380,
+        "source": "source/units/units.c"
+      },
+      {
+        "bytes": 324,
+        "source": "source/units/bipeds.c"
+      },
+      {
+        "bytes": 296,
+        "source": "gcc-lib:libc.a(libc_a-strtod.o)"
+      },
+      {
+        "bytes": 296,
+        "source": "gcc-lib:libc.a(libc_a-mprec.o)"
+      },
+      {
+        "bytes": 288,
+        "source": "parent:60869cbb0e20/stream/sha256.c"
+      },
+      {
+        "bytes": 272,
+        "source": "source/cseries/cseries.c"
+      },
+      {
+        "bytes": 256,
+        "source": "gcc-lib:libc.a(libc_a-gdtoa-gethex.o)"
+      },
+      {
+        "bytes": 256,
+        "source": "gcc-lib:libgcc.a(_clz.o)"
+      },
+      {
+        "bytes": 226,
+        "source": "source/game/game_engine.c"
+      },
+      {
+        "bytes": 204,
+        "source": "source/physics/collisions.c"
+      },
+      {
+        "bytes": 196,
+        "source": "source/hs/hs_compile.c"
+      },
+      {
+        "bytes": 172,
+        "source": "source/units/vehicles.c"
+      },
+      {
+        "bytes": 168,
+        "source": "source/ai/actor_looking.c"
+      },
+      {
+        "bytes": 166,
+        "source": "source/camera/director.c"
+      },
+      {
+        "bytes": 144,
+        "source": "parent:60869cbb0e20/stream/hcu_owner_telemetry.c"
+      },
+      {
+        "bytes": 144,
+        "source": "source/ai/actor_perception.c"
+      },
+      {
+        "bytes": 144,
+        "source": "source/math/real_math.c"
+      },
+      {
+        "bytes": 128,
+        "source": "source/rasterizer/rasterizer_swizzle.c"
+      },
+      {
+        "bytes": 124,
+        "source": "source/ai/actor_firing_position.c"
+      },
+      {
+        "bytes": 122,
+        "source": "source/interface/hud_draw.c"
+      },
+      {
+        "bytes": 120,
+        "source": "source/math/geometry.c"
+      },
+      {
+        "bytes": 120,
+        "source": "source/objects/objects.c"
+      },
+      {
+        "bytes": 111,
+        "source": "source/items/weapons.c"
+      },
+      {
+        "bytes": 108,
+        "source": "source/game/players.c"
+      },
+      {
+        "bytes": 106,
+        "source": "source/interface/first_person_weapons.c"
+      },
+      {
+        "bytes": 102,
+        "source": "closure:ps2_crt.o"
+      },
+      {
+        "bytes": 96,
+        "source": "gcc-lib:libc.a(libc_a-mktime.o)"
+      },
+      {
+        "bytes": 96,
+        "source": "source/ai/encounters.c"
+      }
+    ],
+    "text": [
+      {
+        "bytes": 67780,
+        "source": "source/units/units.c"
+      },
+      {
+        "bytes": 59816,
+        "source": "closure:ps2_abi.o"
+      },
+      {
+        "bytes": 48972,
+        "source": "source/game/game_engine.c"
+      },
+      {
+        "bytes": 41820,
+        "source": "sdk:lib"
+      },
+      {
+        "bytes": 39188,
+        "source": "source/objects/objects.c"
+      },
+      {
+        "bytes": 37856,
+        "source": "source/hs/hs.c"
+      },
+      {
+        "bytes": 33172,
+        "source": "source/ai/actor_perception.c"
+      },
+      {
+        "bytes": 31048,
+        "source": "source/ai/ai_communication.c"
+      },
+      {
+        "bytes": 28544,
+        "source": "source/units/bipeds.c"
+      },
+      {
+        "bytes": 26484,
+        "source": "source/game/players.c"
+      },
+      {
+        "bytes": 25232,
+        "source": "source/ai/encounters.c"
+      },
+      {
+        "bytes": 23884,
+        "source": "source/ai/ai_script.c"
+      },
+      {
+        "bytes": 23776,
+        "source": "source/ai/actors.c"
+      },
+      {
+        "bytes": 23044,
+        "source": "source/ai/actions.c"
+      },
+      {
+        "bytes": 21704,
+        "source": "source/ai/actor_moving.c"
+      },
+      {
+        "bytes": 20680,
+        "source": "source/items/weapons.c"
+      },
+      {
+        "bytes": 20192,
+        "source": "source/hs/hs_compile.c"
+      },
+      {
+        "bytes": 18476,
+        "source": "source/sound/sound_manager.c"
+      },
+      {
+        "bytes": 18156,
+        "source": "source/units/vehicles.c"
+      },
+      {
+        "bytes": 17444,
+        "source": "source/models/model_animations.c"
+      },
+      {
+        "bytes": 17404,
+        "source": "source/hs/hs_runtime.c"
+      },
+      {
+        "bytes": 17204,
+        "source": "source/physics/physics.c"
+      },
+      {
+        "bytes": 16772,
+        "source": "source/ai/actor_firing_position.c"
+      },
+      {
+        "bytes": 15240,
+        "source": "other:ccaRr9Ju.ltrans0.ltrans.o"
+      },
+      {
+        "bytes": 14816,
+        "source": "source/ai/ai.c"
+      },
+      {
+        "bytes": 14772,
+        "source": "source/main/main.c"
+      },
+      {
+        "bytes": 14688,
+        "source": "source/interface/hud_draw.c"
+      },
+      {
+        "bytes": 14616,
+        "source": "gcc-lib:libc.a(libc_a-vfprintf.o)"
+      },
+      {
+        "bytes": 14264,
+        "source": "gcc-lib:libc.a(libc_a-svfprintf.o)"
+      },
+      {
+        "bytes": 13936,
+        "source": "source/effects/effects.c"
+      },
+      {
+        "bytes": 13700,
+        "source": "source/effects/decals.c"
+      },
+      {
+        "bytes": 12984,
+        "source": "source/ai/action_obey.c"
+      },
+      {
+        "bytes": 12976,
+        "source": "source/items/projectiles.c"
+      },
+      {
+        "bytes": 12712,
+        "source": "source/ai/actor_combat.c"
+      },
+      {
+        "bytes": 12688,
+        "source": "source/physics/collisions.c"
+      },
+      {
+        "bytes": 12372,
+        "source": "source/physics/collision_bsp.c"
+      },
+      {
+        "bytes": 12344,
+        "source": "source/ai/actor_looking.c"
+      },
+      {
+        "bytes": 12296,
+        "source": "source/objects/damage.c"
+      },
+      {
+        "bytes": 12016,
+        "source": "source/game/player_control.c"
+      },
+      {
+        "bytes": 11956,
+        "source": "source/math/real_math.c"
+      },
+      {
+        "bytes": 11744,
+        "source": "source/sound/sound_dsound_xbox.c"
+      },
+      {
+        "bytes": 11192,
+        "source": "source/camera/observer.c"
+      },
+      {
+        "bytes": 10968,
+        "source": "source/interface/hud_weapon.c"
+      },
+      {
+        "bytes": 10732,
+        "source": "closure:ps2_platform.o"
+      },
+      {
+        "bytes": 10592,
+        "source": "gcc-lib:libc.a(libc_a-vfscanf.o)"
+      },
+      {
+        "bytes": 9868,
+        "source": "source/ai/path.c"
+      },
+      {
+        "bytes": 9688,
+        "source": "gcc-lib:libc.a(libc_a-svfiscanf.o)"
+      },
+      {
+        "bytes": 9636,
+        "source": "closure:ps2_edge.o"
+      },
+      {
+        "bytes": 9480,
+        "source": "source/interface/first_person_weapons.c"
+      },
+      {
+        "bytes": 9440,
+        "source": "source/ai/action_alert.c"
+      },
+      {
+        "bytes": 9108,
+        "source": "port/linux/game/tag_validate.c"
+      },
+      {
+        "bytes": 7912,
+        "source": "source/physics/collision_features.c"
+      },
+      {
+        "bytes": 7848,
+        "source": "gcc-lib:libc.a(libc_a-strtod.o)"
+      },
+      {
+        "bytes": 7812,
+        "source": "source/effects/particle_systems.c"
+      },
+      {
+        "bytes": 7768,
+        "source": "source/saved games/saved_game_files.c"
+      },
+      {
+        "bytes": 7724,
+        "source": "source/sound/game_sound.c"
+      },
+      {
+        "bytes": 7628,
+        "source": "parent:60869cbb0e20/stream/hcu_map_service.c"
+      },
+      {
+        "bytes": 7616,
+        "source": "source/objects/object_lights.c"
+      },
+      {
+        "bytes": 7612,
+        "source": "source/objects/widgets/flags.c"
+      },
+      {
+        "bytes": 7492,
+        "source": "source/interface/hud.c"
+      }
+    ]
+  }
+}

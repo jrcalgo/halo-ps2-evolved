@@ -1,0 +1,111 @@
+{
+  "lane": "alloc-a",
+  "date": "2026-10-24",
+  "verdicts": [
+    {
+      "file": "source/cseries/debug_memory.c",
+      "line": 499,
+      "function": "debug_malloc",
+      "verdict": "bounded-after-binding",
+      "evidence": "ps2_memory.c __wrap_malloc/__wrap_free/GlobalReAlloc route to the 1 MiB compat arena after activation (sdk_realloc/sdk_free/refused_unbound counters); tools/test_hcu_ps2_malloc_endless.py ops=2000000 sdk_fallbacks=0; pre-activation SDK calls are counted as sdk_malloc_preactivation, not removed"
+    },
+    {
+      "file": "source/cseries/debug_memory.c",
+      "line": 548,
+      "function": "debug_free",
+      "verdict": "bounded-after-binding",
+      "evidence": "ps2_memory.c __wrap_malloc/__wrap_free/GlobalReAlloc route to the 1 MiB compat arena after activation (sdk_realloc/sdk_free/refused_unbound counters); tools/test_hcu_ps2_malloc_endless.py ops=2000000 sdk_fallbacks=0; pre-activation SDK calls are counted as sdk_malloc_preactivation, not removed"
+    },
+    {
+      "file": "source/cseries/debug_memory.c",
+      "line": 590,
+      "function": "debug_realloc",
+      "verdict": "bounded-after-binding",
+      "evidence": "ps2_memory.c __wrap_malloc/__wrap_free/GlobalReAlloc route to the 1 MiB compat arena after activation (sdk_realloc/sdk_free/refused_unbound counters); tools/test_hcu_ps2_malloc_endless.py ops=2000000 sdk_fallbacks=0; pre-activation SDK calls are counted as sdk_malloc_preactivation, not removed; GlobalReAlloc copies min(old extent, new size)"
+    },
+    {
+      "file": "source/memory/memory_pool.c",
+      "line": 128,
+      "function": "memory_pool_new",
+      "verdict": "load-only",
+      "evidence": "constructs a pool at level load; no steady-state call in the traced callers"
+    },
+    {
+      "file": "source/memory/memory_pool.c",
+      "line": 146,
+      "function": "memory_pool_delete",
+      "verdict": "load-only",
+      "evidence": "pool teardown; not on the steady-state path"
+    },
+    {
+      "file": "source/memory/memory_pool.c",
+      "line": 280,
+      "function": "memory_pool_block_reallocate",
+      "verdict": "bounded-in-pool",
+      "evidence": "host test tests/hcu_c2_alloc_a_main.c: 100000 cycles, used_after_drain=0, escapes=0, corruptions=0; move path allocates inside the pool and frees the old block; a failed reallocate keeps the old block"
+    },
+    {
+      "file": "source/memory/memory_pool.c",
+      "line": 284,
+      "function": "memory_pool_block_reallocate",
+      "verdict": "bounded-in-pool",
+      "evidence": "host test tests/hcu_c2_alloc_a_main.c: 100000 cycles, used_after_drain=0, escapes=0, corruptions=0; move path allocates inside the pool and frees the old block; a failed reallocate keeps the old block"
+    },
+    {
+      "file": "source/objects/objects.c",
+      "line": 758,
+      "function": "object_header_new",
+      "verdict": "bounded-in-pool",
+      "evidence": "object_header_block_allocate and object_header_delete call the pool directly; bounded by object_memory_pool and FALSE on exhaustion; the objects.c path itself is not host-compiled, so the bound is evidenced at pool level only"
+    },
+    {
+      "file": "source/objects/objects.c",
+      "line": 787,
+      "function": "object_header_delete",
+      "verdict": "bounded-in-pool",
+      "evidence": "object_header_block_allocate and object_header_delete call the pool directly; bounded by object_memory_pool and FALSE on exhaustion; the objects.c path itself is not host-compiled, so the bound is evidenced at pool level only"
+    },
+    {
+      "file": "source/objects/objects.c",
+      "line": 811,
+      "function": "object_header_block_allocate",
+      "verdict": "bounded-in-pool",
+      "evidence": "object_header_block_allocate and object_header_delete call the pool directly; bounded by object_memory_pool and FALSE on exhaustion; the objects.c path itself is not host-compiled, so the bound is evidenced at pool level only"
+    },
+    {
+      "file": "source/objects/objects.c",
+      "line": 1125,
+      "function": "objects_initialize",
+      "verdict": "load-only",
+      "evidence": "level-load initialisation of the game state pool"
+    },
+    {
+      "file": "source/objects/objects.c",
+      "line": 1132,
+      "function": "objects_initialize",
+      "verdict": "load-only",
+      "evidence": "level-load initialisation of the object pool"
+    },
+    {
+      "file": "source/objects/objects.c",
+      "line": 1144,
+      "function": "objects_initialize",
+      "verdict": "load-only",
+      "evidence": "level-load initialisation"
+    },
+    {
+      "file": "source/objects/objects.c",
+      "line": 1202,
+      "function": "objects_dispose_from_old_map",
+      "verdict": "load-only",
+      "evidence": "map-change teardown, paired with object allocation"
+    },
+    {
+      "file": "source/objects/objects.c",
+      "line": 4734,
+      "function": "object_name_list_allocate",
+      "verdict": "unverified-open",
+      "evidence": "game_state_malloc on a post-load-candidate path; not traced in this lane"
+    }
+  ]
+}
