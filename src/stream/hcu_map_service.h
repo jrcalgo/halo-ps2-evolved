@@ -20,6 +20,11 @@ typedef int (*hcu_map_profile_compatibility_fn)(void *context,
  * service never allocates or frees any of it. Spans must be pairwise disjoint.
  * frame_owner is the bitmap frame owner whose dispatcher leases gate unload;
  * when it is NULL, readers cannot be proven drained and unload fails closed. */
+/* Called at map boundaries: "map-loaded" after a successful load, "map-released"
+ * after an owner's storage is released, "map-empty" after a failed load. */
+typedef void (*hcu_map_service_boundary_fn)(void *context, const char *phase,
+	unsigned int cycle);
+
 typedef struct {
 	hcu_asset_profile_read_at package_read_at;
 	void *package_context;
@@ -41,6 +46,18 @@ typedef struct {
 	size_t stream_scratch_bytes;
 	uint32_t maximum_tag_image_bytes;
 	const hcu_bitmap_frame_owner *frame_owner;
+	/* Parent renderer drain predicate. Unload and successor staging require it
+	 * to return nonzero: its DMA fence observed and no reference left to the
+	 * map's world or texture storage. NULL fails closed. */
+	int (*renderer_drained)(void *context);
+	void *renderer_context;
+	/* Caller-owned CE/CBSP segment residency. Bound before every prepare, so a
+	 * registered runtime never reads whole chunks. The arena is whole 64 KiB
+	 * slots, 16-byte aligned, and disjoint from every other span. */
+	hcu_asset_residency_entry *residency_entries;
+	uint32_t residency_entry_capacity;
+	void *residency_arena;
+	size_t residency_arena_bytes;
 } hcu_map_profile_runtime;
 
 typedef struct {
@@ -77,6 +94,23 @@ typedef struct {
 	hcu_profile_mount profile_mount;
 	hcu_profile_mount profile_candidate;
 	int profile_candidate_ready;
+	/* Foreign successor: a second caller-owned runtime for another catalog map.
+	 * It is staged while the live owner keeps its storage, and becomes the
+	 * registered runtime when CE has released that owner. */
+	int successor_registered;
+	int successor_staged;
+	hcu_map_profile_runtime successor;
+	char successor_map_name[16];
+	hcu_asset_profile_view successor_view;
+	/* Legacy (non-runtime) production path only. When set, CE's legacy unloader
+	 * and loader refuse to release or replace map storage while the predicate
+	 * reports the renderer busy. NULL keeps the host fixtures unchanged. */
+	int (*legacy_renderer_drained)(void *context);
+	void *legacy_renderer_context;
+	/* Optional boundary hook. boundary_cycle counts successful map loads. */
+	hcu_map_service_boundary_fn boundary_hook;
+	void *boundary_context;
+	unsigned int boundary_cycle;
 } hcu_map_service;
 
 	/* Register the parent-owned loader/unloader after FileXio is initialized.
@@ -114,7 +148,25 @@ int hcu_map_service_register_runtime(hcu_map_service *service,
 	const char *map_name, const hcu_map_profile_runtime *runtime);
 /* Refused while a profile owner is mounted or a successor is staged. */
 int hcu_map_service_unregister_runtime(hcu_map_service *service);
-void hcu_map_service_shutdown(hcu_map_service *service);
+/* Register a second caller-owned runtime for a different catalog map while a
+ * runtime is registered, even while its owner is mounted. The successor's
+ * spans must be disjoint from the registered runtime's, so staging never
+ * writes the live owner's storage. It becomes the registered runtime when CE
+ * releases the owner and a load of the successor begins. */
+int hcu_map_service_register_successor_runtime(hcu_map_service *service,
+	const char *map_name, const hcu_map_profile_runtime *runtime);
+/* Returns zero with the service and storage ownership intact while readers or
+ * callbacks remain live. The caller must drain and retry before freeing backing. */
+int hcu_map_service_shutdown(hcu_map_service *service);
+/* Optional, legacy path only, after init: the renderer's drain predicate. Map
+ * storage is released or replaced only while it returns nonzero. Refused while
+ * a runtime is registered, which carries its own renderer_drained gate. */
+int hcu_map_service_set_legacy_renderer_drained(hcu_map_service *service,
+	int (*renderer_drained)(void *context), void *context);
+/* Optional, after init: a boundary hook for per-cycle telemetry. NULL clears it
+ * and makes every boundary a no-op. Resets the cycle counter to zero. */
+int hcu_map_service_set_boundary_hook(hcu_map_service *service,
+	hcu_map_service_boundary_fn hook, void *context);
 /* Read-only diagnostic trace used by the opt-in M2 CE lifecycle fixture. */
 void hcu_map_service_lifecycle_trace(const char *phase, unsigned int cycle);
 #ifdef HALO_PS2_M2_UI_LIFECYCLE_TEST

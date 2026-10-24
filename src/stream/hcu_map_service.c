@@ -27,6 +27,14 @@ extern uint8_t *world_load_section_with_scratch(arena_t *owner,
 #endif
 
 static hcu_map_service *s_service;
+
+/* A NULL hook is a no-op, so the host fixtures and the default build are unchanged. */
+static void notify_boundary(hcu_map_service *service, const char *phase)
+{
+	if (service->boundary_hook)
+		service->boundary_hook(service->boundary_context, phase, service->boundary_cycle);
+}
+
 #ifdef HALO_PS2_M2_UI_LIFECYCLE_TEST
 static int s_lifecycle_fail_preflight_once;
 static int s_lifecycle_deferred_failure_armed;
@@ -288,32 +296,96 @@ static int span_overlaps(const void *left, size_t left_bytes,
 	return a < b + right_bytes && b < a + left_bytes;
 }
 
-static int runtime_spans_valid(const hcu_map_profile_runtime *runtime)
+/* Residency entries and the segment arena are caller-owned spans like the
+ * rest, so they join the same disjointness check. */
+#define RUNTIME_SPAN_COUNT 5
+
+static void runtime_spans(const hcu_map_profile_runtime *runtime,
+	const void *base[RUNTIME_SPAN_COUNT], size_t bytes[RUNTIME_SPAN_COUNT])
 {
-	const void *base[3];
-	size_t bytes[3];
-	int i, j;
 	base[0] = runtime->metadata_storage;
 	bytes[0] = runtime->metadata_storage_bytes;
 	base[1] = runtime->relocation_storage;
 	bytes[1] = runtime->relocation_storage_bytes;
 	base[2] = runtime->stream_scratch;
 	bytes[2] = runtime->stream_scratch_bytes;
-	for (i = 0; i < 3; ++i)
+	base[3] = runtime->residency_entries;
+	bytes[3] = (size_t)runtime->residency_entry_capacity *
+		sizeof(*runtime->residency_entries);
+	base[4] = runtime->residency_arena;
+	bytes[4] = runtime->residency_arena_bytes;
+}
+
+/* A runtime must carry whole 64 KiB residency slots; a missing or ragged arena
+ * fails closed, since the mount would otherwise fall back to whole-chunk reads. */
+static int runtime_residency_valid(const hcu_map_profile_runtime *runtime)
+{
+	return runtime->residency_entries && runtime->residency_entry_capacity &&
+		runtime->residency_arena &&
+		runtime->residency_arena_bytes >= HCU_PROFILE_MOUNT_RESIDENCY_SEGMENT_BYTES &&
+		runtime->residency_arena_bytes % HCU_PROFILE_MOUNT_RESIDENCY_SEGMENT_BYTES == 0 &&
+		((uintptr_t)runtime->residency_arena & 15u) == 0;
+}
+
+static int runtime_spans_valid(const hcu_map_profile_runtime *runtime)
+{
+	const void *base[RUNTIME_SPAN_COUNT];
+	size_t bytes[RUNTIME_SPAN_COUNT];
+	int i, j;
+	runtime_spans(runtime, base, bytes);
+	for (i = 0; i < RUNTIME_SPAN_COUNT; ++i)
 		if (!base[i] || !bytes[i]) return 0;
-	for (i = 0; i < 3; ++i)
-		for (j = i + 1; j < 3; ++j)
+	for (i = 0; i < RUNTIME_SPAN_COUNT; ++i)
+		for (j = i + 1; j < RUNTIME_SPAN_COUNT; ++j)
 			if (span_overlaps(base[i], bytes[i], base[j], bytes[j])) return 0;
 	return 1;
+}
+
+/* Binds the runtime's residency before every prepare. Prepare on an unbound
+ * mount would read whole chunks, so a failed bind stops the stage. */
+static int profile_bind_residency(hcu_profile_mount *mount,
+	const hcu_map_profile_runtime *rt)
+{
+	return runtime_residency_valid(rt) &&
+		hcu_profile_mount_bind_residency(mount, rt->residency_entries,
+			rt->residency_entry_capacity, rt->residency_arena,
+			rt->residency_arena_bytes) == HCU_PROFILE_MOUNT_OK;
 }
 
 /* The bitmap frame owner's own state is the lease drain hook: no frame in
  * progress, no GPU work pending, and no dispatcher lease outstanding. A missing
  * or unbound owner cannot prove drain, so it fails closed. */
-static int profile_readers_drained(const hcu_bitmap_frame_owner *owner)
+/* Every span of one runtime against every span of another. Storage that
+ * overlaps would let a successor's prepare write under the live owner. */
+static int runtime_spans_disjoint(const hcu_map_profile_runtime *left,
+	const hcu_map_profile_runtime *right)
 {
+	const void *base_left[RUNTIME_SPAN_COUNT];
+	const void *base_right[RUNTIME_SPAN_COUNT];
+	size_t bytes_left[RUNTIME_SPAN_COUNT], bytes_right[RUNTIME_SPAN_COUNT];
+	int i, j;
+	runtime_spans(left, base_left, bytes_left);
+	runtime_spans(right, base_right, bytes_right);
+	for (i = 0; i < RUNTIME_SPAN_COUNT; ++i)
+		for (j = 0; j < RUNTIME_SPAN_COUNT; ++j)
+			if (span_overlaps(base_left[i], bytes_left[i], base_right[j],
+					bytes_right[j]))
+				return 0;
+	return 1;
+}
+
+/* The bitmap frame owner's own state is the lease drain hook: no frame in
+ * progress, no GPU work pending, and no dispatcher lease outstanding. The
+ * parent renderer's predicate adds the DMA fence and the world/texture
+ * release. A missing owner, unbound owner or predicate cannot prove drain, so
+ * it fails closed. */
+static int profile_readers_drained(const hcu_map_profile_runtime *rt)
+{
+	const hcu_bitmap_frame_owner *owner = rt->frame_owner;
 	return owner && owner->bound && !owner->in_frame && !owner->gpu_pending &&
-		owner->dispatch && owner->dispatch->lease_count == 0;
+		owner->dispatch && owner->dispatch->lease_count == 0 &&
+		ps2_cache_bsp_readers_drained() && rt->renderer_drained &&
+		rt->renderer_drained(rt->renderer_context) != 0;
 }
 
 static int profile_owner_live(const hcu_map_service *service)
@@ -327,8 +399,77 @@ static void discard_profile_candidate(hcu_map_service *service)
 	service->profile_candidate_ready = 0;
 	service->preflight_ready = 0;
 	service->reload_pending = 0;
+	service->successor_staged = 0;
 	service->staged_map[0] = 0;
 	service->staged_entry = NULL;
+}
+
+/* Stages a foreign successor under its own runtime. The live owner keeps its
+ * storage and mount: nothing here publishes, and the successor's spans were
+ * checked disjoint from the registered runtime's at registration. */
+static int profile_preflight_successor(hcu_map_service *service,
+	const hcu_map_catalog_entry *entry)
+{
+	const hcu_map_profile_runtime *rt = &service->successor;
+	hcu_asset_profile_view *view = &service->successor_view;
+	hcu_profile_metadata_view metadata;
+	discard_profile_candidate(service);
+	if (!runtime_spans_valid(rt) || !runtime_spans_disjoint(&service->runtime, rt) ||
+		rt->maximum_tag_image_bytes == 0 ||
+		(unsigned long)rt->maximum_tag_image_bytes >
+			physical_memory_get_tag_cache_size()) {
+		printf("HALO_PS2_LOCAL profile-preflight rejected reason=successor-capacity-or-spans map=%s\n",
+			entry->identity.map_name);
+		return 0;
+	}
+	if (hcu_asset_profile_preflight_reader(rt->package_read_at,
+			rt->package_context, rt->package_size, rt->profile_id, view) != HCU_ASSET_PROFILE_OK ||
+		!verify_profile_package_hash(rt->package_read_at, rt->package_context,
+			rt->package_size, rt->package_sha256) ||
+		!rt->compatibility ||
+		!rt->compatibility(rt->compatibility_context, entry, view)) {
+		printf("HALO_PS2_LOCAL profile-preflight rejected reason=successor-package-gate map=%s\n",
+			entry->identity.map_name);
+		return 0;
+	}
+	if (hcu_profile_metadata_decode(rt->metadata_bytes, rt->metadata_size,
+			rt->metadata_sha256, rt->profile_id, rt->metadata_storage,
+			rt->metadata_storage_bytes, &metadata) != HCU_PROFILE_METADATA_OK ||
+		metadata.cbsp_count > 0xffffu) {
+		printf("HALO_PS2_LOCAL profile-preflight rejected reason=successor-metadata map=%s\n",
+			entry->identity.map_name);
+		return 0;
+	}
+	hcu_profile_mount_init(&service->profile_candidate);
+	if (!profile_bind_residency(&service->profile_candidate, rt)) {
+		printf("HALO_PS2_LOCAL profile-preflight rejected reason=successor-residency-bind map=%s\n",
+			entry->identity.map_name);
+		hcu_profile_mount_init(&service->profile_candidate);
+		return 0;
+	}
+	if (hcu_profile_mount_prepare(&service->profile_candidate, view,
+			rt->profile_id, entry, metadata.cbsp_bindings,
+			(uint16_t)metadata.cbsp_count, metadata.resource_ranges,
+			metadata.resource_range_count, rt->source_read, rt->source_context,
+			service->backend, rt->maximum_tag_image_bytes,
+			rt->relocation_storage, rt->relocation_storage_bytes,
+			rt->stream_scratch, rt->stream_scratch_bytes) != HCU_PROFILE_MOUNT_OK) {
+		printf("HALO_PS2_LOCAL profile-preflight rejected reason=successor-mount-prepare map=%s\n",
+			entry->identity.map_name);
+		hcu_profile_mount_init(&service->profile_candidate);
+		return 0;
+	}
+	/* The successor replaces the live owner, so its stage is a reload. */
+	service->profile_candidate_ready = 1;
+	service->successor_staged = 1;
+	service->reload_pending = 1;
+	service->staged_entry = entry;
+	memcpy(service->staged_map, entry->identity.map_name,
+		strlen(entry->identity.map_name) + 1);
+	service->preflight_ready = 1;
+	printf("HALO_PS2_LOCAL profile-preflight result=1 map=%s successor=1\n",
+		entry->identity.map_name);
+	return 1;
 }
 
 static int profile_preflight(hcu_map_service *service,
@@ -337,21 +478,51 @@ static int profile_preflight(hcu_map_service *service,
 	const hcu_map_profile_runtime *rt = &service->runtime;
 	hcu_asset_profile_view candidate;
 	hcu_profile_metadata_view metadata;
-	if (!service->runtime_registered || !entry ||
-		strcmp(service->runtime_map_name, entry->identity.map_name) != 0)
+	if (!service->runtime_registered || !entry)
 		return 0;
+	if (strcmp(service->runtime_map_name, entry->identity.map_name) != 0) {
+		if (service->successor_registered &&
+			strcmp(service->successor_map_name, entry->identity.map_name) == 0)
+			return profile_preflight_successor(service, entry);
+		return 0;
+	}
 	if (profile_owner_live(service)) {
-		/* Teardown is allowed only for an exact same-map reload whose bitmap readers
-		 * have released every lease. The loader repeats the full checks after the
-		 * old owner is gone. Any other map keeps the live owner untouched. */
+		uint8_t metadata_digest[32];
+		sha256_context metadata_hash;
+		/* Revalidate the exact successor before authorizing CE teardown. Decode
+		 * buffers and relocation storage still belong to the live map here, so
+		 * check their retained pins instead of writing a second prepare over them. */
 		if (strcmp(service->profile_mount.source_identity_snapshot.map_name,
 			entry->identity.map_name) != 0) {
 			printf("HALO_PS2_LOCAL profile-preflight rejected reason=owner-live map=%s\n",
 				entry->identity.map_name);
 			return 0;
 		}
-		if (!profile_readers_drained(rt->frame_owner)) {
+		if (!profile_readers_drained(rt)) {
+			discard_profile_candidate(service);
 			printf("HALO_PS2_LOCAL profile-preflight rejected reason=bitmap-leases-outstanding\n");
+			return 0;
+		}
+		if (!rt->metadata_bytes || !rt->metadata_size ||
+			rt->metadata_size > UINT32_MAX || !runtime_spans_valid(rt) ||
+			!hcu_profile_mount_inputs_match(&service->profile_mount) ||
+			hcu_asset_profile_preflight_reader(rt->package_read_at,
+				rt->package_context, rt->package_size, rt->profile_id,
+				&candidate) != HCU_ASSET_PROFILE_OK ||
+			!verify_profile_package_hash(rt->package_read_at, rt->package_context,
+				rt->package_size, rt->package_sha256) ||
+			!rt->compatibility || !rt->compatibility(rt->compatibility_context,
+				entry, &candidate)) {
+			discard_profile_candidate(service);
+			printf("HALO_PS2_LOCAL profile-preflight rejected reason=live-successor-gate\n");
+			return 0;
+		}
+		sha256_init(&metadata_hash);
+		sha256_update(&metadata_hash, rt->metadata_bytes, (uint32_t)rt->metadata_size);
+		sha256_final(&metadata_hash, metadata_digest);
+		if (memcmp(metadata_digest, rt->metadata_sha256, sizeof(metadata_digest))) {
+			discard_profile_candidate(service);
+			printf("HALO_PS2_LOCAL profile-preflight rejected reason=live-metadata-pin\n");
 			return 0;
 		}
 		service->staged_entry = entry;
@@ -360,6 +531,9 @@ static int profile_preflight(hcu_map_service *service,
 		service->reload_pending = 1;
 		return 1;
 	}
+	/* A new attempt supersedes every earlier empty-state stage, including when
+	 * corruption is detected before metadata or mount preparation can run. */
+	discard_profile_candidate(service);
 	if (!runtime_spans_valid(rt) || rt->maximum_tag_image_bytes == 0 ||
 		(unsigned long)rt->maximum_tag_image_bytes >
 			physical_memory_get_tag_cache_size()) {
@@ -386,6 +560,12 @@ static int profile_preflight(hcu_map_service *service,
 		return 0;
 	}
 	hcu_profile_mount_init(&service->profile_candidate);
+	if (!profile_bind_residency(&service->profile_candidate, rt)) {
+		printf("HALO_PS2_LOCAL profile-preflight rejected reason=residency-bind map=%s\n",
+			entry->identity.map_name);
+		hcu_profile_mount_init(&service->profile_candidate);
+		return 0;
+	}
 	if (hcu_profile_mount_prepare(&service->profile_candidate,
 			&service->profile_view, rt->profile_id, entry,
 			metadata.cbsp_bindings, (uint16_t)metadata.cbsp_count,
@@ -427,6 +607,17 @@ static int profile_load(hcu_map_service *service, const char *map_name)
 		if (service->reload_pending) discard_profile_candidate(service);
 		return 0;
 	}
+	if (service->successor_staged) {
+		/* CE has released the old owner, so the successor's runtime becomes the
+		 * registered one. A failed load below leaves it registered for a retry. */
+		service->runtime = service->successor;
+		memset(service->runtime_map_name, 0, sizeof(service->runtime_map_name));
+		memcpy(service->runtime_map_name, service->successor_map_name,
+			strlen(service->successor_map_name) + 1);
+		service->profile_view = service->successor_view;
+		service->successor_registered = 0;
+		service->successor_staged = 0;
+	}
 	service->profile_mount = service->profile_candidate;
 	hcu_profile_mount_init(&service->profile_candidate);
 	service->profile_candidate_ready = 0;
@@ -442,6 +633,7 @@ static int profile_load(hcu_map_service *service, const char *map_name)
 		service->staged_entry = NULL;
 		printf("HALO_PS2_LOCAL profile-load failed map=%s state=empty\n",
 			entry->identity.map_name);
+		notify_boundary(service, "map-empty");
 		return 0;
 	}
 	service->preflight_ready = 0;
@@ -451,17 +643,20 @@ static int profile_load(hcu_map_service *service, const char *map_name)
 #ifdef HALO_PS2_M2_ANIMATION_TRACE
 	ps2_animation_trace_map_epoch_advance();
 #endif
+	service->boundary_cycle++;
+	notify_boundary(service, "map-loaded");
 	return 1;
 }
 
 static void profile_unload(hcu_map_service *service)
 {
 	int preserve_reload = service->reload_pending;
-	if (profile_owner_live(service)) {
+	int owner_live = profile_owner_live(service);
+	if (owner_live) {
 		/* CE's unloader cannot report failure. Keep the mount and its storage
 		 * published rather than unmount under a live bitmap reader; profile_load
 		 * refuses while the owner remains live. */
-		if (!profile_readers_drained(service->runtime.frame_owner)) {
+		if (!profile_readers_drained(&service->runtime)) {
 			printf("HALO_PS2_LOCAL profile-unload blocked reason=bitmap-leases-outstanding\n");
 			return;
 		}
@@ -475,6 +670,20 @@ static void profile_unload(hcu_map_service *service)
 #endif
 	service->preflight_ready = 0;
 	if (!preserve_reload) discard_profile_candidate(service);
+	if (owner_live) notify_boundary(service, "map-released");
+}
+
+/* Legacy owners release only after the renderer's fence has retired. Without a
+ * predicate (host fixtures) the legacy path behaves as before. */
+static int legacy_renderer_ready(const hcu_map_service *service)
+{
+	return !service->legacy_renderer_drained ||
+		service->legacy_renderer_drained(service->legacy_renderer_context) != 0;
+}
+
+static int legacy_owner_live(const hcu_map_service *service)
+{
+	return service->mount.active || service->source.active;
 }
 
 static int map_loader(void *context, const char *map_name)
@@ -484,6 +693,13 @@ static int map_loader(void *context, const char *map_name)
 	int result;
 	if (!service || !service->initialized) return 0;
 	if (service->runtime_registered) return profile_load(service, map_name);
+	if (service->legacy_renderer_drained && service->mount.active) {
+		/* The previous mount was not released, so its storage is still in use.
+		 * An open source alone is the validated stage this load consumes. */
+		printf("HALO_PS2_LOCAL map-mount rejected reason=owner-still-active\n");
+		clear_staged_request(service);
+		return 0;
+	}
 	/* A deferred reload is legal only after CE has actually released the old
 	 * owner. Otherwise do not mistake the active map's same-map shortcut for a
 	 * fresh post-unload validation pass. */
@@ -540,6 +756,8 @@ static int map_loader(void *context, const char *map_name)
 		/* New mounted tag/object indices must not alias the prior map's trace. */
 		ps2_animation_trace_map_epoch_advance();
 #endif
+		service->boundary_cycle++;
+		notify_boundary(service, "map-loaded");
 		return 1;
 	}
 	ctag_map_source_close(&service->source);
@@ -547,6 +765,7 @@ static int map_loader(void *context, const char *map_name)
 	service->staged_map[0] = 0;
 	service->staged_entry = NULL;
 	service->reload_pending = 0;
+	notify_boundary(service, "map-empty");
 	return 0;
 }
 
@@ -564,11 +783,19 @@ static void map_unloader(void *context)
 		profile_unload(service);
 		return;
 	}
+	if (legacy_owner_live(service) && !legacy_renderer_ready(service)) {
+		/* CE's unloader cannot report failure, so the owner stays published and
+		 * map_loader refuses the successor until a drained retry releases it. */
+		printf("HALO_PS2_LOCAL map-unload blocked reason=renderer-busy\n");
+		return;
+	}
 	preserve_reload = service->reload_pending;
-	if (service->mount.active)
+	if (service->mount.active) {
 		ctag_mount_unload(&service->mount);
-	else if (service->source.active)
+		notify_boundary(service, "map-released");
+	} else if (service->source.active) {
 		ctag_map_source_close(&service->source);
+	}
 #ifdef HALO_PS2_M2_ANIMATION_TRACE
 	/* Advance even for an empty/deferred unload boundary: identity is diagnostic,
 	 * not a statement that the old map had gameplay pose data. */
@@ -722,7 +949,7 @@ int hcu_map_service_preflight(const char *map_name)
 		return 0;
 	}
 #endif
-	if (service->preflight_ready)
+	if (service->preflight_ready && !service->runtime_registered)
 		return service->staged_entry == entry;
 	/* The full catalog is available for identity and extent checks, but no
 	 * gameplay map is enabled until its M2 resident/BSP peak is qualified.
@@ -901,6 +1128,26 @@ int hcu_map_service_unregister_profile(hcu_map_service *service)
 	return 1;
 }
 
+/* The checks every registered runtime passes: its catalog entry's package pin,
+ * its compatibility gate and its storage. The candidate view is the package's
+ * identity, kept for later preflights. */
+static int runtime_registration_valid(const hcu_map_catalog_entry *entry,
+	const hcu_map_profile_runtime *runtime, hcu_asset_profile_view *candidate)
+{
+	return runtime->package_read_at && runtime->compatibility &&
+		runtime->package_size && runtime->profile_id &&
+		runtime->metadata_bytes && runtime->metadata_size &&
+		runtime->source_read && runtime->maximum_tag_image_bytes &&
+		runtime_residency_valid(runtime) && runtime_spans_valid(runtime) &&
+		hcu_asset_profile_preflight_reader(runtime->package_read_at,
+			runtime->package_context, runtime->package_size, runtime->profile_id,
+			candidate) == HCU_ASSET_PROFILE_OK &&
+		verify_profile_package_hash(runtime->package_read_at,
+			runtime->package_context, runtime->package_size,
+			runtime->package_sha256) &&
+		runtime->compatibility(runtime->compatibility_context, entry, candidate);
+}
+
 int hcu_map_service_register_runtime(hcu_map_service *service,
 	const char *map_name, const hcu_map_profile_runtime *runtime)
 {
@@ -915,18 +1162,7 @@ int hcu_map_service_register_runtime(hcu_map_service *service,
 	if (!(entry = hcu_map_catalog_find(map_name)) ||
 		strcmp(map_name, entry->identity.map_name) != 0 ||
 		strlen(entry->identity.map_name) >= sizeof(service->runtime_map_name) ||
-		!runtime->package_read_at || !runtime->compatibility ||
-		!runtime->package_size || !runtime->profile_id ||
-		!runtime->metadata_bytes || !runtime->metadata_size ||
-		!runtime->source_read || !runtime->maximum_tag_image_bytes ||
-		!runtime_spans_valid(runtime) ||
-		hcu_asset_profile_preflight_reader(runtime->package_read_at,
-			runtime->package_context, runtime->package_size, runtime->profile_id,
-			&candidate) != HCU_ASSET_PROFILE_OK ||
-		!verify_profile_package_hash(runtime->package_read_at,
-			runtime->package_context, runtime->package_size,
-			runtime->package_sha256) ||
-		!runtime->compatibility(runtime->compatibility_context, entry, &candidate))
+		!runtime_registration_valid(entry, runtime, &candidate))
 		return 0;
 	service->runtime = *runtime;
 	memset(service->runtime_map_name, 0, sizeof(service->runtime_map_name));
@@ -937,10 +1173,57 @@ int hcu_map_service_register_runtime(hcu_map_service *service,
 	return 1;
 }
 
+int hcu_map_service_register_successor_runtime(hcu_map_service *service,
+	const char *map_name, const hcu_map_profile_runtime *runtime)
+{
+	const hcu_map_catalog_entry *entry;
+	hcu_asset_profile_view candidate;
+	if (!service || service != s_service || !service->initialized || !map_name ||
+		!runtime || !service->runtime_registered || service->successor_registered ||
+		service->profile_candidate_ready)
+		return 0;
+	if (!(entry = hcu_map_catalog_find(map_name)) ||
+		strcmp(map_name, entry->identity.map_name) != 0 ||
+		strcmp(map_name, service->runtime_map_name) == 0 ||
+		strlen(entry->identity.map_name) >= sizeof(service->successor_map_name) ||
+		!runtime_registration_valid(entry, runtime, &candidate) ||
+		!runtime_spans_disjoint(&service->runtime, runtime))
+		return 0;
+	service->successor = *runtime;
+	memset(service->successor_map_name, 0, sizeof(service->successor_map_name));
+	memcpy(service->successor_map_name, entry->identity.map_name,
+		strlen(entry->identity.map_name) + 1);
+	service->successor_view = candidate;
+	service->successor_registered = 1;
+	return 1;
+}
+
+int hcu_map_service_set_boundary_hook(hcu_map_service *service,
+	hcu_map_service_boundary_fn hook, void *context)
+{
+	if (!service) return 0;
+	service->boundary_hook = hook;
+	service->boundary_context = context;
+	service->boundary_cycle = 0;
+	return 1;
+}
+
+int hcu_map_service_set_legacy_renderer_drained(hcu_map_service *service,
+	int (*renderer_drained)(void *context), void *context)
+{
+	if (!service || service != s_service || !service->initialized ||
+		!renderer_drained || service->runtime_registered)
+		return 0;
+	service->legacy_renderer_drained = renderer_drained;
+	service->legacy_renderer_context = context;
+	return 1;
+}
+
 int hcu_map_service_unregister_runtime(hcu_map_service *service)
 {
 	if (!service || service != s_service || !service->initialized ||
 		!service->runtime_registered || profile_owner_live(service) ||
+		service->successor_registered ||
 		service->profile_candidate_ready || service->reload_pending)
 		return 0;
 	memset(&service->runtime, 0, sizeof(service->runtime));
@@ -950,29 +1233,37 @@ int hcu_map_service_unregister_runtime(hcu_map_service *service)
 	return 1;
 }
 
-void hcu_map_service_shutdown(hcu_map_service *service)
+int hcu_map_service_shutdown(hcu_map_service *service)
 {
-	if (!service) return;
+	if (!service || !service->initialized) return 1;
 	map_unloader(service);
+	if (service->legacy_renderer_drained && legacy_owner_live(service)) {
+		printf("HALO_PS2_LOCAL map-shutdown retained live legacy owner\n");
+		return 0;
+	}
+	if (service->runtime_registered && profile_owner_live(service)) {
+		/* Keep callback registration and initialization intact as well as the
+		 * backing. A drained retry must still be able to release this owner. */
+		printf("HALO_PS2_LOCAL map-shutdown retained live profile owner\n");
+		return 0;
+	}
 	service->reload_pending = 0;
 	service->staged_map[0] = 0;
 	service->staged_entry = NULL;
-	if (service->runtime_registered && profile_owner_live(service)) {
-		/* Readers were not drained, so the owner and the caller-owned storage it
-		 * names stay published. The caller must not reclaim that storage. */
-		printf("HALO_PS2_LOCAL map-shutdown retained live profile owner\n");
-	} else {
-		service->runtime_registered = 0;
-		memset(&service->runtime, 0, sizeof(service->runtime));
-		memset(service->runtime_map_name, 0, sizeof(service->runtime_map_name));
-		discard_profile_candidate(service);
-	}
+	service->runtime_registered = 0;
+	memset(&service->runtime, 0, sizeof(service->runtime));
+	memset(service->runtime_map_name, 0, sizeof(service->runtime_map_name));
+	service->successor_registered = 0;
+	memset(&service->successor, 0, sizeof(service->successor));
+	memset(service->successor_map_name, 0, sizeof(service->successor_map_name));
+	discard_profile_candidate(service);
 	(void)hcu_map_service_unregister_profile(service);
 	ps2_cache_set_map_preflight(NULL, NULL);
 	ps2_cache_set_map_loader(NULL, NULL);
 	ps2_cache_set_map_unloader(NULL, NULL);
 	service->initialized = 0;
 	if (s_service == service) s_service = NULL;
+	return 1;
 }
 
 void hcu_map_service_lifecycle_trace(const char *phase, unsigned int cycle)
