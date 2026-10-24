@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from tools.c2_profile_fit_table import extract, matched_owner, owner_qualifies_fit, summarize_matrix_row
+from tools.c2_profile_fit_table import build_matrix_report, extract, matched_owner, owner_qualifies_fit, summarize_matrix_row, summarize_reuse
 
 
 class ProfileFitMatchingTests(unittest.TestCase):
@@ -192,6 +192,40 @@ class MatrixRowTests(unittest.TestCase):
             profile["hcp_package_sha256"] = "b" * 64
             out, _ = summarize_matrix_row(self.make_row(Path(td)), profile)
         self.assertFalse(out["fit"])
+
+
+class ReuseAndExitTests(unittest.TestCase):
+    def write_run(self, d, name, *, passed=True, cycles=2, reused=True, failures=0):
+        checks = {f"cycle_{i}_released": passed or i < cycles for i in range(1, cycles + 1)}
+        checks["storage_reused_cycles_2_to_n"] = reused
+        rel = {"owners": {"tags": {"failures": failures}}, "backing": {"backing_used": 1, "backing_high": 2}, "cache": {}}
+        (d / f"{name}_result.json").write_text(json.dumps({"row": name, "map": "m", "cycles": cycles, "ticks": 0,
+            "pass": passed, "elapsed_seconds": 1, "failing_checks": [],
+            "cycle_checks": {"checks": checks, "per_cycle": [{"at_release": rel}]}}))
+
+    def test_reuse_needs_a_passing_multicycle_run_with_zero_failures(self):
+        with tempfile.TemporaryDirectory() as td:
+            d = Path(td)
+            self.assertFalse(summarize_reuse(d)["reuse_shown"])
+            self.write_run(d, "a", passed=False, cycles=3)
+            self.write_run(d, "b", cycles=1)
+            self.write_run(d, "c", reused=False)
+            self.write_run(d, "e", failures=1)
+            self.assertFalse(summarize_reuse(d)["reuse_shown"])
+            self.write_run(d, "f", cycles=3)
+            r = summarize_reuse(d)
+            self.assertTrue(r["reuse_shown"])
+            self.assertEqual(r["max_cycles_by_row"], {"f": 3})
+
+    def test_exit_requires_ui_pass_and_reuse(self):
+        m = {"checks": {}, "fit": True, "reasons": [], "failure_counts_total": 0, "peaks": {}, "margins": {}}
+        def data(ui, reuse):
+            profs = [{"profile": "s", "matrix_row": m}, {"profile": "ui", "matrix_row": ui}]
+            return {"profiles": profs, "extra_diagnostic_rows": {}, "reuse_evidence": {"reuse_shown": reuse}}
+        self.assertTrue(build_matrix_report(data(m, True))["exit_met"])
+        self.assertFalse(build_matrix_report(data(m, False))["exit_met"])
+        self.assertFalse(build_matrix_report(data(None, True))["exit_met"])
+        self.assertFalse(build_matrix_report(data({**m, "fit": False}, True))["exit_met"])
 
 
 if __name__ == "__main__":

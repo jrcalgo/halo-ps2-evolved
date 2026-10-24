@@ -4,9 +4,9 @@ This ledger keeps actual owner observations separate from profile fit claims and
 
 ## Current result
 
-26 of 27 package rows now carry a measured guarded-owner fit from a PCSX2 (interpreter) run of the selected-profile production loader. The UI package row stays unmeasured: no matrix row was run for it.
+27 of 27 package rows (the 26 selected session packages plus the UI lifecycle package) carry a measured guarded-owner fit from a PCSX2 (interpreter) run of the selected-profile production loader. Nothing is unmeasured and no row fails. The UI row was added from `build/m2-c2-matrix/ui/result.json` and is bound to the package tree that row staged (`build/m2-c2-gaps-ui/tree/pkg/ui/ui.hcp`, sha256 matches its manifest).
 
-A row is measured only when its guest run is bound to the exact row name, map, profile ID, HCP package SHA (also matched to the package manifest), linked-build ELF SHA, and the `production-ce-map-load-headless` scenario. Each of the 26 rows then fits when all of these hold:
+A row is measured only when its guest run is bound to the exact row name, map, profile ID, HCP package SHA (also matched to the package manifest), linked-build ELF SHA, and the `production-ce-map-load-headless` scenario. Each row then fits when all of these hold:
 
 - the guest printed `partition-selected ... qualified=1`, `profile-runtime`, `production-ce-map-loaded result=1`, and `production-ce-map-released result=1 mounted=0`;
 - every owner, arena and cache failure counter is zero;
@@ -15,7 +15,7 @@ A row is measured only when its guest run is bound to the exact row name, map, p
 
 What a measured row means: boot, guarded-partition registration, a real CE scenario and BSP load of that row's map, and owner release. The matrix runs do not tick 4-player or bot gameplay and do not hold renderer readers. Owner peaks for `object_pool`, `actor_pool` and `game_state` therefore reflect scenario placement, not a played workload. `render_chunks`, `render_texture` and `widget_pool` are unbound in the headless guest and stay unmeasured.
 
-| Quantity across the 26 passing rows | Minimum | Maximum |
+| Quantity across the 26 selected session rows | Minimum | Maximum |
 |---|---:|---:|
 | Tag cap minus tag peak (bytes) | 0 (ratrace_marine_shotgun_4p4bot) | 14 |
 | BSP cap minus BSP peak (bytes) | 2,608 (longest rows) | 10,672 (boardingaction rows) |
@@ -25,9 +25,17 @@ What a measured row means: boot, guarded-partition registration, a real CE scena
 
 Tag spans are exact-fit by construction, so a 0 to 14 byte tag margin is expected, not slack. The partition-table caps equal the guest owner caps for all 26 rows.
 
-## Extra diagnostic row that failed
+## UI row
 
-`bots_sidewinder` was also run and is recorded under `extra_diagnostic_rows`, not under a selected package row. It used the older `bots-package-tree-v2` package tree. The CE log shows `game_load() failed.` (emu.txt line 566), then `HALO_PS2_LOCAL halt 0x1aca50 file_create('z:saved') error 0x00000005`. `production-ce-map-loaded` and `production-ce-map-released` never print; tag peak is 4,584,878 B and BSP peak is 0. It is a fail and no fit is claimed for it.
+`ui` passes 12 of 12 checks in 91.9 s: tag peak 789,137 B (margin 15), BSP peak 2,048 B (margin 240), game state 3,107,696 B (margin 58,512), `streaming_map_owner` peak 14,040 B (margin 1,034,536), boot end 447,782 B below the reserve, 140 failure counters all zero, 366 tags. Its package manifest is a one-field copy (`package_file_bytes` corrected from the HCP1 size 1,980,506 to the HCP2 size 1,985,546); the source manifest in `build/m2-c2-hcp2-primary/` is still stale. See `m2-c2-gaps-ui-2026-10-24.md`.
+
+## Extra diagnostic row `bots_sidewinder`
+
+The row failed earlier (`game_load() failed.`, then `file_create('z:saved') error 0x00000005`) because the migrated v2 bots package kept 19 sound-permutation file-data extents sourced from `c40` and `a50`, outside the 48,048,128-byte `sidewinder.map`; CE refused the map in tag validation. The package was rebuilt with the current producer (19 extents made metadata-only, same 19,484,677 B size) and the row now passes in 251.1 s: tag peak 4,584,878 B (margin 2), BSP peak 1,984,512 B (margin 9,232), zero failures. It is a Spartan-only lower bound, is not one of the selected rows, and its rebuild is diagnostic-grade (two producer pin checks were bypassed), so it supports no selected-profile claim. See `m2-c2-gaps-bots-2026-10-24.md`.
+
+## Repeated load/release
+
+Multi-cycle runs (`tools/c2_profile_boot_matrix.py --cycles N [--ticks T]`, results in `build/m2-c2-gaps-reuse/*_result.json`, summarized under `reuse_evidence` in the JSON and in the matrix report) pass on three rows: `longest_mounted_gunner_4p4bot` 3 cycles with and without 300 ticks, `bloodgulch_mounted_gunner_4p4bot` 3 cycles with 300 ticks, `sidewinder_marine_shotgun_4p4bot` 2 cycles with 300 ticks. In cycles 2..N every owner used/high/failures, tag and BSP cache current/peak and backing used/high equal the previous cycle, with zero failures and resets rising by 1 per cycle. Two 3-cycle sidewinder attempts hit the 600 s guest bound after cycle 2 and are recorded as failures. The other 23 rows were not cycled. The ticks are one local player with no bots, so this is not the 4-player/4-bot workload. See `m2-c2-gaps-reuse-2026-10-24.md`.
 
 ## Earlier diagnostic scenarios
 
@@ -36,7 +44,8 @@ The capacity, 2-player workload, 4-player workload and UI lifecycle diagnostics 
 ## Limits
 
 - Load-and-release only. No 2p/4p gameplay workload, bot spawn, endless-survival reuse or network co-op is measured by the matrix rows.
-- Each row has a single load/release cycle, so repeated-cycle reuse is not shown by this ledger.
-- UI lifecycle remains unmeasured.
+- The per-row fit entries are single load/release cycles; repeated-cycle reuse is shown only on the three rows above (sidewinder for 2 cycles).
+- The 26 selected-row ELFs were built before the cycle-loop edit to `main.c` (default 1 cycle, +256 B measured on `longest`); they were not rebuilt.
+- The UI row is one load/release cycle; the two-cycle UI lifecycle proof remains the earlier M2 ui lifecycle guest report.
 - C2.7 in-flight DMA and C2.8 renderer drain are carried to C3.10 and C3.11 by the 2026-10-24 amendment. The matrix has no renderer readers and cannot stand in for them.
 - The Address Error at boot (`addr=0x1ff [store]`, logged before `machine entry`) is recorded in each row's boot diagnostics and is not counted as a guest fault.

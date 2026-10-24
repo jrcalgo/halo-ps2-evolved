@@ -414,7 +414,7 @@ def load_matrix(matrix_dir, profiles_by_name):
     return summaries, evidences
 
 
-def build(matrix_path, manifest_path, workload2_path, workload4_path, lifecycle_path, matrix_dir=None):
+def build(matrix_path, manifest_path, workload2_path, workload4_path, lifecycle_path, matrix_dir=None, reuse_dir=None):
     matrix = json.loads(matrix_path.read_text())
     partition_path = ROOT / "build/m2-c2-r2-budget/partition-table-profile-v2.json"
     partition_data = json.loads(partition_path.read_text()) if partition_path.is_file() else {"profiles": []}
@@ -450,10 +450,21 @@ def build(matrix_path, manifest_path, workload2_path, workload4_path, lifecycle_
     # UI is the separate 27th package and has a lifecycle scenario, not a
     # session-map capacity row.
     ui_package = ROOT / "build/m2-c2-r3-selected-packages/pm/ui-under-test.hcp"
-    ui = {}
+    ui_manifest = None
+    ui_result = Path(matrix_dir) / "ui" / "result.json" if matrix_dir else None
+    if ui_result and ui_result.is_file():
+        # Bind to the package tree the ui matrix row actually staged.
+        root = json.loads(ui_result.read_text()).get("package_root")
+        if root and (abspath(root) / "ui" / "ui.hcp").is_file():
+            ui_package = abspath(root) / "ui" / "ui.hcp"
+            ui_manifest = abspath(root) / "ui" / "ui.json"
+    ui_manifest_data = json.loads(ui_manifest.read_text()) if ui_manifest and ui_manifest.is_file() else {}
+    ui_sha = sha(ui_package) if ui_package.is_file() else None
     profile_inputs.append({"name":"ui", "map":"ui", "local_players":0, "spartan_bots":0,
-        "hcp_package_path":str(ui_package.relative_to(ROOT)), "hcp_package_sha256":sha(ui_package) if ui_package.is_file() else None,
-        "hcp_package_sha256_matches_manifest":False,
+        "hcp_package_path":rel(ui_package), "hcp_package_sha256":ui_sha,
+        "hcp_package_sha256_matches_manifest":bool(ui_sha and ui_sha == ui_manifest_data.get("package_sha256")),
+        "hcp_manifest_sha256":sha(ui_manifest) if ui_manifest and ui_manifest.is_file() else None,
+        "profile_id":ui_manifest_data.get("profile", {}).get("id"),
         "resident_ce_bytes":None,"bsp_payload_bytes":None,
         "claims_bitmap_payload_capacity_floor_bytes":None,"ctag_relocation_staging_bytes":None})
     matrix_summaries, matrix_evidence = load_matrix(matrix_dir, {p["name"]: p for p in profile_inputs})
@@ -527,8 +538,11 @@ def build(matrix_path, manifest_path, workload2_path, workload4_path, lifecycle_
                 "scope":item.get("scope"),"assertions":item.get("assertions")}
     measured_pass = sorted(n for n in selected_names if n in matrix_summaries and matrix_summaries[n]["fit"])
     measured_fail = sorted(n for n in selected_names if n in matrix_summaries and not matrix_summaries[n]["fit"])
-    unmeasured = sorted(n for n in selected_names if n not in matrix_summaries) + ["ui"]
-    extra = {n: v for n, v in matrix_summaries.items() if n not in selected_names}
+    unmeasured = sorted(n for n in selected_names if n not in matrix_summaries) + ([] if "ui" in matrix_summaries else ["ui"])
+    if "ui" in matrix_summaries:
+        (measured_pass if matrix_summaries["ui"]["fit"] else measured_fail).append("ui")
+        measured_pass.sort(); measured_fail.sort()
+    extra = {n: v for n, v in matrix_summaries.items() if n not in selected_names and n != "ui"}
     return {"format":"hcu-c2-profile-guarded-fit-v1","scope":{"session_profiles":len(matrix["profiles"]),"ui_row_included":True,
       "guarded_owner_fit_claimed":bool(measured_pass),
       "guarded_owner_fit_scope":"selected-profile production CE load and release in PCSX2; no 4-player or bot gameplay workload ticks",
@@ -538,7 +552,42 @@ def build(matrix_path, manifest_path, workload2_path, workload4_path, lifecycle_
       "measured_pass_count":len(measured_pass),"measured_fail":measured_fail,
       "unmeasured_rows":unmeasured,"extra_diagnostic_rows":sorted(extra)},
       "extra_diagnostic_rows":extra,
+      "reuse_evidence":summarize_reuse(reuse_dir),
       "diagnostic_observations":diagnostics,"run_evidence":parsed,"profiles":rows}
+
+
+def summarize_reuse(reuse_dir):
+    """Summarize multi-cycle runs (build/m2-c2-gaps-reuse/*_result.json) as storage-reuse evidence."""
+    out = {"dir": rel(reuse_dir) if reuse_dir else None, "runs": [], "passing_runs": [], "failing_runs": []}
+    if not reuse_dir or not Path(reuse_dir).is_dir():
+        out.update(rows_with_reuse_evidence=[], max_cycles_by_row={}, reuse_shown=False)
+        return out
+    for path in sorted(Path(reuse_dir).glob("*_result.json")):
+        r = json.loads(path.read_text())
+        cc = r.get("cycle_checks") or {}
+        checks = cc.get("checks") or {}
+        per = cc.get("per_cycle") or []
+        last = per[-1].get("at_release", {}) if per else {}
+        completed = sum(1 for i in range(1, (r.get("cycles") or 0) + 1) if checks.get(f"cycle_{i}_released"))
+        rec = {"file": rel(path), "sha256": sha(path), "row": r.get("row"), "map": r.get("map"),
+               "cycles_requested": r.get("cycles"), "cycles_completed": completed, "ticks_per_cycle": r.get("ticks"),
+               "pass": bool(r.get("pass")), "elapsed_seconds": r.get("elapsed_seconds"),
+               "failing_checks": r.get("failing_checks"),
+               "storage_reused_cycles_2_to_n": checks.get("storage_reused_cycles_2_to_n"),
+               "cycle1_vs_cycle2_differences": cc.get("cycle1_vs_cycle2_differences"),
+               "release_backing": last.get("backing"),
+               "release_owner_failures": sum(v.get("failures", 0) for v in (last.get("owners") or {}).values()),
+               "release_cache": last.get("cache"),
+               "elf": r.get("elf"), "package_root": r.get("package_root")}
+        out["runs"].append(rec)
+        (out["passing_runs"] if rec["pass"] else out["failing_runs"]).append(rec["file"])
+    # A reuse claim needs a passing run with >=2 complete cycles, identical storage in cycles 2..N and zero failures.
+    ok = [r for r in out["runs"] if r["pass"] and r["cycles_completed"] >= 2 and r["storage_reused_cycles_2_to_n"]
+          and not r["release_owner_failures"]]
+    out["rows_with_reuse_evidence"] = sorted({r["row"] for r in ok})
+    out["max_cycles_by_row"] = {n: max(r["cycles_completed"] for r in ok if r["row"] == n) for n in out["rows_with_reuse_evidence"]}
+    out["reuse_shown"] = bool(ok)
+    return out
 
 
 def build_matrix_report(data):
@@ -556,11 +605,11 @@ def build_matrix_report(data):
             "failure_counts_total": m.get("failure_counts_total"), "reserve": m.get("reserve"), "boot_end": m.get("boot_end"),
             "provenance": m.get("provenance")}
     for prof in data["profiles"]:
-        if prof["profile"] == "ui":
+        if prof["profile"] == "ui" and not prof["matrix_row"]:
             rows.append({"row": "ui", "selected_session_package": False, "pass": None, "status": "unmeasured",
                 "reasons": ["no matrix row was run for the separate UI lifecycle package"]})
         elif prof["matrix_row"]:
-            rows.append(row_of(prof["profile"], prof["matrix_row"], True))
+            rows.append(row_of(prof["profile"], prof["matrix_row"], prof["profile"] != "ui"))
         else:
             rows.append({"row": prof["profile"], "selected_session_package": True, "pass": None, "status": "unmeasured",
                 "reasons": ["no matrix result.json"]})
@@ -572,7 +621,7 @@ def build_matrix_report(data):
     unmeasured = [r["row"] for r in rows if r["pass"] is None]
     measured = [r for r in rows if r.get("peaks")]
     def span(key, sub):
-        vals = [r[key][sub] for r in rows if r.get("pass") and r.get(key)]
+        vals = [r[key][sub] for r in sel if r.get("pass") and r.get(key)]
         return {"min": min(vals), "max": max(vals)} if vals else None
     return {"format": "hcu-c2-profile-matrix-v1", "date": "2026-10-24",
         "scope": "Selected-profile production loader in PCSX2 (interpreter): boot, guarded-partition registration, real CE scenario+BSP load, owner release. No 4-player or bot gameplay ticks and no integrated renderer readers.",
@@ -580,7 +629,11 @@ def build_matrix_report(data):
         "failing_rows": failing, "unmeasured_rows": unmeasured,
         "margin_ranges_passing_rows": {k: span("margins", k) for k in ("tag", "bsp", "game_state", "residency_streaming_map_owner", "boot_end_below_reserve")},
         "all_selected_session_rows_passed": len(sel) == len(sel_pass) and bool(sel),
-        "exit_met": not failing and not unmeasured and bool(sel) and len(sel) == len(sel_pass),
+        "ui_row_passed": any(r["row"] == "ui" and r["pass"] for r in rows),
+        "reuse_evidence": data.get("reuse_evidence"),
+        "exit_met": (not failing and not unmeasured and bool(sel) and len(sel) == len(sel_pass)
+                     and any(r["row"] == "ui" and r["pass"] for r in rows)
+                     and bool((data.get("reuse_evidence") or {}).get("reuse_shown"))),
         "rows": rows}
 
 
@@ -600,15 +653,28 @@ def write_matrix_markdown(report, path):
             continue
         p, m = r["peaks"], r["margins"]
         res = "pass" if r["pass"] else "FAIL"
-        if not r["selected_session_package"]:
+        if r["row"] == "ui":
+            res += " (UI lifecycle package)"
+        elif not r["selected_session_package"]:
             res += " (extra diagnostic)"
         out.append(f"| {r['row']} | {yn(r['booted'])} | {yn(r['map_loaded'])} | {yn(r['released'])} | {yn(r['failures_zero'])} | {yn(r['below_reserve'])} | "
             f"{f(p['tag'])} | {f(m['tag'])} | {f(p['bsp'])} | {f(m['bsp'])} | {f(p['game_state'])} | {f(m['game_state'])} | "
             f"{f(p['residency_streaming_map_owner'])} | {f(m['residency_streaming_map_owner'])} | {f(m['boot_end_below_reserve'])} | {res} |")
     out += ["", "## Failing and unmeasured rows", ""]
-    for r in report["rows"]:
-        if r["pass"] is not True:
-            out.append(f"- `{r['row']}`: " + " | ".join(r["reasons"] or []))
+    bad = [r for r in report["rows"] if r["pass"] is not True]
+    for r in bad:
+        out.append(f"- `{r['row']}`: " + " | ".join(r["reasons"] or []))
+    if not bad:
+        out.append("None.")
+    reuse = report.get("reuse_evidence") or {}
+    out += ["", "## Repeated load/release (storage reuse)", "",
+        f"Reuse shown: {str(bool(reuse.get('reuse_shown'))).lower()}. Rows with passing multi-cycle evidence: {', '.join(reuse.get('rows_with_reuse_evidence') or []) or 'none'}.", "",
+        "| Run | Cycles done / requested | Ticks per cycle | Elapsed s | Storage identical cycles 2..N | Owner failures at release | Backing used / high at release | Result |",
+        "|---|---:|---:|---:|---|---:|---|---|"]
+    for r in reuse.get("runs") or []:
+        b = r.get("release_backing") or {}
+        out.append(f"| {r['row']} ({Path(r['file']).name}) | {r['cycles_completed']} / {r['cycles_requested']} | {r['ticks_per_cycle']} | {r['elapsed_seconds']} | "
+            f"{r['storage_reused_cycles_2_to_n']} | {r['release_owner_failures']} | {f(b.get('backing_used'))} / {f(b.get('backing_high'))} | {'pass' if r['pass'] else 'FAIL'} |")
     out += ["", "## Provenance", "", "Per-row ELF SHA-256, package SHA-256, result.json SHA-256 and log paths are in the JSON `rows[].provenance` and in `m2-c2-profile-guarded-fit-2026-10-24.json` under `profiles[].matrix_row.provenance`.", ""]
     Path(path).write_text("\n".join(out))
 
@@ -621,10 +687,11 @@ def main():
     ap.add_argument("--workload4",type=Path,default=ROOT/"build/m2-c2-resume-fit/guest/workload4p/manifest.json")
     ap.add_argument("--lifecycle",type=Path,default=ROOT/"build/m2-c2-resume-fit/guest/lifecycle/manifest.json")
     ap.add_argument("--matrix-dir",type=Path,default=ROOT/"build/m2-c2-matrix")
+    ap.add_argument("--reuse-dir",type=Path,default=ROOT/"build/m2-c2-gaps-reuse")
     ap.add_argument("--output",type=Path,required=True)
     ap.add_argument("--matrix-report",type=Path,help="write the per-row matrix report JSON here (a .md twin is written beside it)")
     a=ap.parse_args()
-    data=build(a.matrix,a.manifest,a.workload2,a.workload4,a.lifecycle,a.matrix_dir)
+    data=build(a.matrix,a.manifest,a.workload2,a.workload4,a.lifecycle,a.matrix_dir,a.reuse_dir)
     a.output.parent.mkdir(parents=True,exist_ok=True)
     a.output.write_text(json.dumps(data,indent=2,sort_keys=True)+"\n")
     if a.matrix_report:

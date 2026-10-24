@@ -180,7 +180,7 @@
         "dma_commands": {
           "capacity": 1179648,
           "failures": 0,
-          "peak": 0
+          "peak": 1179648
         },
         "dynamic_simulation": {
           "capacity": 2621440,
@@ -190,7 +190,7 @@
         "frame_scratch": {
           "capacity": 393216,
           "failures": 0,
-          "peak": 0
+          "peak": 274704
         },
         "resident_gameplay": {
           "capacity": 5058708,
@@ -202,17 +202,27 @@
           "failures": 0,
           "peak": 0
         },
+        "streaming_map_owner": {
+          "capacity": 1048576,
+          "failures": 0,
+          "peak": 104892
+        },
+        "streaming_section_scratch": {
+          "capacity": 524288,
+          "failures": 0,
+          "peak": 65536
+        },
         "texture_cache": {
           "capacity": 3907120,
           "failures": 0,
           "peak": 3907120
         }
       },
-      "boot_end": 27099738,
+      "boot_end": 27099994,
       "cache_owners": {
         "bsp": {
           "failures": 0,
-          "peak": 0
+          "peak": 1984512
         },
         "tags": {
           "failures": 0,
@@ -222,38 +232,38 @@
       "caps": {
         "bsp": 1993744,
         "game_state": 3166208,
-        "residency_streaming_map_owner": null,
+        "residency_streaming_map_owner": 1048576,
         "tag": 4584880
       },
       "checks": {
         "boot_end_below_reserve": true,
         "failures_zero": true,
         "kernel_reservation": true,
-        "map_loaded": false,
+        "map_loaded": true,
         "map_mount": true,
-        "map_released": false,
-        "marker_order": false,
+        "map_released": true,
+        "marker_order": true,
         "memory_ready": true,
-        "no_guest_faults": false,
+        "no_guest_faults": true,
         "partition_selected": true,
         "profile_preflight": true,
         "profile_runtime": true
       },
-      "failing_checks": [
-        "map_loaded",
-        "map_released",
-        "marker_order",
-        "no_guest_faults"
-      ],
+      "failing_checks": [],
       "failure_counts_total": 0,
-      "fit": false,
-      "loaded": null,
+      "fit": true,
+      "loaded": {
+        "bsp_bytes": 1984512,
+        "map": "sidewinder",
+        "result": 1,
+        "tag_bytes": 4584878
+      },
       "map": "sidewinder",
       "margins": {
-        "boot_end_below_reserve": 425382,
-        "bsp": 1993744,
+        "boot_end_below_reserve": 425126,
+        "bsp": 9232,
         "game_state": 58512,
-        "residency_streaming_map_owner": null,
+        "residency_streaming_map_owner": 943684,
         "tag": 2
       },
       "owners": {
@@ -263,7 +273,7 @@
           "current": 0,
           "failures": 0,
           "peak": 0,
-          "resets": 1
+          "resets": 3
         },
         "audio_requests": {
           "bound": 1,
@@ -278,8 +288,8 @@
           "capacity": 1993744,
           "current": 0,
           "failures": 0,
-          "peak": 0,
-          "resets": 0
+          "peak": 1984512,
+          "resets": 1
         },
         "dma": {
           "bound": 1,
@@ -303,15 +313,15 @@
           "current": 3107696,
           "failures": 0,
           "peak": 3107696,
-          "resets": 0
+          "resets": 1
         },
         "object_pool": {
           "bound": 1,
           "capacity": 1048576,
           "current": 0,
           "failures": 0,
-          "peak": 0,
-          "resets": 0
+          "peak": 42600,
+          "resets": 1
         },
         "render_chunks": {
           "bound": 0,
@@ -363,39 +373,38 @@
         }
       },
       "peaks": {
-        "backing_high": 7967278,
-        "bsp": 0,
+        "backing_high": 9951790,
+        "bsp": 1984512,
         "game_state": 3107696,
-        "object_pool": 0,
-        "residency_streaming_map_owner": null,
+        "object_pool": 42600,
+        "residency_streaming_map_owner": 104892,
         "tag": 4584878
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 238.1,
+        "elapsed_seconds": 251.1,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/bots_sidewinder/link/hcu-gameplay-machine-partition-bots_sidewinder-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "339e91f53bf576676b142f1fa266489571578991364c483ea048689d0a7b402d",
+        "elf_sha256": "30ae24ce5acb3c86916144e829bd8f19ee37dd9b72322e994cc5cb37bb491302",
         "emu_log": "build/m2-c2-matrix/bots_sidewinder/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "feac9a6e94bf88047217a009c02cdc32dacc36beda71775a9247019db3ad83e2",
-        "exit": "guest-error; host-stopped-sigint--2",
+        "emu_log_sha256": "6b09bdd749cbb7b2eddbec48d1125a48d27b2b530baa51fe86191358e7dacd40",
+        "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/bots_sidewinder/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/bots_sidewinder/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "6056b5baf8702cba36715afc4882ea35e38695c7a6fd51c7cfc974c193d0bf7f",
-        "linked_hcu_elf_sha256": "339e91f53bf576676b142f1fa266489571578991364c483ea048689d0a7b402d",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-resume-runtime-guest/bots-package-tree-v2/pkg",
-        "package_sha256": "bdf9559fec754b9007825e133d38d1e619a730f4b8ceaa87273d1c492ef5dea3",
+        "halo_log_sha256": "4e4e02266af451024b619df875b127f8a2a4e6e781b8e0c88fa339ae917c7b42",
+        "linked_hcu_elf_sha256": "30ae24ce5acb3c86916144e829bd8f19ee37dd9b72322e994cc5cb37bb491302",
+        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-gaps-bots/tree/pkg",
+        "package_sha256": "f355796e20d75f22223dd4c5315c83c19e7b70af597237a06cc236268511aa89",
         "result_json": "build/m2-c2-matrix/bots_sidewinder/result.json",
-        "result_json_sha256": "00c318cfe797b0cd84186bcedb898904a7c4e52cd62c4c76e5f4bf3af1a9fe64",
-        "staged_elf_sha256": "339e91f53bf576676b142f1fa266489571578991364c483ea048689d0a7b402d"
+        "result_json_sha256": "3791290bf34c83030618cd99f55428600e280fe44fb122e875132b3ecd109f56",
+        "staged_elf_sha256": "30ae24ce5acb3c86916144e829bd8f19ee37dd9b72322e994cc5cb37bb491302"
       },
-      "reasons": [
-        "result.json pass=false: production-ce-map-loaded result=1 missing or incomplete: None; production-ce-map-released result=1 missing or incomplete: None; markers are missing or out of order: [4, 43, 81, 82, None, None]; guest fault: HALO_PS2_LOCAL halt 0x1aca50 file_create('z:saved') error 0x00000005; CE reported: game_load() failed.",
-        "guest evidence incomplete: guest terminal sequence was not completed",
-        "production-ce-map-loaded result=1 missing",
-        "production-ce-map-released result=1 mounted=0 missing"
-      ],
-      "released": null,
+      "reasons": [],
+      "released": {
+        "map": "sidewinder",
+        "mounted": 0,
+        "result": 1
+      },
       "reserve": 27525120,
       "row": "bots_sidewinder",
       "scenario_mode": "production-ce-map-load-headless",
@@ -21737,93 +21746,616 @@
     {
       "bots": 0,
       "ce_ctag_sha256": null,
-      "hcp_manifest_sha256": null,
-      "hcp_package_sha256_matches_manifest": false,
+      "hcp_manifest_sha256": "b41482c102aab00379b1dc74ca68805e794952932ffc5afeb2b33296b81836a7",
+      "hcp_package_sha256_matches_manifest": true,
       "map": "ui",
-      "matrix_row": null,
+      "matrix_row": {
+        "arenas": {
+          "audio": {
+            "capacity": 524288,
+            "failures": 0,
+            "peak": 0
+          },
+          "checkpoint": {
+            "capacity": 524288,
+            "failures": 0,
+            "peak": 0
+          },
+          "current_bsp": {
+            "capacity": 791456,
+            "failures": 0,
+            "peak": 791456
+          },
+          "dma_commands": {
+            "capacity": 1179648,
+            "failures": 0,
+            "peak": 1179648
+          },
+          "dynamic_simulation": {
+            "capacity": 2621440,
+            "failures": 0,
+            "peak": 0
+          },
+          "frame_scratch": {
+            "capacity": 393216,
+            "failures": 0,
+            "peak": 274704
+          },
+          "resident_gameplay": {
+            "capacity": 5058740,
+            "failures": 0,
+            "peak": 3527284
+          },
+          "streaming": {
+            "capacity": 1572864,
+            "failures": 0,
+            "peak": 0
+          },
+          "streaming_map_owner": {
+            "capacity": 1048576,
+            "failures": 0,
+            "peak": 14040
+          },
+          "streaming_section_scratch": {
+            "capacity": 524288,
+            "failures": 0,
+            "peak": 65536
+          },
+          "texture_cache": {
+            "capacity": 9694304,
+            "failures": 0,
+            "peak": 9694304
+          }
+        },
+        "boot_end": 27077338,
+        "cache_owners": {
+          "bsp": {
+            "failures": 0,
+            "peak": 2048
+          },
+          "tags": {
+            "failures": 0,
+            "peak": 789137
+          }
+        },
+        "caps": {
+          "bsp": 2288,
+          "game_state": 3166208,
+          "residency_streaming_map_owner": 1048576,
+          "tag": 789152
+        },
+        "checks": {
+          "boot_end_below_reserve": true,
+          "failures_zero": true,
+          "kernel_reservation": true,
+          "map_loaded": true,
+          "map_mount": true,
+          "map_released": true,
+          "marker_order": true,
+          "memory_ready": true,
+          "no_guest_faults": true,
+          "partition_selected": true,
+          "profile_preflight": true,
+          "profile_runtime": true
+        },
+        "failing_checks": [],
+        "failure_counts_total": 0,
+        "fit": true,
+        "loaded": {
+          "bsp_bytes": 2048,
+          "map": "ui",
+          "result": 1,
+          "tag_bytes": 789137
+        },
+        "map": "ui",
+        "margins": {
+          "boot_end_below_reserve": 447782,
+          "bsp": 240,
+          "game_state": 58512,
+          "residency_streaming_map_owner": 1034536,
+          "tag": 15
+        },
+        "owners": {
+          "actor_pool": {
+            "bound": 1,
+            "capacity": 467968,
+            "current": 0,
+            "failures": 0,
+            "peak": 0,
+            "resets": 3
+          },
+          "audio_requests": {
+            "bound": 1,
+            "capacity": 524288,
+            "current": 0,
+            "failures": 0,
+            "peak": 0,
+            "resets": 0
+          },
+          "bsp": {
+            "bound": 1,
+            "capacity": 2288,
+            "current": 0,
+            "failures": 0,
+            "peak": 2048,
+            "resets": 1
+          },
+          "dma": {
+            "bound": 1,
+            "capacity": 1179648,
+            "current": 0,
+            "failures": 0,
+            "peak": 0,
+            "resets": 0
+          },
+          "dynamic_simulation": {
+            "bound": 1,
+            "capacity": 2621440,
+            "current": 0,
+            "failures": 0,
+            "peak": 0,
+            "resets": 0
+          },
+          "game_state": {
+            "bound": 1,
+            "capacity": 3166208,
+            "current": 3107696,
+            "failures": 0,
+            "peak": 3107696,
+            "resets": 1
+          },
+          "object_pool": {
+            "bound": 1,
+            "capacity": 1048576,
+            "current": 0,
+            "failures": 0,
+            "peak": 500,
+            "resets": 1
+          },
+          "render_chunks": {
+            "bound": 0,
+            "capacity": 0,
+            "current": 0,
+            "failures": 0,
+            "peak": 0,
+            "resets": 0
+          },
+          "render_texture": {
+            "bound": 0,
+            "capacity": 0,
+            "current": 0,
+            "failures": 0,
+            "peak": 0,
+            "resets": 0
+          },
+          "scratch": {
+            "bound": 1,
+            "capacity": 393216,
+            "current": 274704,
+            "failures": 0,
+            "peak": 274704,
+            "resets": 0
+          },
+          "streaming": {
+            "bound": 1,
+            "capacity": 1572864,
+            "current": 0,
+            "failures": 0,
+            "peak": 0,
+            "resets": 0
+          },
+          "tags": {
+            "bound": 1,
+            "capacity": 789152,
+            "current": 0,
+            "failures": 0,
+            "peak": 789137,
+            "resets": 1
+          },
+          "widget_pool": {
+            "bound": 0,
+            "capacity": 0,
+            "current": 0,
+            "failures": 0,
+            "peak": 0,
+            "resets": 0
+          }
+        },
+        "peaks": {
+          "backing_high": 4173585,
+          "bsp": 2048,
+          "game_state": 3107696,
+          "object_pool": 500,
+          "residency_streaming_map_owner": 14040,
+          "tag": 789137
+        },
+        "provenance": {
+          "build_identity_valid": true,
+          "elapsed_seconds": 91.9,
+          "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/hcu-gameplay-machine-partition-ui-headless-runtime-guest.elf",
+          "elf_hash_valid": true,
+          "elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+          "emu_log": "build/m2-c2-matrix/ui/guest/runs/partition-selected/emu.txt",
+          "emu_log_sha256": "384f530acf36d4acbd7c31b89bbe0d3f48e8efdb3e36d356cd2c300e770e3c31",
+          "exit": "release-marker; host-stopped-sigint--2",
+          "guest_manifest": "build/m2-c2-matrix/ui/guest/manifest.json",
+          "halo_log": "build/m2-c2-matrix/ui/guest/runs/partition-selected/halo_ps2_local.txt",
+          "halo_log_sha256": "3505f54a5b81a7f800ab6d4be76499d50735958725d760e3475d242c7e851504",
+          "linked_hcu_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+          "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-gaps-ui/tree/pkg",
+          "package_sha256": "4ad8b57b7515b074d16d2b89e4f1787a9e37d6f6ab6127ababe9ac1d40a72ed7",
+          "result_json": "build/m2-c2-matrix/ui/result.json",
+          "result_json_sha256": "81513849c80dcbde1c5e9cc06661e5a6159de4634e71d1c9369bd44efe6ca8bd",
+          "staged_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2"
+        },
+        "reasons": [],
+        "released": {
+          "map": "ui",
+          "mounted": 0,
+          "result": 1
+        },
+        "reserve": 27525120,
+        "row": "ui",
+        "scenario_mode": "production-ce-map-load-headless",
+        "scope": "selected-profile production CE load and release only; no 4-player or bot gameplay workload ticks",
+        "spans": {
+          "bsp": 2288,
+          "name": "ui",
+          "qualified": 1,
+          "residency": 1048576,
+          "tag": 789152,
+          "texture": 8645712,
+          "version": 1
+        },
+        "status": "measured"
+      },
       "missing_behavior": [
-        "profile-specific map registration and mount",
-        "live 2-player and 4-player gameplay peaks",
-        "owner reset/failure behavior",
-        "renderer drain/UI lifecycle"
+        "live 4-player and 4-bot gameplay workload peaks (matrix run is load and release only)",
+        "renderer drain with in-flight readers (C3.10/C3.11)"
       ],
       "owner_measurements": {
         "actor_pool": {
-          "capacity": null,
-          "current": null,
-          "evidence": null,
+          "bound": 1,
+          "capacity": 467968,
+          "current": 0,
           "expected_static_capacity": null,
-          "failures": null,
-          "peak": null,
-          "reason": "no complete guest run bound to this exact partition and HCP package hash",
-          "resets": null,
-          "status": "unmeasured"
+          "failures": 0,
+          "kind": "nested",
+          "parent": "game_state",
+          "peak": 0,
+          "phase": "shutdown",
+          "provenance": {
+            "boot_diagnostics": [
+              "[    1.5072] Address Error, addr=0x1ff [store]"
+            ],
+            "build_identity_valid": true,
+            "build_result": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/result-partition-ui-headless-runtime-guest.json",
+            "build_result_sha256": "162f939cdf4ea7aba7f0273887e36205926cb15000f8bd3fc265cb0e1007108e",
+            "compiled_hcu_main_object_sha256": "9b70f850170134484bc321b64a1d23cfc48f53496596ce3f84f108afcf49a844",
+            "diagnostic_terminal": {
+              "completed": false,
+              "mode": "production-ce-map-load-headless",
+              "reason": "no matching clean completion sequence"
+            },
+            "elapsed_seconds": 27.0,
+            "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/hcu-gameplay-machine-partition-ui-headless-runtime-guest.elf",
+            "elf_hash_valid": true,
+            "elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "errors": [],
+            "exit": "release-marker; host-stopped-sigint--2",
+            "linked_hcu_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "log": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/runs/partition-selected/emu.txt",
+            "maps_dir": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-parent-link-probe/maps",
+            "partition_profile": "ui",
+            "profile_name": "ui",
+            "profile_package_sha256": "4ad8b57b7515b074d16d2b89e4f1787a9e37d6f6ab6127ababe9ac1d40a72ed7",
+            "run_manifest": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/manifest.json",
+            "runtime_profile": {
+              "map": "ui",
+              "profile_id": 1,
+              "row": "ui"
+            },
+            "scenario": "partition-selected",
+            "scenario_mode": "production-ce-map-load-headless",
+            "staged_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2"
+          },
+          "qualifies_fit": true,
+          "resets": 3,
+          "status": "measured"
         },
         "audio_requests": {
-          "capacity": null,
-          "current": null,
-          "evidence": null,
+          "bound": 1,
+          "capacity": 524288,
+          "current": 0,
           "expected_static_capacity": null,
-          "failures": null,
-          "peak": null,
-          "reason": "no complete guest run bound to this exact partition and HCP package hash",
-          "resets": null,
-          "status": "unmeasured"
+          "failures": 0,
+          "kind": "backing",
+          "parent": "-",
+          "peak": 0,
+          "phase": "shutdown",
+          "provenance": {
+            "boot_diagnostics": [
+              "[    1.5072] Address Error, addr=0x1ff [store]"
+            ],
+            "build_identity_valid": true,
+            "build_result": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/result-partition-ui-headless-runtime-guest.json",
+            "build_result_sha256": "162f939cdf4ea7aba7f0273887e36205926cb15000f8bd3fc265cb0e1007108e",
+            "compiled_hcu_main_object_sha256": "9b70f850170134484bc321b64a1d23cfc48f53496596ce3f84f108afcf49a844",
+            "diagnostic_terminal": {
+              "completed": false,
+              "mode": "production-ce-map-load-headless",
+              "reason": "no matching clean completion sequence"
+            },
+            "elapsed_seconds": 27.0,
+            "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/hcu-gameplay-machine-partition-ui-headless-runtime-guest.elf",
+            "elf_hash_valid": true,
+            "elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "errors": [],
+            "exit": "release-marker; host-stopped-sigint--2",
+            "linked_hcu_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "log": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/runs/partition-selected/emu.txt",
+            "maps_dir": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-parent-link-probe/maps",
+            "partition_profile": "ui",
+            "profile_name": "ui",
+            "profile_package_sha256": "4ad8b57b7515b074d16d2b89e4f1787a9e37d6f6ab6127ababe9ac1d40a72ed7",
+            "run_manifest": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/manifest.json",
+            "runtime_profile": {
+              "map": "ui",
+              "profile_id": 1,
+              "row": "ui"
+            },
+            "scenario": "partition-selected",
+            "scenario_mode": "production-ce-map-load-headless",
+            "staged_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2"
+          },
+          "qualifies_fit": true,
+          "resets": 0,
+          "status": "measured"
         },
         "bsp": {
-          "capacity": null,
-          "current": null,
-          "evidence": null,
+          "bound": 1,
+          "capacity": 2288,
+          "current": 0,
           "expected_static_capacity": 2288,
-          "failures": null,
-          "peak": null,
-          "reason": "no complete guest run bound to this exact partition and HCP package hash",
-          "resets": null,
-          "status": "unmeasured"
+          "failures": 0,
+          "kind": "backing",
+          "parent": "-",
+          "peak": 2048,
+          "phase": "shutdown",
+          "provenance": {
+            "boot_diagnostics": [
+              "[    1.5072] Address Error, addr=0x1ff [store]"
+            ],
+            "build_identity_valid": true,
+            "build_result": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/result-partition-ui-headless-runtime-guest.json",
+            "build_result_sha256": "162f939cdf4ea7aba7f0273887e36205926cb15000f8bd3fc265cb0e1007108e",
+            "compiled_hcu_main_object_sha256": "9b70f850170134484bc321b64a1d23cfc48f53496596ce3f84f108afcf49a844",
+            "diagnostic_terminal": {
+              "completed": false,
+              "mode": "production-ce-map-load-headless",
+              "reason": "no matching clean completion sequence"
+            },
+            "elapsed_seconds": 27.0,
+            "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/hcu-gameplay-machine-partition-ui-headless-runtime-guest.elf",
+            "elf_hash_valid": true,
+            "elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "errors": [],
+            "exit": "release-marker; host-stopped-sigint--2",
+            "linked_hcu_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "log": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/runs/partition-selected/emu.txt",
+            "maps_dir": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-parent-link-probe/maps",
+            "partition_profile": "ui",
+            "profile_name": "ui",
+            "profile_package_sha256": "4ad8b57b7515b074d16d2b89e4f1787a9e37d6f6ab6127ababe9ac1d40a72ed7",
+            "run_manifest": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/manifest.json",
+            "runtime_profile": {
+              "map": "ui",
+              "profile_id": 1,
+              "row": "ui"
+            },
+            "scenario": "partition-selected",
+            "scenario_mode": "production-ce-map-load-headless",
+            "staged_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2"
+          },
+          "qualifies_fit": true,
+          "resets": 1,
+          "status": "measured"
         },
         "dma": {
-          "capacity": null,
-          "current": null,
-          "evidence": null,
+          "bound": 1,
+          "capacity": 1179648,
+          "current": 0,
           "expected_static_capacity": null,
-          "failures": null,
-          "peak": null,
-          "reason": "no complete guest run bound to this exact partition and HCP package hash",
-          "resets": null,
-          "status": "unmeasured"
+          "failures": 0,
+          "kind": "backing",
+          "parent": "-",
+          "peak": 0,
+          "phase": "shutdown",
+          "provenance": {
+            "boot_diagnostics": [
+              "[    1.5072] Address Error, addr=0x1ff [store]"
+            ],
+            "build_identity_valid": true,
+            "build_result": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/result-partition-ui-headless-runtime-guest.json",
+            "build_result_sha256": "162f939cdf4ea7aba7f0273887e36205926cb15000f8bd3fc265cb0e1007108e",
+            "compiled_hcu_main_object_sha256": "9b70f850170134484bc321b64a1d23cfc48f53496596ce3f84f108afcf49a844",
+            "diagnostic_terminal": {
+              "completed": false,
+              "mode": "production-ce-map-load-headless",
+              "reason": "no matching clean completion sequence"
+            },
+            "elapsed_seconds": 27.0,
+            "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/hcu-gameplay-machine-partition-ui-headless-runtime-guest.elf",
+            "elf_hash_valid": true,
+            "elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "errors": [],
+            "exit": "release-marker; host-stopped-sigint--2",
+            "linked_hcu_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "log": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/runs/partition-selected/emu.txt",
+            "maps_dir": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-parent-link-probe/maps",
+            "partition_profile": "ui",
+            "profile_name": "ui",
+            "profile_package_sha256": "4ad8b57b7515b074d16d2b89e4f1787a9e37d6f6ab6127ababe9ac1d40a72ed7",
+            "run_manifest": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/manifest.json",
+            "runtime_profile": {
+              "map": "ui",
+              "profile_id": 1,
+              "row": "ui"
+            },
+            "scenario": "partition-selected",
+            "scenario_mode": "production-ce-map-load-headless",
+            "staged_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2"
+          },
+          "qualifies_fit": true,
+          "resets": 0,
+          "status": "measured"
         },
         "dynamic_simulation": {
-          "capacity": null,
-          "current": null,
-          "evidence": null,
+          "bound": 1,
+          "capacity": 2621440,
+          "current": 0,
           "expected_static_capacity": null,
-          "failures": null,
-          "peak": null,
-          "reason": "no complete guest run bound to this exact partition and HCP package hash",
-          "resets": null,
-          "status": "unmeasured"
+          "failures": 0,
+          "kind": "backing",
+          "parent": "-",
+          "peak": 0,
+          "phase": "shutdown",
+          "provenance": {
+            "boot_diagnostics": [
+              "[    1.5072] Address Error, addr=0x1ff [store]"
+            ],
+            "build_identity_valid": true,
+            "build_result": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/result-partition-ui-headless-runtime-guest.json",
+            "build_result_sha256": "162f939cdf4ea7aba7f0273887e36205926cb15000f8bd3fc265cb0e1007108e",
+            "compiled_hcu_main_object_sha256": "9b70f850170134484bc321b64a1d23cfc48f53496596ce3f84f108afcf49a844",
+            "diagnostic_terminal": {
+              "completed": false,
+              "mode": "production-ce-map-load-headless",
+              "reason": "no matching clean completion sequence"
+            },
+            "elapsed_seconds": 27.0,
+            "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/hcu-gameplay-machine-partition-ui-headless-runtime-guest.elf",
+            "elf_hash_valid": true,
+            "elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "errors": [],
+            "exit": "release-marker; host-stopped-sigint--2",
+            "linked_hcu_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "log": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/runs/partition-selected/emu.txt",
+            "maps_dir": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-parent-link-probe/maps",
+            "partition_profile": "ui",
+            "profile_name": "ui",
+            "profile_package_sha256": "4ad8b57b7515b074d16d2b89e4f1787a9e37d6f6ab6127ababe9ac1d40a72ed7",
+            "run_manifest": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/manifest.json",
+            "runtime_profile": {
+              "map": "ui",
+              "profile_id": 1,
+              "row": "ui"
+            },
+            "scenario": "partition-selected",
+            "scenario_mode": "production-ce-map-load-headless",
+            "staged_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2"
+          },
+          "qualifies_fit": true,
+          "resets": 0,
+          "status": "measured"
         },
         "game_state": {
-          "capacity": null,
-          "current": null,
-          "evidence": null,
+          "bound": 1,
+          "capacity": 3166208,
+          "current": 3107696,
           "expected_static_capacity": null,
-          "failures": null,
-          "peak": null,
-          "reason": "no complete guest run bound to this exact partition and HCP package hash",
-          "resets": null,
-          "status": "unmeasured"
+          "failures": 0,
+          "kind": "backing",
+          "parent": "-",
+          "peak": 3107696,
+          "phase": "shutdown",
+          "provenance": {
+            "boot_diagnostics": [
+              "[    1.5072] Address Error, addr=0x1ff [store]"
+            ],
+            "build_identity_valid": true,
+            "build_result": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/result-partition-ui-headless-runtime-guest.json",
+            "build_result_sha256": "162f939cdf4ea7aba7f0273887e36205926cb15000f8bd3fc265cb0e1007108e",
+            "compiled_hcu_main_object_sha256": "9b70f850170134484bc321b64a1d23cfc48f53496596ce3f84f108afcf49a844",
+            "diagnostic_terminal": {
+              "completed": false,
+              "mode": "production-ce-map-load-headless",
+              "reason": "no matching clean completion sequence"
+            },
+            "elapsed_seconds": 27.0,
+            "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/hcu-gameplay-machine-partition-ui-headless-runtime-guest.elf",
+            "elf_hash_valid": true,
+            "elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "errors": [],
+            "exit": "release-marker; host-stopped-sigint--2",
+            "linked_hcu_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "log": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/runs/partition-selected/emu.txt",
+            "maps_dir": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-parent-link-probe/maps",
+            "partition_profile": "ui",
+            "profile_name": "ui",
+            "profile_package_sha256": "4ad8b57b7515b074d16d2b89e4f1787a9e37d6f6ab6127ababe9ac1d40a72ed7",
+            "run_manifest": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/manifest.json",
+            "runtime_profile": {
+              "map": "ui",
+              "profile_id": 1,
+              "row": "ui"
+            },
+            "scenario": "partition-selected",
+            "scenario_mode": "production-ce-map-load-headless",
+            "staged_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2"
+          },
+          "qualifies_fit": true,
+          "resets": 1,
+          "status": "measured"
         },
         "object_pool": {
-          "capacity": null,
-          "current": null,
-          "evidence": null,
+          "bound": 1,
+          "capacity": 1048576,
+          "current": 0,
           "expected_static_capacity": null,
-          "failures": null,
-          "peak": null,
-          "reason": "no complete guest run bound to this exact partition and HCP package hash",
-          "resets": null,
-          "status": "unmeasured"
+          "failures": 0,
+          "kind": "nested",
+          "parent": "game_state",
+          "peak": 500,
+          "phase": "shutdown",
+          "provenance": {
+            "boot_diagnostics": [
+              "[    1.5072] Address Error, addr=0x1ff [store]"
+            ],
+            "build_identity_valid": true,
+            "build_result": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/result-partition-ui-headless-runtime-guest.json",
+            "build_result_sha256": "162f939cdf4ea7aba7f0273887e36205926cb15000f8bd3fc265cb0e1007108e",
+            "compiled_hcu_main_object_sha256": "9b70f850170134484bc321b64a1d23cfc48f53496596ce3f84f108afcf49a844",
+            "diagnostic_terminal": {
+              "completed": false,
+              "mode": "production-ce-map-load-headless",
+              "reason": "no matching clean completion sequence"
+            },
+            "elapsed_seconds": 27.0,
+            "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/hcu-gameplay-machine-partition-ui-headless-runtime-guest.elf",
+            "elf_hash_valid": true,
+            "elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "errors": [],
+            "exit": "release-marker; host-stopped-sigint--2",
+            "linked_hcu_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "log": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/runs/partition-selected/emu.txt",
+            "maps_dir": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-parent-link-probe/maps",
+            "partition_profile": "ui",
+            "profile_name": "ui",
+            "profile_package_sha256": "4ad8b57b7515b074d16d2b89e4f1787a9e37d6f6ab6127ababe9ac1d40a72ed7",
+            "run_manifest": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/manifest.json",
+            "runtime_profile": {
+              "map": "ui",
+              "profile_id": 1,
+              "row": "ui"
+            },
+            "scenario": "partition-selected",
+            "scenario_mode": "production-ce-map-load-headless",
+            "staged_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2"
+          },
+          "qualifies_fit": true,
+          "resets": 1,
+          "status": "measured"
         },
         "render_chunks": {
           "capacity": null,
@@ -21848,37 +22380,151 @@
           "status": "unmeasured"
         },
         "scratch": {
-          "capacity": null,
-          "current": null,
-          "evidence": null,
+          "bound": 1,
+          "capacity": 393216,
+          "current": 274704,
           "expected_static_capacity": null,
-          "failures": null,
-          "peak": null,
-          "reason": "no complete guest run bound to this exact partition and HCP package hash",
-          "resets": null,
-          "status": "unmeasured"
+          "failures": 0,
+          "kind": "backing",
+          "parent": "-",
+          "peak": 274704,
+          "phase": "shutdown",
+          "provenance": {
+            "boot_diagnostics": [
+              "[    1.5072] Address Error, addr=0x1ff [store]"
+            ],
+            "build_identity_valid": true,
+            "build_result": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/result-partition-ui-headless-runtime-guest.json",
+            "build_result_sha256": "162f939cdf4ea7aba7f0273887e36205926cb15000f8bd3fc265cb0e1007108e",
+            "compiled_hcu_main_object_sha256": "9b70f850170134484bc321b64a1d23cfc48f53496596ce3f84f108afcf49a844",
+            "diagnostic_terminal": {
+              "completed": false,
+              "mode": "production-ce-map-load-headless",
+              "reason": "no matching clean completion sequence"
+            },
+            "elapsed_seconds": 27.0,
+            "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/hcu-gameplay-machine-partition-ui-headless-runtime-guest.elf",
+            "elf_hash_valid": true,
+            "elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "errors": [],
+            "exit": "release-marker; host-stopped-sigint--2",
+            "linked_hcu_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "log": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/runs/partition-selected/emu.txt",
+            "maps_dir": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-parent-link-probe/maps",
+            "partition_profile": "ui",
+            "profile_name": "ui",
+            "profile_package_sha256": "4ad8b57b7515b074d16d2b89e4f1787a9e37d6f6ab6127ababe9ac1d40a72ed7",
+            "run_manifest": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/manifest.json",
+            "runtime_profile": {
+              "map": "ui",
+              "profile_id": 1,
+              "row": "ui"
+            },
+            "scenario": "partition-selected",
+            "scenario_mode": "production-ce-map-load-headless",
+            "staged_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2"
+          },
+          "qualifies_fit": true,
+          "resets": 0,
+          "status": "measured"
         },
         "streaming": {
-          "capacity": null,
-          "current": null,
-          "evidence": null,
+          "bound": 1,
+          "capacity": 1572864,
+          "current": 0,
           "expected_static_capacity": null,
-          "failures": null,
-          "peak": null,
-          "reason": "no complete guest run bound to this exact partition and HCP package hash",
-          "resets": null,
-          "status": "unmeasured"
+          "failures": 0,
+          "kind": "backing",
+          "parent": "-",
+          "peak": 0,
+          "phase": "shutdown",
+          "provenance": {
+            "boot_diagnostics": [
+              "[    1.5072] Address Error, addr=0x1ff [store]"
+            ],
+            "build_identity_valid": true,
+            "build_result": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/result-partition-ui-headless-runtime-guest.json",
+            "build_result_sha256": "162f939cdf4ea7aba7f0273887e36205926cb15000f8bd3fc265cb0e1007108e",
+            "compiled_hcu_main_object_sha256": "9b70f850170134484bc321b64a1d23cfc48f53496596ce3f84f108afcf49a844",
+            "diagnostic_terminal": {
+              "completed": false,
+              "mode": "production-ce-map-load-headless",
+              "reason": "no matching clean completion sequence"
+            },
+            "elapsed_seconds": 27.0,
+            "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/hcu-gameplay-machine-partition-ui-headless-runtime-guest.elf",
+            "elf_hash_valid": true,
+            "elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "errors": [],
+            "exit": "release-marker; host-stopped-sigint--2",
+            "linked_hcu_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "log": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/runs/partition-selected/emu.txt",
+            "maps_dir": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-parent-link-probe/maps",
+            "partition_profile": "ui",
+            "profile_name": "ui",
+            "profile_package_sha256": "4ad8b57b7515b074d16d2b89e4f1787a9e37d6f6ab6127ababe9ac1d40a72ed7",
+            "run_manifest": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/manifest.json",
+            "runtime_profile": {
+              "map": "ui",
+              "profile_id": 1,
+              "row": "ui"
+            },
+            "scenario": "partition-selected",
+            "scenario_mode": "production-ce-map-load-headless",
+            "staged_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2"
+          },
+          "qualifies_fit": true,
+          "resets": 0,
+          "status": "measured"
         },
         "tags": {
-          "capacity": null,
-          "current": null,
-          "evidence": null,
+          "bound": 1,
+          "capacity": 789152,
+          "current": 0,
           "expected_static_capacity": 789152,
-          "failures": null,
-          "peak": null,
-          "reason": "no complete guest run bound to this exact partition and HCP package hash",
-          "resets": null,
-          "status": "unmeasured"
+          "failures": 0,
+          "kind": "backing",
+          "parent": "-",
+          "peak": 789137,
+          "phase": "shutdown",
+          "provenance": {
+            "boot_diagnostics": [
+              "[    1.5072] Address Error, addr=0x1ff [store]"
+            ],
+            "build_identity_valid": true,
+            "build_result": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/result-partition-ui-headless-runtime-guest.json",
+            "build_result_sha256": "162f939cdf4ea7aba7f0273887e36205926cb15000f8bd3fc265cb0e1007108e",
+            "compiled_hcu_main_object_sha256": "9b70f850170134484bc321b64a1d23cfc48f53496596ce3f84f108afcf49a844",
+            "diagnostic_terminal": {
+              "completed": false,
+              "mode": "production-ce-map-load-headless",
+              "reason": "no matching clean completion sequence"
+            },
+            "elapsed_seconds": 27.0,
+            "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/hcu-gameplay-machine-partition-ui-headless-runtime-guest.elf",
+            "elf_hash_valid": true,
+            "elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "errors": [],
+            "exit": "release-marker; host-stopped-sigint--2",
+            "linked_hcu_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+            "log": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/runs/partition-selected/emu.txt",
+            "maps_dir": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-parent-link-probe/maps",
+            "partition_profile": "ui",
+            "profile_name": "ui",
+            "profile_package_sha256": "4ad8b57b7515b074d16d2b89e4f1787a9e37d6f6ab6127ababe9ac1d40a72ed7",
+            "run_manifest": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/guest/manifest.json",
+            "runtime_profile": {
+              "map": "ui",
+              "profile_id": 1,
+              "row": "ui"
+            },
+            "scenario": "partition-selected",
+            "scenario_mode": "production-ce-map-load-headless",
+            "staged_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2"
+          },
+          "qualifies_fit": true,
+          "resets": 1,
+          "status": "measured"
         },
         "widget_pool": {
           "capacity": null,
@@ -21892,12 +22538,12 @@
           "status": "unmeasured"
         }
       },
-      "package": "build/m2-c2-r3-selected-packages/pm/ui-under-test.hcp",
+      "package": "build/m2-c2-gaps-ui/tree/pkg/ui/ui.hcp",
       "package_sha256": "4ad8b57b7515b074d16d2b89e4f1787a9e37d6f6ab6127ababe9ac1d40a72ed7",
       "partition_terms_source": "build/m2-c2-r2-budget/partition-table-profile-v2.json",
       "players": 0,
       "profile": "ui",
-      "profile_specific_guest_fit": "not_measured",
+      "profile_specific_guest_fit": "measured_pass",
       "static_capacity_floor_bytes": {
         "bsp_payload": null,
         "ce_resident": null,
@@ -21918,6 +22564,247 @@
       }
     }
   ],
+  "reuse_evidence": {
+    "dir": "build/m2-c2-gaps-reuse",
+    "failing_runs": [
+      "build/m2-c2-gaps-reuse/sidewinder_cycles3_noticks_timeout_result.json",
+      "build/m2-c2-gaps-reuse/sidewinder_cycles3_ticks300_timeout_result.json"
+    ],
+    "max_cycles_by_row": {
+      "bloodgulch_mounted_gunner_4p4bot": 3,
+      "longest_mounted_gunner_4p4bot": 3,
+      "sidewinder_marine_shotgun_4p4bot": 2
+    },
+    "passing_runs": [
+      "build/m2-c2-gaps-reuse/bloodgulch_cycles3_ticks300_result.json",
+      "build/m2-c2-gaps-reuse/longest_cycles3_noticks_result.json",
+      "build/m2-c2-gaps-reuse/longest_cycles3_ticks300_result.json",
+      "build/m2-c2-gaps-reuse/sidewinder_cycles2_ticks300_result.json"
+    ],
+    "reuse_shown": true,
+    "rows_with_reuse_evidence": [
+      "bloodgulch_mounted_gunner_4p4bot",
+      "longest_mounted_gunner_4p4bot",
+      "sidewinder_marine_shotgun_4p4bot"
+    ],
+    "runs": [
+      {
+        "cycle1_vs_cycle2_differences": [],
+        "cycles_completed": 3,
+        "cycles_requested": 3,
+        "elapsed_seconds": 543.2,
+        "elf": "build/m2-c2-gaps-reuse/bloodgulch_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-bloodgulch_mounted_gunner_4p4bot-headless-runtime-guest.elf",
+        "failing_checks": [],
+        "file": "build/m2-c2-gaps-reuse/bloodgulch_cycles3_ticks300_result.json",
+        "map": "bloodgulch",
+        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
+        "pass": true,
+        "release_backing": {
+          "backing_high": 9474762,
+          "backing_resets": 9,
+          "backing_used": 3382400
+        },
+        "release_cache": {
+          "bsp": {
+            "current": 0,
+            "peak": 1296384,
+            "publications": 3,
+            "resets": 3,
+            "unmounts": 3
+          },
+          "tags": {
+            "current": 0,
+            "peak": 4795978,
+            "publications": 3,
+            "resets": 3,
+            "unmounts": 3
+          }
+        },
+        "release_owner_failures": 0,
+        "row": "bloodgulch_mounted_gunner_4p4bot",
+        "sha256": "334060646dbf3dad304613cb523e5d556dbbe88c66e9b81fee9b44e8b0fb8032",
+        "storage_reused_cycles_2_to_n": true,
+        "ticks_per_cycle": 300
+      },
+      {
+        "cycle1_vs_cycle2_differences": [],
+        "cycles_completed": 3,
+        "cycles_requested": 3,
+        "elapsed_seconds": 476.4,
+        "elf": "build/m2-c2-gaps-reuse/longest_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-longest_mounted_gunner_4p4bot-headless-runtime-guest.elf",
+        "failing_checks": [],
+        "file": "build/m2-c2-gaps-reuse/longest_cycles3_noticks_result.json",
+        "map": "longest",
+        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
+        "pass": true,
+        "release_backing": {
+          "backing_high": 8335214,
+          "backing_resets": 9,
+          "backing_used": 3382400
+        },
+        "release_cache": {
+          "bsp": {
+            "current": 0,
+            "peak": 374784,
+            "publications": 3,
+            "resets": 3,
+            "unmounts": 3
+          },
+          "tags": {
+            "current": 0,
+            "peak": 4578030,
+            "publications": 3,
+            "resets": 3,
+            "unmounts": 3
+          }
+        },
+        "release_owner_failures": 0,
+        "row": "longest_mounted_gunner_4p4bot",
+        "sha256": "90fe192f6f5589226e7196b7b8d51da3c385281b19561430d6c42c2b9c5cfcab",
+        "storage_reused_cycles_2_to_n": true,
+        "ticks_per_cycle": 0
+      },
+      {
+        "cycle1_vs_cycle2_differences": [],
+        "cycles_completed": 3,
+        "cycles_requested": 3,
+        "elapsed_seconds": 471.0,
+        "elf": "build/m2-c2-gaps-reuse/longest_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-longest_mounted_gunner_4p4bot-headless-runtime-guest.elf",
+        "failing_checks": [],
+        "file": "build/m2-c2-gaps-reuse/longest_cycles3_ticks300_result.json",
+        "map": "longest",
+        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
+        "pass": true,
+        "release_backing": {
+          "backing_high": 8335214,
+          "backing_resets": 9,
+          "backing_used": 3382400
+        },
+        "release_cache": {
+          "bsp": {
+            "current": 0,
+            "peak": 374784,
+            "publications": 3,
+            "resets": 3,
+            "unmounts": 3
+          },
+          "tags": {
+            "current": 0,
+            "peak": 4578030,
+            "publications": 3,
+            "resets": 3,
+            "unmounts": 3
+          }
+        },
+        "release_owner_failures": 0,
+        "row": "longest_mounted_gunner_4p4bot",
+        "sha256": "0035d3fb41a2e12f14ecba3893cc9d1d8e319a3105641a7e54846c6ca56a3783",
+        "storage_reused_cycles_2_to_n": true,
+        "ticks_per_cycle": 300
+      },
+      {
+        "cycle1_vs_cycle2_differences": [],
+        "cycles_completed": 2,
+        "cycles_requested": 2,
+        "elapsed_seconds": 514.8,
+        "elf": "build/m2-c2-gaps-reuse/sidewinder_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-sidewinder_marine_shotgun_4p4bot-headless-runtime-guest.elf",
+        "failing_checks": [],
+        "file": "build/m2-c2-gaps-reuse/sidewinder_cycles2_ticks300_result.json",
+        "map": "sidewinder",
+        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
+        "pass": true,
+        "release_backing": {
+          "backing_high": 12280840,
+          "backing_resets": 6,
+          "backing_used": 3382400
+        },
+        "release_cache": {
+          "bsp": {
+            "current": 0,
+            "peak": 1984512,
+            "publications": 2,
+            "resets": 2,
+            "unmounts": 2
+          },
+          "tags": {
+            "current": 0,
+            "peak": 6913928,
+            "publications": 2,
+            "resets": 2,
+            "unmounts": 2
+          }
+        },
+        "release_owner_failures": 0,
+        "row": "sidewinder_marine_shotgun_4p4bot",
+        "sha256": "a4a0394649c743c8a08d4137896b1e79976b1d69838f60a19e4cf42d629a3f32",
+        "storage_reused_cycles_2_to_n": true,
+        "ticks_per_cycle": 300
+      },
+      {
+        "cycle1_vs_cycle2_differences": [],
+        "cycles_completed": 2,
+        "cycles_requested": 3,
+        "elapsed_seconds": 668.4,
+        "elf": "build/m2-c2-gaps-reuse/sidewinder_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-sidewinder_marine_shotgun_4p4bot-headless-runtime-guest.elf",
+        "failing_checks": [
+          "map_released",
+          "marker_order",
+          "cycle_3_loaded",
+          "cycle_3_released",
+          "cycle_3_boundary",
+          "resets_increment_3_owners_game_state",
+          "resets_increment_3_owners_tags",
+          "resets_increment_3_owners_bsp",
+          "resets_increment_3_cache_tags",
+          "resets_increment_3_cache_bsp",
+          "storage_reused_cycles_2_to_n"
+        ],
+        "file": "build/m2-c2-gaps-reuse/sidewinder_cycles3_noticks_timeout_result.json",
+        "map": "sidewinder",
+        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
+        "pass": false,
+        "release_backing": null,
+        "release_cache": null,
+        "release_owner_failures": 0,
+        "row": "sidewinder_marine_shotgun_4p4bot",
+        "sha256": "cc059ca9fa191bb35561a1b06c09e02f042afdf294b227872706214801561df4",
+        "storage_reused_cycles_2_to_n": false,
+        "ticks_per_cycle": 0
+      },
+      {
+        "cycle1_vs_cycle2_differences": [],
+        "cycles_completed": 2,
+        "cycles_requested": 3,
+        "elapsed_seconds": 668.2,
+        "elf": "build/m2-c2-gaps-reuse/sidewinder_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-sidewinder_marine_shotgun_4p4bot-headless-runtime-guest.elf",
+        "failing_checks": [
+          "map_released",
+          "marker_order",
+          "cycle_3_loaded",
+          "cycle_3_released",
+          "cycle_3_boundary",
+          "cycle_3_ticks",
+          "resets_increment_3_owners_game_state",
+          "resets_increment_3_owners_tags",
+          "resets_increment_3_owners_bsp",
+          "resets_increment_3_cache_tags",
+          "resets_increment_3_cache_bsp",
+          "storage_reused_cycles_2_to_n"
+        ],
+        "file": "build/m2-c2-gaps-reuse/sidewinder_cycles3_ticks300_timeout_result.json",
+        "map": "sidewinder",
+        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
+        "pass": false,
+        "release_backing": null,
+        "release_cache": null,
+        "release_owner_failures": 0,
+        "row": "sidewinder_marine_shotgun_4p4bot",
+        "sha256": "bef0877be4ed8bd5866142b013980877a7f3888b1ee116e0737eb744ae8170e9",
+        "storage_reused_cycles_2_to_n": false,
+        "ticks_per_cycle": 300
+      }
+    ]
+  },
   "run_evidence": {
     "capacity": {
       "blocker": "run result missing",
@@ -21953,12 +22840,10 @@
     "guarded_owner_fit_scope": "selected-profile production CE load and release in PCSX2; no 4-player or bot gameplay workload ticks",
     "matrix_dir": "build/m2-c2-matrix",
     "measured_fail": [],
-    "measured_pass_count": 26,
+    "measured_pass_count": 27,
     "session_profiles": 26,
     "static_floors_are_not_runtime_fit": true,
     "ui_row_included": true,
-    "unmeasured_rows": [
-      "ui"
-    ]
+    "unmeasured_rows": []
   }
 }
