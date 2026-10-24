@@ -36,6 +36,8 @@ def main():
     parser.add_argument("--camera", type=float, nargs=5, default=[65, -95, 9, -70, -5])
     parser.add_argument("--objects", action="store_true")
     parser.add_argument("--variant", choices=("conservative","portal","stream"), default="conservative")
+    parser.add_argument("--build-output", default=None,
+                        help="build directory name under build/ (for isolated local-source diagnostics)")
     parser.add_argument("--force-conservative", action="store_true")
     parser.add_argument("--framebuffer", action="store_true", help="Retain raw GS pixels at frame 120, with HUD disabled")
     parser.add_argument("--route", action="store_true")
@@ -131,9 +133,12 @@ def main():
         args.frames = 3000
         args.objects = True
     require_platform()
-    build_name = "world-stream-elf" if args.variant == "stream" else "world-portal-elf" if args.variant == "portal" else "world-play-elf" if args.variant == "play" else "world-elf"
-    report = json.loads((ROOT / "build" / build_name / "result.json").read_text())
-    original = ROOT / "build" / build_name / "world.elf"
+    build_name = args.build_output or ("world-stream-elf" if args.variant == "stream" else "world-portal-elf" if args.variant == "portal" else "world-play-elf" if args.variant == "play" else "world-elf")
+    build_dir = (ROOT / "build" / build_name).resolve()
+    if not build_dir.is_relative_to((ROOT / "build").resolve()):
+        raise RuntimeError("Build output must remain under build/")
+    report = json.loads((build_dir / "result.json").read_text())
+    original = build_dir / "world.elf"
     if sha(original) != report["elf_sha256"]:
         raise RuntimeError("World ELF changed after build")
     for name, digest in report["source_sha256"].items():
