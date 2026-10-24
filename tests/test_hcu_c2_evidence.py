@@ -49,3 +49,18 @@ def test_missing_requirement_and_unverified_pass_are_rejected(tmp_path):
     (tmp_path / "status.json").write_text(json.dumps(status))
     with pytest.raises(ValueError):
         updater.update(tmp_path, Path("status.json"), Path("ledger.json"))
+
+
+def test_carry_over_preserves_unqualified_proof_and_destination(tmp_path):
+    status, _ = fixture(tmp_path)
+    requirement = status["requirements"][6]
+    requirement["deferred_to"] = ["C3.10"]
+    requirement["deferred_acceptance_requirements"] = ["Observe actual DMA/GS completion"]
+    requirement["scope_amendment"] = "user-approved-2026-10-24"
+    (tmp_path / "status.json").write_text(json.dumps(status))
+    ledger = updater.update(tmp_path, Path("status.json"), Path("ledger.json"))
+    row = next(row for row in ledger["evidence"] if row["subcheck"] == "c2-7")
+    assert row["result"] == "partial"
+    assert row["deferred_to"] == ["C3.10"]
+    assert row["deferred_acceptance_requirements"] == ["Observe actual DMA/GS completion"]
+    assert ledger["step_status"]["step8"]["qualified_rows"] == 0

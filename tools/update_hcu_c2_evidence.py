@@ -63,6 +63,14 @@ def update(root=ROOT, status_path=STATUS, ledger_path=LEDGER):
                "measurements": requirement.get("measurements", {}), "result": result,
                "remaining_limitation": requirement["remaining_limitation"],
                "source_report_hashes": {pin["path"]: pin["sha256"] for pin in pins}}
+        # A user-approved carry-over changes proof ownership, not its result.
+        # Preserve the destination and unresolved acceptance text explicitly;
+        # importing it must never manufacture a target execution or a pass.
+        if requirement.get("deferred_to"):
+            row["deferred_to"] = requirement["deferred_to"]
+            row["deferred_acceptance_requirements"] = requirement.get(
+                "deferred_acceptance_requirements", [])
+            row["scope_amendment"] = requirement.get("scope_amendment")
         if stale:
             row["stale_dependencies"] = stale
         added.append(row)

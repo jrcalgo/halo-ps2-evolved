@@ -1,0 +1,71 @@
+{
+  "format": "hcu-c2-approved-scope-amendment-v1",
+  "date": "2026-10-24",
+  "authority": "User supplied coworker context and explicitly requested resuming the approved C2 finish with GPT-6 Luna low reasoning subagents.",
+  "budget_revision": {
+    "version": 3,
+    "reserve_transfer_to_elf_static_bytes": 262144,
+    "committed_limit_bytes": 28049408,
+    "elf_static_bytes": 2359296,
+    "remaining_reserve_bytes": 5505024,
+    "total_ee_bytes": 33554432,
+    "reserve_physical_start": "0x01a40000",
+    "reserve_physical_end_exclusive": "0x01f80000",
+    "nobits_owner": "resident_gameplay",
+    "additional_reserve_spend_authorized": false
+  },
+  "carry_over": [
+    {
+      "requirement": "C2.7",
+      "deferred_to": "C3.10",
+      "behavior": "Actual combined-renderer guest proof of in-flight chains, idle-chain emission and DMA/GS reader completion.",
+      "retained_c2_scope": "Exact fixed ownership of all 1,179,648 DMA bytes and removal of separate snapshot DMA payload."
+    },
+    {
+      "requirement": "C2.8",
+      "deferred_to": "C3.11",
+      "behavior": "Map replacement and failure/retry with real renderer uploads/draws in flight and demonstrated reader/DMA drain.",
+      "retained_c2_scope": "Successor preflight before CE disposal with old tags live, safe owner release/publication, CPU/cache lifetime and load/unload/retry through the actual loader."
+    }
+  ],
+  "coworker_assessment": [
+    "Rounds through nine implemented segmented HCP2, complete selected packages, guarded partitions, runtime registration, reusable allocation and owner telemetry; these are useful source/host advances, not a fully qualified combined runtime.",
+    "The prior runtime guest reused r8 objects and halted at the old fixed-budget check; registration and actual CE map loading were not demonstrated.",
+    "The standalone Blood Gulch viewer regression does not measure the combined HCU production loader or its workload memory.",
+    "Capacity diagnostics, local-player tests without AI, selected recipe asset metadata, and bounded segment size cannot establish survival/bot workload admission or all-profile renderer fit.",
+    "Concurrent build outputs require serialized linking and exact sibling HCU gameplay ELF selection. Mutable shared build paths must not serve as the only retained artifact identity."
+  ],
+  "current_evidence": [
+    {
+      "path": "docs/reports/m2-c2-budget-v3-2026-10-24.json",
+      "sha256": "c78b5217b82528e9d666373820ac5e806e705e176c23eeabc116795947802816",
+      "evidence_level": "host execution",
+      "role": "report"
+    },
+    {
+      "path": "docs/reports/m2-c2-r9-runtime-guest-2026-10-24.md",
+      "sha256": "004d752f17fe9abed9af37410e739ae81ee1f4e1ec511af1c5ab965c89119538",
+      "evidence_level": "PCSX2 interpreter",
+      "role": "report"
+    },
+    {
+      "path": "plans/5.hcu-remake.md",
+      "sha256": "3800316b1f5010d298cffd293bbb22687aabf3cbca59da82bf07f1b834ca86de",
+      "evidence_level": "source inspection",
+      "role": "acceptance contract"
+    },
+    {
+      "path": "plans/7.hcu-remake-m2-m4.md",
+      "sha256": "6c97e299fadf6553d76c61d5e5b4b084e78bf70798bf032ec009a46aaf7e3ecc",
+      "evidence_level": "source inspection",
+      "role": "acceptance contract"
+    }
+  ],
+  "acceptance": {
+    "c2_exit_met": false,
+    "step7_closed": false,
+    "step8_closed": false,
+    "renderer_carry_over_is_a_pass": false,
+    "scope": "Budget section accounting and amended proof ownership only. New production guest and profile measurements are recorded independently when executed."
+  }
+}

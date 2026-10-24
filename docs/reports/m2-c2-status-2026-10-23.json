@@ -1,10 +1,12 @@
 {
   "format": "hcu-m2-c2-status-v2",
   "date": "2026-10-23",
-  "scope": "C2 implementation and evidence; each acceptance requirement stays open until its full scope is proved.",
+  "scope": "C2 implementation and evidence under the user-approved budget-v3 and C3 renderer-proof carry-over amendment. Historical evidence retains its original scope and pins; partial or stale requirements cannot pass.",
   "plan_identity": {
     "path": "plans/7.hcu-remake-m2-m4.md",
-    "sha256": "674ba2c99d440b16b9e2da7180ab7b8230f0c3a76e987120a6999cbca214a131"
+    "sha256": "6c97e299fadf6553d76c61d5e5b4b084e78bf70798bf032ec009a46aaf7e3ecc",
+    "evidence_level": "source inspection",
+    "role": "acceptance contract"
   },
   "canonical_ledger": "docs/reports/m2-step7-step8-closure-ledger-2026-10-22.json",
   "c1_context": {
@@ -26,8 +28,8 @@
       "behavior": "C1-derived exact storage requirements",
       "owner": "profile compiler, CE loader and renderer",
       "acceptance_requirement": "Recompute alignment, relocations, claims, indexes, workspaces and simultaneous staging from C1 outputs.",
-      "scope": "27 archived profiles, deterministic HCP2 migration, and 75 exact selected-recipe closures on Blood Gulch.",
-      "remaining_limitation": "Full-union survival CE remains 25,612,462 B. Selected CTAGs retain full recipe closure, but complete selected media/binding packages are not yet assembled. The tightest measured selected map/render residual is 1,578,064 B; resident claims and streaming relocations are separate owners. Renderer indexes/live set, simultaneous staging and target workload peaks remain unmeasured.",
+      "scope": "Historical archived C1/HCP2 corpus, 26 complete selected session packages on 13 maps, UI, and recipe-level CE/BSP storage floors. These are distinct corpora and retain original evidence scope.",
+      "remaining_limitation": "Selected packages exist and later host residency runs pass their streaming/lease fixture, superseding the early packaging-only blocker. Full-union survival CE remains about25.6 MB and cannot be a live fallback. Current source-clean C1 rebuild, simultaneous renderer/index/staging live set and profile-specific gameplay owner peaks remain unqualified. Four-player/four-bot selection metadata does not establish spawned bots.",
       "result": "partial",
       "acceptance_verified": false,
       "evidence_level": "host execution",
@@ -67,6 +69,12 @@
           "sha256": "a7e00cd7cba40f147b1792a909720f315833826242d8b4725ed1a4444542ba9a",
           "evidence_level": "host execution",
           "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-r8-residency-2026-10-24.md",
+          "sha256": "1740456843ea4a5054667e379e2b8365d72fc412f2a1c308954251624c3bdb54",
+          "role": "report",
+          "evidence_level": "host execution"
         }
       ],
       "measurements": {
@@ -227,8 +235,8 @@
       "behavior": "Versioned guarded map/render partition before CE allocation",
       "owner": "parent memory profile and CE fixed providers",
       "acceptance_requirement": "Choose and version a measured production partition inside 10 MiB, with canaries outside live spans and no live-pointer rebinding.",
-      "scope": "Profile-v1 planner/binder plus actual ILP32 fixture and target object compilation.",
-      "remaining_limitation": "The API is implemented and tested, but production startup does not yet select a complete qualified profile; fixture capacities do not establish renderer/workload fit.",
+      "scope": "Guarded partition planner/binder, selected-session table and generated exact package/header registration; a distinct bots_sidewinder candidate was added in the resumed work.",
+      "remaining_limitation": "Static capacities, host fixtures and successful backend registration do not establish actual CE scenario/BSP loading or renderer/workload fit. Selected-map guest qualification is running separately; CE pointers must never be rebound while live.",
       "result": "partial",
       "acceptance_verified": false,
       "evidence_level": "host execution",
@@ -275,10 +283,10 @@
     {
       "id": "C2.3",
       "behavior": "Committed memory, guards, nested ownership and reserve",
-      "owner": "budget-v2 layout and parent startup",
-      "acceptance_requirement": "Keep committed EE memory <=27,787,264 B and reserve 5,767,168 B untouched, counting every nested owner, staging copy and gap once.",
-      "scope": "Unchanged budget; fixed-owner reservation and guarded partition accounting plus target object compilation.",
-      "remaining_limitation": "No current combined ELF/guest placement or fully integrated simultaneous live-set proof exists for selected production profiles.",
+      "owner": "budget-v3 layout and parent startup",
+      "acceptance_requirement": "Keep committed EE memory <=28,049,408 B and the remaining 5,505,024 B reserve untouched after the user-approved 262,144 B transfer to elf_static. Count file-backed ELF in elf_static, NOBITS in resident_gameplay, and every nested owner/staging copy/gap once.",
+      "scope": "Version-3 fixed-owner accounting and an exact selected-profile ELF link; actual combined guest placement and owner live-set qualification remain separate.",
+      "remaining_limitation": "Selected link file-backed sections fit v3; this host section audit does not establish all runtime owners, workload high-water or final exact guest placement.",
       "result": "partial",
       "acceptance_verified": false,
       "evidence_level": "host execution",
@@ -312,13 +320,25 @@
           "sha256": "b802d6ca2f447f3d82b4d81f60e3b56af136f98640150d384241f454bdd45674",
           "evidence_level": "host execution",
           "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-budget-v3-2026-10-24.json",
+          "sha256": "c78b5217b82528e9d666373820ac5e806e705e176c23eeabc116795947802816",
+          "evidence_level": "host execution",
+          "role": "report"
         }
       ],
       "measurements": {
-        "committed_limit_bytes": 27787264,
-        "reserve_bytes": 5767168,
+        "committed_limit_bytes": 28049408,
+        "reserve_bytes": 5505024,
         "renderer_packet_workspace_bytes": 5632,
-        "dma_reserved_bytes": 1179648
+        "dma_reserved_bytes": 1179648,
+        "budget_version": 3,
+        "elf_static_bytes": 2359296,
+        "approved_reserve_transfer_bytes": 262144,
+        "selected_elf_file_backed_bytes": 2250500,
+        "selected_elf_static_margin_bytes": 108796,
+        "selected_elf_nobits_bytes": 1811648
       }
     },
     {
@@ -432,8 +452,8 @@
       "behavior": "Post-load allocations and storage reuse",
       "owner": "CE compatibility allocator and subsystem owners",
       "acceptance_requirement": "Audit every post-load allocation; recurrent path, bot, renderer, wave and mode work uses preallocated/scoped storage with correct free/realloc semantics and no steady-state heap fallback.",
-      "scope": "Current source inventory and focused reusable allocator behavior.",
-      "remaining_limitation": "211 function-body allocation API expressions across 67 files are recorded; phases and live workload attribution remain unresolved. No complete path/bot/wave/mode allocation trace or EE allocator timing/fragmentation bound exists.",
+      "scope": "Source allocation verdicts and reusable allocator semantics, plus resumed path-state oracle and owner-counter corrections; runtime workload traces remain separate.",
+      "remaining_limitation": "The coworker source inventory reports zero undispositioned callsites, but that is a source classification result. Current exact long path/bot/wave/mode traces, EE allocation timing/fragmentation and endless survival reuse are still unqualified. The resumed path test was corrected to sample allocation while live and require reclamation after free.",
       "result": "partial",
       "acceptance_verified": false,
       "evidence_level": "host execution",
@@ -461,6 +481,12 @@
           "sha256": "9c0478bc28c8cccc1241124b67a92dc9e1011b23334b7c2d4598bd6a0acdc120",
           "evidence_level": "source inspection",
           "role": "source"
+        },
+        {
+          "path": "docs/reports/m2-c2-r8-alloc-final-2026-10-24.md",
+          "sha256": "524ad19980a7bd6201a8d2be313cb6247df8cdc3e3a2764e1b5d482d5bcab447",
+          "role": "report",
+          "evidence_level": "source inspection"
         }
       ],
       "measurements": {
@@ -473,8 +499,8 @@
       "behavior": "Actual owner telemetry and nesting",
       "owner": "CE pools, parent arenas, streaming, renderer, DMA and audio",
       "acceptance_requirement": "Retain high-water, failure and reset counters for every named owner; nested pools must not be summed with their backing.",
-      "scope": "Generic arena, actor datum and compatibility counters plus staging request/reset telemetry.",
-      "remaining_limitation": "Several tag/BSP publication, texture-residency, renderer lifetime, audio-request and production workload snapshots remain missing. Fixed reservations do not measure actual payload usage.",
+      "scope": "Named parent owner registry and CE object/actor/widget counters, with nested widget pool correctly assigned to dynamic_simulation; fixed reservations are separate from actual payload counters.",
+      "remaining_limitation": "Object-pool realloc failure forwarding and widget failure/reset reporting are corrected in source and focused tests. Actual profile-specific guest peaks and sustained bot/survival workload counters are still required. The headless runtime cannot measure active renderer or audio playback residency.",
       "result": "partial",
       "acceptance_verified": false,
       "evidence_level": "host execution",
@@ -520,6 +546,12 @@
           "sha256": "ef4a6e152bba97dd81708b5bc9c1e375b461685a8b5b17cee47d639aeafeff46",
           "evidence_level": "source inspection",
           "role": "source"
+        },
+        {
+          "path": "docs/reports/m2-c2-r8-alloc-final-2026-10-24.md",
+          "sha256": "524ad19980a7bd6201a8d2be313cb6247df8cdc3e3a2764e1b5d482d5bcab447",
+          "role": "report",
+          "evidence_level": "source inspection"
         }
       ],
       "measurements": {}
@@ -530,7 +562,7 @@
       "owner": "bsp_render and HCU snapshot adapter",
       "acceptance_requirement": "Reserve all 1,179,648 DMA bytes for two geometry and two upload chains; remove the separate snapshot payload and assign initialization/environment/font packets real owners.",
       "scope": "Exact fixed chain layout, frame-scratch packet workspace, direct idle-chain matrix emission and target object compilation.",
-      "remaining_limitation": "The combined C3 drawing loop and snapshot-derived animated geometry are not integrated; no current guest in-flight chain/fence or full rendered workload execution proves this gate.",
+      "remaining_limitation": "The combined C3 drawing loop and snapshot-derived animated geometry are not integrated; no current guest in-flight chain/fence or full rendered workload execution proves this gate. User-approved amendment carries the actual integrated renderer proof into C3.10; that destination remains open and this deferral cannot pass a row.",
       "result": "partial",
       "acceptance_verified": false,
       "evidence_level": "host execution",
@@ -576,6 +608,12 @@
           "sha256": "641e30a49f5c1e2d4376c834685aacbec446218841e35310275519df129494d4",
           "evidence_level": "source inspection",
           "role": "source"
+        },
+        {
+          "path": "docs/reports/m2-c2-scope-amendment-2026-10-24.json",
+          "sha256": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff",
+          "evidence_level": "source inspection",
+          "role": "report"
         }
       ],
       "measurements": {
@@ -586,6 +624,16 @@
         "dma_bytes": 1179648,
         "packet_workspace_bytes": 5632,
         "snapshot_private_dma_bytes": 0
+      },
+      "deferred_to": "C3.10",
+      "deferred_acceptance_requirements": [
+        "Actual combined-renderer guest in-flight DMA/GS proof and snapshot-derived geometry emission."
+      ],
+      "scope_amendment": {
+        "path": "docs/reports/m2-c2-scope-amendment-2026-10-24.json",
+        "sha256": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff",
+        "evidence_level": "source inspection",
+        "role": "report"
       }
     },
     {
@@ -594,7 +642,7 @@
       "owner": "map service, CE map disposal and renderer fence",
       "acceptance_requirement": "Validate successor before teardown, drain all readers/DMA, dispose CE while tags live, unpublish/release old storage, then load; preflight failure preserves old map and later failure is safe-empty/retryable.",
       "scope": "Real map-service control flow with scripted CE mount seam; separate native CE cache mount and corruption/retry fixture.",
-      "remaining_limitation": "Same-map package/metadata/binding revalidation is fixed and passes 11 host cases. Foreign-profile replacement, actual CE disposal with renderer/DMA drain and combined guest retry remain unqualified.",
+      "remaining_limitation": "Same-map package/metadata/binding revalidation is fixed and passes 11 host cases. Foreign-profile replacement, actual CE disposal with renderer/DMA drain and combined guest retry remain unqualified. User-approved amendment carries the actual integrated renderer proof into C3.11; that destination remains open and this deferral cannot pass a row.",
       "result": "partial",
       "acceptance_verified": false,
       "evidence_level": "host execution",
@@ -640,17 +688,33 @@
           "sha256": "d0b13d2771032056fa7e8d2517497ae7e34fcb09c02467c0bf4b9cd1f401e619",
           "evidence_level": "source inspection",
           "role": "source"
+        },
+        {
+          "path": "docs/reports/m2-c2-scope-amendment-2026-10-24.json",
+          "sha256": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff",
+          "evidence_level": "source inspection",
+          "role": "report"
         }
       ],
       "measurements": {
         "host_map_service_checks": 11,
         "native_UI_mount_cycles": 3
+      },
+      "deferred_to": "C3.11",
+      "deferred_acceptance_requirements": [
+        "Actual renderer-drain proof during integrated load/unload/replacement and failure/retry with draws/uploads in flight."
+      ],
+      "scope_amendment": {
+        "path": "docs/reports/m2-c2-scope-amendment-2026-10-24.json",
+        "sha256": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff",
+        "evidence_level": "source inspection",
+        "role": "report"
       }
     }
   ],
   "exit_met": false,
-  "committed_limit_bytes": 27787264,
-  "reserve_bytes": 5767168,
+  "committed_limit_bytes": 28049408,
+  "reserve_bytes": 5505024,
   "validation": {
     "focused_tests": {
       "path": "build/m2-c2-current-focused-tests.xml",
@@ -670,5 +734,13 @@
       "failed": 0,
       "skipped": 0
     }
-  }
+  },
+  "updated_date": "2026-10-24",
+  "approved_scope_amendment": {
+    "path": "docs/reports/m2-c2-scope-amendment-2026-10-24.json",
+    "sha256": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff",
+    "evidence_level": "source inspection",
+    "role": "report"
+  },
+  "budget_version": 3
 }
