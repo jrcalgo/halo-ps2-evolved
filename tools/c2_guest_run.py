@@ -423,9 +423,32 @@ def mount_guest_package_tree(lane_run: Path, package_tree: Path, guest_package_r
     mount_path.symlink_to(Path(package_tree).resolve())
 
 
+def stage_host_paths(lane_run: Path, relative_paths):
+    """Symlink repo-relative files into the run's host:/ root so the guest can open them.
+
+    Paths must be relative, free of '..', and exist under the repo; a path already
+    reachable through an earlier symlink (for example build/retail-maps) is skipped.
+    """
+    staged = []
+    for text in relative_paths:
+        rel = Path(text)
+        if rel.is_absolute() or ".." in rel.parts or not rel.parts:
+            raise ValueError(f"host staging path must be relative without '..': {text}")
+        source = ROOT / rel
+        if not source.exists():
+            raise FileNotFoundError(f"host staging source is missing: {source}")
+        target = lane_run / rel
+        if target.exists():
+            continue
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.symlink_to(source.resolve())
+        staged.append(str(rel))
+    return staged
+
+
 def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
               maps_dir=PROBE / "maps", production_tuple=None,
-              guest_package_root="build/m2-c2-r3-selected-packages"):
+              guest_package_root="build/m2-c2-r3-selected-packages", stage_paths=()):
     lane_run = out_dir / "runs" / which
     if lane_run.exists():
         shutil.rmtree(lane_run)
@@ -440,6 +463,7 @@ def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
     if package_tree:
         mount_guest_package_tree(lane_run, package_tree, guest_package_root)
         (lane_run / "build/retail-maps").symlink_to((ROOT / "build/retail-maps").resolve())
+        stage_host_paths(lane_run, stage_paths)
     log = lane_run / "emu.txt"
     command = [str(PCSX2), "-batch", "-nogui", "-datapath", str(data),
                "-logfile", str(log), "-elf", str(elf_copy)]
@@ -513,6 +537,8 @@ def main():
                         help="selected packages tree exposed under host:/build/m2-c2-r3-selected-packages")
     parser.add_argument("--guest-package-root", default="build/m2-c2-r3-selected-packages",
                         help="relative host: path where this package tree is mounted")
+    parser.add_argument("--stage-path", action="append", default=[],
+                        help="repo-relative file to symlink into the guest host:/ root (repeatable)")
     parser.add_argument("--maps-dir", type=Path, default=PROBE / "maps",
                         help="directory exposed at host:/maps for the guest")
     parser.add_argument("--production-row", default="sidewinder_marine_shotgun_4p4bot")
@@ -617,7 +643,7 @@ def main():
                                                      "profile_id": args.production_profile_id,
                                                      "package_bytes": manifest["runtime_profile"]["package_bytes"]}
                                                     if args.production_elf else None),
-                                                   args.guest_package_root))
+                                                   args.guest_package_root, args.stage_path))
             except Exception as error:  # record the failure and keep the partial manifest
                 manifest["runs"].append({"run": which, "error": f"{type(error).__name__}: {error}"})
             write_manifest(manifest_path, manifest)

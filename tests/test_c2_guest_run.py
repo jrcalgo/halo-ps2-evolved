@@ -111,3 +111,18 @@ def test_package_tree_mount_uses_build_time_guest_host_path(tmp_path):
         pass
     else:
         raise AssertionError("unsafe host: package mount path was accepted")
+
+
+def test_stage_host_paths_symlinks_repo_files_and_rejects_escapes(tmp_path):
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    rel = "tools/c2_guest_run.py"
+    assert c2_guest_run.stage_host_paths(run_dir, [rel]) == [rel]
+    assert (run_dir / rel).is_symlink() and (run_dir / rel).is_file()
+    assert c2_guest_run.stage_host_paths(run_dir, [rel]) == []
+    for bad in ("../escape", "/etc/passwd"):
+        try:
+            c2_guest_run.stage_host_paths(run_dir, [bad])
+        except ValueError:
+            continue
+        raise AssertionError(f"unsafe staging path accepted: {bad}")
