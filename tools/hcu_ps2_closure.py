@@ -478,6 +478,7 @@ def main() -> None:
 				     "ps2_ctag_stream_validator_begin",
 				     "ps2_ctag_stream_validator_write",
 				     "ps2_ctag_stream_validator_finish",
+				     "ps2_ctag_validate_stream",
                      "ps2_cache_mount_cbsp_for_extent", "ps2_cache_set_bsp_loader",
                      "ps2_cache_set_bsp_visitor",
                      "ps2_cache_set_map_loader", "ps2_cache_set_map_preflight",
@@ -492,7 +493,8 @@ def main() -> None:
                      "physical_memory_bind_sound_cache",
                      "physical_memory_bind_malloc_arena",
                      "physical_memory_bind_tag_validation_scratch",
-                     "ps2_input_poll_devices", "ps2_input_publish_dualshock"]
+                     "ps2_input_poll_devices", "ps2_input_publish_dualshock",
+                     "ps2_cache_get_owner_telemetry", "halo_ps2_owner_counters_get"]
             if args.m2_animation_trace:
                 roots.append("ps2_animation_trace_bind")
                 roots.append("ps2_animation_trace_bind_contexts")
