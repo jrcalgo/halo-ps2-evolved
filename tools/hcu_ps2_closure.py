@@ -25,6 +25,34 @@ def _elf_static_bytes() -> int:
 HCU = ROOT / "submodules/halo-ce-universal"
 MANIFEST_PATH = HCU / "port/ps2/port.json"
 
+# Parent bitmap dispatch imports these real CE entry points. Source inclusion
+# alone is insufficient because the rooted relocatable link garbage collects
+# individual function sections, and the renderer references interface drawing
+# weakly. Root the actual providers for production runtime guests.
+PRODUCTION_BITMAP_ROOTS = (
+    "halo_ps2_bitmap_requests_init",
+    "halo_ps2_bitmap_requests_end",
+    "halo_ps2_bitmap_requests_register_consumer",
+    "halo_ps2_bitmap_requests_clear_consumer",
+    "halo_ps2_bitmap_requests_acquire",
+    "halo_ps2_bitmap_requests_release",
+    "halo_ps2_bitmap_frame_consumer_register",
+    "halo_ps2_bitmap_frame_consumer_clear",
+    "halo_ps2_bitmap_frame_is_active",
+    "halo_ps2_real_producer_descriptor_instance",
+    "interface_draw_screen",
+)
+
+
+def rooted_symbol_definition_counts(nm_output: str, symbols: tuple[str, ...]) -> dict[str, int]:
+    """Count global definitions in nm output for rooted provider verification."""
+    counts = {symbol: 0 for symbol in symbols}
+    for line in nm_output.splitlines():
+        fields = line.split()
+        if len(fields) >= 2 and fields[-1] in counts and fields[-2].upper() != "U":
+            counts[fields[-1]] += 1
+    return counts
+
 TOOLCHAIN_RUNTIME = {
     "floor", "fmod", "rint", "scalbn", "sqrt", "strrchr", "memcpy", "memmove", "memset", "memcmp",
     "memchr", "qsort", "rand", "atoi", "atof", "exit", "rewind", "time", "localtime", "strerror",
@@ -526,9 +554,7 @@ def main() -> None:
                 roots.append("ps2_animation_trace_bind")
                 roots.append("ps2_animation_trace_bind_contexts")
             if args.production_runtime_guest:
-                # Keep the real CE frame registry query in the same rooted
-                # translation unit as its private active-state singleton.
-                roots.append("halo_ps2_bitmap_frame_is_active")
+                roots.extend(PRODUCTION_BITMAP_ROOTS)
             if hcu_c3:
                 # C3: the parent sound recorder binds this CE seam from hcu_main.c.
                 roots.append("halo_ps2_sound_request_bind_sink")
@@ -538,6 +564,19 @@ def main() -> None:
                 cwd=ROOT, env=env, text=True, capture_output=True)
             (output / "rooted-link.log").write_text(rooted_link.stdout + rooted_link.stderr)
             if rooted_link.returncode == 0:
+                rooted_nm = subprocess.check_output(
+                    [str(nm), "-g", str(rooted)], text=True)
+                bitmap_definition_counts = rooted_symbol_definition_counts(
+                    rooted_nm, PRODUCTION_BITMAP_ROOTS
+                ) if args.production_runtime_guest else {}
+                if args.production_runtime_guest:
+                    invalid_counts = {symbol: count for symbol, count
+                                      in bitmap_definition_counts.items() if count != 1}
+                    if invalid_counts:
+                        raise RuntimeError(
+                            "production bitmap CE providers must each have exactly "
+                            f"one rooted definition: {invalid_counts}"
+                        )
                 rooted_sections = section_bytes(size, rooted)
                 rooted_code = rooted_sections[".text"] + rooted_sections[".data"] + rooted_sections[".rodata"]
                 rooted_relocations = live_external_relocations(nm, objdump, rooted)
@@ -563,6 +602,7 @@ def main() -> None:
                     })
                 report["rooted_link"] = {
                     "roots": roots,
+                    "production_bitmap_provider_definition_counts": bitmap_definition_counts,
                     "sections": rooted_sections,
                     "code_constants_static_data": rooted_code,
                     "elf_static_bytes": _elf_static_bytes(),

@@ -11,7 +11,12 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 HCU = ROOT / "submodules/halo-ce-universal"
 sys.path.insert(0, str(ROOT / "tools"))
-from hcu_ps2_closure import classify, selected_sources  # noqa: E402
+from hcu_ps2_closure import (  # noqa: E402
+    PRODUCTION_BITMAP_ROOTS,
+    classify,
+    rooted_symbol_definition_counts,
+    selected_sources,
+)
 from hcu_ps2_memory_audit import (  # noqa: E402
     apply_region_candidates,
     attach_owners,
@@ -27,6 +32,34 @@ from host_abi32 import flags as host_abi32_flags  # noqa: E402
 
 
 class HcuPs2ClosureClassification(unittest.TestCase):
+    def test_production_bitmap_providers_are_explicit_roots_and_unique(self):
+        closure = (ROOT / "tools/hcu_ps2_closure.py").read_text()
+        parent_probe = (ROOT / "tools/hcu_parent_link_probe.py").read_text()
+        for symbol in PRODUCTION_BITMAP_ROOTS:
+            self.assertIn(f'"{symbol}"', closure)
+        self.assertIn("roots.extend(PRODUCTION_BITMAP_ROOTS)", closure)
+        self.assertIn("count != 1", closure)
+        self.assertIn("production_bitmap_provider_definition_counts", parent_probe)
+
+        sample_nm = """\
+00100000 T halo_ps2_bitmap_requests_init
+00100080 T halo_ps2_bitmap_requests_end
+00100100 T halo_ps2_bitmap_requests_register_consumer
+00100180 T halo_ps2_bitmap_requests_clear_consumer
+00100200 T halo_ps2_bitmap_requests_acquire
+00100280 T halo_ps2_bitmap_requests_release
+00100300 T halo_ps2_bitmap_frame_consumer_register
+00100380 T halo_ps2_bitmap_frame_consumer_clear
+00100400 T halo_ps2_bitmap_frame_is_active
+00200000 D halo_ps2_real_producer_descriptor_instance
+00100500 T interface_draw_screen
+"""
+        counts = rooted_symbol_definition_counts(sample_nm, PRODUCTION_BITMAP_ROOTS)
+        self.assertEqual(counts, {symbol: 1 for symbol in PRODUCTION_BITMAP_ROOTS})
+        duplicate = sample_nm + "00100600 T interface_draw_screen\n"
+        self.assertEqual(rooted_symbol_definition_counts(
+            duplicate, PRODUCTION_BITMAP_ROOTS)["interface_draw_screen"], 2)
+
     def test_ps2_memory_diagnostics_are_owned_by_real_provider(self):
         symbols = (
             "ps2_step8_dynamic_sim_diagnostics",

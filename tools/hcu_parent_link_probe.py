@@ -380,16 +380,15 @@ def main() -> None:
         rooted_object = hcu_closure / "rooted.o"
         rooted_report = json.loads((hcu_closure / "result.json").read_text())
         rooted_symbols = run([str(nm), "-g", str(rooted_object)], env=env)
-        if not any(line.split()[-1:] == ["halo_ps2_bitmap_frame_is_active"]
-                   for line in rooted_symbols.splitlines()):
-            raise RuntimeError("rooted CE image lacks the real frame-active query")
-        if "halo_ps2_bitmap_frame_is_active" not in rooted_report.get("rooted_link", {}).get("roots", []):
-            raise RuntimeError("frame-active query was not an explicit root in the CE link")
+        bitmap_roots = rooted_report.get("rooted_link", {}).get(
+            "production_bitmap_provider_definition_counts", {})
+        if not bitmap_roots or any(count != 1 for count in bitmap_roots.values()):
+            raise RuntimeError("rooted CE image lacks exactly one real bitmap provider definition")
         headless_frame_state = {
             "rooted_object": str(rooted_object.relative_to(ROOT)),
             "rooted_object_sha256": sha256(rooted_object),
             "rooted_report_sha256": sha256(hcu_closure / "result.json"),
-            "rooted_symbol": "halo_ps2_bitmap_frame_is_active",
+            "rooted_symbols": bitmap_roots,
             "registry_translation_unit": "port/ps2/src/ps2_render.c",
             "shared_singleton_with_render_frame": True,
         }
