@@ -21,7 +21,8 @@ int32_t hcu_bitmap_renderer_init(hcu_bitmap_renderer *r,
 	uint32_t texture_page_base_words, uint32_t clut_base_words,
 	uint16_t screen_w, uint16_t screen_h)
 {
-	if (!r || !dispatch || !cache || !cache_readers || cache_reader_count < cache->max_keys ||
+	if (!r || !dispatch || !cache_readers ||
+		(cache && cache_reader_count < cache->max_keys) ||
 		cache_reader_count > TC_MAX_KEYS || !source_storage || !source_storage_bytes ||
 		!slot_stride || !slot_count ||
 		!staging_buffer || staging_buffer_bytes < slot_stride || !slots || !leases ||
@@ -105,10 +106,20 @@ int32_t hcu_bitmap_renderer_hook_emit(void *user, uint32_t frame, chain_t *geome
 {
 	hcu_bitmap_renderer *r = (hcu_bitmap_renderer *)user;
 	if (!r || !r->bound || !r->frame_open || frame != r->frame_index) return HCU_BITMAP_FRAME_E_NOT_READY;
-	if (!geometry || !upload || geometry == upload || cache != r->cache ||
+	if (!geometry || !upload || geometry == upload || !cache ||
 		!geometry->base || !upload->base || geometry->cap_qw < 2 || upload->cap_qw < 2 ||
 		geometry->overflow || upload->overflow || !aligned16(geometry->base) || !aligned16(upload->base))
 		return HCU_BITMAP_FRAME_E_ARGUMENT;
+	/* The actual tc_t is private to bsp_render and exists only in this hook.
+	 * Bind its exact instance on first emit; a later replacement is rejected. */
+	if (!r->cache) {
+		if (r->dispatch->cache || cache->max_keys == 0 || cache->max_keys > r->cache_reader_count)
+			return HCU_BITMAP_FRAME_E_NOT_READY;
+		r->cache = cache;
+		r->dispatch->cache = cache;
+	} else if (cache != r->cache || r->dispatch->cache != cache) {
+		return HCU_BITMAP_FRAME_E_ARGUMENT;
+	}
 	/* Idle capacity is what remains after the BSP packets; the dispatcher checks
 	 * each append and rolls back on overflow (fail-closed). */
 	r->dispatch->upload_chain = upload;

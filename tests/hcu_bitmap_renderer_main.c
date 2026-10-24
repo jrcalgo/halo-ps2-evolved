@@ -136,6 +136,17 @@ int main(void)
 
 	/* a second submit for the same frame after completion is a no-op for the adapter state */
 	CHECK(hcu_bitmap_renderer_submit_frame(&s_r, 6, 9) == HCU_BITMAP_FRAME_OK);
+
+	/* Production keeps bsp_render's cache private until its emit hook. The
+	 * adapter may prepare without one, then must bind the exact live instance. */
+	setup();
+	s_dispatch.cache = NULL;
+	CHECK(hcu_bitmap_renderer_init(&s_r, &s_dispatch, NULL, s_readers, TC_MAX_KEYS,
+		s_source, sizeof s_source, 256, s_staging, sizeof s_staging, s_slots, 4,
+		s_leases, 4, 0, 0, 640, 448) == HCU_BITMAP_FRAME_OK);
+	CHECK(hcu_bitmap_renderer_begin_frame(&s_r, 11) == HCU_BITMAP_FRAME_OK);
+	CHECK(hcu_bitmap_renderer_hook_emit(&s_r, 11, &geom, &upl, &s_cache) == HCU_BITMAP_FRAME_OK);
+	CHECK(s_r.cache == &s_cache && s_dispatch.cache == &s_cache);
 	printf("%s: %d failure(s), %d fence call(s)\n", failures ? "FAILED" : "PASSED", failures, s_fence_calls);
 	return failures ? 1 : 0;
 }
