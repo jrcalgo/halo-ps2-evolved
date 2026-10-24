@@ -1,0 +1,91 @@
+{
+  "schema": "hcu-m3-collision-parity-scaffold-v1",
+  "status": "scaffold-only-no-hcu-parity-claim",
+  "purpose": "Freeze a retail-derived parent movement/collision trace and name the exact prerequisites for a valid HCU comparison.",
+  "source_pins": {
+    "parent": "70e2ed0cf2145a45d23aa07414a3a88c05155d4c",
+    "halo_ce_universal": "6933490b2d16bb1c637295b6a0f3880ba23a7d56",
+    "halo_ps2": "71183bb0a9adc586cd267b2780c82bbc12cfd95b"
+  },
+  "fixture": {
+    "map": "data/retail/convert/bloodgulch/decompressed/bloodgulch.map",
+    "map_sha256": "9eb0374cbe4571af640ae0d2e0ebf6119543cdbbece44d49543b4748c4cf0dc1",
+    "parent_pack_builder": "tools/convert_collision.py: build_pack",
+    "parent_hp2_sha256": "28a747bec4f29bde74a2c86847d539d6faf95a78f86c42f40606862669e7e999",
+    "parent_driver": "tests/player_main.c",
+    "parent_sources": [
+      "src/game/move.c",
+      "src/game/pill.c",
+      "src/game/collide.c",
+      "src/game/collpack.c"
+    ],
+    "parent_trace_sha256_excluding_bench_line": "e0a0a1628098b23914f3d4701c311c89c3ccd1dcbfefa70af03c19ed9f30ba70",
+    "parent_pill_scratch_bytes": 47644,
+    "frame_scratch_budget_bytes": 393216,
+    "coverage": [
+      "settle and floor contact",
+      "jump and landing",
+      "walk and crouch",
+      "out-of-world recovery",
+      "render-schedule invariance",
+      "fast sweep collision",
+      "slope, ceiling, and corner probes"
+    ],
+    "limitations": [
+      "This is a parent-only reference trace, not a CE comparison.",
+      "The generated HP2 COLL section is the parent converter format; it is not the CE relocated tag-block collision_bsp representation.",
+      "The variable wall-clock bench line is excluded from trace hashing."
+    ]
+  },
+  "hcu_authority": {
+    "bsp_pill_api": "submodules/halo-ce-universal/source/physics/collision_bsp.c:1130",
+    "collision_dispatch": "submodules/halo-ce-universal/source/physics/collisions.c:1138-1200",
+    "biped_movement": "submodules/halo-ce-universal/source/units/bipeds.c: biped physics/update path",
+    "current_runtime_requirement": "A BSP must be mounted into CE collision tag blocks and global_collision_bsp_get() must resolve it before the CE calls can produce runtime collision traces.",
+    "blocking_boundary": "The current M2 guest has not yet emitted m2-ui-map-loaded or loaded a gameplay map/BSP into the resident CE cache. A UI BSP diagnostic package is not evidence of a gameplay resident BSP."
+  },
+  "comparisons": [
+    {
+      "case": "player_pill_sweep",
+      "status": "blocked-awaiting-m2-resident-gameplay-bsp",
+      "parent_fixture": "parent player trace includes floor, wall, slope, ceiling, corner, and fast sweep cases",
+      "hcu_trace_available": false,
+      "blockers": ["No CE collision_bsp runtime object backed by the M2-resident gameplay BSP is available to the host harness."]
+    },
+    {
+      "case": "static_bsp_hit",
+      "status": "blocked-awaiting-m2-resident-gameplay-bsp",
+      "parent_fixture": "retail Blood Gulch COLL-converted parent oracle",
+      "hcu_trace_available": false,
+      "blockers": ["The parent COLL pack and HCU CE collision tag-block graph are different representations; the conversion output cannot be passed to collision_bsp_test_pill_new.", "No M2 gameplay BSP materialization is available to bind CE tag blocks and globals."]
+    },
+    {
+      "case": "dynamic_object_hit",
+      "status": "blocked-awaiting-m2-resident-gameplay-bsp",
+      "parent_fixture": "No matching dynamic-object collision fixture exists in the parent movement harness.",
+      "hcu_trace_available": false,
+      "blockers": ["The CE broad-phase and object collision path requires initialized object pool, map collision globals, and runtime object identity; parent structure-only pill sweep has no equivalent object collision authority."]
+    },
+    {
+      "case": "actor_hit",
+      "status": "blocked-awaiting-m2-resident-gameplay-bsp",
+      "parent_fixture": "tests/test_actor_collision.py validates static cyborg ACOL mesh extraction and damage-part metadata only; it does not execute actor hit collision.",
+      "hcu_trace_available": false,
+      "blockers": ["No live CE actor datum, node pose, collision-model context, or actor collision dispatch is initialized in the available host fixture."]
+    },
+    {
+      "case": "projectile_hit",
+      "status": "blocked-awaiting-m2-resident-gameplay-bsp",
+      "parent_fixture": "No HCU-equivalent projectile-vs-object trace exists in the parent player harness.",
+      "hcu_trace_available": false,
+      "blockers": ["CE projectile collision is routed through CE object/collision state and needs a resident BSP plus live projectile/owner datums; a parent segment test alone would not be equivalent."]
+    }
+  ],
+  "requirements_to_unblock": [
+    "M2 must materialize a selected gameplay map and BSP into the real current_bsp/resident regions with source and CBIX extent identity recorded.",
+    "The host/guest fixture must initialize CE tag-block pointers, global collision BSP, object pool, collision flags, and breakable-surface state from that exact materialized BSP.",
+    "Use an identical tick-indexed input and collision query fixture on parent and CE; record hit fraction, normal, surface/material, final position/velocity, grounded state, and object handles where applicable.",
+    "Only compare object/actor/projectile behavior once each side has semantically equivalent actors, objects, owners, and collision filters; label non-equivalent parent cases as implementation gaps rather than parity.",
+    "Run CE trace twice and hash canonical output; retain the mismatch list without relaxing tolerances absent a source-backed numerical explanation."
+  ]
+}
