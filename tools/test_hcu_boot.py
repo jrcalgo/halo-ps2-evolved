@@ -23,11 +23,32 @@ def git_revision(path):
         ["git", "-C", str(path), "rev-parse", "HEAD"], text=True).strip()
 
 
+def host_asset_manifest(elf):
+    """Hash UI inputs under the HLE host root associated with the ELF."""
+    if elf is None:
+        return None
+    root = Path(elf).resolve().parent
+    assets = []
+    for relative in ("maps/ui.map", "maps/ui.hp2"):
+        path = root / relative
+        if path.is_file():
+            assets.append({"relative_path": relative, "path": str(path),
+                           "bytes": path.stat().st_size, "sha256": sha(path)})
+        else:
+            assets.append({"relative_path": relative, "path": str(path),
+                           "missing": True})
+    return {"host_root": str(root),
+            "basis": "HLE host:/ root observed in PCSX2 guest log",
+            "assets": assets}
+
+
 STAGE_MARKERS = {
     "playable": "HALO_PS2_LOCAL playable",
     "m3-memory-ready": "HALO_PS2_LOCAL memory-ready",
     "m1-boundary": "HALO_PS2_LOCAL m1-ui-map-request",
     "m2-ui": "HALO_PS2_LOCAL m2-ui-map-loaded",
+    "m2-ui-lifecycle": "HALO_PS2_LOCAL m2-ui-lifecycle-complete cycles=2",
+    "m3-render-clear": "HALO_PS2_LOCAL m3-render-clear-presented",
 }
 
 PHYSICAL_MEMORY = re.compile(
@@ -50,6 +71,118 @@ EXPECTED_ARENAS = {
     "dynamic_simulation", "dma_commands", "streaming", "checkpoint",
     "audio", "frame_scratch",
 }
+
+GUEST_FAULT_MARKERS = (
+    "HALO_PS2_LOCAL halt",
+    "HALO_PS2_FAIL",
+    "Address Error,",
+    "branch delay!!",
+    "EXCEPTION halt",
+)
+
+
+def guest_fault_after_marker(log_text, success_marker):
+    """Return the first guest-fault line after this stage's success boundary."""
+    marker_offset = log_text.find(success_marker)
+    if marker_offset < 0:
+        return None
+    for line in log_text[marker_offset:].splitlines():
+        if any(marker in line for marker in GUEST_FAULT_MARKERS):
+            return line
+    return None
+
+
+def validate_m2_ui_lifecycle_log(log_text):
+    """Require live-owner fault preservation, post-unload retry, and two reloads."""
+    if "HALO_PS2_LOCAL m2-ui-lifecycle-failed" in log_text:
+        raise RuntimeError("CE UI lifecycle diagnostic emitted a failure marker")
+    required_fault_markers = (
+        "m2-ui-lifecycle-injected preflight-before-unload",
+        "m2-ui-lifecycle-preunload-failure-preserved",
+        "m2-ui-lifecycle-injected preflight-after-unload",
+		"m2-ui-lifecycle-postunload-ce-preflight-refused",
+        "m2-ui-lifecycle-postunload-failure-safe-empty",
+        "m2-ui-lifecycle-postunload-retry-complete",
+    )
+    for marker in required_fault_markers:
+        if f"HALO_PS2_LOCAL {marker}" not in log_text:
+            raise RuntimeError(f"missing CE lifecycle fault/retry evidence: {marker}")
+    if not (log_text.index("m2-ui-lifecycle-preunload-failure-preserved") <
+            log_text.index("m2-ui-lifecycle-injected preflight-after-unload") <
+            log_text.index("m2-ui-lifecycle-postunload-ce-preflight-refused") <
+            log_text.index("m2-ui-lifecycle-postunload-failure-safe-empty") <
+            log_text.index("m2-ui-lifecycle-postunload-retry-complete")):
+        raise RuntimeError("CE lifecycle fault/retry evidence is out of order")
+    trace = re.compile(
+        r"HALO_PS2_LOCAL m2-ui-owner cycle=0 phase=([^ ]+) base=(0x[0-9a-fA-F]+) "
+        r"cap=(\d+) used=(\d+) high=(\d+) mount=(\d+) source=(\d+) "
+        r"descriptor=(-?\d+) preflight=(\d+) reload=(\d+) staged=([^\s]+)")
+    states = {row[0]: row[1:] for row in trace.findall(log_text)}
+    before = states.get("before-preflight-fault")
+    after = states.get("after-preflight-fault")
+    if before is None or after is None or before != after:
+        raise RuntimeError("pre-unload preflight refusal changed the live owner snapshot")
+    empty = states.get("after-postunload-fault")
+    if (empty is None or empty[0:2] != before[0:2] or empty[2] != "0" or
+            empty[3] != before[3] or empty[4:9] != ("0", "0", "-1", "0", "0") or
+            empty[9] != "-"):
+        raise RuntimeError("post-unload fault did not return parent owner to empty baseline")
+    recovered = states.get("postunload-retry-loaded")
+    if (recovered is None or recovered[2] == "0" or recovered[4] != "1" or
+            recovered[5] != "1" or recovered[6] == "-1" or
+            recovered[7] != "0" or recovered[8] != "0" or
+            recovered[9] != "-"):
+        raise RuntimeError("post-unload same-process retry did not remount the UI owner")
+    completed = re.findall(
+        r"HALO_PS2_LOCAL m2-ui-lifecycle-cycle-complete cycle=(\d+)", log_text)
+    if completed != ["1", "2"]:
+        raise RuntimeError(f"expected lifecycle cycle completions [1, 2], got {completed}")
+    ce_released = re.findall(
+        r"HALO_PS2_LOCAL m2-ui-lifecycle-owner-released cycle=(\d+) "
+        r"scenario=(?:\(nil\)|0x0+|0+) bsp=(?:\(nil\)|0x0+|0+) "
+        r"collision=(?:\(nil\)|0x0+|0+) bsp3d=(?:\(nil\)|0x0+|0+) "
+        r"game_globals=(?:\(nil\)|0x0+|0+) scenario_index=-1 bsp_index=-1 "
+        r"scenario_bsp_index=-1 tags=(?:\(nil\)|0x0+|0+) tag_count=0 cache=0",
+        log_text)
+    if ce_released != ["1", "2"]:
+        raise RuntimeError("CE scenario/collision/tag/index globals were not null at owner release")
+    ce_unpublished = re.findall(
+        r"HALO_PS2_LOCAL m2-ui-lifecycle-ce-unpublished cycle=(\d+) "
+        r"scenario=(?:\(nil\)|0x0+|0+) bsp=(?:\(nil\)|0x0+|0+) "
+        r"collision=(?:\(nil\)|0x0+|0+) bsp3d=(?:\(nil\)|0x0+|0+) "
+        r"game_globals=(?:\(nil\)|0x0+|0+) scenario_index=-1 bsp_index=-1 "
+        r"scenario_bsp_index=-1 tags=(?:\(nil\)|0x0+|0+) tag_count=0 cache=1",
+        log_text)
+    if ce_unpublished != ["1", "2"]:
+        raise RuntimeError("CE globals were not unpublished before owner release")
+    if not (log_text.index("m2-ui-lifecycle-ce-unpublished cycle=1") <
+            log_text.index("m2-ui-lifecycle-owner-released cycle=1") <
+            log_text.index("m2-ui-lifecycle-cycle-complete cycle=1") <
+            log_text.index("m2-ui-lifecycle-ce-unpublished cycle=2") <
+            log_text.index("m2-ui-lifecycle-owner-released cycle=2") <
+            log_text.index("m2-ui-lifecycle-cycle-complete cycle=2")):
+        raise RuntimeError("CE unpublish/release/reload cycles are not ordered")
+    owner_released = re.findall(
+        r"HALO_PS2_LOCAL m2-ui-owner cycle=(\d+) phase=ce-unpublished-owner-released "
+        r"base=(0x[0-9a-fA-F]+) cap=(\d+) used=0 high=(\d+) mount=0 source=0 "
+        r"descriptor=-1 preflight=0 reload=1 staged=ui",
+        log_text)
+    owner_released = [row for row in owner_released if row[0] in ("1", "2")]
+    if [(cycle, cap) for cycle, _base, cap, _high in owner_released] != [
+            ("1", "1572864"), ("2", "1572864")]:
+        raise RuntimeError("parent owner did not return to its fixed UI-unload baseline")
+    loaded = re.findall(
+        r"HALO_PS2_LOCAL m2-ui-owner cycle=(\d+) phase=cycle-loaded "
+        r"base=(0x[0-9a-fA-F]+) cap=(\d+) used=(\d+) high=(\d+) mount=1 source=1 "
+        r"descriptor=(\d+) preflight=0 reload=0 staged=-",
+        log_text)
+    if [row[0] for row in loaded] != ["1", "2"]:
+        raise RuntimeError("parent owner state missing after one or more UI reloads")
+    if loaded[0][1:5] != loaded[1][1:5]:
+        raise RuntimeError("identical UI reload changed fixed owner footprint/high-water")
+    return {"cycles": completed, "owner_release": owner_released,
+            "owner_loaded": loaded, "ce_globals_null": ce_released,
+            "ce_globals_unpublished": ce_unpublished}
 
 
 def physical_memory_evidence(log_text):
@@ -115,9 +248,38 @@ def physical_memory_evidence(log_text):
                 and arena_valid and stack_valid}
 
 
+def find_link_probe_report(elf, probe_directory=None):
+    """Find the link-probe report whose embedded ELF hash matches `elf`.
+
+    Diagnostic profiles write isolated result-<profile>.json files. Selecting
+    the default result.json unconditionally can compare a real guest run against
+    the wrong tag-cache/layout profile, so identity is the selection key.
+    """
+    probe_directory = (Path(probe_directory) if probe_directory is not None
+                       else ROOT / "build/hcu-parent-link-probe")
+    wanted = sha(elf)
+    candidates = [probe_directory / "result.json"]
+    candidates.extend(sorted(probe_directory.glob("result-*.json")))
+    for candidate in candidates:
+        if not candidate.is_file():
+            continue
+        try:
+            report = json.loads(candidate.read_text())
+            machine = report["hcu_gameplay_machine"]
+            if machine["elf"]["sha256"] == wanted:
+                return candidate
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+    return None
+
+
 def linked_physical_evidence(physical, elf, probe_path=None):
     """Bind guest pointers to this exact linked image, not a prior guest log."""
-    probe_path = probe_path or ROOT / "build/hcu-parent-link-probe/result.json"
+    if probe_path is None:
+        probe_path = find_link_probe_report(elf)
+    if probe_path is None:
+        return {"checks": {"matching_link_probe_report": False}, "passed": False,
+                "machine_elf_sha256": sha(elf), "link_map_sha256": None}
     probe = json.loads(probe_path.read_text())
     machine = probe["hcu_gameplay_machine"]
     placement = machine["physical_placement"]
@@ -146,6 +308,17 @@ def linked_physical_evidence(physical, elf, probe_path=None):
             "link_map_sha256": machine["memory_ledger"]["map_sha256"]}
 
 
+def required_physical_evidence(log_text, elf, required, probe_path=None):
+    """Parse runtime placement and bind it to the exact linked image."""
+    physical = physical_memory_evidence(log_text)
+    linked = (linked_physical_evidence(physical, elf, probe_path)
+              if physical is not None and elf is not None else None)
+    if required and not (physical and linked and linked["passed"]):
+        raise RuntimeError(
+            "guest physical memory/arena placement evidence missing or invalid")
+    return physical, linked
+
+
 def failed_guest_evidence(log_text, success_marker):
     """Retain completed startup gates even when a later stage halts."""
     m1_marker = "HALO_PS2_LOCAL m1-ui-map-request"
@@ -155,15 +328,15 @@ def failed_guest_evidence(log_text, success_marker):
             "HALO_PS2_LOCAL game-initialize-done" in log_text,
         "reached_success_marker": success_marker in log_text,
         "reached_m1_boundary": m1_offset >= 0,
-        "failure_after_m1_boundary": m1_offset >= 0 and any(
-            token in log_text[m1_offset:]
-            for token in ("HALO_PS2_LOCAL halt", "HALO_PS2_FAIL")),
+        "failure_after_m1_boundary": m1_offset >= 0 and
+            guest_fault_after_marker(log_text[m1_offset:], m1_marker) is not None,
         "physical_memory": physical_memory_evidence(log_text),
     }
 
 
 def boot_once(config, elf, mode, display, timeout, stage, success_marker,
-              disc=None, boot_from_disc=False, require_physical_placement=False):
+              disc=None, boot_from_disc=False, require_physical_placement=False,
+              stable_seconds=2.0):
     run = OUTPUT / f"emulator-m1-{mode}-{uuid.uuid4().hex}"
     run.mkdir(parents=True)
     ini = prepare(config, run, mode)
@@ -190,8 +363,10 @@ def boot_once(config, elf, mode, display, timeout, stage, success_marker,
         "halo_ps2_commit": git_revision(ROOT / "submodules/halo-ps2"),
         "boot_from_disc": boot_from_disc,
         "require_physical_placement": require_physical_placement,
+        "required_stable_seconds": stable_seconds,
         "elf_sha256": sha(elf) if elf is not None else None,
         "elf_path": str(elf) if elf is not None else None,
+        "host_asset_manifest_before": host_asset_manifest(elf),
         "disc_path": str(disc) if disc is not None else None,
         "disc_sha256": sha(disc) if disc is not None else None,
         "bios_sha256": sha(config["bios"]),
@@ -221,13 +396,11 @@ def boot_once(config, elf, mode, display, timeout, stage, success_marker,
                     success_marker in text and
                     (stage == "m3-memory-ready" or
                      "HALO_PS2_LOCAL game-initialize-done" in text)):
-                physical = physical_memory_evidence(text)
-                linked = (linked_physical_evidence(physical, elf)
-                          if physical and require_physical_placement else None)
-                if require_physical_placement and not (
-                        physical and linked and linked["passed"]):
-                    raise RuntimeError(
-                        "guest physical memory/arena placement evidence missing or invalid")
+                guest_fault = guest_fault_after_marker(text, success_marker)
+                if guest_fault:
+                    raise RuntimeError(guest_fault)
+                physical, linked = required_physical_evidence(
+                    text, elf, require_physical_placement)
                 marker_offset = text.index(success_marker)
                 result.update(
                     status=("passed" if stage == "m3-memory-ready" else "boundary-observed"),
@@ -236,31 +409,53 @@ def boot_once(config, elf, mode, display, timeout, stage, success_marker,
                              "local-menu-request-reached-not-playable"),
                     reached_game_initialize_done="HALO_PS2_LOCAL game-initialize-done" in text,
                     reached_success_marker=True,
-                    failure_after_boundary=any(
-                        text.find(token, marker_offset) >= 0
-                        for token in ("HALO_PS2_LOCAL halt", "HALO_PS2_FAIL")),
+                    failure_after_boundary=guest_fault_after_marker(
+                        text[marker_offset:], success_marker) is not None,
                     wall_seconds=time.monotonic() - started,
                     physical_memory=physical,
                     linked_physical=linked,
                     last_guest_log=text[-12000:],
                 )
+                result["host_asset_manifest_after"] = host_asset_manifest(elf)
+                result["host_assets_unchanged"] = (
+                    result["host_asset_manifest_before"] ==
+                    result["host_asset_manifest_after"])
                 save(result_path, result)
                 return result
-            if "HALO_PS2_LOCAL halt" in text or "HALO_PS2_FAIL" in text:
-                marker = next((line for line in reversed(text.splitlines())
-                               if "HALO_PS2_LOCAL halt" in line or "HALO_PS2_FAIL" in line), "guest failure")
-                raise RuntimeError(marker)
             if "HALO_PS2_LOCAL game-initialize-done" in text:
                 result["reached_game_initialize_done"] = True
                 save(result_path, result)
             if success_marker in text and success_at is None:
+                if stage == "m2-ui-lifecycle":
+                    result["lifecycle_evidence"] = validate_m2_ui_lifecycle_log(text)
+                    if require_physical_placement:
+                        physical, linked = required_physical_evidence(
+                            text, elf, True)
+                        result["physical_memory"] = physical
+                        result["linked_physical"] = linked
                 success_at = time.monotonic()
                 result["reached_success_marker"] = True
                 save(result_path, result)
-            if success_at is not None and time.monotonic() - success_at >= 2.0:
+            if success_at is not None:
+                guest_fault = guest_fault_after_marker(text, success_marker)
+                if guest_fault:
+                    raise RuntimeError(guest_fault)
+            elif "HALO_PS2_LOCAL halt" in text or "HALO_PS2_FAIL" in text:
+                marker = next((line for line in reversed(text.splitlines())
+                               if "HALO_PS2_LOCAL halt" in line or "HALO_PS2_FAIL" in line), "guest failure")
+                raise RuntimeError(marker)
+            if (success_at is not None and
+                    time.monotonic() - success_at >= stable_seconds):
+                guest_fault = guest_fault_after_marker(text, success_marker)
+                if guest_fault:
+                    raise RuntimeError(guest_fault)
                 result.update(status="passed", outcome=f"{stage}-marker-stable",
                               wall_seconds=time.monotonic() - started,
                               stable_seconds=time.monotonic() - success_at)
+                result["host_asset_manifest_after"] = host_asset_manifest(elf)
+                result["host_assets_unchanged"] = (
+                    result["host_asset_manifest_before"] ==
+                    result["host_asset_manifest_after"])
                 save(result_path, result)
                 return result
             if process.poll() is not None:
@@ -276,6 +471,10 @@ def boot_once(config, elf, mode, display, timeout, stage, success_marker,
         result.update(status="failed", error=str(error),
                       **failed_guest_evidence(text, success_marker),
                       last_guest_log=text[-12000:])
+        result["host_asset_manifest_after"] = host_asset_manifest(elf)
+        result["host_assets_unchanged"] = (
+            result["host_asset_manifest_before"] ==
+            result["host_asset_manifest_after"])
         save(result_path, result)
         raise
     finally:
@@ -296,6 +495,8 @@ def main():
                         help="playable is the acceptance default; m1-boundary is diagnostic only")
     parser.add_argument("--display", default=os.environ.get("DISPLAY"))
     parser.add_argument("--timeout", type=int, default=180)
+    parser.add_argument("--stable-seconds", type=float, default=2.0,
+                        help="fault-free observation time after the requested marker")
     parser.add_argument("--elf", type=Path, default=ELF,
                         help="ELF to qualify (default: standalone HCU closure)")
     parser.add_argument("--disc", type=Path, default=None,
@@ -307,6 +508,8 @@ def main():
     parser.add_argument("--success-marker", default=None,
                         help="override the selected stage marker (normally avoid this)")
     args = parser.parse_args()
+    if args.stable_seconds <= 0:
+        parser.error("--stable-seconds must be positive")
     elf = args.elf.resolve() if not args.boot_from_disc else None
     if elf is not None and not elf.is_file():
         raise RuntimeError(f"ELF does not exist: {elf}")
@@ -326,7 +529,8 @@ def main():
             results.append(boot_once(config, elf, mode, display, args.timeout,
                                      args.stage, success_marker, disc,
                                      args.boot_from_disc,
-                                     args.require_physical_placement))
+                                     args.require_physical_placement,
+                                     args.stable_seconds))
         except (OSError, RuntimeError, subprocess.SubprocessError) as error:
             # boot_once persists the exact failed run before raising. Keep the
             # aggregate pointer truthful too; otherwise a failed current ELF
