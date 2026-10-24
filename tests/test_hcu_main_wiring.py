@@ -68,9 +68,14 @@ class HcuMainWiringTest(unittest.TestCase):
         helper = helper[:helper.index("\n}\n") + 3]
         for owner in ("HCU_OWNER_GAME_STATE", "HCU_OWNER_OBJECT_POOL",
                       "HCU_OWNER_DYNAMIC_SIM", "HCU_OWNER_TAGS", "HCU_OWNER_BSP",
-                      "HCU_OWNER_RENDER_CHUNKS", "HCU_OWNER_STREAMING",
+                      "HCU_OWNER_STREAMING",
                       "HCU_OWNER_SCRATCH", "HCU_OWNER_DMA", "HCU_OWNER_AUDIO_REQUESTS"):
             self.assertRegex(helper, re.escape(owner))
+        self.assertIn("hcu_render_telemetry_bind(&s_owner_telemetry, texture)", helper)
+        self.assertNotIn("HCU_OWNER_WIDGET_POOL", helper)
+        self.assertNotIn("HCU_OWNER_RENDER_TEXTURE", helper)
+        self.assertIn("gs_cap=%u", self.source)
+        self.assertIn("domain=%s", self.source)
         # Nested owners are declared with their backing parent in the static table,
         # so main must not sum them: the report sums BACKING rows only.
         self.assertIn("nested_within_parent", self.source)

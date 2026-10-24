@@ -186,23 +186,27 @@ static void hcu_report_owner_telemetry(const char *phase)
 		return;
 	printf("HALO_PS2_LOCAL owner-telemetry phase=%s partition=%s backing_cap=%u "
 		"backing_used=%u backing_high=%u backing_failures=%u backing_resets=%u "
+		"gs_cap=%u gs_used=%u gs_high=%u gs_failures=%u gs_resets=%u "
 		"nested_within_parent=%d renderer_drained=%d\n",
 		phase, s_partition_name,
 		(unsigned)rep.backing_capacity, (unsigned)rep.backing_used,
 		(unsigned)rep.backing_high, (unsigned)rep.backing_failures,
-		(unsigned)rep.backing_resets, rep.nested_within_parent,
+		(unsigned)rep.backing_resets,
+		(unsigned)rep.gs_capacity, (unsigned)rep.gs_used, (unsigned)rep.gs_high,
+		(unsigned)rep.gs_failures, (unsigned)rep.gs_resets, rep.nested_within_parent,
 		hcu_renderer_drained(NULL));
 	for (i = 0; i < (int)HCU_OWNER_COUNT; ++i) {
 		const hcu_owner_row_t *row = &rep.rows[i];
 		printf("HALO_PS2_LOCAL owner-telemetry phase=%s name=%s kind=%s parent=%s "
-			"bound=%d cap=%u used=%u high=%u failures=%u resets=%u\n",
+			"bound=%d cap=%u used=%u high=%u failures=%u resets=%u domain=%s\n",
 			phase, row->name,
 			row->kind == HCU_OWNER_KIND_NESTED ? "nested" : "backing",
 			row->parent >= 0 ? rep.rows[row->parent].name : "-",
 			row->bound,
 			(unsigned)row->sample.capacity, (unsigned)row->sample.used,
 			(unsigned)row->sample.high, (unsigned)row->sample.failures,
-			(unsigned)row->sample.resets);
+			(unsigned)row->sample.resets,
+			row->domain == HCU_OWNER_DOMAIN_GS ? "gs" : "ee");
 	}
 }
 
@@ -473,8 +477,8 @@ static void hcu_bind_owner_telemetry(mem_layout_v2_t *layout,
 		hcu_sample_ce_owner, (void *)(intptr_t)HALO_PS2_OWNER_OBJECT_POOL);
 	hcu_owner_telemetry_bind_sampler(&s_owner_telemetry, HCU_OWNER_ACTOR_POOL,
 		hcu_sample_ce_owner, (void *)(intptr_t)HALO_PS2_OWNER_ACTOR_POOL);
-	hcu_owner_telemetry_bind_sampler(&s_owner_telemetry, HCU_OWNER_WIDGET_POOL,
-		hcu_sample_ce_owner, (void *)(intptr_t)HALO_PS2_OWNER_WIDGET_POOL);
+	/* The current UI adapter initializes CE widgets but does not allocate a
+	 * separate widget stack pool; leave that nested row unbound. */
 
 	s_owner_ctx[HCU_OWNER_DYNAMIC_SIM].arena = dynamic;
 	hcu_owner_telemetry_bind_sampler(&s_owner_telemetry, HCU_OWNER_DYNAMIC_SIM,
@@ -488,10 +492,6 @@ static void hcu_bind_owner_telemetry(mem_layout_v2_t *layout,
 	hcu_owner_telemetry_bind_sampler(&s_owner_telemetry, HCU_OWNER_BSP,
 		hcu_sample_bsp, &s_owner_ctx[HCU_OWNER_BSP]);
 
-	s_owner_ctx[HCU_OWNER_RENDER_CHUNKS].arena = texture;
-	hcu_owner_telemetry_bind_sampler(&s_owner_telemetry, HCU_OWNER_RENDER_CHUNKS,
-		hcu_sample_arena, &s_owner_ctx[HCU_OWNER_RENDER_CHUNKS]);
-
 	s_owner_ctx[HCU_OWNER_STREAMING].arena = streaming;
 	hcu_owner_telemetry_bind_sampler(&s_owner_telemetry, HCU_OWNER_STREAMING,
 		hcu_sample_arena, &s_owner_ctx[HCU_OWNER_STREAMING]);
@@ -501,8 +501,6 @@ static void hcu_bind_owner_telemetry(mem_layout_v2_t *layout,
 		hcu_sample_arena, &s_owner_ctx[HCU_OWNER_SCRATCH]);
 
 	s_owner_ctx[HCU_OWNER_DMA].arena = dma_commands;
-	hcu_owner_telemetry_bind_sampler(&s_owner_telemetry, HCU_OWNER_DMA,
-		hcu_sample_arena, &s_owner_ctx[HCU_OWNER_DMA]);
 
 	/* No separate request queue exists yet; the audio region is the closest
 	 * owned store and is reported under its own name, not as a queue. */
@@ -510,12 +508,8 @@ static void hcu_bind_owner_telemetry(mem_layout_v2_t *layout,
 	hcu_owner_telemetry_bind_sampler(&s_owner_telemetry, HCU_OWNER_AUDIO_REQUESTS,
 		hcu_sample_arena, &s_owner_ctx[HCU_OWNER_AUDIO_REQUESTS]);
 
-	hcu_owner_telemetry_bind_sampler(&s_owner_telemetry, HCU_OWNER_RENDER_CHUNKS,
-		hcu_render_telemetry_sample_render_chunks, NULL);
-	hcu_owner_telemetry_bind_sampler(&s_owner_telemetry, HCU_OWNER_RENDER_TEXTURE,
-		hcu_render_telemetry_sample_texture, NULL);
-	hcu_owner_telemetry_bind_sampler(&s_owner_telemetry, HCU_OWNER_DMA,
-		hcu_render_telemetry_sample_dma, NULL);
+	if (!hcu_render_telemetry_bind(&s_owner_telemetry, texture))
+		printf("[err] could not bind renderer owners to EE and GS telemetry domains\n");
 }
 
 static void hcu_report_cache_owners(const char *phase)

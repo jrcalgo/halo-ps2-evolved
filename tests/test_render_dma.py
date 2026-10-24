@@ -32,6 +32,14 @@ def test_renderer_owner_samplers_and_registry_host():
         ], "telemetry-test", temp)
 
 
+def test_owner_registry_separates_ee_and_gs_domains_and_rejects_cross_domain_parent():
+    with tempfile.TemporaryDirectory(prefix="owner-domain-telemetry-") as temp:
+        _build_and_run([
+            ROOT / "tests/hcu_owner_telemetry_main.c",
+            ROOT / "src/stream/hcu_owner_telemetry.c",
+        ], "owner-domain-test", temp)
+
+
 def test_bsp_render_counts_chains_and_refuses_inflight_build():
     text = (ENGINE / "render/bsp_render.c").read_text()
     # The build redirects off the in-flight chain and the emit is gated by the same rule.
@@ -60,6 +68,7 @@ def test_telemetry_module_has_the_three_owner_samplers():
     source = (ROOT / "src/stream/hcu_render_telemetry.c").read_text()
     for name in ("hcu_render_telemetry_sample_dma",
                  "hcu_render_telemetry_sample_render_chunks",
-                 "hcu_render_telemetry_sample_texture"):
+                 "hcu_render_telemetry_sample_gs_window",
+                 "hcu_render_telemetry_sample_gs_texture"):
         assert name + "(void *ctx, hcu_owner_sample_t *out)" in header
         assert name + "(void *ctx, hcu_owner_sample_t *out)" in source

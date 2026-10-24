@@ -21,11 +21,13 @@ int main(void) {
     hcu_owner_report_t r;
     int parent;
     hcu_owner_kind_t kind;
+    hcu_owner_domain_t domain;
     const char *name;
 
     /* Static table: every nested owner names a BACKING parent. */
     for (int i = 0; i < (int)HCU_OWNER_COUNT; ++i) {
         assert(hcu_owner_static_info((hcu_owner_id_t)i, &parent, &kind, &name));
+        assert(hcu_owner_static_domain((hcu_owner_id_t)i, &domain));
         assert(name && name[0]);
         if (kind == HCU_OWNER_KIND_NESTED) {
             assert(parent >= 0 && parent < (int)HCU_OWNER_COUNT);
@@ -34,6 +36,10 @@ int main(void) {
             const char *pname;
             assert(hcu_owner_static_info((hcu_owner_id_t)parent, &pparent, &pkind, &pname));
             assert(pkind == HCU_OWNER_KIND_BACKING && pparent == -1);
+            assert(hcu_owner_parent_is_valid((hcu_owner_id_t)i, (hcu_owner_id_t)parent));
+            hcu_owner_domain_t parent_domain;
+            assert(hcu_owner_static_domain((hcu_owner_id_t)parent, &parent_domain));
+            assert(domain == parent_domain);
         } else {
             assert(parent == -1);
         }
@@ -41,6 +47,8 @@ int main(void) {
     assert(!hcu_owner_static_info(HCU_OWNER_COUNT, &parent, &kind, &name));
     assert(hcu_owner_static_info(HCU_OWNER_WIDGET_POOL, &parent, &kind, &name));
     assert(kind == HCU_OWNER_KIND_NESTED && parent == HCU_OWNER_DYNAMIC_SIM);
+    assert(!hcu_owner_parent_is_valid(HCU_OWNER_GS_TEXTURE, HCU_OWNER_RENDER_CHUNKS));
+    assert(!hcu_owner_parent_is_valid(HCU_OWNER_RENDER_TEXTURE, HCU_OWNER_GS_WINDOW));
 
     hcu_owner_telemetry_init(&t);
 
@@ -61,20 +69,19 @@ int main(void) {
 
     assert(hcu_owner_telemetry_note_capacity(&t, HCU_OWNER_DYNAMIC_SIM, 300));
     assert(hcu_owner_telemetry_note_used(&t, HCU_OWNER_DYNAMIC_SIM, 120));
-    /* The widget pool is allocated from the dynamic-simulation arena; its
-       internal use is nested telemetry, not another backing owner. */
-    assert(hcu_owner_telemetry_note_capacity(&t, HCU_OWNER_WIDGET_POOL, 256));
-    assert(hcu_owner_telemetry_note_used(&t, HCU_OWNER_WIDGET_POOL, 200));
+    /* The current UI adapter has no real widget allocation pool; leave it unbound. */
     assert(hcu_owner_telemetry_note_capacity(&t, HCU_OWNER_TAGS, 5000));
     assert(hcu_owner_telemetry_note_used(&t, HCU_OWNER_TAGS, 4000));
     assert(hcu_owner_telemetry_note_capacity(&t, HCU_OWNER_BSP, 2000));
     assert(hcu_owner_telemetry_note_used(&t, HCU_OWNER_BSP, 1800));
 
-    /* Sampler-driven render chunks, with a nested texture owner. */
+    /* EE render arena and GS window/cache are separate memory domains. */
     hcu_owner_sample_t chunks = {500, 100, 450, 1, 0};
-    hcu_owner_sample_t texture = {300, 200, 280, 0, 2};
+    hcu_owner_sample_t gs_window = {1000, 800, 900, 1, 2};
+    hcu_owner_sample_t gs_texture = {500, 300, 350, 0, 1};
     assert(hcu_owner_telemetry_bind_sampler(&t, HCU_OWNER_RENDER_CHUNKS, fake_render_sampler, &chunks));
-    assert(hcu_owner_telemetry_bind_sampler(&t, HCU_OWNER_RENDER_TEXTURE, fake_render_sampler, &texture));
+    assert(hcu_owner_telemetry_bind_sampler(&t, HCU_OWNER_GS_WINDOW, fake_render_sampler, &gs_window));
+    assert(hcu_owner_telemetry_bind_sampler(&t, HCU_OWNER_GS_TEXTURE, fake_render_sampler, &gs_texture));
 
     assert(hcu_owner_telemetry_note_capacity(&t, HCU_OWNER_SCRATCH, 64));
     assert(hcu_owner_telemetry_note_used(&t, HCU_OWNER_SCRATCH, 64));
@@ -93,15 +100,20 @@ int main(void) {
     assert(r.rows[HCU_OWNER_OBJECT_POOL].sample.failures == 1);
     assert(r.rows[HCU_OWNER_ACTOR_POOL].sample.capacity == 200);
     assert(r.rows[HCU_OWNER_WIDGET_POOL].parent == HCU_OWNER_DYNAMIC_SIM);
-    assert(r.rows[HCU_OWNER_WIDGET_POOL].sample.used == 200);
-    assert(r.rows[HCU_OWNER_RENDER_TEXTURE].kind == HCU_OWNER_KIND_NESTED);
-    assert(r.rows[HCU_OWNER_RENDER_TEXTURE].sample.resets == 2);
+    assert(r.rows[HCU_OWNER_WIDGET_POOL].domain == HCU_OWNER_DOMAIN_EE);
+    assert(!r.rows[HCU_OWNER_WIDGET_POOL].bound);
+    assert(!r.rows[HCU_OWNER_RENDER_TEXTURE].bound);
+    assert(r.rows[HCU_OWNER_GS_WINDOW].domain == HCU_OWNER_DOMAIN_GS);
+    assert(r.rows[HCU_OWNER_GS_TEXTURE].kind == HCU_OWNER_KIND_NESTED);
+    assert(r.rows[HCU_OWNER_GS_TEXTURE].parent == HCU_OWNER_GS_WINDOW);
+    assert(r.rows[HCU_OWNER_GS_TEXTURE].sample.resets == 1);
 
     /* Backing totals must equal the sum over BACKING rows only. */
     size_t cap = 0, used = 0, high = 0;
     uint64_t fail = 0, reset = 0;
     for (int i = 0; i < (int)HCU_OWNER_COUNT; ++i) {
-        if (r.rows[i].kind != HCU_OWNER_KIND_BACKING) continue;
+        if (r.rows[i].kind != HCU_OWNER_KIND_BACKING ||
+            r.rows[i].domain != HCU_OWNER_DOMAIN_EE) continue;
         cap += r.rows[i].sample.capacity;
         used += r.rows[i].sample.used;
         high += r.rows[i].sample.high;
@@ -113,10 +125,12 @@ int main(void) {
     assert(r.backing_high == high);
     assert(r.backing_failures == fail);
     assert(r.backing_resets == reset);
+    assert(r.gs_capacity == 1000u && r.gs_used == 800u && r.gs_high == 900u);
+    assert(r.gs_failures == 1u && r.gs_resets == 2u);
 
     /* Expected literal values: game state 1000 + dyn 300 + tags 5000 + bsp 2000
      * + chunks 500 + streaming 1024 + scratch 64 + dma 1179648 + audio 0. Nested
-     * object pool 400, actor pool 200, widget pool 256 and texture 300 are NOT added. */
+     * object/actor/widget/GS texture rows are not added, and GS window is separate. */
     assert(r.backing_capacity == 1000u + 300u + 5000u + 2000u + 500u + 1024u + 64u + 1179648u);
     /* Used sum: 650 + 120 + 4000 + 1800 + 100 + 512 + 64 + 1179648 (game-state
      * used is the last note, 650). */
@@ -127,10 +141,10 @@ int main(void) {
     assert(r.backing_resets == 1u);
 
     /* Nested capacity larger than parent makes the report invalid. */
-    texture.capacity = 600;
+    gs_texture.capacity = 1200;
     assert(hcu_owner_telemetry_snapshot(&t, &r));
     assert(r.nested_within_parent == 0);
-    texture.capacity = 300;
+    gs_texture.capacity = 500;
 
     /* A sampler that reports not-bound leaves the row unbound and empty. */
     assert(hcu_owner_telemetry_bind_sampler(&t, HCU_OWNER_DMA, fake_unbound, NULL));

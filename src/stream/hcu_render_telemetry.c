@@ -25,36 +25,51 @@ int hcu_render_telemetry_sample_dma(void *ctx, hcu_owner_sample_t *out)
     return 1;
 }
 
-int hcu_render_telemetry_sample_texture(void *ctx, hcu_owner_sample_t *out)
-{
-    bsp_render_owner_counters t;
-    (void)ctx;
-    if (!out || bsp_render_texcache_counters(&t) != 0)
-        return 0;
-    from_counters(out, &t);
-    return 1;
-}
-
 int hcu_render_telemetry_sample_render_chunks(void *ctx, hcu_owner_sample_t *out)
 {
+    const arena_t *a = (const arena_t *)ctx;
+    if (!out || !a || !a->base)
+        return 0;
+    out->capacity = a->cap;
+    out->used = a->used;
+    out->high = a->high;
+    out->failures = a->failed_allocations;
+    out->resets = a->reset_count;
+    return 1;
+}
+
+int hcu_render_telemetry_sample_gs_window(void *ctx, hcu_owner_sample_t *out)
+{
     bsp_render_owner_counters t;
     (void)ctx;
     if (!out || bsp_render_texcache_counters(&t) != 0)
         return 0;
     from_counters(out, &t);
-    out->capacity += HCU_RENDER_TEXTURE_RESERVED_BYTES;
-    out->used += HCU_RENDER_TEXTURE_RESERVED_BYTES;
-    out->high += HCU_RENDER_TEXTURE_RESERVED_BYTES;
+    out->capacity += HCU_GS_TEXTURE_RESERVED_BYTES;
+    out->used += HCU_GS_TEXTURE_RESERVED_BYTES;
+    out->high += HCU_GS_TEXTURE_RESERVED_BYTES;
     return 1;
 }
 
-int hcu_render_telemetry_bind(hcu_owner_telemetry_t *t)
+int hcu_render_telemetry_sample_gs_texture(void *ctx, hcu_owner_sample_t *out)
+{
+    bsp_render_owner_counters t;
+    (void)ctx;
+    if (!out || bsp_render_texcache_counters(&t) != 0)
+        return 0;
+    from_counters(out, &t);
+    return 1;
+}
+
+int hcu_render_telemetry_bind(hcu_owner_telemetry_t *t, const arena_t *ee_render_chunks)
 {
     int ok = 1;
-    if (!t)
+    if (!t || !ee_render_chunks)
         return 0;
     ok &= hcu_owner_telemetry_bind_sampler(t, HCU_OWNER_DMA, hcu_render_telemetry_sample_dma, NULL) != 0;
-    ok &= hcu_owner_telemetry_bind_sampler(t, HCU_OWNER_RENDER_CHUNKS, hcu_render_telemetry_sample_render_chunks, NULL) != 0;
-    ok &= hcu_owner_telemetry_bind_sampler(t, HCU_OWNER_RENDER_TEXTURE, hcu_render_telemetry_sample_texture, NULL) != 0;
+    ok &= hcu_owner_telemetry_bind_sampler(t, HCU_OWNER_RENDER_CHUNKS,
+        hcu_render_telemetry_sample_render_chunks, (void *)ee_render_chunks) != 0;
+    ok &= hcu_owner_telemetry_bind_sampler(t, HCU_OWNER_GS_WINDOW, hcu_render_telemetry_sample_gs_window, NULL) != 0;
+    ok &= hcu_owner_telemetry_bind_sampler(t, HCU_OWNER_GS_TEXTURE, hcu_render_telemetry_sample_gs_texture, NULL) != 0;
     return ok;
 }
