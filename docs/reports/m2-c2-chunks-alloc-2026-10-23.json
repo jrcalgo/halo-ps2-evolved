@@ -1,0 +1,35 @@
+{
+  "format": "hcu-m2-c2-chunks-alloc-v1",
+  "date": "2026-10-23",
+  "lane": "chunks-alloc",
+  "requirements": [
+    {
+      "id": "C2.4",
+      "result": "partial",
+      "evidence_level": "host execution + EE cross-compile",
+      "scope": "Residency table with CE pin, DMA/GS lease and gameplay-ref counts; refuse-while-busy evict; verified fill via HCP2 read_chunk; host tests on real bots-bloodgulch.hcp.",
+      "remaining_limitation": "Residency unit is the whole logical chunk (CE 4,767,713 B), not a <=64 KiB decoded chunk; not wired to CE gameplay pointers or DMA/GS paths; pin-time verify failure untested; no partition or budget charge.",
+      "evidence_files": [
+        "src/stream/hcu_asset_profile.c",
+        "src/stream/hcu_asset_profile.h",
+        "tests/hcu_asset_residency_main.c",
+        "tests/test_hcu_asset_residency.py",
+        "docs/reports/m2-c2-chunks-alloc-2026-10-23.md"
+      ]
+    },
+    {
+      "id": "C2.5",
+      "result": "partial",
+      "evidence_level": "host execution + EE cross-compile + source inventory",
+      "scope": "211 callsites classified (static heuristic); compat allocator fallback counters and refused_unbound counter; endless churn 2,000,000 ops with zero failures and zero SDK fallbacks; realloc semantics unchanged.",
+      "remaining_limitation": "No runtime phase trace; zero callsites moved to preallocated storage; CE game-state and nested object pools have no free path; endless churn covers only the compat arena.",
+      "evidence_files": [
+        "docs/reports/m2-c2-5-postload-allocation-source-inventory-2026-10-23.json",
+        "submodules/halo-ce-universal/port/ps2/src/ps2_memory.c",
+        "tests/hcu_ps2_malloc_endless_main.c",
+        "tools/test_hcu_ps2_malloc_endless.py",
+        "docs/reports/m2-c2-chunks-alloc-2026-10-23.md"
+      ]
+    }
+  ]
+}
