@@ -1,4 +1,4 @@
-"""Deterministic HCP1 independently addressable HCU profile chunk envelope."""
+"""Deterministic HCP1/HCP2 HCU profile chunk envelope writers."""
 from __future__ import annotations
 
 import argparse
@@ -6,22 +6,26 @@ import hashlib
 from pathlib import Path
 import struct
 
-MAGIC = b"HCP1"
-VERSION = 1
+MAGIC_V1 = b"HCP1"
+MAGIC = b"HCP2"
+VERSION_V1 = 1
+VERSION = 2
 HEADER = struct.Struct("<4s7I")
-RECORD = struct.Struct("<4I32s")
+V1_RECORD = struct.Struct("<4I32s")
+V2_RECORD = struct.Struct("<8I32s32s")
+RECORD = V2_RECORD
 CHUNK_TYPES = {"ce": (1, 0), "media": (2, None), "sound_meta": (3, 0)}
 ALIGNMENT = 16
 MAX_CHUNKS = 65536
+MAX_MEDIA_CHUNK_BYTES = 65536
+MAX_SEGMENT_BYTES = 65536
 
 
 class ProfileError(ValueError):
     pass
 
 
-def encode(profile_id: int, chunks: dict[str, bytes] | dict[tuple[int, int], bytes]) -> bytes:
-    if not 0 < profile_id <= 0xffffffff:
-        raise ProfileError("profile id must be a nonzero u32")
+def _normalize(chunks):
     normalized = {}
     if all(isinstance(key, str) for key in chunks):
         if not {"ce", "media", "sound_meta"}.issubset(chunks):
@@ -35,28 +39,63 @@ def encode(profile_id: int, chunks: dict[str, bytes] | dict[tuple[int, int], byt
             normalized[(2, 0)] = media
     else:
         normalized = {(int(kind), int(cid)): data for (kind, cid), data in chunks.items()}
-    if (1, 0) not in normalized or (3, 0) not in normalized or len(normalized) > MAX_CHUNKS:
-        raise ProfileError("CE and sound metadata roots are required; at most 65536 chunks")
+    if (1, 0) not in normalized or (3, 0) not in normalized:
+        raise ProfileError("CE and sound metadata roots are required")
     ordered = sorted(normalized.items())
-    if any((kind not in (1, 2, 3) or not 0 <= kind <= 0xffffffff or
-            not 0 <= cid <= 0xffffffff or (kind != 2 and cid != 0))
+    if any(kind not in (1, 2, 3) or not 0 <= kind <= 0xffffffff or
+           not 0 <= cid <= 0xffffffff or (kind != 2 and cid != 0)
            for (kind, cid), _data in ordered):
         raise ProfileError("invalid chunk type/id")
-    rows = bytearray()
-    payload = bytearray()
-    dir_offset = HEADER.size
-    data_offset = dir_offset + len(ordered) * RECORD.size
-    for (kind, chunk_id), raw_blob in ordered:
-        blob = bytes(raw_blob)
+    if len(ordered) > MAX_CHUNKS:
+        raise ProfileError("at most 65536 logical chunks")
+    result = []
+    for (kind, cid), raw in ordered:
+        blob = bytes(raw)
         if not blob:
-            raise ProfileError(f"chunk {kind}:{chunk_id} must be nonempty")
+            raise ProfileError(f"chunk {kind}:{cid} must be nonempty")
+        result.append(((kind, cid), blob))
+    return result
+
+
+def encode(profile_id: int, chunks: dict[str, bytes] | dict[tuple[int, int], bytes], *, version: int = 2) -> bytes:
+    if not 0 < profile_id <= 0xffffffff:
+        raise ProfileError("profile id must be a nonzero u32")
+    if version not in (1, 2):
+        raise ProfileError("version must be 1 or 2")
+    logical = _normalize(chunks)
+    rows, payload = bytearray(), bytearray()
+    directory_offset = HEADER.size
+    if version == 1:
+        if any(kind == 2 and len(blob) > MAX_MEDIA_CHUNK_BYTES for ((kind, _), blob) in logical):
+            raise ProfileError(f"HCP1 media chunks cannot exceed {MAX_MEDIA_CHUNK_BYTES} bytes")
+        data_offset = directory_offset + len(logical) * V1_RECORD.size
+        for (kind, cid), blob in logical:
+            offset = (data_offset + len(payload) + ALIGNMENT - 1) & ~(ALIGNMENT - 1)
+            payload.extend(b"\0" * (offset - data_offset - len(payload)))
+            rows.extend(V1_RECORD.pack(kind, cid, offset, len(blob), hashlib.sha256(blob).digest()))
+            payload.extend(blob)
+        header = HEADER.pack(MAGIC_V1, 1, HEADER.size, profile_id, len(logical), directory_offset,
+                             len(rows), data_offset + len(payload))
+        return header + rows + payload
+    segments = []
+    for (kind, cid), blob in logical:
+        count = (len(blob) + MAX_SEGMENT_BYTES - 1) // MAX_SEGMENT_BYTES
+        whole_digest = hashlib.sha256(blob).digest()
+        for index in range(count):
+            part = blob[index * MAX_SEGMENT_BYTES:(index + 1) * MAX_SEGMENT_BYTES]
+            segments.append((kind, cid, index, count, len(blob), index * MAX_SEGMENT_BYTES,
+                             part, hashlib.sha256(part).digest(), whole_digest))
+    if len(segments) > MAX_CHUNKS:
+        raise ProfileError("at most 65536 physical segments")
+    data_offset = directory_offset + len(segments) * V2_RECORD.size
+    for kind, cid, index, count, logical_size, logical_offset, blob, seg_sha, whole_sha in segments:
         offset = (data_offset + len(payload) + ALIGNMENT - 1) & ~(ALIGNMENT - 1)
         payload.extend(b"\0" * (offset - data_offset - len(payload)))
-        rows.extend(RECORD.pack(kind, chunk_id, offset, len(blob), hashlib.sha256(blob).digest()))
+        rows.extend(V2_RECORD.pack(kind, cid, offset, len(blob), logical_offset, logical_size,
+                                   index, count, seg_sha, whole_sha))
         payload.extend(blob)
-    total = data_offset + len(payload)
-    header = HEADER.pack(MAGIC, VERSION, HEADER.size, profile_id, len(ordered),
-                         dir_offset, len(rows), total)
+    header = HEADER.pack(MAGIC, VERSION, HEADER.size, profile_id, len(segments), directory_offset,
+                         len(rows), data_offset + len(payload))
     return header + rows + payload
 
 

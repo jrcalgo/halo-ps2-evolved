@@ -32,32 +32,17 @@ static int span_overlap(const void *left, size_t left_size,
 	return a < be && b < ae;
 }
 
-static int profile_read(const hcu_asset_profile_view *profile,
-	uint32_t offset, void *destination, uint32_t size)
-{
-	if (!profile || (!destination && size) || offset > profile->total_bytes ||
-		size > profile->total_bytes - offset)
-		return 0;
-	if (profile->memory_image) {
-		memcpy(destination, profile->memory_image + offset, size);
-		return 1;
-	}
-	return profile->read_at &&
-		profile->read_at(profile->reader_context, offset, destination, size) == 0;
-}
-
 static int chunk_reader(void *context, size_t offset,
 	uint8_t *destination, size_t size)
 {
 	profile_chunk_reader_context *reader =	(profile_chunk_reader_context *)context;
 	size_t end;
-	uint32_t absolute;
 	if (!reader || !reader->profile || !add_size_ok(offset, size, &end) ||
-		end > reader->chunk.size || offset > UINT32_MAX - reader->chunk.offset ||
-		size > UINT32_MAX)
+		end > reader->chunk.size || offset > UINT32_MAX || size > UINT32_MAX)
 		return -1;
-	absolute = reader->chunk.offset + (uint32_t)offset;
-	return profile_read(reader->profile, absolute, destination, (uint32_t)size) ? 0 : -1;
+	return hcu_asset_profile_read_range(reader->profile, reader->chunk.type,
+		reader->chunk.chunk_id, (uint32_t)offset, destination, (uint32_t)size) ==
+		HCU_ASSET_PROFILE_OK ? 0 : -1;
 }
 
 static uint32_t read_u32_le(const uint8_t *p)
@@ -85,7 +70,10 @@ static int digest_profile_chunk(const hcu_asset_profile_view *profile,
 	while (offset < chunk->size) {
 		uint32_t take = chunk->size - offset;
 		if (take > scratch_size) take = (uint32_t)scratch_size;
-		if (!profile_read(profile, chunk->offset + offset, scratch, take)) return 0;
+		if (take > HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES)
+			take = HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES;
+		if (hcu_asset_profile_read_range(profile, chunk->type, chunk->chunk_id,
+			offset, scratch, take) != HCU_ASSET_PROFILE_OK) return 0;
 		sha256_update(&sha, scratch, take);
 		offset += take;
 	}
@@ -114,6 +102,7 @@ static int profile_view_matches(const hcu_asset_profile_view *a,
 {
 	return a && b && a->profile_id == b->profile_id &&
 		a->total_bytes == b->total_bytes && a->chunk_count == b->chunk_count &&
+		a->version == b->version && a->record_bytes == b->record_bytes &&
 		a->directory_bytes == b->directory_bytes && a->read_at == b->read_at &&
 		a->reader_context == b->reader_context && a->memory_image == b->memory_image;
 }
@@ -148,6 +137,30 @@ static int prepared_inputs_match(const hcu_profile_mount *mount)
 void hcu_profile_mount_init(hcu_profile_mount *mount)
 {
 	if (mount) memset(mount, 0, sizeof(*mount));
+}
+
+int hcu_profile_mount_bind_residency(hcu_profile_mount *mount,
+	hcu_asset_residency_entry *entries, uint32_t entry_capacity,
+	void *arena, size_t arena_bytes)
+{
+	if (!mount || !entries || !entry_capacity || !arena ||
+		arena_bytes < HCU_PROFILE_MOUNT_RESIDENCY_SEGMENT_BYTES ||
+		((uintptr_t)arena & 15u))
+		return HCU_PROFILE_MOUNT_E_ARGUMENT;
+	if (mount->prepared || mount->active || mount->backend_mounted || mount->callbacks_active)
+		return HCU_PROFILE_MOUNT_E_BUSY;
+	mount->residency_entries = entries;
+	mount->residency_entry_capacity = entry_capacity;
+	mount->residency_arena = (uint8_t *)arena;
+	mount->residency_arena_bytes = arena_bytes;
+	mount->residency_bound = 1;
+	return HCU_PROFILE_MOUNT_OK;
+}
+
+int hcu_profile_mount_inputs_match(const hcu_profile_mount *mount)
+{
+	return mount && mount->prepared && !mount->callbacks_active &&
+		prepared_inputs_match(mount);
 }
 
 static int resource_range_valid(const hmap_identity *identity,
@@ -208,7 +221,7 @@ int hcu_profile_mount_prepare(hcu_profile_mount *mount,
 	uint8_t digest[32];
 	uint8_t zero_digest[32] = { 0 };
 	size_t relocation_bytes;
-	uint16_t i, j;
+	uint32_t i, j;
 	uint32_t max_relocations;
 	if (!mount || !profile || !catalog_entry || !backend || !backend->mount_stream ||
 		!backend->register_ctag_visitor || !backend->unmount ||
@@ -370,6 +383,25 @@ int hcu_profile_mount_prepare(hcu_profile_mount *mount,
 	candidate.maximum_tag_image_bytes = maximum_tag_image_bytes;
 	candidate.prepared = 1;
 	if (!prepared_inputs_match(&candidate)) return HCU_PROFILE_MOUNT_E_IDENTITY;
+	if (mount->residency_bound) {
+		/* The residency arena is live from load until unload, so it must not
+		 * alias any span that prepare or the stream path still reads. */
+		if (span_overlap(mount->residency_arena, mount->residency_arena_bytes,
+			relocation_storage, relocation_storage_bytes) ||
+			span_overlap(mount->residency_arena, mount->residency_arena_bytes,
+			stream_scratch, stream_scratch_bytes) ||
+			(profile->memory_image && span_overlap(mount->residency_arena,
+			mount->residency_arena_bytes, profile->memory_image, profile->total_bytes)))
+			return HCU_PROFILE_MOUNT_E_ARGUMENT;
+		candidate.residency_entries = mount->residency_entries;
+		candidate.residency_entry_capacity = mount->residency_entry_capacity;
+		candidate.residency_arena = mount->residency_arena;
+		candidate.residency_arena_bytes = mount->residency_arena_bytes;
+		candidate.residency_bound = 1;
+		if (hcu_asset_residency_init(&candidate.residency, candidate.residency_entries,
+			candidate.residency_entry_capacity) != HCU_ASSET_PROFILE_OK)
+			return HCU_PROFILE_MOUNT_E_ARGUMENT;
+	}
 	*mount = candidate;
 	return HCU_PROFILE_MOUNT_OK;
 }
@@ -411,7 +443,117 @@ static int mount_source_read(void *context, int32_t output_datum,
 	return 0;
 }
 
+static int stream_chunk_direct(hcu_profile_mount *mount,
+	const hcu_asset_chunk_view *chunk, ctag_ctag_sink_fn sink,
+	void *sink_context, size_t *raw_size);
+
+static uint8_t *residency_free_slot(hcu_profile_mount *mount)
+{
+	size_t slots = mount->residency_arena_bytes / HCU_PROFILE_MOUNT_RESIDENCY_SEGMENT_BYTES, s;
+	uint32_t i;
+	for (s = 0; s < slots; ++s) {
+		uint8_t *slot = mount->residency_arena + s * HCU_PROFILE_MOUNT_RESIDENCY_SEGMENT_BYTES;
+		for (i = 0; i < mount->residency.count; ++i)
+			if (mount->residency.entries[i].resident &&
+				mount->residency.entries[i].storage == slot) break;
+		if (i == mount->residency.count) return slot;
+	}
+	/* Every slot is resident: reuse one with no pin, lease or gameplay
+	 * reference. Busy segments are never evicted. */
+	for (i = 0; i < mount->residency.count; ++i) {
+		hcu_asset_residency_entry *e = &mount->residency.entries[i];
+		void *released = NULL;
+		if (e->resident && !e->pin_count && !e->lease_count && !e->gameplay_refs &&
+			hcu_asset_residency_evict(&mount->residency, e->type, e->chunk_id,
+				e->segment, &released) == HCU_ASSET_PROFILE_OK)
+			return (uint8_t *)released;
+	}
+	return NULL;
+}
+
+/* Pin one verified segment. A segment that is already resident only gains a
+ * pin; a new one takes the first arena slot no resident segment uses. */
+static int segment_pin(hcu_profile_mount *mount, const hcu_asset_chunk_view *chunk,
+	uint32_t segment, const hcu_asset_residency_entry **entry)
+{
+	const hcu_asset_residency_entry *found = NULL;
+	uint8_t *slot = NULL;
+	int rc;
+	if (hcu_asset_residency_state(&mount->residency, chunk->type, chunk->chunk_id,
+		segment, &found) != HCU_ASSET_PROFILE_OK || !found->resident) {
+		slot = residency_free_slot(mount);
+		if (!slot) { mount->residency.refused_pins++; return HCU_ASSET_PROFILE_E_MEMORY; }
+	}
+	rc = hcu_asset_residency_pin(&mount->residency, mount->profile, chunk->type,
+		chunk->chunk_id, segment, slot, HCU_PROFILE_MOUNT_RESIDENCY_SEGMENT_BYTES);
+	if (rc != HCU_ASSET_PROFILE_OK) return rc;
+	return hcu_asset_residency_state(&mount->residency, chunk->type, chunk->chunk_id,
+		segment, entry);
+}
+
+/* Walk one logical chunk segment by segment. Each segment is pinned, hashed,
+ * optionally sunk from its pinned bytes, and unpinned. The sink copies into
+ * the CE tag/BSP cache, so gameplay pointers never refer to this staging slot
+ * and the slot may be reused once unpinned. The sink never sees bytes from a
+ * failed pin. */
+static int pinned_walk(hcu_profile_mount *mount, const hcu_asset_chunk_view *chunk,
+	int publish, ctag_ctag_sink_fn sink, void *sink_context, uint8_t digest[32])
+{
+	sha256_context sha;
+	uint32_t segment = 0, offset = 0;
+	sha256_init(&sha);
+	while (offset < chunk->size) {
+		uint32_t bytes, logical, at = 0;
+		const hcu_asset_residency_entry *entry = NULL;
+		int ok = 1;
+		if (hcu_asset_profile_segment_info(mount->profile, chunk->type, chunk->chunk_id,
+			segment, &bytes, &logical) != HCU_ASSET_PROFILE_OK || logical != offset ||
+			!bytes || bytes > chunk->size - offset) return 0;
+		if (segment_pin(mount, chunk, segment, &entry) != HCU_ASSET_PROFILE_OK ||
+			entry->bytes != bytes) return 0;
+		sha256_update(&sha, entry->storage, bytes);
+		while (publish && ok && at < bytes) {
+			uint32_t take = bytes - at;
+			if (take > HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES)
+				take = HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES;
+			ok = sink(sink_context, offset + at, (const uint8_t *)entry->storage + at, take);
+			at += take;
+		}
+		hcu_asset_residency_unpin(&mount->residency, chunk->type, chunk->chunk_id, segment);
+		if (!ok) return 0;
+		offset += bytes;
+		segment++;
+	}
+	sha256_final(&sha, digest);
+	return 1;
+}
+
+static int stream_chunk_pinned(hcu_profile_mount *mount,
+	const hcu_asset_chunk_view *chunk, ctag_ctag_sink_fn sink,
+	void *sink_context, size_t *raw_size)
+{
+	uint8_t digest[32];
+	/* Pass 1 verifies every segment and the logical digest with no sink call. */
+	if (!pinned_walk(mount, chunk, 0, NULL, NULL, digest) ||
+		memcmp(digest, chunk->sha256, sizeof(digest)) != 0) return 0;
+	if (!pinned_walk(mount, chunk, 1, sink, sink_context, digest) ||
+		memcmp(digest, chunk->sha256, sizeof(digest)) != 0) return 0;
+	*raw_size = chunk->size;
+	return 1;
+}
+
 static int stream_chunk(hcu_profile_mount *mount,
+	const hcu_asset_chunk_view *chunk, ctag_ctag_sink_fn sink,
+	void *sink_context, size_t *raw_size)
+{
+	if (!mount || !chunk || !sink || !raw_size || !prepared_inputs_match(mount))
+		return 0;
+	if (mount->residency_bound)
+		return stream_chunk_pinned(mount, chunk, sink, sink_context, raw_size);
+	return stream_chunk_direct(mount, chunk, sink, sink_context, raw_size);
+}
+
+static int stream_chunk_direct(hcu_profile_mount *mount,
 	const hcu_asset_chunk_view *chunk, ctag_ctag_sink_fn sink,
 	void *sink_context, size_t *raw_size)
 {
@@ -430,8 +572,11 @@ static int stream_chunk(hcu_profile_mount *mount,
 		uint32_t take = chunk->size - offset;
 		if (take > mount->stream_scratch_bytes)
 			take = (uint32_t)mount->stream_scratch_bytes;
-		if (!profile_read(mount->profile, chunk->offset + offset,
-			mount->stream_scratch, take)) return 0;
+		if (take > HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES)
+			take = HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES;
+		if (hcu_asset_profile_read_range(mount->profile, chunk->type,
+			chunk->chunk_id, offset, mount->stream_scratch, take) !=
+			HCU_ASSET_PROFILE_OK) return 0;
 		sha256_update(&sha, mount->stream_scratch, take);
 		if (!sink(sink_context, offset, (const uint8_t *)mount->stream_scratch, take))
 			return 0;
@@ -528,11 +673,28 @@ int hcu_profile_mount_load(hcu_profile_mount *mount)
 
 int hcu_profile_mount_unload(hcu_profile_mount *mount)
 {
+	uint32_t i;
 	if (!mount) return HCU_PROFILE_MOUNT_E_ARGUMENT;
 	if (mount->callbacks_active) return HCU_PROFILE_MOUNT_E_BUSY;
+	/* A pin or lease is a live reader of resident bytes. Refuse before any
+	 * teardown, so the mount and CE stay exactly as they were. */
+	for (i = 0; i < mount->residency.count; ++i)
+		if (mount->residency.entries[i].pin_count ||
+			mount->residency.entries[i].lease_count) return HCU_PROFILE_MOUNT_E_BUSY;
 	if (mount->backend_mounted) {
 		if (!mount->backend.unmount) return HCU_PROFILE_MOUNT_E_BACKEND;
 		mount->backend.unmount(mount->backend.context);
+	}
+	/* CE is unpublished, so its gameplay references end here. Each segment is
+	 * then evicted and its arena slot returns to the caller. */
+	for (i = 0; i < mount->residency.count; ++i) {
+		hcu_asset_residency_entry *e = &mount->residency.entries[i];
+		while (e->gameplay_refs &&
+			hcu_asset_residency_gameplay_ref(&mount->residency, e->type,
+				e->chunk_id, e->segment, -1) == HCU_ASSET_PROFILE_OK) {}
+		if (e->resident)
+			(void)hcu_asset_residency_evict(&mount->residency, e->type,
+				e->chunk_id, e->segment, NULL);
 	}
 	memset(mount, 0, sizeof(*mount));
 	return HCU_PROFILE_MOUNT_OK;
