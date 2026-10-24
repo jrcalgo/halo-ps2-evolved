@@ -71,6 +71,12 @@ def update(root=ROOT, status_path=STATUS, ledger_path=LEDGER):
             row["deferred_acceptance_requirements"] = requirement.get(
                 "deferred_acceptance_requirements", [])
             row["scope_amendment"] = requirement.get("scope_amendment")
+        # Narrower-scope outcomes are recorded for reference only; they never
+        # replace the row result, which stays the full-acceptance verdict.
+        for key in ("c2_retained_scope_result", "c2_retained_scope_basis",
+                    "matrix_evidence"):
+            if requirement.get(key) is not None:
+                row[key] = requirement[key]
         if stale:
             row["stale_dependencies"] = stale
         added.append(row)

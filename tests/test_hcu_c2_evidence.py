@@ -64,3 +64,15 @@ def test_carry_over_preserves_unqualified_proof_and_destination(tmp_path):
     assert row["deferred_to"] == ["C3.10"]
     assert row["deferred_acceptance_requirements"] == ["Observe actual DMA/GS completion"]
     assert ledger["step_status"]["step8"]["qualified_rows"] == 0
+
+
+def test_retained_scope_result_is_recorded_but_never_becomes_the_result(tmp_path):
+    status, _ = fixture(tmp_path)
+    status["requirements"][7]["c2_retained_scope_result"] = "passed"
+    status["requirements"][7]["c2_retained_scope_basis"] = "same-map reload"
+    (tmp_path / "status.json").write_text(json.dumps(status))
+    ledger = updater.update(tmp_path, Path("status.json"), Path("ledger.json"))
+    row = next(row for row in ledger["evidence"] if row["subcheck"] == "c2-8")
+    assert row["result"] == "partial"
+    assert row["c2_retained_scope_result"] == "passed"
+    assert ledger["step_status"]["step8"]["qualified_rows"] == 0
