@@ -26,6 +26,7 @@ SECTION_HEADER = re.compile(r"^\s*(\.bss(?:\.[^\s]+)?|COMMON)\s*$")
 ADDRESS_ROW = re.compile(r"^\s*(0x[0-9a-fA-F]+)\s+(0x[0-9a-fA-F]+)\s+(.+?)\s*$")
 FILL_ROW = re.compile(r"^\s*\*fill\*\s+(0x[0-9a-fA-F]+)\s+(0x[0-9a-fA-F]+)\s*$")
 BSS_OUTPUT = re.compile(r"^\.bss\s+(0x[0-9a-fA-F]+)\s+(0x[0-9a-fA-F]+)\s*$")
+LOAD_ROW = re.compile(r"^\s*LOAD\s+(?:0x[0-9a-fA-F]+\s+){3}(0x[0-9a-fA-F]+)\s+(0x[0-9a-fA-F]+)")
 ALLOC_SECTION = re.compile(
     r"^\s*\[\s*\d+\]\s+(\S+)\s+(\S+)\s+"
     r"[0-9a-fA-F]+\s+[0-9a-fA-F]+\s+([0-9a-fA-F]+)\s+\S+\s+(\S+)"
@@ -136,6 +137,22 @@ def parse_file_backed_allocated_bytes(text: str) -> tuple[int, list[dict[str, ob
     return total, sections
 
 
+def parse_load_accounting(text: str) -> dict[str, object]:
+    rows = []
+    for line in text.splitlines():
+        match = LOAD_ROW.match(line)
+        if match:
+            filesz, memsz = (int(value, 16) for value in match.groups())
+            rows.append({"filesz": filesz, "memsz": memsz, "nobits": memsz - filesz})
+    if not rows:
+        raise ValueError("ELF has no PT_LOAD program headers")
+    return {
+        "load_segments": rows,
+        "file_backed_load_bytes": sum(row["filesz"] for row in rows),
+        "nobits_load_bytes": sum(row["nobits"] for row in rows),
+    }
+
+
 def apply_region_candidates(
     ranges: list[dict[str, object]],
     symbols: list[dict[str, object]],
@@ -241,6 +258,7 @@ def build_report(
     readelf_text: str,
     budget: dict[str, object],
     memory_map: dict[str, object],
+    program_headers_text: str | None = None,
 ) -> dict[str, object]:
     ranges = parse_map(map_path.read_text(encoding="utf-8", errors="replace"))
     symbols = parse_nm(nm_text)
@@ -253,7 +271,18 @@ def build_report(
     candidates = apply_region_candidates(ranges, symbols, memory_map)
     candidate_totals = dict(candidates["candidate_bss_bytes_by_region"])
     file_backed_region = str(memory_map["file_backed_region"])
-    candidate_totals[file_backed_region] = candidate_totals.get(file_backed_region, 0) + file_backed_bytes
+    if program_headers_text is None:
+        # Compatibility for callers that supply section text only. Production
+        # reports always pass PT_LOAD headers and use the exact v3 contract.
+        candidate_totals[file_backed_region] = candidate_totals.get(file_backed_region, 0) + file_backed_bytes
+        load_accounting = None
+    else:
+        load_accounting = parse_load_accounting(program_headers_text)
+        nobits_region = str(memory_map.get("elf_nobits_region", "resident_gameplay"))
+        candidate_totals = {
+            file_backed_region: int(load_accounting["file_backed_load_bytes"]),
+            nobits_region: int(load_accounting["nobits_load_bytes"]),
+        }
     capacities = {entry["name"]: int(entry["bytes"]) for entry in budget["regions"]}
     over_capacity = {
         region: {"used": used, "capacity": capacities[region]}
@@ -264,9 +293,11 @@ def build_report(
     return {
         "elf": str(elf),
         "map": str(map_path),
-        "warning": "Region totals are provisional logical assignments, not proof of physical linker/loader or parent-arena placement. Symbol sizes may alias; map input sections are the authoritative totals.",
+        "warning": "PT_LOAD filesz is charged to elf_static and PT_LOAD memsz-filesz (NOBITS) to resident_gameplay. This section accounting does not prove physical linker/loader or parent-arena placement. Symbol sizes may alias; map input sections remain owner-attribution evidence.",
         "file_backed_allocated_bytes": file_backed_bytes,
         "file_backed_sections": alloc_sections,
+        "elf_load_accounting": load_accounting,
+        "provisional_owner_attribution_bytes_by_region": dict(sorted(candidates["candidate_bss_bytes_by_region"].items())),
         "bss_input_sections": ranges,
         "bss_bytes_by_input_object": dict(sorted(owner_totals.items())),
         **candidates,
@@ -293,10 +324,12 @@ def main() -> None:
     readelf = prefix / "ee/bin/mips64r5900el-ps2-elf-readelf"
     output = subprocess.check_output([str(nm), "-S", "--defined-only", str(args.elf)], text=True)
     sections = subprocess.check_output([str(readelf), "-W", "-S", str(args.elf)], text=True)
+    program_headers = subprocess.check_output([str(readelf), "-W", "-l", str(args.elf)], text=True)
     report = build_report(
         args.elf, args.map_path, output, sections,
         json.loads(args.budget.read_text(encoding="utf-8")),
         json.loads(args.memory_map.read_text(encoding="utf-8")),
+        program_headers,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

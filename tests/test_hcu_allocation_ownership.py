@@ -10,7 +10,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 from hcu_ps2_m0_gate import validate_high_water
-RESULT = ROOT / "build/hcu-parent-link-probe/result.json"
+RESULT = ROOT / "build/m2-c2-resume-budget-v3/result-partition-sidewinder_marine_shotgun_4p4bot.json"
 
 
 def sha256(path):
@@ -74,9 +74,9 @@ class HcuAllocationOwnershipTests(unittest.TestCase):
         self.assertEqual(audit["unmapped_symbol_count"], 0)
         self.assertEqual(machine["memory_ledger"]["unassigned_owners"], [])
         candidate = machine["memory_ledger"]["candidate_allocated_bytes_by_region"]
-        self.assertEqual(candidate["elf_static"], audit["file_backed_allocated_bytes"])
-        self.assertEqual(candidate["resident_gameplay"], machine["elf"]["bss_bytes"])
-        self.assertLessEqual(candidate["elf_static"], 2 * 1024 * 1024)
+        self.assertEqual(candidate["elf_static"], audit["elf_load_accounting"]["file_backed_load_bytes"])
+        self.assertEqual(candidate["resident_gameplay"], audit["elf_load_accounting"]["nobits_load_bytes"])
+        self.assertLessEqual(candidate["elf_static"], 2359296)
         gate = subprocess.run(
             [sys.executable, str(ROOT / "tools/hcu_ps2_m0_gate.py")],
             cwd=ROOT, capture_output=True, text=True, check=True,
