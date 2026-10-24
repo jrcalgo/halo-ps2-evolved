@@ -1,0 +1,594 @@
+{
+  "build_report_path": "build/hcu-parent-link-probe/result-step8-mp-capacity-tagcache-4477120.json",
+  "build_report_sha256": "682f66b35395a8011055c33d58b8a168ef5fc871632e3b0e9f9c6af7d9a86f95",
+  "code_inputs": [
+    {
+      "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.c",
+      "sha256": "c15b1b1b6ab0b8c24e494e3bf3a5340eca89899ded49f900a2b544241374afee"
+    },
+    {
+      "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+      "sha256": "16581f812393db63428fcf426acaad33bebe0687393db4a7fc4febccc7ca45c3"
+    },
+    {
+      "path": "submodules/halo-ce-universal/source/physics/collision_bsp.c",
+      "sha256": "096debda0f9cdd62fa8b9981f040770e5e0dfbb8f6baa2f4a241ff0db00dde86"
+    },
+    {
+      "path": "submodules/halo-ce-universal/source/ai/path.c",
+      "sha256": "626755d212abc247d1a5a37ec48231d9058eeea668f973425beade991fd53c41"
+    },
+    {
+      "path": "submodules/halo-ce-universal/source/ai/path_structure_bsp.c",
+      "sha256": "a3e1353f812ce1f70e7ea8d6b20a61dd02f041bcc8f96531877e0736f58f7b31"
+    },
+    {
+      "path": "tools/test_hcu_step7_path_guest.py",
+      "sha256": "a7f54091cc9eaf457f1f226bd45adc5a16bf40f1d4ef9816359c7acb1899019f"
+    },
+    {
+      "path": "tests/test_hcu_mp_capacity.py",
+      "sha256": "3631fa38434725759efc6c9979feab9370d109faccf0360f07f91c4d9edeca14"
+    }
+  ],
+  "consumer_members_invoked": [
+    {
+      "consumer": "structure_bsp_get_cluster_pvs; loop bound and cluster indices",
+      "member": "structure_bsp.clusters",
+      "source": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.c"
+    },
+    {
+      "consumer": "structure_bsp_get_cluster_pvs; cluster visibility bitvectors",
+      "member": "structure_bsp.cluster_data",
+      "source": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.c"
+    },
+    {
+      "consumer": "collision_test_vector -> collision_bsp_test_vector",
+      "member": "structure_bsp.collision_bsp",
+      "source": "submodules/halo-ce-universal/source/physics/collisions.c"
+    },
+    {
+      "consumer": "3D collision tree traversal",
+      "member": "collision_bsp.bsp3d.nodes",
+      "source": "submodules/halo-ce-universal/source/physics/collision_bsp.c"
+    },
+    {
+      "consumer": "collision plane lookup during 3D tree traversal",
+      "member": "collision_bsp.bsp3d.planes",
+      "source": "submodules/halo-ce-universal/source/physics/collision_bsp.c"
+    },
+    {
+      "consumer": "collision leaf lookup in vector collision traversal",
+      "member": "collision_bsp.leaves",
+      "source": "submodules/halo-ce-universal/source/physics/collision_bsp.c"
+    },
+    {
+      "consumer": "2D collision routing from leaves",
+      "member": "collision_bsp.bsp2d_references",
+      "source": "submodules/halo-ce-universal/source/physics/collision_bsp.c"
+    },
+    {
+      "consumer": "2D collision tree traversal",
+      "member": "collision_bsp.bsp2d.nodes",
+      "source": "submodules/halo-ce-universal/source/physics/collision_bsp.c"
+    },
+    {
+      "consumer": "vector collision surface selection",
+      "member": "collision_bsp.surfaces",
+      "source": "submodules/halo-ce-universal/source/physics/collision_bsp.c"
+    },
+    {
+      "consumer": "collision_structure_material_type; returned material checked against source oracle",
+      "member": "structure_bsp.collision_materials",
+      "source": "submodules/halo-ce-universal/source/physics/collisions.c"
+    },
+    {
+      "consumer": "CE A* path search over retained retail routes",
+      "member": "structure_bsp.pathfinding_surfaces",
+      "source": "submodules/halo-ce-universal/source/ai/path.c; submodules/halo-ce-universal/source/ai/path_structure_bsp.c"
+    },
+    {
+      "consumer": "CE A* route adjacency traversal",
+      "member": "structure_bsp.pathfinding_edges",
+      "source": "submodules/halo-ce-universal/source/ai/path.c; submodules/halo-ce-universal/source/ai/path_structure_bsp.c"
+    }
+  ],
+  "elf_sha256": "3f8efe1407f44a1f74d3a5f0d8c7c8941173d19f54ef17ffef258ce320ff93e3",
+  "limits": [
+    "The query executes real CE consumers after scenario_load publishes each retail CBSP. One deterministic hit per map does not visit every collision record or prove malformed-data handling for every member.",
+    "The PVS loop invokes CE for every cluster index and requires every returned row to be non-null. It does not establish visual submission or pixel correctness.",
+    "A* uses one predetermined successful route per map; it is not an AI actor steering workload.",
+    "The diagnostic ELF uses the opt-in MP capacity path and does not qualify ordinary production admission, renderer residency, 5,767,168-byte reserve, or physical hardware behavior.",
+    "This report covers only the explicitly listed members and tested call paths. Other BSP consumers, opaque ranges, and open dispositions remain governed by the current generated crosswalk and inventory; no whole-inventory closure is claimed."
+  ],
+  "map_order": [
+    "beavercreek",
+    "bloodgulch",
+    "boardingaction",
+    "carousel",
+    "chillout",
+    "damnation",
+    "hangemhigh",
+    "longest",
+    "prisoner",
+    "putput",
+    "ratrace",
+    "sidewinder",
+    "wizard"
+  ],
+  "probe_source_path": "submodules/halo-ce-universal/source/main/ps2_m2_ui_lifecycle_test.c",
+  "probe_source_sha256": "1b998826143b3c155193aaee93e4d083c21c3ac3a9f86abb863762e70cece05d",
+  "recorder_path": "tools/record_step7_bsp_target_probe.py",
+  "recorder_sha256": "c7858b4f06da686844d22ad008051c0d62898ded2dc9e8c4ce77eff0807da589",
+  "runs": [
+    {
+      "bios_sha256": "b0bf7184d50a209cf7ceb1ab0eb3a0c9b8c583f5f6b3c819e6536f282b93063b",
+      "collision_oracle_path": "build/mp-collision-shared-edge-source-oracle.json",
+      "collision_oracle_sha256": "ff26f43f8e474f59397c441d246b93e3a45f39fdaefca555d5eb7e3bfb54b95a",
+      "completion_marker": "HALO_PS2_LOCAL step8-mp-capacity-complete maps=13 query_only=1",
+      "elf_path": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-parent-link-probe/hcu-gameplay-machine-step8-mp-capacity-tagcache-4477120.elf",
+      "elf_sha256": "3f8efe1407f44a1f74d3a5f0d8c7c8941173d19f54ef17ffef258ce320ff93e3",
+      "emulator_sha256": "0c46bb6a88aa2782b10853a7b07cf3387ba99cbef2b966372cd2315b8571abea",
+      "guest_log_path": "build/hcu-ps2-closure/emulator-m1-interpreter-c98db8627d234473a8dc263c3288852d/emulog.txt",
+      "guest_log_sha256": "c76264f7ede2b243c7709b260bdea488a7d87f5bf681a32e0b4fc552f7b8f2e9",
+      "host_assets_unchanged": true,
+      "map_inputs": [
+        {
+          "map": "beavercreek",
+          "package_path": "build/hcu-parent-link-probe/maps/beavercreek.hp2",
+          "package_sha256": "4f95672c4233a63d30e94395010324076cb1454813facb54e48c065d7c776dfc",
+          "source_map_path": "build/retail-maps/decompressed/beavercreek.map",
+          "source_map_sha256": "eaf90b2abc4fd295469eb2d640063618b0d14396f28e7d7f1758e834c061c50a"
+        },
+        {
+          "map": "bloodgulch",
+          "package_path": "build/hcu-parent-link-probe/maps/bloodgulch.hp2",
+          "package_sha256": "ded2bca19058f51d7feed6b40149f421f7b1c2c7704f0918a42bacc5601dd011",
+          "source_map_path": "build/retail-maps/decompressed/bloodgulch.map",
+          "source_map_sha256": "9eb0374cbe4571af640ae0d2e0ebf6119543cdbbece44d49543b4748c4cf0dc1"
+        },
+        {
+          "map": "boardingaction",
+          "package_path": "build/hcu-parent-link-probe/maps/boardingaction.hp2",
+          "package_sha256": "2c12e7c0cf555698b837397666b1f343a6864fe16deeffb0b0d4a007e869acd0",
+          "source_map_path": "build/retail-maps/decompressed/boardingaction.map",
+          "source_map_sha256": "34ddf961973b6aaf05f40f26bd9ad536ca97f8af503995611535ccf6ce911522"
+        },
+        {
+          "map": "carousel",
+          "package_path": "build/hcu-parent-link-probe/maps/carousel.hp2",
+          "package_sha256": "e24191ed1e660dfb3c9c9bcd88abcff61c366690f6d903f3b0622eb2c2e751b4",
+          "source_map_path": "build/retail-maps/decompressed/carousel.map",
+          "source_map_sha256": "3e4be29a7952af0b3f19a7540e454fd0deece6d6078c256cde70a734beba55e1"
+        },
+        {
+          "map": "chillout",
+          "package_path": "build/hcu-parent-link-probe/maps/chillout.hp2",
+          "package_sha256": "727abc7401a530892f1136f082a6254544915e0d85f2a068f63d9530189b1bf0",
+          "source_map_path": "build/retail-maps/decompressed/chillout.map",
+          "source_map_sha256": "52bc3e23b9142cf479770d1d601fe08b13d78fe3eb05eca72d313b7ebbd21ffb"
+        },
+        {
+          "map": "damnation",
+          "package_path": "build/hcu-parent-link-probe/maps/damnation.hp2",
+          "package_sha256": "ca41445cc9560035910fbc8c2fc7130175b707b1df2e8e51734d208c4ee2076d",
+          "source_map_path": "build/retail-maps/decompressed/damnation.map",
+          "source_map_sha256": "87bd92c1821ff20bed03c559d7be5ac43baeb44aa68342ffdbb5a8cd978f711c"
+        },
+        {
+          "map": "hangemhigh",
+          "package_path": "build/hcu-parent-link-probe/maps/hangemhigh.hp2",
+          "package_sha256": "1e2a4df7a5ba17d0742bd30484fcfe63db011e6c47a87ac0f2d06ac6f5cab58f",
+          "source_map_path": "build/retail-maps/decompressed/hangemhigh.map",
+          "source_map_sha256": "e3e4b25ed36178926f0df11f3cd82b07e2071f6aa0efaa77f0cfde8f8480981f"
+        },
+        {
+          "map": "longest",
+          "package_path": "build/hcu-parent-link-probe/maps/longest.hp2",
+          "package_sha256": "6f9c19feb4df9e7ec49e797ce3eb6f7cfbdef3c89c6363b12aab2f05359f5a5b",
+          "source_map_path": "build/retail-maps/decompressed/longest.map",
+          "source_map_sha256": "e045b0843f4a167a516f050161a651610fafc94ccc8c5f2c5d5725d108d5d1b9"
+        },
+        {
+          "map": "prisoner",
+          "package_path": "build/hcu-parent-link-probe/maps/prisoner.hp2",
+          "package_sha256": "3bb10f06c785da93fe0f7257be9f06519b7ccb6c155801a7a04a5e6d56352136",
+          "source_map_path": "build/retail-maps/decompressed/prisoner.map",
+          "source_map_sha256": "85ff2fdc117b7640bda85a490b30c662f2626bd6d0685e41832935422891c307"
+        },
+        {
+          "map": "putput",
+          "package_path": "build/hcu-parent-link-probe/maps/putput.hp2",
+          "package_sha256": "6d66e4ecf9c51b3ae417d85356de9ff66c14bc9fc19dd4a2bd2a2954f6b4f3bd",
+          "source_map_path": "build/retail-maps/decompressed/putput.map",
+          "source_map_sha256": "efbe723188f34053d318105f20c7046f263171fbb937fbad45e3d00f8437f243"
+        },
+        {
+          "map": "ratrace",
+          "package_path": "build/hcu-parent-link-probe/maps/ratrace.hp2",
+          "package_sha256": "a735d4a5bef86cc7277ae888a1ef9da25f28f0ab6e45dff010da53dc41e685da",
+          "source_map_path": "build/retail-maps/decompressed/ratrace.map",
+          "source_map_sha256": "577886f949f2648f04cf99e354fb04ca08d7b9199636c2f9fe1a161ccdaa4b1e"
+        },
+        {
+          "map": "sidewinder",
+          "package_path": "build/hcu-parent-link-probe/maps/sidewinder.hp2",
+          "package_sha256": "968ab65ea7ae6fbd15925ed28eb0f8eafc267c78f53150b59b4cc1dea2d017f5",
+          "source_map_path": "build/retail-maps/decompressed/sidewinder.map",
+          "source_map_sha256": "995561a68c8c5b142f13f1967730ce8c08d4f0db9574db8e987d915f2b118dcc"
+        },
+        {
+          "map": "wizard",
+          "package_path": "build/hcu-parent-link-probe/maps/wizard.hp2",
+          "package_sha256": "00bf468d4d8c96e234ef21e5bfb59b410cac7c3e8c9f4f848ea20fbfacf01c57",
+          "source_map_path": "build/retail-maps/decompressed/wizard.map",
+          "source_map_sha256": "978539ff70085998485870a15d4ec81d3811442ac48f9265db668a396f6ff1eb"
+        }
+      ],
+      "mode": "interpreter",
+      "path_rows": 13,
+      "path_validation_path": "build/hcu-ps2-closure/emulator-m1-interpreter-c98db8627d234473a8dc263c3288852d/step7-path-validation.json",
+      "path_validation_sha256": "12b1db160e67cba7f057b01903edf1694d36a27f71ab593344f409633cb488a7",
+      "query_rows": [
+        {
+          "cluster_count": 29,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 2,
+          "collision_surface": 39,
+          "map": "beavercreek",
+          "pvs_rows_queried": 29
+        },
+        {
+          "cluster_count": 30,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 2,
+          "collision_surface": 84,
+          "map": "bloodgulch",
+          "pvs_rows_queried": 30
+        },
+        {
+          "cluster_count": 41,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 16,
+          "map": "boardingaction",
+          "pvs_rows_queried": 41
+        },
+        {
+          "cluster_count": 36,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 21,
+          "map": "carousel",
+          "pvs_rows_queried": 36
+        },
+        {
+          "cluster_count": 10,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 1,
+          "map": "chillout",
+          "pvs_rows_queried": 10
+        },
+        {
+          "cluster_count": 12,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 7,
+          "map": "damnation",
+          "pvs_rows_queried": 12
+        },
+        {
+          "cluster_count": 1,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 0,
+          "map": "hangemhigh",
+          "pvs_rows_queried": 1
+        },
+        {
+          "cluster_count": 1,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 2,
+          "map": "longest",
+          "pvs_rows_queried": 1
+        },
+        {
+          "cluster_count": 1,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 0,
+          "map": "prisoner",
+          "pvs_rows_queried": 1
+        },
+        {
+          "cluster_count": 9,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 4,
+          "map": "putput",
+          "pvs_rows_queried": 9
+        },
+        {
+          "cluster_count": 16,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 2,
+          "map": "ratrace",
+          "pvs_rows_queried": 16
+        },
+        {
+          "cluster_count": 35,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 2,
+          "collision_surface": 85,
+          "map": "sidewinder",
+          "pvs_rows_queried": 35
+        },
+        {
+          "cluster_count": 18,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 2,
+          "map": "wizard",
+          "pvs_rows_queried": 18
+        }
+      ],
+      "result_sha256": "da7748c43a7490fef6e3f11b4542008fc9a6300d05a182ab92d2201ff6ca558e",
+      "run_directory": "build/hcu-ps2-closure/emulator-m1-interpreter-c98db8627d234473a8dc263c3288852d",
+      "settings_sha256": "6544719db660b6be9b277f983a5a270ff9eb83ccf66c2e77d38a164ee6383a85",
+      "status": "passed",
+      "unload_guard_rows": 13
+    },
+    {
+      "bios_sha256": "b0bf7184d50a209cf7ceb1ab0eb3a0c9b8c583f5f6b3c819e6536f282b93063b",
+      "collision_oracle_path": "build/mp-collision-shared-edge-source-oracle.json",
+      "collision_oracle_sha256": "ff26f43f8e474f59397c441d246b93e3a45f39fdaefca555d5eb7e3bfb54b95a",
+      "completion_marker": "HALO_PS2_LOCAL step8-mp-capacity-complete maps=13 query_only=1",
+      "elf_path": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-parent-link-probe/hcu-gameplay-machine-step8-mp-capacity-tagcache-4477120.elf",
+      "elf_sha256": "3f8efe1407f44a1f74d3a5f0d8c7c8941173d19f54ef17ffef258ce320ff93e3",
+      "emulator_sha256": "0c46bb6a88aa2782b10853a7b07cf3387ba99cbef2b966372cd2315b8571abea",
+      "guest_log_path": "build/hcu-ps2-closure/emulator-m1-recompiler-5b536c94e7b44a4ca19636cc2cfecacd/emulog.txt",
+      "guest_log_sha256": "d3a24b7168e5e74db6dcccb9d5127a377d89b23b2a05c61f6a998a4d84fc736a",
+      "host_assets_unchanged": true,
+      "map_inputs": [
+        {
+          "map": "beavercreek",
+          "package_path": "build/hcu-parent-link-probe/maps/beavercreek.hp2",
+          "package_sha256": "4f95672c4233a63d30e94395010324076cb1454813facb54e48c065d7c776dfc",
+          "source_map_path": "build/retail-maps/decompressed/beavercreek.map",
+          "source_map_sha256": "eaf90b2abc4fd295469eb2d640063618b0d14396f28e7d7f1758e834c061c50a"
+        },
+        {
+          "map": "bloodgulch",
+          "package_path": "build/hcu-parent-link-probe/maps/bloodgulch.hp2",
+          "package_sha256": "ded2bca19058f51d7feed6b40149f421f7b1c2c7704f0918a42bacc5601dd011",
+          "source_map_path": "build/retail-maps/decompressed/bloodgulch.map",
+          "source_map_sha256": "9eb0374cbe4571af640ae0d2e0ebf6119543cdbbece44d49543b4748c4cf0dc1"
+        },
+        {
+          "map": "boardingaction",
+          "package_path": "build/hcu-parent-link-probe/maps/boardingaction.hp2",
+          "package_sha256": "2c12e7c0cf555698b837397666b1f343a6864fe16deeffb0b0d4a007e869acd0",
+          "source_map_path": "build/retail-maps/decompressed/boardingaction.map",
+          "source_map_sha256": "34ddf961973b6aaf05f40f26bd9ad536ca97f8af503995611535ccf6ce911522"
+        },
+        {
+          "map": "carousel",
+          "package_path": "build/hcu-parent-link-probe/maps/carousel.hp2",
+          "package_sha256": "e24191ed1e660dfb3c9c9bcd88abcff61c366690f6d903f3b0622eb2c2e751b4",
+          "source_map_path": "build/retail-maps/decompressed/carousel.map",
+          "source_map_sha256": "3e4be29a7952af0b3f19a7540e454fd0deece6d6078c256cde70a734beba55e1"
+        },
+        {
+          "map": "chillout",
+          "package_path": "build/hcu-parent-link-probe/maps/chillout.hp2",
+          "package_sha256": "727abc7401a530892f1136f082a6254544915e0d85f2a068f63d9530189b1bf0",
+          "source_map_path": "build/retail-maps/decompressed/chillout.map",
+          "source_map_sha256": "52bc3e23b9142cf479770d1d601fe08b13d78fe3eb05eca72d313b7ebbd21ffb"
+        },
+        {
+          "map": "damnation",
+          "package_path": "build/hcu-parent-link-probe/maps/damnation.hp2",
+          "package_sha256": "ca41445cc9560035910fbc8c2fc7130175b707b1df2e8e51734d208c4ee2076d",
+          "source_map_path": "build/retail-maps/decompressed/damnation.map",
+          "source_map_sha256": "87bd92c1821ff20bed03c559d7be5ac43baeb44aa68342ffdbb5a8cd978f711c"
+        },
+        {
+          "map": "hangemhigh",
+          "package_path": "build/hcu-parent-link-probe/maps/hangemhigh.hp2",
+          "package_sha256": "1e2a4df7a5ba17d0742bd30484fcfe63db011e6c47a87ac0f2d06ac6f5cab58f",
+          "source_map_path": "build/retail-maps/decompressed/hangemhigh.map",
+          "source_map_sha256": "e3e4b25ed36178926f0df11f3cd82b07e2071f6aa0efaa77f0cfde8f8480981f"
+        },
+        {
+          "map": "longest",
+          "package_path": "build/hcu-parent-link-probe/maps/longest.hp2",
+          "package_sha256": "6f9c19feb4df9e7ec49e797ce3eb6f7cfbdef3c89c6363b12aab2f05359f5a5b",
+          "source_map_path": "build/retail-maps/decompressed/longest.map",
+          "source_map_sha256": "e045b0843f4a167a516f050161a651610fafc94ccc8c5f2c5d5725d108d5d1b9"
+        },
+        {
+          "map": "prisoner",
+          "package_path": "build/hcu-parent-link-probe/maps/prisoner.hp2",
+          "package_sha256": "3bb10f06c785da93fe0f7257be9f06519b7ccb6c155801a7a04a5e6d56352136",
+          "source_map_path": "build/retail-maps/decompressed/prisoner.map",
+          "source_map_sha256": "85ff2fdc117b7640bda85a490b30c662f2626bd6d0685e41832935422891c307"
+        },
+        {
+          "map": "putput",
+          "package_path": "build/hcu-parent-link-probe/maps/putput.hp2",
+          "package_sha256": "6d66e4ecf9c51b3ae417d85356de9ff66c14bc9fc19dd4a2bd2a2954f6b4f3bd",
+          "source_map_path": "build/retail-maps/decompressed/putput.map",
+          "source_map_sha256": "efbe723188f34053d318105f20c7046f263171fbb937fbad45e3d00f8437f243"
+        },
+        {
+          "map": "ratrace",
+          "package_path": "build/hcu-parent-link-probe/maps/ratrace.hp2",
+          "package_sha256": "a735d4a5bef86cc7277ae888a1ef9da25f28f0ab6e45dff010da53dc41e685da",
+          "source_map_path": "build/retail-maps/decompressed/ratrace.map",
+          "source_map_sha256": "577886f949f2648f04cf99e354fb04ca08d7b9199636c2f9fe1a161ccdaa4b1e"
+        },
+        {
+          "map": "sidewinder",
+          "package_path": "build/hcu-parent-link-probe/maps/sidewinder.hp2",
+          "package_sha256": "968ab65ea7ae6fbd15925ed28eb0f8eafc267c78f53150b59b4cc1dea2d017f5",
+          "source_map_path": "build/retail-maps/decompressed/sidewinder.map",
+          "source_map_sha256": "995561a68c8c5b142f13f1967730ce8c08d4f0db9574db8e987d915f2b118dcc"
+        },
+        {
+          "map": "wizard",
+          "package_path": "build/hcu-parent-link-probe/maps/wizard.hp2",
+          "package_sha256": "00bf468d4d8c96e234ef21e5bfb59b410cac7c3e8c9f4f848ea20fbfacf01c57",
+          "source_map_path": "build/retail-maps/decompressed/wizard.map",
+          "source_map_sha256": "978539ff70085998485870a15d4ec81d3811442ac48f9265db668a396f6ff1eb"
+        }
+      ],
+      "mode": "recompiler",
+      "path_rows": 13,
+      "path_validation_path": "build/hcu-ps2-closure/emulator-m1-recompiler-5b536c94e7b44a4ca19636cc2cfecacd/step7-path-validation.json",
+      "path_validation_sha256": "4f922b935d010568da6d3b0a47e0649288150bc72e83a3345765f44334d36b0b",
+      "query_rows": [
+        {
+          "cluster_count": 29,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 2,
+          "collision_surface": 39,
+          "map": "beavercreek",
+          "pvs_rows_queried": 29
+        },
+        {
+          "cluster_count": 30,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 2,
+          "collision_surface": 84,
+          "map": "bloodgulch",
+          "pvs_rows_queried": 30
+        },
+        {
+          "cluster_count": 41,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 16,
+          "map": "boardingaction",
+          "pvs_rows_queried": 41
+        },
+        {
+          "cluster_count": 36,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 21,
+          "map": "carousel",
+          "pvs_rows_queried": 36
+        },
+        {
+          "cluster_count": 10,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 1,
+          "map": "chillout",
+          "pvs_rows_queried": 10
+        },
+        {
+          "cluster_count": 12,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 7,
+          "map": "damnation",
+          "pvs_rows_queried": 12
+        },
+        {
+          "cluster_count": 1,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 0,
+          "map": "hangemhigh",
+          "pvs_rows_queried": 1
+        },
+        {
+          "cluster_count": 1,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 2,
+          "map": "longest",
+          "pvs_rows_queried": 1
+        },
+        {
+          "cluster_count": 1,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 0,
+          "map": "prisoner",
+          "pvs_rows_queried": 1
+        },
+        {
+          "cluster_count": 9,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 4,
+          "map": "putput",
+          "pvs_rows_queried": 9
+        },
+        {
+          "cluster_count": 16,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 2,
+          "map": "ratrace",
+          "pvs_rows_queried": 16
+        },
+        {
+          "cluster_count": 35,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 2,
+          "collision_surface": 85,
+          "map": "sidewinder",
+          "pvs_rows_queried": 35
+        },
+        {
+          "cluster_count": 18,
+          "collision_called": true,
+          "collision_hit": true,
+          "collision_material_type": 7,
+          "collision_surface": 2,
+          "map": "wizard",
+          "pvs_rows_queried": 18
+        }
+      ],
+      "result_sha256": "cd4ed9507c23dfee917ba1dd96ed378a3b043ab06408ebec3b01d566e56127c5",
+      "run_directory": "build/hcu-ps2-closure/emulator-m1-recompiler-5b536c94e7b44a4ca19636cc2cfecacd",
+      "settings_sha256": "29091d26012bf2b9470f2abcdd10b7cca2e8d7ae6e2c6fc2f4134348c52540a2",
+      "status": "passed",
+      "unload_guard_rows": 13
+    }
+  ],
+  "schema": "hcu-m2-step7-bsp-current-target-probe-v1",
+  "scope": "13 stock multiplayer map CBSPs, one deterministic CE collision hit and every cluster PVS row per map, one CE path route per map; no campaign, rendering, bots, or hardware claim",
+  "status": "passed-paired-pcsx2-diagnostic"
+}
