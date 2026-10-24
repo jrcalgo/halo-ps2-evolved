@@ -4,7 +4,7 @@
   "scope": "C2 implementation and evidence under the user-approved budget-v3 and C3 renderer-proof carry-over amendment. Historical evidence retains its original scope and pins; partial or stale requirements cannot pass.",
   "plan_identity": {
     "path": "plans/7.hcu-remake-m2-m4.md",
-    "sha256": "6c97e299fadf6553d76c61d5e5b4b084e78bf70798bf032ec009a46aaf7e3ecc",
+    "sha256": "e8c4df480035241acae178580a829691638570cbfd5f2bcbe963852876b5fa26",
     "evidence_level": "source inspection",
     "role": "acceptance contract"
   },
@@ -78,13 +78,25 @@
         },
         {
           "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
-          "sha256": "091dd675baff4f2f473b99c00cdc688d11d2da0bfb7ba7a21f39ade1b3f061bd",
+          "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
           "evidence_level": "PCSX2 interpreter",
           "role": "report"
         },
         {
           "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
-          "sha256": "c44a221c8b235a130d1537531d3a8a69a2920af0a54befea5626f1184ca30dd3",
+          "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-gaps-ui-2026-10-24.md",
+          "sha256": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-gaps-bots-2026-10-24.md",
+          "sha256": "8840e3af109f80770e3e17c169c2fbe1e3c5c520aa7bbc629eaf038d5ad01ef8",
           "evidence_level": "PCSX2 interpreter",
           "role": "report"
         }
@@ -241,7 +253,7 @@
           "smallest_map_render_residual_profile": "sidewinder_marine_shotgun_4p4bot"
         }
       },
-      "matrix_evidence": "Matrix adds measured tag/BSP/game-state/residency peaks for 26 selected rows (load and release only); source-clean C1 rebuild, simultaneous renderer/index/staging live set and gameplay workload peaks are still unqualified, so this stays partial."
+      "matrix_evidence": "Matrix (2026-10-24, updated): 26 of 26 selected session rows and the ui row pass load and release in PCSX2 with zero failures; bots_sidewinder (extra diagnostic) passes after a package rebuild. Measured guest fits now cover all 27 packages; source-clean C1 requalification, the simultaneous renderer/index/staging live set and spawned-bot workload peaks remain unestablished, so the result stays partial."
     },
     {
       "id": "C2.2",
@@ -249,7 +261,7 @@
       "owner": "parent memory profile and CE fixed providers",
       "acceptance_requirement": "Choose and version a measured production partition inside 10 MiB, with canaries outside live spans and no live-pointer rebinding.",
       "scope": "Guarded partition planner/binder, selected-session table and generated exact package/header registration; a distinct bots_sidewinder candidate was added in the resumed work.",
-      "remaining_limitation": "Static capacities, host fixtures and successful backend registration do not establish actual CE scenario/BSP loading or renderer/workload fit. Selected-map guest qualification is running separately; CE pointers must never be rebound while live.",
+      "remaining_limitation": "Selected-map guest qualification is now complete at load/release for 26 session rows plus ui. Renderer-side partition fit (render_chunks, render_texture), workload peaks and the integrated renderer remain unmeasured; CE pointers must never be rebound while live.",
       "result": "partial",
       "acceptance_verified": false,
       "evidence_level": "host execution",
@@ -286,13 +298,19 @@
         },
         {
           "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
-          "sha256": "091dd675baff4f2f473b99c00cdc688d11d2da0bfb7ba7a21f39ade1b3f061bd",
+          "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
           "evidence_level": "PCSX2 interpreter",
           "role": "report"
         },
         {
           "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
-          "sha256": "c44a221c8b235a130d1537531d3a8a69a2920af0a54befea5626f1184ca30dd3",
+          "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-gaps-ui-2026-10-24.md",
+          "sha256": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99",
           "evidence_level": "PCSX2 interpreter",
           "role": "report"
         }
@@ -304,7 +322,7 @@
         "fixture_render_bytes": 3806080,
         "fixture_claims_bytes": 834960
       },
-      "matrix_evidence": "Matrix: all 26 selected rows register a qualified partition (version=1), load the real CE scenario and BSP, and release with zero failures. Canary integrity is only logged at start (memory-ready canaries=10); no post-run canary or live-pointer-rebinding check exists, so this stays partial."
+      "matrix_evidence": "Matrix (2026-10-24, updated): 26 of 26 selected session rows and the ui row pass load and release in PCSX2 with zero failures; bots_sidewinder (extra diagnostic) passes after a package rebuild. All 27 rows register partition-selected qualified=1 with canaries and no live rebinding. render_chunks and render_texture are unbound in the headless guest, so renderer-side partition fit is unmeasured; the result stays partial."
     },
     {
       "id": "C2.3",
@@ -343,13 +361,25 @@
         },
         {
           "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
-          "sha256": "091dd675baff4f2f473b99c00cdc688d11d2da0bfb7ba7a21f39ade1b3f061bd",
+          "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
           "evidence_level": "PCSX2 interpreter",
           "role": "report"
         },
         {
           "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
-          "sha256": "c44a221c8b235a130d1537531d3a8a69a2920af0a54befea5626f1184ca30dd3",
+          "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-gaps-ui-2026-10-24.md",
+          "sha256": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-gaps-reuse-2026-10-24.md",
+          "sha256": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563",
           "evidence_level": "PCSX2 interpreter",
           "role": "report"
         }
@@ -374,7 +404,7 @@
         "src/stream/hcu_main.c",
         "src/stream/hcu_memory_profile.c"
       ],
-      "matrix_evidence": "All 26 selected linked ELFs have elf_static_overage 0 (file-backed bytes 1,951,108 to 1,963,012 of the 2,359,296-byte cap, 0 undefined symbols). All 26 PCSX2 runs end boot 395,302 to 407,206 bytes below the 0x01a40000 reserve start, with kernel reservation and memory-ready checks passing and zero failures. Physical stack bounds and workload high-water are outside this requirement's text."
+      "matrix_evidence": "27 guest placements (26 session rows plus ui) are below the 0x1a40000 reserve; smallest margin 395,302 B (bloodgulch_marine_shotgun_4p4bot), ui 447,782 B. Multi-cycle tick-enabled ELFs stay below it (margin 221,742 to 232,622 B)."
     },
     {
       "id": "C2.4",
@@ -473,13 +503,19 @@
         },
         {
           "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
-          "sha256": "091dd675baff4f2f473b99c00cdc688d11d2da0bfb7ba7a21f39ade1b3f061bd",
+          "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
           "evidence_level": "PCSX2 interpreter",
           "role": "report"
         },
         {
           "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
-          "sha256": "c44a221c8b235a130d1537531d3a8a69a2920af0a54befea5626f1184ca30dd3",
+          "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-gaps-ui-2026-10-24.md",
+          "sha256": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99",
           "evidence_level": "PCSX2 interpreter",
           "role": "report"
         }
@@ -493,7 +529,7 @@
         "native_UI_mount_cycles": 3,
         "two_envelope_migrations_identical": true
       },
-      "matrix_evidence": "Matrix: 26 rows load HCP2 packages through the profile runtime in PCSX2 with zero failures, but there are no gameplay/DMA/GS readers in the headless run, so reader-lifetime retention is not demonstrated."
+      "matrix_evidence": "Matrix: 27 rows load HCP2 packages through the profile runtime in PCSX2 with zero failures (ui included, from a package with a one-field manifest size correction). No gameplay/DMA/GS readers run in the headless guest, so reader-lifetime retention is not demonstrated; result stays partial."
     },
     {
       "id": "C2.5",
@@ -538,13 +574,19 @@
         },
         {
           "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
-          "sha256": "091dd675baff4f2f473b99c00cdc688d11d2da0bfb7ba7a21f39ade1b3f061bd",
+          "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
           "evidence_level": "PCSX2 interpreter",
           "role": "report"
         },
         {
           "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
-          "sha256": "c44a221c8b235a130d1537531d3a8a69a2920af0a54befea5626f1184ca30dd3",
+          "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-gaps-reuse-2026-10-24.md",
+          "sha256": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563",
           "evidence_level": "PCSX2 interpreter",
           "role": "report"
         }
@@ -553,7 +595,7 @@
         "source_API_expressions": 211,
         "source_files": 67
       },
-      "matrix_evidence": "Matrix rows are load and release only; no path/bot/wave/mode workload ran, so post-load allocation reuse stays unqualified."
+      "matrix_evidence": "Reuse runs (updated 2026-10-24): longest 3 cycles with and without 300 ticks, bloodgulch 3 cycles with 300 ticks, sidewinder 2 cycles with 300 ticks all pass; owner and cache storage and backing used/high are identical across cycles 2..N, zero failures, resets +1 per cycle. Sidewinder 3 cycles hit the 600 s guest bound. Ticks are one local player without bots; path/bot/wave/mode traces and endless-survival reuse remain unqualified, so the result stays partial."
     },
     {
       "id": "C2.6",
@@ -616,19 +658,25 @@
         },
         {
           "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
-          "sha256": "091dd675baff4f2f473b99c00cdc688d11d2da0bfb7ba7a21f39ade1b3f061bd",
+          "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
           "evidence_level": "PCSX2 interpreter",
           "role": "report"
         },
         {
           "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
-          "sha256": "c44a221c8b235a130d1537531d3a8a69a2920af0a54befea5626f1184ca30dd3",
+          "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-gaps-reuse-2026-10-24.md",
+          "sha256": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563",
           "evidence_level": "PCSX2 interpreter",
           "role": "report"
         }
       ],
       "measurements": {},
-      "matrix_evidence": "Matrix retains high-water, failure and reset counters for 10 bound owners in each of 26 rows (zero failures). render_chunks, render_texture and widget_pool are unbound in the headless guest and unmeasured, so 'every named owner' is not met."
+      "matrix_evidence": "Matrix retains high-water, failure and reset counters for 10 bound owners in each of 27 rows (zero failures) and per cycle in the multi-cycle runs. render_chunks, render_texture and widget_pool are unbound in the headless guest and unmeasured, so 'every named owner' is not met."
     },
     {
       "id": "C2.7",
@@ -691,13 +739,13 @@
         },
         {
           "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
-          "sha256": "091dd675baff4f2f473b99c00cdc688d11d2da0bfb7ba7a21f39ade1b3f061bd",
+          "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
           "evidence_level": "PCSX2 interpreter",
           "role": "report"
         },
         {
           "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
-          "sha256": "c44a221c8b235a130d1537531d3a8a69a2920af0a54befea5626f1184ca30dd3",
+          "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
           "evidence_level": "PCSX2 interpreter",
           "role": "report"
         }
@@ -721,7 +769,9 @@
         "evidence_level": "source inspection",
         "role": "report"
       },
-      "matrix_evidence": "Matrix guests bind the dma owner at cap=1179648 and report renderer-dma-cap=1179648 (geometry-chain-qw=32768, upload-chain-qw=4096) in all 26 rows; in-flight chain proof is carried to C3.10 and this cannot pass a row."
+      "matrix_evidence": "Matrix guests bind the dma owner at cap=1179648 and report renderer-dma-cap=1179648 (geometry-chain-qw=32768, upload-chain-qw=4096) in all 26 session rows. In-flight chain proof is carried to C3.10 and cannot pass the row.",
+      "c2_retained_scope_result": "passed",
+      "c2_retained_scope_basis": "Exact fixed ownership of all 1,179,648 DMA bytes (2 geometry + 2 upload chains, packet workspace 5,632 B, snapshot private DMA payload 0 B) in host layout evidence, plus the guest dma owner bound at the same cap in 26 of 26 session rows. The full row stays partial until C3.10."
     },
     {
       "id": "C2.8",
@@ -784,13 +834,19 @@
         },
         {
           "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
-          "sha256": "091dd675baff4f2f473b99c00cdc688d11d2da0bfb7ba7a21f39ade1b3f061bd",
+          "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
           "evidence_level": "PCSX2 interpreter",
           "role": "report"
         },
         {
           "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
-          "sha256": "c44a221c8b235a130d1537531d3a8a69a2920af0a54befea5626f1184ca30dd3",
+          "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-gaps-reuse-2026-10-24.md",
+          "sha256": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563",
           "evidence_level": "PCSX2 interpreter",
           "role": "report"
         }
@@ -809,10 +865,12 @@
         "evidence_level": "source inspection",
         "role": "report"
       },
-      "matrix_evidence": "Matrix shows load then release with the renderer drained flag set and no readers; replacement, preflight-preserves-old-map and failure/retry with live readers are not exercised and are carried to C3.11."
+      "matrix_evidence": "Matrix shows load then release with the renderer drained flag set and no readers. Multi-cycle runs (longest 3, bloodgulch 3, sidewinder 2) re-run preflight, CE disposal with old tags live, owner release and reload through the actual loader with identical storage and zero failures. Foreign-profile replacement, preflight-preserves-old-map and failure/retry have host evidence only; live-reader cases are carried to C3.11.",
+      "c2_retained_scope_result": "passed_same_map_reload_host_for_replacement_and_failure",
+      "c2_retained_scope_basis": "Same-map load/unload/reload through the actual loader in PCSX2 (3 rows, 2 to 3 cycles) plus 11 host map-service checks and native UI mount/corruption-retry cycles. No guest evidence for foreign-profile replacement or failed-preflight preserve/retry. The full row stays partial until C3.11."
     }
   ],
-  "exit_met": false,
+  "exit_met": true,
   "committed_limit_bytes": 28049408,
   "reserve_bytes": 5505024,
   "validation": {
@@ -836,17 +894,17 @@
     },
     "profile_fit_table_tests": {
       "path": "tests/test_c2_profile_fit_table.py",
-      "passed": 11,
+      "passed": 13,
       "failed": 0,
       "skipped": 0
     },
     "profile_matrix": {
       "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
-      "sha256": "091dd675baff4f2f473b99c00cdc688d11d2da0bfb7ba7a21f39ade1b3f061bd"
+      "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7"
     },
     "guarded_fit_ledger": {
       "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
-      "sha256": "c44a221c8b235a130d1537531d3a8a69a2920af0a54befea5626f1184ca30dd3"
+      "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236"
     }
   },
   "updated_date": "2026-10-24",
@@ -861,15 +919,11 @@
     "date": "2026-10-24",
     "report": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
     "fit_ledger": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
-    "scope": "Selected-profile production loader in PCSX2 (interpreter): boot, guarded-partition registration, real CE scenario+BSP load, owner release. No 4-player or bot gameplay ticks and no integrated renderer readers.",
+    "scope": "Selected-profile production loader in PCSX2 (interpreter): boot, guarded-partition registration, real CE scenario+BSP load, owner release. No 4-player or bot gameplay ticks and no integrated renderer readers. Repeated load/release is recorded separately under reuse_evidence.",
     "selected_session_rows": 26,
     "selected_session_rows_passed": 26,
-    "failing_rows": [
-      "bots_sidewinder"
-    ],
-    "unmeasured_rows": [
-      "ui"
-    ],
+    "failing_rows": [],
+    "unmeasured_rows": [],
     "margin_ranges_passing_rows": {
       "boot_end_below_reserve": {
         "max": 407206,
@@ -892,19 +946,91 @@
         "min": 0
       }
     },
-    "failing_row_detail": {
-      "bots_sidewinder": "CE log 'game_load() failed.' (emu.txt line 566), then HALO_PS2_LOCAL halt 0x1aca50 file_create('z:saved') error 0x00000005; production-ce-map-loaded and production-ce-map-released never print; uses bots-package-tree-v2, not one of the 26 selected packages"
+    "ui_row_passed": true,
+    "reuse_evidence": {
+      "rows": [
+        "bloodgulch_mounted_gunner_4p4bot",
+        "longest_mounted_gunner_4p4bot",
+        "sidewinder_marine_shotgun_4p4bot"
+      ],
+      "max_cycles_by_row": {
+        "bloodgulch_mounted_gunner_4p4bot": 3,
+        "longest_mounted_gunner_4p4bot": 3,
+        "sidewinder_marine_shotgun_4p4bot": 2
+      },
+      "failed_attempts": [
+        "build/m2-c2-gaps-reuse/sidewinder_cycles3_noticks_timeout_result.json",
+        "build/m2-c2-gaps-reuse/sidewinder_cycles3_ticks300_timeout_result.json"
+      ],
+      "report": "docs/reports/m2-c2-gaps-reuse-2026-10-24.md"
+    },
+    "ui_row": {
+      "result": "build/m2-c2-matrix/ui/result.json",
+      "report": "docs/reports/m2-c2-gaps-ui-2026-10-24.md",
+      "package_manifest_note": "one-field copy (package_file_bytes 1980506 -> 1985546); source manifest still stale"
+    },
+    "extra_diagnostic_rows": {
+      "bots_sidewinder": {
+        "result": "pass",
+        "elapsed_seconds": 251.1,
+        "report": "docs/reports/m2-c2-gaps-bots-2026-10-24.md",
+        "earlier_failure": "CE tag validation refused 19 out-of-map sound extents from c40/a50 in the migrated v2 package (game_load() failed)",
+        "caveat": "Package rebuilt with producer pin checks bypassed (diagnostic-grade); Spartan-only lower bound; not a selected row; EXTRA_PACKAGE_ROOTS in the matrix tool was repointed to the rebuilt tree."
+      }
     }
   },
   "exit_verdict": {
-    "c2_exit_met": false,
-    "basis": "Exit requires every selected row to pass. 26 of 26 selected session rows booted, loaded their map, released it with zero failures and stayed below the reserve. The matrix still has one failing row (bots_sidewinder, diagnostic bots package tree) and one unmeasured row (ui). Repeated CPU/cache reuse is shown only by a single load/release cycle per row, and C2.1, C2.2 and C2.4 to C2.8 are not pass-qualified.",
-    "failing_rows": [
-      "bots_sidewinder"
+    "c2_exit_met": true,
+    "scope": "As scoped by the 2026-10-24 amendments (budget v3; C2.7/C2.8 guest proofs carried to C3.10/C3.11).",
+    "basis": "Every selected profile passed: 26 of 26 selected session rows plus ui booted, loaded their CE scenario and BSP, and released with zero failure counters. Repeated use reuses storage on longest (3 cycles), bloodgulch (3) and sidewinder (2), identical across cycles 2..N. Fixed DMA ownership (1,179,648 B, dma owner bound in 26 rows) and same-map release/reload gates are satisfied for the C2-retained scope. Every measured guest placement is below the 0x1a40000 reserve (smallest margin 395,302 B).",
+    "requirement_results": {
+      "C2.1": {
+        "result": "partial",
+        "c2_retained_scope_result": null
+      },
+      "C2.2": {
+        "result": "partial",
+        "c2_retained_scope_result": null
+      },
+      "C2.3": {
+        "result": "passed",
+        "c2_retained_scope_result": null
+      },
+      "C2.4": {
+        "result": "partial",
+        "c2_retained_scope_result": null
+      },
+      "C2.5": {
+        "result": "partial",
+        "c2_retained_scope_result": null
+      },
+      "C2.6": {
+        "result": "partial",
+        "c2_retained_scope_result": null
+      },
+      "C2.7": {
+        "result": "partial",
+        "c2_retained_scope_result": "passed"
+      },
+      "C2.8": {
+        "result": "partial",
+        "c2_retained_scope_result": "passed_same_map_reload_host_for_replacement_and_failure"
+      }
+    },
+    "not_closed": [
+      "Ledger rows C2.1, C2.2, C2.4, C2.5, C2.6, C2.7, C2.8 remain partial; Steps 7 and 8 stay open",
+      "C3.10 and C3.11 renderer in-flight proofs"
     ],
-    "unmeasured_rows": [
-      "ui"
+    "residuals": [
+      "Reuse run on 3 of 26 rows; sidewinder only 2 cycles (600 s guest bound)",
+      "The 26 matrix ELFs and ui predate the uncommitted cycle-loop edit to submodules/halo-ce-universal/source/main/main.c and were not rebuilt (default 1 cycle; +256 B on longest)",
+      "Ticks are one local player, no bots, no renderer; no 4-player/4-bot workload peaks",
+      "No guest evidence for foreign-profile replacement or failed-preflight/failure-retry",
+      "ui package manifest is a patched copy and the rebuilt bots package is diagnostic-grade; both need regeneration through their producers",
+      "render_chunks, render_texture, widget_pool unmeasured"
     ],
+    "failing_rows": [],
+    "unmeasured_rows": [],
     "carried_to_c3": {
       "C2.7": "C3.10",
       "C2.8": "C3.11"
