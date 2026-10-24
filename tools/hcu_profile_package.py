@@ -16,8 +16,8 @@ from hcu_profile_media import build_media  # noqa: E402
 from audit_hcu_profile_non2d import FIELD_RULES  # noqa: E402
 from halo2ps2 import bitmaps  # noqa: E402
 
-NON2D_REPORT = ROOT / "docs/reports/m2-c1-ui-non2d-consumers-2026-10-23.json"
-SURVIVAL_NON2D_REPORT = ROOT / "docs/reports/m2-c1-survival-non2d-consumers-2026-10-23.json"
+NON2D_REPORT = ROOT / "docs/reports/m2-c2-ui-non2d-consumers-2026-10-23.json"
+SURVIVAL_NON2D_REPORT = ROOT / "docs/reports/m2-c2-survival-non2d-consumers-2026-10-23.json"
 IMAGE_TYPE_NAMES = {bitmaps.TYPE_CUBE: "cube", bitmaps.TYPE_3D: "3d"}
 
 

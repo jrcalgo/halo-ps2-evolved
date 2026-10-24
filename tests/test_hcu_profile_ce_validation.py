@@ -38,19 +38,24 @@ def _extract_ce_chunk(package_path, manifest_path, output_path):
     if _sha(package_path) != manifest["package_sha256"]:
         raise ValueError("HCP package pin mismatch")
     magic, version, hsize, _profile_id, count, directory, dsize, total = hcu_profile_chunks.HEADER.unpack_from(package)
-    assert magic == hcu_profile_chunks.MAGIC and version == hcu_profile_chunks.VERSION
     assert hsize == hcu_profile_chunks.HEADER.size and total == len(package)
-    assert dsize == count * hcu_profile_chunks.RECORD.size and directory == hsize
-    for i in range(count):
-        kind, chunk_id, offset, size, digest = hcu_profile_chunks.RECORD.unpack_from(
-            package, directory + i * hcu_profile_chunks.RECORD.size)
-        if (kind, chunk_id) == (1, 0):
+    if (magic, version) == (hcu_profile_chunks.MAGIC_V1, 1):
+        record = hcu_profile_chunks.V1_RECORD
+        logical = {}
+        for i in range(count):
+            kind, chunk_id, offset, size, digest = record.unpack_from(package, directory + i * record.size)
             payload = package[offset:offset + size]
             assert hashlib.sha256(payload).digest() == digest
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            output_path.write_bytes(payload)
-            return payload
-    raise AssertionError("UI HCP has no CE tag chunk")
+            logical[(kind, chunk_id)] = payload
+    else:
+        assert (magic, version) == (hcu_profile_chunks.MAGIC, 2)
+        from tools.hcu_profile_validate import parse_package
+        logical = parse_package(package, expected_package_sha256=_sha(package_path),
+                                expected_profile_id=manifest["validation"]["profile_id"])["chunks"]
+    payload = logical[(1, 0)]
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_bytes(payload)
+    return payload
 
 
 def _inputs():

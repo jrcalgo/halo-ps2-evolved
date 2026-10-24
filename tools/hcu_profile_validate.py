@@ -172,49 +172,109 @@ def _entries(image):
 
 def parse_package(data: bytes, *, expected_package_sha256: str,
                   expected_profile_id: int) -> dict:
-    """Validate HCP1 structure, integrity, and exact package identity."""
+    """Validate HCP1/HCP2 structure, integrity, and exact package identity."""
     if _sha(data) != expected_package_sha256:
         raise ProfileValidationError("package SHA-256 mismatch")
     if len(data) < chunks.HEADER.size:
         raise ProfileValidationError("truncated HCP header")
     magic, version, hsize, profile_id, count, directory, dsize, total = chunks.HEADER.unpack_from(data)
-    if magic != chunks.MAGIC or version != chunks.VERSION or hsize != chunks.HEADER.size:
+    if hsize != chunks.HEADER.size or (magic, version) not in (
+            (chunks.MAGIC_V1, 1), (chunks.MAGIC, 2)):
         raise ProfileValidationError("unsupported HCP header")
     if profile_id != expected_profile_id or not profile_id:
         raise ProfileValidationError("profile id mismatch")
-    if count < 2 or count > chunks.MAX_CHUNKS or directory != hsize or dsize != count * chunks.RECORD.size:
+    record = chunks.V1_RECORD if version == 1 else chunks.V2_RECORD
+    if count < 2 or count > chunks.MAX_CHUNKS or directory != hsize or dsize != count * record.size:
         raise ProfileValidationError("invalid HCP directory bounds")
     dir_end = directory + dsize
     if total != len(data) or dir_end > total:
         raise ProfileValidationError("invalid HCP total size")
-    table, chunks_found = [], {}
+    table, physical, chunks_found = [], [], {}
     payload_end = dir_end
-    previous = None
-    for i in range(count):
-        kind, cid, offset, size, digest = chunks.RECORD.unpack_from(data, directory + i * chunks.RECORD.size)
-        key = (kind, cid)
-        if previous is not None and key <= previous:
-            raise ProfileValidationError("HCP entries are duplicated or out of order")
-        previous = key
-        if kind not in (1, 2, 3) or (kind != 2 and cid != 0) or not size:
-            raise ProfileValidationError("invalid HCP chunk identity or size")
-        if offset % chunks.ALIGNMENT or offset < dir_end or offset > total or size > total - offset:
-            raise ProfileValidationError("HCP chunk bounds/alignment invalid")
-        expected_offset = (payload_end + chunks.ALIGNMENT - 1) & ~(chunks.ALIGNMENT - 1)
-        if offset != expected_offset or any(data[payload_end:offset]):
-            raise ProfileValidationError("HCP payload ranges are not canonical or padding is nonzero")
-        payload_end = offset + size
-        blob = data[offset:offset + size]
-        if hashlib.sha256(blob).digest() != digest:
-            raise ProfileValidationError("HCP chunk hash mismatch")
-        chunks_found[key] = blob
-        table.append({"type": kind, "id": cid, "offset": offset, "size": size,
-                      "sha256": digest.hex()})
+    if version == 1:
+        previous = None
+        for i in range(count):
+            kind, cid, offset, size, digest = record.unpack_from(data, directory + i * record.size)
+            key = (kind, cid)
+            if previous is not None and key <= previous:
+                raise ProfileValidationError("HCP entries are duplicated or out of order")
+            previous = key
+            if kind not in (1, 2, 3) or (kind != 2 and cid != 0) or not size:
+                raise ProfileValidationError("invalid HCP chunk identity or size")
+            if kind == 2 and size > chunks.MAX_MEDIA_CHUNK_BYTES:
+                raise ProfileValidationError("HCP media chunk exceeds 65536-byte decoded limit")
+            expected_offset = (payload_end + chunks.ALIGNMENT - 1) & ~(chunks.ALIGNMENT - 1)
+            if offset % chunks.ALIGNMENT or offset != expected_offset or offset > total or size > total - offset:
+                raise ProfileValidationError("HCP chunk bounds/alignment invalid")
+            if any(data[payload_end:offset]):
+                raise ProfileValidationError("HCP payload padding is nonzero")
+            payload_end = offset + size
+            blob = data[offset:offset + size]
+            if hashlib.sha256(blob).digest() != digest:
+                raise ProfileValidationError("HCP chunk hash mismatch")
+            chunks_found[key] = blob
+            table.append({"type": kind, "id": cid, "offset": offset, "size": size,
+                          "sha256": digest.hex()})
+            physical.append(dict(table[-1], logical_offset=0, logical_size=size,
+                                 segment_index=0, segment_count=1))
+    else:
+        logical_parts, logical_specs, logical_offsets = {}, {}, {}
+        previous = None
+        for i in range(count):
+            (kind, cid, offset, size, logical_offset, logical_size, index, segment_count,
+             segment_digest, logical_digest) = record.unpack_from(data, directory + i * record.size)
+            key, order = (kind, cid), (kind, cid, index)
+            if previous is not None and order <= previous:
+                raise ProfileValidationError("HCP2 physical entries are duplicated or out of order")
+            previous = order
+            if kind not in (1, 2, 3) or (kind != 2 and cid != 0) or not size:
+                raise ProfileValidationError("invalid HCP2 chunk identity or size")
+            if size > chunks.MAX_SEGMENT_BYTES or not logical_size or not segment_count:
+                raise ProfileValidationError("invalid HCP2 segment/logical size")
+            if logical_size > 0xffffffff or logical_offset > logical_size or size > logical_size - logical_offset:
+                raise ProfileValidationError("HCP2 logical range out of bounds")
+            expected_offset = (payload_end + chunks.ALIGNMENT - 1) & ~(chunks.ALIGNMENT - 1)
+            if offset % chunks.ALIGNMENT or offset != expected_offset or offset > total or size > total - offset:
+                raise ProfileValidationError("HCP2 physical bounds/alignment invalid")
+            if any(data[payload_end:offset]):
+                raise ProfileValidationError("HCP2 payload padding is nonzero")
+            payload_end = offset + size
+            blob = data[offset:offset + size]
+            if hashlib.sha256(blob).digest() != segment_digest:
+                raise ProfileValidationError("HCP2 segment hash mismatch")
+            spec = (logical_size, segment_count, logical_digest)
+            if key in logical_specs and logical_specs[key] != spec:
+                raise ProfileValidationError("HCP2 logical metadata disagrees across segments")
+            logical_specs[key] = spec
+            logical_offsets.setdefault(key, offset)
+            parts = logical_parts.setdefault(key, [])
+            if index != len(parts) or logical_offset != sum(map(len, parts)):
+                raise ProfileValidationError("HCP2 segment indices or logical offsets are not contiguous")
+            parts.append(blob)
+            physical.append({"type": kind, "id": cid, "offset": offset, "size": size,
+                             "logical_offset": logical_offset, "logical_size": logical_size,
+                             "segment_index": index, "segment_count": segment_count,
+                             "segment_sha256": segment_digest.hex(),
+                             "sha256": logical_digest.hex()})
+        for key, parts in logical_parts.items():
+            logical_size, expected_count, digest = logical_specs[key]
+            if len(parts) != expected_count or sum(map(len, parts)) != logical_size:
+                raise ProfileValidationError("HCP2 segment count or aggregate size mismatch")
+            # Hash incrementally to avoid joining attacker-sized payloads.
+            h = hashlib.sha256()
+            for part in parts:
+                h.update(part)
+            if h.digest() != digest:
+                raise ProfileValidationError("HCP2 logical chunk hash mismatch")
+            chunks_found[key] = b"".join(parts)
+            table.append({"type": key[0], "id": key[1], "offset": logical_offsets[key],
+                          "size": logical_size, "sha256": digest.hex()})
     if (1, 0) not in chunks_found or (3, 0) not in chunks_found:
         raise ProfileValidationError("required CE or sound metadata chunk missing")
     if payload_end != total:
         raise ProfileValidationError("trailing bytes after final HCP payload")
-    return {"profile_id": profile_id, "chunks": chunks_found, "directory": table}
+    return {"profile_id": profile_id, "chunks": chunks_found, "directory": table,
+            "segments": physical, "version": version, "format": magic.decode("ascii")}
 
 
 def _schema_dependencies(image, schema, tags, *, roots=None):
