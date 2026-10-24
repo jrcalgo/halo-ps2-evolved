@@ -78,3 +78,9 @@ HCU, on `ps2-port` at `c406a414`, with local edits:
 2. Boot again with `tools/test_emulator.py` `prepare()` until `game_initialize` returns (`HALO_PS2_LOCAL game-initialize-done`) or the next halt names a new caller.
 3. Keep using `python3 tools/hcu_ps2_closure.py --layer all` and `python3 tools/hcu_ps2_link.py`. Do not commit M1 until the lifecycle stays up without a Direct3D, DirectSound, Bink, or online-netcode relocation, and the ELF bytes are reported against `elf_static`.
 4. Update `docs/hcu-ps2-closure.md` and the status line in `plans/5.hcu-remake.md` from the image that actually booted.
+
+## Continuation check — 2026-10-20
+
+The continuation below is historical. `plans/5.hcu-remake.md` now records M0 and M1 complete on host ELF `e3577ca6…`. At the time, the note said M0 remained complete and M1 remained open. Rebuilt the current dirty HCU port into `build/hcu-ps2-closure/all/halo-local.elf` (SHA-256 `95d835841abbdf43e18fce98baf4153361d03732752772e6a0bd6517e1d40804`). `tools/hcu_ps2_memory_audit.py` reports 1,892,788 file-backed bytes against `elf_static` 2,097,152, no unassigned owners, and candidate BSS regions under their current capacities; this remains logical accounting, not proof of arena routing. `tests/test_hcu_ps2_closure.py` (13 tests) and `tools/hcu_ps2_abi_host.py` pass.
+
+Fresh guest execution is still unverified. `tools/test_hcu_boot.py --mode recompiler` exited before guest startup because the PCSX2 AppImage could not initialize Qt/XCB. Retrying through `xvfb-run` also failed because this sandbox cannot create X sockets under `/tmp/.X11-unix` (the directory is root-owned). These are host-launch failures, not guest results; do not infer either success or a new guest-side blocker from them. Resume with a usable display/PCSX2 launch environment, then investigate the next guest failure from its actual log.
