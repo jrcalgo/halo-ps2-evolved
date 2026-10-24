@@ -24,7 +24,8 @@ typedef enum {
 	HCU_SOUND_EVENT_IMPULSE = 2,
 	HCU_SOUND_EVENT_LOOPING_START = 3,
 	HCU_SOUND_EVENT_LOOPING_STOP = 4,
-	HCU_SOUND_EVENT_FADE = 5
+	HCU_SOUND_EVENT_FADE = 5,
+	HCU_SOUND_EVENT_STOP = 6
 } hcu_sound_event_kind;
 
 typedef enum {
@@ -32,15 +33,17 @@ typedef enum {
 	HCU_SOUND_OWNER_OBJECT = 1,
 	HCU_SOUND_OWNER_UNIT = 2,
 	HCU_SOUND_OWNER_SCENARIO = 3,
-	HCU_SOUND_OWNER_UNATTACHED = 4
+	HCU_SOUND_OWNER_UNATTACHED = 4,
+	HCU_SOUND_OWNER_LOOPING = 5,
+	HCU_SOUND_OWNER_CE_SOURCE = 6
 } hcu_sound_owner_kind;
 
 typedef struct {
 	uint32_t sequence;          /* assigned at submit, strictly increasing */
 	uint16_t event;             /* hcu_sound_event_kind */
 	uint16_t owner_kind;        /* hcu_sound_owner_kind */
-	uint32_t owner_datum;       /* CE datum handle of the owner, or NONE */
-	uint32_t sound_index;       /* sound definition index, or NONE */
+	uint32_t owner_datum;       /* raw CE source datum in owner_kind namespace */
+	uint32_t sound_index;       /* CE sound definition index, or NONE */
 	uint32_t permutation;       /* permutation handle or cache block index */
 	float position[3];          /* world position; ignored when !has_position */
 	uint8_t has_position;
@@ -82,6 +85,13 @@ void hcu_sound_requests_reset(hcu_sound_request_queue *queue);
  * rejects the new record (oldest records are never discarded) and counts it. */
 int hcu_sound_requests_submit(hcu_sound_request_queue *queue,
 	const hcu_sound_request *request);
+/* Build a playback/fade/stop record from the CE bridge arguments. metadata_known
+ * uses bits 0..5 for owner, position-state, priority, gain, pitch and time. */
+int hcu_sound_request_capture_playback(hcu_sound_request *out,
+	uint16_t event, uint32_t permutation, uint32_t sound_index,
+	uint16_t owner_kind, uint32_t owner_datum, int has_position,
+	const float position[3], uint8_t priority, float gain, float pitch,
+	uint32_t game_time, uint8_t metadata_known);
 /* Copies up to max records, oldest first, into out. Returns the number
  * copied. Drained records leave the ring. */
 size_t hcu_sound_requests_drain(hcu_sound_request_queue *queue,

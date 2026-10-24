@@ -2,6 +2,7 @@
 #include "stream/hcu_sound_requests.h"
 
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -35,7 +36,48 @@ int main(void)
 	hcu_sound_request in[HCU_SOUND_REQUEST_CAPACITY + 4];
 	hcu_sound_request out[HCU_SOUND_REQUEST_CAPACITY + 4];
 	hcu_sound_request_counters c;
+	hcu_sound_request_queue bridge_queue;
 	size_t n, i;
+	float position[3] = { 10.5f, -2.25f, 4.0f };
+	hcu_sound_request playback;
+
+	assert(hcu_sound_request_capture_playback(&playback,
+		HCU_SOUND_EVENT_IMPULSE, 0xabcdefu, 0x123456u,
+		HCU_SOUND_OWNER_OBJECT, 0x765432u, 1, position, 7u,
+		0.625f, 1.25f, 9876u, 0x3fu));
+	assert(playback.event == HCU_SOUND_EVENT_IMPULSE);
+	assert(playback.permutation == 0xabcdefu && playback.sound_index == 0x123456u);
+	assert(playback.owner_kind == HCU_SOUND_OWNER_OBJECT && playback.owner_datum == 0x765432u);
+	assert(playback.has_position && playback.position[0] == 10.5f &&
+		playback.position[1] == -2.25f && playback.position[2] == 4.0f);
+	assert(playback.priority == 7u && playback.gain == 0.625f && playback.pitch == 1.25f);
+	assert(playback.game_time == 9876u && playback.metadata_known == 0x3fu);
+	assert(playback.accepted == 1u);
+	hcu_sound_requests_init(&bridge_queue);
+	assert(hcu_sound_requests_submit(&bridge_queue, &playback));
+	assert(hcu_sound_requests_drain(&bridge_queue, out, 1u) == 1u);
+	assert(out[0].event == HCU_SOUND_EVENT_IMPULSE &&
+		out[0].sound_index == 0x123456u && out[0].owner_datum == 0x765432u);
+	assert(out[0].position[1] == -2.25f && out[0].priority == 7u &&
+		out[0].gain == 0.625f && out[0].pitch == 1.25f && out[0].game_time == 9876u);
+	assert(!hcu_sound_request_capture_playback(&playback,
+		HCU_SOUND_EVENT_IMPULSE, 1u, 2u, HCU_SOUND_OWNER_OBJECT, 3u,
+		1, position, 1u, NAN, 1.0f, 1u, 0x3fu));
+	assert(!hcu_sound_request_capture_playback(&playback,
+		HCU_SOUND_EVENT_IMPULSE, 1u, 2u, HCU_SOUND_OWNER_OBJECT, 3u,
+		1, position, 1u, 1.0f, INFINITY, 1u, 0x3fu));
+	assert(!hcu_sound_request_capture_playback(&playback,
+		HCU_SOUND_EVENT_IMPULSE, 1u, 2u, HCU_SOUND_OWNER_OBJECT, 3u,
+		1, (const float[3]){ 0.0f, NAN, 0.0f }, 1u,
+		1.0f, 1.0f, 1u, 0x3fu));
+	assert(hcu_sound_request_capture_playback(&playback,
+		HCU_SOUND_EVENT_STOP, 0xabcdu, 0x1234u,
+		HCU_SOUND_OWNER_CE_SOURCE, 0x9988u, 0, NULL, 4u,
+		0.0f, 1.0f, 123u, 0x37u));
+	assert(playback.event == HCU_SOUND_EVENT_STOP && !playback.has_position);
+	assert(playback.owner_kind == HCU_SOUND_OWNER_CE_SOURCE &&
+		playback.owner_datum == 0x9988u && playback.sound_index == 0x1234u);
+	assert(playback.metadata_known == 0x37u && playback.pitch == 1.0f);
 
 	hcu_sound_requests_init(&queue);
 	assert(queue.spu2_playback_qualified == 0);

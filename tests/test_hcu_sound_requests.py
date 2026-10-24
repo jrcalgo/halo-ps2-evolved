@@ -33,9 +33,14 @@ class HcuSoundRequestsTest(unittest.TestCase):
         self.assertIn("request.metadata_known = 0", main)
         self.assertIn("request.accepted = accepted ? 1u : 0u", main)
         self.assertIn("halo_ps2_sound_playback_bind_sink", binder)
+        self.assertIn("sound_definition, captured_owner_kind", main)
         self.assertIn("channel_note_playback_request(sound, definition, &properties, permutation,", ce)
-        self.assertIn("HCU_SOUND_EVENT_IMPULSE", ce)
-        self.assertIn("HCU_SOUND_EVENT_LOOPING_START", ce)
+        self.assertIn("sound->track_proc == track_object_impulse_sound", ce)
+        self.assertIn("PS2_SOUND_OWNER_LOOPING", ce)
+        self.assertIn("sound->source_identifier", ce)
+        self.assertIn("channel_note_stop_request", ce)
+        self.assertIn("PS2_SOUND_EVENT_STOP", ce)
+        self.assertIn("PS2_SOUND_EVENT_FADE", ce)
 
 
 if __name__ == "__main__":

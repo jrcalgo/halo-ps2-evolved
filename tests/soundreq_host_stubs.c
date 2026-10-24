@@ -234,14 +234,15 @@ boolean _sound_cache_sound_request(struct sound_permutation *sound,
 	return sound != NULL;
 }
 
-void halo_ps2_sound_playback_note(const void *sound, int event,
-	int owner_kind, unsigned owner_datum, int has_position,
-	float x, float y, float z, int priority, float gain, float pitch,
-	unsigned game_time)
+void halo_ps2_sound_playback_note(const void *sound, unsigned event,
+	unsigned sound_definition, int owner_kind, unsigned owner_datum,
+	int has_position, float x, float y, float z, int priority,
+	float gain, float pitch, unsigned game_time, unsigned metadata_known)
 {
-	(void)sound; (void)event; (void)owner_kind; (void)owner_datum;
+	(void)sound; (void)event; (void)sound_definition;
+	(void)owner_kind; (void)owner_datum;
 	(void)has_position; (void)x; (void)y; (void)z; (void)priority;
-	(void)gain; (void)pitch; (void)game_time;
+	(void)gain; (void)pitch; (void)game_time; (void)metadata_known;
 }
 
 void dsound_port_set_channel_stereo_position(short virtual_channel_index,
