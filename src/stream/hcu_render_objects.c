@@ -14,6 +14,26 @@ int hcu_render_objects_find_model(const hcu_render_objects_model *models, uint32
 	return -1;
 }
 
+uint32_t hcu_render_objects_residency_priority(uint16_t type)
+{
+	/* Keep player/AI bipeds and their weapons resident before optional traffic. */
+	if (type == HCU_OBJECTS_TYPE_BIPED || type == HCU_OBJECTS_TYPE_WEAPON) return 0;
+	if (type == HCU_OBJECTS_TYPE_VEHICLE) return 1;
+	if (type == HCU_OBJECTS_TYPE_EFFECT) return 2;
+	return 3;
+}
+
+int hcu_render_objects_residency_may_evict(int loaded, int referenced_this_frame,
+	int fence_observed)
+{
+	return loaded && !referenced_this_frame && fence_observed == 1;
+}
+
+int hcu_render_objects_pool_request_fits(uint32_t need, uint32_t capacity)
+{
+	return need != 0 && need <= capacity;
+}
+
 int hcu_render_objects_select(const halo_ps2_frame_snapshot *snap, uint32_t view,
 	const hcu_render_objects_model *models, uint32_t model_count,
 	hcu_render_object_draw *out, uint32_t capacity, uint32_t *count,
@@ -466,6 +486,11 @@ static void entry_request(const hcu_asset_profile_view *view, uint32_t i, uint32
 	if (s->loaded) { s->last_used = frame + 1u; s_res.hits++; return; }
 	if (s->refused) { s_res.misses++; return; }
 	if (entry_need(s, &need) != 0) { s->refused = 1; s_res.entry_refusals++; s_res.misses++; return; }
+	if (!hcu_render_objects_pool_request_fits(need, s_res.pool_bytes)) {
+		s_res.pool_refusals++;
+		s_res.misses++;
+		return;
+	}
 	for (;;) {
 		if (pool_find(need) >= 0) {
 			if (entry_load(view, i, frame) == 0) return;
@@ -476,7 +501,8 @@ static void entry_request(const hcu_asset_profile_view *view, uint32_t i, uint32
 		{
 			uint32_t v, best = OBJ_NONE;
 			for (v = 0; v < s_slot_count; v++)
-				if (s_slots[v].loaded && s_slots[v].last_used <= frame &&
+				if (hcu_render_objects_residency_may_evict(s_slots[v].loaded,
+					s_slots[v].last_used > frame, safe) &&
 					(best == OBJ_NONE || s_slots[v].last_used < s_slots[best].last_used)) best = v;
 			if (best == OBJ_NONE) { s_res.pool_refusals++; break; }
 			entry_evict(best);
@@ -489,27 +515,36 @@ static void entry_request(const hcu_asset_profile_view *view, uint32_t i, uint32
 static void residency_frame(const halo_ps2_frame_snapshot *snap, uint32_t frame)
 {
 	static uint8_t need[HCU_OBJECTS_MAX_MODELS];
-	uint32_t v, ref, i;
+	static uint8_t priority[HCU_OBJECTS_MAX_MODELS];
+	uint32_t v, ref, i, p;
 	if (!snap || !s_pool) return;
 	memset(need, 0, sizeof need);
+	memset(priority, 0xFF, sizeof priority);
 	for (v = 0; v < snap->view_count && v < HALO_PS2_FRAME_MAX_VIEWS; v++) {
 		const halo_ps2_frame_view *fv = &snap->views[v];
 		if (!(fv->flags & HALO_PS2_FRAME_VIEW_ACTIVE)) continue;
 		for (ref = fv->view_ref_first; ref < fv->view_ref_first + fv->view_ref_count && ref < snap->view_ref_count; ref++) {
 			uint32_t oi = snap->view_refs[ref];
-			uint32_t rid, k;
+			uint32_t rid, k, rank;
 			if (oi >= snap->object_count) continue;
 			if (snap->objects[oi].resource_slot >= snap->resource_count) continue;
 			rid = snap->resources[snap->objects[oi].resource_slot].id;
+			rank = hcu_render_objects_residency_priority(snap->objects[oi].type);
 			for (k = 0; k < s_slot_count; k++)
-				if (!s_slots[k].refused && (s_slots[k].entry->source_datum & 0xFFFFu) == rid) { need[k] = 1; break; }
+				if (!s_slots[k].refused && (s_slots[k].entry->source_datum & 0xFFFFu) == rid) {
+					need[k] = 1;
+					if (rank < priority[k]) priority[k] = (uint8_t)rank;
+					break;
+				}
 		}
 	}
 	/* Mark what this frame uses before any eviction, so a referenced entry is never the victim. */
 	for (i = 0; i < s_slot_count; i++)
 		if (need[i] && s_slots[i].loaded) s_slots[i].last_used = frame + 1u;
-	for (i = 0; i < s_slot_count; i++)
-		if (need[i]) entry_request(s_profile, i, frame);
+	/* Resolve shared resources at their most important visible type, then admit by that priority. */
+	for (p = 0; p <= 3u; p++)
+		for (i = 0; i < s_slot_count; i++)
+			if (need[i] && priority[i] == p) entry_request(s_profile, i, frame);
 }
 
 /* ---- texture binding (same mapping as hcu_render_media.c, global texture index) ---------------- */

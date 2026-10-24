@@ -99,6 +99,12 @@ int hcu_render_objects_select(const halo_ps2_frame_snapshot *snap, uint32_t view
 int hcu_render_objects_find_model(const hcu_render_objects_model *models, uint32_t model_count,
 	uint32_t resource_id);
 
+/* Residency policy helpers shared with host tests. Lower priority values are admitted first. */
+uint32_t hcu_render_objects_residency_priority(uint16_t type);
+int hcu_render_objects_residency_may_evict(int loaded, int referenced_this_frame,
+	int fence_observed);
+int hcu_render_objects_pool_request_fits(uint32_t need, uint32_t capacity);
+
 /* ---- pin / unpin ----------------------------------------------------------------------------------
  * pin takes a read pin on the latest published bank slot. unpin releases it; call it only after the
  * frame's kick has completed. Returns NULL when nothing is published (the frame draws no objects). */

@@ -154,6 +154,26 @@ static int test_parity(void)
 	return 0;
 }
 
+static int test_residency_policy(void)
+{
+	CHECK(hcu_render_objects_residency_priority(HCU_OBJECTS_TYPE_BIPED) == 0);
+	CHECK(hcu_render_objects_residency_priority(HCU_OBJECTS_TYPE_WEAPON) == 0);
+	CHECK(hcu_render_objects_residency_priority(HCU_OBJECTS_TYPE_VEHICLE) == 1);
+	CHECK(hcu_render_objects_residency_priority(HCU_OBJECTS_TYPE_EFFECT) == 2);
+	CHECK(hcu_render_objects_residency_priority(99) == 3);
+	/* No resource can be evicted before its draw/upload chain fence is observed. */
+	CHECK(!hcu_render_objects_residency_may_evict(1, 0, 0));
+	CHECK(!hcu_render_objects_residency_may_evict(1, 0, -1));
+	CHECK(!hcu_render_objects_residency_may_evict(1, 1, 1));
+	CHECK(!hcu_render_objects_residency_may_evict(0, 0, 1));
+	CHECK(hcu_render_objects_residency_may_evict(1, 0, 1));
+	/* An individually oversized model is a real pool refusal, not an eviction attempt. */
+	CHECK(hcu_render_objects_pool_request_fits(1024, 2048));
+	CHECK(!hcu_render_objects_pool_request_fits(2049, 2048));
+	CHECK(!hcu_render_objects_pool_request_fits(0, 2048));
+	return 0;
+}
+
 static int test_pin(void)
 {
 	static unsigned char storage[1u << 20] __attribute__((aligned(16)));
@@ -201,7 +221,8 @@ int main(void)
 	if (test_builder()) return 1;
 	if (test_select()) return 2;
 	if (test_parity()) return 3;
-	if (test_pin()) return 4;
+	if (test_residency_policy()) return 4;
+	if (test_pin()) return 5;
 	printf("hcu_render_objects tests passed\n");
 	return 0;
 }
