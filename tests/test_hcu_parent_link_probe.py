@@ -55,10 +55,10 @@ def test_physical_placement_rejects_overlapping_load_intervals():
 
 
 def test_physical_placement_rejects_file_overage_and_reserve_overlap():
-    segment = {"start": 0x100000, "file_end": 0x300880,
+    segment = {"start": 0x100000, "file_end": 0x340880,
                "memory_end": 0x4f6888}
     symbols = named_symbols(
-        "00100000 T _ftext\n00300880 D _fbss\n004f6888 B _end\n",
+        "00100000 T _ftext\n00340880 D _fbss\n004f6888 B _end\n",
         {"_ftext", "_fbss", "_end"})
     report = physical_placement(segment, symbols)
     assert report["necessary_conditions_pass"] is False
@@ -118,7 +118,7 @@ def test_joint_probe_retains_parent_memory_bridge_without_claiming_runtime_accep
 
 
 def test_joint_probe_links_optional_hcu_machine_entry_and_input_owner():
-    result = json.loads((ROOT / "build/hcu-parent-link-probe/result.json").read_text())
+    result = json.loads((ROOT / "build/m2-c2-resume-budget-v3/result-partition-sidewinder_marine_shotgun_4p4bot.json").read_text())
     gameplay = result["hcu_gameplay_machine"]
     parent_objects = gameplay["parent_object_sha256"]
     assert gameplay["status"] == "linked-diagnostic"
@@ -130,16 +130,19 @@ def test_joint_probe_links_optional_hcu_machine_entry_and_input_owner():
     assert "hcu_map_service.o" in " ".join(parent_objects)
     assert "ctag_ps2_backend.o" in " ".join(parent_objects)
     assert gameplay["elf"]["undefined_symbol_count"] == 0
+    assert gameplay["elf"]["elf_static_capacity"] == 2359296
     assert gameplay["elf"]["elf_static_overage"] == 0
+    assert gameplay["elf"]["load_segment_file_bytes"] == 2250500
     assert gameplay["elf"]["bss_bytes"] > 0
     assert gameplay["elf"]["load_segment_memory_bytes_including_bss"] > gameplay["elf"]["elf_static_capacity"]
     assert gameplay["elf"]["elf_static_memory_overage_including_bss"] > 0
     ledger = gameplay["memory_ledger"]
     assert ledger["unassigned_owners"] == []
     assert ledger["candidate_regions_over_capacity"] == {}
-    assert ledger["candidate_allocated_bytes_by_region"]["elf_static"] <= 2 * 1024 * 1024
-    assert ledger["candidate_allocated_bytes_by_region"]["resident_gameplay"] == gameplay["elf"]["bss_bytes"]
-    assert "not proof of physical" in ledger["warning"]
+    assert ledger["candidate_allocated_bytes_by_region"]["elf_static"] == 2250500
+    assert ledger["candidate_allocated_bytes_by_region"]["resident_gameplay"] == 1811648
+    assert "does not prove physical" in ledger["warning"]
+    assert gameplay["partition_profile"] == "sidewinder_marine_shotgun_4p4bot"
     assert gameplay["tag_cache_bytes"] == 2 * 1024 * 1024
     assert gameplay["physical_placement"]["necessary_conditions_pass"] is True
     assert gameplay["physical_placement"]["actual_boot_pointer_guest_verified"] is False
@@ -179,6 +182,22 @@ def test_nondefault_tag_cache_profile_is_validated_before_building():
             cwd=ROOT, text=True, capture_output=True, check=False)
         assert result.returncode == 2
         assert "16-byte aligned" in result.stderr
+
+
+def test_partition_profile_identifier_is_validated_before_building():
+    script = ROOT / "tools/hcu_parent_link_probe.py"
+    result = subprocess.run(
+        [sys.executable, str(script), "--partition-profile", "Bad-Row"],
+        cwd=ROOT, text=True, capture_output=True, check=False)
+    assert result.returncode == 2
+    assert "lowercase row identifier" in result.stderr
+
+
+def test_partition_profile_option_is_forwarded_and_artifacts_are_scoped():
+    script = (ROOT / "tools/hcu_parent_link_probe.py").read_text()
+    assert 'parser.add_argument("--partition-profile"' in script
+    assert 'f"-partition-{args.partition_profile}"' in script
+    assert 'f"WORLD_HCU_PARTITION_PROFILE={args.partition_profile or \'\'}"' in script
 
 
 def test_nondefault_tag_cache_profile_artifact_is_isolated_and_diagnostic():

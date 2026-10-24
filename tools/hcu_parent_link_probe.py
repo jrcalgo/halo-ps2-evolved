@@ -89,14 +89,24 @@ def named_symbols(nm_output: str, names: set[str]) -> dict[str, int]:
     return found
 
 
+def _budget_region_bytes(name: str) -> int:
+    budget = json.loads((Path(__file__).resolve().parents[1] / "config/memory-budget.json").read_text())
+    return next(r["bytes"] for r in budget["regions"] if r["name"] == name)
+
+
+LOW_KERNEL_END = 0x00100000
+HIGH_KERNEL_START = 0x01f80000
+MEM_LAYOUT_V2_BYTES = 24_117_248  # submodules/halo-ps2/engine/src/core/mem.h
+
+
 def physical_placement(segment: dict[str, int] | list[dict[str, int]], symbols: dict[str, int],
                        layout_bytes: int = 24_117_248) -> dict[str, object]:
     """Necessary physical-capacity proof; actual malloc placement is a guest check."""
     segments = segment if isinstance(segment, list) else [segment]
     first, last = segments[0], segments[-1]
     text, bss, end = (symbols[name] for name in ("_ftext", "_fbss", "_end"))
-    static_end = 0x00300000
-    reserve_start = 0x01a00000
+    static_end = LOW_KERNEL_END + _budget_region_bytes("elf_static")
+    reserve_start = static_end + MEM_LAYOUT_V2_BYTES
     bss_bytes = end - bss
     backing_bytes = layout_bytes - bss_bytes
     stack_symbol = symbols.get("_stack")
@@ -120,7 +130,7 @@ def physical_placement(segment: dict[str, int] | list[dict[str, int]], symbols: 
         errors.append("PT_LOAD interval escapes the EE user image range")
     if bss > static_end:
         errors.append("file-backed ELF exceeds elf_static physical boundary")
-    if bss_bytes > 6_815_744:
+    if bss_bytes > _budget_region_bytes("resident_gameplay"):
         errors.append("ELF BSS exceeds resident_gameplay capacity")
     if backing_bytes < 0 or minimum_boot_end > reserve_start:
         errors.append("minimum boot backing overlaps untouched reserve")
@@ -141,7 +151,7 @@ def physical_placement(segment: dict[str, int] | list[dict[str, int]], symbols: 
                              "kernel_assigned": stack_symbol == 0xffffffff,
                              "physical_bounds_guest_verified": False},
             "system_kernel_reservation": {
-                "budget_bytes": 1_572_864,
+                "budget_bytes": _budget_region_bytes("system_kernel"),
                 "physical_intervals": [
                     {"start": 0x00000000, "end": 0x00100000,
                      "owner": "low EE kernel/communication reservation"},
@@ -149,8 +159,8 @@ def physical_placement(segment: dict[str, int] | list[dict[str, int]], symbols: 
                      "owner": "high EE stack/kernel reservation"},
                 ],
                 "uncommitted_reserve_interval": {
-                    "start": reserve_start, "end": 0x01f80000,
-                    "bytes": 5_767_168},
+                    "start": reserve_start, "end": HIGH_KERNEL_START,
+                    "bytes": HIGH_KERNEL_START - reserve_start},
                 "source": "config/memory-budget.json",
                 "layout_basis": "docs/memory.md:122-139",
                 "physical_bounds_guest_verified_for_this_image": False},
@@ -188,6 +198,13 @@ def main() -> None:
     parser.add_argument("--tag-cache-bytes", type=int, default=2097152,
                         help=("boot-fixed diagnostic tag-cache span in bytes; "
                               "must be 16-byte aligned and smaller than current_bsp"))
+    parser.add_argument("--partition-profile",
+                        help="compile a generated C2 partition image row into the HCU main ELF")
+    parser.add_argument("--profile-package-root", type=Path,
+                        default=ROOT / "build/m2-c2-r3-selected-packages/pkg",
+                        help="package row directory passed to the generated image-header builder")
+    parser.add_argument("--headless-runtime-guest", action="store_true",
+                        help="run CE's selected Sidewinder load/BSP lifecycle before any render frame")
     args = parser.parse_args()
     if args.m2_ui_lifecycle_test and args.m3_render_clear_test:
         parser.error("the M2 lifecycle and M3 render-clear diagnostics are separate ELF profiles")
@@ -203,6 +220,13 @@ def main() -> None:
         args.tag_cache_bytes = 4477120
     if args.asset_root and args.asset_profile != "host":
         parser.error("use either --asset-root or --asset-profile, not both")
+    if args.partition_profile and not re.fullmatch(r"[a-z0-9_]+", args.partition_profile):
+        parser.error("--partition-profile must be a lowercase row identifier")
+    if args.headless_runtime_guest and args.partition_profile not in (
+            "sidewinder_marine_shotgun_4p4bot", "bots_sidewinder"):
+        parser.error("--headless-runtime-guest requires the Sidewinder survival or bots row")
+    if args.headless_runtime_guest and (args.asset_profile != "host" or args.asset_root):
+        parser.error("--headless-runtime-guest requires the host asset profile")
     if (args.tag_cache_bytes <= 0 or args.tag_cache_bytes >= 6291456 or
             args.tag_cache_bytes % 16 != 0):
         parser.error("--tag-cache-bytes must be positive, 16-byte aligned, and below 6291456")
@@ -210,7 +234,7 @@ def main() -> None:
                           if root == args.asset_root) if args.asset_root
                      else args.asset_profile)
     asset_root = profile_roots[asset_profile]
-    # The R5900 combined image is constrained by the fixed 2 MiB load window.
+    # The R5900 combined image is constrained by the configured elf_static window.
     # Use GCC's size-first mode for this probe, while retaining the HCU's
     # source-profile flags and verifying the exact image in PCSX2 afterward.
     optimization = "-Oz"
@@ -224,10 +248,16 @@ def main() -> None:
                       "-m3-render-clear" if args.m3_render_clear_test else "")
     if args.tag_cache_bytes != 2097152:
         profile_suffix += f"-tagcache-{args.tag_cache_bytes}"
+    if args.partition_profile:
+        profile_suffix += f"-partition-{args.partition_profile}"
+    if args.headless_runtime_guest:
+        profile_suffix += "-headless-runtime-guest"
     closure_suffix = (f"-step8-mp-workload-{args.step8_mp_workload_players}p" if args.step8_mp_workload_only else
                       "-step8-mp-capacity" if args.step8_mp_capacity_diagnostic else
                       "-m2-ui-lifecycle" if args.m2_ui_lifecycle_test else
                       "-m2-animation-trace" if args.m2_animation_trace else "")
+    if args.headless_runtime_guest:
+        closure_suffix += "-production-runtime-guest"
     hcu_closure = build / "hcu-ps2-closure" / (
         "all-no-bootstrap-memory" + closure_suffix)
     parent_output = output / "parent-sections-os"
@@ -262,6 +292,9 @@ def main() -> None:
     if args.m2_animation_trace:
         closure_command.append("--m2-animation-trace")
         link_command.append("--m2-animation-trace")
+    if args.headless_runtime_guest:
+        closure_command.append("--production-runtime-guest")
+        link_command.append("--production-runtime-guest")
     run(closure_command, env=env)
     run(link_command, env=env)
     parent_vis = "src/world/visibility.c"
@@ -283,6 +316,9 @@ def main() -> None:
          f"WORLD_HCU_STEP8_MP_CAPACITY_DIAGNOSTIC={1 if args.step8_mp_capacity_diagnostic else 0}",
          f"WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS={args.step8_mp_workload_players}",
          f"WORLD_HCU_TAG_CACHE_BYTES={args.tag_cache_bytes}",
+         f"WORLD_HCU_PARTITION_PROFILE={args.partition_profile or ''}",
+         f"WORLD_HCU_PROFILE_PACKAGE_ROOT={args.profile_package_root}",
+         f"WORLD_HCU_HEADLESS_RUNTIME_GUEST={1 if args.headless_runtime_guest else 0}",
          f"EE_OPTFLAGS={optimization}", "parent-objects"], env=env)
 
     parent_objects = sorted(parent_output.rglob("*.o"))
@@ -318,7 +354,7 @@ def main() -> None:
     vu_program_bytes = sizes.get(".vutext", 0)
     program_headers = run([str(readelf), "-l", str(elf)], env=env)
     load_file_bytes, load_memory_bytes = load_segment_sizes(program_headers)
-    static_cap = 2_097_152
+    static_cap = _budget_region_bytes("elf_static")
 
     gameplay_objects = sorted(gameplay_output.rglob("*.o"))
     gameplay_entry = gameplay_output / "stream/hcu_main.o"
@@ -327,6 +363,24 @@ def main() -> None:
     for path in (gameplay_entry, input_bridge, memory_bridge):
         if path not in gameplay_objects:
             raise RuntimeError(f"missing HCU gameplay machine input: {path}")
+    headless_frame_state = None
+    if args.headless_runtime_guest:
+        rooted_object = hcu_closure / "rooted.o"
+        rooted_report = json.loads((hcu_closure / "result.json").read_text())
+        rooted_symbols = run([str(nm), "-g", str(rooted_object)], env=env)
+        if not any(line.split()[-1:] == ["halo_ps2_bitmap_frame_is_active"]
+                   for line in rooted_symbols.splitlines()):
+            raise RuntimeError("rooted CE image lacks the real frame-active query")
+        if "halo_ps2_bitmap_frame_is_active" not in rooted_report.get("rooted_link", {}).get("roots", []):
+            raise RuntimeError("frame-active query was not an explicit root in the CE link")
+        headless_frame_state = {
+            "rooted_object": str(rooted_object.relative_to(ROOT)),
+            "rooted_object_sha256": sha256(rooted_object),
+            "rooted_report_sha256": sha256(hcu_closure / "result.json"),
+            "rooted_symbol": "halo_ps2_bitmap_frame_is_active",
+            "registry_translation_unit": "port/ps2/src/ps2_render.c",
+            "shared_singleton_with_render_frame": True,
+        }
     gameplay_name = ("hcu-gameplay-machine" if asset_profile == "host"
                      else f"hcu-gameplay-machine-{asset_profile}") + profile_suffix
     gameplay_elf = output / f"{gameplay_name}.elf"
@@ -357,6 +411,23 @@ def main() -> None:
          "--elf", str(gameplay_elf), "--map", str(gameplay_map),
          "--output", str(gameplay_memory_audit)], env=env)
     gameplay_ledger = json.loads(gameplay_memory_audit.read_text())
+    guest_scope = args.headless_runtime_guest
+    gameplay_entrypoint = (
+        "PS2 entry -> HCU selected partition/runtime -> CE main_setup_connection -> "
+        "scenario+BSP load/release before first renderer frame"
+        if guest_scope else "parent hcu_main -> parent v2 arena binder -> HCU shell")
+    gameplay_map_service = (
+        "selected HCP2 profile runtime with segmented source maps and guarded BSP residency"
+        if guest_scope else "parent UI/bootstrap callback with HMAP preflight, CTAG/CRNG mount, and source verification")
+    gameplay_limits = ([
+        "The headless driver exercises CE initialization, selected Sidewinder scenario/BSP load, and owner release before rendering.",
+        "This linked report alone is not runtime evidence; inspect the paired PCSX2 guest manifest and logs.",
+        "No bitmap rendering, active-frame consumption, multiplayer bot behavior, or C3 draw proof is included.",
+    ] if guest_scope else [
+        "No guest execution or M1 startup marker has been observed for this linked image.",
+        "Only the UI/bootstrap map callback is implemented; no CBSP residency or ordinary retail-map transaction is qualified.",
+        "The default cache is deliberately too small to claim ordinary retail map support.",
+    ])
     report = {
         "status": "linked-diagnostic",
         "acceptance": False,
@@ -405,18 +476,19 @@ def main() -> None:
         "hcu_gameplay_machine": {
             "status": "linked-diagnostic",
             "acceptance": False,
-            "entrypoint": "parent hcu_main -> parent v2 arena binder -> HCU shell",
+            "entrypoint": gameplay_entrypoint,
             "input_bridge": "HCU input_frame_begin polls four parent logical pads before CE snapshot",
-            "map_service": "parent UI-only callback with HMAP preflight, CTAG/CRNG mount, and source verification",
+            "map_service": gameplay_map_service,
+            "runtime_guest_mode": "headless-ce-map-load" if guest_scope else None,
             "asset_profile": asset_profile,
             "asset_root": asset_root,
+            "partition_profile": args.partition_profile,
+            "profile_package_root": str(args.profile_package_root),
+            "headless_frame_state_object": headless_frame_state,
             "tag_cache_bytes": args.tag_cache_bytes,
-            "tag_cache_limit_note": "UI/bootstrap diagnostic only; not a retail map capacity claim",
-            "limits": [
-                "No guest execution or M1 startup marker has been observed for this linked image.",
-                "Only the UI/bootstrap map callback is implemented; no CBSP residency or ordinary retail-map transaction is qualified.",
-                "The default cache is deliberately too small to claim ordinary retail map support.",
-            ],
+            "tag_cache_limit_note": ("partition-selected guest tuple; runtime qualification is in the paired guest result"
+                                     if guest_scope else "UI/bootstrap diagnostic only; not a retail map capacity claim"),
+            "limits": gameplay_limits,
             "elf": {
                 "path": str(gameplay_elf.relative_to(ROOT)),
                 "sha256": sha256(gameplay_elf),
@@ -470,7 +542,9 @@ def main() -> None:
                 ("1" if args.m2_animation_trace else "0") +
                 " WORLD_HCU_M2_UI_LIFECYCLE_TEST=" +
                 ("1" if args.m2_ui_lifecycle_test else "0") +
-                f" WORLD_HCU_TAG_CACHE_BYTES={args.tag_cache_bytes} EE_OPTFLAGS={optimization} all"),
+                f" WORLD_HCU_TAG_CACHE_BYTES={args.tag_cache_bytes} "
+                f"WORLD_HCU_PARTITION_PROFILE={args.partition_profile or ''} "
+                f"EE_OPTFLAGS={optimization} all"),
         },
     }
     report_path = output / ("result.json" if asset_profile == "host"

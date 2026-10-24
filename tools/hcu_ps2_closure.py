@@ -16,6 +16,11 @@ import sys
 
 from build_toolchain import ROOT, environment, save
 
+
+def _elf_static_bytes() -> int:
+    budget = json.loads((ROOT / "config/memory-budget.json").read_text())
+    return next(r["bytes"] for r in budget["regions"] if r["name"] == "elf_static")
+
 HCU = ROOT / "submodules/halo-ce-universal"
 MANIFEST_PATH = HCU / "port/ps2/port.json"
 
@@ -295,6 +300,8 @@ def main() -> None:
                         help="local split-screen players for the workload-only diagnostic (2 or CE maximum 4)")
     parser.add_argument("--m2-animation-trace", action="store_true",
                         help="compile the opt-in bounded animation touch observer")
+    parser.add_argument("--production-runtime-guest", action="store_true",
+                        help="compile CE main with the production selected-map lifecycle driver")
     args = parser.parse_args()
     manifest = json.loads(MANIFEST_PATH.read_text())
     if args.layer != "all" and args.layer not in manifest["layers"]:
@@ -325,6 +332,10 @@ def main() -> None:
         parser.error("--step8-mp-workload-players requires --step8-mp-workload-only")
     if args.m2_animation_trace:
         profile += "-m2-animation-trace"
+    if args.production_runtime_guest:
+        if not args.no_bootstrap_memory or args.m2_ui_lifecycle_test:
+            parser.error("--production-runtime-guest requires --no-bootstrap-memory and is separate from diagnostics")
+        profile += "-production-runtime-guest"
     output = build / "hcu-ps2-closure" / (args.layer + profile)
     output.mkdir(parents=True, exist_ok=True)
     header = HCU / manifest["prefix"]
@@ -369,7 +380,9 @@ def main() -> None:
                             ([f"HALO_PS2_STEP8_MP_WORKLOAD_PLAYERS={args.step8_mp_workload_players}"]
                              if args.step8_mp_workload_only else []) +
                             (["HALO_PS2_M2_ANIMATION_TRACE"]
-                             if args.m2_animation_trace else [])),
+                             if args.m2_animation_trace else []) +
+                            (["HALO_PS2_C2_PRODUCTION_RUNTIME_GUEST"]
+                             if args.production_runtime_guest else [])),
         "profile_source_overrides": ({
             "source/main/main.c": ["HALO_PS2_M2_UI_LIFECYCLE_TEST"],
             "source/scenario/scenario.c": ["-Oz"],
@@ -413,6 +426,8 @@ def main() -> None:
             extra.append("-Oz")
         if args.m2_animation_trace:
             extra.append("-DHALO_PS2_M2_ANIMATION_TRACE")
+        if args.production_runtime_guest and relative == "source/main/main.c":
+            extra.append("-DHALO_PS2_C2_PRODUCTION_RUNTIME_GUEST")
         pending.append((relative, source, obj, extra))
     objects = []
     compiled_object_sources = []
@@ -465,11 +480,13 @@ def main() -> None:
             data = report["partial_link"]["sections"].get(".data", 0)
             bss = report["partial_link"]["sections"].get(".bss", 0)
             rodata = report["partial_link"]["sections"].get(".rodata", 0)
+            reported_progbits = text + data + rodata
             report["elf_static_account"] = {
                 "region": "elf_static",
-                "region_bytes": 2097152,
-                "layer_text_data_rodata_bss": text + data + rodata + bss,
-                "note": "Sum of every compiled section. The rooted link below is the reachable image.",
+                "region_bytes": _elf_static_bytes(),
+                "layer_reported_text_data_rodata_bytes": reported_progbits,
+                "layer_reported_bss_bytes": bss,
+                "note": "These selected section totals are diagnostic only and are not complete PT_LOAD accounting. Final elf_static accounting uses file-backed LOAD bytes; LOAD NOBITS is charged to resident_gameplay. The rooted link below is the reachable image.",
             }
             rooted = output / "rooted.o"
             roots = ["game_initialize", "game_tick", "halo_shell_main", "actors_update", "hs_update",
@@ -498,6 +515,10 @@ def main() -> None:
             if args.m2_animation_trace:
                 roots.append("ps2_animation_trace_bind")
                 roots.append("ps2_animation_trace_bind_contexts")
+            if args.production_runtime_guest:
+                # Keep the real CE frame registry query in the same rooted
+                # translation unit as its private active-state singleton.
+                roots.append("halo_ps2_bitmap_frame_is_active")
             rooted_link = subprocess.run(
                 [str(linker), "-r", "--gc-sections", *[arg for name in roots for arg in ("-u", name)],
                  f"@{response}", "-o", str(rooted)],
@@ -531,8 +552,8 @@ def main() -> None:
                     "roots": roots,
                     "sections": rooted_sections,
                     "code_constants_static_data": rooted_code,
-                    "elf_static_bytes": 2097152,
-                    "elf_static_spare": 2097152 - rooted_code,
+                    "elf_static_bytes": _elf_static_bytes(),
+                    "elf_static_spare": _elf_static_bytes() - rooted_code,
                     "live_external_count": len(live_external_rows),
                     "classes": {name: sorted(symbols)
                                 for name, symbols in rooted_classes.items()},

@@ -15,6 +15,7 @@ from hcu_ps2_closure import classify, selected_sources  # noqa: E402
 from hcu_ps2_memory_audit import (  # noqa: E402
     apply_region_candidates,
     attach_owners,
+    parse_load_accounting,
     parse_file_backed_allocated_bytes,
     parse_map,
     parse_nm,
@@ -434,6 +435,17 @@ class HcuPs2Cache(unittest.TestCase):
 
 
 class HcuPs2MemoryAudit(unittest.TestCase):
+    def test_load_accounting_separates_file_bytes_from_nobits(self):
+        headers = """
+  LOAD 0x000080 0x00100000 0x00100000 0x225704 0x3dfbc4 RWE 0x80
+"""
+        self.assertEqual(parse_load_accounting(headers), {
+            "load_segments": [{"filesz": 2250500, "memsz": 4062148,
+                               "nobits": 1811648}],
+            "file_backed_load_bytes": 2250500,
+            "nobits_load_bytes": 1811648,
+        })
+
     def test_map_ignores_aggregate_and_keeps_input_section_ranges(self):
         ranges = parse_map("""
 .bss 0x1000 0x3000
