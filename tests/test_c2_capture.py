@@ -10,6 +10,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import c2_guest_run as g  # noqa: E402
+import c2_profile_boot_matrix as matrix  # noqa: E402
 
 
 def _png(path: Path, fill, box=None, size=(1280, 1024)):
@@ -42,6 +43,26 @@ def test_textured_game_area_counts(tmp_path):
 def test_faint_noise_below_black_level_is_black(tmp_path):
     stats = g.nonblack_stats(_png(tmp_path / "faint.png", (g.CAPTURE_BLACK_LEVEL, 0, 0), box=(0, 0, 1280, 1024)))
     assert stats["nonblack_fraction"] == 0.0
+
+
+def test_clear_sky_and_hud_do_not_qualify_as_rendered_scene(tmp_path):
+    image = Image.new("RGB", (640, 448), (15, 25, 40))
+    image.paste((255, 255, 255), (310, 220, 330, 221))
+    path = tmp_path / "clear-with-crosshair.png"
+    image.save(path)
+    stats = g.nonblack_stats(path)
+    assert stats["nonblack_fraction"] > 0.5
+    assert not matrix.capture_has_scene_variation(stats)
+
+
+def test_scene_variation_gate_accepts_detailed_content(tmp_path):
+    image = Image.new("RGB", (640, 448))
+    for column in range(640):
+        value = column % 256
+        image.paste((value, (value * 3) % 256, 255 - value), (column, 120, column + 1, 448))
+    path = tmp_path / "content.png"
+    image.save(path)
+    assert matrix.capture_has_scene_variation(g.nonblack_stats(path))
 
 
 def test_find_window_picks_largest_pcsx2_window(monkeypatch):

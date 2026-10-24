@@ -20,7 +20,9 @@ def transaction_lines():
 def check(lines, mode=1, captures=None):
     return matrix.rendered_successor_checks(
         lines, "bloodgulch", "beavercreek", mode, 4,
-        captures if captures is not None else [{"nonblack_fraction": 0.7}] * 2)
+        captures if captures is not None else [{"nonblack_fraction": 0.7,
+                                                "scene_color_buckets": 100,
+                                                "scene_nonflat_fraction": 0.3}] * 2)
 
 
 def test_rendered_successor_requires_validated_drain_before_ce_dispose():

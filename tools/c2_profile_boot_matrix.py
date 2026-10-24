@@ -983,6 +983,14 @@ def render_checks(lines: list[str], views: int, frames: int) -> dict:
     return out
 
 
+def capture_has_scene_variation(capture: dict) -> bool:
+    """Reject clear-color/HUD-only evidence; this does not replace visual review."""
+    return (not capture.get("error") and
+            (capture.get("nonblack_fraction") or 0) >= 0.01 and
+            (capture.get("scene_color_buckets") or 0) >= 16 and
+            (capture.get("scene_nonflat_fraction") or 0) >= 0.005)
+
+
 def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1, ticks: int = 0,
             render_views: int = 0, render_frames: int = 300, workload_players: int = 0) -> dict:
     if OUTPUT_ROOT is not None:
@@ -1052,6 +1060,10 @@ def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1
                 result["failing_checks"] = [*result["failing_checks"], "held_capture_nonblack"]
                 parsed = {**parsed, "failing_checks": result["failing_checks"]}
                 result["reasons"].append(f"held capture is black (non-black fraction {held_fraction})")
+            if not held or not capture_has_scene_variation(held[0]):
+                result["failing_checks"] = [*result["failing_checks"], "held_capture_scene_variation"]
+                parsed = {**parsed, "failing_checks": result["failing_checks"]}
+                result["reasons"].append("held capture lacks scene variation (clear color or HUD alone cannot qualify)")
         run_config = guest_run.get("pcsx2_config", {})
         result["emu_mode_verified"] = run_config.get("emu_mode_verified")
         if not run_config.get("emu_mode_verified"):
@@ -1096,8 +1108,7 @@ def rendered_successor_checks(lines: list[str], old_map: str, new_map: str, mode
         "rendered_view_counts": bool(ready) and all(row.get("views") == str(views) for row in ready),
         "render_failure_free": not any("HALO_PS2_FAIL c3-" in line for line in lines),
         "replacement_captures_visible": len(captures) == 2 and all(
-            (capture.get("nonblack_fraction") or 0) >= 0.01 and not capture.get("error")
-            for capture in captures),
+            capture_has_scene_variation(capture) for capture in captures),
     }
     if mode == 2:
         checks["failed_preflight_preserves_renderer"] = not begin and not validated and not drained

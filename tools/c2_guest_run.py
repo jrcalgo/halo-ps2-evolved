@@ -562,10 +562,17 @@ def find_pcsx2_window(display):
 
 
 def nonblack_stats(png_path):
-    """Count gray pixels above CAPTURE_BLACK_LEVEL, outside the OSD box."""
+    """Measure visibility and scene variation outside the OSD box.
+
+    A clear color with HUD glyphs can be bright without showing any world.
+    Color variation rejects that case; visual inspection still establishes
+    whether the captured content matches the required scene.
+    """
+    from collections import Counter
     from PIL import Image
     with Image.open(png_path) as image:
         gray = image.convert("L")
+        rgb = image.convert("RGB").point(lambda value: value >> 3)
     width, height = gray.size
     histogram = gray.histogram()
     total_bright = sum(histogram[CAPTURE_BLACK_LEVEL + 1:])
@@ -575,9 +582,19 @@ def nonblack_stats(png_path):
     osd_bright = sum(osd_hist[CAPTURE_BLACK_LEVEL + 1:])
     game_pixels = width * height - osd.size[0] * osd.size[1]
     game_bright = total_bright - osd_bright
+    colors = Counter()
+    # OSD starts at (0, 0). These disjoint rectangles cover its complement.
+    for box in ((min(right, width), 0, width, min(bottom, height)),
+                (0, min(bottom, height), width, height)):
+        region = rgb.crop(box)
+        for count, color in region.getcolors(maxcolors=width * height) or ():
+            colors[color] += count
+    nonflat_pixels = game_pixels - sum(count for _, count in colors.most_common(2))
     return {"width": width, "height": height, "game_pixels": game_pixels,
             "nonblack_pixels": game_bright,
-            "nonblack_fraction": round(game_bright / game_pixels, 6) if game_pixels else 0.0}
+            "nonblack_fraction": round(game_bright / game_pixels, 6) if game_pixels else 0.0,
+            "scene_color_buckets": len(colors), "scene_nonflat_pixels": nonflat_pixels,
+            "scene_nonflat_fraction": round(nonflat_pixels / game_pixels, 6) if game_pixels else 0.0}
 
 
 def capture_window(display, base):

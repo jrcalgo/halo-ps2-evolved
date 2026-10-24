@@ -650,6 +650,12 @@ int main(int argc, char **argv)
 	/* Corruption discovered before teardown must retain the old live owner.
 	 * Repeat after authorizing a reload to prove a stale authorization is cleared. */
 	dispatch.lease_count = 0;
+	owner.drain_pending = 1;
+	assert(!hcu_map_service_preflight("ui"));
+	expect_live_owner(&service, 1);
+	map_unloader(&service);
+	assert(s_unload_calls == 0 && s_unmount_calls == 0);
+	owner.drain_pending = 0;
 	assert(hcu_map_service_preflight("ui") == 1);
 	package_bytes[package.size - 1u] ^= 1u;
 	assert(!hcu_map_service_preflight("ui"));

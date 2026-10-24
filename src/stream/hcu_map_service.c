@@ -416,6 +416,7 @@ static int profile_readers_drained(const hcu_map_service *service,
 			ps2_cache_bsp_readers_drained() && rt->renderer_drained &&
 			rt->renderer_drained(rt->renderer_context) != 0;
 	return owner && owner->bound && !owner->in_frame && !owner->gpu_pending &&
+		!owner->drain_pending &&
 		owner->dispatch && owner->dispatch->lease_count == 0 &&
 		ps2_cache_bsp_readers_drained() && rt->renderer_drained &&
 		rt->renderer_drained(rt->renderer_context) != 0;
