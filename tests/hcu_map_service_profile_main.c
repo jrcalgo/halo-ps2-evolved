@@ -349,7 +349,6 @@ static hcu_map_profile_runtime make_runtime(const memory_image *package,
 	size_t metadata_storage_bytes, const hcu_bitmap_frame_owner *owner)
 {
 	hcu_map_profile_runtime runtime;
-	hcu_map_residency_report residency_report;
 	memset(&runtime, 0, sizeof(runtime));
 	runtime.package_read_at = image_read;
 	runtime.package_context = (void *)package;
@@ -426,6 +425,7 @@ int main(int argc, char **argv)
 	mem_layout_v2_t layout;
 	arena_t map_owner, section_scratch;
 	hcu_map_service service;
+	hcu_map_residency_report residency_report;
 	memory_image package;
 	uint8_t package_sha[32], meta_ok_sha[32], meta_big_sha[32];
 	uint8_t *package_bytes, *meta_ok, *meta_big;
@@ -565,6 +565,69 @@ int main(int argc, char **argv)
 	assert(s_unload_calls == 0 && s_unmount_calls == 0);
 	printf("PASS busy shutdown retains callbacks and initialized owner for retry\n");
 
+	/* 5b. Renderer readers (C3.11): registered source references hold the live
+	 * owner exactly like a bitmap lease, and each release is matched once. */
+	{
+		hcu_map_reader_ref refs[HCU_MAP_READER_CAPACITY + 1u];
+		hcu_map_reader_ref stale;
+		unsigned i;
+		uint32_t saved_leases = dispatch.lease_count;
+		dispatch.lease_count = 0;
+		assert(hcu_map_service_readers_drained(&service));
+		assert(!hcu_map_service_reader_acquire(&service, HCU_MAP_READER_TEXTURE_UPLOAD,
+			NULL, 16u, &refs[0]));
+		assert(!hcu_map_service_reader_acquire(&service, HCU_MAP_READER_NONE,
+			package_bytes, 16u, &refs[0]));
+		assert(!hcu_map_service_reader_acquire(&service, HCU_MAP_READER_DRAW_CHAIN,
+			package_bytes, 0u, &refs[0]));
+		assert(hcu_map_service_reader_acquire(&service, HCU_MAP_READER_TEXTURE_UPLOAD,
+			package_bytes, 16u, &refs[0]));
+		assert(hcu_map_service_reader_count(&service) == 1);
+		assert(!hcu_map_service_readers_drained(&service));
+		map_unloader(&service);
+		assert(s_unload_calls == 0 && s_unmount_calls == 0);
+		expect_live_owner(&service, 1);
+		assert(map_loader(&service, "ui") == 0);
+		/* A reader from before a release cannot release a reused slot. */
+		stale = refs[0];
+		assert(hcu_map_service_reader_release(&service, refs[0]));
+		assert(!hcu_map_service_reader_release(&service, stale));
+		assert(hcu_map_service_reader_count(&service) == 0);
+		assert(hcu_map_service_readers_drained(&service));
+		/* Fill the table: the next acquire is refused and counted. */
+		for (i = 0; i < HCU_MAP_READER_CAPACITY; ++i)
+			assert(hcu_map_service_reader_acquire(&service,
+				HCU_MAP_READER_DRAW_CHAIN, package_bytes + i, 1u, &refs[i]));
+		assert(!hcu_map_service_reader_acquire(&service, HCU_MAP_READER_SOURCE_SPAN,
+			package_bytes, 1u, &refs[HCU_MAP_READER_CAPACITY]));
+		assert(service.reader_refused >= 1u);
+		assert(!hcu_map_service_readers_drained(&service));
+		for (i = 0; i < HCU_MAP_READER_CAPACITY; ++i)
+			assert(hcu_map_service_reader_release(&service, refs[i]));
+		assert(hcu_map_service_readers_drained(&service));
+		dispatch.lease_count = saved_leases;
+		printf("PASS renderer readers hold the live owner, refuse stale releases and a full table\n");
+		/* World accessor: unbound until the loader binds it, returns the bound
+		 * pointers and the map generation while mounted, and clears on release. */
+		{
+			static int fixture_bsp;
+			static int fixture_source;
+			const struct bsp_section *got_bsp = NULL;
+			const void *got_source = NULL;
+			uint32_t generation = 99u;
+			assert(!hcu_map_service_current_world(&service, &got_bsp, &got_source, &generation));
+			assert(got_bsp == NULL && got_source == NULL && generation == 0u);
+			assert(!hcu_map_service_bind_world(&service, NULL, &fixture_source));
+			assert(hcu_map_service_bind_world(&service, (const struct bsp_section *)&fixture_bsp,
+				&fixture_source));
+			assert(hcu_map_service_current_world(&service, &got_bsp, &got_source, &generation));
+			assert((const void *)got_bsp == (const void *)&fixture_bsp && got_source == &fixture_source);
+			assert(generation == service.boundary_cycle);
+			assert(hcu_map_service_current_world(&service, NULL, NULL, NULL));
+		}
+		printf("PASS world accessor returns the bound world and generation while mounted\n");
+	}
+
 	/* 6. A preflight for a different map while live is refused without teardown. */
 	assert(!hcu_map_service_preflight("beavercreek"));
 	expect_live_owner(&service, 1);
@@ -604,7 +667,7 @@ int main(int argc, char **argv)
 	expect_live_owner(&service, 0);
 	assert(hcu_map_service_residency_snapshot(&service, &residency_report));
 	assert(residency_report.valid && !residency_report.active);
-	assert(strcmp(residency_report.map_name, "ui") == 0 && residency_report.cycle == 1u);
+	assert(strcmp(residency_report.map_name, "ui") == 0 && residency_report.cycle == 0u);
 	assert(residency_report.map.bound && residency_report.map.capacity_bytes > 0);
 	assert(residency_report.map.current_bytes == 0u &&
 		residency_report.map.high_water_bytes == 8192u &&

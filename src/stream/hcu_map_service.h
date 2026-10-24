@@ -10,6 +10,9 @@
 #include "stream/hcu_profile_metadata.h"
 #include "stream/hcu_profile_mount.h"
 
+/* Forward declarations only: the renderer headers pull EE platform headers. */
+struct bsp_section;
+
 /* Caller validates profile-specific CE/media/sound bindings against its pinned
  * dependency manifest. This callback must be read-only and fail closed. */
 typedef int (*hcu_map_profile_compatibility_fn)(void *context,
@@ -24,6 +27,35 @@ typedef int (*hcu_map_profile_compatibility_fn)(void *context,
  * after an owner's storage is released, "map-empty" after a failed load. */
 typedef void (*hcu_map_service_boundary_fn)(void *context, const char *phase,
 	unsigned int cycle);
+
+/* Renderer readers (C3.11). A texture upload or draw chain that holds bytes of
+ * the live map registers a source reference before it reads them and releases
+ * it when its VIF/GS work has retired. The service refuses to unload or replace
+ * the owner while any reference is outstanding, and the drain predicate also
+ * requires the parent renderer's DMA/GS fence. Fixed capacity; registration
+ * fails closed when the table is full. */
+#define HCU_MAP_READER_CAPACITY 64u
+typedef enum {
+	HCU_MAP_READER_NONE = 0,
+	HCU_MAP_READER_TEXTURE_UPLOAD = 1,
+	HCU_MAP_READER_DRAW_CHAIN = 2,
+	HCU_MAP_READER_SOURCE_SPAN = 3
+} hcu_map_reader_kind;
+
+typedef struct {
+	uint32_t slot;
+	uint32_t generation;
+} hcu_map_reader_ref;
+
+typedef struct {
+	uint8_t kind;
+	uint8_t live;
+	uint16_t reserved;
+	uint32_t generation;
+	uint32_t map_cycle;
+	const void *source;
+	uint32_t bytes;
+} hcu_map_reader_slot;
 
 typedef struct {
 	hcu_asset_profile_read_at package_read_at;
@@ -140,6 +172,17 @@ typedef struct {
 	int residency_last_valid;
 	hcu_profile_residency_stats residency_last;
 	hcu_profile_residency_stats residency_lifetime;
+	/* Renderer reader table (C3.11). Empty whenever the owner is released. */
+	hcu_map_reader_slot readers[HCU_MAP_READER_CAPACITY];
+	uint32_t reader_count;
+	uint32_t reader_generation;
+	uint32_t reader_refused;
+	/* World binding for the render loop (C3.11). Set by hcu_map_service_bind_world
+	 * while the owner is mounted; cleared when the owner releases. */
+	int world_bound;
+	const struct bsp_section *world_bsp;
+	/* A tex_source_t (render/bsp_render.h), held opaquely here. */
+	const void *world_source;
 } hcu_map_service;
 
 	/* Register the parent-owned loader/unloader after FileXio is initialized.
@@ -200,6 +243,33 @@ int hcu_map_service_set_legacy_renderer_drained(hcu_map_service *service,
  * and makes every boundary a no-op. Resets the cycle counter to zero. */
 int hcu_map_service_set_boundary_hook(hcu_map_service *service,
 	hcu_map_service_boundary_fn hook, void *context);
+/* Register a renderer reader of the live profile owner's bytes (source is the
+ * caller's pointer into the mounted map, bytes its extent). Refused, with
+ * ref left zeroed, when no owner is mounted, the arguments are invalid, or the
+ * table is full. Each successful acquire must be matched by one release. */
+int hcu_map_service_reader_acquire(hcu_map_service *service,
+	hcu_map_reader_kind kind, const void *source, uint32_t bytes,
+	hcu_map_reader_ref *ref);
+/* Releases one reference. Returns zero for a stale or unknown reference. */
+int hcu_map_service_reader_release(hcu_map_service *service,
+	hcu_map_reader_ref ref);
+/* Number of outstanding renderer readers. The drain step requires zero. */
+uint32_t hcu_map_service_reader_count(const hcu_map_service *service);
+/* Drain check run before CE dispose: nonzero only when no reader remains and
+ * the service's full drain predicate (DMA/GS fence, bitmap leases) holds. */
+int hcu_map_service_readers_drained(const hcu_map_service *service);
+/* Binds the mounted map's BSP section and texture source for the renderer.
+ * Refused (returns 0) when no owner is mounted or an argument is NULL. The
+ * pointers must stay valid until the owner releases. */
+int hcu_map_service_bind_world(hcu_map_service *service,
+	const struct bsp_section *bsp, const void *source);
+/* Returns the current map's world: bsp, source, and generation (the map
+ * boundary count, which changes at every successful load). Returns 0 and
+ * NULLs the outputs when no map is mounted or no world is bound. A renderer
+ * that uses the world must also register a reader with
+ * hcu_map_service_reader_acquire; that reference blocks CE dispose. */
+int hcu_map_service_current_world(const hcu_map_service *service,
+	const struct bsp_section **bsp, const void **source, uint32_t *generation);
 /* Read-only diagnostic trace used by the opt-in M2 CE lifecycle fixture. */
 void hcu_map_service_lifecycle_trace(const char *phase, unsigned int cycle);
 #ifdef HALO_PS2_M2_UI_LIFECYCLE_TEST

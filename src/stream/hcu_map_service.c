@@ -379,9 +379,14 @@ static int runtime_spans_disjoint(const hcu_map_profile_runtime *left,
  * parent renderer's predicate adds the DMA fence and the world/texture
  * release. A missing owner, unbound owner or predicate cannot prove drain, so
  * it fails closed. */
-static int profile_readers_drained(const hcu_map_profile_runtime *rt)
+static int profile_readers_drained(const hcu_map_service *service,
+	const hcu_map_profile_runtime *rt)
 {
 	const hcu_bitmap_frame_owner *owner = rt->frame_owner;
+	/* C3.11: every renderer reader registered against the live owner must have
+	 * released its reference (VIF/GS retired) before drain can succeed. */
+	if (service->reader_count != 0)
+		return 0;
 	if (!owner)
 		return rt->headless_no_bitmap_consumers &&
 			rt->renderer_never_started &&
@@ -397,6 +402,40 @@ static int profile_readers_drained(const hcu_map_profile_runtime *rt)
 static int profile_owner_live(const hcu_map_service *service)
 {
 	return service->profile_mount.active || service->profile_mount.backend_mounted;
+}
+
+static void reader_table_clear(hcu_map_service *service)
+{
+	memset(service->readers, 0, sizeof(service->readers));
+	service->reader_count = 0;
+	service->world_bound = 0;
+	service->world_bsp = NULL;
+	service->world_source = NULL;
+}
+
+int hcu_map_service_bind_world(hcu_map_service *service,
+	const struct bsp_section *bsp, const void *source)
+{
+	if (!service || !bsp || !source || !profile_owner_live(service))
+		return 0;
+	service->world_bsp = bsp;
+	service->world_source = source;
+	service->world_bound = 1;
+	return 1;
+}
+
+int hcu_map_service_current_world(const hcu_map_service *service,
+	const struct bsp_section **bsp, const void **source, uint32_t *generation)
+{
+	if (bsp) *bsp = NULL;
+	if (source) *source = NULL;
+	if (generation) *generation = 0;
+	if (!service || !service->world_bound || !profile_owner_live(service))
+		return 0;
+	if (bsp) *bsp = service->world_bsp;
+	if (source) *source = service->world_source;
+	if (generation) *generation = service->boundary_cycle;
+	return 1;
 }
 
 static uint32_t residency_sat_add(uint32_t left, uint32_t right)
@@ -585,7 +624,7 @@ static int profile_preflight(hcu_map_service *service,
 				entry->identity.map_name);
 			return 0;
 		}
-		if (!profile_readers_drained(rt)) {
+		if (!profile_readers_drained(service, rt)) {
 			discard_profile_candidate(service);
 			printf("HALO_PS2_LOCAL profile-preflight rejected reason=bitmap-leases-outstanding\n");
 			return 0;
@@ -705,6 +744,7 @@ static int profile_load(hcu_map_service *service, const char *map_name)
 		service->successor_registered = 0;
 		service->successor_staged = 0;
 	}
+	reader_table_clear(service);
 	service->profile_mount = service->profile_candidate;
 	hcu_profile_mount_init(&service->profile_candidate);
 	service->profile_candidate_ready = 0;
@@ -751,7 +791,7 @@ static void profile_unload(hcu_map_service *service)
 		/* CE's unloader cannot report failure. Keep the mount and its storage
 		 * published rather than unmount under a live bitmap reader; profile_load
 		 * refuses while the owner remains live. */
-		if (!profile_readers_drained(&service->runtime)) {
+		if (!profile_readers_drained(service, &service->runtime)) {
 			printf("HALO_PS2_LOCAL profile-unload blocked reason=bitmap-leases-outstanding\n");
 			return;
 		}
@@ -766,6 +806,9 @@ static void profile_unload(hcu_map_service *service)
 		}
 		record_residency_release(service, released_map_name,
 			service->boundary_cycle, &released_stats);
+		service->world_bound = 0;
+		service->world_bsp = NULL;
+		service->world_source = NULL;
 	}
 #ifdef HALO_PS2_M2_ANIMATION_TRACE
 	ps2_animation_trace_map_epoch_advance();
@@ -773,6 +816,63 @@ static void profile_unload(hcu_map_service *service)
 	service->preflight_ready = 0;
 	if (!preserve_reload) discard_profile_candidate(service);
 	if (owner_live) notify_boundary(service, "map-released");
+}
+
+int hcu_map_service_reader_acquire(hcu_map_service *service,
+	hcu_map_reader_kind kind, const void *source, uint32_t bytes,
+	hcu_map_reader_ref *ref)
+{
+	uint32_t i;
+	if (ref) memset(ref, 0, sizeof(*ref));
+	if (!service || !ref || !source || bytes == 0 ||
+		kind <= HCU_MAP_READER_NONE || kind > HCU_MAP_READER_SOURCE_SPAN ||
+		!profile_owner_live(service)) {
+		if (service) service->reader_refused++;
+		return 0;
+	}
+	for (i = 0; i < HCU_MAP_READER_CAPACITY; ++i) {
+		hcu_map_reader_slot *slot = &service->readers[i];
+		if (slot->live) continue;
+		service->reader_generation++;
+		if (service->reader_generation == 0) service->reader_generation = 1;
+		memset(slot, 0, sizeof(*slot));
+		slot->kind = (uint8_t)kind;
+		slot->live = 1;
+		slot->generation = service->reader_generation;
+		slot->map_cycle = service->boundary_cycle;
+		slot->source = source;
+		slot->bytes = bytes;
+		service->reader_count++;
+		ref->slot = i;
+		ref->generation = slot->generation;
+		return 1;
+	}
+	service->reader_refused++;
+	return 0;
+}
+
+int hcu_map_service_reader_release(hcu_map_service *service,
+	hcu_map_reader_ref ref)
+{
+	hcu_map_reader_slot *slot;
+	if (!service || ref.slot >= HCU_MAP_READER_CAPACITY) return 0;
+	slot = &service->readers[ref.slot];
+	if (!slot->live || slot->generation != ref.generation) return 0;
+	memset(slot, 0, sizeof(*slot));
+	service->reader_count--;
+	return 1;
+}
+
+uint32_t hcu_map_service_reader_count(const hcu_map_service *service)
+{
+	return service ? service->reader_count : 0;
+}
+
+int hcu_map_service_readers_drained(const hcu_map_service *service)
+{
+	if (!service || service->reader_count != 0) return 0;
+	return !service->runtime_registered || !profile_owner_live(service) ||
+		profile_readers_drained(service, &service->runtime);
 }
 
 /* Legacy owners release only after the renderer's fence has retired. Without a
