@@ -38,6 +38,11 @@ class SchemaWalkResult:
     reference_target_counts: tuple[tuple[str, int], ...]
     schema_bytes_by_owner: tuple[tuple[str, int], ...]
     in_image_data_records: tuple[tuple[str, str, int, int], ...]
+    # Diagnostic-only attribution for profile memory audits.  The group is
+    # the owning root tag group; offsets and sizes remain the same validated
+    # schema extents as the legacy records above.
+    group_spans: tuple[tuple[str, int, int, str], ...]
+    group_in_image_data_records: tuple[tuple[str, str, str, int, int], ...]
 
 
 @dataclass(frozen=True)
@@ -94,6 +99,9 @@ class Walker:
         self.relocations = set()
         self.external_reference_relocations: list[tuple[int, int]] = []
         self.spans: list[tuple[int, int, str]] = []
+        self.active_tag_group: str | None = None
+        self.group_spans: list[tuple[str, int, int, str]] = []
+        self.group_in_image_data_records: list[tuple[str, str, str, int, int]] = []
         self.visiting = set()
 
     @staticmethod
@@ -178,6 +186,8 @@ class Walker:
             return
         end = start + size
         self.spans.append((start, end, owner))
+        if self.active_tag_group is not None:
+            self.group_spans.append((self.active_tag_group, start, end, owner))
 
     def validate_spans(self):
         ordered = sorted(self.spans)
@@ -280,6 +290,11 @@ class Walker:
                             self.in_image_data_records.append((
                                 definition["name"], field["name"], data_size, target
                             ))
+                            if self.active_tag_group is not None:
+                                self.group_in_image_data_records.append((
+                                    self.active_tag_group, definition["name"], field["name"],
+                                    data_size, target
+                                ))
                     self.write_u32(data + 16, 0, "runtime-definition")
             elif kind == "reference":
                 if stride != TAG_REFERENCE_SIZE:
@@ -366,9 +381,11 @@ class Walker:
                 raise SchemaWalkError(f"tag {index} has no linked CE schema for {group_name}")
             if root:
                 definition = self.schema(schema_group["definition"])
+                self.active_tag_group = self.fourcc(group)
                 self.add_span(root, definition["size"],
                               f"tag root {self.fourcc(group)}")
                 self.walk_definition(schema_group["definition"], root)
+                self.active_tag_group = None
             else:
                 raise SchemaWalkError(f"tag {index} ({self.fourcc(group)}) has no root data")
         self.validate_spans()
@@ -381,7 +398,8 @@ class Walker:
                                 tuple(self.unsupported_groups), tuple(self.opaque_group_instances),
                                 tuple(sorted(self.reference_target_counts.items())),
                                 tuple(sorted(owner_bytes.items())),
-                                tuple(self.in_image_data_records))
+                                tuple(self.in_image_data_records), tuple(self.group_spans),
+                                tuple(self.group_in_image_data_records))
 
     def run_structure_bsp(self) -> StructureBspWalkResult:
         """Walk a standalone BSP image while keeping tag-name pointers typed.
