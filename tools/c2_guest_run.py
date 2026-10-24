@@ -486,18 +486,117 @@ def stage_host_paths(lane_run: Path, relative_paths):
 FFMPEG = shutil.which("ffmpeg") or "/home/ai/miniconda3/envs/dl/bin/ffmpeg"
 
 
-def capture_root(display, base):
-    """C3: `xwd -root` of the guest display, converted to PNG. Returns a result dict."""
+CAPTURE_OSD_BOX = (0, 0, 460, 120)   # PCSX2's OSD warnings sit top-left; not game pixels
+CAPTURE_MIN_NONBLACK = 0.01          # below this a C3 render capture is treated as black
+CAPTURE_BLACK_LEVEL = 8              # a gray level above this counts as non-black
+
+
+class PrivateDisplay:
+    """A private Xvfb for one guest run, so no other lane's window shares its root."""
+
+    def __init__(self, first=100, last=200):
+        self.first, self.last = first, last
+        self.process = None
+        self.display = None
+
+    def start(self):
+        for number in range(self.first, self.last):
+            if Path(f"/tmp/.X{number}-lock").exists() or Path(f"/tmp/.X11-unix/X{number}").exists():
+                continue
+            display = f":{number}"
+            server = subprocess.Popen(["Xvfb", display, "-screen", "0", "1280x1024x24", "-nolisten", "tcp"],
+                                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                      start_new_session=True)
+            deadline = time.monotonic() + 15
+            while time.monotonic() < deadline:
+                if server.poll() is not None:
+                    break  # lost a race for this number; try the next one
+                if subprocess.run(["xdpyinfo", "-display", display], capture_output=True).returncode == 0:
+                    self.process, self.display = server, display
+                    return display
+                time.sleep(0.2)
+            else:
+                self._kill(server)
+            if server.poll() is None:
+                self._kill(server)
+        raise RuntimeError(f"no free X display in :{self.first}-:{self.last - 1}")
+
+    @staticmethod
+    def _kill(server):
+        try:
+            os.killpg(server.pid, signal.SIGTERM)
+            server.wait(timeout=5)
+        except (ProcessLookupError, subprocess.TimeoutExpired):
+            try:
+                os.killpg(server.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            server.wait()
+
+    def stop(self):
+        if self.process is not None:
+            self._kill(self.process)
+            self.process = None
+
+
+WINDOW_LINE = re.compile(r'(0x[0-9a-fA-F]+)\s+"([^"]*)":\s+\((.*?)\)\s+(\d+)x(\d+)\+')
+
+
+def find_pcsx2_window(display):
+    """(window id, width, height) of the largest PCSX2 top-level window, or None."""
+    text = subprocess.run(["xwininfo", "-root", "-tree"], env={**os.environ, "DISPLAY": display},
+                          capture_output=True, text=True).stdout
+    best = None
+    for line in text.splitlines():
+        match = WINDOW_LINE.search(line)
+        if not match:
+            continue
+        window, name, cls, width, height = match.groups()
+        if "pcsx2" not in (name + " " + cls).lower():
+            continue
+        area = int(width) * int(height)
+        if int(width) >= 64 and int(height) >= 64 and (best is None or area > best[3]):
+            best = (window, int(width), int(height), area)
+    return None if best is None else best[:3]
+
+
+def nonblack_stats(png_path):
+    """Count gray pixels above CAPTURE_BLACK_LEVEL, outside the OSD box."""
+    from PIL import Image
+    with Image.open(png_path) as image:
+        gray = image.convert("L")
+    width, height = gray.size
+    histogram = gray.histogram()
+    total_bright = sum(histogram[CAPTURE_BLACK_LEVEL + 1:])
+    left, top, right, bottom = CAPTURE_OSD_BOX
+    osd = gray.crop((left, top, min(right, width), min(bottom, height)))
+    osd_hist = osd.histogram()
+    osd_bright = sum(osd_hist[CAPTURE_BLACK_LEVEL + 1:])
+    game_pixels = width * height - osd.size[0] * osd.size[1]
+    game_bright = total_bright - osd_bright
+    return {"width": width, "height": height, "game_pixels": game_pixels,
+            "nonblack_pixels": game_bright,
+            "nonblack_fraction": round(game_bright / game_pixels, 6) if game_pixels else 0.0}
+
+
+def capture_window(display, base):
+    """C3: capture the PCSX2 window (the root when it is not found) as PNG, with stats."""
     xwd = base.with_suffix(".xwd")
     png = base.with_suffix(".png")
     env = {**os.environ, "DISPLAY": display}
-    r = subprocess.run(["xwd", "-root", "-silent", "-out", str(xwd)], env=env, capture_output=True)
+    window = find_pcsx2_window(display)
+    command = ["xwd", "-silent", "-out", str(xwd)] + (["-id", window[0]] if window else ["-root"])
+    r = subprocess.run(command, env=env, capture_output=True)
     if r.returncode != 0:
-        return {"file": None, "error": r.stderr.decode(errors="replace").strip()}
+        return {"file": None, "error": r.stderr.decode(errors="replace").strip(), "display": display}
     c = subprocess.run([FFMPEG, "-loglevel", "error", "-y", "-i", str(xwd), str(png)], capture_output=True)
     if c.returncode != 0:
         return {"file": str(xwd), "error": "ffmpeg: " + c.stderr.decode(errors="replace").strip()}
-    return {"file": str(png), "xwd": str(xwd), "bytes": png.stat().st_size}
+    info = {"file": str(png), "xwd": str(xwd), "bytes": png.stat().st_size, "display": display,
+            "window": window[0] if window else "root",
+            "window_size": f"{window[1]}x{window[2]}" if window else None}
+    info.update(nonblack_stats(png))
+    return info
 
 
 def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
@@ -528,26 +627,51 @@ def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
     start = time.monotonic()
     guest_terminal = None
     captures = []
+    private = PrivateDisplay() if capture_dir and capture_markers else None
+    if private:
+        env["DISPLAY"] = private.start()
+    capture_base = Path(capture_dir) if capture_dir else None
+
+    def frames_in(log_path):
+        text = log_path.read_text(errors="replace") if log_path.exists() else ""
+        return sum(1 for line in text.splitlines() if " c3-frame " in line)
+
+    def take(marker, base_index):
+        Path(capture_dir).mkdir(parents=True, exist_ok=True)
+        tag = re.sub(r"[^A-Za-z0-9]+", "-", marker).strip("-")
+        info = capture_window(env["DISPLAY"], capture_base / f"capture-{base_index:02d}-{tag}")
+        info["marker"] = marker
+        info["display"] = env["DISPLAY"]
+        return info
+
     with (lane_run / "launcher.log").open("w") as launcher:
         process = subprocess.Popen(command, cwd=lane_run, env=env, stdout=launcher,
                                    stderr=subprocess.STDOUT, start_new_session=True)
         deadline = time.monotonic() + timeout
-        pending_markers = list(capture_markers)
+        pending_markers = list(capture_markers) if private else []
+        waiting = []   # (marker, frame lines seen at the marker, time seen)
         while process.poll() is None and time.monotonic() < deadline:
-            if capture_dir and pending_markers:
+            if pending_markers:
                 log_text = log.read_text(errors="replace") if log.exists() else ""
                 for marker in list(pending_markers):
                     if marker in log_text:
                         pending_markers.remove(marker)
-                        Path(capture_dir).mkdir(parents=True, exist_ok=True)
-                        tag = re.sub(r"[^A-Za-z0-9]+", "-", marker).strip("-")
-                        info = capture_root(os.environ.get("DISPLAY", ":99"),
-                                            Path(capture_dir) / f"capture-{len(captures) + 1:02d}-{tag}")
-                        info["marker"] = marker
-                        captures.append(info)
+                        waiting.append((marker, frames_in(log), time.monotonic()))
+            # A periodic frame marker waits for two more presented frames; a held one waits a
+            # short settle time, since the guest has stopped drawing.
+            for item in list(waiting):
+                marker, seen, since = item
+                enough = (frames_in(log) >= seen + 2) if " c3-frame " in marker else False
+                if enough or time.monotonic() - since >= (3.0 if "held" in marker else 25.0):
+                    time.sleep(1.0)
+                    waiting.remove(item)
+                    captures.append(take(marker, len(captures) + 1))
             guest_terminal = _run_terminal(which, log)
             if guest_terminal:
-                # Let PCSX2 flush the CE teardown tail before stopping it.
+                # Let PCSX2 flush the CE teardown tail before stopping it; flush held captures now.
+                for marker, _seen, _since in waiting:
+                    captures.append(take(marker, len(captures) + 1))
+                waiting = []
                 time.sleep(1.5)
                 break
             time.sleep(0.2)
@@ -557,8 +681,14 @@ def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
             exit_status = f"host-exited-{process.returncode}"
         else:
             exit_status = f"bounded timeout after {timeout}s; {_stop_owned_process(process, grace=20.0)}"
+    if private:
+        private.stop()
     elapsed = round(time.monotonic() - start, 1)
     text = log.read_text(errors="replace") if log.exists() else ""
+    # PCSX2 logs its EE recompiler reset only when the EE recompiler runs (the interpreter run
+    # does not log it), so this is the log-side proof that --emu-mode recompiler took effect.
+    config_identity["recompiler_log_seen"] = "EE/iR5900 Recompiler Reset" in text
+    config_identity["emu_mode_verified"] = config_identity["recompiler_log_seen"] == (emu_mode == "recompiler")
     lines = halo_lines(text)
     (lane_run / "halo_ps2_local.txt").write_text("\n".join(lines) + "\n")
     lifecycle = which == "lifecycle"

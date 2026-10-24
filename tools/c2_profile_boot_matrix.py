@@ -977,6 +977,21 @@ def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1
             result["captures"] = json.loads(
                 (out / "guest/manifest.json").read_text())["runs"][-1].get("captures", []) \
                 if (out / "guest/manifest.json").is_file() else []
+            # A held capture must show the game, not a black frame (C3 capture reliability).
+            held = [c for c in result["captures"] if "c3-render-held" in c.get("marker", "")]
+            held_fraction = held[0].get("nonblack_fraction") if held else None
+            result["capture_nonblack_fraction"] = held_fraction
+            if held_fraction is None or held_fraction < 0.01:
+                result["failing_checks"] = [*result["failing_checks"], "held_capture_nonblack"]
+                parsed = {**parsed, "failing_checks": result["failing_checks"]}
+                result["reasons"].append(f"held capture is black (non-black fraction {held_fraction})")
+        if (out / "guest/manifest.json").is_file():
+            run_config = json.loads((out / "guest/manifest.json").read_text())["runs"][-1].get("pcsx2_config", {})
+            result["emu_mode_verified"] = run_config.get("emu_mode_verified")
+            if EMU_MODE == "recompiler" and not run_config.get("emu_mode_verified"):
+                result["failing_checks"] = [*result["failing_checks"], "emu_mode_recompiler_not_seen"]
+                parsed = {**parsed, "failing_checks": result["failing_checks"]}
+                result["reasons"].append("PCSX2 log shows no EE recompiler reset in recompiler mode")
         result["ce_failure_lines"] = ce_failure_lines(out / "guest/runs/partition-selected/emu.txt")
         if parsed["failing_checks"] and result["ce_failure_lines"]:
             result["reasons"].append("CE reported: " + " | ".join(result["ce_failure_lines"][:2]))
