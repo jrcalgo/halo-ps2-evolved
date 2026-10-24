@@ -9,6 +9,11 @@
 #include "stream/hcu_map_service.h"
 #include "stream/hcu_file_bridge.h"
 #include "stream/hcu_render_snapshot.h"
+/* C3:snapshot begin */
+#if defined(HCU_C3_FRAME_SNAPSHOT)
+#include "stream/hcu_snapshot_bank.h"
+#endif
+/* C3:snapshot end */
 #include "stream/hcu_storage_boot.h"
 #include "halo_ps2_cache.h"
 #include "halo_ps2_bitmap_frame.h"
@@ -779,6 +784,32 @@ static void hcu_report_cache_owners(const char *phase)
 		(unsigned)usage.mount_rejections);
 }
 
+/* C3:replace begin */
+#include "stream/hcu_sound_requests.h"
+/* Defined by the CE port (ps2_sound_cache.c). Each CE sound request reaches
+ * the recorder below; the audio backend is not qualified (SPU2). */
+void halo_ps2_sound_request_bind_sink(
+	void (*sink)(void *context, const void *sound, int block, int load,
+		int reference, int accepted),
+	void *context);
+static hcu_sound_request_queue s_c3_sound_queue;
+static void hcu_c3_sound_request_sink(void *context, const void *sound,
+	int block, int load, int reference, int accepted)
+{
+	hcu_sound_request request;
+	(void)context;
+	(void)accepted;
+	memset(&request, 0, sizeof(request));
+	request.event = HCU_SOUND_EVENT_PERMUTATION;
+	request.permutation = (uint32_t)(uintptr_t)sound;
+	request.flags = (uint8_t)((block ? 1u : 0u) | (load ? 2u : 0u) |
+		(reference ? 4u : 0u));
+	request.gain = 1.0f;
+	request.pitch = 1.0f;
+	(void)hcu_sound_requests_submit(&s_c3_sound_queue, &request);
+}
+/* C3:replace end */
+
 /* Map boundary telemetry: the owner counters and the cache owners at each
  * map load, release and empty state of the lifecycle. */
 static void hcu_map_boundary_report(void *context, const char *phase,
@@ -788,6 +819,19 @@ static void hcu_map_boundary_report(void *context, const char *phase,
 	(void)context;
 	printf("HALO_PS2_LOCAL m2-cycle-boundary phase=%s cycle=%u\n", phase, cycle);
 	hcu_report_owner_telemetry(phase);
+	/* C3:replace begin */
+	/* Drain once per boundary. The audio side is not qualified, so drained
+	 * records are only counted, never played. */
+	{
+		hcu_sound_request drained[HCU_SOUND_REQUEST_CAPACITY];
+		(void)hcu_sound_requests_drain(&s_c3_sound_queue, drained,
+			HCU_SOUND_REQUEST_CAPACITY);
+	}
+	hcu_sound_requests_print(&s_c3_sound_queue, phase);
+	printf("HALO_PS2_LOCAL renderer-readers phase=%s outstanding=%u refused=%u\n",
+		phase, hcu_map_service_reader_count(&s_map_service),
+		s_map_service.reader_refused);
+	/* C3:replace end */
 	if (hcu_map_service_residency_snapshot(&s_map_service, &residency) &&
 		residency.valid && residency.map.bound) {
 		printf("HALO_PS2_LOCAL decoded-residency phase=%s scope=map map=%s cycle=%u "
@@ -1243,7 +1287,15 @@ int main(int argc, char **argv)
 	frame_scratch = mem_layout_v2_get(&layout, MEM_LAYOUT_V2_FRAME_SCRATCH);
 	dma_commands = mem_layout_v2_get(&layout, MEM_LAYOUT_V2_DMA_COMMANDS);
 	streaming = mem_layout_v2_get(&layout, MEM_LAYOUT_V2_STREAMING);
+	/* C3:snapshot begin */
+#if defined(HCU_C3_FRAME_SNAPSHOT)
+	/* Opt-in v2 bank replaces the v1 double bank in frame_scratch; the two
+	 * do not fit together in the 393,216-byte owner. */
+	snapshot_bytes = hcu_snapshot_bank_storage_required();
+#else
 	snapshot_bytes = hcu_render_snapshot_storage_required();
+#endif
+	/* C3:snapshot end */
 	renderer_workspace_bytes = bsp_render_workspace_required();
 	if (!frame_scratch || !dma_commands || !streaming ||
 		dma_commands->cap != bsp_render_dma_storage_required() ||
@@ -1273,7 +1325,13 @@ int main(int argc, char **argv)
 	}
 	memset(snapshot_guard, 0xC7, MEM_LAYOUT_V2_GUARD_BYTES);
 	memset(renderer_workspace_guard, 0xC7, MEM_LAYOUT_V2_GUARD_BYTES);
+	/* C3:snapshot begin */
+#if defined(HCU_C3_FRAME_SNAPSHOT)
+	if (hcu_snapshot_bank_bind(snapshot_storage, snapshot_bytes) != 0)
+#else
 	if (hcu_render_snapshot_bind(snapshot_storage, snapshot_bytes) != 0)
+#endif
+	/* C3:snapshot end */
 	{
 		printf("[err] cannot bind bounded CE render snapshot storage\n");
 		physical_memory_free();
@@ -1344,6 +1402,10 @@ int main(int argc, char **argv)
 	/* Per-cycle telemetry at each map boundary. NULL hook costs nothing. */
 	(void)hcu_map_service_set_boundary_hook(&s_map_service,
 		hcu_map_boundary_report, NULL);
+	/* C3:replace begin */
+	hcu_sound_requests_init(&s_c3_sound_queue);
+	halo_ps2_sound_request_bind_sink(hcu_c3_sound_request_sink, NULL);
+	/* C3:replace end */
 	/* Legacy bootstrap map storage is released only after the renderer fence
 	 * has retired. Without this gate the unload path would free live GS/DMA
 	 * readers. */
