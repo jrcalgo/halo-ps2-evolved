@@ -122,8 +122,168 @@ int main(void)
             subprocess.run(["cc", "-std=c11", "-Wall", "-Wextra", "-Werror",
                             str(cfile), "-o", str(exe)], check=True,
                            capture_output=True, text=True)
-            subprocess.run([str(exe)], check=True, capture_output=True,
-                           text=True)
+            result = subprocess.run([str(exe)], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_ce_game_initialization_and_tick_phase_order_is_preserved(self):
+        game_source = (HCU / "source/game/game.c").read_text()
+        initialize = self.extract_function(game_source, "void game_initialize(")
+        tick = self.extract_function(game_source, "void game_tick(")
+
+        initialize_phases = [
+            "scenario_initialize()", "objects_initialize()",
+            "structures_initialize()", "players_initialize()",
+            "effects_initialize()", "ai_initialize()",
+            "hs_initialize()", "input_abstraction_initialize()",
+        ]
+        positions = [initialize.index(phase) for phase in initialize_phases]
+        self.assertEqual(positions, sorted(positions))
+        for phase in initialize_phases:
+            self.assertEqual(initialize.count(phase), 1, phase)
+
+        tick_phases = [
+            "game_allegiance_update()", "units_update()", "ai_update()",
+            "players_update_before_game()", "effects_update(seconds_per_tick)",
+            "antennas_update(seconds_per_tick)", "first_person_weapons_update()",
+            "game_engine_update()", "hs_update()",
+            "recorded_animations_update()", "objects_update()",
+            "players_update_after_game()", "hud_update()",
+            "player_effect_update()",
+        ]
+        positions = [tick.index(phase) for phase in tick_phases]
+        self.assertEqual(positions, sorted(positions))
+        for phase in tick_phases:
+            self.assertEqual(tick.count(phase), 1, phase)
+        self.assertLess(tick.index("lock_global_random_seed()"),
+                        tick.index("first_person_weapons_update()"))
+        self.assertLess(tick.index("first_person_weapons_update()"),
+                        tick.index("unlock_global_random_seed()"))
+
+        main_source = (HCU / "source/main/main.c").read_text()
+        main_loop_start = main_source.rindex("void main_loop(")
+        # The function has an #ifdef HALO_WEB branch that closes syntactically
+        # before the native #else body; inspect the native source tail rather
+        # than treating preprocessor alternatives as nested C blocks.
+        main_loop = main_source[main_loop_start:]
+        self.assertLess(main_loop.index("game_initialize()"),
+                        main_loop.index("input_frame_begin()"))
+        self.assertLess(main_loop.index("input_frame_begin()"),
+                        main_loop.index("input_update()"))
+        self.assertLess(main_loop.index("input_update()"),
+                        main_loop.index("input_abstraction_update()"))
+        self.assertLess(main_loop.index("input_abstraction_update()"),
+                        main_loop.index("player_control_update("))
+        self.assertLess(main_loop.index("player_control_update("),
+                        main_loop.index("game_time_update("))
+
+    def test_ce_frame_boundary_polls_four_tick_indexed_pads_before_snapshot(self):
+        source = (HCU / "source/input/input_xbox.c").read_text()
+        frame_begin = self.extract_function(source, "void input_frame_begin(")
+        frame_end = self.extract_function(source, "void input_frame_end(")
+        fixture = r"""
+#include <assert.h>
+#include <string.h>
+#include "halo_ps2_input.h"
+#include "platform/pad.h"
+#include "xdk/xdk_xbox.h"
+#define HALO_PS2 1
+#define TRUE 1
+struct { int frame_active; } input_globals;
+static int frame, poll_count, event_count, events[64];
+static struct _XINPUT_STATE states[4];
+static void *handles[4];
+XPP_DEVICE_TYPE XDEVICE_TYPE_GAMEPAD_TABLE;
+static void input_get_device_states(void)
+{
+    unsigned long inserted = 0, removed = 0;
+    int i;
+    events[event_count++] = 2;
+    if (XGetDeviceChanges(XDEVICE_TYPE_GAMEPAD, &inserted, &removed)) {
+        for (i = 0; i < 4; ++i) {
+            if (removed & (1UL << i)) {
+                XInputClose(handles[i]);
+                handles[i] = 0;
+            }
+            if (inserted & (1UL << i))
+                handles[i] = XInputOpen(XDEVICE_TYPE_GAMEPAD, (unsigned long)i,
+                    XDEVICE_NO_SLOT, 0);
+        }
+    }
+    for (i = 0; i < 4; ++i)
+        if (handles[i])
+            assert(XInputGetState(handles[i], &states[i]) == ERROR_SUCCESS);
+    /* This fixture models CE's frame snapshot boundary; gamepad-state
+       edge/hold conversion is exercised against the source loop separately. */
+    for (i = 0; i < 4; ++i)
+        if (handles[i] && (states[i].Gamepad.wButtons & XINPUT_GAMEPAD_START))
+            events[event_count++] = 10 + i;
+}
+static void acquire_input_mutex(void) { events[event_count++] = 3; }
+static void release_input_mutex(void) { }
+void SetLastError(unsigned long error) { (void)error; }
+int pad_poll_players(pad_sample samples[4])
+{
+    int i;
+    ++poll_count;
+    events[event_count++] = 1;
+    memset(samples, 0, sizeof(pad_sample) * 4);
+    if (frame == 0) {
+        for (i = 0; i < 4; ++i) {
+            samples[i].connected = 1;
+            samples[i].buttons = PAD_BTN_START;
+        }
+    } else if (frame == 1) {
+        samples[0].connected = 1; samples[0].buttons = PAD_BTN_START;
+        samples[1].connected = 1;
+        samples[3].connected = 1; samples[3].buttons = PAD_BTN_START;
+    } else {
+        samples[0].connected = 1; samples[0].buttons = PAD_BTN_START;
+        samples[1].connected = 1;
+        samples[2].connected = 1; samples[2].buttons = PAD_BTN_START;
+        samples[3].connected = 1; samples[3].buttons = PAD_BTN_START;
+    }
+    ++frame;
+    return 1;
+}
+""" + frame_begin + frame_end + r"""
+int main(void)
+{
+    int expected[3][4] = {{1,1,1,1}, {1,0,0,1}, {1,0,1,1}};
+    int tick, i;
+    for (tick = 0; tick < 3; ++tick) {
+        int begin = event_count;
+        input_frame_begin();
+        assert(poll_count == tick + 1);
+        assert(input_globals.frame_active == TRUE);
+        assert(events[begin] == 1 && events[begin + 1] == 2 &&
+            events[event_count - 1] == 3);
+        for (i = 0; i < 4; ++i) {
+            int found = 0, j;
+            for (j = begin; j < event_count; ++j)
+                if (events[j] == 10 + i) found = 1;
+            assert(found == expected[tick][i]);
+        }
+        input_frame_end();
+    }
+    return 0;
+}
+"""
+        with tempfile.TemporaryDirectory() as temp:
+            cfile = Path(temp) / "ce-pad-tick-boundary.c"
+            exe = Path(temp) / "ce-pad-tick-boundary"
+            cfile.write_text(fixture)
+            compiled = subprocess.run([
+                "cc", "-std=c11", "-Wall", "-Wextra", "-Werror",
+                "-D__stdcall=", "-D__fastcall=", "-D__int64=long long",
+                "-I" + str(ROOT / "submodules/halo-ps2/engine/src"),
+                "-I" + str(HCU / "port/include"),
+                "-I" + str(HCU / "port/ps2/include"),
+                str(cfile), str(ROOT / "src/stream/hcu_input_bridge.c"),
+                str(HCU / "port/ps2/src/ps2_input.c"), "-o", str(exe),
+            ], capture_output=True, text=True)
+            self.assertEqual(compiled.returncode, 0, compiled.stderr)
+            result = subprocess.run([str(exe)], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_ce_hold_tick_helper_executes_press_hold_release_transitions(self):
         source = (HCU / "source/input/input_xbox.c").read_text()
@@ -267,37 +427,47 @@ static void update_from_ps2_sample(void)
 }
 int main(void)
 {
-	XINPUT_GAMEPAD sample;
-	void *handle;
+	XINPUT_GAMEPAD sample[MAXIMUM_GAMEPADS];
+	void *handle[MAXIMUM_GAMEPADS];
 	const struct gamepad_state *state;
-	memset(&sample, 0, sizeof(sample));
-	sample.wButtons = XINPUT_GAMEPAD_DPAD_UP;
-	sample.bAnalogButtons[XINPUT_GAMEPAD_A] = 200;
-	sample.sThumbLX = 16000;
-	ps2_input_publish_state(0, 1, &sample);
-	handle = XInputOpen(&XDEVICE_TYPE_GAMEPAD_TABLE, 0, XDEVICE_NO_SLOT, 0);
-	assert(handle != 0);
-	input_globals.gamepad_handles[0] = handle;
+	int i;
+	memset(sample, 0, sizeof(sample));
+	for (i = 0; i < MAXIMUM_GAMEPADS; ++i) {
+		sample[i].wButtons = XINPUT_GAMEPAD_DPAD_UP;
+		sample[i].bAnalogButtons[XINPUT_GAMEPAD_A] = (unsigned char)(200 - i);
+		sample[i].sThumbLX = (short)(16000 - i * 500);
+		ps2_input_publish_state((unsigned long)i, 1, &sample[i]);
+		handle[i] = XInputOpen(&XDEVICE_TYPE_GAMEPAD_TABLE,
+			(unsigned long)i, XDEVICE_NO_SLOT, 0);
+		assert(handle[i] != 0);
+		input_globals.gamepad_handles[i] = handle[i];
+	}
 	fake_now = 100;
 	update_from_ps2_sample();
-	state = input_get_gamepad_state(0);
-	assert(state != 0);
-	assert(state->buttons[0] == 1); /* analog A press */
-	assert(state->buttons[8] == 1); /* D-pad up press */
-	assert(state->analog_buttons[0] == 200);
-	assert(state->sticks[_gamepad_stick_left].x > 9000);
+	for (i = 0; i < MAXIMUM_GAMEPADS; ++i) {
+		state = input_get_gamepad_state((short)i);
+		assert(state != 0);
+		assert(state->buttons[0] == 1); /* analog A press */
+		assert(state->buttons[8] == 1); /* D-pad up press */
+		assert(state->analog_buttons[0] == (unsigned char)(200 - i));
+		assert(state->sticks[_gamepad_stick_left].x > 0);
+	}
 	fake_now = 150;
 	update_from_ps2_sample();
-	state = input_get_gamepad_state(0);
-	assert(state->buttons[0] == 2 && state->buttons[8] == 2); /* held */
-	sample.wButtons = 0;
-	sample.bAnalogButtons[XINPUT_GAMEPAD_A] = 0;
-	ps2_input_publish_state(0, 1, &sample);
+	for (i = 0; i < MAXIMUM_GAMEPADS; ++i) {
+		state = input_get_gamepad_state((short)i);
+		assert(state->buttons[0] == 2 && state->buttons[8] == 2); /* held */
+		sample[i].wButtons = 0;
+		sample[i].bAnalogButtons[XINPUT_GAMEPAD_A] = 0;
+		ps2_input_publish_state((unsigned long)i, 1, &sample[i]);
+	}
 	fake_now = 200;
 	update_from_ps2_sample();
-	state = input_get_gamepad_state(0);
-	assert(state->buttons[0] == 0 && state->buttons[8] == 0); /* released */
-	XInputClose(handle);
+	for (i = 0; i < MAXIMUM_GAMEPADS; ++i) {
+		state = input_get_gamepad_state((short)i);
+		assert(state->buttons[0] == 0 && state->buttons[8] == 0); /* released */
+		XInputClose(handle[i]);
+	}
 	return 0;
 }
 """
@@ -315,8 +485,8 @@ int main(void)
             ], capture_output=True, text=True)
             self.assertEqual(compiled.returncode, 0,
                              compiled.stderr)
-            subprocess.run([str(exe)], check=True, capture_output=True,
-                           text=True)
+            result = subprocess.run([str(exe)], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__ == "__main__":
