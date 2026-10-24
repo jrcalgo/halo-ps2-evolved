@@ -1,0 +1,53 @@
+{
+  "lane": "objects-pool",
+  "date": "2026-10-24",
+  "scope": "C2.5 verdicts for source/objects/objects.c allocation sites, and C2.6 object-pool telemetry. Host and EE compile evidence only; nothing ran on PCSX2 or hardware.",
+  "verdict_values": ["load-only", "unreachable-selected-build", "bounded-in-pool", "recurrent-open"],
+  "verdicts": [
+    {
+      "file": "submodules/halo-ce-universal/source/objects/objects.c",
+      "line": 4757,
+      "original_line": 4734,
+      "function": "object_name_list_allocate",
+      "verdict": "load-only",
+      "evidence": "Caller chain: main() (source/main/main.c:3501, game_initialize, boot, before the main loop) -> game_initialize() (source/game/game.c:281-299) -> objects_initialize() (objects.c:1139, call at objects.c:1169) -> object_name_list_allocate() (objects.c:4755) -> game_state_malloc() (source/saved games/game_state.c:589). game_state_malloc is a bump carve of the fixed GAME_STATE_CPU_SIZE block, with no SDK heap call; its size is MAXIMUM_OBJECT_NAMES_PER_SCENARIO * sizeof(long). objects_initialize is called from game_initialize alone; objects_initialize_for_new_map (objects.c:1176) does not allocate the name list, and object_name_list_free is empty (\"Bungie never free'd this properly\"). So the carve happens once at boot and is never repeated per map, per tick or per path. Counted in the game-state cursor (halo_ps2_owner_counters_note_game_state, game_state.c:624)."
+    },
+    {
+      "file": "submodules/halo-ce-universal/source/objects/objects.c",
+      "line": 770,
+      "function": "object_header_new",
+      "verdict": "bounded-in-pool",
+      "evidence": "Allocates the object's datum with memory_pool_block_allocate(object_memory_pool, ...) (objects.c:780). The pool is created once in objects_initialize (objects.c:1150) with game_state_memory_pool_new(\"objects\", OBJECT_MEMORY_POOL_SIZE); on PS2 that is 0x100000 bytes (port/ps2/include/halo_ps2_limits.h:34), a carve of game state (game_state.c:1011-1017), not an SDK heap call. A refused allocation runs datum_delete and returns NONE (objects.c:786-790); there is no fallback. Callers: object creation (objects.c:3626). The pool counters are fed after the call (object_pool_counters_note, objects.c:797): used, high water, allocation_failures (= refused allocations) and resets."
+    },
+    {
+      "file": "submodules/halo-ce-universal/source/objects/objects.c",
+      "line": 802,
+      "function": "object_header_delete",
+      "verdict": "bounded-in-pool",
+      "evidence": "Returns the datum with memory_pool_block_free(object_memory_pool, ...) (objects.c:810), then datum_delete. Blocks freed here return to the same pool, so storage is reused, not grown: the pool's frees counter rises and its used bytes fall, and a free that empties the pool counts a reset (memory_pool.c, memory_pool_block_free). Callers: objects.c:3815 and objects.c:5299. Pool-level host evidence: the r6 driver (docs/reports/m2-c2-r6-alloc-a-2026-10-24.md; tests/hcu_c2_alloc_a_main.c, 100000 allocate/reallocate/free cycles) reports used_after_drain=0, corruptions=0, escapes=0. The objects.c path itself is not host-compiled, so the bound is evidenced at pool level plus the EE compile of this file."
+    },
+    {
+      "file": "submodules/halo-ce-universal/source/objects/objects.c",
+      "line": 821,
+      "function": "object_header_block_allocate",
+      "verdict": "bounded-in-pool",
+      "evidence": "Grows a datum with memory_pool_block_reallocate(object_memory_pool, ...) (objects.c:835). memory_pool.c:260-313: an in-place grow or shrink returns TRUE; otherwise the pool allocates the new size inside the same pool, copies the old user bytes, and frees the old block; a refused move leaves the old block and its reference untouched and returns FALSE. Every refused reallocate passes through memory_pool_block_allocate, so allocation_failures counts it once. Refusal returns FALSE to the caller (objects.c:862-866), and no SDK heap is consulted. Counters after the call (object_pool_counters_note): reallocations, moved_reallocations, reallocation_failures and escapes, which must stay 0. Pool-level host evidence as for object_header_delete."
+    }
+  ],
+  "telemetry": {
+    "owner": "HALO_PS2_OWNER_OBJECT_POOL",
+    "source": "memory_pool_counters of object_memory_pool, copied by object_pool_counters_note() (objects.c) into halo_ps2_owner_counters_note_pool() (port/ps2/src/ps2_owner_counters.c)",
+    "capacity": "object_memory_pool->size (0x100000 on PS2)",
+    "used": "memory_pool_counters.used_size (block headers included)",
+    "high_water": "memory_pool_counters.high_water_size",
+    "failures": "memory_pool_counters.allocation_failures (every refused block allocate, including the move inside a refused reallocate)",
+    "resets": "memory_pool_counters.resets",
+    "nesting": "nested in game state: not added to the game-state total",
+    "replaced": "the object header datum array's estimate (halo_ps2_owner_counters_bind_datum for the object pool) is removed; bind_datum now accepts the actor pool only"
+  },
+  "not_met": [
+    "No PS2 run: the counters are host-tested (tests/test_hcu_ce_owner_counters.py) and EE-compiled only.",
+    "The full closure (tools/hcu_ps2_closure.py --layer all --no-bootstrap-memory) was not rerun in this lane: it writes the shared build/hcu-ps2-closure directory. The two objects were compiled with the closure's flags and include order into build/m2-c2-r7-objects-pool/ee/.",
+    "Steady-state object pool use is not traced on a workload: the verdicts cite the call sites and pool-level behaviour, not a measured Sidewinder or Blood Gulch run."
+  ]
+}
