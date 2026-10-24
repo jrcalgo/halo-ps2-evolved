@@ -29,8 +29,8 @@
 #include <string.h>
 #include <stdarg.h>
 
-#define TAG_CACHE_BYTES (2u * 1024u * 1024u)
-#define BSP_CACHE_BYTES (2u * 1024u * 1024u)
+#define TAG_CACHE_BYTES HCU_PROFILE_MOUNT_TEST_TAG_CACHE_BYTES
+#define BSP_CACHE_BYTES HCU_PROFILE_MOUNT_TEST_BSP_CACHE_BYTES
 #define TEST_RESOURCE_BYTES 16u
 
 struct cache_file_header {
@@ -67,6 +67,13 @@ static uint8_t s_relocations[1024u * 1024u] __attribute__((aligned(16)));
 static uint8_t s_stream_scratch[512] __attribute__((aligned(16)));
 static uint8_t s_relocations_other[1024u * 1024u] __attribute__((aligned(16)));
 static uint8_t s_stream_scratch_other[512] __attribute__((aligned(16)));
+/* Slot count is set by -DHCU_PROFILE_MOUNT_TEST_RESIDENCY_SLOTS (default 16). */
+#ifndef HCU_PROFILE_MOUNT_TEST_RESIDENCY_SLOTS
+#define HCU_PROFILE_MOUNT_TEST_RESIDENCY_SLOTS 16u
+#endif
+#define RESIDENCY_SLOTS HCU_PROFILE_MOUNT_TEST_RESIDENCY_SLOTS
+static uint8_t s_residency_arena[RESIDENCY_SLOTS * HCU_PROFILE_MOUNT_RESIDENCY_SEGMENT_BYTES] __attribute__((aligned(16)));
+static hcu_asset_residency_entry s_residency_entries[RESIDENCY_SLOTS];
 static uint8_t s_resource[TEST_RESOURCE_BYTES];
 static uint8_t s_expected_resource[TEST_RESOURCE_BYTES];
 static FILE *s_package_file;
@@ -75,6 +82,9 @@ static uint32_t s_package_size;
 static uint32_t s_map_file_length;
 static uint32_t s_map_reads;
 static int32_t s_last_output_datum;
+static uint32_t s_residency_high_water;
+static uint32_t s_residency_refused_pins;
+static uint32_t s_residency_evictions;
 
 unsigned long physical_memory_get_tag_cache_size(void) { return TAG_CACHE_BYTES; }
 void *physical_memory_get_tag_cache_base_address(void) { return s_tag_cache; }
@@ -239,7 +249,7 @@ static int read_tags(hcu_profile_mount *mount, int validate)
 	test_tag_header *tag_header;
 	unsigned long claims_size;
 	void *claims;
-	if (!cache_file_open("ui", &cache_header) ||
+	if (!cache_file_open(HCU_PROFILE_MOUNT_TEST_MAP_NAME, &cache_header) ||
 		cache_header.tag_data_offset != mount->source_identity_snapshot.tag_data_offset ||
 		cache_header.file_length != mount->source_identity_snapshot.file_length)
 		return 0;
@@ -256,7 +266,7 @@ static int read_tags(hcu_profile_mount *mount, int validate)
 			free(claims); return 0;
 		}
 		if (!tag_validate_tags(tag_header, cache_header.tag_data_size,
-			cache_header.file_length, "ui")) {
+			cache_header.file_length, HCU_PROFILE_MOUNT_TEST_MAP_NAME)) {
 			tag_validate_release_claims_buffer(); free(claims); return 0;
 		}
 		tag_validate_release_claims_buffer();
@@ -295,7 +305,7 @@ int main(int argc, char **argv)
 	s_package_file = fopen(argv[1], "r+b");
 	s_map_file = fopen(argv[2], "rb");
 	if (!s_package_file || !s_map_file || !set_profile_file_size(s_package_file)) return 3;
-	catalog = hcu_map_catalog_find("ui");
+	catalog = hcu_map_catalog_find(HCU_PROFILE_MOUNT_TEST_MAP_NAME);
 	s_real_backend = ctag_ps2_cache_backend();
 	s_wrapped_backend = *s_real_backend;
 	s_wrapped_backend.register_ctag_visitor = wrap_register_ctag_visitor;
@@ -325,6 +335,8 @@ int main(int argc, char **argv)
 	for (cycle = 0; cycle < 3; ++cycle) {
 		int with_reader = cycle != 1;
 		hcu_profile_mount_init(&mount);
+		if (hcu_profile_mount_bind_residency(&mount, s_residency_entries,
+			RESIDENCY_SLOTS, s_residency_arena, sizeof(s_residency_arena)) != HCU_PROFILE_MOUNT_OK) return 7;
 		status = hcu_profile_mount_prepare(&mount, &profile,
 			HCU_PROFILE_MOUNT_TEST_PROFILE_ID, catalog, bindings,
 			HCU_PROFILE_MOUNT_TEST_CBSP_COUNT, resources,
@@ -413,7 +425,7 @@ int main(int argc, char **argv)
 			if (hcu_profile_mount_load(&forced) != HCU_PROFILE_MOUNT_E_BACKEND) return 32;
 			s_force_bsp_register_failure = 0;
 			if (forced.backend_mounted || forced.active || forced.callbacks_active) return 33;
-			if (cache_file_open("ui", &(struct cache_file_header){0})) return 34;
+			if (cache_file_open(HCU_PROFILE_MOUNT_TEST_MAP_NAME, &(struct cache_file_header){0})) return 34;
 			/* The failed object stays prepared and must accept an exact retry. */
 			if (!forced.prepared || hcu_profile_mount_load(&forced) != HCU_PROFILE_MOUNT_OK) return 35;
 			if (hcu_profile_mount_unload(&forced) != HCU_PROFILE_MOUNT_OK) return 36;
@@ -421,6 +433,38 @@ int main(int argc, char **argv)
 		if (hcu_profile_mount_load(&mount) != HCU_PROFILE_MOUNT_OK ||
 			hcu_profile_mount_load(&mount) != HCU_PROFILE_MOUNT_E_STATE)
 			return 12;
+		if (cycle == 0) {
+			/* HCP storage can change after map preflight; late visitor hash
+			 * mismatch must leave CE completion false until exact retry. */
+			if (!flip_byte(s_package_file, mount.ce_chunk.offset, &original)) return 13;
+			/* Post-prepare corruption: the visitor must fail before the sink
+			 * receives any byte, so nothing unverified reaches the CTAG cache. */
+			{
+				size_t sunk = 0, raw = 0;
+				if (!s_ctag_visit || s_ctag_visit(s_ctag_visit_context,
+					count_sink, &sunk, &raw) != 0 || sunk != 0 || raw != 0)
+					return 30;
+			}
+			{
+				struct cache_file_header h;
+				boolean complete = TRUE;
+				if (!cache_file_open(HCU_PROFILE_MOUNT_TEST_MAP_NAME, &h) ||
+					cache_file_read(NONE, h.tag_data_offset, h.tag_data_size,
+						s_tag_cache, &complete, TRUE) != NONE || complete != _cache_file_read_failed)
+					return 14;
+			}
+			if (!restore_byte(s_package_file, mount.ce_chunk.offset, original) ||
+				!read_tags(&mount, 1)) return 15;
+			/* A corrupt CBSP chunk is rejected by the exact source-extent visitor. */
+			if (!flip_byte(s_package_file, media_chunk.offset, &original)) return 16;
+			{
+				boolean complete = TRUE;
+				if (cache_file_read(NONE, HCU_PROFILE_MOUNT_TEST_BSP_OFFSET,
+					HCU_PROFILE_MOUNT_TEST_BSP_SIZE, s_bsp_cache,
+					&complete, TRUE) != NONE || complete != _cache_file_read_failed) return 17;
+			}
+			if (!restore_byte(s_package_file, media_chunk.offset, original)) return 18;
+		}
 		if (cycle == 0) {
 			/* A second mount object must not tear down or replace the live one. */
 			hcu_profile_mount other;
@@ -437,38 +481,6 @@ int main(int argc, char **argv)
 				other.backend_mounted || other.active) return 27;
 			if (!read_tags(&mount, 1)) return 28;
 			if (hcu_profile_mount_unload(&other) != HCU_PROFILE_MOUNT_OK) return 29;
-		}
-		if (cycle == 0) {
-			/* HCP storage can change after map preflight; late visitor hash
-			 * mismatch must leave CE completion false until exact retry. */
-			if (!flip_byte(s_package_file, mount.ce_chunk.offset, &original)) return 13;
-			/* Post-prepare corruption: the visitor must fail before the sink
-			 * receives any byte, so nothing unverified reaches the CTAG cache. */
-			{
-				size_t sunk = 0, raw = 0;
-				if (!s_ctag_visit || s_ctag_visit(s_ctag_visit_context,
-					count_sink, &sunk, &raw) != 0 || sunk != 0 || raw != 0)
-					return 30;
-			}
-			{
-				struct cache_file_header h;
-				boolean complete = TRUE;
-				if (!cache_file_open("ui", &h) ||
-					cache_file_read(NONE, h.tag_data_offset, h.tag_data_size,
-						s_tag_cache, &complete, TRUE) != NONE || complete != _cache_file_read_failed)
-					return 14;
-			}
-			if (!restore_byte(s_package_file, mount.ce_chunk.offset, original) ||
-				!read_tags(&mount, 1)) return 15;
-			/* A corrupt CBSP chunk is rejected by the exact source-extent visitor. */
-			if (!flip_byte(s_package_file, media_chunk.offset, &original)) return 16;
-			{
-				boolean complete = TRUE;
-				if (cache_file_read(NONE, HCU_PROFILE_MOUNT_TEST_BSP_OFFSET,
-					HCU_PROFILE_MOUNT_TEST_BSP_SIZE, s_bsp_cache,
-					&complete, TRUE) != NONE || complete != _cache_file_read_failed) return 17;
-			}
-			if (!restore_byte(s_package_file, media_chunk.offset, original)) return 18;
 		}
 		if (!read_tags(&mount, cycle != 1) || !read_bsp()) return 19;
 		if (with_reader) {
@@ -489,10 +501,54 @@ int main(int argc, char **argv)
 				first_resource_size, s_resource, &complete, TRUE) != NONE ||
 				complete != _cache_file_read_failed) return 22;
 		}
+		if (cycle == 0) {
+			/* Residency gates: a lease or pin keeps the mount live and makes unload
+			 * return busy with no teardown. Releasing them allows unload again. Then
+			 * a gameplay-held segment evicts only after its reference is released. */
+			void *released = NULL;
+			uint32_t e, evictions0, refused0;
+			/* Larger packages recycle staging slots during the walk, so make
+			 * CE segment 0 resident in slot 0 before exercising the gates. */
+			for (e = 0; e < mount.residency.count; ++e)
+				if (mount.residency.entries[e].resident)
+					(void)hcu_asset_residency_evict(&mount.residency,
+						mount.residency.entries[e].type, mount.residency.entries[e].chunk_id,
+						mount.residency.entries[e].segment, NULL);
+			if (hcu_asset_residency_pin(&mount.residency, mount.profile, HCU_ASSET_CHUNK_CE, 0, 0,
+				s_residency_arena, HCU_PROFILE_MOUNT_RESIDENCY_SEGMENT_BYTES) != HCU_ASSET_PROFILE_OK ||
+				hcu_asset_residency_unpin(&mount.residency, HCU_ASSET_CHUNK_CE, 0, 0) != HCU_ASSET_PROFILE_OK) return 53;
+			evictions0 = mount.residency.evictions; refused0 = mount.residency.refused_evictions;
+			if (hcu_asset_residency_lease(&mount.residency, HCU_ASSET_CHUNK_CE, 0, 0) != HCU_ASSET_PROFILE_OK) return 40;
+			if (hcu_profile_mount_unload(&mount) != HCU_PROFILE_MOUNT_E_BUSY ||
+				!mount.active || !mount.backend_mounted || mount.residency.refused_evictions != refused0) return 41;
+			if (!read_tags(&mount, 0)) return 42;
+			if (hcu_asset_residency_release_lease(&mount.residency, HCU_ASSET_CHUNK_CE, 0, 0) != HCU_ASSET_PROFILE_OK) return 43;
+			if (hcu_asset_residency_pin(&mount.residency, mount.profile, HCU_ASSET_CHUNK_CE, 0, 0, NULL, 0) != HCU_ASSET_PROFILE_OK) return 44;
+			if (hcu_profile_mount_unload(&mount) != HCU_PROFILE_MOUNT_E_BUSY || !mount.backend_mounted) return 45;
+			if (hcu_asset_residency_unpin(&mount.residency, HCU_ASSET_CHUNK_CE, 0, 0) != HCU_ASSET_PROFILE_OK) return 46;
+			/* Model a gameplay pointer into this resident segment. */
+			if (hcu_asset_residency_gameplay_ref(&mount.residency, HCU_ASSET_CHUNK_CE, 0, 0, 1) != HCU_ASSET_PROFILE_OK) return 52;
+			if (hcu_asset_residency_evict(&mount.residency, HCU_ASSET_CHUNK_CE, 0, 0, &released) != HCU_ASSET_PROFILE_E_BUSY) return 47;
+			if (hcu_asset_residency_gameplay_ref(&mount.residency, HCU_ASSET_CHUNK_CE, 0, 0, -1) != HCU_ASSET_PROFILE_OK) return 48;
+			if (hcu_asset_residency_evict(&mount.residency, HCU_ASSET_CHUNK_CE, 0, 0, &released) != HCU_ASSET_PROFILE_OK ||
+				released != (void *)s_residency_arena) return 49;
+			if (!read_tags(&mount, 1)) return 50;
+			if (mount.residency.evictions - evictions0 < 1u ||
+				mount.residency.refused_evictions - refused0 != 1u) return 51;
+		}
+		/* Residency statistics of this cycle, kept as the maximum over cycles. */
+		if (mount.residency.resident_high_water > s_residency_high_water)
+			s_residency_high_water = mount.residency.resident_high_water;
+		s_residency_refused_pins += mount.residency.refused_pins;
+		s_residency_evictions += mount.residency.evictions;
 		if (hcu_profile_mount_unload(&mount) != HCU_PROFILE_MOUNT_OK ||
-			cache_file_open("ui", &(struct cache_file_header){0})) return 23;
+			cache_file_open(HCU_PROFILE_MOUNT_TEST_MAP_NAME, &(struct cache_file_header){0})) return 23;
 	}
+	printf("RESIDENCY_STATS map=%s slots=%u segment_bytes=%u resident_high_water=%u refused_pins=%u evictions=%u\n",
+		HCU_PROFILE_MOUNT_TEST_MAP_NAME, (unsigned)RESIDENCY_SLOTS,
+		(unsigned)HCU_PROFILE_MOUNT_RESIDENCY_SEGMENT_BYTES, (unsigned)s_residency_high_water,
+		(unsigned)s_residency_refused_pins, (unsigned)s_residency_evictions);
 	fclose(s_package_file); fclose(s_map_file);
-	puts("PROFILE_MOUNT_OK actual-ui-hcp ctag=loaded+rebased+schema-validated cbsp=loaded+rebased resource=allowlisted missing-reader=denied late-corruption=fail-closed post-mount-failure=unmounted retry=passed identity-mismatch=rejected double-load=denied second-mount=denied cycles=3");
+	printf("PROFILE_MOUNT_OK map=%s ctag=loaded+rebased+schema-validated cbsp=loaded+rebased resource=allowlisted missing-reader=denied late-corruption=fail-closed post-mount-failure=unmounted retry=passed identity-mismatch=rejected double-load=denied second-mount=denied residency=pinned+leases-gate-unload+evict-after-release cycles=3\\n", HCU_PROFILE_MOUNT_TEST_MAP_NAME);
 	return 0;
 }
