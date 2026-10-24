@@ -807,17 +807,12 @@ static void hcu_report_cache_owners(const char *phase)
 /* C3:replace begin */
 #if defined(HCU_C3_FRAME_SNAPSHOT)
 #include "stream/hcu_sound_requests.h"
+#include "ps2_sound_playback.h"
 /* Defined by the CE port (ps2_sound_cache.c). This seam reports permutation
  * cache requests only; playback event context is unavailable here. */
 void halo_ps2_sound_request_bind_sink(
 	void (*sink)(void *context, const void *sound, int block, int load,
 		int reference, int accepted),
-	void *context);
-void halo_ps2_sound_playback_bind_sink(
-	void (*sink)(void *context, const void *sound, int event,
-		int owner_kind, unsigned owner_datum, int has_position,
-		float x, float y, float z, int priority, float gain, float pitch,
-		unsigned game_time),
 	void *context);
 static hcu_sound_request_queue s_c3_sound_queue;
 static void hcu_c3_sound_request_sink(void *context, const void *sound,
@@ -842,30 +837,30 @@ static void hcu_c3_sound_request_sink(void *context, const void *sound,
 	(void)hcu_sound_requests_submit(&s_c3_sound_queue, &request);
 }
 static void hcu_c3_sound_playback_sink(void *context, const void *sound,
-	int event, int owner_kind, unsigned owner_datum, int has_position,
+	unsigned event, unsigned sound_definition, int owner_kind, unsigned owner_datum, int has_position,
 	float x, float y, float z, int priority, float gain, float pitch,
-	unsigned game_time)
+	unsigned game_time, unsigned metadata_known)
 {
 	hcu_sound_request request;
+	float position[3];
+	uint16_t captured_owner_kind;
+	uint32_t captured_owner_datum;
+	uint8_t captured_metadata_known;
 	(void)context;
-	memset(&request, 0, sizeof(request));
-	request.event = (uint16_t)event;
-	request.permutation = (uint32_t)(uintptr_t)sound;
-	request.owner_kind = owner_kind >= HCU_SOUND_OWNER_NONE &&
-		owner_kind <= HCU_SOUND_OWNER_UNATTACHED ? (uint16_t)owner_kind :
+	captured_owner_kind = owner_kind >= HCU_SOUND_OWNER_NONE &&
+		owner_kind <= HCU_SOUND_OWNER_CE_SOURCE ? (uint16_t)owner_kind :
 		HCU_SOUND_OWNER_NONE;
-	request.owner_datum = owner_kind >= 0 ? (uint32_t)owner_datum : UINT32_MAX;
-	request.sound_index = UINT32_MAX;
-	request.has_position = has_position ? 1u : 0u;
-	request.position[0] = x;
-	request.position[1] = y;
-	request.position[2] = z;
-	request.priority = priority >= 0 && priority < 255 ? (uint8_t)priority : UINT8_MAX;
-	request.accepted = 1u; /* CE queued it; this does not mean it was rendered. */
-	request.gain = gain;
-	request.pitch = pitch;
-	request.game_time = (uint32_t)game_time;
-	request.metadata_known = (uint8_t)(0x1cu | (has_position ? 0x02u : 0u) | 0x20u);
+	captured_owner_datum = owner_kind >= 0 ? (uint32_t)owner_datum : UINT32_MAX;
+	captured_metadata_known = (uint8_t)metadata_known;
+	if (priority < 0 || priority >= 255)
+		captured_metadata_known &= (uint8_t)~0x04u;
+	position[0] = x; position[1] = y; position[2] = z;
+	if (!hcu_sound_request_capture_playback(&request, (uint16_t)event,
+		(uint32_t)(uintptr_t)sound, sound_definition, captured_owner_kind,
+		captured_owner_datum, has_position, position,
+		priority >= 0 && priority < 255 ? (uint8_t)priority : UINT8_MAX,
+		gain, pitch, game_time, captured_metadata_known))
+		return;
 	(void)hcu_sound_requests_submit(&s_c3_sound_queue, &request);
 }
 #endif
