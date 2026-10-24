@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 OWNER = re.compile(r"HALO_PS2_LOCAL owner-telemetry phase=(\S+) name=(\S+) kind=(\S+) parent=(\S+) bound=(\d+) cap=(\d+) used=(\d+) high=(\d+) failures=(\d+) resets=(\d+)")
 CACHE = re.compile(r"HALO_PS2_LOCAL cache-owner phase=(\S+) name=(\S+) current=(\d+) peak=(\d+).*?failures=(\d+).*?resets=(\d+)")
 ARENA = re.compile(r"HALO_PS2_LOCAL arena name=(\S+).*?cap=(\d+) used=(\d+) high=(\d+).*?alloc_failures=(\d+) resets=(\d+)")
-REQUIRED = ("partition-selected", "profile-runtime", "owner-telemetry", "cache-owner", "arena",
+REQUIRED = ("machine-entry", "partition-selected", "profile-runtime", "owner-telemetry", "cache-owner", "arena",
             "render-storage-bound", "map-lifecycle")
 OWNER_NAMES = ("game_state", "object_pool", "actor_pool", "widget_pool", "dynamic_simulation", "tags", "bsp",
                "render_chunks", "render_texture", "streaming", "scratch", "dma", "audio_requests")
@@ -71,6 +71,7 @@ def extract(run, run_path):
     for line in lines:
         if "HALO_PS2_LOCAL machine entry" in line:
             machine_entered = True
+            markers.add("machine-entry")
         if "HALO_PS2_LOCAL partition-selected " in line:
             markers.add("partition-selected")
             if "qualified=1" in line: markers.add("partition-selected-qualified")
@@ -100,9 +101,7 @@ def extract(run, run_path):
                 if re.fullmatch(r"-?\d+",v): fields[k]=int(v)
             fields["line"]=line.strip()
             workload_diagnostics.append(fields)
-        if "[err]" in line or "HALO_PS2_FAIL" in line:
-            errors.append(line.strip())
-        elif "Address Error" in line:
+        if "[err]" in line or "HALO_PS2_FAIL" in line or "Address Error" in line:
             (errors if machine_entered else boot_diagnostics).append(line.strip())
         query=re.search(r"HALO_PS2_LOCAL step8-mp-capacity-query map=(\S+)",line)
         if query:

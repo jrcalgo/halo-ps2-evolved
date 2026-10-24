@@ -11,6 +11,21 @@ from tools.c2_profile_fit_table import build_matrix_report, extract, matched_own
 
 
 class ProfileFitMatchingTests(unittest.TestCase):
+    def test_pre_entry_diagnostics_are_preserved_and_never_qualify(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            elf = root / "guest.elf"
+            elf.write_bytes(b"pinned ELF")
+            log = root / "emu.txt"
+            log.write_text("[err] BIOS setup diagnostic\nHALO_PS2_FAIL setup diagnostic\nAddress Error, addr=0x1ff [store]\n")
+            digest = hashlib.sha256(elf.read_bytes()).hexdigest()
+            result = extract({"elf":str(elf),"elf_sha256":digest,"guest_completed":True,
+                "guest_terminal":"completion-marker","log":str(log)}, root / "manifest.json")
+        self.assertFalse(result["complete"])
+        self.assertEqual(result["provenance"]["errors"], [])
+        self.assertEqual(len(result["provenance"]["boot_diagnostics"]), 3)
+        self.assertIn("machine-entry", result["blocker"])
+
     def test_two_profiles_only_exact_package_identity_matches(self):
         row_a = {"name": "map_a_session", "map":"map_a", "hcp_package_sha256": "a" * 64,
                  "hcp_package_sha256_matches_manifest":True,"profile_id":7}
