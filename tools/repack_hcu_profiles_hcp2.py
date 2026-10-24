@@ -121,6 +121,11 @@ def repack(input_dir: Path, output_dir: Path, selections: list[str] | None = Non
             "c1_clean_source_qualification_claimed": False,
         }
         manifest["validation"]["package_sha256"] = digest
+        # The envelope directory and segment records change the container's
+        # physical size. Keep the physical-package field coherent while all
+        # logical content and C1 producer/source pins remain unchanged.
+        memory = manifest.setdefault("memory", {})
+        memory["package_file_bytes"] = len(migrated)
         if "package_sha256" in manifest:
             manifest["package_sha256"] = digest
         out_package, out_manifest = output_dir / package_path.name, output_dir / manifest_path.name

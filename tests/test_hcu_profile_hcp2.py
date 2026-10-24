@@ -1,4 +1,5 @@
 import hashlib
+import json
 import struct
 import sys
 from pathlib import Path
@@ -9,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import hcu_profile_chunks as writer
 from hcu_profile_validate import ProfileValidationError, parse_package
+import repack_hcu_profiles_hcp2
 
 
 def parse(data):
@@ -71,3 +73,32 @@ def test_hcp2_rejects_segment_hash_logical_hash_and_truncation():
         parse(bytes(damaged))
     with pytest.raises(ProfileValidationError):
         parse(package[:-1])
+
+
+def test_hcp1_envelope_migration_updates_physical_package_size(tmp_path):
+    input_dir = tmp_path / "input"
+    output_dir = tmp_path / "output"
+    input_dir.mkdir()
+    logical = {(1, 0): b"ce" * 80, (2, 1): b"media" * 800,
+               (3, 0): b"sound"}
+    source = writer.encode(13, logical, version=1)
+    (input_dir / "bots-sidewinder.hcp").write_bytes(source)
+    manifest = {"profile": {"name": "bots-sidewinder", "id": 13},
+                "validation": {"profile_id": 13,
+                               "package_sha256": hashlib.sha256(source).hexdigest()},
+                "package_sha256": hashlib.sha256(source).hexdigest(),
+                "memory": {"package_file_bytes": len(source)}}
+    (input_dir / "bots-sidewinder.json").write_text(json.dumps(manifest))
+
+    report = repack_hcu_profiles_hcp2.repack(input_dir, output_dir,
+                                              ["bots-sidewinder"])
+    migrated = output_dir / "bots-sidewinder.hcp"
+    result_manifest = json.loads((output_dir / "bots-sidewinder.json").read_text())
+    parsed = parse_package(migrated.read_bytes(),
+                           expected_package_sha256=hashlib.sha256(migrated.read_bytes()).hexdigest(),
+                           expected_profile_id=13)
+    assert result_manifest["memory"]["package_file_bytes"] == migrated.stat().st_size
+    assert result_manifest["memory"]["package_file_bytes"] != len(source)
+    assert parsed["chunks"] == logical
+    assert report["profiles"][0]["logical_chunks_unchanged"]
+    assert report["profiles"][0]["max_physical_segment_bytes"] <= 65536
