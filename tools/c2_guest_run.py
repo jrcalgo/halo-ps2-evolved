@@ -3,7 +3,7 @@
 
 The lane stages HCU ELFs that the caller copied out of the parent-link probe output right
 after each link (the probe output directory is shared, so the copies live in
-build/m2-c2-r8-peaks/elf/). It never relinks, reads their LOAD segments with the EE
+build/m2-c2-r9-peaks/elf/). It never relinks, reads their LOAD segments with the EE
 readelf, runs each one headless in PCSX2 under Xvfb with a bounded timeout, saves every
 HALO_PS2_LOCAL line, and writes a manifest with sha256s.
 
@@ -28,7 +28,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / "build/m2-c2-r8-peaks"
+OUT = ROOT / "build/m2-c2-r9-peaks"
 PROBE = ROOT / "build/hcu-parent-link-probe"
 PCSX2 = Path(os.environ.get("PCSX2_BIN", "/home/ai/.local/bin/pcsx2"))
 READELF = ROOT / "build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-readelf"
@@ -260,7 +260,7 @@ def main():
     parser.add_argument("--timeout", type=int, default=600, help="seconds per guest run")
     parser.add_argument("--only", choices=tuple(RUNS), help="run one guest only")
     parser.add_argument("--source-elf", type=Path,
-                        help="stage this ELF for --only instead of the lane copy in build/m2-c2-r8-peaks/elf/")
+                        help="stage this ELF for --only instead of the lane copy in build/m2-c2-r9-peaks/elf/")
     args = parser.parse_args()
     if args.source_elf and not args.only:
         parser.error("--source-elf requires --only")
