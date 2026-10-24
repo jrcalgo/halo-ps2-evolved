@@ -7,8 +7,8 @@ plan is updated with concise step status; this report retains detailed source
 and run evidence. Milestone 4's four startup-interface steps passed for ELF
 `e3577ca6ffc8f6f25d98e7930db0741f6dccfe099ae6a8133710861f938d7df2`.
 Interpreter reached `m1-ui-map-request`. Recompiler reached `memory-ready`
-with physical placement. No retail scene was drawn. Physical controllers and
-OPL/optical hardware remain Milestone 5.
+with physical placement. No retail scene was drawn. M1 is complete on that
+host ELF. Physical controllers and OPL/optical hardware are not an M1 exit.
 
 ## Current source/image update
 
