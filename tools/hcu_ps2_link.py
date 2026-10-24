@@ -20,6 +20,10 @@ COMMENT = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
 PREPROC = re.compile(r"^\s*#.*?(?<!\\)$", re.M | re.S)
 SKIP = {
 	"halo_ps2_render_snapshot_begin", "halo_ps2_render_snapshot_commit",
+    # Implemented by the real PS2 memory provider. Keep undefined references
+    # unresolved in every profile so the provider object must satisfy them.
+    "ps2_step8_dynamic_sim_diagnostics",
+    "ps2_step8_malloc_phase_begin", "ps2_step8_malloc_phase_end",
     "physical_memory_allocate", "physical_memory_verify", "physical_memory_free",
     "physical_memory_bind_game_state", "physical_memory_bind_tag_cache",
     "physical_memory_bind_structure_bsp_cache", "physical_memory_bind_texture_cache",
@@ -469,6 +473,8 @@ def main() -> None:
         extra = []
         if args.no_bootstrap_memory and source.name == "ps2_memory.c":
             extra.append("-DHALO_PS2_NO_BOOTSTRAP_MEMORY")
+        if args.production_runtime_guest and source.name == "ps2_memory.c":
+            extra.append("-DHALO_PS2_C2_PRODUCTION_RUNTIME_GUEST")
         if args.step8_mp_capacity_diagnostic and source.name == "ps2_memory.c":
             extra.append("-DHALO_PS2_STEP8_MEMORY_DIAGNOSTIC")
         run = subprocess.run([str(compiler), *flags, *extra, "-c", str(source), "-o", str(obj)],

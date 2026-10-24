@@ -241,9 +241,13 @@ class HcuProfileImageTest(unittest.TestCase):
         self.assertNotIn("sidewinder", guest.lower())
         self.assertIn("hcu_c2_runtime_scenario_path,", guest)
         self.assertIn("const char *map_name = hcu_c2_runtime_map_name;", guest)
-        for marker in ("production-ce-map-loaded result=%d map=%s", "production-ce-map-released result=%d map=%s",
+        for marker in ("production-ce-map-loaded result=%d map=%s",
                        "tag-count=%ld tag-bytes=%u bsp-bytes=%u", "mounted=%d tag-bytes=%u bsp-bytes=%u"):
             self.assertIn(marker, guest)
+        # Intermediate cycles keep a distinct name so the host stops only
+        # after the final release. Both use the selected map argument.
+        self.assertIn('HALO_PS2_LOCAL %s result=%d map=%s mounted=%d', guest)
+        self.assertIn('"production-ce-map-released-cycle" : "production-ce-map-released"', guest)
         self.assertIn("extern char hcu_c2_runtime_map_name[64];", self.source)
         self.assertIn("HCU_C2_IMAGE_SCENARIO,", self.source)
         fill = self.source.index("strncpy(hcu_c2_runtime_map_name")

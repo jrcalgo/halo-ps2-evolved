@@ -20,6 +20,7 @@ def main() -> int:
 		command = [
 			compiler, "-std=gnu99", "-O2", "-Wall", "-Wextra", "-Werror",
 			"-DHALO_PS2", "-DHALO_PS2_STEP8_MEMORY_DIAGNOSTIC=1",
+			"-DHALO_PS2_C2_PRODUCTION_RUNTIME_GUEST=1",
 			"-DHALO_PS2_NO_BOOTSTRAP_MEMORY", "-I" + str(HCU / "source"),
 			"-I" + str(ROOT / "tests/hcu_ps2_memory_shim"),
 			"-I" + str(HCU / "port/ps2/include"), "-Wno-sign-compare",
@@ -32,7 +33,7 @@ def main() -> int:
 		run = subprocess.run([str(binary)], cwd=ROOT, capture_output=True, text=True)
 		if run.returncode:
 			raise SystemExit(f"host allocator diagnostic failed ({run.returncode}):\n{run.stdout}{run.stderr}")
-		expected = "ps2-malloc-diagnostic preboot-realloc=preserved align=16 high_water=224 failures=3 free=coalesced-reuse rebind_reset=passed"
+		expected = "ps2-malloc-diagnostic preboot-realloc=preserved align=16 high_water=224 failures=3 free=coalesced-reuse rebind_reset=passed phase-trace=exact"
 		if expected not in run.stdout:
 			raise SystemExit("expected diagnostic marker missing:\n" + run.stdout)
 		print(run.stdout, end="")

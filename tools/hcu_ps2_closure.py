@@ -567,6 +567,8 @@ def main() -> None:
         code, log_text = compile_unit(
             compiler, flags, env, memory_source, memory_object,
             ["-DHALO_PS2_NO_BOOTSTRAP_MEMORY"] +
+            (["-DHALO_PS2_C2_PRODUCTION_RUNTIME_GUEST"]
+             if args.production_runtime_guest else []) +
             (["-DHALO_PS2_STEP8_MEMORY_DIAGNOSTIC"]
              if args.step8_mp_capacity_diagnostic else []),
         )

@@ -27,6 +27,18 @@ from host_abi32 import flags as host_abi32_flags  # noqa: E402
 
 
 class HcuPs2ClosureClassification(unittest.TestCase):
+    def test_ps2_memory_diagnostics_are_owned_by_real_provider(self):
+        symbols = (
+            "ps2_step8_dynamic_sim_diagnostics",
+            "ps2_step8_malloc_phase_begin",
+            "ps2_step8_malloc_phase_end",
+        )
+        generated, missing = emit(list(symbols))
+        self.assertEqual(missing, [])
+        for symbol in symbols:
+            self.assertNotIn(symbol + "(", generated)
+            self.assertIn(symbol, SKIP)
+
     def test_ce_validator_claims_scratch_bounds_and_rebind(self):
         compiler = shutil.which("gcc")
         if not compiler:

@@ -1,4 +1,5 @@
 #include "cache/physical_memory_map.h"
+#include "ps2_step8_memory_owners.h"
 
 #include <stdint.h>
 #include <limits.h>
@@ -6,6 +7,7 @@
 #include <stdlib.h>
 
 void *__wrap_malloc(unsigned long size);
+void *__wrap_calloc(unsigned long count, unsigned long size);
 void __wrap_free(void *block);
 void *__wrap_realloc(void *block, unsigned long size);
 
@@ -67,6 +69,11 @@ int main(void)
 	void *reused;
 	void *guard;
 	void *coalesced;
+	void *phase_malloc;
+	void *phase_calloc;
+	void *phase_realloc;
+	struct ps2_step8_malloc_phase_trace phase;
+	struct ps2_step8_dynamic_sim_diagnostics dynamic_usage;
 	unsigned long capacity = sizeof arena;
 	unsigned long index;
 
@@ -145,7 +152,43 @@ int main(void)
 	physical_memory_allocate();
 	if (!check_diagnostics(capacity, 0, 0, 0))
 		return 10;
+	if (!ps2_step8_dynamic_sim_diagnostics(&dynamic_usage) ||
+		dynamic_usage.capacity_bytes != capacity || dynamic_usage.used_bytes != 0 ||
+		dynamic_usage.high_water_bytes != 0 || dynamic_usage.failed_allocations != 0 ||
+		dynamic_usage.resets != 3)
+		return 25;
+	if (!ps2_step8_malloc_phase_begin())
+		return 21;
+	phase_malloc = __wrap_malloc(5);
+	phase_calloc = __wrap_calloc(2, 8);
+	phase_realloc = __wrap_realloc(phase_malloc, 40);
+	if (!phase_malloc || !phase_calloc || !phase_realloc ||
+		__wrap_realloc(phase_calloc, capacity) != NULL ||
+		__wrap_calloc(ULONG_MAX, 2) != NULL)
+		return 22;
+	__wrap_free(phase_calloc);
+	__wrap_free(phase_realloc);
+	__wrap_free(NULL);
+	if (!ps2_step8_malloc_phase_end(&phase))
+		return 24;
+	if (
+		phase.malloc_attempts != 4 || phase.malloc_successes != 3 ||
+		phase.malloc_failures != 1 || phase.calloc_attempts != 2 ||
+		phase.calloc_successes != 1 || phase.calloc_failures != 1 ||
+		phase.realloc_attempts != 2 || phase.realloc_successes != 1 ||
+		phase.realloc_failures != 1 || phase.free_attempts != 4 ||
+		phase.free_successes != 4 || phase.free_failures != 0 ||
+		phase.requested_bytes != ULONG_MAX || phase.current_start_bytes != 0 ||
+		phase.current_end_bytes != 0 || phase.peak_during_bytes != 128 ||
+		phase.sdk_malloc_fallbacks || phase.sdk_realloc_fallbacks ||
+		phase.sdk_free_fallbacks || phase.refused_unbound)
+		return 23;
+	if (!ps2_step8_dynamic_sim_diagnostics(&dynamic_usage) ||
+		dynamic_usage.capacity_bytes != capacity || dynamic_usage.used_bytes != 0 ||
+		dynamic_usage.high_water_bytes != 128 || dynamic_usage.failed_allocations != 1 ||
+		dynamic_usage.resets != 3)
+		return 26;
 	physical_memory_free();
-	puts("ps2-malloc-diagnostic preboot-realloc=preserved align=16 high_water=224 failures=3 free=coalesced-reuse rebind_reset=passed");
+	puts("ps2-malloc-diagnostic preboot-realloc=preserved align=16 high_water=224 failures=3 free=coalesced-reuse rebind_reset=passed phase-trace=exact");
 	return 0;
 }

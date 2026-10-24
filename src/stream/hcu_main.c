@@ -12,6 +12,7 @@
 #include "stream/hcu_storage_boot.h"
 #include "halo_ps2_cache.h"
 #include "halo_ps2_bitmap_frame.h"
+#include "ps2_step8_memory_owners.h"
 #include "stream/hcu_bitmap_renderer.h"
 
 #include <kernel.h>
@@ -107,6 +108,21 @@ static int hcu_sample_arena(void *ctx, hcu_owner_sample_t *out)
 	out->resets = c->arena->reset_count;
 	return 1;
 }
+
+static int hcu_sample_dynamic_simulation(void *ctx, hcu_owner_sample_t *out)
+{
+	struct ps2_step8_dynamic_sim_diagnostics usage;
+	(void)ctx;
+	if (!out || !ps2_step8_dynamic_sim_diagnostics(&usage))
+		return 0;
+	out->capacity = (size_t)usage.capacity_bytes;
+	out->used = (size_t)usage.used_bytes;
+	out->high = (size_t)usage.high_water_bytes;
+	out->failures = (uint32_t)usage.failed_allocations;
+	out->resets = (uint32_t)usage.resets;
+	return 1;
+}
+
 
 /* CE-owned pools report through the always-on port counters; ctx is the
  * HALO_PS2_OWNER_* index, not a pointer. */
@@ -459,7 +475,6 @@ static void hcu_bind_owner_telemetry(mem_layout_v2_t *layout,
 {
 	const arena_t *bsp = mem_layout_v2_get(layout, MEM_LAYOUT_V2_CURRENT_BSP);
 	const arena_t *texture = mem_layout_v2_get(layout, MEM_LAYOUT_V2_TEXTURE_CACHE);
-	const arena_t *dynamic = mem_layout_v2_get(layout, MEM_LAYOUT_V2_DYNAMIC_SIMULATION);
 	const arena_t *audio = mem_layout_v2_get(layout, MEM_LAYOUT_V2_AUDIO);
 	size_t tag_bytes = s_partition_selected ? s_partition.tag_cache_bytes
 		: (size_t)HALO_HCU_TAG_CACHE_BYTES;
@@ -480,9 +495,8 @@ static void hcu_bind_owner_telemetry(mem_layout_v2_t *layout,
 	/* The current UI adapter initializes CE widgets but does not allocate a
 	 * separate widget stack pool; leave that nested row unbound. */
 
-	s_owner_ctx[HCU_OWNER_DYNAMIC_SIM].arena = dynamic;
 	hcu_owner_telemetry_bind_sampler(&s_owner_telemetry, HCU_OWNER_DYNAMIC_SIM,
-		hcu_sample_arena, &s_owner_ctx[HCU_OWNER_DYNAMIC_SIM]);
+		hcu_sample_dynamic_simulation, NULL);
 
 	s_owner_ctx[HCU_OWNER_TAGS].capacity = tag_bytes;
 	hcu_owner_telemetry_bind_sampler(&s_owner_telemetry, HCU_OWNER_TAGS,
