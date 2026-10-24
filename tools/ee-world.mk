@@ -45,6 +45,8 @@ EE_OBJS = $(WORLD_OUTPUT)/platform/screenshot_sdk.o \
 WORLD_HCU_GAMEPLAY ?= 0
 WORLD_HCU_RENDER_CLEAR_TEST ?= 0
 WORLD_HCU_ANIMATION_TRACE_TEST ?= 0
+# HCU_LOAD_TRACE=1 prints HALO_PS2_LOCAL load-trace phase lines (off by default).
+HCU_LOAD_TRACE ?= 0
 WORLD_HCU_M2_UI_LIFECYCLE_TEST ?= 0
 WORLD_HCU_STEP8_MP_CAPACITY_DIAGNOSTIC ?= 0
 WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS ?= 2
@@ -66,6 +68,7 @@ EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_main.o \
 	$(WORLD_OUTPUT)/stream/hcu_render_snapshot.o \
 	$(WORLD_OUTPUT)/stream/hcu_storage_boot.o \
 	$(WORLD_OUTPUT)/stream/hcu_map_service.o \
+	$(WORLD_OUTPUT)/stream/hcu_load_trace.o \
 	$(WORLD_OUTPUT)/stream/hcu_profile_mount.o \
 	$(WORLD_OUTPUT)/stream/hcu_profile_metadata.o \
 	$(WORLD_OUTPUT)/stream/hcu_asset_profile.o \
@@ -88,7 +91,8 @@ EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_snapshot_bank.o \
 	$(WORLD_OUTPUT)/stream/hcu_render_content.o \
 	$(WORLD_OUTPUT)/stream/hcu_render_frame.o \
 	$(WORLD_OUTPUT)/stream/hcu_render_media.o \
-	$(WORLD_OUTPUT)/stream/hcu_render_world.o
+	$(WORLD_OUTPUT)/stream/hcu_render_world.o \
+	$(WORLD_OUTPUT)/stream/hcu_render_views.o
 endif
 else
 EE_OBJS += $(WORLD_OUTPUT)/main.o
@@ -189,9 +193,14 @@ $(WORLD_OUTPUT)/stream/hcu_file_bridge.o: src/stream/hcu_file_bridge.c
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
 
+$(WORLD_OUTPUT)/stream/hcu_load_trace.o: src/stream/hcu_load_trace.c
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc $(if $(filter 1,$(HCU_LOAD_TRACE)),-DHCU_LOAD_TRACE=1 -DHCU_LOAD_TRACE_EE=1,) -c $< -o $@
+
 $(WORLD_OUTPUT)/stream/hcu_map_service.o: src/stream/hcu_map_service.c
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
+		$(if $(filter 1,$(HCU_LOAD_TRACE)),-DHCU_LOAD_TRACE=1,) \
 		-I$(HCU_ROOT)/port/ps2/include -I$(HCU_ROOT)/source \
 		-I$(HCU_ROOT)/port/include -fshort-wchar \
 		-I$(HCU_ROOT)/source/cseries -DHALO_PS2=1 \
@@ -227,7 +236,7 @@ $(WORLD_OUTPUT)/stream/ps2_ctag.o: $(HCU_ROOT)/port/ps2/src/ps2_ctag.c $(HCU_ROO
 
 $(WORLD_OUTPUT)/stream/hcu_asset_profile.o: src/stream/hcu_asset_profile.c
 	@mkdir -p $(@D)
-	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -fshort-wchar \
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc $(if $(filter 1,$(HCU_LOAD_TRACE)),-DHCU_LOAD_TRACE=1,) -fshort-wchar \
 		-include $(HCU_ROOT)/port/ps2/include/halo_ps2_prefix.h \
 		-c $< -o $@
 
@@ -311,6 +320,10 @@ $(WORLD_OUTPUT)/stream/hcu_render_content.o: src/stream/hcu_render_content.c src
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
 
+$(WORLD_OUTPUT)/stream/hcu_render_views.o: src/stream/hcu_render_views.c src/stream/hcu_render_views.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
 $(WORLD_OUTPUT)/stream/hcu_render_frame.o: src/stream/hcu_render_frame.c src/stream/hcu_render_frame.h
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
@@ -370,6 +383,29 @@ HCU_C3 ?= 0
 ifeq ($(HCU_C3),1)
 EE_CFLAGS += -DHCU_C3=1 -DHCU_C3_FRAME_SNAPSHOT -DHALO_PS2_C3_FRAME_SNAPSHOT
 endif
+# C3.objects (opt-in, needs HCU_C3=1): the object pass draws the published snapshot. HCU_C3_OBJECTS_SYNTHETIC=1
+# publishes a synthetic object snapshot until the CE publisher fills the bank. The table header is generated
+# per package by tools/hcu_c3_objects_table.py into HCU_C3_OBJECTS_GEN.
+HCU_C3_OBJECTS ?= 0
+HCU_C3_OBJECTS_SYNTHETIC ?= 0
+HCU_C3_OBJECTS_GEN ?= build/c3/objects/gen
+ifeq ($(HCU_C3_OBJECTS),1)
+EE_CFLAGS += -DHCU_C3_OBJECTS=1 -DHCU_RENDER_OBJECTS_EE=1 -I$(HCU_C3_OBJECTS_GEN)
+ifeq ($(HCU_C3_OBJECTS_SYNTHETIC),1)
+EE_CFLAGS += -DHCU_C3_OBJECTS_SYNTHETIC=1
+endif
+EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_render_objects.o
+$(WORLD_OUTPUT)/stream/hcu_render_objects.o: src/stream/hcu_render_objects.c src/stream/hcu_render_objects.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) -D_EE $(EE_INCS) -I$(ENGINE)/src -Isrc \
+		-I$(PS2SDK)/ee/include -I$(PS2SDK)/common/include \
+		-I$(HCU_ROOT)/port/ps2/include -I$(HCU_ROOT)/source \
+		-I$(HCU_ROOT)/port/include -fshort-wchar \
+		-I$(HCU_ROOT)/source/cseries -DHALO_PS2=1 \
+		-include $(HCU_ROOT)/port/ps2/include/halo_ps2_prefix.h \
+		-c $< -o $@
+endif
+
 ifeq ($(WORLD_HCU_LINK_PROBE),1)
 # Diagnostic-only granularity lets the combined link discard unreferenced
 # parent functions/data; it does not alter behavior of retained sections.

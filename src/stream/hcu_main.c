@@ -1198,6 +1198,283 @@ static void hcu_c3_print_frame(const char *kind)
 		(unsigned)s_c3r.state.views_rendered);
 }
 
+/* C3:views begin */
+/* C3.5 per-view camera, HUD and first-person state. One pinned snapshot-bank slot serves the whole frame
+ * (begin before the views, end after them). A view takes its camera from the snapshot when that view is
+ * active, its camera is valid and the map generation matches; otherwise it keeps the fixed camera and
+ * reports camera=fixed. HUD: a crosshair always, health/shield/ammo when the snapshot says HUD_VISIBLE,
+ * drawn with the overlay text batch inside the view's viewport. First person: the snapshot's node count is
+ * reported; the object path (hcu_render_objects.h) is not present, so no first-person geometry is drawn.
+ * HCU_C3_VIEWS_FP_PLACEHOLDER=1 adds an "FP n" marker only (not counted as drawn). */
+#include "stream/hcu_render_views.h"
+#if defined(HCU_C3_FRAME_SNAPSHOT)
+#include "stream/hcu_snapshot_bank.h"
+#endif
+#ifndef HCU_C3_VIEWS_FP_PLACEHOLDER
+#define HCU_C3_VIEWS_FP_PLACEHOLDER 0
+#endif
+#define HCU_C3_VIEWS_PRINT_PERIOD 30u
+#define HCU_C3_VIEWS_RGB_HUD 0xE0E0E0u
+#define HCU_C3_VIEWS_RGB_CROSS 0x80FF80u
+#define HCU_C3_VIEWS_RGB_FP 0xFFC040u
+
+typedef struct {
+	int pinned;
+	hcu_snapshot_reader reader;
+	const halo_ps2_frame_snapshot *snap;
+	hcu_views_stats stats;
+	hcu_view_camera_source source[HCU_RENDER_VIEWS_MAX];
+	uint32_t hud_lines[HCU_RENDER_VIEWS_MAX];
+	uint32_t fp_nodes[HCU_RENDER_VIEWS_MAX];
+	int fp_placeholder[HCU_RENDER_VIEWS_MAX];
+	float fov_h_deg[HCU_RENDER_VIEWS_MAX];
+	float pitch_deg[HCU_RENDER_VIEWS_MAX];
+	uint32_t active[HCU_RENDER_VIEWS_MAX];
+	float pos[HCU_RENDER_VIEWS_MAX][3];
+	bsp_viewport vp[HCU_RENDER_VIEWS_MAX];
+	text_batch_t text[HCU_RENDER_VIEWS_MAX];
+} hcu_c3_views_state;
+
+static hcu_c3_views_state s_c3v;
+
+static int hcu_c3_views_hund(float v)
+{
+	return (int)(v >= 0.0f ? v * 100.0f + 0.5f : v * 100.0f - 0.5f);
+}
+
+static void hcu_c3_views_begin(void)
+{
+	if (s_c3r.frames == 0u) memset(&s_c3v.stats, 0, sizeof s_c3v.stats);
+	s_c3v.stats.frames++;
+	s_c3v.snap = NULL;
+	s_c3v.pinned = 0;
+#if defined(HCU_C3_FRAME_SNAPSHOT)
+	s_c3v.snap = hcu_snapshot_bank_begin_read(&s_c3v.reader);
+	s_c3v.pinned = s_c3v.snap != NULL;
+#endif
+}
+
+/* text_batch_emit places a glyph at (VIDEO_WIDTH/2 - screen_w/2 + x) and the view's XYOFFSET
+ * (2048 - vp.x - vp.w/2) is subtracted, so a glyph at x would land at x + vp.x + vp.w/2 - VIDEO_WIDTH/2.
+ * Pre-compensating by VIDEO_WIDTH/2 - vp.w/2 puts local (xl, yl) at buffer pixel (vp.x + xl, vp.y + yl). */
+static void hcu_c3_views_text(text_batch_t *tb, const bsp_viewport *vp, int xl, int yl, uint32_t rgb,
+	const char *str)
+{
+	text_batch_print(tb, xl + VIDEO_WIDTH / 2 - vp->w / 2, yl + VIDEO_HEIGHT / 2 - vp->h / 2, rgb, str);
+}
+
+/* Sets up view v: its camera (snapshot or fixed), its overlay batch and its bookkeeping. Returns the overlay
+ * for bsp_render_view. */
+static const text_batch_t *hcu_c3_views_camera(unsigned v, camera_t *cam, const bsp_viewport *vp)
+{
+	hcu_view_camera hc;
+	const halo_ps2_frame_view *view = NULL;
+	text_batch_t *tb = &s_c3v.text[v];
+	int from_snapshot = 0;
+	char lines[HCU_RENDER_VIEWS_HUD_LINES][HCU_RENDER_VIEWS_HUD_CHARS];
+	unsigned i, n = 0;
+	int gap, cx, cy;
+
+	s_c3v.vp[v] = *vp;
+	s_c3v.hud_lines[v] = 0;
+	s_c3v.fp_nodes[v] = 0;
+	s_c3v.fp_placeholder[v] = 0;
+#if defined(HCU_C3_FRAME_SNAPSHOT)
+	if (s_c3v.snap && v < s_c3v.snap->view_count) {
+		view = &s_c3v.snap->views[v];
+		if (!(view->flags & HALO_PS2_FRAME_VIEW_ACTIVE)) {
+			s_c3v.stats.refused_views++;
+			view = NULL;
+		} else if (hcu_views_accept_generation(&s_c3v.stats, s_c3v.snap->map_generation) &&
+			hcu_views_camera_from_snapshot(view->camera.position, view->camera.forward, view->camera.up,
+				view->camera.vertical_field_of_view, view->camera.z_near, view->camera.z_far, &hc)) {
+			from_snapshot = 1;
+		} else {
+			s_c3v.stats.refused_views++;
+		}
+	}
+#endif
+	camera_init(cam);
+	if (from_snapshot) {
+		cam->pos[0] = hc.pos[0]; cam->pos[1] = hc.pos[1]; cam->pos[2] = hc.pos[2];
+		cam->yaw = hc.yaw; cam->pitch = hc.pitch; cam->hfov = hc.hfov;
+		cam->near_z = hc.near_z; cam->far_z = hc.far_z;
+		s_c3v.source[v] = HCU_VIEW_CAMERA_SNAPSHOT;
+		s_c3v.stats.snapshot_views++;
+	} else {
+		hcu_c3_make_camera(cam, v);
+		s_c3v.source[v] = HCU_VIEW_CAMERA_FIXED;
+		s_c3v.stats.fixed_views++;
+	}
+	s_c3v.pos[v][0] = cam->pos[0]; s_c3v.pos[v][1] = cam->pos[1]; s_c3v.pos[v][2] = cam->pos[2];
+	s_c3v.fov_h_deg[v] = cam->hfov / HCU_C3_DEG;
+	s_c3v.pitch_deg[v] = cam->pitch / HCU_C3_DEG;
+	s_c3v.active[v] = view ? 1u : 0u;
+
+	/* HUD: viewport-local pixels (bsp_render_view sets the view's XYOFFSET to its origin, so absolute
+	 * positions would be shifted by the origin a second time). Kept inside the rectangle. */
+	text_batch_clear(tb);
+	if (view) {
+		n = hcu_views_hud_lines(view->hud_values, view->hud_flags, lines);
+		/* The view's XYOFFSET is its own origin, so overlay text is in viewport-local pixels. */
+		for (i = 0; i < n; ++i)
+			hcu_c3_views_text(tb, vp, 4, 4 + (int)i * 10, HCU_C3_VIEWS_RGB_HUD, lines[i]);
+		s_c3v.stats.hud_lines += n;
+		s_c3v.hud_lines[v] = n;
+		s_c3v.fp_nodes[v] = view->first_person_palette_count;
+		s_c3v.stats.fp_nodes_seen += view->first_person_palette_count;
+	}
+	/* Crosshair: two dashes either side of the centre, spread from the snapshot (4 px when there is none). */
+	gap = view ? hcu_views_crosshair_gap(view->hud_values) : hcu_views_crosshair_gap(NULL);
+	cx = vp->w / 2;
+	cy = vp->h / 2;
+	hcu_c3_views_text(tb, vp, cx - gap - 6, cy - 4, HCU_C3_VIEWS_RGB_CROSS, "-");
+	hcu_c3_views_text(tb, vp, cx + gap, cy - 4, HCU_C3_VIEWS_RGB_CROSS, "-");
+	if (!view && s_c3v.snap && v < s_c3v.snap->view_count)
+		hcu_c3_views_text(tb, vp, 4, 4, HCU_C3_VIEWS_RGB_FP, "RESPAWNING");
+	s_c3v.stats.crosshairs++;
+#if HCU_C3_VIEWS_FP_PLACEHOLDER
+	if (view && (view->flags & HALO_PS2_FRAME_VIEW_FIRST_PERSON) && view->first_person_palette_count) {
+		char fp[HCU_RENDER_VIEWS_HUD_CHARS];
+		hcu_views_fp_placeholder_text(view->first_person_palette_count, fp);
+		hcu_c3_views_text(tb, vp, 4, vp->h - 12, HCU_C3_VIEWS_RGB_FP, fp);
+		s_c3v.fp_placeholder[v] = 1;
+	}
+#endif
+	return tb;
+}
+
+static void hcu_c3_views_end(unsigned view_count)
+{
+	unsigned v;
+	int print = s_c3r.frames == 0u || (s_c3r.frames % HCU_C3_VIEWS_PRINT_PERIOD) == 0u;
+	hcu_snapshot_bank_stats bs;
+	uint32_t seq = s_c3v.snap ? s_c3v.snap->sequence : 0u;
+
+	if (s_c3v.pinned) {
+#if defined(HCU_C3_FRAME_SNAPSHOT)
+		hcu_snapshot_bank_end_read(&s_c3v.reader);
+#endif
+		s_c3v.pinned = 0;
+	}
+	if (!print || view_count == 0u) return;
+	hcu_snapshot_bank_get_stats(&bs);
+	for (v = 0; v < view_count && v < HCU_RENDER_VIEWS_MAX; ++v) {
+		printf("HALO c3-views frame=%u view=%u camera=%s pos_x100=%d,%d,%d fov_h_x100=%d "
+			"pitch_x100=%d active=%u viewport=%d,%d,%d,%d hud=%u fp-nodes=%u fp-drawn=0 fp-placeholder=%d "
+			"bank-views=%u bank-seq=%u pins=%u\n",
+			(unsigned)s_c3r.frames, v,
+			s_c3v.source[v] == HCU_VIEW_CAMERA_SNAPSHOT ? "snapshot" : "fixed",
+			hcu_c3_views_hund(s_c3v.pos[v][0]), hcu_c3_views_hund(s_c3v.pos[v][1]),
+			hcu_c3_views_hund(s_c3v.pos[v][2]), hcu_c3_views_hund(s_c3v.fov_h_deg[v]), hcu_c3_views_hund(s_c3v.pitch_deg[v]), (unsigned)s_c3v.active[v],
+			s_c3v.vp[v].x, s_c3v.vp[v].y, s_c3v.vp[v].w, s_c3v.vp[v].h,
+			(unsigned)s_c3v.hud_lines[v], (unsigned)s_c3v.fp_nodes[v], s_c3v.fp_placeholder[v],
+			(unsigned)(seq ? s_c3v.snap->view_count : 0u), (unsigned)seq, (unsigned)bs.read_pins_active);
+	}
+}
+/* C3:views end */
+
+/* C3:objects begin */
+/* C3.objects: draws the published object snapshot (players, bots, vehicles, weapons, one effect) through the
+ * halo-ps2 object pass. The pass is installed inside bsp_render_view, so the objects draw after the BSP pass
+ * of the same view. Views call begin before and end after their bsp_render_view; frame begin/end pin the
+ * snapshot bank slot until the frame's kick has completed. Without HCU_C3_OBJECTS every hook is a no-op. */
+#if defined(HCU_C3_OBJECTS)
+#include "stream/hcu_render_objects.h"
+#include <hcu_c3_objects_table.h>
+#if defined(HCU_C3_OBJECTS_SYNTHETIC)
+#define HCU_C3_OBJECTS_SOURCE "synthetic"
+#else
+#define HCU_C3_OBJECTS_SOURCE "bank"
+#endif
+static int s_c3o_loaded, s_c3o_installed;
+static hcu_render_objects_load_info s_c3o_info;
+
+static void hcu_c3_objects_frame_begin(void)
+{
+	halo_ps2_snapshot_camera cams[HALO_PS2_FRAME_MAX_VIEWS];
+	uint32_t v, views = 0;
+	if (s_c3r.frames == 0u) {
+		s_c3o_loaded = 0;
+		s_c3o_installed = 0;
+		if (hcu_render_objects_load(&s_map_service.profile_view, &s_c3r.level, hcu_c3_objects_table,
+			HCU_C3_OBJECTS_TABLE_COUNT, &s_c3o_info) == 0 && s_c3o_info.models_loaded)
+			s_c3o_loaded = 1;
+		printf("HALO_PS2_LOCAL c3-objects-load loaded=%u refused=%u texture-sets=%u textures=%u model-bytes=%u "
+			"texture-bytes=%u arena-before=%u arena-after=%u\n", (unsigned)s_c3o_info.models_loaded,
+			(unsigned)s_c3o_info.models_refused, (unsigned)s_c3o_info.texture_sets, (unsigned)s_c3o_info.textures,
+			(unsigned)s_c3o_info.model_bytes, (unsigned)s_c3o_info.texture_bytes,
+			(unsigned)s_c3o_info.arena_before, (unsigned)s_c3o_info.arena_after);
+	}
+#if defined(HCU_C3_OBJECTS_SYNTHETIC)
+	if (s_c3o_loaded) {
+		views = (uint32_t)HCU_C3_RENDER_VIEWS;
+		for (v = 0; v < views; ++v) {
+			camera_t c;
+			float right[3], up[3], fwd[3];
+			hcu_c3_make_camera(&c, v);
+			camera_basis(&c, right, up, fwd);
+			memcpy(cams[v].position, c.pos, sizeof cams[v].position);
+			memcpy(cams[v].forward, fwd, sizeof cams[v].forward);
+			memcpy(cams[v].up, up, sizeof cams[v].up);
+			cams[v].vertical_field_of_view = c.hfov;
+			cams[v].z_near = c.near_z;
+			cams[v].z_far = c.far_z;
+		}
+	}
+#endif
+	(void)hcu_render_objects_frame_begin(s_c3r.frames, views, cams);
+	if (s_c3o_loaded && !s_c3o_installed) {
+		hcu_render_objects_install();
+		s_c3o_installed = 1;
+	}
+}
+
+static void hcu_c3_objects_view_begin(uint32_t view)
+{
+	hcu_render_objects_view_begin(view);
+}
+
+static void hcu_c3_objects_view_end(uint32_t view)
+{
+	hcu_render_objects_view_stats st;
+	hcu_render_objects_view_end(view, &st);
+	if (s_c3r.frames == 0u || (s_c3r.frames % 30u) == 0u)
+		printf("HALO_PS2_LOCAL c3-objects frame=%u view=%u source=%s drawn=%u triangles=%u skinned-nodes=%u "
+			"model-hits=%u model-misses=%u tex-hits=%u tex-misses=%u failures=%u parity=%u\n",
+			(unsigned)s_c3r.frames, (unsigned)view, HCU_C3_OBJECTS_SOURCE, (unsigned)st.drawn,
+			(unsigned)st.triangles, (unsigned)st.skinned_nodes, (unsigned)st.model_hits,
+			(unsigned)st.model_misses, (unsigned)st.texture_hits, (unsigned)st.texture_misses,
+			(unsigned)st.failures, (unsigned)st.parity_records);
+}
+
+static void hcu_c3_objects_frame_end(void)
+{
+	hcu_render_objects_frame_end();
+}
+
+static void hcu_c3_objects_final(void)
+{
+	hcu_render_objects_counters t;
+	hcu_render_objects_release();
+	hcu_render_objects_totals(&t);
+	printf("HALO_PS2_LOCAL c3-objects-final frames=%u drawn=%u triangles=%u skinned-nodes=%u model-hits=%u "
+		"model-misses=%u tex-hits=%u tex-misses=%u failures=%u deduped=%u pins=%u unpins=%u pin-refusals=%u "
+		"parity-dropped=%u model-bytes=%u texture-bytes=%u\n", (unsigned)s_c3r.frames, (unsigned)t.objects_drawn,
+		(unsigned)t.triangles, (unsigned)t.skinned_nodes, (unsigned)t.model_hits, (unsigned)t.model_misses,
+		(unsigned)t.texture_hits, (unsigned)t.texture_misses, (unsigned)t.failures, (unsigned)t.deduped,
+		(unsigned)t.pins, (unsigned)t.unpins, (unsigned)t.pin_refusals, (unsigned)t.parity_dropped,
+		(unsigned)s_c3o_info.model_bytes, (unsigned)s_c3o_info.texture_bytes);
+}
+#else
+#define hcu_c3_objects_frame_begin() ((void)0)
+#define hcu_c3_objects_view_begin(v) ((void)(v))
+#define hcu_c3_objects_view_end(v) ((void)(v))
+#define hcu_c3_objects_frame_end() ((void)0)
+#define hcu_c3_objects_final() ((void)0)
+#endif
+/* C3:objects end */
+
 void hcu_c3_render_tick(int tick)
 {
 	hcu_render_layout layout;
@@ -1213,17 +1490,34 @@ void hcu_c3_render_tick(int tick)
 		s_c3r.active = 0;
 		return;
 	}
+	/* C3:views begin */
+	hcu_c3_views_begin();
+	/* C3:views end */
+	/* C3:objects begin */
+	hcu_c3_objects_frame_begin();
+	/* C3:objects end */
 	for (v = 0; v < layout.view_count; ++v) {
 		memset(&vp, 0, sizeof vp);
 		vp.x = layout.views[v].x; vp.y = layout.views[v].y;
 		vp.w = layout.views[v].w; vp.h = layout.views[v].h;
-		hcu_c3_make_camera(&cam, v);
-		if (bsp_render_view(&cam, NULL, &vp) != 0) {
+		/* C3:objects begin */
+		hcu_c3_objects_view_begin(v);
+		/* C3:objects end */
+		/* C3:views begin */
+		if (bsp_render_view(&cam, hcu_c3_views_camera(v, &cam, &vp), &vp) != 0) {
+			hcu_c3_views_end(0u);
+		/* C3:views end */
 			printf("HALO_PS2_FAIL c3-render view=%u frame=%u\n", v, (unsigned)s_c3r.frames);
 			s_c3r.active = 0;
 			return;
 		}
+		/* C3:objects begin */
+		hcu_c3_objects_view_end(v);
+		/* C3:objects end */
 	}
+	/* C3:views begin */
+	hcu_c3_views_end(layout.view_count);
+	/* C3:views end */
 	if (layout.clear.w > 0) {
 		memset(&vp, 0, sizeof vp);
 		vp.x = layout.clear.x; vp.y = layout.clear.y; vp.w = layout.clear.w; vp.h = layout.clear.h;
@@ -1239,6 +1533,9 @@ void hcu_c3_render_tick(int tick)
 		s_c3r.active = 0;
 		return;
 	}
+	/* C3:objects begin */
+	hcu_c3_objects_frame_end();
+	/* C3:objects end */
 	s_c3r.frames++;
 	if (s_c3r.frames == 1u || (s_c3r.frames % 30u) == 0u)
 		hcu_c3_print_frame("periodic");
@@ -1246,6 +1543,9 @@ void hcu_c3_render_tick(int tick)
 		unsigned i;
 		bsp_render_wait_gpu();
 		video_wait_gpu();
+		/* C3:objects begin */
+		hcu_c3_objects_final();
+		/* C3:objects end */
 		hcu_c3_print_frame("final");
 		/* Hold the last presented frame on screen so the host can capture it. */
 		video_present(&s_c3r.video);
@@ -1284,6 +1584,78 @@ void hcu_c3_render_map_release(void)
 }
 #endif
 /* C3:render end */
+
+/* C3:snapshot begin */
+#if defined(HCU_C3_FRAME_SNAPSHOT)
+/* Per-tick report of the CE frame snapshot the guest publishes through
+ * main_game_render -> render_frame (submodules/halo-ce-universal port/ps2
+ * ps2_c3_publish_frame_snapshot). Each map load starts a new map generation. */
+static uint32_t s_c3s_map_generation;
+static uint32_t s_c3s_ticks;
+
+void hcu_c3_snapshot_map_loaded(const char *map_name)
+{
+	(void)map_name;
+	s_c3s_map_generation++;
+	s_c3s_ticks = 0;
+	hcu_snapshot_bank_set_map_generation(s_c3s_map_generation);
+}
+
+void hcu_c3_snapshot_tick(int tick)
+{
+	hcu_snapshot_reader reader;
+	const halo_ps2_frame_snapshot *s;
+	hcu_snapshot_bank_stats st;
+	unsigned biped = 0, weapon = 0, vehicle = 0, other = 0, active = 0, i;
+	unsigned palette = 0, attachments = 0, resources = 0, views = 0, object_count = 0;
+	unsigned sequence = 0, view_refs = 0;
+	int slot;
+
+	(void)tick;
+	s_c3s_ticks++;
+	if (s_c3s_ticks % 30u)
+		return;
+	s = hcu_snapshot_bank_begin_read(&reader);
+	if (!s) {
+		hcu_snapshot_bank_get_stats(&st);
+		printf("HALO_PS2_LOCAL c3-snapshot frame=%u map-gen=%u views=0 objects=0 published=0 "
+			"refused-writes=%u commit-rejects=%u\n", (unsigned)s_c3s_ticks,
+			(unsigned)s_c3s_map_generation, (unsigned)st.write_refusals, (unsigned)st.commit_rejects);
+		return;
+	}
+	for (i = 0; i < s->object_count; ++i) {
+		switch (s->objects[i].type) {
+		case 0: biped++; break;      /* _object_type_biped */
+		case 1: vehicle++; break;    /* _object_type_vehicle */
+		case 2: weapon++; break;     /* _object_type_weapon */
+		default: other++; break;
+		}
+	}
+	for (i = 0; i < s->view_count; ++i)
+		if (s->views[i].flags & HALO_PS2_FRAME_VIEW_ACTIVE)
+			active++;
+	views = s->view_count;
+	object_count = s->object_count;
+	palette = s->palette_count;
+	attachments = s->attachment_count;
+	resources = s->resource_count;
+	view_refs = s->view_ref_count;
+	sequence = s->sequence;
+	slot = hcu_snapshot_bank_published_slot();
+	hcu_snapshot_bank_get_stats(&st);   /* pins are read while this reader holds one */
+	hcu_snapshot_bank_end_read(&reader);
+	printf("HALO_PS2_LOCAL c3-snapshot frame=%u map-gen=%u seq=%u views=%u active-views=%u "
+		"objects=%u biped=%u weapon=%u vehicle=%u other=%u palette=%u attachments=%u "
+		"resources=%u view-refs=%u dedupe-hits=%u bank-slot=%d reader-pins=%u pins-taken=%u "
+		"refused-writes=%u commit-rejects=%u commits=%u\n",
+		(unsigned)s_c3s_ticks, (unsigned)s->map_generation, sequence, views, active,
+		object_count, biped, weapon, vehicle, other, palette, attachments, resources, view_refs,
+		(unsigned)st.object_dedupe_hits, slot, (unsigned)st.read_pins_active,
+		(unsigned)st.read_pins_taken, (unsigned)st.write_refusals, (unsigned)st.commit_rejects,
+		(unsigned)st.commits);
+}
+#endif
+/* C3:snapshot end */
 
 static int hcu_guard_intact(const uint8_t *guard, uint8_t pattern)
 {
