@@ -1082,6 +1082,14 @@ def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1
     return result
 
 
+def guest_fault_lines(path: Path, limit: int = 5) -> list[str]:
+    """The guest's own failure lines ([err], HALO_PS2_FAIL), so a run reports its real cause."""
+    if not path.is_file():
+        return []
+    text = path.read_text(errors="replace").splitlines()
+    return [line.strip() for line in text if "[err]" in line or "HALO_PS2_FAIL" in line][:limit]
+
+
 def successor_stage_paths(plan: dict, succ_plan: dict, succ_row: str, succ_root: Path) -> list[str]:
     """Repo-relative files the guest must reach beyond the selected row's tree and retail maps."""
     paths = [*plan["stage_paths"], *succ_plan["stage_paths"]]
@@ -1093,34 +1101,84 @@ def successor_stage_paths(plan: dict, succ_plan: dict, succ_row: str, succ_root:
 
 def rendered_successor_checks(lines: list[str], old_map: str, new_map: str, mode: int,
                                views: int, captures: list[dict]) -> dict:
-    """Rendered transaction diagnostics; in-flight and both-mode qualification remain separate."""
-    ready = [fields_of(line) for line in lines if line.startswith(PREFIX + "c3-render-ready ")]
+    """Ordered rendered-replacement checks for one guest log (C3.11 diagnostics).
+
+    The renderer markers come from hcu_main.c (c3-render-*, c3-frame) and hcu_map_service.c
+    (map-replacement). The step markers come from CE (production-ce-successor-step). A pass
+    here is necessary but not sufficient: C3.11 stays open until both emulator modes pass on
+    the exact executable/package tuple and in-flight uploads/draws are observed.
+    """
+    def indexed(prefix: str):
+        return [(index, fields_of(line)) for index, line in enumerate(lines) if line.startswith(PREFIX + prefix)]
+
+    ready = indexed("c3-render-ready ")
+    frames = [index for index, _ in indexed("c3-frame ")]
+    held = [index for index, _ in indexed("c3-render-held ")]
+    boundaries = indexed("map-replacement ")
+    begin = [(i, r) for i, r in boundaries if r.get("phase") == "quiesce-begin"]
+    validated = [(i, r) for i, r in boundaries if r.get("phase") == "candidate-validated"]
+    drained = [(i, r) for i, r in boundaries if r.get("phase") == "quiesce-end"]
+    quiesce = indexed("c3-render-quiesce ")
+    steps = [(index, fields_of(line)) for index, line in enumerate(lines)
+             if line.startswith(PREFIX + "production-ce-successor-step ")]
+    usable = [index for index, line in enumerate(lines) if line.startswith(PREFIX + "production-ce-successor-usable result=1 ")]
+    failed_preflight = [i for i, r in steps if r.get("step") == "after-failed-preflight"]
+    failed_load = [i for i, r in steps if r.get("step") == "after-failed-load"]
+    dispose = [(i, r) for i, r in steps if r.get("step") == "dispose"]
+    unload = [(i, r) for i, r in steps if r.get("step") == "unload"]
+    loads = [(i, r) for i, r in steps if r.get("step") == "load"]
+    new_ready = [i for i, r in ready if r.get("map") == new_map]
     expected_maps = [old_map] if mode == 2 else [old_map, new_map]
-    boundaries = [(index, fields_of(line)) for index, line in enumerate(lines)
-                  if line.startswith(PREFIX + "map-replacement ")]
-    begin = [(index, row) for index, row in boundaries if row.get("phase") == "quiesce-begin"]
-    validated = [(index, row) for index, row in boundaries if row.get("phase") == "candidate-validated"]
-    drained = [(index, row) for index, row in boundaries if row.get("phase") == "quiesce-end"]
-    dispose = [index for index, line in enumerate(lines)
-               if line.startswith(PREFIX + "production-ce-successor-step step=dispose ")]
+
+    def window_quiesce(lo: int, hi: int) -> bool:
+        return any(lo < i < hi and q.get("result") == "1" and q.get("readers") == "0" and
+                   q.get("fence") == "1" and (_int(q.get("kick-seq")) or 0) > 0 for i, q in quiesce)
+
+    def captured_visible(capture: dict) -> bool:
+        return capture_has_scene_variation(capture)
+
     checks = {
-        "rendered_maps": [row.get("map") for row in ready] == expected_maps,
-        "rendered_view_counts": bool(ready) and all(row.get("views") == str(views) for row in ready),
+        "rendered_maps": [row.get("map") for _, row in ready] == expected_maps,
+        "rendered_view_counts": bool(ready) and all(row.get("views") == str(views) for _, row in ready),
         "render_failure_free": not any("HALO_PS2_FAIL c3-" in line for line in lines),
-        "replacement_captures_visible": len(captures) == 2 and all(
-            capture_has_scene_variation(capture) for capture in captures),
+        "replacement_captures_visible": len(captures) == 2 and all(captured_visible(c) for c in captures),
+        "capture_order_map_a_then_map_b": len(captures) == 2 and
+            str(captures[0].get("marker", "")).startswith("c3-render-held") and
+            str(captures[1].get("marker", "")).startswith("production-ce-successor-usable"),
     }
     if mode == 2:
-        checks["failed_preflight_preserves_renderer"] = not begin and not validated and not drained
-    else:
-        checks["candidate_before_quiesce_before_dispose"] = bool(begin) and all(
-            any(vindex < bindex and v.get("new") == row.get("new") for vindex, v in validated)
-            and any(bindex < dindex < pindex and d.get("drained") == "1" and d.get("readers") == "0"
-                    for dindex, d in drained for pindex in dispose)
-            for bindex, row in begin)
-        checks["old_renderer_reader_present"] = any(
-            row.get("old") == old_map and (_int(row.get("readers")) or 0) > 0
-            for _, row in begin)
+        checks["failed_preflight_preserves_renderer"] = (
+            not begin and not validated and not drained and not quiesce and
+            bool(failed_preflight) and any(i > failed_preflight[0] for i in frames) and
+            len(ready) == 1)
+        checks["failed_preflight_no_quiesce_or_dispose"] = not begin and not dispose and not unload
+        return {"checks": checks,
+                "reasons": [f"rendered successor check failed: {name}" for name, passed in checks.items() if not passed],
+                "c3_11_qualified": False,
+                "remaining_requirement": "Verify actual in-flight uploads/draw source references and both emulator modes on the exact tuple."}
+    checks["readers_held_while_drawing"] = bool(begin) and any(
+        r.get("old") == old_map and (_int(r.get("readers")) or 0) > 0 and any(f < bi for f in frames)
+        for bi, r in begin)
+    checks["candidate_before_quiesce"] = bool(begin) and all(
+        any(vi < bi and v.get("new") == r.get("new") for vi, v in validated) for bi, r in begin)
+    checks["drain_readers_zero_fence_observed"] = bool(begin) and bool(drained) and all(
+        window_quiesce(bi, ei) and e.get("drained") == "1" and e.get("readers") == "0"
+        for bi, _ in begin for ei, e in drained if ei > bi)
+    checks["ce_dispose_with_old_tags_live"] = bool(dispose) and any(
+        d.get("result") == "1" and d.get("old") == old_map and d.get("old-mounted") == "1" and
+        (_int(d.get("tag-bytes")) or 0) > 0 and (_int(d.get("bsp-bytes")) or 0) > 0 and
+        bool(begin) and any(bi < di for bi, _ in begin) and
+        any(ei < di for ei, _ in drained)
+        for di, d in dispose)
+    checks["release_before_successor_load"] = bool(unload) and bool(loads) and any(
+        u.get("result") == "1" and u.get("old-mounted") == "0" and
+        any(li > ui and l.get("result") == "1" and l.get("new-mounted") == "1" for li, l in loads) and
+        any(ui > di for di, _ in dispose)
+        for ui, u in unload)
+    if mode == 3:
+        checks["late_failure_empty_then_retry"] = bool(failed_load) and any(
+            li > failed_load[0] for li, l in loads if l.get("result") == "1") and bool(new_ready)
+    checks["successor_frames_render"] = bool(new_ready) and any(i > new_ready[-1] for i in frames) and bool(usable)
     return {"checks": checks,
             "reasons": [f"rendered successor check failed: {name}" for name, passed in checks.items() if not passed],
             "c3_11_qualified": False,
@@ -1185,7 +1243,9 @@ def run_successor(row: str, succ_row: str, fault: str = "none", ticks: int = SUC
         guest_run, provenance_error = validate_guest_provenance(
             out, attempt_started_ns, EMU_MODE, expected_captures=2 if render_views else 0)
         if guest_run is None:
-            raise RuntimeError(provenance_error)
+            faults = guest_fault_lines(out / "guest/runs/partition-selected/halo_ps2_local.txt")
+            detail = f" (guest fault: {' | '.join(faults[:2])})" if faults else ""
+            raise RuntimeError(provenance_error + detail)
         result["guest_launch_id"] = guest_run["launch_id"]
         result["emu_mode_verified"] = guest_run["pcsx2_config"]["emu_mode_verified"]
         log_path = out / "guest/runs/partition-selected/halo_ps2_local.txt"
