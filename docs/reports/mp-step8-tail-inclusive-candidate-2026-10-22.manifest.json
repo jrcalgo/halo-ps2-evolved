@@ -1,0 +1,65 @@
+{
+  "schema": "hcu-mp-step8-tail-inclusive-candidate-v1",
+  "scope": "13 stock multiplayer maps; campaign excluded",
+  "diagnostic_only": true,
+  "candidate_is_production_budget": false,
+  "is_ee_or_ps2_execution_evidence": false,
+  "is_texture_residency_or_safety_proof": false,
+  "profile_bytes": {
+    "tag_cache": 4477120,
+    "bsp_cache_including_relocation_tail": 1993704,
+    "combined_map_cache": 6470824,
+    "texture_remainder": 4014936,
+    "combined_map_plus_texture": 10485760,
+    "map_owner": 1048576,
+    "section_scratch": 524288,
+    "tag_validation_claims": 808856
+  },
+  "source_pins": {
+    "parent": "70e2ed0cf2145a45d23aa07414a3a88c05155d4c",
+    "halo_ce_universal": "6933490b2d16bb1c637295b6a0f3880ba23a7d56",
+    "halo_ps2": "71183bb0a9adc586cd267b2780c82bbc12cfd95b"
+  },
+  "test": {
+    "base_fixture": "tests/test_hcu_mp_capacity.py",
+    "base_fixture_sha256": "c45575259c0e47f34328df8d54f744da4c9e5289d73f793121957100f2719a9e",
+    "candidate_runner": "tools/test_hcu_mp_candidate_topology.py",
+    "candidate_runner_sha256": "13e568f9813836b3dbcc297c23d9501c5d01cddfa5e06027163d0f63a63361f7",
+    "command": "build/hcu-mpct-tail-1792683984346895497/retained/mp-weather-wind build/hcu-mpct-tail-1792683984346895497/retained/assets/",
+    "exit_code": 0,
+    "map_cycles": 26,
+    "maps": [
+      "longest",
+      "bloodgulch",
+      "beavercreek",
+      "prisoner",
+      "boardingaction",
+      "carousel",
+      "chillout",
+      "damnation",
+      "hangemhigh",
+      "putput",
+      "ratrace",
+      "sidewinder",
+      "wizard"
+    ],
+    "owner_high_water_bytes": 89164,
+    "section_scratch_high_water_bytes": 262144,
+    "strict_weather_vector_parity": "not asserted; finite-value smoke check only",
+    "rollback_retry": "late B000 failure injected on Longest, followed by successful retry"
+  },
+  "artifacts": {
+    "binary_sha256": "09db4dfda456f3de333f6e3bfa6bc4caba8fc0919ca19d8af939b3fb5e82e5cd",
+    "link_map_sha256": "6057cab9a4813bdebe4d39b467a0de0f1a9a446c413c923fcfe4c2486e51c764",
+    "successful_run_log": "build/hcu-mpct-tail-1792683984346895497/retained/candidate-run.log",
+    "successful_run_log_sha256": "d4a26e123d89ed45ad84296c8fd9c8708163006086f176b67efb60ca4f8e3099",
+    "artifact_directory": "build/hcu-mpct-tail-1792683984346895497"
+  },
+  "limits": [
+    "Native host ILP32 execution only; no R5900/PCSX2 execution or physical EE placement.",
+    "Texture remainder is canary-protected but no actual render texture residency/upload/eviction is exercised.",
+    "The 2.5 MiB dynamic simulation pool and simultaneous gameplay/render asset working set are not measured.",
+    "Weather numeric parity is open; this fixture only checked finite weather outputs.",
+    "This diagnostic does not close Step 8 or authorize production map admission."
+  ]
+}
