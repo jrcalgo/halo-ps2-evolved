@@ -1,5 +1,7 @@
 # M1 physical placement evidence (2026-10-20)
 
+The completing placement run is recompiler `emulator-m1-recompiler-59d36a0b7be54b7cbaf819462458625b` on host ELF `e3577ca6…`. The result below is the earlier frozen tuple.
+
 ## Result
 
 The M3 physical-memory gate in `/home/ai/Desktop/HCU plan` passes for the current
