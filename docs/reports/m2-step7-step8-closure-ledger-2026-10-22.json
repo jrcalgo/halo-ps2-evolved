@@ -27,7 +27,7 @@
     },
     "c2_evidence_updater": {
       "path": "tools/update_hcu_c2_evidence.py",
-      "sha256": "502d27ae66660a628dba6b699d0ff0cf9e846103917d0bdab8d5587468c548be"
+      "sha256": "17edcd9ac1c2f3dd54d6916d4dbdbe7fe32edd36921e5b7668609b7a2434335f"
     }
   },
   "dependency_identities": [
@@ -91312,7 +91312,7 @@
       "evidence_files": [
         {
           "path": "docs/reports/m2-c2-status-2026-10-23.json",
-          "sha256": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+          "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
           "role": "phase status report",
           "exists": true
         },
@@ -91357,6 +91357,13 @@
           "evidence_level": "host execution",
           "role": "report",
           "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-r8-residency-2026-10-24.md",
+          "sha256": "1740456843ea4a5054667e379e2b8365d72fc412f2a1c308954251624c3bdb54",
+          "role": "report",
+          "evidence_level": "host execution",
+          "exists": true
         }
       ],
       "evidence_level": "host execution",
@@ -91364,7 +91371,7 @@
         {
           "mode": "host execution",
           "result": "partial",
-          "scope": "27 archived profiles, deterministic HCP2 migration, and 75 exact selected-recipe closures on Blood Gulch.",
+          "scope": "Historical archived C1/HCP2 corpus, 26 complete selected session packages on 13 maps, UI, and recipe-level CE/BSP storage floors. These are distinct corpora and retain original evidence scope.",
           "evidence_files": [
             {
               "path": "docs/reports/m2-c2-profile-memory-audit-2026-10-23.json",
@@ -91407,6 +91414,13 @@
               "evidence_level": "host execution",
               "role": "report",
               "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-r8-residency-2026-10-24.md",
+              "sha256": "1740456843ea4a5054667e379e2b8365d72fc412f2a1c308954251624c3bdb54",
+              "role": "report",
+              "evidence_level": "host execution",
+              "exists": true
             }
           ]
         }
@@ -91417,7 +91431,7 @@
         "fixture_hashes": [
           {
             "path": "docs/reports/m2-c2-status-2026-10-23.json",
-            "sha256": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+            "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
             "role": "phase status report"
           }
         ],
@@ -91463,6 +91477,13 @@
             "sha256": "a7e00cd7cba40f147b1792a909720f315833826242d8b4725ed1a4444542ba9a",
             "evidence_level": "host execution",
             "role": "report",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-r8-residency-2026-10-24.md",
+            "sha256": "1740456843ea4a5054667e379e2b8365d72fc412f2a1c308954251624c3bdb54",
+            "role": "report",
+            "evidence_level": "host execution",
             "exists": true
           }
         ]
@@ -91620,15 +91641,16 @@
         }
       },
       "result": "partial",
-      "remaining_limitation": "Full-union survival CE remains 25,612,462 B. Selected CTAGs retain full recipe closure, but complete selected media/binding packages are not yet assembled. The tightest measured selected map/render residual is 1,578,064 B; resident claims and streaming relocations are separate owners. Renderer indexes/live set, simultaneous staging and target workload peaks remain unmeasured.",
+      "remaining_limitation": "Selected packages exist and later host residency runs pass their streaming/lease fixture, superseding the early packaging-only blocker. Full-union survival CE remains about25.6 MB and cannot be a live fallback. Current source-clean C1 rebuild, simultaneous renderer/index/staging live set and profile-specific gameplay owner peaks remain unqualified. Four-player/four-bot selection metadata does not establish spawned bots.",
       "source_report_hashes": {
-        "docs/reports/m2-c2-status-2026-10-23.json": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+        "docs/reports/m2-c2-status-2026-10-23.json": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
         "docs/reports/m2-c2-profile-memory-audit-2026-10-23.json": "3745930d29e2ea112790a42e6bc116acab076b94d9bfe29ed9f6bf366f20d01c",
         "docs/reports/m2-c2-ce-image-owner-audit-2026-10-23.json": "6abe6b861456f28e997d2cdd492f3ecda3b5375d8394a69850a768dbab9cbb67",
         "build/m2-c2-recipe-residency-2026-10-23/matrix.json": "eb98fa47511ff83a7923e619ae0fd93091bb7b8e86ef7d9055c8a375a41c20c3",
         "build/m2-c2-hcp2-primary/migration-report.json": "47d1cac72230e20195b3cbc72cac7a4257f1e17eefccae5da20df770279eaa8e",
         "docs/reports/m2-c2-session-map-capacity-2026-10-23.json": "c35fc183f80491e383b06faa1ac138bbde6a946877a31d6ca2e30cc3bd103c50",
-        "docs/reports/m2-c2-session-map-capacity-2026-10-23.md": "a7e00cd7cba40f147b1792a909720f315833826242d8b4725ed1a4444542ba9a"
+        "docs/reports/m2-c2-session-map-capacity-2026-10-23.md": "a7e00cd7cba40f147b1792a909720f315833826242d8b4725ed1a4444542ba9a",
+        "docs/reports/m2-c2-r8-residency-2026-10-24.md": "1740456843ea4a5054667e379e2b8365d72fc412f2a1c308954251624c3bdb54"
       }
     },
     {
@@ -91641,7 +91663,7 @@
       "evidence_files": [
         {
           "path": "docs/reports/m2-c2-status-2026-10-23.json",
-          "sha256": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+          "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
           "role": "phase status report",
           "exists": true
         },
@@ -91685,8 +91707,8 @@
       "execution_results": [
         {
           "mode": "host execution",
-          "result": "partial",
-          "scope": "Profile-v1 planner/binder plus actual ILP32 fixture and target object compilation.",
+          "result": "stale",
+          "scope": "Guarded partition planner/binder, selected-session table and generated exact package/header registration; a distinct bots_sidewinder candidate was added in the resumed work.",
           "evidence_files": [
             {
               "path": "docs/reports/m2-c2-memory-partition-implementation-2026-10-23.json",
@@ -91706,8 +91728,8 @@
         },
         {
           "mode": "source inspection",
-          "result": "partial",
-          "scope": "Profile-v1 planner/binder plus actual ILP32 fixture and target object compilation.",
+          "result": "stale",
+          "scope": "Guarded partition planner/binder, selected-session table and generated exact package/header registration; a distinct bots_sidewinder candidate was added in the resumed work.",
           "evidence_files": [
             {
               "path": "src/stream/hcu_memory_profile.c",
@@ -91734,12 +91756,12 @@
         }
       ],
       "fixture_input_hashes": {
-        "status": "complete",
+        "status": "partial",
         "executable_hashes": [],
         "fixture_hashes": [
           {
             "path": "docs/reports/m2-c2-status-2026-10-23.json",
-            "sha256": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+            "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
             "role": "phase status report"
           }
         ],
@@ -91789,28 +91811,32 @@
         "fixture_render_bytes": 3806080,
         "fixture_claims_bytes": 834960
       },
-      "result": "partial",
-      "remaining_limitation": "The API is implemented and tested, but production startup does not yet select a complete qualified profile; fixture capacities do not establish renderer/workload fit.",
+      "result": "stale",
+      "remaining_limitation": "Static capacities, host fixtures and successful backend registration do not establish actual CE scenario/BSP loading or renderer/workload fit. Selected-map guest qualification is running separately; CE pointers must never be rebound while live.",
       "source_report_hashes": {
-        "docs/reports/m2-c2-status-2026-10-23.json": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+        "docs/reports/m2-c2-status-2026-10-23.json": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
         "docs/reports/m2-c2-memory-partition-implementation-2026-10-23.json": "b802d6ca2f447f3d82b4d81f60e3b56af136f98640150d384241f454bdd45674",
         "build/mp-production-binder-capacity-1792807638276695796/manifest.json": "931cfa8548bee284bfffa7fe3ae02ab027e0cb491c53f9d08bc056c0d3aa463e",
         "src/stream/hcu_memory_profile.c": "ca8c5f01b47ee8a4757774d61bffdc8708d79b2a0da9c4fd2df4939d6c7694dd",
         "src/stream/hcu_memory_profile.h": "5dce4c6e598c5e922fdbbc083b7a32b3e9eda127f911c4d5aa07aa243145d4f6",
         "src/stream/hcu_memory_bind.c": "e58097ae81288df6ec35fc1f44d207c6753cdfd3c6ad0860980e6f4c47bc2812"
-      }
+      },
+      "stale_dependencies": [
+        "src/stream/hcu_memory_profile.c",
+        "src/stream/hcu_memory_profile.h"
+      ]
     },
     {
       "step": 8,
       "subcheck": "c2-3",
       "behavior_or_member": "Committed memory, guards, nested ownership and reserve",
-      "owner": "budget-v2 layout and parent startup",
-      "acceptance_requirement": "Keep committed EE memory <=27,787,264 B and reserve 5,767,168 B untouched, counting every nested owner, staging copy and gap once.",
+      "owner": "budget-v3 layout and parent startup",
+      "acceptance_requirement": "Keep committed EE memory <=28,049,408 B and the remaining 5,505,024 B reserve untouched after the user-approved 262,144 B transfer to elf_static. Count file-backed ELF in elf_static, NOBITS in resident_gameplay, and every nested owner/staging copy/gap once.",
       "evidence": "docs/reports/m2-c2-status-2026-10-23.json",
       "evidence_files": [
         {
           "path": "docs/reports/m2-c2-status-2026-10-23.json",
-          "sha256": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+          "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
           "role": "phase status report",
           "exists": true
         },
@@ -91848,14 +91874,21 @@
           "evidence_level": "host execution",
           "role": "report",
           "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-budget-v3-2026-10-24.json",
+          "sha256": "c78b5217b82528e9d666373820ac5e806e705e176c23eeabc116795947802816",
+          "evidence_level": "host execution",
+          "role": "report",
+          "exists": true
         }
       ],
       "evidence_level": "host execution",
       "execution_results": [
         {
           "mode": "host execution",
-          "result": "partial",
-          "scope": "Unchanged budget; fixed-owner reservation and guarded partition accounting plus target object compilation.",
+          "result": "stale",
+          "scope": "Version-3 fixed-owner accounting and an exact selected-profile ELF link; actual combined guest placement and owner live-set qualification remain separate.",
           "evidence_files": [
             {
               "path": "docs/reports/m2-c2-dma-owner-implementation-2026-10-23.json",
@@ -91870,13 +91903,20 @@
               "evidence_level": "host execution",
               "role": "report",
               "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-budget-v3-2026-10-24.json",
+              "sha256": "c78b5217b82528e9d666373820ac5e806e705e176c23eeabc116795947802816",
+              "evidence_level": "host execution",
+              "role": "report",
+              "exists": true
             }
           ]
         },
         {
           "mode": "source inspection",
-          "result": "partial",
-          "scope": "Unchanged budget; fixed-owner reservation and guarded partition accounting plus target object compilation.",
+          "result": "stale",
+          "scope": "Version-3 fixed-owner accounting and an exact selected-profile ELF link; actual combined guest placement and owner live-set qualification remain separate.",
           "evidence_files": [
             {
               "path": "config/memory-budget.json",
@@ -91903,12 +91943,12 @@
         }
       ],
       "fixture_input_hashes": {
-        "status": "complete",
+        "status": "partial",
         "executable_hashes": [],
         "fixture_hashes": [
           {
             "path": "docs/reports/m2-c2-status-2026-10-23.json",
-            "sha256": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+            "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
             "role": "phase status report"
           }
         ],
@@ -91948,25 +91988,44 @@
             "evidence_level": "host execution",
             "role": "report",
             "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-budget-v3-2026-10-24.json",
+            "sha256": "c78b5217b82528e9d666373820ac5e806e705e176c23eeabc116795947802816",
+            "evidence_level": "host execution",
+            "role": "report",
+            "exists": true
           }
         ]
       },
       "measurements": {
-        "committed_limit_bytes": 27787264,
-        "reserve_bytes": 5767168,
+        "committed_limit_bytes": 28049408,
+        "reserve_bytes": 5505024,
         "renderer_packet_workspace_bytes": 5632,
-        "dma_reserved_bytes": 1179648
+        "dma_reserved_bytes": 1179648,
+        "budget_version": 3,
+        "elf_static_bytes": 2359296,
+        "approved_reserve_transfer_bytes": 262144,
+        "selected_elf_file_backed_bytes": 2250500,
+        "selected_elf_static_margin_bytes": 108796,
+        "selected_elf_nobits_bytes": 1811648
       },
-      "result": "partial",
-      "remaining_limitation": "No current combined ELF/guest placement or fully integrated simultaneous live-set proof exists for selected production profiles.",
+      "result": "stale",
+      "remaining_limitation": "Selected link file-backed sections fit v3; this host section audit does not establish all runtime owners, workload high-water or final exact guest placement.",
       "source_report_hashes": {
-        "docs/reports/m2-c2-status-2026-10-23.json": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+        "docs/reports/m2-c2-status-2026-10-23.json": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
         "config/memory-budget.json": "67ef6d6085de71c22e3998a355cb2f79a8123837b7b14e89593a0d497de21b74",
         "src/stream/hcu_main.c": "f0f55e9edf87929e9ba8d9079a3a09723091aa69f4934112ee3fd813edb5b4f8",
         "src/stream/hcu_memory_profile.c": "ca8c5f01b47ee8a4757774d61bffdc8708d79b2a0da9c4fd2df4939d6c7694dd",
         "docs/reports/m2-c2-dma-owner-implementation-2026-10-23.json": "94269eedf4fab2cce33a772ac62e34068bea3f86c4ce3c8ad4319a1d450c0b73",
-        "docs/reports/m2-c2-memory-partition-implementation-2026-10-23.json": "b802d6ca2f447f3d82b4d81f60e3b56af136f98640150d384241f454bdd45674"
-      }
+        "docs/reports/m2-c2-memory-partition-implementation-2026-10-23.json": "b802d6ca2f447f3d82b4d81f60e3b56af136f98640150d384241f454bdd45674",
+        "docs/reports/m2-c2-budget-v3-2026-10-24.json": "c78b5217b82528e9d666373820ac5e806e705e176c23eeabc116795947802816"
+      },
+      "stale_dependencies": [
+        "config/memory-budget.json",
+        "src/stream/hcu_main.c",
+        "src/stream/hcu_memory_profile.c"
+      ]
     },
     {
       "step": 8,
@@ -91978,7 +92037,7 @@
       "evidence_files": [
         {
           "path": "docs/reports/m2-c2-status-2026-10-23.json",
-          "sha256": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+          "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
           "role": "phase status report",
           "exists": true
         },
@@ -92085,7 +92144,7 @@
       "execution_results": [
         {
           "mode": "host execution",
-          "result": "partial",
+          "result": "stale",
           "scope": "All 27 HCP2 packages, file-backed C preflight, native UI CE tag/BSP streaming and bitmap upload/fence fixtures.",
           "evidence_files": [
             {
@@ -92148,7 +92207,7 @@
         },
         {
           "mode": "source inspection",
-          "result": "partial",
+          "result": "stale",
           "scope": "All 27 HCP2 packages, file-backed C preflight, native UI CE tag/BSP streaming and bitmap upload/fence fixtures.",
           "evidence_files": [
             {
@@ -92197,7 +92256,7 @@
         }
       ],
       "fixture_input_hashes": {
-        "status": "complete",
+        "status": "partial",
         "executable_hashes": [
           {
             "path": "build/m2-c2-hcp2-native/hcp2-file-preflight",
@@ -92224,7 +92283,7 @@
         "fixture_hashes": [
           {
             "path": "docs/reports/m2-c2-status-2026-10-23.json",
-            "sha256": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+            "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
             "role": "phase status report"
           }
         ],
@@ -92339,10 +92398,10 @@
         "native_UI_mount_cycles": 3,
         "two_envelope_migrations_identical": true
       },
-      "result": "partial",
+      "result": "stale",
       "remaining_limitation": "HCP2 representation and host consumers pass. Final CE data still remains resident for the map; generic eviction, integrated renderer fencing, active roster admission and complete guest lifetime qualification remain open.",
       "source_report_hashes": {
-        "docs/reports/m2-c2-status-2026-10-23.json": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+        "docs/reports/m2-c2-status-2026-10-23.json": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
         "build/m2-c2-hcp2-primary/migration-report.json": "47d1cac72230e20195b3cbc72cac7a4257f1e17eefccae5da20df770279eaa8e",
         "build/m2-c2-hcp2-rebuild/migration-report.json": "47d1cac72230e20195b3cbc72cac7a4257f1e17eefccae5da20df770279eaa8e",
         "build/m2-c2-hcp2-native/result.json": "4d90b3166a8398fa9645078181369d6743ae6dc01505e31aa67936465abed1bb",
@@ -92357,7 +92416,13 @@
         "tools/hcu_profile_chunks.py": "24112efedf580bbed1692236c5eafc124885ca5810105f8ec7a327f33a3d9594",
         "tools/hcu_profile_validate.py": "4e276b429db4805985bce51fdd655a21dfc4d9657264e0518d41f4b5ceed4a8c",
         "tools/repack_hcu_profiles_hcp2.py": "daeb6892723916b680795017c12878c6ebdf696a93a580e19ddf7c86efead4f7"
-      }
+      },
+      "stale_dependencies": [
+        "src/stream/hcu_asset_profile.c",
+        "src/stream/hcu_asset_profile.h",
+        "src/stream/hcu_profile_mount.c",
+        "tools/repack_hcu_profiles_hcp2.py"
+      ]
     },
     {
       "step": 8,
@@ -92369,7 +92434,7 @@
       "evidence_files": [
         {
           "path": "docs/reports/m2-c2-status-2026-10-23.json",
-          "sha256": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+          "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
           "role": "phase status report",
           "exists": true
         },
@@ -92400,14 +92465,21 @@
           "evidence_level": "source inspection",
           "role": "source",
           "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-r8-alloc-final-2026-10-24.md",
+          "sha256": "524ad19980a7bd6201a8d2be313cb6247df8cdc3e3a2764e1b5d482d5bcab447",
+          "role": "report",
+          "evidence_level": "source inspection",
+          "exists": true
         }
       ],
       "evidence_level": "host execution",
       "execution_results": [
         {
           "mode": "host execution",
-          "result": "partial",
-          "scope": "Current source inventory and focused reusable allocator behavior.",
+          "result": "stale",
+          "scope": "Source allocation verdicts and reusable allocator semantics, plus resumed path-state oracle and owner-counter corrections; runtime workload traces remain separate.",
           "evidence_files": [
             {
               "path": "docs/reports/m2-c2-5-postload-allocation-source-inventory-2026-10-23.json",
@@ -92434,8 +92506,8 @@
         },
         {
           "mode": "source inspection",
-          "result": "partial",
-          "scope": "Current source inventory and focused reusable allocator behavior.",
+          "result": "stale",
+          "scope": "Source allocation verdicts and reusable allocator semantics, plus resumed path-state oracle and owner-counter corrections; runtime workload traces remain separate.",
           "evidence_files": [
             {
               "path": "submodules/halo-ce-universal/port/ps2/src/ps2_memory.c",
@@ -92443,17 +92515,24 @@
               "evidence_level": "source inspection",
               "role": "source",
               "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-r8-alloc-final-2026-10-24.md",
+              "sha256": "524ad19980a7bd6201a8d2be313cb6247df8cdc3e3a2764e1b5d482d5bcab447",
+              "role": "report",
+              "evidence_level": "source inspection",
+              "exists": true
             }
           ]
         }
       ],
       "fixture_input_hashes": {
-        "status": "complete",
+        "status": "partial",
         "executable_hashes": [],
         "fixture_hashes": [
           {
             "path": "docs/reports/m2-c2-status-2026-10-23.json",
-            "sha256": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+            "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
             "role": "phase status report"
           }
         ],
@@ -92486,6 +92565,13 @@
             "evidence_level": "source inspection",
             "role": "source",
             "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-r8-alloc-final-2026-10-24.md",
+            "sha256": "524ad19980a7bd6201a8d2be313cb6247df8cdc3e3a2764e1b5d482d5bcab447",
+            "role": "report",
+            "evidence_level": "source inspection",
+            "exists": true
           }
         ]
       },
@@ -92493,15 +92579,20 @@
         "source_API_expressions": 211,
         "source_files": 67
       },
-      "result": "partial",
-      "remaining_limitation": "211 function-body allocation API expressions across 67 files are recorded; phases and live workload attribution remain unresolved. No complete path/bot/wave/mode allocation trace or EE allocator timing/fragmentation bound exists.",
+      "result": "stale",
+      "remaining_limitation": "The coworker source inventory reports zero undispositioned callsites, but that is a source classification result. Current exact long path/bot/wave/mode traces, EE allocation timing/fragmentation and endless survival reuse are still unqualified. The resumed path test was corrected to sample allocation while live and require reclamation after free.",
       "source_report_hashes": {
-        "docs/reports/m2-c2-status-2026-10-23.json": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+        "docs/reports/m2-c2-status-2026-10-23.json": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
         "docs/reports/m2-c2-5-postload-allocation-source-inventory-2026-10-23.json": "b0a142e368a27f2d0f285bb185dd118ff04ad4deefc344aedea9b11fcbe3d206",
         "docs/reports/m2-c2-5-postload-allocation-inventory-2026-10-23.md": "55397b5f8172113101e828274ac3606982ab77e4ae48ddf3b81e566657184768",
         "docs/reports/m2-c2-streaming-allocation-audit-2026-10-23.md": "24488a770c8530d1f2220d2a58e39d3ea80c270be4ccc6806691f3441c887d00",
-        "submodules/halo-ce-universal/port/ps2/src/ps2_memory.c": "9c0478bc28c8cccc1241124b67a92dc9e1011b23334b7c2d4598bd6a0acdc120"
-      }
+        "submodules/halo-ce-universal/port/ps2/src/ps2_memory.c": "9c0478bc28c8cccc1241124b67a92dc9e1011b23334b7c2d4598bd6a0acdc120",
+        "docs/reports/m2-c2-r8-alloc-final-2026-10-24.md": "524ad19980a7bd6201a8d2be313cb6247df8cdc3e3a2764e1b5d482d5bcab447"
+      },
+      "stale_dependencies": [
+        "docs/reports/m2-c2-5-postload-allocation-source-inventory-2026-10-23.json",
+        "submodules/halo-ce-universal/port/ps2/src/ps2_memory.c"
+      ]
     },
     {
       "step": 8,
@@ -92513,7 +92604,7 @@
       "evidence_files": [
         {
           "path": "docs/reports/m2-c2-status-2026-10-23.json",
-          "sha256": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+          "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
           "role": "phase status report",
           "exists": true
         },
@@ -92565,14 +92656,21 @@
           "evidence_level": "source inspection",
           "role": "source",
           "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-r8-alloc-final-2026-10-24.md",
+          "sha256": "524ad19980a7bd6201a8d2be313cb6247df8cdc3e3a2764e1b5d482d5bcab447",
+          "role": "report",
+          "evidence_level": "source inspection",
+          "exists": true
         }
       ],
       "evidence_level": "host execution",
       "execution_results": [
         {
           "mode": "host execution",
-          "result": "partial",
-          "scope": "Generic arena, actor datum and compatibility counters plus staging request/reset telemetry.",
+          "result": "stale",
+          "scope": "Named parent owner registry and CE object/actor/widget counters, with nested widget pool correctly assigned to dynamic_simulation; fixed reservations are separate from actual payload counters.",
           "evidence_files": [
             {
               "path": "docs/reports/m2-c2-actor-pool-telemetry-2026-10-23.md",
@@ -92599,8 +92697,8 @@
         },
         {
           "mode": "source inspection",
-          "result": "partial",
-          "scope": "Generic arena, actor datum and compatibility counters plus staging request/reset telemetry.",
+          "result": "stale",
+          "scope": "Named parent owner registry and CE object/actor/widget counters, with nested widget pool correctly assigned to dynamic_simulation; fixed reservations are separate from actual payload counters.",
           "evidence_files": [
             {
               "path": "src/stream/staging.c",
@@ -92629,17 +92727,24 @@
               "evidence_level": "source inspection",
               "role": "source",
               "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-r8-alloc-final-2026-10-24.md",
+              "sha256": "524ad19980a7bd6201a8d2be313cb6247df8cdc3e3a2764e1b5d482d5bcab447",
+              "role": "report",
+              "evidence_level": "source inspection",
+              "exists": true
             }
           ]
         }
       ],
       "fixture_input_hashes": {
-        "status": "complete",
+        "status": "partial",
         "executable_hashes": [],
         "fixture_hashes": [
           {
             "path": "docs/reports/m2-c2-status-2026-10-23.json",
-            "sha256": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+            "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
             "role": "phase status report"
           }
         ],
@@ -92693,22 +92798,33 @@
             "evidence_level": "source inspection",
             "role": "source",
             "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-r8-alloc-final-2026-10-24.md",
+            "sha256": "524ad19980a7bd6201a8d2be313cb6247df8cdc3e3a2764e1b5d482d5bcab447",
+            "role": "report",
+            "evidence_level": "source inspection",
+            "exists": true
           }
         ]
       },
       "measurements": {},
-      "result": "partial",
-      "remaining_limitation": "Several tag/BSP publication, texture-residency, renderer lifetime, audio-request and production workload snapshots remain missing. Fixed reservations do not measure actual payload usage.",
+      "result": "stale",
+      "remaining_limitation": "Object-pool realloc failure forwarding and widget failure/reset reporting are corrected in source and focused tests. Actual profile-specific guest peaks and sustained bot/survival workload counters are still required. The headless runtime cannot measure active renderer or audio playback residency.",
       "source_report_hashes": {
-        "docs/reports/m2-c2-status-2026-10-23.json": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+        "docs/reports/m2-c2-status-2026-10-23.json": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
         "docs/reports/m2-c2-actor-pool-telemetry-2026-10-23.md": "867213dbb77265f7911f17021a2acb29f494f572b176c554a2ae6ea8c938950e",
         "docs/reports/m2-c2-owner-telemetry-audit-2026-10-23.md": "4bf8c32e1d50dda27bbcf363ccb2ff0f49e6b1c8310b3ed8e6952e141b6ad66a",
         "build/m2-c2-current-focused-tests.xml": "8959e3b3d035b2bd6f863af5b7626f0299ecf5a04c5e7e5ea8fd56ad9a8859cd",
         "src/stream/staging.c": "5204ba36fb11ff11253dd3f2c1e16cefc6c333504cb63e88702fd4973e4e4961",
         "src/stream/staging.h": "bbff5e008a91d9c3c400d50948575cf23cd57b7e820a8824b10b5e133098f7b8",
         "submodules/halo-ps2/engine/src/core/mem.c": "b3200864ada17c213b80ae17bc6fe8d69c5d8609189b2d269e41ba04d723eab7",
-        "submodules/halo-ce-universal/source/ai/actors.c": "ef4a6e152bba97dd81708b5bc9c1e375b461685a8b5b17cee47d639aeafeff46"
-      }
+        "submodules/halo-ce-universal/source/ai/actors.c": "ef4a6e152bba97dd81708b5bc9c1e375b461685a8b5b17cee47d639aeafeff46",
+        "docs/reports/m2-c2-r8-alloc-final-2026-10-24.md": "524ad19980a7bd6201a8d2be313cb6247df8cdc3e3a2764e1b5d482d5bcab447"
+      },
+      "stale_dependencies": [
+        "submodules/halo-ce-universal/source/ai/actors.c"
+      ]
     },
     {
       "step": 8,
@@ -92720,7 +92836,7 @@
       "evidence_files": [
         {
           "path": "docs/reports/m2-c2-status-2026-10-23.json",
-          "sha256": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+          "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
           "role": "phase status report",
           "exists": true
         },
@@ -92772,13 +92888,20 @@
           "evidence_level": "source inspection",
           "role": "source",
           "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-scope-amendment-2026-10-24.json",
+          "sha256": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff",
+          "evidence_level": "source inspection",
+          "role": "report",
+          "exists": true
         }
       ],
       "evidence_level": "host execution",
       "execution_results": [
         {
           "mode": "host execution",
-          "result": "partial",
+          "result": "stale",
           "scope": "Exact fixed chain layout, frame-scratch packet workspace, direct idle-chain matrix emission and target object compilation.",
           "evidence_files": [
             {
@@ -92799,7 +92922,7 @@
         },
         {
           "mode": "source inspection",
-          "result": "partial",
+          "result": "stale",
           "scope": "Exact fixed chain layout, frame-scratch packet workspace, direct idle-chain matrix emission and target object compilation.",
           "evidence_files": [
             {
@@ -92836,17 +92959,24 @@
               "evidence_level": "source inspection",
               "role": "source",
               "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-scope-amendment-2026-10-24.json",
+              "sha256": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff",
+              "evidence_level": "source inspection",
+              "role": "report",
+              "exists": true
             }
           ]
         }
       ],
       "fixture_input_hashes": {
-        "status": "complete",
+        "status": "partial",
         "executable_hashes": [],
         "fixture_hashes": [
           {
             "path": "docs/reports/m2-c2-status-2026-10-23.json",
-            "sha256": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+            "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
             "role": "phase status report"
           }
         ],
@@ -92900,6 +93030,13 @@
             "evidence_level": "source inspection",
             "role": "source",
             "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-scope-amendment-2026-10-24.json",
+            "sha256": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff",
+            "evidence_level": "source inspection",
+            "role": "report",
+            "exists": true
           }
         ]
       },
@@ -92912,18 +93049,34 @@
         "packet_workspace_bytes": 5632,
         "snapshot_private_dma_bytes": 0
       },
-      "result": "partial",
-      "remaining_limitation": "The combined C3 drawing loop and snapshot-derived animated geometry are not integrated; no current guest in-flight chain/fence or full rendered workload execution proves this gate.",
+      "result": "stale",
+      "remaining_limitation": "The combined C3 drawing loop and snapshot-derived animated geometry are not integrated; no current guest in-flight chain/fence or full rendered workload execution proves this gate. User-approved amendment carries the actual integrated renderer proof into C3.10; that destination remains open and this deferral cannot pass a row.",
       "source_report_hashes": {
-        "docs/reports/m2-c2-status-2026-10-23.json": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+        "docs/reports/m2-c2-status-2026-10-23.json": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
         "docs/reports/m2-c2-dma-owner-implementation-2026-10-23.json": "94269eedf4fab2cce33a772ac62e34068bea3f86c4ce3c8ad4319a1d450c0b73",
         "build/m2-c2-current-focused-tests.xml": "8959e3b3d035b2bd6f863af5b7626f0299ecf5a04c5e7e5ea8fd56ad9a8859cd",
         "src/stream/hcu_render_snapshot.c": "6a23907536604e7f8b70cc7d52e9248f83c1e648721498c0498bb92d59cac50f",
         "src/stream/hcu_render_snapshot.h": "0e8da9c55c3ee7bf5e070a53f84769cddcb7177a7a34e04fdb5b55301b7d7864",
         "src/stream/hcu_main.c": "f0f55e9edf87929e9ba8d9079a3a09723091aa69f4934112ee3fd813edb5b4f8",
         "submodules/halo-ps2/engine/src/render/storage.h": "543ba5857c32ee3a4d53afc62ae9b80102e602a81ca88358f3afa3a1be4f7e08",
-        "submodules/halo-ps2/engine/src/render/bsp_render.c": "641e30a49f5c1e2d4376c834685aacbec446218841e35310275519df129494d4"
-      }
+        "submodules/halo-ps2/engine/src/render/bsp_render.c": "641e30a49f5c1e2d4376c834685aacbec446218841e35310275519df129494d4",
+        "docs/reports/m2-c2-scope-amendment-2026-10-24.json": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff"
+      },
+      "deferred_to": "C3.10",
+      "deferred_acceptance_requirements": [
+        "Actual combined-renderer guest in-flight DMA/GS proof and snapshot-derived geometry emission."
+      ],
+      "scope_amendment": {
+        "path": "docs/reports/m2-c2-scope-amendment-2026-10-24.json",
+        "sha256": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff",
+        "evidence_level": "source inspection",
+        "role": "report"
+      },
+      "stale_dependencies": [
+        "src/stream/hcu_main.c",
+        "submodules/halo-ps2/engine/src/render/storage.h",
+        "submodules/halo-ps2/engine/src/render/bsp_render.c"
+      ]
     },
     {
       "step": 8,
@@ -92935,7 +93088,7 @@
       "evidence_files": [
         {
           "path": "docs/reports/m2-c2-status-2026-10-23.json",
-          "sha256": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+          "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
           "role": "phase status report",
           "exists": true
         },
@@ -92987,13 +93140,20 @@
           "evidence_level": "source inspection",
           "role": "source",
           "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-scope-amendment-2026-10-24.json",
+          "sha256": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff",
+          "evidence_level": "source inspection",
+          "role": "report",
+          "exists": true
         }
       ],
       "evidence_level": "host execution",
       "execution_results": [
         {
           "mode": "host execution",
-          "result": "partial",
+          "result": "stale",
           "scope": "Real map-service control flow with scripted CE mount seam; separate native CE cache mount and corruption/retry fixture.",
           "evidence_files": [
             {
@@ -93028,7 +93188,7 @@
         },
         {
           "mode": "source inspection",
-          "result": "partial",
+          "result": "stale",
           "scope": "Real map-service control flow with scripted CE mount seam; separate native CE cache mount and corruption/retry fixture.",
           "evidence_files": [
             {
@@ -93051,25 +93211,24 @@
               "evidence_level": "source inspection",
               "role": "source",
               "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-scope-amendment-2026-10-24.json",
+              "sha256": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff",
+              "evidence_level": "source inspection",
+              "role": "report",
+              "exists": true
             }
           ]
         }
       ],
       "fixture_input_hashes": {
-        "status": "complete",
-        "executable_hashes": [
-          {
-            "path": "build/m2-c2-map-service-profile/hcu-map-service-profile",
-            "sha256": "137d3f0169a741da47b79788fff5548fbc02e8369d534ff3bd598ee7f8caf6d7",
-            "evidence_level": "host execution",
-            "role": "executable",
-            "exists": true
-          }
-        ],
+        "status": "partial",
+        "executable_hashes": [],
         "fixture_hashes": [
           {
             "path": "docs/reports/m2-c2-status-2026-10-23.json",
-            "sha256": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+            "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
             "role": "phase status report"
           }
         ],
@@ -93123,6 +93282,13 @@
             "evidence_level": "source inspection",
             "role": "source",
             "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-scope-amendment-2026-10-24.json",
+            "sha256": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff",
+            "evidence_level": "source inspection",
+            "role": "report",
+            "exists": true
           }
         ]
       },
@@ -93130,18 +93296,35 @@
         "host_map_service_checks": 11,
         "native_UI_mount_cycles": 3
       },
-      "result": "partial",
-      "remaining_limitation": "Same-map package/metadata/binding revalidation is fixed and passes 11 host cases. Foreign-profile replacement, actual CE disposal with renderer/DMA drain and combined guest retry remain unqualified.",
+      "result": "stale",
+      "remaining_limitation": "Same-map package/metadata/binding revalidation is fixed and passes 11 host cases. Foreign-profile replacement, actual CE disposal with renderer/DMA drain and combined guest retry remain unqualified. User-approved amendment carries the actual integrated renderer proof into C3.11; that destination remains open and this deferral cannot pass a row.",
       "source_report_hashes": {
-        "docs/reports/m2-c2-status-2026-10-23.json": "cd76984ea83e95822dc54199adfa3f7f30655cc695c0c1ecf5418fcfadc06b1a",
+        "docs/reports/m2-c2-status-2026-10-23.json": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
         "build/m2-c2-map-service-profile/result.json": "21b69a1494a1c0608d3d6cec98f8b99801dd84c0be37d3e0c1d6e587ba316676",
         "build/m2-c2-profile-mount/result.json": "d3432ed34e522403b1cbb22f57c258b4ab497c9f519a5ba52fb52660c48ff905",
         "build/m2-c2-bitmap-frame-owner/result.json": "24d37885ee429201724ed059481309084f53f78453f4762dd25b967de56fff8d",
         "build/m2-c2-map-service-profile/hcu-map-service-profile": "137d3f0169a741da47b79788fff5548fbc02e8369d534ff3bd598ee7f8caf6d7",
         "src/stream/hcu_map_service.c": "b59c2abc89070c5741a86c60bcdd4879f899e398b9220629264c6e9dab1bc54f",
         "src/stream/hcu_profile_mount.c": "d6741fe60765bf25f186161c755583cf475f1d777a4f64d157491b1cf2fa8801",
-        "src/stream/hcu_bitmap_frame.c": "d0b13d2771032056fa7e8d2517497ae7e34fcb09c02467c0bf4b9cd1f401e619"
-      }
+        "src/stream/hcu_bitmap_frame.c": "d0b13d2771032056fa7e8d2517497ae7e34fcb09c02467c0bf4b9cd1f401e619",
+        "docs/reports/m2-c2-scope-amendment-2026-10-24.json": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff"
+      },
+      "deferred_to": "C3.11",
+      "deferred_acceptance_requirements": [
+        "Actual renderer-drain proof during integrated load/unload/replacement and failure/retry with draws/uploads in flight."
+      ],
+      "scope_amendment": {
+        "path": "docs/reports/m2-c2-scope-amendment-2026-10-24.json",
+        "sha256": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff",
+        "evidence_level": "source inspection",
+        "role": "report"
+      },
+      "stale_dependencies": [
+        "build/m2-c2-map-service-profile/result.json",
+        "build/m2-c2-map-service-profile/hcu-map-service-profile",
+        "src/stream/hcu_map_service.c",
+        "src/stream/hcu_profile_mount.c"
+      ]
     }
   ],
   "format": "hcu-m2-step7-step8-closure-ledger-v1",

@@ -593,7 +593,7 @@ def evidence_rows() -> list[dict]:
             "not_run", "m2-step8-gameplay-workload-fixture-feasibility-2026-10-22.md",
             "No bot/mixed workload EE tick and end-to-end timing evidence.",
             "Measure complete required workload; preserve 30 Hz and reserve."),
-        row(8, "reserve", "5,767,168-byte reserve untouched", "source inspection",
+        row(8, "reserve", f"{json.loads((ROOT / 'config/memory-budget.json').read_text())['reserve_bytes']:,}-byte reserve untouched", "source inspection",
             "partial", "config/memory-budget.json",
             "Budget specifies the reserve; each exact candidate ELF/profile still needs placement verification.",
             "Require non-overlap with reserve in every final guest run."),
@@ -1626,7 +1626,7 @@ def ledger(schema_elf: Path, inventory_path: Path) -> dict:
         "scope": {"maps": 13, "ui_bootstrap": True, "campaign": False,
                   "local_players": [1, 2, 3, 4], "minimum_spartan_bots": 4,
                   "retail_actor_variants": "all resolved combat variants from retained source corpus",
-                  "reserve_bytes": 5767168},
+                  "reserve_bytes": json.loads((ROOT / "config/memory-budget.json").read_text())["reserve_bytes"]},
         "repository_identities": [parent, hcu, ps2],
         "dependency_identities": dependencies,
         "additional_pins": {

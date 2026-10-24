@@ -175,7 +175,7 @@ def main() -> int:
             "The query executes real CE consumers after scenario_load publishes each retail CBSP. One deterministic hit per map does not visit every collision record or prove malformed-data handling for every member.",
             "The PVS loop invokes CE for every cluster index and requires every returned row to be non-null. It does not establish visual submission or pixel correctness.",
             "A* uses one predetermined successful route per map; it is not an AI actor steering workload.",
-            "The diagnostic ELF uses the opt-in MP capacity path and does not qualify ordinary production admission, renderer residency, 5,767,168-byte reserve, or physical hardware behavior.",
+            "The diagnostic ELF uses the opt-in MP capacity path and does not qualify ordinary production admission, renderer residency, the current uncommitted reserve, or physical hardware behavior.",
             "This report covers only the explicitly listed members and tested call paths. Other BSP consumers, opaque ranges, and open dispositions remain governed by the current generated crosswalk and inventory; no whole-inventory closure is claimed."
         ]
     }
