@@ -86,49 +86,84 @@ def qualification_rows(root, report_path):
      row.get('id') for row in requirements}!={f'C1.{i}' for i in range(1,7)}:
   raise ValueError('C1 qualification must name all six exact acceptance requirements')
  producer=report.get('producer',{})
- inputs=[{'path':str(report_path),'sha256':sha(report_file)}]
- inputs.extend(report.get('verification_inputs',[]))
- if producer: inputs.append(producer)
+ common_inputs=[{'path':str(report_path),'sha256':sha(report_file)}]
+ # Requirement evidence is the narrow dependency map. Any report-wide input
+ # not claimed there (apart from the schema pin explicitly shared by design)
+ # remains conservatively shared until the qualification report classifies it.
+ if producer: common_inputs.append(producer)
+ schema=report.get('inputs',{}).get('schema_elf')
+ declared=set()
+ for requirement in requirements:
+  for item in requirement.get('evidence',[]):
+   if item.get('path') and item.get('sha256'):
+    declared.add((item['path'],item['sha256']))
+   if item.get('package_path') and item.get('package_sha256'):
+    declared.add((item['package_path'],item['package_sha256']))
+ verification_inputs=report.get('verification_inputs',[])
+ # Keep the report-wide pins that no exact requirement evidence claims.
+ common_inputs.extend(pin for pin in verification_inputs
+                      if (pin.get('path'),pin.get('sha256')) not in declared)
  # The qualification report pins its child reports. Preserve their exact
  # executable, generated-source, log and journal file identities in each row
  # as well, rather than making fixture hashes terminate at another JSON file.
- child_reports=[]
- for key in ('native_ce_corpus','native_corpus','native_bitmap_dispatch','bitmap_dispatch',
-             'real_ce_preflight_report','preflight_report'):
-  name=report.get('inputs',{}).get(key)
-  if name and (root/name).is_file(): child_reports.append(root/name)
- for evidence_name in ('bitmap_native_evidence',):
-  name=report.get('inputs',{}).get(evidence_name)
-  if name and (root/name).is_dir():
-   child_reports.extend((root/name).rglob('case-metadata.json'))
- for child in child_reports:
-  inputs.extend(nested_artifact_pins(json.loads(child.read_text())))
  cache={}
- pins=[]
- stale=[]
  executables=[]
- seen=set()
- for item in inputs:
-  relative=item.get('path')
-  expected=item.get('sha256')
-  if not relative: raise ValueError('qualification input pin lacks a file path')
-  path=root/relative
-  if (relative,expected) in seen: continue
-  seen.add((relative,expected))
-  if relative not in cache:
-   cache[relative]=sha(path) if path.is_file() else None
-  exists=cache[relative] is not None
-  pins.append({'path':relative,'sha256':expected,'exists':exists})
-  if not exists or not expected or cache[relative]!=expected: stale.append(relative)
-  if exists:
-   with path.open('rb') as stream:
-    if stream.read(4)==b'\x7fELF': executables.append(dict(pins[-1]))
- if not producer or not report.get('verification_inputs'):
-  stale.append('qualification producer or verification input pins are missing')
+ def verify(items):
+  pins=[]; stale=[]; seen=set()
+  for item in items:
+   relative=item.get('path'); expected=item.get('sha256')
+   if not relative: raise ValueError('qualification input pin lacks a file path')
+   path=root/relative
+   if (relative,expected) in seen: continue
+   seen.add((relative,expected))
+   if relative not in cache: cache[relative]=sha(path) if path.is_file() else None
+   exists=cache[relative] is not None
+   pin={'path':relative,'sha256':expected,'exists':exists}; pins.append(pin)
+   if not exists or not expected or cache[relative]!=expected: stale.append(relative)
+   if exists:
+    with path.open('rb') as stream:
+     if stream.read(4)==b'\x7fELF': executables.append(dict(pin))
+  return pins,stale
+ common_pins,common_stale=verify(common_inputs)
+ if report.get('format')=='hcu-c1-qualification-v1' and (not producer or not report.get('verification_inputs')):
+  common_stale.append('qualification producer or verification input pins are missing')
  result=[]
  by_id={row['id']:row for row in requirements}
  for i,(behavior,owner,_,requirement,old_limit) in enumerate(CASES,1):
   check=by_id[f'C1.{i}']
+  req_inputs=[]
+  for evidence_item in check.get('evidence',[]):
+   if evidence_item.get('path') and evidence_item.get('sha256'):
+    req_inputs.append({'path':evidence_item['path'],'sha256':evidence_item['sha256']})
+   if evidence_item.get('package_path') and evidence_item.get('package_sha256'):
+    req_inputs.append({'path':evidence_item['package_path'],'sha256':evidence_item['package_sha256']})
+   producer_pins=(evidence_item.get('details') or {}).get('producer_pins',{})
+   if isinstance(producer_pins,dict):
+    req_inputs.extend({'path':path,'sha256':digest}
+                      for path,digest in producer_pins.items())
+  req_pins,req_stale=verify(req_inputs)
+  # Expand only direct native report dependencies named by this requirement's
+  # own evidence. This retains executable/source pins without importing the
+  # unrelated children from the report-wide input inventory.
+  child_paths={item.get('path') for item in req_inputs if item.get('path')}
+  child_keys={'native_ce_corpus','native_corpus','native_bitmap_dispatch','bitmap_dispatch',
+              'real_ce_preflight_report','preflight_report'}
+  for key in child_keys:
+   name=report.get('inputs',{}).get(key)
+   if name and any(str(name).endswith(Path(p).name) for p in child_paths):
+    child=root/name
+    if child.is_file():
+     extra,extra_stale=verify(list(nested_artifact_pins(json.loads(child.read_text()))))
+     req_pins.extend(extra); req_stale.extend(extra_stale)
+  bitmap_dir=report.get('inputs',{}).get('bitmap_native_evidence')
+  if bitmap_dir and i==4 and (root/bitmap_dir).is_dir():
+   for child in (root/bitmap_dir).rglob('case-metadata.json'):
+    extra,extra_stale=verify(list(nested_artifact_pins(json.loads(child.read_text()))))
+    req_pins.extend(extra); req_stale.extend(extra_stale)
+  pins,stale=verify(common_inputs+req_inputs)
+  # Include expanded child details while preserving the requirement-local scope.
+  pins.extend(p for p in req_pins if p not in pins)
+  stale.extend(x for x in common_stale+req_stale if x not in stale)
   passed=check.get('status')=='pass' and check.get('evidence_grade')=='verified'
   status='stale' if stale else ('passed' if passed else 'partial')
   findings='; '.join(item.get('message','') for item in check.get('findings',[]))
@@ -145,7 +180,7 @@ def qualification_rows(root, report_path):
    'acceptance_requirement':requirement,'remaining_limitation':limitation,
    'source_report_hashes':{pin['path']:pin['sha256'] for pin in pins},
    **({'stale_dependencies':stale} if stale else {})})
-  if i==4 and (root/ROLE_AUDIT).is_file():
+  if i==4 and (root/ROLE_AUDIT).is_file() and report.get('inputs',{}).get('consumer_roles'):
    audit=json.loads((root/ROLE_AUDIT).read_text())
    role_pin={'path':str(ROLE_AUDIT),'sha256':sha(root/ROLE_AUDIT),'exists':True}
    entry=result[-1]
