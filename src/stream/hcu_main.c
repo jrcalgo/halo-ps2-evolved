@@ -1294,6 +1294,20 @@ static const text_batch_t *hcu_c3_views_camera(unsigned v, camera_t *cam, const 
 		}
 	}
 #endif
+#if defined(HCU_C3_FRAME_SNAPSHOT)
+	/* Unit position beside the camera position, for the spawn-cam versus conversion question. */
+	if ((s_c3r.frames == 0u || (s_c3r.frames % 30u) == 0u) && s_c3v.snap && view &&
+		view->unit_object < s_c3v.snap->object_count) {
+		const halo_ps2_snapshot_matrix4x3 *uw = &s_c3v.snap->objects[view->unit_object].world;
+		printf("HALO_PS2_LOCAL c3-view-camera frame=%u view=%u source=%s unit-object=%u "
+			"unit-pos=%.2f,%.2f,%.2f camera-pos=%.2f,%.2f,%.2f camera-fwd=%.3f,%.3f,%.3f pitch-x100=%d\n",
+			(unsigned)s_c3r.frames, v, from_snapshot ? "snapshot" : "fixed", (unsigned)view->unit_object,
+			uw->position[0], uw->position[1], uw->position[2],
+			view->camera.position[0], view->camera.position[1], view->camera.position[2],
+			view->camera.forward[0], view->camera.forward[1], view->camera.forward[2],
+			(int)((from_snapshot ? hc.pitch : 0.0f) * 100.0f));
+	}
+#endif
 	camera_init(cam);
 	if (from_snapshot) {
 		cam->pos[0] = hc.pos[0]; cam->pos[1] = hc.pos[1]; cam->pos[2] = hc.pos[2];
@@ -1398,12 +1412,10 @@ static void hcu_c3_objects_frame_begin(void)
 		s_c3o_loaded = 0;
 		s_c3o_installed = 0;
 		if (hcu_render_objects_load(&s_map_service.profile_view, &s_c3r.level, hcu_c3_objects_table,
-			HCU_C3_OBJECTS_TABLE_COUNT, &s_c3o_info) == 0 && s_c3o_info.models_loaded)
+			HCU_C3_OBJECTS_TABLE_COUNT, &s_c3o_info) == 0 && s_c3o_info.entries)
 			s_c3o_loaded = 1;
-		printf("HALO_PS2_LOCAL c3-objects-load loaded=%u refused=%u texture-sets=%u textures=%u model-bytes=%u "
-			"texture-bytes=%u arena-before=%u arena-after=%u\n", (unsigned)s_c3o_info.models_loaded,
-			(unsigned)s_c3o_info.models_refused, (unsigned)s_c3o_info.texture_sets, (unsigned)s_c3o_info.textures,
-			(unsigned)s_c3o_info.model_bytes, (unsigned)s_c3o_info.texture_bytes,
+		printf("HALO_PS2_LOCAL c3-objects-load entries=%u refused=%u pool-bytes=%u arena-before=%u arena-after=%u\n",
+			(unsigned)s_c3o_info.entries, (unsigned)s_c3o_info.models_refused, (unsigned)s_c3o_info.pool_bytes,
 			(unsigned)s_c3o_info.arena_before, (unsigned)s_c3o_info.arena_after);
 	}
 #if defined(HCU_C3_OBJECTS_SYNTHETIC)
@@ -1451,6 +1463,15 @@ static void hcu_c3_objects_view_end(uint32_t view)
 static void hcu_c3_objects_frame_end(void)
 {
 	hcu_render_objects_frame_end();
+	if (s_c3r.frames == 0u || (s_c3r.frames % 30u) == 0u) {
+		hcu_render_objects_residency rs;
+		hcu_render_objects_residency_stats(&rs);
+		printf("HALO_PS2_LOCAL c3-objects-residency frame=%u resident=%u loads=%u hits=%u misses=%u evictions=%u "
+			"pool-refusals=%u fence-blocked=%u entry-refusals=%u keys-refused=%u pool-bytes=%u pool-used=%u pool-peak=%u\n",
+			(unsigned)s_c3r.frames, (unsigned)rs.resident, (unsigned)rs.loads, (unsigned)rs.hits, (unsigned)rs.misses,
+			(unsigned)rs.evictions, (unsigned)rs.pool_refusals, (unsigned)rs.fence_blocked, (unsigned)rs.entry_refusals,
+			(unsigned)rs.keys_refused, (unsigned)rs.pool_bytes, (unsigned)rs.pool_used, (unsigned)rs.pool_used_peak);
+	}
 }
 
 static void hcu_c3_objects_final(void)

@@ -16,33 +16,48 @@ import hashlib
 import json
 from pathlib import Path
 
-# Owner paths (MEDIA chunk owners, group "mode") in table order. Slot order is fixed here; the synthetic
-# publisher finds its slots by these paths. The set is sized to fit the render level arena (see report).
-TABLE_PATHS = [
-    "characters\\cyborg\\cyborg",           # player and bot body (skinned)
-    "weapons\\assault rifle\\assault rifle",  # weapon
-    "weapons\\plasma grenade\\plasma grenade",  # representative effect model
-    "vehicles\\ghost\\ghost",               # vehicle
+# The synthetic publisher finds its entries by path; it is the only user of a path subset.
+SYNTHETIC_PATHS = [
+    "characters\\cyborg\\cyborg",
+    "weapons\\assault rifle\\assault rifle",
+    "weapons\\plasma grenade\\plasma grenade",
+    "vehicles\\ghost\\ghost",
 ]
 
 
-def select(manifest: dict) -> list[dict]:
+def select(manifest: dict, paths: list[str] | None = None) -> list[dict]:
+    """Every MODL binding of the package (mode group), sorted by its output datum, or only `paths` when given.
+
+    Resource ids are the low 16 bits of the output datum (the CE model index the snapshot publishes), so they
+    must be unique; a collision is refused rather than resolved silently.
+    """
     bindings = manifest["chunk_bindings"]
+    models = [b for b in bindings if b["kind"] == "MODL" and b["owner"]["group"] == "mode"]
+    if paths is not None:
+        models = [b for b in models if b["owner"]["path"] in paths]
+        missing = [p for p in paths if not any(b["owner"]["path"] == p for b in models)]
+        if missing:
+            raise SystemExit(f"no MODL binding for: {missing}")
+    models.sort(key=lambda b: int(b["owner"]["output_datum"]))
+    seen = {}
     rows = []
-    for path in TABLE_PATHS:
-        model = [b for b in bindings if b["kind"] == "MODL" and b["owner"]["path"] == path and b["owner"]["group"] == "mode"]
-        tex = [b for b in bindings if b["kind"] == "OTEX" and b["owner"]["path"] == path and b["owner"]["group"] == "mode"]
-        if len(model) != 1:
-            raise SystemExit(f"{path}: expected one MODL binding, found {len(model)}")
+    for model in models:
+        path = model["owner"]["path"]
+        datum = int(model["owner"]["output_datum"])
+        if (datum & 0xFFFF) in seen:
+            raise SystemExit(f"{path}: resource id {datum & 0xFFFF} also used by {seen[datum & 0xFFFF]}")
+        seen[datum & 0xFFFF] = path
+        tex = [b for b in bindings if b["kind"] == "OTEX" and b["owner"]["path"] == path and b["owner"]["group"] == "mode"
+               and int(b["owner"]["output_datum"]) == datum]
         if len(tex) > 1:
-            raise SystemExit(f"{path}: expected at most one OTEX binding, found {len(tex)}")
+            raise SystemExit(f"{path}: expected at most one OTEX binding for datum {datum}, found {len(tex)}")
         rows.append({
             "path": path,
-            "model_chunk": int(model[0]["chunk_id"]),
-            "model_sha256": model[0]["sha256"],
+            "model_chunk": int(model["chunk_id"]),
+            "model_sha256": model["sha256"],
             "texture_chunk": int(tex[0]["chunk_id"]) if tex else 0,
             "texture_sha256": tex[0]["sha256"] if tex else "00" * 32,
-            "source_datum": int(model[0]["owner"]["output_datum"]),  # CE runtime tag datum (what the snapshot publishes)
+            "source_datum": datum,  # CE runtime tag datum (what the snapshot publishes)
         })
     return rows
 
@@ -83,13 +98,13 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--package-json", type=Path, required=True)
     ap.add_argument("--output", type=Path, required=True)
+    ap.add_argument("--synthetic-paths", action="store_true", help="only the four synthetic publisher paths")
     args = ap.parse_args(argv)
     manifest = json.loads(args.package_json.read_text())
-    rows = select(manifest)
+    rows = select(manifest, SYNTHETIC_PATHS if args.synthetic_paths else None)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(render(rows, args.package_json))
-    for r in rows:
-        print(f"{r['path']}: MODL chunk {r['model_chunk']} OTEX chunk {r['texture_chunk']}")
+    print(f"entries {len(rows)} MODL {sum(1 for r in rows)} OTEX {sum(1 for r in rows if r['texture_chunk'])}")
     print(f"wrote {args.output} ({len(rows)} entries)")
     return 0
 

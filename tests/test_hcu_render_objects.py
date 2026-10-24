@@ -36,6 +36,6 @@ def test_objects_table_generator_is_exact(tmp_path):
                     "--package-json", str(package), "--output", str(out)],
                    cwd=ROOT, check=True, capture_output=True, text=True)
     text = out.read_text()
-    assert "HCU_C3_OBJECTS_TABLE_COUNT 4u" in text
+    assert "HCU_C3_OBJECTS_TABLE_COUNT 69u" in text
     assert "characters\\\\cyborg\\\\cyborg" in text
     assert "vehicles\\\\ghost\\\\ghost" in text

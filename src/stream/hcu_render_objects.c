@@ -232,11 +232,26 @@ typedef struct {
 	uint32_t tex_base;
 	tex_source_t src;
 	int loaded;
+	int refused;                 /* chunk missing or not matching the table: never loaded */
+	uint32_t model_size, tex_size; /* chunk sizes from the profile directory (set at load) */
+	uint32_t pool_off, pool_size; /* the entry's pool region while loaded */
+	uint32_t last_used;          /* frame + 1 of the last frame that referenced it */
 } obj_slot;
 
 static obj_slot s_slots[HCU_OBJECTS_MAX_MODELS];
 static hcu_render_objects_model s_meta[HCU_OBJECTS_MAX_MODELS];
 static uint32_t s_slot_count;
+
+/* Residency pool: the render arena's rest, managed first-fit in 64-byte-aligned segments. Segments are kept
+ * in offset order and cover the pool exactly; adjacent free segments merge on free. */
+#define OBJ_SEG_MAX 256u
+typedef struct { uint32_t off, size; uint8_t used; } obj_seg;
+static uint8_t *s_pool;
+static uint32_t s_pool_size;
+static obj_seg s_segs[OBJ_SEG_MAX];
+static uint32_t s_seg_count;
+static hcu_render_objects_residency s_res;
+static const hcu_asset_profile_view *s_profile;
 static uint32_t s_tex_total;
 static tex_source_t s_src_total;
 static int s_installed;
@@ -270,21 +285,231 @@ static int read_verified(const hcu_asset_profile_view *view, uint32_t id, uint32
 	return memcmp(digest, want, 32) ? -2 : 0;
 }
 
-/* Place one MEDIA chunk in the arena: the chunk's directory hash must match the table, and the bytes must
- * match it too. */
-static int place_chunk(const hcu_asset_profile_view *view, arena_t *arena, uint32_t id,
-	const uint8_t want[32], uint8_t **out, uint32_t *out_size)
+#define OBJ_NONE 0xFFFFFFFFu
+
+static int slot_binding(void *user, uint32_t shader_id, mat_binding_t *out);
+static int slot_texture(void *user, int tex, tex_image_t *out);
+
+static uint32_t obj_align(uint32_t n)
+{
+	return (n + OBJ_ALIGN - 1u) & ~(OBJ_ALIGN - 1u);
+}
+
+/* Chunk sizes come from the mounted profile directory. Keep the alignment and combined allocation arithmetic
+ * checked before using either size for a pool allocation or a read into the pool. */
+static int entry_need(const obj_slot *s, uint32_t *out)
+{
+	uint32_t model, texture;
+	if (!s || !out || s->model_size > UINT32_MAX - (OBJ_ALIGN - 1u) ||
+		s->tex_size > UINT32_MAX - (OBJ_ALIGN - 1u)) return -1;
+	model = obj_align(s->model_size);
+	texture = obj_align(s->tex_size);
+	if (model > UINT32_MAX - texture) return -1;
+	*out = model + texture;
+	return 0;
+}
+
+static void pool_init(uint8_t *base, uint32_t size)
+{
+	s_pool = base;
+	s_pool_size = size;
+	s_segs[0].off = 0;
+	s_segs[0].size = size;
+	s_segs[0].used = 0;
+	s_seg_count = size ? 1u : 0u;
+	s_res.pool_bytes = size;
+	s_res.pool_used = 0;
+}
+
+/* First free segment of at least n bytes, or -1. */
+static int pool_find(uint32_t n)
+{
+	uint32_t i;
+	for (i = 0; i < s_seg_count; i++)
+		if (!s_segs[i].used && s_segs[i].size >= n) return (int)i;
+	return -1;
+}
+
+static uint32_t pool_alloc(uint32_t n)
+{
+	int i = pool_find(n);
+	obj_seg *g;
+	if (i < 0) return OBJ_NONE;
+	g = &s_segs[i];
+	if (g->size > n) {
+		uint32_t k;
+		if (s_seg_count >= OBJ_SEG_MAX) return OBJ_NONE;
+		for (k = s_seg_count; k > (uint32_t)i + 1u; k--) s_segs[k] = s_segs[k - 1u];
+		s_seg_count++;
+		s_segs[i + 1].off = g->off + n;
+		s_segs[i + 1].size = g->size - n;
+		s_segs[i + 1].used = 0;
+		g->size = n;
+	}
+	g->used = 1;
+	s_res.pool_used += n;
+	if (s_res.pool_used > s_res.pool_used_peak) s_res.pool_used_peak = s_res.pool_used;
+	return g->off;
+}
+
+static void pool_free(uint32_t off)
+{
+	uint32_t i;
+	for (i = 0; i < s_seg_count; i++)
+		if (s_segs[i].used && s_segs[i].off == off) break;
+	if (i == s_seg_count) return;
+	s_res.pool_used -= s_segs[i].size;
+	s_segs[i].used = 0;
+	if (i + 1u < s_seg_count && !s_segs[i + 1].used) {
+		uint32_t k;
+		s_segs[i].size += s_segs[i + 1].size;
+		for (k = i + 1u; k + 1u < s_seg_count; k++) s_segs[k] = s_segs[k + 1u];
+		s_seg_count--;
+	}
+	if (i > 0 && !s_segs[i - 1].used) {
+		uint32_t k;
+		s_segs[i - 1].size += s_segs[i].size;
+		for (k = i; k + 1u < s_seg_count; k++) s_segs[k] = s_segs[k + 1u];
+		s_seg_count--;
+	}
+}
+
+/* Fence: the latest kick is complete (or there is none), so no in-flight chain reads the pool. Anything
+ * else (pending, or not yet observed) blocks eviction. */
+static int pool_fence_safe(void)
+{
+	uint32_t k = bsp_render_kick_seq();
+	if (k == 0u) return 1;
+	return bsp_render_fence_observed(k) == 1;
+}
+
+/* Reads and checks one chunk's directory entry (size and hash) without reading its bytes. */
+static int chunk_check(const hcu_asset_profile_view *view, uint32_t id, const uint8_t want[32], uint32_t *size)
 {
 	hcu_asset_chunk_view c;
-	uint8_t *dst;
 	if (hcu_asset_profile_lookup(view, HCU_ASSET_CHUNK_MEDIA, id, &c) != 0) return -1;
 	if (memcmp(c.sha256, want, 32)) return -2;
-	dst = arena_alloc(arena, c.size, OBJ_ALIGN);
-	if (!dst) return -3;
-	if (read_verified(view, id, c.size, dst, want) != 0) { memset(dst, 0, c.size); return -4; }
-	*out = dst;
-	*out_size = c.size;
+	*size = c.size;
 	return 0;
+}
+
+/* Loads entry i into a fresh pool region, reading and verifying its bytes. Returns 0, or -1 when the pool
+ * has no room (the caller may evict) or -2 when the entry itself is refused. */
+static int entry_load(const hcu_asset_profile_view *view, uint32_t i, uint32_t frame)
+{
+	obj_slot *s = &s_slots[i];
+	const hcu_render_objects_table_entry *e = s->entry;
+	uint32_t need, model_span;
+	uint32_t off;
+	uint8_t *bytes;
+	if (entry_need(s, &need) != 0) { s->refused = 1; s_res.entry_refusals++; return -2; }
+	model_span = obj_align(s->model_size);
+	off = pool_alloc(need);
+	if (off == OBJ_NONE) return -1;
+	bytes = s_pool + off;
+	if (read_verified(view, e->model_chunk, s->model_size, bytes, e->model_sha256) != 0 ||
+		model_open(&s->models, bytes, s->model_size) != MODEL_OK || model_get(&s->models, 0).node_count == 0) {
+		pool_free(off);
+		s->refused = 1;
+		s_res.entry_refusals++;
+		return -2;
+	}
+	s->has_tex = 0;
+	if (e->texture_chunk && s->tex_size &&
+		read_verified(view, e->texture_chunk, s->tex_size, bytes + model_span, e->texture_sha256) == 0 &&
+		tex_open(&s->tex, bytes + model_span, s->tex_size) == TEX_OK) {
+		if (s->tex.texture_count > HCU_OBJECTS_TEX_STRIDE) {
+			s_res.keys_refused++;      /* more textures than the entry's key stride: drawn flat */
+		} else {
+			s->has_tex = 1;
+		}
+	}
+	s->pool_off = off;
+	s->pool_size = need;
+	s->tex_base = (uint32_t)(s - s_slots) * HCU_OBJECTS_TEX_STRIDE;
+	s->src.binding = slot_binding;
+	s->src.texture = slot_texture;
+	s->src.lightmap = NULL;
+	s->src.user = s;
+	s->src.texture_count = s->has_tex ? s->tex.texture_count : 0;
+	s->loaded = 1;
+	s->last_used = frame + 1u;
+	s_meta[i].resource_id = e->source_datum & 0xFFFFu; /* CE model.index: low 16 bits of the tag datum */
+	s_meta[i].source_datum = e->source_datum;
+	s_meta[i].model_bytes = s->model_size;
+	s_meta[i].texture_count = (uint16_t)(s->has_tex ? s->tex.texture_count : 0);
+	s_meta[i].loaded = 1;
+	s_res.loads++;
+	s_res.resident++;
+	if (s->has_tex) s_res.keys_used += s->tex.texture_count;
+	return 0;
+}
+
+static void entry_evict(uint32_t i)
+{
+	obj_slot *s = &s_slots[i];
+	pool_free(s->pool_off);
+	s->loaded = 0;
+	s->has_tex = 0;
+	s_meta[i].loaded = 0;
+	s_res.evictions++;
+	s_res.resident--;
+}
+
+/* Makes entry i resident for this frame: loads it when the pool has room, otherwise evicts the least recently
+ * used entries that this frame does not reference, and only while the fence is clear. */
+static void entry_request(const hcu_asset_profile_view *view, uint32_t i, uint32_t frame)
+{
+	obj_slot *s = &s_slots[i];
+	uint32_t need;
+	int safe = -1;
+	if (s->loaded) { s->last_used = frame + 1u; s_res.hits++; return; }
+	if (s->refused) { s_res.misses++; return; }
+	if (entry_need(s, &need) != 0) { s->refused = 1; s_res.entry_refusals++; s_res.misses++; return; }
+	for (;;) {
+		if (pool_find(need) >= 0) {
+			if (entry_load(view, i, frame) == 0) return;
+			break;
+		}
+		if (safe < 0) safe = pool_fence_safe();
+		if (!safe) { s_res.fence_blocked++; break; }
+		{
+			uint32_t v, best = OBJ_NONE;
+			for (v = 0; v < s_slot_count; v++)
+				if (s_slots[v].loaded && s_slots[v].last_used <= frame &&
+					(best == OBJ_NONE || s_slots[v].last_used < s_slots[best].last_used)) best = v;
+			if (best == OBJ_NONE) { s_res.pool_refusals++; break; }
+			entry_evict(best);
+		}
+	}
+	s_res.misses++;
+}
+
+/* Frame begin: every entry the snapshot's visible views reference is made resident before the views draw. */
+static void residency_frame(const halo_ps2_frame_snapshot *snap, uint32_t frame)
+{
+	static uint8_t need[HCU_OBJECTS_MAX_MODELS];
+	uint32_t v, ref, i;
+	if (!snap || !s_pool) return;
+	memset(need, 0, sizeof need);
+	for (v = 0; v < snap->view_count && v < HALO_PS2_FRAME_MAX_VIEWS; v++) {
+		const halo_ps2_frame_view *fv = &snap->views[v];
+		if (!(fv->flags & HALO_PS2_FRAME_VIEW_ACTIVE)) continue;
+		for (ref = fv->view_ref_first; ref < fv->view_ref_first + fv->view_ref_count && ref < snap->view_ref_count; ref++) {
+			uint32_t oi = snap->view_refs[ref];
+			uint32_t rid, k;
+			if (oi >= snap->object_count) continue;
+			if (snap->objects[oi].resource_slot >= snap->resource_count) continue;
+			rid = snap->resources[snap->objects[oi].resource_slot].id;
+			for (k = 0; k < s_slot_count; k++)
+				if (!s_slots[k].refused && (s_slots[k].entry->source_datum & 0xFFFFu) == rid) { need[k] = 1; break; }
+		}
+	}
+	/* Mark what this frame uses before any eviction, so a referenced entry is never the victim. */
+	for (i = 0; i < s_slot_count; i++)
+		if (need[i] && s_slots[i].loaded) s_slots[i].last_used = frame + 1u;
+	for (i = 0; i < s_slot_count; i++)
+		if (need[i]) entry_request(s_profile, i, frame);
 }
 
 /* ---- texture binding (same mapping as hcu_render_media.c, global texture index) ---------------- */
@@ -436,53 +661,54 @@ int hcu_render_objects_load(const hcu_asset_profile_view *view, arena_t *arena,
 	const hcu_render_objects_table_entry *table, uint32_t count, hcu_render_objects_load_info *info)
 {
 	uint32_t i;
+	size_t room;
+	uint8_t *base;
 	if (!view || !arena || !table || !info) return HCU_RENDER_CONTENT_E_ARGUMENT;
 	if (count > HCU_OBJECTS_MAX_MODELS) return HCU_RENDER_CONTENT_E_FULL;
 	memset(info, 0, sizeof *info);
 	memset(s_slots, 0, sizeof s_slots);
 	memset(s_meta, 0, sizeof s_meta);
+	memset(&s_res, 0, sizeof s_res);
+	s_profile = view;
 	s_slot_count = count;
-	s_tex_total = 0;
+	s_tex_total = count * HCU_OBJECTS_TEX_STRIDE;
 	s_installed = 0;
 	s_parity.records = NULL;
 	info->arena_before = (uint32_t)arena->used;
+	/* The residency pool is the render arena's rest: nothing else is charged to it after this. */
+	room = arena->cap > arena->used ? arena->cap - arena->used : 0;
+	if (room) {
+		uintptr_t current = (uintptr_t)arena->base + arena->used;
+		size_t padding = (size_t)((-(uintptr_t)current) & (OBJ_ALIGN - 1u));
+		room = room > padding ? room - padding : 0;
+		room &= ~(size_t)(OBJ_ALIGN - 1u);
+	}
+	base = room ? arena_alloc(arena, room, OBJ_ALIGN) : NULL;
+	pool_init(base, base ? (uint32_t)room : 0u);
 	for (i = 0; i < count; i++) {
 		obj_slot *s = &s_slots[i];
-		uint8_t *bytes;
-		uint32_t size;
 		s->entry = &table[i];
-		if (place_chunk(view, arena, table[i].model_chunk, table[i].model_sha256, &bytes, &size) != 0 ||
-			model_open(&s->models, bytes, size) != MODEL_OK || model_get(&s->models, 0).node_count == 0) {
+		if (chunk_check(view, table[i].model_chunk, table[i].model_sha256, &s->model_size) != 0) {
+			s->refused = 1;
 			info->models_refused++;
 			continue;
 		}
-		info->model_bytes += size;
-		s->tex_base = s_tex_total;
-		if (table[i].texture_chunk) {
-			if (place_chunk(view, arena, table[i].texture_chunk, table[i].texture_sha256, &bytes, &size) == 0 &&
-				tex_open(&s->tex, bytes, size) == TEX_OK) {
-				s->has_tex = 1;
-				info->texture_bytes += size;
-				info->texture_sets++;
-				info->textures += s->tex.texture_count;
-				s_tex_total += s->tex.texture_count;
-			}
-		}
-		s->src.binding = slot_binding;
-		s->src.texture = slot_texture;
-		s->src.lightmap = NULL;
-		s->src.user = s;
-		s->src.texture_count = s->has_tex ? s->tex.texture_count : 0;
-		s->loaded = 1;
-		s_meta[i].resource_id = table[i].source_datum & 0xFFFFu; /* CE model.index: low 16 bits of the tag datum */
+		s->tex_size = 0;
+		if (table[i].texture_chunk &&
+			chunk_check(view, table[i].texture_chunk, table[i].texture_sha256, &s->tex_size) != 0)
+			s->tex_size = 0;               /* a bad texture chunk leaves the entry flat, as before */
+		s_meta[i].resource_id = table[i].source_datum & 0xFFFFu;
 		s_meta[i].source_datum = table[i].source_datum;
-		s_meta[i].model_bytes = size;
-		s_meta[i].texture_count = (uint16_t)(s->has_tex ? s->tex.texture_count : 0);
-		s_meta[i].loaded = 1;
-		info->models_loaded++;
+		info->entries++;
 	}
+	info->pool_bytes = s_pool_size;
 	info->arena_after = (uint32_t)arena->used;
-	return HCU_RENDER_CONTENT_OK;
+	return base ? HCU_RENDER_CONTENT_OK : HCU_RENDER_CONTENT_E_FULL;
+}
+
+void hcu_render_objects_residency_stats(hcu_render_objects_residency *out)
+{
+	if (out) *out = s_res;
 }
 
 int hcu_render_objects_install(void)
@@ -491,7 +717,8 @@ int hcu_render_objects_install(void)
 	s_src_total.texture_count = s_tex_total;
 	s_src_total.binding = slot_binding;
 	s_src_total.texture = slot_texture;
-	/* The residency cache is sized from the object texture count: re-init it with the same limit. */
+	/* The texture cache keys are fixed per entry (HCU_OBJECTS_TEX_STRIDE), so an evicted entry reloads under the
+	 * same keys and its bytes never change. */
 	bsp_render_cache_limit(0);
 	bsp_render_set_object_pass(object_pass, NULL, &s_src_total);
 	s_installed = 1;
@@ -504,7 +731,11 @@ static int find_entry(const char *path)
 {
 	uint32_t i;
 	for (i = 0; i < s_slot_count; i++)
-		if (s_slots[i].loaded && s_slots[i].entry->path && strcmp(s_slots[i].entry->path, path) == 0) return (int)i;
+		if (!s_slots[i].refused && s_slots[i].entry->path && strcmp(s_slots[i].entry->path, path) == 0) {
+			/* The synthetic set references the entry through the same residency path as a snapshot does. */
+			entry_request(s_profile, i, s_frame);
+			return s_slots[i].loaded ? (int)i : -1;
+		}
 	return -1;
 }
 
@@ -599,6 +830,7 @@ const halo_ps2_frame_snapshot *hcu_render_objects_frame_begin(uint32_t frame, ui
 	}
 	if (!s_pin.pinned) hcu_render_objects_pin(&s_pin, &s_totals);
 	s_snapshot = s_pin.pinned ? s_pin.snapshot : NULL;
+	residency_frame(s_snapshot, frame);
 	s_pose_snapshot = s_snapshot;
 	return s_snapshot;
 }

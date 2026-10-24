@@ -23,7 +23,8 @@
 extern "C" {
 #endif
 
-#define HCU_OBJECTS_MAX_MODELS 8u       /* resident model slots (one MODL chunk each) */
+#define HCU_OBJECTS_MAX_MODELS 80u      /* table entries (one MODL chunk each); residency is by the pool */
+#define HCU_OBJECTS_TEX_STRIDE 32u      /* texture cache keys per entry: entry i owns [i*32, i*32+32) */
 #define HCU_OBJECTS_MAX_DRAW 64u        /* draw entries per view */
 #define HCU_OBJECTS_MAX_PARITY 64u      /* parity records kept for the first frame only */
 
@@ -150,9 +151,20 @@ typedef struct {
 } hcu_render_objects_table_entry;
 
 typedef struct {
-	uint32_t models_loaded, models_refused, texture_sets, textures;
+	uint32_t entries, models_refused, texture_sets, textures;
 	uint32_t model_bytes, texture_bytes, arena_before, arena_after;
+	uint32_t pool_bytes;
 } hcu_render_objects_load_info;
+
+/* Residency of the table's models in the pool (C3.objects). hits and misses count the frame's referenced
+ * entries: a hit is resident when the frame begins, a miss is still not resident after the frame's loads
+ * and evictions. A miss on an entry the pool cannot hold, or that the fence keeps from evicting, is
+ * counted in pool_refusals or fence_blocked. */
+typedef struct {
+	uint32_t resident, loads, hits, misses, evictions, pool_refusals, fence_blocked;
+	uint32_t entry_refusals, pool_bytes, pool_used, pool_used_peak;
+	uint32_t keys_used, keys_refused;
+} hcu_render_objects_residency;
 
 typedef struct {
 	uint32_t drawn, triangles, skinned_nodes, failures, pins_before;
@@ -160,8 +172,9 @@ typedef struct {
 	uint32_t parity_records;
 } hcu_render_objects_view_stats;
 
-/* Loads the table's MODL/OTEX chunks into `arena` (the render level arena) with read-verify. Refused
- * entries are left out; the arena charge is reported. Resets all previous object state. */
+/* Takes the rest of `arena` as the residency pool and checks the table's chunk sizes against the mounted
+ * profile. No chunk is read here: entries load when a frame's snapshot references them (see frame_begin).
+ * Entries whose chunks do not match the table are refused. Resets all previous object state. */
 int hcu_render_objects_load(const hcu_asset_profile_view *view, arena_t *arena,
 	const hcu_render_objects_table_entry *table, uint32_t count, hcu_render_objects_load_info *info);
 /* Installs the object pass after the BSP pass (bsp_render_set_object_pass). Call once per map,
@@ -177,6 +190,7 @@ void hcu_render_objects_view_end(uint32_t view, hcu_render_objects_view_stats *o
 void hcu_render_objects_frame_end(void);
 void hcu_render_objects_release(void);
 void hcu_render_objects_totals(hcu_render_objects_counters *out);
+void hcu_render_objects_residency_stats(hcu_render_objects_residency *out);
 #endif
 
 #ifdef __cplusplus
