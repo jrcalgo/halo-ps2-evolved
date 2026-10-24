@@ -1,0 +1,986 @@
+{
+  "capacity_bytes": 6291456,
+  "format": "retail-ce-bsp-capacity-audit-v1",
+  "largest_raw_structure_bsp_bytes": 9039872,
+  "largest_structure_bsps": [
+    {
+      "file_offset": 15704064,
+      "file_size": 9039872,
+      "fits_raw_current_bsp": false,
+      "map": "c20",
+      "path": "levels\\c20\\c20_3",
+      "xbox_base_address": 2165338112
+    },
+    {
+      "file_offset": 7129088,
+      "file_size": 8574976,
+      "fits_raw_current_bsp": false,
+      "map": "c20",
+      "path": "levels\\c20\\c20_2",
+      "xbox_base_address": 2165803008
+    },
+    {
+      "file_offset": 42303488,
+      "file_size": 8568832,
+      "fits_raw_current_bsp": false,
+      "map": "a10",
+      "path": "levels\\a10\\a10g",
+      "xbox_base_address": 2165809152
+    },
+    {
+      "file_offset": 33771520,
+      "file_size": 8531968,
+      "fits_raw_current_bsp": false,
+      "map": "a10",
+      "path": "levels\\a10\\a10f",
+      "xbox_base_address": 2165846016
+    },
+    {
+      "file_offset": 18900992,
+      "file_size": 8517632,
+      "fits_raw_current_bsp": false,
+      "map": "d20",
+      "path": "levels\\d20\\d20_hangar",
+      "xbox_base_address": 2165860352
+    },
+    {
+      "file_offset": 10504192,
+      "file_size": 8396800,
+      "fits_raw_current_bsp": false,
+      "map": "d20",
+      "path": "levels\\d20\\d20_muster",
+      "xbox_base_address": 2165981184
+    },
+    {
+      "file_offset": 6232064,
+      "file_size": 8255488,
+      "fits_raw_current_bsp": false,
+      "map": "a10",
+      "path": "levels\\a10\\a10b",
+      "xbox_base_address": 2166122496
+    },
+    {
+      "file_offset": 4900864,
+      "file_size": 7907328,
+      "fits_raw_current_bsp": false,
+      "map": "d40",
+      "path": "levels\\d40\\d40b",
+      "xbox_base_address": 2166470656
+    },
+    {
+      "file_offset": 12808192,
+      "file_size": 7804928,
+      "fits_raw_current_bsp": false,
+      "map": "d40",
+      "path": "levels\\d40\\d40c",
+      "xbox_base_address": 2166573056
+    },
+    {
+      "file_offset": 26017792,
+      "file_size": 7753728,
+      "fits_raw_current_bsp": false,
+      "map": "a10",
+      "path": "levels\\a10\\a10e",
+      "xbox_base_address": 2166624256
+    },
+    {
+      "file_offset": 43886592,
+      "file_size": 7331840,
+      "fits_raw_current_bsp": false,
+      "map": "d40",
+      "path": "levels\\d40\\d40h",
+      "xbox_base_address": 2167046144
+    },
+    {
+      "file_offset": 26419200,
+      "file_size": 7223296,
+      "fits_raw_current_bsp": false,
+      "map": "d40",
+      "path": "levels\\d40\\d40e",
+      "xbox_base_address": 2167154688
+    },
+    {
+      "file_offset": 6201344,
+      "file_size": 7174144,
+      "fits_raw_current_bsp": false,
+      "map": "a30",
+      "path": "levels\\a30\\a30_b",
+      "xbox_base_address": 2167203840
+    },
+    {
+      "file_offset": 17979392,
+      "file_size": 7159808,
+      "fits_raw_current_bsp": false,
+      "map": "a50",
+      "path": "levels\\a50\\a50_control",
+      "xbox_base_address": 2167218176
+    },
+    {
+      "file_offset": 10821632,
+      "file_size": 7157760,
+      "fits_raw_current_bsp": false,
+      "map": "a50",
+      "path": "levels\\a50\\a50_hangar",
+      "xbox_base_address": 2167220224
+    },
+    {
+      "file_offset": 2048,
+      "file_size": 7127040,
+      "fits_raw_current_bsp": false,
+      "map": "c20",
+      "path": "levels\\c20\\c20_1",
+      "xbox_base_address": 2167250944
+    },
+    {
+      "file_offset": 3837952,
+      "file_size": 6983680,
+      "fits_raw_current_bsp": false,
+      "map": "a50",
+      "path": "levels\\a50\\a50_muster",
+      "xbox_base_address": 2167394304
+    },
+    {
+      "file_offset": 24743936,
+      "file_size": 6864896,
+      "fits_raw_current_bsp": false,
+      "map": "c20",
+      "path": "levels\\c20\\c20_4",
+      "xbox_base_address": 2167513088
+    },
+    {
+      "file_offset": 33642496,
+      "file_size": 6758400,
+      "fits_raw_current_bsp": false,
+      "map": "d40",
+      "path": "levels\\d40\\d40f",
+      "xbox_base_address": 2167619584
+    },
+    {
+      "file_offset": 2048,
+      "file_size": 6608896,
+      "fits_raw_current_bsp": false,
+      "map": "b30",
+      "path": "levels\\b30\\b30a",
+      "xbox_base_address": 2167769088
+    }
+  ],
+  "map_count": 24,
+  "maps": [
+    {
+      "decompressed_file_size": 274734080,
+      "largest_structure_bsp_bytes": 8568832,
+      "map": "a10",
+      "raw_bsp_capacity_failures": 4,
+      "source_sha256": "1ce33954aa12a2e0c21a07e20d0dc652b1b403e4ef1b98c067439a15545d9971",
+      "structure_bsp_count": 9,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 6230016,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\a10\\a10a",
+          "xbox_base_address": 2168147968
+        },
+        {
+          "file_offset": 6232064,
+          "file_size": 8255488,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\a10\\a10b",
+          "xbox_base_address": 2166122496
+        },
+        {
+          "file_offset": 14487552,
+          "file_size": 6057984,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\a10\\a10c",
+          "xbox_base_address": 2168320000
+        },
+        {
+          "file_offset": 20545536,
+          "file_size": 5472256,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\a10\\a10d",
+          "xbox_base_address": 2168905728
+        },
+        {
+          "file_offset": 26017792,
+          "file_size": 7753728,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\a10\\a10e",
+          "xbox_base_address": 2166624256
+        },
+        {
+          "file_offset": 33771520,
+          "file_size": 8531968,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\a10\\a10f",
+          "xbox_base_address": 2165846016
+        },
+        {
+          "file_offset": 42303488,
+          "file_size": 8568832,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\a10\\a10g",
+          "xbox_base_address": 2165809152
+        },
+        {
+          "file_offset": 50872320,
+          "file_size": 1529856,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\a10\\a10_space",
+          "xbox_base_address": 2172848128
+        },
+        {
+          "file_offset": 52402176,
+          "file_size": 2760704,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\a10\\x10hangar",
+          "xbox_base_address": 2171617280
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 213065216,
+      "largest_structure_bsp_bytes": 7174144,
+      "map": "a30",
+      "raw_bsp_capacity_failures": 1,
+      "source_sha256": "287959f34a7379a1dbec5fec15b4d94d17fe97ccd861f5c0c8fc80148b7ed293",
+      "structure_bsp_count": 2,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 6199296,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\a30\\a30_a",
+          "xbox_base_address": 2168178688
+        },
+        {
+          "file_offset": 6201344,
+          "file_size": 7174144,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\a30\\a30_b",
+          "xbox_base_address": 2167203840
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 250138624,
+      "largest_structure_bsp_bytes": 7159808,
+      "map": "a50",
+      "raw_bsp_capacity_failures": 3,
+      "source_sha256": "d7a3e80a86f2b0f23d855ce353aed3c0eb252145697797d87f25623dc470f38d",
+      "structure_bsp_count": 4,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 3835904,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\a50\\a50_exterior",
+          "xbox_base_address": 2170542080
+        },
+        {
+          "file_offset": 3837952,
+          "file_size": 6983680,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\a50\\a50_muster",
+          "xbox_base_address": 2167394304
+        },
+        {
+          "file_offset": 10821632,
+          "file_size": 7157760,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\a50\\a50_hangar",
+          "xbox_base_address": 2167220224
+        },
+        {
+          "file_offset": 17979392,
+          "file_size": 7159808,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\a50\\a50_control",
+          "xbox_base_address": 2167218176
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 224887296,
+      "largest_structure_bsp_bytes": 6608896,
+      "map": "b30",
+      "raw_bsp_capacity_failures": 1,
+      "source_sha256": "74020202d3930ee52c1ee96a7d8e3ee4020ce31a434b3f870d71df72b9c3e4dd",
+      "structure_bsp_count": 2,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 6608896,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\b30\\b30a",
+          "xbox_base_address": 2167769088
+        },
+        {
+          "file_offset": 6610944,
+          "file_size": 4022272,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\b30\\b30b",
+          "xbox_base_address": 2170355712
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 279763456,
+      "largest_structure_bsp_bytes": 5838848,
+      "map": "b40",
+      "raw_bsp_capacity_failures": 0,
+      "source_sha256": "8c5e4aecbd0bc7e063feb7d0c6a3f6d8cff65bf1abec75286070ef9c85fd927b",
+      "structure_bsp_count": 13,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 5515264,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\b40\\b40_a",
+          "xbox_base_address": 2168862720
+        },
+        {
+          "file_offset": 5517312,
+          "file_size": 5838848,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\b40\\b40_b",
+          "xbox_base_address": 2168539136
+        },
+        {
+          "file_offset": 11356160,
+          "file_size": 3862528,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\b40\\b40_c",
+          "xbox_base_address": 2170515456
+        },
+        {
+          "file_offset": 15218688,
+          "file_size": 2209792,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\b40\\b40_a1",
+          "xbox_base_address": 2172168192
+        },
+        {
+          "file_offset": 17428480,
+          "file_size": 3956736,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\b40\\b40_a2",
+          "xbox_base_address": 2170421248
+        },
+        {
+          "file_offset": 21385216,
+          "file_size": 1396736,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\b40\\b40_a3",
+          "xbox_base_address": 2172981248
+        },
+        {
+          "file_offset": 22781952,
+          "file_size": 1294336,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\b40\\b40_b1",
+          "xbox_base_address": 2173083648
+        },
+        {
+          "file_offset": 24076288,
+          "file_size": 2551808,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\b40\\b40_b2",
+          "xbox_base_address": 2171826176
+        },
+        {
+          "file_offset": 26628096,
+          "file_size": 3930112,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\b40\\b40_b3",
+          "xbox_base_address": 2170447872
+        },
+        {
+          "file_offset": 30558208,
+          "file_size": 3074048,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\b40\\b40_b4",
+          "xbox_base_address": 2171303936
+        },
+        {
+          "file_offset": 33632256,
+          "file_size": 2992128,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\b40\\b40_b5",
+          "xbox_base_address": 2171385856
+        },
+        {
+          "file_offset": 36624384,
+          "file_size": 4048896,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\b40\\b40_c1",
+          "xbox_base_address": 2170329088
+        },
+        {
+          "file_offset": 40673280,
+          "file_size": 1288192,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\b40\\b40_c2",
+          "xbox_base_address": 2173089792
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 43565056,
+      "largest_structure_bsp_bytes": 724992,
+      "map": "beavercreek",
+      "raw_bsp_capacity_failures": 0,
+      "source_sha256": "eaf90b2abc4fd295469eb2d640063618b0d14396f28e7d7f1758e834c061c50a",
+      "structure_bsp_count": 1,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 724992,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\test\\beavercreek\\beavercreek",
+          "xbox_base_address": 2173652992
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 44328960,
+      "largest_structure_bsp_bytes": 1296384,
+      "map": "bloodgulch",
+      "raw_bsp_capacity_failures": 0,
+      "source_sha256": "9eb0374cbe4571af640ae0d2e0ebf6119543cdbbece44d49543b4748c4cf0dc1",
+      "structure_bsp_count": 1,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 1296384,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\test\\bloodgulch\\bloodgulch",
+          "xbox_base_address": 2173081600
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 45346304,
+      "largest_structure_bsp_bytes": 1343488,
+      "map": "boardingaction",
+      "raw_bsp_capacity_failures": 0,
+      "source_sha256": "34ddf961973b6aaf05f40f26bd9ad536ca97f8af503995611535ccf6ce911522",
+      "structure_bsp_count": 1,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 1343488,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\test\\boardingaction\\boardingaction",
+          "xbox_base_address": 2173034496
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 252559360,
+      "largest_structure_bsp_bytes": 5988352,
+      "map": "c10",
+      "raw_bsp_capacity_failures": 0,
+      "source_sha256": "423d50a4d7fb7b3c280d7e0806d67e136b2b6a51468ed0be6ee9415e5f129e7d",
+      "structure_bsp_count": 6,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 5402624,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\c10\\c10_exteriora",
+          "xbox_base_address": 2168975360
+        },
+        {
+          "file_offset": 5404672,
+          "file_size": 4972544,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\c10\\c10_interiora",
+          "xbox_base_address": 2169405440
+        },
+        {
+          "file_offset": 10377216,
+          "file_size": 5443584,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\c10\\c10_interiorb",
+          "xbox_base_address": 2168934400
+        },
+        {
+          "file_offset": 15820800,
+          "file_size": 4757504,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\c10\\c10_interiorc",
+          "xbox_base_address": 2169620480
+        },
+        {
+          "file_offset": 20578304,
+          "file_size": 5988352,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\c10\\c10_interiord",
+          "xbox_base_address": 2168389632
+        },
+        {
+          "file_offset": 26566656,
+          "file_size": 4704256,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\c10\\c10_exteriorb",
+          "xbox_base_address": 2169673728
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 142009856,
+      "largest_structure_bsp_bytes": 9039872,
+      "map": "c20",
+      "raw_bsp_capacity_failures": 4,
+      "source_sha256": "1c1c9a8ca882636a3e78cb1d14e25a09c4a11388f6381c5f74212d468b70e654",
+      "structure_bsp_count": 4,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 7127040,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\c20\\c20_1",
+          "xbox_base_address": 2167250944
+        },
+        {
+          "file_offset": 7129088,
+          "file_size": 8574976,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\c20\\c20_2",
+          "xbox_base_address": 2165803008
+        },
+        {
+          "file_offset": 15704064,
+          "file_size": 9039872,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\c20\\c20_3",
+          "xbox_base_address": 2165338112
+        },
+        {
+          "file_offset": 24743936,
+          "file_size": 6864896,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\c20\\c20_4",
+          "xbox_base_address": 2167513088
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 255975936,
+      "largest_structure_bsp_bytes": 6318080,
+      "map": "c40",
+      "raw_bsp_capacity_failures": 1,
+      "source_sha256": "d7465f07a675a86785a329b9ab3d8a5a20b25b7ca7d05bafeb7ca87b02b20be9",
+      "structure_bsp_count": 13,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 5515264,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\c40\\c40_a",
+          "xbox_base_address": 2168862720
+        },
+        {
+          "file_offset": 5517312,
+          "file_size": 6318080,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\c40\\c40_b",
+          "xbox_base_address": 2168059904
+        },
+        {
+          "file_offset": 11835392,
+          "file_size": 3862528,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\c40\\c40_c",
+          "xbox_base_address": 2170515456
+        },
+        {
+          "file_offset": 15697920,
+          "file_size": 2023424,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\c40\\c40_a1",
+          "xbox_base_address": 2172354560
+        },
+        {
+          "file_offset": 17721344,
+          "file_size": 3618816,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\c40\\c40_a2",
+          "xbox_base_address": 2170759168
+        },
+        {
+          "file_offset": 21340160,
+          "file_size": 1400832,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\c40\\c40_a3",
+          "xbox_base_address": 2172977152
+        },
+        {
+          "file_offset": 22740992,
+          "file_size": 1413120,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\c40\\c40_b1",
+          "xbox_base_address": 2172964864
+        },
+        {
+          "file_offset": 24154112,
+          "file_size": 2779136,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\c40\\c40_b2",
+          "xbox_base_address": 2171598848
+        },
+        {
+          "file_offset": 26933248,
+          "file_size": 3930112,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\c40\\c40_b3",
+          "xbox_base_address": 2170447872
+        },
+        {
+          "file_offset": 30863360,
+          "file_size": 3074048,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\c40\\c40_b4",
+          "xbox_base_address": 2171303936
+        },
+        {
+          "file_offset": 33937408,
+          "file_size": 2992128,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\c40\\c40_b5",
+          "xbox_base_address": 2171385856
+        },
+        {
+          "file_offset": 36929536,
+          "file_size": 4048896,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\c40\\c40_c1",
+          "xbox_base_address": 2170329088
+        },
+        {
+          "file_offset": 40978432,
+          "file_size": 1404928,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\c40\\c40_c2",
+          "xbox_base_address": 2172973056
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 42367488,
+      "largest_structure_bsp_bytes": 507904,
+      "map": "carousel",
+      "raw_bsp_capacity_failures": 0,
+      "source_sha256": "3e4be29a7952af0b3f19a7540e454fd0deece6d6078c256cde70a734beba55e1",
+      "structure_bsp_count": 1,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 507904,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\test\\carousel\\carousel",
+          "xbox_base_address": 2173870080
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 41967104,
+      "largest_structure_bsp_bytes": 567296,
+      "map": "chillout",
+      "raw_bsp_capacity_failures": 0,
+      "source_sha256": "52bc3e23b9142cf479770d1d601fe08b13d78fe3eb05eca72d313b7ebbd21ffb",
+      "structure_bsp_count": 1,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 567296,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\test\\chillout\\chillout",
+          "xbox_base_address": 2173810688
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 205501952,
+      "largest_structure_bsp_bytes": 8517632,
+      "map": "d20",
+      "raw_bsp_capacity_failures": 2,
+      "source_sha256": "30d8fc02bcd209a7ce03174d8cf6cf771dd3621837d9a2d02111718dcc5e792c",
+      "structure_bsp_count": 5,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 5408768,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\d20\\d20_start",
+          "xbox_base_address": 2168969216
+        },
+        {
+          "file_offset": 5410816,
+          "file_size": 5093376,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\d20\\d20_exterior",
+          "xbox_base_address": 2169284608
+        },
+        {
+          "file_offset": 10504192,
+          "file_size": 8396800,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\d20\\d20_muster",
+          "xbox_base_address": 2165981184
+        },
+        {
+          "file_offset": 18900992,
+          "file_size": 8517632,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\d20\\d20_hangar",
+          "xbox_base_address": 2165860352
+        },
+        {
+          "file_offset": 27418624,
+          "file_size": 3807232,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\d20\\d20_control",
+          "xbox_base_address": 2170570752
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 274594816,
+      "largest_structure_bsp_bytes": 7907328,
+      "map": "d40",
+      "raw_bsp_capacity_failures": 5,
+      "source_sha256": "438452ef1896dd5bc2d3210b279f76e71b775f7eb2b7a8f8e29f4e5471d59a76",
+      "structure_bsp_count": 10,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 4898816,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\d40\\d40a",
+          "xbox_base_address": 2169479168
+        },
+        {
+          "file_offset": 4900864,
+          "file_size": 7907328,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\d40\\d40b",
+          "xbox_base_address": 2166470656
+        },
+        {
+          "file_offset": 12808192,
+          "file_size": 7804928,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\d40\\d40c",
+          "xbox_base_address": 2166573056
+        },
+        {
+          "file_offset": 20613120,
+          "file_size": 5806080,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\d40\\d40d",
+          "xbox_base_address": 2168571904
+        },
+        {
+          "file_offset": 26419200,
+          "file_size": 7223296,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\d40\\d40e",
+          "xbox_base_address": 2167154688
+        },
+        {
+          "file_offset": 33642496,
+          "file_size": 6758400,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\d40\\d40f",
+          "xbox_base_address": 2167619584
+        },
+        {
+          "file_offset": 40400896,
+          "file_size": 3485696,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\d40\\d40g",
+          "xbox_base_address": 2170892288
+        },
+        {
+          "file_offset": 43886592,
+          "file_size": 7331840,
+          "fits_raw_current_bsp": false,
+          "path": "levels\\d40\\d40h",
+          "xbox_base_address": 2167046144
+        },
+        {
+          "file_offset": 51218432,
+          "file_size": 2469888,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\d40\\d40_terrain",
+          "xbox_base_address": 2171908096
+        },
+        {
+          "file_offset": 53688320,
+          "file_size": 8192,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\d40\\d40_space",
+          "xbox_base_address": 2174369792
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 47968768,
+      "largest_structure_bsp_bytes": 1320960,
+      "map": "damnation",
+      "raw_bsp_capacity_failures": 0,
+      "source_sha256": "87bd92c1821ff20bed03c559d7be5ac43baeb44aa68342ffdbb5a8cd978f711c",
+      "structure_bsp_count": 1,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 1320960,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\test\\damnation\\damnation",
+          "xbox_base_address": 2173057024
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 43700224,
+      "largest_structure_bsp_bytes": 589824,
+      "map": "hangemhigh",
+      "raw_bsp_capacity_failures": 0,
+      "source_sha256": "e3e4b25ed36178926f0df11f3cd82b07e2071f6aa0efaa77f0cfde8f8480981f",
+      "structure_bsp_count": 1,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 589824,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\test\\hangemhigh\\hangemhigh",
+          "xbox_base_address": 2173788160
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 42141696,
+      "largest_structure_bsp_bytes": 374784,
+      "map": "longest",
+      "raw_bsp_capacity_failures": 0,
+      "source_sha256": "e045b0843f4a167a516f050161a651610fafc94ccc8c5f2c5d5725d108d5d1b9",
+      "structure_bsp_count": 1,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 374784,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\test\\longest\\longest",
+          "xbox_base_address": 2174003200
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 43974656,
+      "largest_structure_bsp_bytes": 884736,
+      "map": "prisoner",
+      "raw_bsp_capacity_failures": 0,
+      "source_sha256": "85ff2fdc117b7640bda85a490b30c662f2626bd6d0685e41832935422891c307",
+      "structure_bsp_count": 1,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 884736,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\test\\prisoner\\prisoner",
+          "xbox_base_address": 2173493248
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 40668672,
+      "largest_structure_bsp_bytes": 1638400,
+      "map": "putput",
+      "raw_bsp_capacity_failures": 0,
+      "source_sha256": "efbe723188f34053d318105f20c7046f263171fbb937fbad45e3d00f8437f243",
+      "structure_bsp_count": 1,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 1638400,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\test\\putput\\putput",
+          "xbox_base_address": 2172739584
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 47403008,
+      "largest_structure_bsp_bytes": 544768,
+      "map": "ratrace",
+      "raw_bsp_capacity_failures": 0,
+      "source_sha256": "577886f949f2648f04cf99e354fb04ca08d7b9199636c2f9fe1a161ccdaa4b1e",
+      "structure_bsp_count": 1,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 544768,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\test\\ratrace\\ratrace",
+          "xbox_base_address": 2173833216
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 48048128,
+      "largest_structure_bsp_bytes": 1984512,
+      "map": "sidewinder",
+      "raw_bsp_capacity_failures": 0,
+      "source_sha256": "995561a68c8c5b142f13f1967730ce8c08d4f0db9574db8e987d915f2b118dcc",
+      "structure_bsp_count": 1,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 1984512,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\test\\sidewinder\\sidewinder",
+          "xbox_base_address": 2172393472
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 33582080,
+      "largest_structure_bsp_bytes": 2048,
+      "map": "ui",
+      "raw_bsp_capacity_failures": 0,
+      "source_sha256": "8556b647b82742d07282fe4e6db0cf847b542c046484e91e71ec31fea5f5fd7e",
+      "structure_bsp_count": 1,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 2048,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\ui\\ui",
+          "xbox_base_address": 2174375936
+        }
+      ]
+    },
+    {
+      "decompressed_file_size": 40681984,
+      "largest_structure_bsp_bytes": 552960,
+      "map": "wizard",
+      "raw_bsp_capacity_failures": 0,
+      "source_sha256": "978539ff70085998485870a15d4ec81d3811442ac48f9265db668a396f6ff1eb",
+      "structure_bsp_count": 1,
+      "structure_bsps": [
+        {
+          "file_offset": 2048,
+          "file_size": 552960,
+          "fits_raw_current_bsp": true,
+          "path": "levels\\test\\wizard\\wizard",
+          "xbox_base_address": 2173825024
+        }
+      ]
+    }
+  ],
+  "raw_bsp_capacity_failure_count": 21,
+  "structure_bsp_count": 82
+}

@@ -1,0 +1,50 @@
+{
+  "format": "retail-ce-bsp-cbsp-integration-v1",
+  "source": {
+    "disc_entry": "maps/bloodgulch.map",
+    "decompressed_map_sha256": "9eb0374cbe4571af640ae0d2e0ebf6119543cdbbece44d49543b4748c4cf0dc1",
+    "schema_elf_sha256": "81208465ad10f35a950bfde031bed2e8fec1bc941a89c79315af1e169173d24e"
+  },
+  "tag_image": {
+    "compact_ctag_image_bytes": 4477116,
+    "ctag_internal_relocation_fields": 19832
+  },
+  "structure_bsp": {
+    "tag_path": "levels\\test\\bloodgulch\\bloodgulch",
+    "retail_file_offset": 2048,
+    "retail_xbox_base": "0x81869800",
+    "cbsp_source_file_offset": 2048,
+    "cbsp_source_file_size": 1296384,
+    "raw_and_cbsp_image_bytes": 1296384,
+    "cbsp_envelope_bytes": 1303092,
+    "cbsp_sha256": "0fc221a36e097285e472e6fc4227a6bf07f20b063d285d4b464303c7d7a0715d",
+    "bsp_internal_relocation_fields": 463,
+    "typed_ctag_name_relocation_fields": 93,
+    "schema_visited_bytes": 1293723,
+    "compressed_vertex_bytes_retained": 229552
+  },
+  "round_trip": {
+    "cbsp_decode_passed": true,
+    "ctag_decode_passed": true,
+    "all_bsp_tag_name_offsets_resolved_to_bounded_nul_terminated_ctag_strings": true,
+    "candidate_ctag_base": "0x01400000",
+    "candidate_bsp_base": "0x02000000",
+    "internal_and_cross_image_pointers_materialized_without_32_bit_wrap": true,
+    "ps2_c_decoder_materializer_matches_python_fixture": true,
+    "ps2_cache_exact_source_extent_dispatch_fixture": true
+  },
+  "hp2_package": {
+    "sections": ["CTAG", "CRNG", "CBSP"],
+    "package_bytes": 2828288,
+    "package_sha256": "0181a4aea2081941e66a441243f0f371c584db632f1b3c81033f44140581f891",
+    "packer_reopened_and_validated_cbsp_section": true,
+    "cbsp_source_extent_bound_to_original_map_read": true
+  },
+  "limitations": [
+    "The candidate bases validate 32-bit relocation arithmetic only; they are not evidence of physical arena placement.",
+    "CBSP is in a reproducible host-built HP2 package, but no production parent loader reads/materializes it or loads it through CE.",
+    "The full compressed-vertex payload is retained; this does not solve the 21-of-82 raw BSP capacity failures.",
+    "Collision, pathfinding, PVS, material/lightmap query, and object-lighting parity remain untested.",
+    "This single retail BSP does not qualify the other 81 BSP references or whole-map rollback/unload."
+  ]
+}
