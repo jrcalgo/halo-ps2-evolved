@@ -1,13 +1,13 @@
 {
   "all_selected_session_rows_passed": true,
   "date": "2026-10-24",
-  "exit_met": true,
+  "exit_met": false,
   "failing_rows": [],
   "format": "hcu-c2-profile-matrix-v1",
   "margin_ranges_passing_rows": {
     "boot_end_below_reserve": {
-      "max": 407206,
-      "min": 395302
+      "max": 406950,
+      "min": 394918
     },
     "bsp": {
       "max": 10672,
@@ -27,1238 +27,23 @@
     }
   },
   "reuse_evidence": {
-    "dir": "build/m2-c2-gaps-reuse",
-    "failing_runs": [
-      "build/m2-c2-gaps-reuse/sidewinder_cycles3_noticks_timeout_result.json",
-      "build/m2-c2-gaps-reuse/sidewinder_cycles3_ticks300_timeout_result.json"
-    ],
-    "max_cycles_by_row": {
-      "beavercreek_marine_shotgun_4p4bot": 2,
-      "beavercreek_mounted_gunner_4p4bot": 2,
-      "bloodgulch_marine_shotgun_4p4bot": 2,
-      "bloodgulch_mounted_gunner_4p4bot": 3,
-      "boardingaction_marine_shotgun_4p4bot": 2,
-      "boardingaction_mounted_gunner_4p4bot": 2,
-      "carousel_marine_shotgun_4p4bot": 2,
-      "carousel_mounted_gunner_4p4bot": 2,
-      "chillout_marine_shotgun_4p4bot": 2,
-      "chillout_mounted_gunner_4p4bot": 2,
-      "damnation_marine_shotgun_4p4bot": 2,
-      "damnation_mounted_gunner_4p4bot": 2,
-      "hangemhigh_marine_shotgun_4p4bot": 2,
-      "hangemhigh_mounted_gunner_4p4bot": 2,
-      "longest_marine_shotgun_4p4bot": 2,
-      "longest_mounted_gunner_4p4bot": 3,
-      "prisoner_marine_shotgun_4p4bot": 2,
-      "prisoner_mounted_gunner_4p4bot": 2,
-      "putput_marine_shotgun_4p4bot": 2,
-      "putput_mounted_gunner_4p4bot": 2,
-      "ratrace_marine_shotgun_4p4bot": 3,
-      "ratrace_mounted_gunner_4p4bot": 2,
-      "sidewinder_marine_shotgun_4p4bot": 2,
-      "sidewinder_mounted_gunner_4p4bot": 2,
-      "ui": 2,
-      "wizard_marine_shotgun_4p4bot": 2,
-      "wizard_mounted_gunner_4p4bot": 2
-    },
-    "passing_runs": [
-      "build/m2-c2-gaps-reuse/beavercreek_marine_shotgun_4p4bot_cycles2_noticks_result.json",
-      "build/m2-c2-gaps-reuse/beavercreek_mounted_gunner_4p4bot_cycles2_noticks_result.json",
-      "build/m2-c2-gaps-reuse/bloodgulch_cycles3_ticks300_result.json",
-      "build/m2-c2-gaps-reuse/bloodgulch_marine_shotgun_cycles2_result.json",
-      "build/m2-c2-gaps-reuse/boardingaction_marine_shotgun_4p4bot_cycles2_noticks_result.json",
-      "build/m2-c2-gaps-reuse/boardingaction_mounted_gunner_4p4bot_cycles2_noticks_result.json",
-      "build/m2-c2-gaps-reuse/carousel_marine_shotgun_cycles2_result.json",
-      "build/m2-c2-gaps-reuse/carousel_mounted_gunner_4p4bot_cycles2_noticks_result.json",
-      "build/m2-c2-gaps-reuse/chillout_marine_shotgun_4p4bot_cycles2_noticks_result.json",
-      "build/m2-c2-gaps-reuse/chillout_mounted_gunner_cycles2_result.json",
-      "build/m2-c2-gaps-reuse/damnation_marine_shotgun_4p4bot_cycles2_noticks_result.json",
-      "build/m2-c2-gaps-reuse/damnation_mounted_gunner_4p4bot_cycles2_noticks_result.json",
-      "build/m2-c2-gaps-reuse/hangemhigh_marine_shotgun_cycles2_result.json",
-      "build/m2-c2-gaps-reuse/hangemhigh_mounted_gunner_4p4bot_cycles2_noticks_result.json",
-      "build/m2-c2-gaps-reuse/longest_cycles3_noticks_result.json",
-      "build/m2-c2-gaps-reuse/longest_cycles3_ticks300_result.json",
-      "build/m2-c2-gaps-reuse/longest_marine_shotgun_4p4bot_cycles2_noticks_result.json",
-      "build/m2-c2-gaps-reuse/prisoner_marine_shotgun_cycles2_result.json",
-      "build/m2-c2-gaps-reuse/prisoner_mounted_gunner_4p4bot_cycles2_noticks_result.json",
-      "build/m2-c2-gaps-reuse/putput_marine_shotgun_4p4bot_cycles2_noticks_result.json",
-      "build/m2-c2-gaps-reuse/putput_mounted_gunner_cycles2_result.json",
-      "build/m2-c2-gaps-reuse/ratrace_marine_shotgun_4p4bot_cycles3_noticks_result.json",
-      "build/m2-c2-gaps-reuse/ratrace_mounted_gunner_4p4bot_cycles2_noticks_result.json",
-      "build/m2-c2-gaps-reuse/sidewinder_cycles2_ticks300_result.json",
-      "build/m2-c2-gaps-reuse/sidewinder_mounted_gunner_4p4bot_cycles2_noticks_result.json",
-      "build/m2-c2-gaps-reuse/ui_cycles2_noticks_result.json",
-      "build/m2-c2-gaps-reuse/wizard_marine_shotgun_cycles2_result.json",
-      "build/m2-c2-gaps-reuse/wizard_mounted_gunner_4p4bot_cycles2_noticks_result.json"
-    ],
-    "reuse_shown": true,
-    "rows_with_reuse_evidence": [
-      "beavercreek_marine_shotgun_4p4bot",
-      "beavercreek_mounted_gunner_4p4bot",
-      "bloodgulch_marine_shotgun_4p4bot",
-      "bloodgulch_mounted_gunner_4p4bot",
-      "boardingaction_marine_shotgun_4p4bot",
-      "boardingaction_mounted_gunner_4p4bot",
-      "carousel_marine_shotgun_4p4bot",
-      "carousel_mounted_gunner_4p4bot",
-      "chillout_marine_shotgun_4p4bot",
-      "chillout_mounted_gunner_4p4bot",
-      "damnation_marine_shotgun_4p4bot",
-      "damnation_mounted_gunner_4p4bot",
-      "hangemhigh_marine_shotgun_4p4bot",
-      "hangemhigh_mounted_gunner_4p4bot",
-      "longest_marine_shotgun_4p4bot",
-      "longest_mounted_gunner_4p4bot",
-      "prisoner_marine_shotgun_4p4bot",
-      "prisoner_mounted_gunner_4p4bot",
-      "putput_marine_shotgun_4p4bot",
-      "putput_mounted_gunner_4p4bot",
-      "ratrace_marine_shotgun_4p4bot",
-      "ratrace_mounted_gunner_4p4bot",
-      "sidewinder_marine_shotgun_4p4bot",
-      "sidewinder_mounted_gunner_4p4bot",
-      "ui",
-      "wizard_marine_shotgun_4p4bot",
-      "wizard_mounted_gunner_4p4bot"
-    ],
-    "runs": [
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 678.0,
-        "elf": "build/m2-c2-gaps-reuse/beavercreek_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-beavercreek_marine_shotgun_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/beavercreek_marine_shotgun_4p4bot_cycles2_noticks_result.json",
-        "map": "beavercreek",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 10946312,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 724992,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 6838920,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "beavercreek_marine_shotgun_4p4bot",
-        "sha256": "e273754450b684b59283d9aabd3c9b4be88b06c08a79136d1a24aa90d4b5fca9",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 472.8,
-        "elf": "build/m2-c2-gaps-reuse/beavercreek_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-beavercreek_mounted_gunner_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/beavercreek_mounted_gunner_4p4bot_cycles2_noticks_result.json",
-        "map": "beavercreek",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 8727323,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 724992,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 4619931,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "beavercreek_mounted_gunner_4p4bot",
-        "sha256": "a6f9e9d0f894496e6bb16b20392538a4ea567e6aa00ab0eb2aef76e47f5394af",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 3,
-        "cycles_requested": 3,
-        "elapsed_seconds": 543.2,
-        "elf": "build/m2-c2-gaps-reuse/bloodgulch_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-bloodgulch_mounted_gunner_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/bloodgulch_cycles3_ticks300_result.json",
-        "map": "bloodgulch",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 9474762,
-          "backing_resets": 9,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 1296384,
-            "publications": 3,
-            "resets": 3,
-            "unmounts": 3
-          },
-          "tags": {
-            "current": 0,
-            "peak": 4795978,
-            "publications": 3,
-            "resets": 3,
-            "unmounts": 3
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "bloodgulch_mounted_gunner_4p4bot",
-        "sha256": "334060646dbf3dad304613cb523e5d556dbbe88c66e9b81fee9b44e8b0fb8032",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 300
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 554.8,
-        "elf": "build/m2-c2-gaps-reuse/bloodgulch_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-bloodgulch_marine_shotgun_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/bloodgulch_marine_shotgun_cycles2_result.json",
-        "map": "bloodgulch",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 11693751,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 1296384,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 7014967,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "bloodgulch_marine_shotgun_4p4bot",
-        "sha256": "5e8bf0150887c65156272c4803e6d94748e34169b86f89ca7dcf8e3b17c4c7e4",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 532.4,
-        "elf": "build/m2-c2-gaps-reuse/boardingaction_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-boardingaction_marine_shotgun_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/boardingaction_marine_shotgun_4p4bot_cycles2_noticks_result.json",
-        "map": "boardingaction",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 11617972,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 1343488,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 6892084,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "boardingaction_marine_shotgun_4p4bot",
-        "sha256": "fe260c674c66447ed57489c484dd4235dd54177ab43f020a0f6fc9b27b10b72e",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 410.7,
-        "elf": "build/m2-c2-gaps-reuse/boardingaction_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-boardingaction_mounted_gunner_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/boardingaction_mounted_gunner_4p4bot_cycles2_noticks_result.json",
-        "map": "boardingaction",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 9398983,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 1343488,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 4673095,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "boardingaction_mounted_gunner_4p4bot",
-        "sha256": "3167a56cee69a84497c84e9db1f37dbd0d59674eef602aedca2d38ea58a139a0",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 513.4,
-        "elf": "build/m2-c2-gaps-reuse/carousel_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-carousel_marine_shotgun_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/carousel_marine_shotgun_cycles2_result.json",
-        "map": "carousel",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 10701947,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 507904,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 6811643,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "carousel_marine_shotgun_4p4bot",
-        "sha256": "8e0cec5c8801446d822fd52f60e47f779f85c9b8900f43da8d176b7fa971ef28",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 387.2,
-        "elf": "build/m2-c2-gaps-reuse/carousel_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-carousel_mounted_gunner_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/carousel_mounted_gunner_4p4bot_cycles2_noticks_result.json",
-        "map": "carousel",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 8482958,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 507904,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 4592654,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "carousel_mounted_gunner_4p4bot",
-        "sha256": "5e13baeff4f8dbbc1c70ae242a13a8f79cdae150a6922d3de36b4871d071d15a",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 509.6,
-        "elf": "build/m2-c2-gaps-reuse/chillout_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-chillout_marine_shotgun_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/chillout_marine_shotgun_4p4bot_cycles2_noticks_result.json",
-        "map": "chillout",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 10736247,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 567296,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 6786551,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "chillout_marine_shotgun_4p4bot",
-        "sha256": "fd6fc7f248000d41001f989608a957f27927d72a37981072d78afa710d7dc086",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 383.9,
-        "elf": "build/m2-c2-gaps-reuse/chillout_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-chillout_mounted_gunner_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/chillout_mounted_gunner_cycles2_result.json",
-        "map": "chillout",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 8517258,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 567296,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 4567562,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "chillout_mounted_gunner_4p4bot",
-        "sha256": "3edb8b0003628e85c67d7108dfac81c0ec386b609251709b06a4d85b160a0ed4",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 533.6,
-        "elf": "build/m2-c2-gaps-reuse/damnation_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-damnation_marine_shotgun_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/damnation_marine_shotgun_4p4bot_cycles2_noticks_result.json",
-        "map": "damnation",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 11584983,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 1320960,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 6881623,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "damnation_marine_shotgun_4p4bot",
-        "sha256": "99b1d74e3ddc20192f70f11c1bc1fa9732cbc841a05d496b32712de53ec25d76",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 408.8,
-        "elf": "build/m2-c2-gaps-reuse/damnation_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-damnation_mounted_gunner_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/damnation_mounted_gunner_4p4bot_cycles2_noticks_result.json",
-        "map": "damnation",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 9365994,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 1320960,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 4662634,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "damnation_mounted_gunner_4p4bot",
-        "sha256": "6b0391af481dbb7ebd41519190b95f2734344c3b1953fbffc986c1936f4ea580",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 525.9,
-        "elf": "build/m2-c2-gaps-reuse/hangemhigh_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-hangemhigh_marine_shotgun_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/hangemhigh_marine_shotgun_cycles2_result.json",
-        "map": "hangemhigh",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 10751154,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 589824,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 6778930,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "hangemhigh_marine_shotgun_4p4bot",
-        "sha256": "d8567b23c10fe1ea4c42d453d0b83988fe7e64ebcd4b1207463d88856245216f",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 389.3,
-        "elf": "build/m2-c2-gaps-reuse/hangemhigh_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-hangemhigh_mounted_gunner_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/hangemhigh_mounted_gunner_4p4bot_cycles2_noticks_result.json",
-        "map": "hangemhigh",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 8532165,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 589824,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 4559941,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "hangemhigh_mounted_gunner_4p4bot",
-        "sha256": "5c183d530e30b9098df8ffecbdd70877174fc33ca94e021407317b9a11b0c27b",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 3,
-        "cycles_requested": 3,
-        "elapsed_seconds": 476.4,
-        "elf": "build/m2-c2-gaps-reuse/longest_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-longest_mounted_gunner_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/longest_cycles3_noticks_result.json",
-        "map": "longest",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 8335214,
-          "backing_resets": 9,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 374784,
-            "publications": 3,
-            "resets": 3,
-            "unmounts": 3
-          },
-          "tags": {
-            "current": 0,
-            "peak": 4578030,
-            "publications": 3,
-            "resets": 3,
-            "unmounts": 3
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "longest_mounted_gunner_4p4bot",
-        "sha256": "90fe192f6f5589226e7196b7b8d51da3c385281b19561430d6c42c2b9c5cfcab",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 3,
-        "cycles_requested": 3,
-        "elapsed_seconds": 471.0,
-        "elf": "build/m2-c2-gaps-reuse/longest_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-longest_mounted_gunner_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/longest_cycles3_ticks300_result.json",
-        "map": "longest",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 8335214,
-          "backing_resets": 9,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 374784,
-            "publications": 3,
-            "resets": 3,
-            "unmounts": 3
-          },
-          "tags": {
-            "current": 0,
-            "peak": 4578030,
-            "publications": 3,
-            "resets": 3,
-            "unmounts": 3
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "longest_mounted_gunner_4p4bot",
-        "sha256": "0035d3fb41a2e12f14ecba3893cc9d1d8e319a3105641a7e54846c6ca56a3783",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 300
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 507.2,
-        "elf": "build/m2-c2-gaps-reuse/longest_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-longest_marine_shotgun_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/longest_marine_shotgun_4p4bot_cycles2_noticks_result.json",
-        "map": "longest",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 10554203,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 374784,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 6797019,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "longest_marine_shotgun_4p4bot",
-        "sha256": "32957b62294338128e4a6b5b865b1815471bc95950288e8ef6d90d84e89ab3f2",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 510.7,
-        "elf": "build/m2-c2-gaps-reuse/prisoner_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-prisoner_marine_shotgun_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/prisoner_marine_shotgun_cycles2_result.json",
-        "map": "prisoner",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 11041300,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 884736,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 6774164,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "prisoner_marine_shotgun_4p4bot",
-        "sha256": "d7d76ed033855f2fdb8ce83da4cb61771e285db56bc398401bf4917af207df5a",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 422.1,
-        "elf": "build/m2-c2-gaps-reuse/prisoner_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-prisoner_mounted_gunner_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/prisoner_mounted_gunner_4p4bot_cycles2_noticks_result.json",
-        "map": "prisoner",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 8822311,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 884736,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 4555175,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "prisoner_mounted_gunner_4p4bot",
-        "sha256": "283cf91700482e9b0ebcd910d4fdf4453372dec39a56c6e6fd8fa3ca8b2d5f0a",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 524.2,
-        "elf": "build/m2-c2-gaps-reuse/putput_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-putput_marine_shotgun_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/putput_marine_shotgun_4p4bot_cycles2_noticks_result.json",
-        "map": "putput",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 11803026,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 1638400,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 6782226,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "putput_marine_shotgun_4p4bot",
-        "sha256": "c19264f7ca8d52c12dc87185b12309211996eeb8fe357b8ca342f85ca2445dae",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 398.0,
-        "elf": "build/m2-c2-gaps-reuse/putput_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-putput_mounted_gunner_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/putput_mounted_gunner_cycles2_result.json",
-        "map": "putput",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 9584037,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 1638400,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 4563237,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "putput_mounted_gunner_4p4bot",
-        "sha256": "ce483df13fe5f524b5c847b1bcd5e88d82109a64b02bf39d86b0595d503447d4",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 3,
-        "cycles_requested": 3,
-        "elapsed_seconds": 636.9,
-        "elf": "build/m2-c2-gaps-reuse/ratrace_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-ratrace_marine_shotgun_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/ratrace_marine_shotgun_4p4bot_cycles3_noticks_result.json",
-        "map": "ratrace",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 10731616,
-          "backing_resets": 9,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 544768,
-            "publications": 3,
-            "resets": 3,
-            "unmounts": 3
-          },
-          "tags": {
-            "current": 0,
-            "peak": 6804448,
-            "publications": 3,
-            "resets": 3,
-            "unmounts": 3
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "ratrace_marine_shotgun_4p4bot",
-        "sha256": "9087065c31da5cb77e1e6b3fb194bdbfc98123fc28bb97f423fcef0fd9e7956f",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 419.4,
-        "elf": "build/m2-c2-gaps-reuse/ratrace_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-ratrace_mounted_gunner_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/ratrace_mounted_gunner_4p4bot_cycles2_noticks_result.json",
-        "map": "ratrace",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 8512627,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 544768,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 4585459,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "ratrace_mounted_gunner_4p4bot",
-        "sha256": "07306b83d68d80a994e2f0e3248fc26c28a1ace3a41562d3186ef31aa4585169",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 514.8,
-        "elf": "build/m2-c2-gaps-reuse/sidewinder_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-sidewinder_marine_shotgun_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/sidewinder_cycles2_ticks300_result.json",
-        "map": "sidewinder",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 12280840,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 1984512,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 6913928,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "sidewinder_marine_shotgun_4p4bot",
-        "sha256": "a4a0394649c743c8a08d4137896b1e79976b1d69838f60a19e4cf42d629a3f32",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 300
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 3,
-        "elapsed_seconds": 668.4,
-        "elf": "build/m2-c2-gaps-reuse/sidewinder_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-sidewinder_marine_shotgun_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [
-          "map_released",
-          "marker_order",
-          "cycle_3_loaded",
-          "cycle_3_released",
-          "cycle_3_boundary",
-          "resets_increment_3_owners_game_state",
-          "resets_increment_3_owners_tags",
-          "resets_increment_3_owners_bsp",
-          "resets_increment_3_cache_tags",
-          "resets_increment_3_cache_bsp",
-          "storage_reused_cycles_2_to_n"
-        ],
-        "file": "build/m2-c2-gaps-reuse/sidewinder_cycles3_noticks_timeout_result.json",
-        "map": "sidewinder",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": false,
-        "release_backing": null,
-        "release_cache": null,
-        "release_owner_failures": 0,
-        "row": "sidewinder_marine_shotgun_4p4bot",
-        "sha256": "cc059ca9fa191bb35561a1b06c09e02f042afdf294b227872706214801561df4",
-        "storage_reused_cycles_2_to_n": false,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 3,
-        "elapsed_seconds": 668.2,
-        "elf": "build/m2-c2-gaps-reuse/sidewinder_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-sidewinder_marine_shotgun_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [
-          "map_released",
-          "marker_order",
-          "cycle_3_loaded",
-          "cycle_3_released",
-          "cycle_3_boundary",
-          "cycle_3_ticks",
-          "resets_increment_3_owners_game_state",
-          "resets_increment_3_owners_tags",
-          "resets_increment_3_owners_bsp",
-          "resets_increment_3_cache_tags",
-          "resets_increment_3_cache_bsp",
-          "storage_reused_cycles_2_to_n"
-        ],
-        "file": "build/m2-c2-gaps-reuse/sidewinder_cycles3_ticks300_timeout_result.json",
-        "map": "sidewinder",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": false,
-        "release_backing": null,
-        "release_cache": null,
-        "release_owner_failures": 0,
-        "row": "sidewinder_marine_shotgun_4p4bot",
-        "sha256": "bef0877be4ed8bd5866142b013980877a7f3888b1ee116e0737eb744ae8170e9",
-        "storage_reused_cycles_2_to_n": false,
-        "ticks_per_cycle": 300
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 415.9,
-        "elf": "build/m2-c2-gaps-reuse/sidewinder_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-sidewinder_mounted_gunner_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/sidewinder_mounted_gunner_4p4bot_cycles2_noticks_result.json",
-        "map": "sidewinder",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 10061851,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 1984512,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 4694939,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "sidewinder_mounted_gunner_4p4bot",
-        "sha256": "9f091cff6d1bb6d40fb265a1394d4cde8c975b5ee7503c9f87197d9dcdcec469",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 115.2,
-        "elf": "build/m2-c2-gaps-reuse/ui/link/hcu-gameplay-machine-partition-ui-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/ui_cycles2_noticks_result.json",
-        "map": "ui",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-gaps-ui/tree/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 4173585,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 2048,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 789137,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "ui",
-        "sha256": "3ec402efcf4b3155642c7d37496eac8e5c0485e7f753e40d5705792e86a8465d",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 522.9,
-        "elf": "build/m2-c2-gaps-reuse/wizard_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-wizard_marine_shotgun_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/wizard_marine_shotgun_cycles2_result.json",
-        "map": "wizard",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 10728262,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 552960,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 6792902,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "wizard_marine_shotgun_4p4bot",
-        "sha256": "61a7d7554d92454cd871a1054c5f6bd2f08005d1574f8d6b37726dcf2ee03dd4",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      },
-      {
-        "cycle1_vs_cycle2_differences": [],
-        "cycles_completed": 2,
-        "cycles_requested": 2,
-        "elapsed_seconds": 373.3,
-        "elf": "build/m2-c2-gaps-reuse/wizard_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-wizard_mounted_gunner_4p4bot-headless-runtime-guest.elf",
-        "failing_checks": [],
-        "file": "build/m2-c2-gaps-reuse/wizard_mounted_gunner_4p4bot_cycles2_noticks_result.json",
-        "map": "wizard",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
-        "pass": true,
-        "release_backing": {
-          "backing_high": 8509273,
-          "backing_resets": 6,
-          "backing_used": 3382400
-        },
-        "release_cache": {
-          "bsp": {
-            "current": 0,
-            "peak": 552960,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          },
-          "tags": {
-            "current": 0,
-            "peak": 4573913,
-            "publications": 2,
-            "resets": 2,
-            "unmounts": 2
-          }
-        },
-        "release_owner_failures": 0,
-        "row": "wizard_mounted_gunner_4p4bot",
-        "sha256": "8b8e4c295b9167d27b5a20b7c71d04e924c118c9fdd777fddae7f357c1f18657",
-        "storage_reused_cycles_2_to_n": true,
-        "ticks_per_cycle": 0
-      }
-    ]
+    "dir": "build/m2-c2-matrix/gaps-reuse",
+    "failing_runs": [],
+    "max_cycles_by_row": {},
+    "passing_runs": [],
+    "reuse_shown": false,
+    "rows_with_reuse_evidence": [],
+    "runs": []
   },
   "rows": [
     {
       "below_reserve": true,
-      "boot_end": 27128282,
+      "boot_end": 27128538,
       "booted": true,
       "caps": {
         "bsp": 730208,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 6838928
       },
@@ -1267,9 +52,10 @@
       "map": "beavercreek",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 396838,
+        "boot_end_below_reserve": 396582,
         "bsp": 5216,
         "game_state": 58512,
+        "map_load_staging": 868028,
         "residency_streaming_map_owner": 868028,
         "tag": 8
       },
@@ -1278,28 +64,29 @@
         "backing_high": 10946312,
         "bsp": 724992,
         "game_state": 3107696,
+        "map_load_staging": 180548,
         "object_pool": 18656,
         "residency_streaming_map_owner": 180548,
         "tag": 6838920
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 558.3,
+        "elapsed_seconds": 315.4,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/beavercreek_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-beavercreek_marine_shotgun_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "b8522d1d3c0f1475b213dff0f6cbeb776e389a2e6feabea9ce57a94b4d8e1ee5",
+        "elf_sha256": "02cd779af18b7a4fe53ab782fe9057ff255cd08a97a6113de392a0477bb78c2e",
         "emu_log": "build/m2-c2-matrix/beavercreek_marine_shotgun_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "3985ac5762f140f5e4a52d7bd46ac9e6597eba21317df108844a600e5ceb464e",
+        "emu_log_sha256": "99a947613028caea07a9772029aadd6d01b52c0035b7fe17d2ddf8be58f50be4",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/beavercreek_marine_shotgun_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/beavercreek_marine_shotgun_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "cde53e7a849d198dc84d82a679db4bfe6431da49759e73050cfd491abe01ccbe",
-        "linked_hcu_elf_sha256": "b8522d1d3c0f1475b213dff0f6cbeb776e389a2e6feabea9ce57a94b4d8e1ee5",
+        "halo_log_sha256": "9d7f343b3fc92593a970b081ed40190842ed179cfe22a81646d23a25f80b8a5e",
+        "linked_hcu_elf_sha256": "02cd779af18b7a4fe53ab782fe9057ff255cd08a97a6113de392a0477bb78c2e",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "80ab72ab844a1429d633d4dcdad8f4d967200f80266da3ecf24bf4618115e7b0",
         "result_json": "build/m2-c2-matrix/beavercreek_marine_shotgun_4p4bot/result.json",
-        "result_json_sha256": "e39cdc5a089f648bc6974d4a4f26a4b07c9a2029f104f58502f7d7da5bf3213e",
-        "staged_elf_sha256": "b8522d1d3c0f1475b213dff0f6cbeb776e389a2e6feabea9ce57a94b4d8e1ee5"
+        "result_json_sha256": "fb9148df0d683880bb1f78587d18d4eb475282396d84fcae8cb9d58b41518865",
+        "staged_elf_sha256": "02cd779af18b7a4fe53ab782fe9057ff255cd08a97a6113de392a0477bb78c2e"
       },
       "reasons": [],
       "released": true,
@@ -1318,11 +105,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27119834,
+      "boot_end": 27120090,
       "booted": true,
       "caps": {
         "bsp": 730208,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 4619936
       },
@@ -1331,9 +119,10 @@
       "map": "beavercreek",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 405286,
+        "boot_end_below_reserve": 405030,
         "bsp": 5216,
         "game_state": 58512,
+        "map_load_staging": 923768,
         "residency_streaming_map_owner": 923768,
         "tag": 5
       },
@@ -1342,28 +131,29 @@
         "backing_high": 8727323,
         "bsp": 724992,
         "game_state": 3107696,
+        "map_load_staging": 124808,
         "object_pool": 18656,
         "residency_streaming_map_owner": 124808,
         "tag": 4619931
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 408.6,
+        "elapsed_seconds": 250.8,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/beavercreek_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-beavercreek_mounted_gunner_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "0d71249f543e14f20d99e1ea4dfb8c4d88ceaaa9aabf60ee40859036e41b8776",
+        "elf_sha256": "bb7bf83d3200fca18904a292bfa3fa2e9f33fffb6a1c999a27ee07b30cc6a2f8",
         "emu_log": "build/m2-c2-matrix/beavercreek_mounted_gunner_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "727cd325deb8300365349c37e3449be68f0d95698d0e72a6b30bc5d6e8250a89",
+        "emu_log_sha256": "c28482853b531b7d82dae528643cd378cbfc09fe7ad7f93c1e4b16afc59917fc",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/beavercreek_mounted_gunner_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/beavercreek_mounted_gunner_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "03a653fca0b531a4680ed79266bd1d1711fffc73e7254ed282b05ab0a5f73cdd",
-        "linked_hcu_elf_sha256": "0d71249f543e14f20d99e1ea4dfb8c4d88ceaaa9aabf60ee40859036e41b8776",
+        "halo_log_sha256": "a7c1d7a0129487d8146d8a8686cc718a1e6215d85c115308f8b9c2631d4ebfe7",
+        "linked_hcu_elf_sha256": "bb7bf83d3200fca18904a292bfa3fa2e9f33fffb6a1c999a27ee07b30cc6a2f8",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "0753725e79543eb05b02c0e050ee3d6b16d6e6a46b406fb6aa7f5dc3ba192cb9",
         "result_json": "build/m2-c2-matrix/beavercreek_mounted_gunner_4p4bot/result.json",
-        "result_json_sha256": "00dd402dcc4974885534507888f2299589c02af70b45282237a8d21473fd7b10",
-        "staged_elf_sha256": "0d71249f543e14f20d99e1ea4dfb8c4d88ceaaa9aabf60ee40859036e41b8776"
+        "result_json_sha256": "e9e70b512edaea202d19491c80ae18094ebafdeae8109bb66cbc7fe1a6ace038",
+        "staged_elf_sha256": "bb7bf83d3200fca18904a292bfa3fa2e9f33fffb6a1c999a27ee07b30cc6a2f8"
       },
       "reasons": [],
       "released": true,
@@ -1382,11 +172,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27129818,
+      "boot_end": 27130202,
       "booted": true,
       "caps": {
         "bsp": 1303104,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 7014976
       },
@@ -1395,9 +186,10 @@
       "map": "bloodgulch",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 395302,
+        "boot_end_below_reserve": 394918,
         "bsp": 6720,
         "game_state": 58512,
+        "map_load_staging": 863816,
         "residency_streaming_map_owner": 863816,
         "tag": 9
       },
@@ -1406,28 +198,29 @@
         "backing_high": 11693751,
         "bsp": 1296384,
         "game_state": 3107696,
+        "map_load_staging": 184760,
         "object_pool": 48944,
         "residency_streaming_map_owner": 184760,
         "tag": 7014967
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 426.3,
+        "elapsed_seconds": 324.7,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/bloodgulch_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-bloodgulch_marine_shotgun_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "e0ab12680cf9a22c7c8884f6b7114783c571c46945e88ad210d00e59477b6168",
+        "elf_sha256": "b26a7824e538a095767ed800f97800983e272b3710c5b68321303f96d5b21532",
         "emu_log": "build/m2-c2-matrix/bloodgulch_marine_shotgun_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "34ee9c5360946855e6463b59b6d1c0a11f982fcb4d2401fab4b886ee2a6cab15",
+        "emu_log_sha256": "aeb6c12fe7ef7086e06a37201c7c20c3dcdde4e7972b61efa04303683a81c555",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/bloodgulch_marine_shotgun_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/bloodgulch_marine_shotgun_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "23c3656ae9b95279a7b3e09c4b5cfa3225d3a31da00ca9a19597e0ec091d2fcf",
-        "linked_hcu_elf_sha256": "e0ab12680cf9a22c7c8884f6b7114783c571c46945e88ad210d00e59477b6168",
+        "halo_log_sha256": "523ee882ae8292d50d557321bb3ecaad74d91400aed59bcd594968d270df381b",
+        "linked_hcu_elf_sha256": "b26a7824e538a095767ed800f97800983e272b3710c5b68321303f96d5b21532",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "8920cf61f83b739440dc8b06bc3bd173a463e411716dc3550b1443a2b0c4c126",
         "result_json": "build/m2-c2-matrix/bloodgulch_marine_shotgun_4p4bot/result.json",
-        "result_json_sha256": "654716f7af2fd763b3aa67dd61a42bec2838d12297d55a56ccb67adfddeb9f65",
-        "staged_elf_sha256": "e0ab12680cf9a22c7c8884f6b7114783c571c46945e88ad210d00e59477b6168"
+        "result_json_sha256": "3f922179203a1420a1dcd57d5cefcecf4e6fdb71d017afd54b950714cb6c6f70",
+        "staged_elf_sha256": "b26a7824e538a095767ed800f97800983e272b3710c5b68321303f96d5b21532"
       },
       "reasons": [],
       "released": true,
@@ -1446,11 +239,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27121370,
+      "boot_end": 27121754,
       "booted": true,
       "caps": {
         "bsp": 1303104,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 4795984
       },
@@ -1459,9 +253,10 @@
       "map": "bloodgulch",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 403750,
+        "boot_end_below_reserve": 403366,
         "bsp": 6720,
         "game_state": 58512,
+        "map_load_staging": 919556,
         "residency_streaming_map_owner": 919556,
         "tag": 6
       },
@@ -1470,28 +265,29 @@
         "backing_high": 9474762,
         "bsp": 1296384,
         "game_state": 3107696,
+        "map_load_staging": 129020,
         "object_pool": 48944,
         "residency_streaming_map_owner": 129020,
         "tag": 4795978
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 277.0,
+        "elapsed_seconds": 258.9,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/bloodgulch_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-bloodgulch_mounted_gunner_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "3cd648ccf34ef102a56eb1846049c805043fecdcb39c6d2e732ff6b35addb1de",
+        "elf_sha256": "6578d217e1fa95cd04fad218648f0d4191c5df542b3e366f13ba45c2b0d4c468",
         "emu_log": "build/m2-c2-matrix/bloodgulch_mounted_gunner_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "8bee58fc07683acc1ce73bf4da30783de4b67e5937e24572edf521281c9073a4",
+        "emu_log_sha256": "20e713d1f43ce477746692ad119491e67a1199f3759b7b72d9c980d01d3a0917",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/bloodgulch_mounted_gunner_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/bloodgulch_mounted_gunner_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "e09e3206ffde7a5ddc9c27c1fa0fa16337866325cdd1947e019258a5836d1f79",
-        "linked_hcu_elf_sha256": "3cd648ccf34ef102a56eb1846049c805043fecdcb39c6d2e732ff6b35addb1de",
+        "halo_log_sha256": "d3e45af88416ce463b897efffd72f1c0115109ec9dd68788e0e9302e4fac886a",
+        "linked_hcu_elf_sha256": "6578d217e1fa95cd04fad218648f0d4191c5df542b3e366f13ba45c2b0d4c468",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "426f1408bdf8b9e68617c9295772db789aca533637785d632369ddfb53c56d6a",
         "result_json": "build/m2-c2-matrix/bloodgulch_mounted_gunner_4p4bot/result.json",
-        "result_json_sha256": "be3c72880f968a554b57eeec6cb3548fb373672406cd70dae90398bf73896a1e",
-        "staged_elf_sha256": "3cd648ccf34ef102a56eb1846049c805043fecdcb39c6d2e732ff6b35addb1de"
+        "result_json_sha256": "690c5b368b15185bd7ecc583ff7e108ade96d8ce57bd1b132195c5720f4f7911",
+        "staged_elf_sha256": "6578d217e1fa95cd04fad218648f0d4191c5df542b3e366f13ba45c2b0d4c468"
       },
       "reasons": [],
       "released": true,
@@ -1510,11 +306,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27129178,
+      "boot_end": 27129434,
       "booted": true,
       "caps": {
         "bsp": 1354160,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 6892096
       },
@@ -1523,9 +320,10 @@
       "map": "boardingaction",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 395942,
+        "boot_end_below_reserve": 395686,
         "bsp": 10672,
         "game_state": 58512,
+        "map_load_staging": 866704,
         "residency_streaming_map_owner": 866704,
         "tag": 12
       },
@@ -1534,28 +332,29 @@
         "backing_high": 11617972,
         "bsp": 1343488,
         "game_state": 3107696,
+        "map_load_staging": 181872,
         "object_pool": 14500,
         "residency_streaming_map_owner": 181872,
         "tag": 6892084
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 434.1,
+        "elapsed_seconds": 317.1,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/boardingaction_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-boardingaction_marine_shotgun_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "7cd7423ff468e5ede58ec6355ec49aab5c20c067f5497adf987611a091e70b1d",
+        "elf_sha256": "10d14f0b64cb91434954c1ca28ffd21ef955fc28db9a918f06adfd7c9b12b2bc",
         "emu_log": "build/m2-c2-matrix/boardingaction_marine_shotgun_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "a481bbf2314d7a749ed7b28e762164099bbf7f4c7db3bedfbc14761fa790b234",
+        "emu_log_sha256": "47d5ef8de61050cbd457adb89bd14da07616e95f4b7ea7fc170692048c03a994",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/boardingaction_marine_shotgun_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/boardingaction_marine_shotgun_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "aa8d0ce7efdbad2c10a49d30dc2cd37ce47656301d8044bff5353fa3a3e4c4d0",
-        "linked_hcu_elf_sha256": "7cd7423ff468e5ede58ec6355ec49aab5c20c067f5497adf987611a091e70b1d",
+        "halo_log_sha256": "6d7e755e685c9d8b6c2414e18989d451017e5ee15aaa71090e168e1a0c6a0d2c",
+        "linked_hcu_elf_sha256": "10d14f0b64cb91434954c1ca28ffd21ef955fc28db9a918f06adfd7c9b12b2bc",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "0cd974b925082f3c1a0178ab00400efc0e692be6eaf85c0d191ca7b66eeb8541",
         "result_json": "build/m2-c2-matrix/boardingaction_marine_shotgun_4p4bot/result.json",
-        "result_json_sha256": "daef2113782ccfd29662decef50fc0fc9e2c1467242606dd99482bb1930e51fc",
-        "staged_elf_sha256": "7cd7423ff468e5ede58ec6355ec49aab5c20c067f5497adf987611a091e70b1d"
+        "result_json_sha256": "7c8df611b658bf955d06de7e8202309eea2733d5197b822777afd8ebbbd479c4",
+        "staged_elf_sha256": "10d14f0b64cb91434954c1ca28ffd21ef955fc28db9a918f06adfd7c9b12b2bc"
       },
       "reasons": [],
       "released": true,
@@ -1574,11 +373,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27120730,
+      "boot_end": 27120986,
       "booted": true,
       "caps": {
         "bsp": 1354160,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 4673104
       },
@@ -1587,9 +387,10 @@
       "map": "boardingaction",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 404390,
+        "boot_end_below_reserve": 404134,
         "bsp": 10672,
         "game_state": 58512,
+        "map_load_staging": 922444,
         "residency_streaming_map_owner": 922444,
         "tag": 9
       },
@@ -1598,28 +399,29 @@
         "backing_high": 9398983,
         "bsp": 1343488,
         "game_state": 3107696,
+        "map_load_staging": 126132,
         "object_pool": 14500,
         "residency_streaming_map_owner": 126132,
         "tag": 4673095
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 283.5,
+        "elapsed_seconds": 253.1,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/boardingaction_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-boardingaction_mounted_gunner_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "215f67c1884d54e0e77e12baeb0408d32def807f9f7e9c0ffacd6dfebb5fcd7c",
+        "elf_sha256": "20ff3b6d6d7e24390f5dc7c3644ba66acf2924cff1b0bfc5a13e79c030ef46f1",
         "emu_log": "build/m2-c2-matrix/boardingaction_mounted_gunner_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "7d6a5528e3a509c647043608794ab580998f43e84c76516536ac3ab36353bdd6",
+        "emu_log_sha256": "09dd3874b589e9de20d3618664f69cdaf76a123fa716f73b75c7f0c35fe970bc",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/boardingaction_mounted_gunner_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/boardingaction_mounted_gunner_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "0ac672418cb6e2eee52e96b720c7d875b409878a9d96d729cf6898e3baa20c56",
-        "linked_hcu_elf_sha256": "215f67c1884d54e0e77e12baeb0408d32def807f9f7e9c0ffacd6dfebb5fcd7c",
+        "halo_log_sha256": "0fe074ffc12a403aa3b9f631db848359c3a6cc351a56d8a7ab3c08aabb29981a",
+        "linked_hcu_elf_sha256": "20ff3b6d6d7e24390f5dc7c3644ba66acf2924cff1b0bfc5a13e79c030ef46f1",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "e64960aac7c31f6ab41efa2baab11df65cc0607ceb6625cfd6d9de8c57d41771",
         "result_json": "build/m2-c2-matrix/boardingaction_mounted_gunner_4p4bot/result.json",
-        "result_json_sha256": "6ef2a6cdf2cbc33496ed9f2d449b91f3906fcbe9b825ec010152814539760176",
-        "staged_elf_sha256": "215f67c1884d54e0e77e12baeb0408d32def807f9f7e9c0ffacd6dfebb5fcd7c"
+        "result_json_sha256": "47deb7c2d26de1d5f27229b90960dffac051529e23a6f66321e948c23908286d",
+        "staged_elf_sha256": "20ff3b6d6d7e24390f5dc7c3644ba66acf2924cff1b0bfc5a13e79c030ef46f1"
       },
       "reasons": [],
       "released": true,
@@ -1638,11 +440,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27127642,
+      "boot_end": 27127898,
       "booted": true,
       "caps": {
         "bsp": 515248,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 6811648
       },
@@ -1651,9 +454,10 @@
       "map": "carousel",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 397478,
+        "boot_end_below_reserve": 397222,
         "bsp": 7344,
         "game_state": 58512,
+        "map_load_staging": 868780,
         "residency_streaming_map_owner": 868780,
         "tag": 5
       },
@@ -1662,28 +466,29 @@
         "backing_high": 10701947,
         "bsp": 507904,
         "game_state": 3107696,
+        "map_load_staging": 179796,
         "object_pool": 27176,
         "residency_streaming_map_owner": 179796,
         "tag": 6811643
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 408.0,
+        "elapsed_seconds": 318.6,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/carousel_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-carousel_marine_shotgun_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "33a4cbd97ef2822154256e4142e8dd3d0aae5919366b7682fa1f92a879e19886",
+        "elf_sha256": "e60fd3163853679e079078faf7744948db313bc6a50f886f361ab957a7f8de84",
         "emu_log": "build/m2-c2-matrix/carousel_marine_shotgun_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "6e3d35555de626db8209bcba01d30e0330da1a614095f0731a8e8cdb9e53c7af",
+        "emu_log_sha256": "adf4b5df02b240a5fb6e717f1d2c73198da9a92074afc1c480e547e0ce653b65",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/carousel_marine_shotgun_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/carousel_marine_shotgun_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "59c2ea63b2749f2b92eb9da0ad6012ba2e8387822efada91c6ee991bdea36e78",
-        "linked_hcu_elf_sha256": "33a4cbd97ef2822154256e4142e8dd3d0aae5919366b7682fa1f92a879e19886",
+        "halo_log_sha256": "6cd7ad2a2f77b435b6bec66326aa9712cca90a594d6eacdeecafb58b54222ba4",
+        "linked_hcu_elf_sha256": "e60fd3163853679e079078faf7744948db313bc6a50f886f361ab957a7f8de84",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "1cfa70a35adc3947e949c6a8305cac8acc0f4883ff14f9ad330dc349e1283f01",
         "result_json": "build/m2-c2-matrix/carousel_marine_shotgun_4p4bot/result.json",
-        "result_json_sha256": "ba0161213be3bc2a2eab24c9f4694c5d1fe93943aab79a1a343b58fc9248a043",
-        "staged_elf_sha256": "33a4cbd97ef2822154256e4142e8dd3d0aae5919366b7682fa1f92a879e19886"
+        "result_json_sha256": "d4290beede47219d643396a8f2c8dc082892d4d087299aaae6d2c33a1a386df1",
+        "staged_elf_sha256": "e60fd3163853679e079078faf7744948db313bc6a50f886f361ab957a7f8de84"
       },
       "reasons": [],
       "released": true,
@@ -1702,11 +507,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27119578,
+      "boot_end": 27119962,
       "booted": true,
       "caps": {
         "bsp": 515248,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 4592656
       },
@@ -1715,9 +521,10 @@
       "map": "carousel",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 405542,
+        "boot_end_below_reserve": 405158,
         "bsp": 7344,
         "game_state": 58512,
+        "map_load_staging": 924024,
         "residency_streaming_map_owner": 924024,
         "tag": 2
       },
@@ -1726,28 +533,29 @@
         "backing_high": 8482958,
         "bsp": 507904,
         "game_state": 3107696,
+        "map_load_staging": 124552,
         "object_pool": 27176,
         "residency_streaming_map_owner": 124552,
         "tag": 4592654
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 275.1,
+        "elapsed_seconds": 244.9,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/carousel_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-carousel_mounted_gunner_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "6b3a4697076944a25a66cf101f9e877b23b7642f26e2e9b37326c55101e159bb",
+        "elf_sha256": "9d8dbdac7de37aa1e53b96e3f0bb1fb88b22c0dbd716e4708b62bad7d7612b33",
         "emu_log": "build/m2-c2-matrix/carousel_mounted_gunner_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "57073c7fe010708d586242f5113abbdf5c142c2b01270e9fa8f2f1ddd3b8682d",
+        "emu_log_sha256": "340036fbd05c2a7bec12b29171a75533bf6c0d79afa98c97846172ab8d2385cf",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/carousel_mounted_gunner_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/carousel_mounted_gunner_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "2b91085aade11261511cb719004e5ca4c8e6d80cd8b07b400f5a50afb89574ff",
-        "linked_hcu_elf_sha256": "6b3a4697076944a25a66cf101f9e877b23b7642f26e2e9b37326c55101e159bb",
+        "halo_log_sha256": "175a9ffcecf7f3e941e2f431e0bcacccbd30b53c377686826d10887d7b8112c0",
+        "linked_hcu_elf_sha256": "9d8dbdac7de37aa1e53b96e3f0bb1fb88b22c0dbd716e4708b62bad7d7612b33",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "532421b47e33972548ae9d10a901c54999d41bc46680d480e38b2764dead5381",
         "result_json": "build/m2-c2-matrix/carousel_mounted_gunner_4p4bot/result.json",
-        "result_json_sha256": "ffe64eff88b17faac685ac9efc440d10530a725eff1e702c35b3e2711dc021de",
-        "staged_elf_sha256": "6b3a4697076944a25a66cf101f9e877b23b7642f26e2e9b37326c55101e159bb"
+        "result_json_sha256": "40e7c9b7c587811acbd33de3ea1d273c49d5c632688e91bf5d466e08165ca99d",
+        "staged_elf_sha256": "9d8dbdac7de37aa1e53b96e3f0bb1fb88b22c0dbd716e4708b62bad7d7612b33"
       },
       "reasons": [],
       "released": true,
@@ -1766,11 +574,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27126618,
+      "boot_end": 27127002,
       "booted": true,
       "caps": {
         "bsp": 573424,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 6786560
       },
@@ -1779,9 +588,10 @@
       "map": "chillout",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 398502,
+        "boot_end_below_reserve": 398118,
         "bsp": 6128,
         "game_state": 58512,
+        "map_load_staging": 870216,
         "residency_streaming_map_owner": 870216,
         "tag": 9
       },
@@ -1790,28 +600,29 @@
         "backing_high": 10736247,
         "bsp": 567296,
         "game_state": 3107696,
+        "map_load_staging": 178360,
         "object_pool": 4000,
         "residency_streaming_map_owner": 178360,
         "tag": 6786551
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 408.4,
+        "elapsed_seconds": 305.4,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/chillout_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-chillout_marine_shotgun_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "c1c7b956080ed3218aa68d61637514fee60ba5a72e66ea45055296e43442ee61",
+        "elf_sha256": "8b8aac2891438485a3940cc43140e44d17569fcdefae2e53b87a16115eda13b5",
         "emu_log": "build/m2-c2-matrix/chillout_marine_shotgun_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "20bd3c439ab2645698e9b759889b226efbff108e92638a3879d64bdd2046481b",
+        "emu_log_sha256": "539302af2af180363bfceadad9b38237df832f305f4b1b81fec6b61d563cf6eb",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/chillout_marine_shotgun_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/chillout_marine_shotgun_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "c0b802547904011e00938f353d1ec042e0a3de7675b564266d280df5b29edaf7",
-        "linked_hcu_elf_sha256": "c1c7b956080ed3218aa68d61637514fee60ba5a72e66ea45055296e43442ee61",
+        "halo_log_sha256": "138656ea50d76fdd95900a8cebe53c3201665162a793f5c7f50b6fab72c27be3",
+        "linked_hcu_elf_sha256": "8b8aac2891438485a3940cc43140e44d17569fcdefae2e53b87a16115eda13b5",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "303cef1f08bbad39bfdd5f4c387b54746f3b3792af0bb973197917a52832e498",
         "result_json": "build/m2-c2-matrix/chillout_marine_shotgun_4p4bot/result.json",
-        "result_json_sha256": "d7519aab89df51513d133275c5b62e421898956f260fdfc22aa4ceb16749a933",
-        "staged_elf_sha256": "c1c7b956080ed3218aa68d61637514fee60ba5a72e66ea45055296e43442ee61"
+        "result_json_sha256": "6faebf8146f877ae5182d805eeac710920f7304a099d4a3463f467e707d60193",
+        "staged_elf_sha256": "8b8aac2891438485a3940cc43140e44d17569fcdefae2e53b87a16115eda13b5"
       },
       "reasons": [],
       "released": true,
@@ -1830,11 +641,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27118682,
+      "boot_end": 27119066,
       "booted": true,
       "caps": {
         "bsp": 573424,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 4567568
       },
@@ -1843,9 +655,10 @@
       "map": "chillout",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 406438,
+        "boot_end_below_reserve": 406054,
         "bsp": 6128,
         "game_state": 58512,
+        "map_load_staging": 925476,
         "residency_streaming_map_owner": 925476,
         "tag": 6
       },
@@ -1854,28 +667,29 @@
         "backing_high": 8517258,
         "bsp": 567296,
         "game_state": 3107696,
+        "map_load_staging": 123100,
         "object_pool": 4000,
         "residency_streaming_map_owner": 123100,
         "tag": 4567562
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 283.9,
+        "elapsed_seconds": 242.1,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/chillout_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-chillout_mounted_gunner_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "e41f219f49c9cfdbce74fcc0025ac06eabcccc5bbce92f466bbdc757623a406e",
+        "elf_sha256": "7579e0148775af8ebee3e8379f96872c2666b25567ea03a410c4ec5fd66693dc",
         "emu_log": "build/m2-c2-matrix/chillout_mounted_gunner_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "fda60dd1e5108e74b215e475904b870c298b620431aa2acfd224f0e0d98eae26",
+        "emu_log_sha256": "607f6345bbe6462722e08b85aa7828373dd4b4f3e07c9dd5e80c9bc77a8fdc77",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/chillout_mounted_gunner_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/chillout_mounted_gunner_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "64031f582bd712adfdc61838d3dacc575a17e33365e8dea8ccc05611b6e4e8ee",
-        "linked_hcu_elf_sha256": "e41f219f49c9cfdbce74fcc0025ac06eabcccc5bbce92f466bbdc757623a406e",
+        "halo_log_sha256": "e70295aecea89a1d70ffed067ab2b0a2827aecdc121fd6bdc6c9d5a7c6bbecc0",
+        "linked_hcu_elf_sha256": "7579e0148775af8ebee3e8379f96872c2666b25567ea03a410c4ec5fd66693dc",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "e802c0e5bd82bf7d5d1a257079754edb084d280415eea8ec9376c1f02597aced",
         "result_json": "build/m2-c2-matrix/chillout_mounted_gunner_4p4bot/result.json",
-        "result_json_sha256": "f92f16f492cd6c96fa1babcc9cad5e32fc9c5531ccbe91ed89074fe02ceab5a9",
-        "staged_elf_sha256": "e41f219f49c9cfdbce74fcc0025ac06eabcccc5bbce92f466bbdc757623a406e"
+        "result_json_sha256": "cc8445c0c4e65466c268c103aafb6415b4c083cb8336ee1543fc1e6b43efa590",
+        "staged_elf_sha256": "7579e0148775af8ebee3e8379f96872c2666b25567ea03a410c4ec5fd66693dc"
       },
       "reasons": [],
       "released": true,
@@ -1894,11 +708,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27128922,
+      "boot_end": 27129178,
       "booted": true,
       "caps": {
         "bsp": 1326816,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 6881632
       },
@@ -1907,9 +722,10 @@
       "map": "damnation",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 396198,
+        "boot_end_below_reserve": 395942,
         "bsp": 5856,
         "game_state": 58512,
+        "map_load_staging": 866468,
         "residency_streaming_map_owner": 866468,
         "tag": 9
       },
@@ -1918,28 +734,29 @@
         "backing_high": 11584983,
         "bsp": 1320960,
         "game_state": 3107696,
+        "map_load_staging": 182108,
         "object_pool": 22956,
         "residency_streaming_map_owner": 182108,
         "tag": 6881623
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 360.3,
+        "elapsed_seconds": 320.2,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/damnation_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-damnation_marine_shotgun_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "3d386fbdb9d7f91cbf6fc599ff14e4a6bd7db211067a41b41fe2515e25df1c0f",
+        "elf_sha256": "d533cd8f0b4b8924ead79b48ff95f874f2b390cb854ce193a9b1d68a1dc1ecb6",
         "emu_log": "build/m2-c2-matrix/damnation_marine_shotgun_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "1c1a610ae37defaf113a04a6f03dcd801fbd6a8678595565f811ddd1dfd12dfd",
+        "emu_log_sha256": "13da1be25ed437d672e022b609ca425e8b5867274eb67850f4f9eed4b49e00a3",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/damnation_marine_shotgun_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/damnation_marine_shotgun_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "993ecd3dd1b0c05ac06bd75a2f6ce6d95a3fcba17690e84b2b586a6f2a042384",
-        "linked_hcu_elf_sha256": "3d386fbdb9d7f91cbf6fc599ff14e4a6bd7db211067a41b41fe2515e25df1c0f",
+        "halo_log_sha256": "d8e66411aaa19e5a5e57f8ecd64ed5b2b4a4c3828dc4d11133ecdc82c5d6faf7",
+        "linked_hcu_elf_sha256": "d533cd8f0b4b8924ead79b48ff95f874f2b390cb854ce193a9b1d68a1dc1ecb6",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "3d92fb625e43ba888e8c87e74fbd3fa40496d75c5a880b51e435425d07543b5a",
         "result_json": "build/m2-c2-matrix/damnation_marine_shotgun_4p4bot/result.json",
-        "result_json_sha256": "d987d6ed6fbd998f0cbabf91c8b4478cc6938ad2ccb367361b3ea31d3a07ac14",
-        "staged_elf_sha256": "3d386fbdb9d7f91cbf6fc599ff14e4a6bd7db211067a41b41fe2515e25df1c0f"
+        "result_json_sha256": "c3c6919e1944b02f95fd71c8a0a6467412457a7e0985fcc71201f76dea399d63",
+        "staged_elf_sha256": "d533cd8f0b4b8924ead79b48ff95f874f2b390cb854ce193a9b1d68a1dc1ecb6"
       },
       "reasons": [],
       "released": true,
@@ -1958,11 +775,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27120858,
+      "boot_end": 27121242,
       "booted": true,
       "caps": {
         "bsp": 1326816,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 4662640
       },
@@ -1971,9 +789,10 @@
       "map": "damnation",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 404262,
+        "boot_end_below_reserve": 403878,
         "bsp": 5856,
         "game_state": 58512,
+        "map_load_staging": 921728,
         "residency_streaming_map_owner": 921728,
         "tag": 6
       },
@@ -1982,28 +801,29 @@
         "backing_high": 9365994,
         "bsp": 1320960,
         "game_state": 3107696,
+        "map_load_staging": 126848,
         "object_pool": 22956,
         "residency_streaming_map_owner": 126848,
         "tag": 4662634
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 292.3,
+        "elapsed_seconds": 252.4,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/damnation_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-damnation_mounted_gunner_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "dc92b591ededbea0f93b299575c736b143f0716bdd47e55cfa75d8f7ca7ec846",
+        "elf_sha256": "be19ee68a89b23404e810a9a7a7b07f720bf78ee403e15603da0ab2f10c1c868",
         "emu_log": "build/m2-c2-matrix/damnation_mounted_gunner_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "5d4f628e35ac02373a48f61d72c318df2a5eb3de1761d89d8872d79e5c6559bb",
+        "emu_log_sha256": "2f27bfad5740fcf33951c6f23ca5c006f1bcbbf0c62201156defb684e0be7a00",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/damnation_mounted_gunner_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/damnation_mounted_gunner_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "907bcb56264cf48ceea4b1669dbe783c55d7047997e7514ea867e8aa82a96f18",
-        "linked_hcu_elf_sha256": "dc92b591ededbea0f93b299575c736b143f0716bdd47e55cfa75d8f7ca7ec846",
+        "halo_log_sha256": "36499f8b26d62f845f5be96a70b1a828f426e02b9ef43ec983308e59e3006168",
+        "linked_hcu_elf_sha256": "be19ee68a89b23404e810a9a7a7b07f720bf78ee403e15603da0ab2f10c1c868",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "59d088c9a9c523355d40aa50d986e161a56f8930c0d8bd6d32547bf7c9be9c1c",
         "result_json": "build/m2-c2-matrix/damnation_mounted_gunner_4p4bot/result.json",
-        "result_json_sha256": "34e2b0e2cd045e9002ff35bb6e7a77b8a9b0b482c25317ebec1a533360f846b8",
-        "staged_elf_sha256": "dc92b591ededbea0f93b299575c736b143f0716bdd47e55cfa75d8f7ca7ec846"
+        "result_json_sha256": "da044bc41d185a003b4889083f534a1c89c4ceca8d32891ff9ceef9d4dfb4c7a",
+        "staged_elf_sha256": "be19ee68a89b23404e810a9a7a7b07f720bf78ee403e15603da0ab2f10c1c868"
       },
       "reasons": [],
       "released": true,
@@ -2022,11 +842,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27125850,
+      "boot_end": 27126234,
       "booted": true,
       "caps": {
         "bsp": 595856,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 6778944
       },
@@ -2035,9 +856,10 @@
       "map": "hangemhigh",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 399270,
+        "boot_end_below_reserve": 398886,
         "bsp": 6032,
         "game_state": 58512,
+        "map_load_staging": 871596,
         "residency_streaming_map_owner": 871596,
         "tag": 14
       },
@@ -2046,28 +868,29 @@
         "backing_high": 10751154,
         "bsp": 589824,
         "game_state": 3107696,
+        "map_load_staging": 176980,
         "object_pool": 4000,
         "residency_streaming_map_owner": 176980,
         "tag": 6778930
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 357.0,
+        "elapsed_seconds": 306.1,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/hangemhigh_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-hangemhigh_marine_shotgun_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "e7a3078a9931f172e716738bb270a04a2f89a253e312c56edb6d36c71c19b88a",
+        "elf_sha256": "87d0f30d0bd6080602dcde51d9f913e48555e0724ae7d30928d045c2a37d6dda",
         "emu_log": "build/m2-c2-matrix/hangemhigh_marine_shotgun_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "427f718367543fa0eff5abd05b377ac588a850c1932e9bf7b2eee69dd2cc00db",
+        "emu_log_sha256": "93a77dab329ba84edb7c557ba7db68fec565fb09ecb14cb3bf985490acae2735",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/hangemhigh_marine_shotgun_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/hangemhigh_marine_shotgun_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "f25f644577932ccdc3562e51f81f35351df7238ee7fd5dc9df3a9a35db1756ef",
-        "linked_hcu_elf_sha256": "e7a3078a9931f172e716738bb270a04a2f89a253e312c56edb6d36c71c19b88a",
+        "halo_log_sha256": "0fe6dde76f1cd85f68e174f9aa620745ef9390d5314546f06484f0705c5b2e7f",
+        "linked_hcu_elf_sha256": "87d0f30d0bd6080602dcde51d9f913e48555e0724ae7d30928d045c2a37d6dda",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "f730aa8f548027023c0e7d380def04e94e883a427a7afb5ca6e437912e41dd0a",
         "result_json": "build/m2-c2-matrix/hangemhigh_marine_shotgun_4p4bot/result.json",
-        "result_json_sha256": "844f3e04d659b25cc2a6953120dec33cd112fd5599c85de013f8eee8f64d2ceb",
-        "staged_elf_sha256": "e7a3078a9931f172e716738bb270a04a2f89a253e312c56edb6d36c71c19b88a"
+        "result_json_sha256": "ae5c929c785c828afec9d05af88328c4162321ee8b621141a649dd0f70d32260",
+        "staged_elf_sha256": "87d0f30d0bd6080602dcde51d9f913e48555e0724ae7d30928d045c2a37d6dda"
       },
       "reasons": [],
       "released": true,
@@ -2086,11 +909,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27117914,
+      "boot_end": 27118298,
       "booted": true,
       "caps": {
         "bsp": 595856,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 4559952
       },
@@ -2099,9 +923,10 @@
       "map": "hangemhigh",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 407206,
+        "boot_end_below_reserve": 406822,
         "bsp": 6032,
         "game_state": 58512,
+        "map_load_staging": 926840,
         "residency_streaming_map_owner": 926840,
         "tag": 11
       },
@@ -2110,28 +935,29 @@
         "backing_high": 8532165,
         "bsp": 589824,
         "game_state": 3107696,
+        "map_load_staging": 121736,
         "object_pool": 4000,
         "residency_streaming_map_owner": 121736,
         "tag": 4559941
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 282.5,
+        "elapsed_seconds": 243.5,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/hangemhigh_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-hangemhigh_mounted_gunner_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "29cabdd3bb008eebeb0135e0278d5f62850fca6ed19a9cdfce6e779c3531f3f1",
+        "elf_sha256": "6ea1535c05a5df7e3daf567ea76d88183970b2e1d85ba13f8c6aa11f7c254190",
         "emu_log": "build/m2-c2-matrix/hangemhigh_mounted_gunner_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "ebd9a283a51a1569b542a51bb179708820a847aab6e0b0447294d69a23e8fc6f",
+        "emu_log_sha256": "9bfed28f07bfc5f3af056788e965867bf62992d730b12c1946e3b2c2bed03bb5",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/hangemhigh_mounted_gunner_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/hangemhigh_mounted_gunner_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "d7e50d7ac726b073f079bdc1ba8665c68bb8468e5c0d8e7692d9944838fa1ef0",
-        "linked_hcu_elf_sha256": "29cabdd3bb008eebeb0135e0278d5f62850fca6ed19a9cdfce6e779c3531f3f1",
+        "halo_log_sha256": "e5ed1ada05be0be6d099a770b4b756344723193ad1df746d78b206addd53341d",
+        "linked_hcu_elf_sha256": "6ea1535c05a5df7e3daf567ea76d88183970b2e1d85ba13f8c6aa11f7c254190",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "675d29677db1248f13bb4add2277d7772a9febfac9c99d51c758d1737a828a9c",
         "result_json": "build/m2-c2-matrix/hangemhigh_mounted_gunner_4p4bot/result.json",
-        "result_json_sha256": "6eb281bcd8ef30fb972024b653d86ddbee46542455e135825f852f87a10bc47e",
-        "staged_elf_sha256": "29cabdd3bb008eebeb0135e0278d5f62850fca6ed19a9cdfce6e779c3531f3f1"
+        "result_json_sha256": "62555bebb49b6e33bb22862c01caba103b6e8678384186fa7f0312218acc55e4",
+        "staged_elf_sha256": "6ea1535c05a5df7e3daf567ea76d88183970b2e1d85ba13f8c6aa11f7c254190"
       },
       "reasons": [],
       "released": true,
@@ -2150,11 +976,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27126234,
+      "boot_end": 27126490,
       "booted": true,
       "caps": {
         "bsp": 377392,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 6797024
       },
@@ -2163,9 +990,10 @@
       "map": "longest",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 398886,
+        "boot_end_below_reserve": 398630,
         "bsp": 2608,
         "game_state": 58512,
+        "map_load_staging": 870972,
         "residency_streaming_map_owner": 870972,
         "tag": 5
       },
@@ -2174,28 +1002,29 @@
         "backing_high": 10554203,
         "bsp": 374784,
         "game_state": 3107696,
+        "map_load_staging": 177604,
         "object_pool": 2000,
         "residency_streaming_map_owner": 177604,
         "tag": 6797019
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 409.6,
+        "elapsed_seconds": 305.6,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/longest_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-longest_marine_shotgun_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "c8fd08b8d00bad0afb17c464361d4bc22f91b5bc62c5bfa816399cf20aa9bcfb",
+        "elf_sha256": "5098cb7c0aa284793cfdc4c39b61276d05818dd661d63d15b2342c468d4190bc",
         "emu_log": "build/m2-c2-matrix/longest_marine_shotgun_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "3d226a082a67e8586d1482d3bdbbaf4bb8ebd831de3c28ae840d3d88519e799f",
+        "emu_log_sha256": "ee32921e255c88a9572bc4ad6b600378d374ee0c514fbde3ccf18faf9a34d767",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/longest_marine_shotgun_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/longest_marine_shotgun_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "f4e0925c298c6390ac1dd9aac9e0ec2bd0ca8653431d91affff2cc9decf9656d",
-        "linked_hcu_elf_sha256": "c8fd08b8d00bad0afb17c464361d4bc22f91b5bc62c5bfa816399cf20aa9bcfb",
+        "halo_log_sha256": "8d7377dcd9cc9038fc9ddd0f37539e097a12d05ed5babb38bd04fb97588ab0b2",
+        "linked_hcu_elf_sha256": "5098cb7c0aa284793cfdc4c39b61276d05818dd661d63d15b2342c468d4190bc",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "a33dc337bc8235263b37006af735c6a6bc49dd9c52f4460f6e83fe0572bea6c9",
         "result_json": "build/m2-c2-matrix/longest_marine_shotgun_4p4bot/result.json",
-        "result_json_sha256": "a19b644fc1a56ab6a444684a1b6c2731874cca2c0887a4901d63b462d01cb4c9",
-        "staged_elf_sha256": "c8fd08b8d00bad0afb17c464361d4bc22f91b5bc62c5bfa816399cf20aa9bcfb"
+        "result_json_sha256": "c39f69c64c96e68450a0ee9332d90d030559c7615f758ae62ae6add447213f3f",
+        "staged_elf_sha256": "5098cb7c0aa284793cfdc4c39b61276d05818dd661d63d15b2342c468d4190bc"
       },
       "reasons": [],
       "released": true,
@@ -2214,11 +1043,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27118298,
+      "boot_end": 27118554,
       "booted": true,
       "caps": {
         "bsp": 377392,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 4578032
       },
@@ -2227,9 +1057,10 @@
       "map": "longest",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 406822,
+        "boot_end_below_reserve": 406566,
         "bsp": 2608,
         "game_state": 58512,
+        "map_load_staging": 926216,
         "residency_streaming_map_owner": 926216,
         "tag": 2
       },
@@ -2238,28 +1069,29 @@
         "backing_high": 8335214,
         "bsp": 374784,
         "game_state": 3107696,
+        "map_load_staging": 122360,
         "object_pool": 2000,
         "residency_streaming_map_owner": 122360,
         "tag": 4578030
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 339.1,
+        "elapsed_seconds": 241.3,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/longest_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-longest_mounted_gunner_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "acbb680f3c437bb2984d5855ba1cbc988f43b51472a2a7728f203de87352b011",
+        "elf_sha256": "3dbef1d1826e2f3054ccd064b37163929064ce8fd9fbd66d5c5a606114b99324",
         "emu_log": "build/m2-c2-matrix/longest_mounted_gunner_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "b42633995f959bdd028e4a11a55e64b91e3faf48719d73eaf1f78fcfad128093",
+        "emu_log_sha256": "5c871aa23278acc458f0921f8abadea0d78b5ac18342bcee3df1c450cf1c4de1",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/longest_mounted_gunner_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/longest_mounted_gunner_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "14d12982e14d99ed8fd68ca051cf58c4d19c187b47846c77cdba01288162a59a",
-        "linked_hcu_elf_sha256": "acbb680f3c437bb2984d5855ba1cbc988f43b51472a2a7728f203de87352b011",
+        "halo_log_sha256": "7bfcebfccdeec9578648b640143093ecb881831f827b918105ba0936ad0be74e",
+        "linked_hcu_elf_sha256": "3dbef1d1826e2f3054ccd064b37163929064ce8fd9fbd66d5c5a606114b99324",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "9b115f105bc6fa0bf4e81de54251652d65242232539570f78f4ca268e17b324c",
         "result_json": "build/m2-c2-matrix/longest_mounted_gunner_4p4bot/result.json",
-        "result_json_sha256": "9212bfa581bfcbf65ebc2f1a54196ccc8ba14a0f64d846deb50a68c92a962501",
-        "staged_elf_sha256": "acbb680f3c437bb2984d5855ba1cbc988f43b51472a2a7728f203de87352b011"
+        "result_json_sha256": "9d5b4801f80fd3691f5d3ccbb6d63b28ba28a09076de6b183a1c974de0194e61",
+        "staged_elf_sha256": "3dbef1d1826e2f3054ccd064b37163929064ce8fd9fbd66d5c5a606114b99324"
       },
       "reasons": [],
       "released": true,
@@ -2278,11 +1110,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27126106,
+      "boot_end": 27126362,
       "booted": true,
       "caps": {
         "bsp": 888336,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 6774176
       },
@@ -2291,9 +1124,10 @@
       "map": "prisoner",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 399014,
+        "boot_end_below_reserve": 398758,
         "bsp": 3600,
         "game_state": 58512,
+        "map_load_staging": 871320,
         "residency_streaming_map_owner": 871320,
         "tag": 12
       },
@@ -2302,28 +1136,29 @@
         "backing_high": 11041300,
         "bsp": 884736,
         "game_state": 3107696,
+        "map_load_staging": 177256,
         "object_pool": 1000,
         "residency_streaming_map_owner": 177256,
         "tag": 6774164
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 338.9,
+        "elapsed_seconds": 313.5,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/prisoner_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-prisoner_marine_shotgun_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "f52e4390a99f32fb4555dc9f8867436bd7bfaaaa5c9da3eb562ea8160e7142d4",
+        "elf_sha256": "d649061c3472c05b9d4edaaa2ffaad21d73da3bffee1e5221cae6f73cd549e15",
         "emu_log": "build/m2-c2-matrix/prisoner_marine_shotgun_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "f5505dbb5a2c5ddc9aa9b2e80b8266943ddcd0ced3aca686bc74450933de481b",
+        "emu_log_sha256": "66b911ae4d2e7ec6e00201bab60dbe4231e46ada863c02e2f944e08710d81312",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/prisoner_marine_shotgun_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/prisoner_marine_shotgun_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "3649891c3f1522986331b25289539e995ae2c2e8ffce6cf32a82a614c7ff2ae2",
-        "linked_hcu_elf_sha256": "f52e4390a99f32fb4555dc9f8867436bd7bfaaaa5c9da3eb562ea8160e7142d4",
+        "halo_log_sha256": "d2b292baab44434a7ccfd36c0cb0d1d381953fac87645c0efd1c6b7df0ce355c",
+        "linked_hcu_elf_sha256": "d649061c3472c05b9d4edaaa2ffaad21d73da3bffee1e5221cae6f73cd549e15",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "6de39100fbf35e7069c2d4d154f697077d983895e3193e66d8b8e48e7a33b5c8",
         "result_json": "build/m2-c2-matrix/prisoner_marine_shotgun_4p4bot/result.json",
-        "result_json_sha256": "6be118de27b28285faeac05136351717153c7bb9c263d951b933af198e4c2b81",
-        "staged_elf_sha256": "f52e4390a99f32fb4555dc9f8867436bd7bfaaaa5c9da3eb562ea8160e7142d4"
+        "result_json_sha256": "4c46741e986a771affc05cdd442c793dfc3e737972448f3580f9cae2d324b659",
+        "staged_elf_sha256": "d649061c3472c05b9d4edaaa2ffaad21d73da3bffee1e5221cae6f73cd549e15"
       },
       "reasons": [],
       "released": true,
@@ -2342,11 +1177,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27118170,
+      "boot_end": 27118426,
       "booted": true,
       "caps": {
         "bsp": 888336,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 4555184
       },
@@ -2355,9 +1191,10 @@
       "map": "prisoner",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 406950,
+        "boot_end_below_reserve": 406694,
         "bsp": 3600,
         "game_state": 58512,
+        "map_load_staging": 926564,
         "residency_streaming_map_owner": 926564,
         "tag": 9
       },
@@ -2366,28 +1203,29 @@
         "backing_high": 8822311,
         "bsp": 884736,
         "game_state": 3107696,
+        "map_load_staging": 122012,
         "object_pool": 1000,
         "residency_streaming_map_owner": 122012,
         "tag": 4555175
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 356.2,
+        "elapsed_seconds": 243.3,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/prisoner_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-prisoner_mounted_gunner_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "1e7db1f62081e0b07d780686475e76b462a22e48679fdd2be0f7aa3e80758b89",
+        "elf_sha256": "8f41c7b2b9ff9351aa90e3006f5991b5e8bfcf660c30c81aaa5772a9792c9cb9",
         "emu_log": "build/m2-c2-matrix/prisoner_mounted_gunner_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "04394dbcedf77472ff2b923b097f516e0cca25389fcb20711b28f4d92570644c",
+        "emu_log_sha256": "083a881d53bbdcaea60afb3f970f61b46ab8704538201ebaec8422900264fa2c",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/prisoner_mounted_gunner_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/prisoner_mounted_gunner_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "b7855fdbd8e6b67c6e82a053d2187eb174b45170b755d69a839757d941f957c5",
-        "linked_hcu_elf_sha256": "1e7db1f62081e0b07d780686475e76b462a22e48679fdd2be0f7aa3e80758b89",
+        "halo_log_sha256": "8f2b2905cf49bd269b089bc11ddb0f30994e25c348e5be88c1f9d9031d422707",
+        "linked_hcu_elf_sha256": "8f41c7b2b9ff9351aa90e3006f5991b5e8bfcf660c30c81aaa5772a9792c9cb9",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "7ac4d0b7e37cce77f1642035ddd3eec1f7ee18f92ee9241c3f86ac7db735ab92",
         "result_json": "build/m2-c2-matrix/prisoner_mounted_gunner_4p4bot/result.json",
-        "result_json_sha256": "65d1750dc32f4df12540c628b8d6ef0bb2ecb69a069b94a410ef7378775170f0",
-        "staged_elf_sha256": "1e7db1f62081e0b07d780686475e76b462a22e48679fdd2be0f7aa3e80758b89"
+        "result_json_sha256": "3bbd321eb821db19d5e73b2568ec92dc4011c9791f03fcfadd12a3e0c148bf11",
+        "staged_elf_sha256": "8f41c7b2b9ff9351aa90e3006f5991b5e8bfcf660c30c81aaa5772a9792c9cb9"
       },
       "reasons": [],
       "released": true,
@@ -2406,11 +1244,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27125850,
+      "boot_end": 27126234,
       "booted": true,
       "caps": {
         "bsp": 1643056,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 6782240
       },
@@ -2419,9 +1258,10 @@
       "map": "putput",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 399270,
+        "boot_end_below_reserve": 398886,
         "bsp": 4656,
         "game_state": 58512,
+        "map_load_staging": 871672,
         "residency_streaming_map_owner": 871672,
         "tag": 14
       },
@@ -2430,28 +1270,29 @@
         "backing_high": 11803026,
         "bsp": 1638400,
         "game_state": 3107696,
+        "map_load_staging": 176904,
         "object_pool": 16000,
         "residency_streaming_map_owner": 176904,
         "tag": 6782226
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 352.9,
+        "elapsed_seconds": 308.4,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/putput_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-putput_marine_shotgun_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "227df4372d5180daeb0313d9865a172de0a4a51a452892ab49d94ebe1e075394",
+        "elf_sha256": "0838cf387dd075f0b2b75ba2dc9a48087817b6a1f93a58840c7fb75e353e8e1c",
         "emu_log": "build/m2-c2-matrix/putput_marine_shotgun_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "0898c4d9fd8ba0fd3aa94a31aa57542bf1899832af2698f848e186da0aafebe2",
+        "emu_log_sha256": "687bf1115d10215af11a65a33df4d55378bf3c9a24323a42babb9ad47324ac2a",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/putput_marine_shotgun_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/putput_marine_shotgun_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "cffc0e0f2e2f0c8dab45b8a66d44e8bd1f8b0e5832f59c77964a2db7b573e05d",
-        "linked_hcu_elf_sha256": "227df4372d5180daeb0313d9865a172de0a4a51a452892ab49d94ebe1e075394",
+        "halo_log_sha256": "c074887aa311d03a25d7e020a4973c2c9b538a8f35893987cd0db298678326d9",
+        "linked_hcu_elf_sha256": "0838cf387dd075f0b2b75ba2dc9a48087817b6a1f93a58840c7fb75e353e8e1c",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "3e7ffb50dc0f0e412c267d8fccf3c5e67026ff885c66cf6b4ae463fb83ac3897",
         "result_json": "build/m2-c2-matrix/putput_marine_shotgun_4p4bot/result.json",
-        "result_json_sha256": "9e3cbb1a97e6637c575f975bbed449bd01372fe7a5e741a83afcf55768f7e7ab",
-        "staged_elf_sha256": "227df4372d5180daeb0313d9865a172de0a4a51a452892ab49d94ebe1e075394"
+        "result_json_sha256": "949fbd351c04d3387660e204c04652a224ede3715e7ea2e310cb4859b0ba0d0d",
+        "staged_elf_sha256": "0838cf387dd075f0b2b75ba2dc9a48087817b6a1f93a58840c7fb75e353e8e1c"
       },
       "reasons": [],
       "released": true,
@@ -2470,11 +1311,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27117914,
+      "boot_end": 27118170,
       "booted": true,
       "caps": {
         "bsp": 1643056,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 4563248
       },
@@ -2483,9 +1325,10 @@
       "map": "putput",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 407206,
+        "boot_end_below_reserve": 406950,
         "bsp": 4656,
         "game_state": 58512,
+        "map_load_staging": 926916,
         "residency_streaming_map_owner": 926916,
         "tag": 11
       },
@@ -2494,28 +1337,29 @@
         "backing_high": 9584037,
         "bsp": 1638400,
         "game_state": 3107696,
+        "map_load_staging": 121660,
         "object_pool": 16000,
         "residency_streaming_map_owner": 121660,
         "tag": 4563237
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 280.1,
+        "elapsed_seconds": 244.8,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/putput_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-putput_mounted_gunner_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "97836d94a8af9800d414ca684758dc5efcd9cbe6028c32d19099cbf6d58c6d43",
+        "elf_sha256": "fa56667cae5e25d605246736eee1a81fa2b3fd8c0535c815cd2cb425028893ce",
         "emu_log": "build/m2-c2-matrix/putput_mounted_gunner_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "9376c4f7639da67c420d1688ca1611941c463a38fa6a41ed4c3d5704765e0e27",
+        "emu_log_sha256": "5abd4028b05d3c9358db8d3948fdc822e489d0a86aa831fd97e6e422686e8351",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/putput_mounted_gunner_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/putput_mounted_gunner_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "0247368faa5b054334a2d4f2991997b9c55cdc27678239e2300467e551f9adc7",
-        "linked_hcu_elf_sha256": "97836d94a8af9800d414ca684758dc5efcd9cbe6028c32d19099cbf6d58c6d43",
+        "halo_log_sha256": "12a3d15a66c6a567b29bb86804a58d67f23e2e0f12efd2955ecda8e30574ddb5",
+        "linked_hcu_elf_sha256": "fa56667cae5e25d605246736eee1a81fa2b3fd8c0535c815cd2cb425028893ce",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "6235819dbba5895ce76e9b21ecc61f8988de3d0f62b334bc547475a81f57f214",
         "result_json": "build/m2-c2-matrix/putput_mounted_gunner_4p4bot/result.json",
-        "result_json_sha256": "06a51cc8d63d68daf101df29a78505d7602cd0c8103aaffc53fd4f0519ff83b3",
-        "staged_elf_sha256": "97836d94a8af9800d414ca684758dc5efcd9cbe6028c32d19099cbf6d58c6d43"
+        "result_json_sha256": "69daac971d802fd99ba52c436a1a52522ad360d8ca214e7c417ee547b5af6afc",
+        "staged_elf_sha256": "fa56667cae5e25d605246736eee1a81fa2b3fd8c0535c815cd2cb425028893ce"
       },
       "reasons": [],
       "released": true,
@@ -2534,11 +1378,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27127642,
+      "boot_end": 27128026,
       "booted": true,
       "caps": {
         "bsp": 550816,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 6804448
       },
@@ -2547,9 +1392,10 @@
       "map": "ratrace",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 397478,
+        "boot_end_below_reserve": 397094,
         "bsp": 6048,
         "game_state": 58512,
+        "map_load_staging": 868976,
         "residency_streaming_map_owner": 868976,
         "tag": 0
       },
@@ -2558,28 +1404,29 @@
         "backing_high": 10731616,
         "bsp": 544768,
         "game_state": 3107696,
+        "map_load_staging": 179600,
         "object_pool": 6760,
         "residency_streaming_map_owner": 179600,
         "tag": 6804448
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 316.8,
+        "elapsed_seconds": 304.4,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ratrace_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-ratrace_marine_shotgun_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "d082ebf13d23f7267c2b1493c02c95e4af6cc3ce1cf202515e7a3ed3169fb016",
+        "elf_sha256": "9ce1989d5743890abcb2a80dca40bcc06f18c98ad933c9ef70e895ea11495dfd",
         "emu_log": "build/m2-c2-matrix/ratrace_marine_shotgun_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "0ee06ed67ca2bb00e08704990dbe3d20fa9c5f986a0c2c887183b048ef85966c",
+        "emu_log_sha256": "457f556f6da5fbdae2c4bda4e8f65c484764174022b915e602031c67c50d9324",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/ratrace_marine_shotgun_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/ratrace_marine_shotgun_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "836758e7b4a8dac8fc55c1f297a2cc890235c023e237995b8e3d4fb62f49806d",
-        "linked_hcu_elf_sha256": "d082ebf13d23f7267c2b1493c02c95e4af6cc3ce1cf202515e7a3ed3169fb016",
+        "halo_log_sha256": "5f1eafae63820b72f1ad9173032ff63a915be725e651db343e7f9681177173a5",
+        "linked_hcu_elf_sha256": "9ce1989d5743890abcb2a80dca40bcc06f18c98ad933c9ef70e895ea11495dfd",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "5f74c2aee5c648f1f10b2b94595849bde4135b8b74f3911db131862752be5900",
         "result_json": "build/m2-c2-matrix/ratrace_marine_shotgun_4p4bot/result.json",
-        "result_json_sha256": "b01e50a75cbeed0b45488906eb19df03bbff0994726e5e8162cff7d4d3bab0aa",
-        "staged_elf_sha256": "d082ebf13d23f7267c2b1493c02c95e4af6cc3ce1cf202515e7a3ed3169fb016"
+        "result_json_sha256": "22b3779c9db7ead2c3528cebe04431f3a2d59d2526c279efce0ad89c33448988",
+        "staged_elf_sha256": "9ce1989d5743890abcb2a80dca40bcc06f18c98ad933c9ef70e895ea11495dfd"
       },
       "reasons": [],
       "released": true,
@@ -2598,11 +1445,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27119706,
+      "boot_end": 27120090,
       "booted": true,
       "caps": {
         "bsp": 550816,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 4585472
       },
@@ -2611,9 +1459,10 @@
       "map": "ratrace",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 405414,
+        "boot_end_below_reserve": 405030,
         "bsp": 6048,
         "game_state": 58512,
+        "map_load_staging": 924220,
         "residency_streaming_map_owner": 924220,
         "tag": 13
       },
@@ -2622,28 +1471,29 @@
         "backing_high": 8512627,
         "bsp": 544768,
         "game_state": 3107696,
+        "map_load_staging": 124356,
         "object_pool": 6760,
         "residency_streaming_map_owner": 124356,
         "tag": 4585459
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 334.2,
+        "elapsed_seconds": 241.8,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ratrace_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-ratrace_mounted_gunner_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "fcedcb5bc072c212afc76e0e0826c9b71d5169205667311a1f6b7cf81bc47706",
+        "elf_sha256": "8963ad430ad48f88d33d230c0fb8376f616accf5104c2d99dff3a942c1037acc",
         "emu_log": "build/m2-c2-matrix/ratrace_mounted_gunner_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "9376ac751a490817db27bcbd73d4b0b3cd815609b93eaa348f27ac0a994723e6",
+        "emu_log_sha256": "9172e7e81653fa53dabc96052d575cf4a2c49d66e8b9cb0a91719b9b8b555780",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/ratrace_mounted_gunner_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/ratrace_mounted_gunner_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "378939e28d4792591d3a079580111bc267120fe9190dc7f05746fab1c1073a60",
-        "linked_hcu_elf_sha256": "fcedcb5bc072c212afc76e0e0826c9b71d5169205667311a1f6b7cf81bc47706",
+        "halo_log_sha256": "d334da3d023015c09c403cfb3ed19839c1e80999c45582e74a5e6dc825028ffc",
+        "linked_hcu_elf_sha256": "8963ad430ad48f88d33d230c0fb8376f616accf5104c2d99dff3a942c1037acc",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "05a22915e70c189aad4ef1312c2eb7f6b5c2485306ce600ba83eb4c47043d5d8",
         "result_json": "build/m2-c2-matrix/ratrace_mounted_gunner_4p4bot/result.json",
-        "result_json_sha256": "e0c2b4bb49caada4c4493432fc488d96cb95871fac1c8df80f8ca0e50b287150",
-        "staged_elf_sha256": "fcedcb5bc072c212afc76e0e0826c9b71d5169205667311a1f6b7cf81bc47706"
+        "result_json_sha256": "880d323eb1c727694d5729edac7488bc3bea50e222ccf91cb45cb7ce8f8d1c2d",
+        "staged_elf_sha256": "8963ad430ad48f88d33d230c0fb8376f616accf5104c2d99dff3a942c1037acc"
       },
       "reasons": [],
       "released": true,
@@ -2662,11 +1512,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27129178,
+      "boot_end": 27129562,
       "booted": true,
       "caps": {
         "bsp": 1993744,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 6913936
       },
@@ -2675,9 +1526,10 @@
       "map": "sidewinder",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 395942,
+        "boot_end_below_reserve": 395558,
         "bsp": 9232,
         "game_state": 58512,
+        "map_load_staging": 865708,
         "residency_streaming_map_owner": 865708,
         "tag": 8
       },
@@ -2686,28 +1538,29 @@
         "backing_high": 12280840,
         "bsp": 1984512,
         "game_state": 3107696,
+        "map_load_staging": 182868,
         "object_pool": 42600,
         "residency_streaming_map_owner": 182868,
         "tag": 6913928
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 331.4,
+        "elapsed_seconds": 330.0,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/sidewinder_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-sidewinder_marine_shotgun_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "03466aa185cb9db90124e2a84b8fe20e69f04d6f673111155a59fad0c5361715",
+        "elf_sha256": "6fb0caaee9cf0599a84f24c199a973e841c71c145eff9ea032f2cfbeb7767da3",
         "emu_log": "build/m2-c2-matrix/sidewinder_marine_shotgun_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "bf38e9cd089aa74f0d7b673e1741400db290fe28a6fde17e298af182596755dd",
+        "emu_log_sha256": "b7820828576052ea983e3f69006d1b7ee6c95e130b45fe3675f783ce8c643a43",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/sidewinder_marine_shotgun_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/sidewinder_marine_shotgun_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "ab4b42f7c708d3554ccd7e7304e9edd134840e08967cd43204a29ef51d91ab40",
-        "linked_hcu_elf_sha256": "03466aa185cb9db90124e2a84b8fe20e69f04d6f673111155a59fad0c5361715",
+        "halo_log_sha256": "dbf2eeea150873566b55cf811a92dae751d8b3581ed96d857bc90cc5c590432a",
+        "linked_hcu_elf_sha256": "6fb0caaee9cf0599a84f24c199a973e841c71c145eff9ea032f2cfbeb7767da3",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "24bf404dadbd0e7ccc806b60052e0b564728efbd253be9453bfb6650e994d648",
         "result_json": "build/m2-c2-matrix/sidewinder_marine_shotgun_4p4bot/result.json",
-        "result_json_sha256": "864f4f5977409e64d73590396e81631e6a687afc829c87a3a855c4ae04e168be",
-        "staged_elf_sha256": "03466aa185cb9db90124e2a84b8fe20e69f04d6f673111155a59fad0c5361715"
+        "result_json_sha256": "fc47248b4e9e883198eeb81f12603f903d6bdbaad3969a0aeeff2042ceb1fca2",
+        "staged_elf_sha256": "6fb0caaee9cf0599a84f24c199a973e841c71c145eff9ea032f2cfbeb7767da3"
       },
       "reasons": [],
       "released": true,
@@ -2726,11 +1579,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27121242,
+      "boot_end": 27121498,
       "booted": true,
       "caps": {
         "bsp": 1993744,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 4694944
       },
@@ -2739,9 +1593,10 @@
       "map": "sidewinder",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 403878,
+        "boot_end_below_reserve": 403622,
         "bsp": 9232,
         "game_state": 58512,
+        "map_load_staging": 920968,
         "residency_streaming_map_owner": 920968,
         "tag": 5
       },
@@ -2750,28 +1605,29 @@
         "backing_high": 10061851,
         "bsp": 1984512,
         "game_state": 3107696,
+        "map_load_staging": 127608,
         "object_pool": 42600,
         "residency_streaming_map_owner": 127608,
         "tag": 4694939
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 278.2,
+        "elapsed_seconds": 259.7,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/sidewinder_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-sidewinder_mounted_gunner_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "ae4397a3219ff73d2563bacbd4ee250968459c2154c5215182f874e56d4d8916",
+        "elf_sha256": "076cfaebe95450bfc30c33511469bae3d091b9c940c8c8fff03cc5fb1efe467f",
         "emu_log": "build/m2-c2-matrix/sidewinder_mounted_gunner_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "0042a8cb8108c22dfaa6add256e76bd69732606404d45fbd608eafb1117b503f",
+        "emu_log_sha256": "0d3476eb1f7ac016ce41c9fb0a045d460c921e60278edf9f6a16964790e619eb",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/sidewinder_mounted_gunner_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/sidewinder_mounted_gunner_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "46efdd568161017a90d90d3eaa6ee5e2e22c61b61a6770a9a5dbac1c9572f1e4",
-        "linked_hcu_elf_sha256": "ae4397a3219ff73d2563bacbd4ee250968459c2154c5215182f874e56d4d8916",
+        "halo_log_sha256": "234e9a2706201a122f7e137701786fafe578c8a1f4839ffa771daa7a6d9dcd48",
+        "linked_hcu_elf_sha256": "076cfaebe95450bfc30c33511469bae3d091b9c940c8c8fff03cc5fb1efe467f",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "08ff98bbcf73ba23a71503872d2d0683c70c33879bd2d94948e2bfb215d12cfa",
         "result_json": "build/m2-c2-matrix/sidewinder_mounted_gunner_4p4bot/result.json",
-        "result_json_sha256": "c1f48cd47fc679e8dbc5447a0fd3f96756f39d4aca529e96321b884fd179206d",
-        "staged_elf_sha256": "ae4397a3219ff73d2563bacbd4ee250968459c2154c5215182f874e56d4d8916"
+        "result_json_sha256": "990f437c9c412526abd2acca69db7361b1b4a4899a2c5acf2f5ce9a31b76be68",
+        "staged_elf_sha256": "076cfaebe95450bfc30c33511469bae3d091b9c940c8c8fff03cc5fb1efe467f"
       },
       "reasons": [],
       "released": true,
@@ -2790,11 +1646,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27126234,
+      "boot_end": 27126490,
       "booted": true,
       "caps": {
         "bsp": 556944,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 6792912
       },
@@ -2803,9 +1660,10 @@
       "map": "wizard",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 398886,
+        "boot_end_below_reserve": 398630,
         "bsp": 3984,
         "game_state": 58512,
+        "map_load_staging": 870384,
         "residency_streaming_map_owner": 870384,
         "tag": 10
       },
@@ -2814,28 +1672,29 @@
         "backing_high": 10728262,
         "bsp": 552960,
         "game_state": 3107696,
+        "map_load_staging": 178192,
         "object_pool": 5400,
         "residency_streaming_map_owner": 178192,
         "tag": 6792902
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 370.0,
+        "elapsed_seconds": 304.6,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/wizard_marine_shotgun_4p4bot/link/hcu-gameplay-machine-partition-wizard_marine_shotgun_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "d0cb3fda4d5b909ea9fe840c68287514ae92055d98bb1c69e661758c6b4419e7",
+        "elf_sha256": "9fd39b70c1a5f9011562668b1386558f3ac9862c94bcff0299a9561f402debb7",
         "emu_log": "build/m2-c2-matrix/wizard_marine_shotgun_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "b29788b2106f4be021e9912b4c0a2e8bdf5aa19d8b4e766b87e6491bd5be4c2a",
+        "emu_log_sha256": "2ffdf42155ccd64729aaf7b0a8e1af46c71d4468cc586d799a0c1f1b9aefb1ad",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/wizard_marine_shotgun_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/wizard_marine_shotgun_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "1094cc726d471fd8da4f03b2145fa6af5aca3d915cc4207a3e27ed9b4bd210b1",
-        "linked_hcu_elf_sha256": "d0cb3fda4d5b909ea9fe840c68287514ae92055d98bb1c69e661758c6b4419e7",
+        "halo_log_sha256": "d359adbb160d651dd22042c783f3aaf112fc02b00060a723fd328ee39a35fc94",
+        "linked_hcu_elf_sha256": "9fd39b70c1a5f9011562668b1386558f3ac9862c94bcff0299a9561f402debb7",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "fd440bf473a361b54ca857effc5ae33561005f75e3fa38dbe411fced28c3efda",
         "result_json": "build/m2-c2-matrix/wizard_marine_shotgun_4p4bot/result.json",
-        "result_json_sha256": "d4bb0baa14aa9fd6e0c102765ad012de95eda7221c3a689504d115478c40f9c2",
-        "staged_elf_sha256": "d0cb3fda4d5b909ea9fe840c68287514ae92055d98bb1c69e661758c6b4419e7"
+        "result_json_sha256": "cb67c9dfb88c9d938b3c8e52727dca5cb190748635fdc5d51293bccc2a4d92d8",
+        "staged_elf_sha256": "9fd39b70c1a5f9011562668b1386558f3ac9862c94bcff0299a9561f402debb7"
       },
       "reasons": [],
       "released": true,
@@ -2854,11 +1713,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27118170,
+      "boot_end": 27118554,
       "booted": true,
       "caps": {
         "bsp": 556944,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 4573920
       },
@@ -2867,9 +1727,10 @@
       "map": "wizard",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 406950,
+        "boot_end_below_reserve": 406566,
         "bsp": 3984,
         "game_state": 58512,
+        "map_load_staging": 925644,
         "residency_streaming_map_owner": 925644,
         "tag": 7
       },
@@ -2878,28 +1739,29 @@
         "backing_high": 8509273,
         "bsp": 552960,
         "game_state": 3107696,
+        "map_load_staging": 122932,
         "object_pool": 5400,
         "residency_streaming_map_owner": 122932,
         "tag": 4573913
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 240.2,
+        "elapsed_seconds": 241.8,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/wizard_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-wizard_mounted_gunner_4p4bot-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "55a975ce991f022988c4f7343ae711b25de431b52c978305a1ffd520e4517677",
+        "elf_sha256": "d9396896bca4e6296d15e84ba6ad337e22b32fdd83e018b492420293cf4726f5",
         "emu_log": "build/m2-c2-matrix/wizard_mounted_gunner_4p4bot/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "5538f6a573f8582b07dbb69c477743b8c50e2e4841094fd9e1c90e1bdb6f68db",
+        "emu_log_sha256": "43669d379e72fadc221f4a8211e872f863d294fce4ce6e464c2c73c64cc2f46e",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/wizard_mounted_gunner_4p4bot/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/wizard_mounted_gunner_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "8ca65ecc68965ec72b7c2e358c2d4641d845accf7e29937cda8147c29896c9e4",
-        "linked_hcu_elf_sha256": "55a975ce991f022988c4f7343ae711b25de431b52c978305a1ffd520e4517677",
+        "halo_log_sha256": "ede12ea4ca67b107a4e8729f1461c8f40b1e9f3f40aa0aeb7034644b383c3229",
+        "linked_hcu_elf_sha256": "d9396896bca4e6296d15e84ba6ad337e22b32fdd83e018b492420293cf4726f5",
         "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-r3-selected-packages/pkg",
         "package_sha256": "736c8f6ce375aaf825b2e276a5b8ecb49e4bbc13f7d98051310d7a85104f17de",
         "result_json": "build/m2-c2-matrix/wizard_mounted_gunner_4p4bot/result.json",
-        "result_json_sha256": "1f8007c8a4204c96ac83b1a53f54f14eaaa4209780225821e1e624813424d8c8",
-        "staged_elf_sha256": "55a975ce991f022988c4f7343ae711b25de431b52c978305a1ffd520e4517677"
+        "result_json_sha256": "0b0afcacd15932852a710d831bab566f21050e4ac7cbfd4edec3625bdd55c0e7",
+        "staged_elf_sha256": "d9396896bca4e6296d15e84ba6ad337e22b32fdd83e018b492420293cf4726f5"
       },
       "reasons": [],
       "released": true,
@@ -2918,11 +1780,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27077338,
+      "boot_end": 27077466,
       "booted": true,
       "caps": {
         "bsp": 2288,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 789152
       },
@@ -2931,9 +1794,10 @@
       "map": "ui",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 447782,
+        "boot_end_below_reserve": 447654,
         "bsp": 240,
         "game_state": 58512,
+        "map_load_staging": 1034536,
         "residency_streaming_map_owner": 1034536,
         "tag": 15
       },
@@ -2942,28 +1806,29 @@
         "backing_high": 4173585,
         "bsp": 2048,
         "game_state": 3107696,
+        "map_load_staging": 14040,
         "object_pool": 500,
         "residency_streaming_map_owner": 14040,
         "tag": 789137
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 91.9,
+        "elapsed_seconds": 92.0,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/ui/link/hcu-gameplay-machine-partition-ui-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
+        "elf_sha256": "abb0bc70e20d8dc8d9199b61b59cc5434365dab8b9711ce238649949fc0134f6",
         "emu_log": "build/m2-c2-matrix/ui/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "384f530acf36d4acbd7c31b89bbe0d3f48e8efdb3e36d356cd2c300e770e3c31",
+        "emu_log_sha256": "e9ded2bfda4670c27d99bc13d80a475b0051e994ade76948a78af2a554a440f9",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/ui/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/ui/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "3505f54a5b81a7f800ab6d4be76499d50735958725d760e3475d242c7e851504",
-        "linked_hcu_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-gaps-ui/tree/pkg",
+        "halo_log_sha256": "8bb4182dd48a48398525f8622ab3b7c4baca8487e29642ec4b57ff73c0faeb2b",
+        "linked_hcu_elf_sha256": "abb0bc70e20d8dc8d9199b61b59cc5434365dab8b9711ce238649949fc0134f6",
+        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-residual-packages/ui-tree/pkg",
         "package_sha256": "4ad8b57b7515b074d16d2b89e4f1787a9e37d6f6ab6127ababe9ac1d40a72ed7",
         "result_json": "build/m2-c2-matrix/ui/result.json",
-        "result_json_sha256": "81513849c80dcbde1c5e9cc06661e5a6159de4634e71d1c9369bd44efe6ca8bd",
-        "staged_elf_sha256": "8c914986b1ef51145c5d607975c9c4a1d2edc8515dceaafd6949ebcf803b23f2"
+        "result_json_sha256": "37d7566fa661eb4e13c464b65ce9340bcc23f2b2230e01493f10775192283d8a",
+        "staged_elf_sha256": "abb0bc70e20d8dc8d9199b61b59cc5434365dab8b9711ce238649949fc0134f6"
       },
       "reasons": [],
       "released": true,
@@ -2982,11 +1847,12 @@
     },
     {
       "below_reserve": true,
-      "boot_end": 27099994,
+      "boot_end": 27100122,
       "booted": true,
       "caps": {
         "bsp": 1993744,
         "game_state": 3166208,
+        "map_load_staging": 1048576,
         "residency_streaming_map_owner": 1048576,
         "tag": 4584880
       },
@@ -2995,9 +1861,10 @@
       "map": "sidewinder",
       "map_loaded": true,
       "margins": {
-        "boot_end_below_reserve": 425126,
+        "boot_end_below_reserve": 424998,
         "bsp": 9232,
         "game_state": 58512,
+        "map_load_staging": 943684,
         "residency_streaming_map_owner": 943684,
         "tag": 2
       },
@@ -3006,28 +1873,29 @@
         "backing_high": 9951790,
         "bsp": 1984512,
         "game_state": 3107696,
+        "map_load_staging": 104892,
         "object_pool": 42600,
         "residency_streaming_map_owner": 104892,
         "tag": 4584878
       },
       "provenance": {
         "build_identity_valid": true,
-        "elapsed_seconds": 251.1,
+        "elapsed_seconds": 241.0,
         "elf": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-matrix/bots_sidewinder/link/hcu-gameplay-machine-partition-bots_sidewinder-headless-runtime-guest.elf",
         "elf_hash_valid": true,
-        "elf_sha256": "30ae24ce5acb3c86916144e829bd8f19ee37dd9b72322e994cc5cb37bb491302",
+        "elf_sha256": "3788e17983f2c737e48ff48e4c11ab9a6bff1ff322381d32ee50cbf7f9c43e63",
         "emu_log": "build/m2-c2-matrix/bots_sidewinder/guest/runs/partition-selected/emu.txt",
-        "emu_log_sha256": "6b09bdd749cbb7b2eddbec48d1125a48d27b2b530baa51fe86191358e7dacd40",
+        "emu_log_sha256": "b80097666ddc1a47bc3b3075d5e959d53f7f2671612efd7e8ebf7d17a406234f",
         "exit": "release-marker; host-stopped-sigint--2",
         "guest_manifest": "build/m2-c2-matrix/bots_sidewinder/guest/manifest.json",
         "halo_log": "build/m2-c2-matrix/bots_sidewinder/guest/runs/partition-selected/halo_ps2_local.txt",
-        "halo_log_sha256": "4e4e02266af451024b619df875b127f8a2a4e6e781b8e0c88fa339ae917c7b42",
-        "linked_hcu_elf_sha256": "30ae24ce5acb3c86916144e829bd8f19ee37dd9b72322e994cc5cb37bb491302",
-        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-gaps-bots/tree/pkg",
+        "halo_log_sha256": "4d99a92462ea0d50e6dbb6d568d2ca86ad594e730e601a0b8bd798e76c4c21ca",
+        "linked_hcu_elf_sha256": "3788e17983f2c737e48ff48e4c11ab9a6bff1ff322381d32ee50cbf7f9c43e63",
+        "package_root": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/m2-c2-residual-packages/bots-tree/pkg",
         "package_sha256": "f355796e20d75f22223dd4c5315c83c19e7b70af597237a06cc236268511aa89",
         "result_json": "build/m2-c2-matrix/bots_sidewinder/result.json",
-        "result_json_sha256": "3791290bf34c83030618cd99f55428600e280fe44fb122e875132b3ecd109f56",
-        "staged_elf_sha256": "30ae24ce5acb3c86916144e829bd8f19ee37dd9b72322e994cc5cb37bb491302"
+        "result_json_sha256": "f913730c0aba173bec54d317087d42e58ef885d30b5cebec1edb1e9e680f50c3",
+        "staged_elf_sha256": "3788e17983f2c737e48ff48e4c11ab9a6bff1ff322381d32ee50cbf7f9c43e63"
       },
       "reasons": [],
       "released": true,

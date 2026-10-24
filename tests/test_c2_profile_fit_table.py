@@ -7,10 +7,41 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from tools.c2_profile_fit_table import build_matrix_report, extract, matched_owner, owner_qualifies_fit, summarize_matrix_row, summarize_reuse
+from tools.c2_profile_fit_table import (build_matrix_report, extract, historical_source_identity,
+    matched_owner, owner_qualifies_fit, summarize_matrix_row, summarize_reuse)
 
 
 class ProfileFitMatchingTests(unittest.TestCase):
+    def test_historical_source_pins_are_labeled_separately_from_linked_objects(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td)
+            source_dir=root/"snapshots"; source_dir.mkdir()
+            for name in ("hcu_main.c","hcu_map_service.c","ps2_m2_ui_lifecycle_test.c"):
+                (source_dir/name).write_text(name)
+            profile=root/"closure"; profile.mkdir()
+            for name in ("source_main_main.c.o","source_main_ps2_m2_ui_lifecycle_test.c.o"):
+                (profile/name).write_bytes(name.encode())
+            ce_object=profile/"source_main_ps2_m2_ui_lifecycle_test.c.o"
+            ce_digest=hashlib.sha256(ce_object.read_bytes()).hexdigest()
+            # Simulate a mutable shared build directory changing after the
+            # historical build report recorded its object digest.
+            ce_object.write_bytes(b"mutated shared object")
+            parent=root/"parent"/"stream"; parent.mkdir(parents=True)
+            (parent/"hcu_main.o").write_bytes(b"changed parent object")
+            build={"source_inputs":{"hcu_profile":str(profile),"hcu_object_sha256":{
+                    "build/closure/source_main_ps2_m2_ui_lifecycle_test.c.o":ce_digest}},
+                "hcu_gameplay_machine":{"parent_object_sha256":{
+                    str(parent/"hcu_main.o"):hashlib.sha256(b"original parent object").hexdigest(),
+                    "build/foo/stream/hcu_map_service.o":"2"*64}}}
+            result=historical_source_identity(build,"capacity",source_dir)
+        self.assertIn("not current-source pins",result["role"])
+        self.assertTrue(all(not x["matches_historical_pin"] for x in result["snapshots"].values()))
+        self.assertFalse(result["linked_parent_objects"]["hcu_main.o"]["retained_bytes_available"])
+        self.assertEqual(result["linked_parent_objects"]["hcu_main.o"]["bytes_match_recorded_digest"],False)
+        self.assertFalse(result["linked_ce_closure_objects"]["source_main_ps2_m2_ui_lifecycle_test.c.o"]["retained_bytes_available"])
+        self.assertIsNone(result["linked_ce_closure_objects"]["source_main_main.c.o"]["recorded_sha256"])
+        self.assertIn("does not establish a complete", result["scope_note"])
+
     def test_pre_entry_diagnostics_are_preserved_and_never_qualify(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)

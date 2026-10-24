@@ -14,11 +14,20 @@ ROOT = Path(__file__).resolve().parent.parent
 OWNER = re.compile(r"HALO_PS2_LOCAL owner-telemetry phase=(\S+) name=(\S+) kind=(\S+) parent=(\S+) bound=(\d+) cap=(\d+) used=(\d+) high=(\d+) failures=(\d+) resets=(\d+)")
 CACHE = re.compile(r"HALO_PS2_LOCAL cache-owner phase=(\S+) name=(\S+) current=(\d+) peak=(\d+).*?failures=(\d+).*?resets=(\d+)")
 ARENA = re.compile(r"HALO_PS2_LOCAL arena name=(\S+).*?cap=(\d+) used=(\d+) high=(\d+).*?alloc_failures=(\d+) resets=(\d+)")
+DECODED_RESIDENCY = re.compile(r"HALO_PS2_LOCAL decoded-residency (.*)")
 REQUIRED = ("machine-entry", "partition-selected", "profile-runtime", "owner-telemetry", "cache-owner", "arena",
             "render-storage-bound", "map-lifecycle")
 OWNER_NAMES = ("game_state", "object_pool", "actor_pool", "widget_pool", "dynamic_simulation", "tags", "bsp",
-               "render_chunks", "render_texture", "gs_window", "gs_texture", "streaming", "scratch", "dma",
+               "render_chunks", "render_texture", "decoded_asset_residency", "gs_window", "gs_texture", "streaming", "scratch", "dma",
                "audio_requests")
+
+# These are immutable copies retained when the corrected diagnostic ELFs were built.
+# They are historical build inputs and must not be compared to today's mutable sources.
+HISTORICAL_SOURCE_SNAPSHOT_PINS = {
+    "hcu_main.c": "6ffe7df825221760b92f0ec634ab63b80855e21d673f28457e3e7520081d4f6c",
+    "hcu_map_service.c": "19397b3b8b2f9910eb26a7a3e3566a4a7c06f2a1adb8617ceb6526bc292c8e50",
+    "ps2_m2_ui_lifecycle_test.c": "fbb640f112c3c5dbc34887551817fb374a66a271f9bcc778926ec8384f48d71d",
+}
 
 
 def sha(path):
@@ -27,6 +36,59 @@ def sha(path):
         for b in iter(lambda: f.read(1 << 20), b""):
             h.update(b)
     return h.hexdigest()
+
+
+def historical_source_identity(build_data, scenario, snapshot_dir=None):
+    """Bind corrected diagnostic runs to their retained source snapshots and link objects."""
+    if scenario not in ("capacity", "lifecycle") or not build_data.get("hcu_gameplay_machine"):
+        return None
+    snapshot_dir = Path(snapshot_dir or ROOT / "build/m2-c2-resume-fit/source-candidate")
+    snapshots = {}
+    for name, expected in HISTORICAL_SOURCE_SNAPSHOT_PINS.items():
+        path = snapshot_dir / name
+        actual = sha(path) if path.is_file() else None
+        snapshots[name] = {"path": str(path), "sha256": actual,
+                           "expected_sha256": expected,
+                           "matches_historical_pin": actual == expected}
+    gameplay = build_data.get("hcu_gameplay_machine", {})
+    objects = gameplay.get("parent_object_sha256", {})
+    linked_parent = {name: {"path": path, "recorded_sha256": digest,
+                           "retained_bytes_available": False,
+                           "bytes_match_recorded_digest": None,
+                           "identity_role": "parent object digest recorded by the historical diagnostic link report"}
+                     for name, suffix in (("hcu_main.o", "/stream/hcu_main.o"),
+                                          ("hcu_map_service.o", "/stream/hcu_map_service.o"))
+                     for path, digest in objects.items() if path.endswith(suffix)}
+    for name, item in linked_parent.items():
+        path = Path(item["path"])
+        if not path.is_absolute(): path = ROOT / path
+        actual = sha(path) if path.is_file() else None
+        item["retained_bytes_available"] = actual is not None and actual == item["recorded_sha256"]
+        item["bytes_match_recorded_digest"] = actual == item["recorded_sha256"] if actual is not None else None
+        if item["retained_bytes_available"]: item["retained_sha256"] = actual
+    source_inputs = build_data.get("source_inputs", {})
+    profile = Path(source_inputs.get("hcu_profile", ""))
+    if profile and not profile.is_absolute():
+        profile = ROOT / profile
+    # The source_inputs object map belongs to this exact diagnostic build report.
+    # Mutable files in hcu_profile are only checked against that record; their
+    # current bytes cannot independently establish historical link identity.
+    recorded_ce_objects = source_inputs.get("hcu_object_sha256", {})
+    closure_objects = {}
+    for name in ("source_main_main.c.o", "source_main_ps2_m2_ui_lifecycle_test.c.o"):
+        path = profile / name
+        expected = next((digest for objpath, digest in recorded_ce_objects.items()
+                         if Path(objpath).name == name), None)
+        actual = sha(path) if path.is_file() else None
+        closure_objects[name] = {"path": str(path), "recorded_sha256": expected,
+            "retained_bytes_available": expected is not None and actual == expected,
+            "bytes_match_recorded_digest": actual == expected if expected is not None and actual is not None else None,
+            "identity_role": "CE closure object digest recorded by this diagnostic build report" if expected else "historical object digest unavailable"}
+        if closure_objects[name]["retained_bytes_available"]: closure_objects[name]["retained_sha256"] = actual
+    return {"role": "retained historical source-candidate snapshots for the corrected 2026-10-24 diagnostic build; not current-source pins",
+            "scope_note": "Only the listed source snapshots and individually recorded object digests are identified; this does not establish a complete historical source closure.",
+            "snapshot_directory": str(snapshot_dir), "snapshots": snapshots,
+            "linked_parent_objects": linked_parent, "linked_ce_closure_objects": closure_objects}
 
 
 def read_run(path, run_name=None):
@@ -60,6 +122,7 @@ def extract(run, run_path):
         if not lp.is_absolute(): lp = ROOT / lp
         if lp.is_file(): lines = lp.read_text(errors="replace").splitlines()
     owners, caches, arenas, markers, identities = {}, {}, {}, set(), set()
+    residency_snapshots = []
     map_diagnostics=[]
     workload_diagnostics=[]
     runtime_profile = {"row":None,"map":None,"profile_id":None}
@@ -136,6 +199,17 @@ def extract(run, run_path):
         if m:
             name, cap, used, high, failures, resets = m.groups()
             arenas.setdefault(name, []).append(dict(capacity=int(cap), current=int(used), peak=int(high), failures=int(failures), resets=int(resets)))
+        m = DECODED_RESIDENCY.search(line)
+        if m:
+            fields = {k: v for k, v in re.findall(r"([A-Za-z_]+)=(\S+)", m.group(1))}
+            for key, value in list(fields.items()):
+                if key in ("cycle", "active", "bound", "cap", "current", "high", "evictions",
+                           "refused_evictions", "refused_pins", "verify_failures", "resets",
+                           "lifetime_high", "lifetime_evictions", "lifetime_refused_evictions",
+                           "lifetime_refused_pins", "lifetime_verify_failures", "lifetime_resets"):
+                    fields[key] = int(value)
+            fields["line"] = line.strip()
+            residency_snapshots.append(fields)
     elf = Path(run.get("elf", ""))
     if not elf.is_absolute(): elf = ROOT / elf
     staged_sha = sha(elf) if elf.is_file() else None
@@ -197,7 +271,9 @@ def extract(run, run_path):
         "build_result_sha256":sha(build_path) if build_path.is_file() else None,
         "linked_hcu_elf_sha256":built_elf_sha,"build_identity_valid":build_identity_valid,
         "compiled_hcu_main_object_sha256":hcu_main_hash,
+        "historical_source_identity":historical_source_identity(build_data, run.get("scenario_mode") or run.get("run")),
         "runtime_profile":runtime_profile,"diagnostic_terminal":diagnostic_terminal,
+        "decoded_residency_snapshots":residency_snapshots,
         "maps_dir":str(maps_dir) if maps_dir.is_dir() else run.get("maps_dir"),"map_file_sha256":map_hashes,
         "log": str(logp) if logp.is_file() else run.get("halo_lines_saved"), "exit": run.get("exit"),
         "elapsed_seconds": run.get("elapsed_seconds"), "observed_markers": sorted(markers), "errors": errors,
@@ -241,6 +317,33 @@ def matched_owner(profile, evidence, owner, scenario):
         return None
     if expected_mode == "lifecycle" and profile.get("name") != "ui":
         return None
+    if owner == "decoded_asset_residency":
+        snapshots = provenance.get("decoded_residency_snapshots", [])
+        matching = [row for row in snapshots if row.get("scope") == "map" and
+                    row.get("map") == profile.get("map")]
+        releases = [row for row in matching if row.get("phase") == "map-released"]
+        if not releases:
+            return None
+        released = releases[-1]
+        loaded = next((row for row in reversed(matching) if row.get("phase") == "map-loaded" and
+                       row.get("cycle") == released.get("cycle")), None)
+        if not loaded or released.get("bound") != 1 or loaded.get("bound") != 1:
+            return None
+        cap = released.get("cap", 0)
+        peak = released.get("high", -1)
+        current = released.get("current", -1)
+        event_failures = released.get("refused_pins", 0) + released.get("verify_failures", 0)
+        if (cap <= 0 or peak <= 0 or current != 0 or peak > cap or event_failures != 0 or
+                released.get("refused_evictions", 0) != 0 or released.get("resets") != 1 or
+                loaded.get("active") != 1 or loaded.get("cap") != cap or
+                loaded.get("high", -1) <= 0 or loaded.get("high", -1) > cap or
+                loaded.get("current", -1) > loaded.get("high", -1) or
+                loaded.get("refused_pins", 0) or loaded.get("verify_failures", 0)):
+            return None
+        sample = {"phase": "map-released", "kind": "nested", "parent": "render_chunks",
+                  "domain": "ee", "bound": 1, "capacity": cap, "current": current,
+                  "peak": peak, "failures": event_failures, "resets": released["resets"]}
+        return sample, provenance
     rows = evidence.get("owners", {}).get(owner, [])
     if not rows or rows[-1].get("bound") != 1 or not rows[-1].get("capacity"):
         return None
@@ -382,11 +485,21 @@ def summarize_matrix_row(row_dir, profile=None):
         "spans": spans, "loaded": loaded, "released": released,
         "peaks": {"tag": tag_peak, "bsp": bsp_peak, "game_state": gs.get("peak"),
                   "object_pool": (owners.get("object_pool") or {}).get("peak"),
+                  "map_load_staging": streaming_map.get("peak"),
+                  # Retained for compatibility with the historical matrix schema.
                   "residency_streaming_map_owner": streaming_map.get("peak"),
                   "backing_high": (result.get("peaks") or {}).get("backing_high")},
         "caps": {"tag": (owners.get("tags") or {}).get("capacity"), "bsp": (owners.get("bsp") or {}).get("capacity"),
-                 "game_state": gs.get("capacity"), "residency_streaming_map_owner": streaming_map.get("capacity")},
-        "margins": margins, "failure_counts_total": failures,
+                 "game_state": gs.get("capacity"), "map_load_staging": streaming_map.get("capacity"),
+                 "residency_streaming_map_owner": streaming_map.get("capacity")},
+        "margins": {**margins, "map_load_staging": margins["residency_streaming_map_owner"]},
+        "metric_semantics": {"map_load_staging": {
+            "source_owner": "streaming_map_owner",
+            "legacy_source_field": "residency_streaming_map_owner",
+            "meaning": "map-load metadata, CE resource staging, and CTAG relocation arena high-water; not decoded asset residency"},
+            "decoded_asset_residency": {"status": "unmeasured",
+                "reason": "the selected-profile guest reports no decoded HCP asset-cache high-water counter"}},
+        "failure_counts_total": failures,
         "reserve": reserve, "boot_end": boot_end, "owners": owners, "cache_owners": caches, "arenas": arenas,
         "provenance": {"elf": prov.get("elf"), "elf_sha256": prov.get("elf_sha256"),
             "staged_elf_sha256": prov.get("staged_elf_sha256"), "elf_hash_valid": prov.get("elf_hash_valid"),
@@ -516,6 +629,7 @@ def build(matrix_path, manifest_path, workload2_path, workload4_path, lifecycle_
             "elf_hash_valid":prov.get("elf_hash_valid"),"build_result":prov.get("build_result"),
             "build_result_sha256":prov.get("build_result_sha256"),"build_identity_valid":prov.get("build_identity_valid"),
             "compiled_hcu_main_object_sha256":prov.get("compiled_hcu_main_object_sha256"),"maps_dir":prov.get("maps_dir"),
+            "historical_source_identity":prov.get("historical_source_identity"),
             "map_file_sha256":prov.get("map_file_sha256",{}),"map_diagnostics":evidence.get("map_diagnostics",[]),
             "workload_diagnostics":evidence.get("workload_diagnostics",[]),
             "owner_snapshots":evidence.get("owners",{}),"cache_owner_snapshots":evidence.get("cache_owners",{}),
@@ -548,6 +662,9 @@ def build(matrix_path, manifest_path, workload2_path, workload4_path, lifecycle_
     return {"format":"hcu-c2-profile-guarded-fit-v1","scope":{"session_profiles":len(matrix["profiles"]),"ui_row_included":True,
       "guarded_owner_fit_claimed":bool(measured_pass),
       "guarded_owner_fit_scope":"selected-profile production CE load and release in PCSX2; no 4-player or bot gameplay workload ticks",
+      "map_load_staging_field":"profiles[].matrix_row.peaks.map_load_staging (source owner: streaming_map_owner)",
+      "legacy_matrix_field_note":"residency_streaming_map_owner is a historical alias for map-load staging, not decoded asset residency",
+      "decoded_asset_residency":"unmeasured; no decoded asset-cache high-water counter is emitted by the selected-profile guest",
       "static_floors_are_not_runtime_fit":True,
       "diagnostic_runs_are_not_profile_fits":True,
       "matrix_dir":rel(matrix_dir) if matrix_dir else None,
@@ -645,8 +762,8 @@ def write_matrix_markdown(report, path):
         "Generated by `tools/c2_profile_fit_table.py` from `build/m2-c2-matrix/*/result.json`, each row's guest manifest, ELF/package hashes and halo log. Machine-readable twin: `m2-c2-profile-matrix-2026-10-24.json`.", "",
         f"Scope: {report['scope']}", "",
         f"Result: {report['selected_session_rows_passed']} of {report['selected_session_rows']} selected session rows passed. Failing rows: {', '.join(report['failing_rows']) or 'none'}. Unmeasured rows: {', '.join(report['unmeasured_rows']) or 'none'}. C2 exit met: {str(report['exit_met']).lower()}.", "",
-        "Margins are cap minus peak in bytes (tag/BSP/game-state caps are the guest owner-telemetry caps; residency is the `streaming_map_owner` arena; reserve is the 0x1a40000 reserve start minus boot end).", "",
-        "| Row | Booted | Loaded | Released | Failures 0 | Below reserve | Tag peak | Tag margin | BSP peak | BSP margin | Game-state peak | GS margin | Residency peak | Residency margin | Reserve margin | Result |",
+        "Margins are cap minus peak in bytes (tag/BSP/game-state caps are the guest owner-telemetry caps; map-load staging is the `streaming_map_owner` arena for metadata, CE resource staging, and CTAG relocation; decoded asset residency is unmeasured; reserve is the 0x1a40000 reserve start minus boot end).", "",
+        "| Row | Booted | Loaded | Released | Failures 0 | Below reserve | Tag peak | Tag margin | BSP peak | BSP margin | Game-state peak | GS margin | Map-load staging peak | Staging margin | Reserve margin | Result |",
         "|---|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|"]
     yn = lambda v: "yes" if v else "no"
     for r in report["rows"]:
@@ -661,7 +778,7 @@ def write_matrix_markdown(report, path):
             res += " (extra diagnostic)"
         out.append(f"| {r['row']} | {yn(r['booted'])} | {yn(r['map_loaded'])} | {yn(r['released'])} | {yn(r['failures_zero'])} | {yn(r['below_reserve'])} | "
             f"{f(p['tag'])} | {f(m['tag'])} | {f(p['bsp'])} | {f(m['bsp'])} | {f(p['game_state'])} | {f(m['game_state'])} | "
-            f"{f(p['residency_streaming_map_owner'])} | {f(m['residency_streaming_map_owner'])} | {f(m['boot_end_below_reserve'])} | {res} |")
+            f"{f(p['map_load_staging'])} | {f(m['map_load_staging'])} | {f(m['boot_end_below_reserve'])} | {res} |")
     out += ["", "## Failing and unmeasured rows", ""]
     bad = [r for r in report["rows"] if r["pass"] is not True]
     for r in bad:
@@ -677,7 +794,7 @@ def write_matrix_markdown(report, path):
         b = r.get("release_backing") or {}
         out.append(f"| {r['row']} ({Path(r['file']).name}) | {r['cycles_completed']} / {r['cycles_requested']} | {r['ticks_per_cycle']} | {r['elapsed_seconds']} | "
             f"{r['storage_reused_cycles_2_to_n']} | {r['release_owner_failures']} | {f(b.get('backing_used'))} / {f(b.get('backing_high'))} | {'pass' if r['pass'] else 'FAIL'} |")
-    out += ["", "## Provenance", "", "Per-row ELF SHA-256, package SHA-256, result.json SHA-256 and log paths are in the JSON `rows[].provenance` and in `m2-c2-profile-guarded-fit-2026-10-24.json` under `profiles[].matrix_row.provenance`.", ""]
+    out += ["", "## Memory metric limits", "", "`streaming_map_owner` reports map-load metadata, CE resource staging, and CTAG relocation arena high-water. It does not report decoded asset residency; no decoded asset-cache high-water counter is emitted by these selected-profile guest runs.", "", "## Provenance", "", "Per-row ELF SHA-256, package SHA-256, result.json SHA-256 and log paths are in the JSON `rows[].provenance` and in `m2-c2-profile-guarded-fit-2026-10-24.json` under `profiles[].matrix_row.provenance`.", ""]
     Path(path).write_text("\n".join(out))
 
 

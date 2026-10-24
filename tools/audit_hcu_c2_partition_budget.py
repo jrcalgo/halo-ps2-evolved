@@ -74,7 +74,7 @@ def header_define(path, name):
 
 
 def header_define_expr(path, name):
-    # e.g. "#define HCU_RENDER_TEXTURE_RESERVED_BYTES (17u * 8192u)"
+    # e.g. "#define HCU_GS_TEXTURE_RESERVED_BYTES (17u * 8192u)"
     m = re.search(rf"#define {name}\s+\((\d+)u?\s*\*\s*(\d+)u?\)", path.read_text())
     if not m:
         raise SystemExit(f"missing {name} in {path}")
@@ -84,7 +84,7 @@ def header_define_expr(path, name):
 def renderer_terms():
     return {
         "packet_workspace_bytes": header_define(STORAGE_H, "BSP_RENDER_WORKSPACE_BYTES"),
-        "reserved_texture_bytes": header_define_expr(RENDER_TELEMETRY_H, "HCU_RENDER_TEXTURE_RESERVED_BYTES"),
+        "reserved_texture_bytes": header_define_expr(RENDER_TELEMETRY_H, "HCU_GS_TEXTURE_RESERVED_BYTES"),
         "texture_page_bytes": header_define(TEXCACHE_H, "TC_PAGE_BYTES"),
         "staging_slots": header_define(STAGING_H, "STAGING_SLOTS"),
         "staging_slot_bytes": header_define(ASSET_PROFILE_H, "HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES"),
