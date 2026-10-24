@@ -173,21 +173,67 @@ def main() -> None:
                         help="deterministic filesystem profile compiled into HCU")
     parser.add_argument("--asset-root", choices=tuple(profile_roots.values()),
                         help="deprecated exact-root alias; prefer --asset-profile")
+    parser.add_argument("--m2-ui-lifecycle-test", action="store_true",
+                        help="build a distinct opt-in CE UI lifecycle guest ELF")
+    parser.add_argument("--step8-mp-capacity-diagnostic", action="store_true",
+                        help="build the isolated target-sized Sidewinder load/query ELF")
+    parser.add_argument("--step8-mp-workload-only", action="store_true",
+                        help="skip the 13 query maps and run only the CE local-player workload")
+    parser.add_argument("--step8-mp-workload-players", type=int, choices=(2, 4), default=2,
+                        help="local players for workload-only diagnostic (2 or CE maximum 4)")
+    parser.add_argument("--m2-animation-trace", action="store_true",
+                        help="build an opt-in guest ELF with budgeted CE animation tracing")
+    parser.add_argument("--m3-render-clear-test", action="store_true",
+                        help="build an isolated HCU ELF that presents a known GS clear")
+    parser.add_argument("--tag-cache-bytes", type=int, default=2097152,
+                        help=("boot-fixed diagnostic tag-cache span in bytes; "
+                              "must be 16-byte aligned and smaller than current_bsp"))
     args = parser.parse_args()
+    if args.m2_ui_lifecycle_test and args.m3_render_clear_test:
+        parser.error("the M2 lifecycle and M3 render-clear diagnostics are separate ELF profiles")
+    if args.m2_animation_trace and (args.m2_ui_lifecycle_test or args.m3_render_clear_test or args.step8_mp_capacity_diagnostic):
+        parser.error("M2 animation trace, lifecycle, and render-clear profiles require separate ELFs")
+    if args.step8_mp_capacity_diagnostic and args.m3_render_clear_test:
+        parser.error("the Step 8 capacity and M3 render-clear diagnostics are separate ELF profiles")
+    if args.step8_mp_workload_only and not args.step8_mp_capacity_diagnostic:
+        parser.error("--step8-mp-workload-only requires --step8-mp-capacity-diagnostic")
+    if not args.step8_mp_workload_only and args.step8_mp_workload_players != 2:
+        parser.error("--step8-mp-workload-players requires --step8-mp-workload-only")
+    if args.step8_mp_capacity_diagnostic:
+        args.tag_cache_bytes = 4477120
     if args.asset_root and args.asset_profile != "host":
         parser.error("use either --asset-root or --asset-profile, not both")
+    if (args.tag_cache_bytes <= 0 or args.tag_cache_bytes >= 6291456 or
+            args.tag_cache_bytes % 16 != 0):
+        parser.error("--tag-cache-bytes must be positive, 16-byte aligned, and below 6291456")
     asset_profile = (next(name for name, root in profile_roots.items()
                           if root == args.asset_root) if args.asset_root
                      else args.asset_profile)
     asset_root = profile_roots[asset_profile]
+    # The R5900 combined image is constrained by the fixed 2 MiB load window.
+    # Use GCC's size-first mode for this probe, while retaining the HCU's
+    # source-profile flags and verifying the exact image in PCSX2 afterward.
+    optimization = "-Oz"
     build, prefix, env, _jobs = environment()
     output = build / "hcu-parent-link-probe"
     output.mkdir(parents=True, exist_ok=True)
-    hcu_closure = build / "hcu-ps2-closure" / "all-no-bootstrap-memory"
+    profile_suffix = (f"-step8-mp-workload-{args.step8_mp_workload_players}p" if args.step8_mp_workload_only else
+                      "-step8-mp-capacity" if args.step8_mp_capacity_diagnostic else
+                      "-m2-ui-lifecycle" if args.m2_ui_lifecycle_test else
+                      "-m2-animation-trace" if args.m2_animation_trace else
+                      "-m3-render-clear" if args.m3_render_clear_test else "")
+    if args.tag_cache_bytes != 2097152:
+        profile_suffix += f"-tagcache-{args.tag_cache_bytes}"
+    closure_suffix = (f"-step8-mp-workload-{args.step8_mp_workload_players}p" if args.step8_mp_workload_only else
+                      "-step8-mp-capacity" if args.step8_mp_capacity_diagnostic else
+                      "-m2-ui-lifecycle" if args.m2_ui_lifecycle_test else
+                      "-m2-animation-trace" if args.m2_animation_trace else "")
+    hcu_closure = build / "hcu-ps2-closure" / (
+        "all-no-bootstrap-memory" + closure_suffix)
     parent_output = output / "parent-sections-os"
     parent_output.mkdir(parents=True, exist_ok=True)
     asset_root_id = hashlib.sha256(asset_root.encode("utf-8")).hexdigest()[:12]
-    gameplay_output = output / f"parent-hcu-gameplay-{asset_root_id}"
+    gameplay_output = output / f"parent-hcu-gameplay-{asset_root_id}{profile_suffix}"
     gameplay_output.mkdir(parents=True, exist_ok=True)
     compiler = prefix / "ee/bin/mips64r5900el-ps2-elf-gcc"
     linker = prefix / "ee/bin/mips64r5900el-ps2-elf-ld"
@@ -196,20 +242,48 @@ def main() -> None:
     readelf = prefix / "ee/bin/mips64r5900el-ps2-elf-readelf"
     linkfile = prefix / "ps2sdk/ee/startup/linkfile"
 
-    run([sys.executable, str(ROOT / "tools/hcu_ps2_closure.py"), "--layer", "all",
-         "--no-bootstrap-memory"], env=env)
-    run([sys.executable, str(ROOT / "tools/hcu_ps2_link.py"),
-         "--no-bootstrap-memory"], env=env)
+    closure_command = [sys.executable, str(ROOT / "tools/hcu_ps2_closure.py"),
+                       "--layer", "all", "--no-bootstrap-memory"]
+    link_command = [sys.executable, str(ROOT / "tools/hcu_ps2_link.py"),
+                    "--no-bootstrap-memory"]
+    if args.m2_ui_lifecycle_test:
+        closure_command.append("--m2-ui-lifecycle-test")
+        link_command.append("--m2-ui-lifecycle-test")
+    if args.step8_mp_capacity_diagnostic:
+        closure_command.extend(("--m2-ui-lifecycle-test",
+                                "--step8-mp-capacity-diagnostic"))
+        link_command.extend(("--m2-ui-lifecycle-test",
+                             "--step8-mp-capacity-diagnostic"))
+    if args.step8_mp_workload_only:
+        closure_command.extend(("--step8-mp-workload-only", "--step8-mp-workload-players",
+                                str(args.step8_mp_workload_players)))
+        link_command.extend(("--step8-mp-workload-only", "--step8-mp-workload-players",
+                             str(args.step8_mp_workload_players)))
+    if args.m2_animation_trace:
+        closure_command.append("--m2-animation-trace")
+        link_command.append("--m2-animation-trace")
+    run(closure_command, env=env)
+    run(link_command, env=env)
     parent_vis = "src/world/visibility.c"
-    run(["make", "-f", "tools/ee-world.mk", f"WORLD_OUTPUT={parent_output}",
+    run(["make", "-B", "-f", "tools/ee-world.mk", f"WORLD_OUTPUT={parent_output}",
          f"WORLD_VIS_SOURCE={parent_vis}", "WORLD_STREAM_DIAGNOSTIC=0",
          "WORLD_PLAY=0", "WORLD_HCU_LINK_PROBE=1", "WORLD_HCU_MEMORY_BRIDGE=1",
-         "EE_OPTFLAGS=-Os", "all"], env=env)
-    run(["make", "-f", "tools/ee-world.mk", f"WORLD_OUTPUT={gameplay_output}",
+         f"EE_OPTFLAGS={optimization}", "all"], env=env)
+    # The link below globs every object under the output directory, so drop
+    # objects a previous configuration built but this one no longer lists.
+    for stale in gameplay_output.rglob("*.o"):
+        stale.unlink()
+    run(["make", "-B", "-f", "tools/ee-world.mk", f"WORLD_OUTPUT={gameplay_output}",
          f"WORLD_VIS_SOURCE={parent_vis}", "WORLD_STREAM_DIAGNOSTIC=0",
          "WORLD_PLAY=0", "WORLD_HCU_LINK_PROBE=1", "WORLD_HCU_GAMEPLAY=1",
          f"WORLD_HCU_ASSET_PROFILE={asset_profile}",
-         "WORLD_HCU_TAG_CACHE_BYTES=2097152", "EE_OPTFLAGS=-Os", "parent-objects"], env=env)
+         f"WORLD_HCU_RENDER_CLEAR_TEST={1 if args.m3_render_clear_test else 0}",
+         f"WORLD_HCU_ANIMATION_TRACE_TEST={1 if args.m2_animation_trace else 0}",
+         f"WORLD_HCU_M2_UI_LIFECYCLE_TEST={1 if (args.m2_ui_lifecycle_test or args.step8_mp_capacity_diagnostic) else 0}",
+         f"WORLD_HCU_STEP8_MP_CAPACITY_DIAGNOSTIC={1 if args.step8_mp_capacity_diagnostic else 0}",
+         f"WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS={args.step8_mp_workload_players}",
+         f"WORLD_HCU_TAG_CACHE_BYTES={args.tag_cache_bytes}",
+         f"EE_OPTFLAGS={optimization}", "parent-objects"], env=env)
 
     parent_objects = sorted(parent_output.rglob("*.o"))
     if not parent_objects:
@@ -254,7 +328,7 @@ def main() -> None:
         if path not in gameplay_objects:
             raise RuntimeError(f"missing HCU gameplay machine input: {path}")
     gameplay_name = ("hcu-gameplay-machine" if asset_profile == "host"
-                     else f"hcu-gameplay-machine-{asset_profile}")
+                     else f"hcu-gameplay-machine-{asset_profile}") + profile_suffix
     gameplay_elf = output / f"{gameplay_name}.elf"
     gameplay_map = output / f"{gameplay_name}.map"
     gameplay_command = [
@@ -336,7 +410,7 @@ def main() -> None:
             "map_service": "parent UI-only callback with HMAP preflight, CTAG/CRNG mount, and source verification",
             "asset_profile": asset_profile,
             "asset_root": asset_root,
-            "tag_cache_bytes": 2097152,
+            "tag_cache_bytes": args.tag_cache_bytes,
             "tag_cache_limit_note": "UI/bootstrap diagnostic only; not a retail map capacity claim",
             "limits": [
                 "No guest execution or M1 startup marker has been observed for this linked image.",
@@ -380,17 +454,29 @@ def main() -> None:
             },
         },
         "commands": {
-            "hcu_compile": "python3 tools/hcu_ps2_closure.py --layer all --no-bootstrap-memory",
-            "hcu_link": "python3 tools/hcu_ps2_link.py --no-bootstrap-memory",
-            "parent_compile": "make -f tools/ee-world.mk WORLD_PLAY=0 WORLD_HCU_LINK_PROBE=1 WORLD_HCU_MEMORY_BRIDGE=1 EE_OPTFLAGS=-Os all",
+            "hcu_compile": "python3 tools/hcu_ps2_closure.py --layer all --no-bootstrap-memory" +
+                           (" --m2-ui-lifecycle-test" if args.m2_ui_lifecycle_test else
+                            " --m2-animation-trace" if args.m2_animation_trace else ""),
+            "hcu_link": "python3 tools/hcu_ps2_link.py --no-bootstrap-memory" +
+                        (" --m2-ui-lifecycle-test" if args.m2_ui_lifecycle_test else
+                         " --m2-animation-trace" if args.m2_animation_trace else ""),
+            "parent_compile": f"make -B -f tools/ee-world.mk WORLD_PLAY=0 WORLD_HCU_LINK_PROBE=1 WORLD_HCU_MEMORY_BRIDGE=1 EE_OPTFLAGS={optimization} all",
             "hcu_gameplay_parent_compile": (
-                "make -f tools/ee-world.mk WORLD_PLAY=0 WORLD_HCU_LINK_PROBE=1 "
+                "make -B -f tools/ee-world.mk WORLD_PLAY=0 WORLD_HCU_LINK_PROBE=1 "
                 "WORLD_HCU_GAMEPLAY=1 WORLD_HCU_ASSET_PROFILE=" + asset_profile +
-                " WORLD_HCU_TAG_CACHE_BYTES=2097152 EE_OPTFLAGS=-Os all"),
+                " WORLD_HCU_RENDER_CLEAR_TEST=" +
+                ("1" if args.m3_render_clear_test else "0") +
+                " WORLD_HCU_ANIMATION_TRACE_TEST=" +
+                ("1" if args.m2_animation_trace else "0") +
+                " WORLD_HCU_M2_UI_LIFECYCLE_TEST=" +
+                ("1" if args.m2_ui_lifecycle_test else "0") +
+                f" WORLD_HCU_TAG_CACHE_BYTES={args.tag_cache_bytes} EE_OPTFLAGS={optimization} all"),
         },
     }
     report_path = output / ("result.json" if asset_profile == "host"
                             else f"result-{asset_profile}.json")
+    if profile_suffix:
+        report_path = report_path.with_name(report_path.stem + profile_suffix + report_path.suffix)
     report_path.write_text(json.dumps(report, indent=2) + "\n")
     print(report_path)
     print(f"ELF {elf}; LOAD file bytes {load_file_bytes}/{static_cap}; "

@@ -14,7 +14,9 @@ int main(void)
 	mem_layout_v2_t layout, before;
 	arena_t backing, short_backing;
 	arena_t *resident;
+	arena_t *dma;
 	size_t used;
+	size_t residue;
 	unsigned char saved;
 
 	arena_init(&short_backing, "short", storage + 1,
@@ -25,11 +27,31 @@ int main(void)
 		CHARGED_BSS, 0xA5u) != 0);
 	assert(short_backing.used == 0 && memcmp(&layout, &before, sizeof layout) == 0);
 
-	arena_init(&backing, "guarded", storage + 1, BACKING_BYTES);
+	/* Exercise every possible caller-base residue. The existing fixed slack
+	 * must cover the one 64-byte DMA alignment gap plus guard alignment, while
+	 * preserving all region sizes and every canary. */
+	for (residue = 0; residue < 64u; residue++) {
+		arena_init(&backing, "guarded", storage + residue, BACKING_BYTES);
+		assert(mem_layout_v2_init_charged_guarded(&layout, &backing,
+			CHARGED_BSS, 0xA5u) == 0);
+		dma = mem_layout_v2_get(&layout, MEM_LAYOUT_V2_DMA_COMMANDS);
+		assert(dma && ((uintptr_t)dma->base & 63u) == 0u);
+		assert(dma->cap == 1179648u);
+		assert(mem_layout_v2_guards_intact(&layout));
+		assert(backing.used <= backing.cap);
+	}
+	for (residue = 0; residue < 64u; residue++) {
+		arena_init(&backing, "plain", storage + residue,
+			MEM_LAYOUT_V2_BYTES + 64u);
+		assert(mem_layout_v2_init(&layout, &backing) == 0);
+		dma = mem_layout_v2_get(&layout, MEM_LAYOUT_V2_DMA_COMMANDS);
+		assert(dma && ((uintptr_t)dma->base & 63u) == 0u);
+		assert(dma->cap == 1179648u && backing.used <= backing.cap);
+	}
+	arena_init(&backing, "guarded-final", storage + 63u, BACKING_BYTES);
 	assert(mem_layout_v2_init_charged_guarded(&layout, &backing,
 		CHARGED_BSS, 0xA5u) == 0);
 	assert(mem_layout_v2_guards_intact(&layout));
-	assert(backing.used <= backing.cap);
 	resident = mem_layout_v2_get(&layout, MEM_LAYOUT_V2_RESIDENT_GAMEPLAY);
 	assert(resident->cap == 6815744u - CHARGED_BSS);
 	assert(arena_alloc(resident, resident->cap + 1u, 1u) == NULL);

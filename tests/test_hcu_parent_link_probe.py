@@ -169,3 +169,24 @@ def test_combined_screen_width_is_parent_machine_owned():
         ROOT / "src/stream/hcu_main.c").read_text()
     assert "halo_screen_width" not in (
         ROOT / "build/hcu-ps2-closure/all-no-bootstrap-memory/ps2_platform.c").read_text()
+
+
+def test_nondefault_tag_cache_profile_is_validated_before_building():
+    script = ROOT / "tools/hcu_parent_link_probe.py"
+    for value in ("0", "4477121", "6291456", "-16"):
+        result = subprocess.run(
+            [sys.executable, str(script), "--tag-cache-bytes", value],
+            cwd=ROOT, text=True, capture_output=True, check=False)
+        assert result.returncode == 2
+        assert "16-byte aligned" in result.stderr
+
+
+def test_nondefault_tag_cache_profile_artifact_is_isolated_and_diagnostic():
+    result = json.loads((ROOT /
+        "build/hcu-parent-link-probe/result-tagcache-4477120.json").read_text())
+    gameplay = result["hcu_gameplay_machine"]
+    assert gameplay["tag_cache_bytes"] == 4_477_120
+    assert gameplay["status"] == "linked-diagnostic"
+    assert gameplay["acceptance"] is False
+    assert gameplay["elf"]["path"].endswith(
+        "hcu-gameplay-machine-tagcache-4477120.elf")
