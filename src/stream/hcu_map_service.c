@@ -421,6 +421,31 @@ static int profile_readers_drained(const hcu_map_service *service,
 		rt->renderer_drained(rt->renderer_context) != 0;
 }
 
+static int profile_owner_live(const hcu_map_service *service);
+
+/* The renderer is allowed to keep live source references through candidate
+ * validation. Quiesce only at the authorization boundary, after every
+ * successor input has passed its read-only/isolated preflight. */
+static int profile_quiesce_renderer(hcu_map_service *service,
+	const hcu_map_profile_runtime *rt, const char *successor_map)
+{
+	const char *old_map = "unset";
+	int callback_ok = 1;
+	if (!service || !rt) return 0;
+	if (profile_owner_live(service))
+		old_map = service->profile_mount.source_identity_snapshot.map_name;
+	printf("HALO_PS2_LOCAL map-replacement phase=quiesce-begin old=%s new=%s readers=%u callback=%d\n",
+		old_map, successor_map ? successor_map : "unset",
+		(unsigned)service->reader_count, rt->renderer_quiesce != NULL);
+	if (rt->renderer_quiesce)
+		callback_ok = rt->renderer_quiesce(rt->renderer_quiesce_context) != 0;
+	callback_ok = callback_ok && profile_readers_drained(service, rt);
+	printf("HALO_PS2_LOCAL map-replacement phase=quiesce-end old=%s new=%s readers=%u drained=%d\n",
+		old_map, successor_map ? successor_map : "unset",
+		(unsigned)service->reader_count, callback_ok);
+	return callback_ok;
+}
+
 static int profile_owner_live(const hcu_map_service *service)
 {
 	return service->profile_mount.active || service->profile_mount.backend_mounted;
@@ -607,6 +632,16 @@ static int profile_preflight_successor(hcu_map_service *service,
 		hcu_profile_mount_init(&service->profile_candidate);
 		return 0;
 	}
+	/* Candidate bytes and metadata are now fully validated in storage disjoint
+	 * from the live owner. Only now may the actual renderer release old-map
+	 * readers; failure leaves CE and the mounted owner intact. */
+	if (!profile_quiesce_renderer(service, &service->runtime,
+		entry->identity.map_name)) {
+		discard_profile_candidate(service);
+		printf("HALO_PS2_LOCAL profile-preflight rejected reason=renderer-quiesce map=%s readers=%u\n",
+			entry->identity.map_name, (unsigned)service->reader_count);
+		return 0;
+	}
 	/* The successor replaces the live owner, so its stage is a reload. */
 	service->profile_candidate_ready = 1;
 	service->successor_staged = 1;
@@ -646,11 +681,6 @@ static int profile_preflight(hcu_map_service *service,
 				entry->identity.map_name);
 			return 0;
 		}
-		if (!profile_readers_drained(service, rt)) {
-			discard_profile_candidate(service);
-			printf("HALO_PS2_LOCAL profile-preflight rejected reason=bitmap-leases-outstanding\n");
-			return 0;
-		}
 		if (!rt->metadata_bytes || !rt->metadata_size ||
 			rt->metadata_size > UINT32_MAX || !runtime_spans_valid(rt) ||
 			!hcu_profile_mount_inputs_match(&service->profile_mount) ||
@@ -671,6 +701,13 @@ static int profile_preflight(hcu_map_service *service,
 		if (memcmp(metadata_digest, rt->metadata_sha256, sizeof(metadata_digest))) {
 			discard_profile_candidate(service);
 			printf("HALO_PS2_LOCAL profile-preflight rejected reason=live-metadata-pin\n");
+			return 0;
+		}
+		if (!profile_quiesce_renderer(service, rt,
+			entry->identity.map_name)) {
+			discard_profile_candidate(service);
+			printf("HALO_PS2_LOCAL profile-preflight rejected reason=renderer-quiesce map=%s readers=%u\n",
+				entry->identity.map_name, (unsigned)service->reader_count);
 			return 0;
 		}
 		service->staged_entry = entry;

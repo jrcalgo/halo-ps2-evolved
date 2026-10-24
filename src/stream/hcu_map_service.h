@@ -83,6 +83,12 @@ typedef struct {
 	 * map's world or texture storage. NULL fails closed. */
 	int (*renderer_drained)(void *context);
 	void *renderer_context;
+	/* Called only after a successor has passed package/metadata/mount preflight,
+	 * while the old CE tags and map owner are still live. It must stop new
+	 * submissions, retire DMA/GS work, and release renderer readers. A false
+	 * result keeps the old owner mounted and aborts teardown. */
+	int (*renderer_quiesce)(void *context);
+	void *renderer_quiesce_context;
 	/* Explicit CPU-only guest probe mode. This is never used by the normal
 	 * runtime. It permits a NULL frame owner only when the caller proves that
 	 * no renderer consumer has started and the BSP lease table is idle. */

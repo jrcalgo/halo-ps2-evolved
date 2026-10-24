@@ -52,6 +52,8 @@ static unsigned s_load_failures_remaining;
 static int s_bindings_valid = 1;
 static int s_renderer_drained = 1;
 static unsigned s_renderer_calls;
+static int s_renderer_quiesce_result = 1;
+static unsigned s_renderer_quiesce_calls;
 static unsigned s_bind_calls;
 static unsigned s_unbound_prepares;
 static int s_bind_result = HCU_PROFILE_MOUNT_OK;
@@ -89,6 +91,17 @@ static int scripted_renderer_drained(void *context)
 	(void)context;
 	++s_renderer_calls;
 	return s_renderer_drained;
+}
+
+static int scripted_renderer_quiesce(void *context)
+{
+	const hcu_map_service *service = (const hcu_map_service *)context;
+	(void)context;
+	++s_renderer_quiesce_calls;
+	/* In this fixture the callback is installed only on the live owner during
+	 * foreign-successor preflight. Its candidate must already be fully prepared. */
+	assert(service && service->profile_candidate.prepared);
+	return s_renderer_quiesce_result;
 }
 
 /* Scripted profile mount. Only the seam is replaced; state transitions mirror
@@ -767,6 +780,8 @@ int main(int argc, char **argv)
 		unsigned unloads_before;
 		runtime = make_runtime(&package, package_sha, meta_ok, meta_ok_size,
 			meta_ok_sha, s_metadata_storage, sizeof(s_metadata_storage), &owner);
+		runtime.renderer_quiesce = scripted_renderer_quiesce;
+		runtime.renderer_quiesce_context = &service;
 		assert(hcu_map_service_register_runtime(&service, "ui", &runtime));
 		successor = make_runtime(&package, package_sha, meta_ok, meta_ok_size,
 			meta_ok_sha, s_b_metadata_storage, sizeof(s_b_metadata_storage), &owner);
@@ -790,17 +805,35 @@ int main(int argc, char **argv)
 
 		/* A failed successor preparation leaves the live owner A untouched. */
 		s_trace_count = 0;
+		s_renderer_quiesce_calls = 0;
 		s_prepare_result = HCU_PROFILE_MOUNT_E_CAPACITY;
 		assert(!hcu_map_service_preflight("beavercreek"));
 		s_prepare_result = HCU_PROFILE_MOUNT_OK;
+		assert(s_renderer_quiesce_calls == 0);
 		expect_live_owner(&service, 1);
 		expect_no_stage(&service);
 		assert(strcmp(service.profile_mount.source_identity_snapshot.map_name, "ui") == 0);
 		assert(s_live_tags[0] == 'u' && s_trace_count == 0);
 		printf("PASS successor preparation failure keeps live owner A untouched\n");
 
-		/* B validates while A stays live: its prepare publishes nothing. */
+		/* B's complete candidate is valid, but a failed renderer drain must
+		 * veto teardown while preserving A and discarding only the candidate. */
+		s_renderer_quiesce_result = 0;
+		assert(!hcu_map_service_preflight("beavercreek"));
+		assert(s_renderer_quiesce_calls == 1);
+		expect_live_owner(&service, 1);
+		expect_no_stage(&service);
+		assert(strcmp(service.profile_mount.source_identity_snapshot.map_name, "ui") == 0);
+		assert(s_live_tags[0] == 'u' && s_unload_calls == unloads_before);
+		assert(s_trace_count == 1 && strcmp(s_trace[0], "prepare:beavercreek") == 0);
+		printf("PASS renderer drain refusal preserves the live owner after validated candidate\n");
+
+		/* B validates while A stays live: its prepare publishes nothing, then
+		 * and only then the renderer quiesce callback runs. */
+		s_renderer_quiesce_result = 1;
+		s_trace_count = 0;
 		assert(hcu_map_service_preflight("beavercreek") == 1);
+		assert(s_renderer_quiesce_calls == 2);
 		assert(service.successor_staged && service.reload_pending && service.preflight_ready);
 		expect_live_owner(&service, 1);
 		assert(s_live_tags[0] == 'u' && s_unload_calls == unloads_before);
