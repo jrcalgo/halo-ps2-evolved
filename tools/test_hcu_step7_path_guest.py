@@ -27,7 +27,7 @@ PATH = re.compile(
 )
 MEMORY = re.compile(
     r"HALO_PS2_LOCAL step8-mp-path-memory map=(\w+) state_bytes=(\d+) "
-    r"used_delta=(\d+) high=(\d+) capacity=(\d+) failures=(\d+)"
+    r"used_delta=(\d+) after_delta=(\d+) high=(\d+) capacity=(\d+) failures=(\d+)"
 )
 COMPLETE = "HALO_PS2_LOCAL step8-mp-capacity-complete maps=13 query_only=1"
 
@@ -52,17 +52,18 @@ def validate_log(path: Path) -> list[dict]:
             int, (explored_text, chain_text, root_text, reached_text))
         if explored < chain_nodes or chain_nodes < 2 or root != start or reached != 1:
             raise RuntimeError(f"invalid goal/parent-chain evidence for {map_name}")
-        state_bytes, used_delta, high, capacity, failures = map(int, by_memory[map_name])
+        state_bytes, used_delta, after_delta, high, capacity, failures = map(int, by_memory[map_name])
         aligned = (state_bytes + 15) & ~15
         # CE's path search may allocate small ancillary scratch besides the
         # fixed path_state. Require that the state was charged, without
         # assuming those callsite-specific allocations are exactly zero.
-        if used_delta < aligned or used_delta > capacity or high > capacity or failures != 0:
+        if used_delta < aligned or used_delta > capacity or after_delta != 0 or high > capacity or failures != 0:
             raise RuntimeError(f"invalid bounded allocator evidence for {map_name}")
         output.append({"map": map_name, "start_surface": start, "goal_surface": goal,
                        "explored_nodes": explored, "chain_nodes": chain_nodes,
                        "root_surface": root, "path_found": True,
                        "path_state_bytes": state_bytes, "allocator_bytes_consumed": used_delta,
+                       "allocator_after_free_delta_bytes": after_delta,
                        "allocator_high_water": high, "allocator_capacity": capacity,
                        "allocator_failures": failures})
     if set(row["map"] for row in output) != set(ROUTES):
