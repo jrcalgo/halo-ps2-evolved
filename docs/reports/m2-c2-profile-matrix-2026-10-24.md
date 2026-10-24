@@ -45,16 +45,40 @@ None.
 
 ## Repeated load/release (storage reuse)
 
-Reuse shown: true. Rows with passing multi-cycle evidence: bloodgulch_mounted_gunner_4p4bot, longest_mounted_gunner_4p4bot, sidewinder_marine_shotgun_4p4bot.
+Reuse shown: true. Rows with passing multi-cycle evidence: beavercreek_marine_shotgun_4p4bot, beavercreek_mounted_gunner_4p4bot, bloodgulch_marine_shotgun_4p4bot, bloodgulch_mounted_gunner_4p4bot, boardingaction_marine_shotgun_4p4bot, boardingaction_mounted_gunner_4p4bot, carousel_marine_shotgun_4p4bot, carousel_mounted_gunner_4p4bot, chillout_marine_shotgun_4p4bot, chillout_mounted_gunner_4p4bot, damnation_marine_shotgun_4p4bot, damnation_mounted_gunner_4p4bot, hangemhigh_marine_shotgun_4p4bot, hangemhigh_mounted_gunner_4p4bot, longest_marine_shotgun_4p4bot, longest_mounted_gunner_4p4bot, prisoner_marine_shotgun_4p4bot, prisoner_mounted_gunner_4p4bot, putput_marine_shotgun_4p4bot, putput_mounted_gunner_4p4bot, ratrace_marine_shotgun_4p4bot, ratrace_mounted_gunner_4p4bot, sidewinder_marine_shotgun_4p4bot, sidewinder_mounted_gunner_4p4bot, ui, wizard_marine_shotgun_4p4bot, wizard_mounted_gunner_4p4bot.
 
 | Run | Cycles done / requested | Ticks per cycle | Elapsed s | Storage identical cycles 2..N | Owner failures at release | Backing used / high at release | Result |
 |---|---:|---:|---:|---|---:|---|---|
+| beavercreek_marine_shotgun_4p4bot (beavercreek_marine_shotgun_4p4bot_cycles2_noticks_result.json) | 2 / 2 | 0 | 678.0 | True | 0 | 3,382,400 / 10,946,312 | pass |
+| beavercreek_mounted_gunner_4p4bot (beavercreek_mounted_gunner_4p4bot_cycles2_noticks_result.json) | 2 / 2 | 0 | 472.8 | True | 0 | 3,382,400 / 8,727,323 | pass |
 | bloodgulch_mounted_gunner_4p4bot (bloodgulch_cycles3_ticks300_result.json) | 3 / 3 | 300 | 543.2 | True | 0 | 3,382,400 / 9,474,762 | pass |
+| bloodgulch_marine_shotgun_4p4bot (bloodgulch_marine_shotgun_cycles2_result.json) | 2 / 2 | 0 | 554.8 | True | 0 | 3,382,400 / 11,693,751 | pass |
+| boardingaction_marine_shotgun_4p4bot (boardingaction_marine_shotgun_4p4bot_cycles2_noticks_result.json) | 2 / 2 | 0 | 532.4 | True | 0 | 3,382,400 / 11,617,972 | pass |
+| boardingaction_mounted_gunner_4p4bot (boardingaction_mounted_gunner_4p4bot_cycles2_noticks_result.json) | 2 / 2 | 0 | 410.7 | True | 0 | 3,382,400 / 9,398,983 | pass |
+| carousel_marine_shotgun_4p4bot (carousel_marine_shotgun_cycles2_result.json) | 2 / 2 | 0 | 513.4 | True | 0 | 3,382,400 / 10,701,947 | pass |
+| carousel_mounted_gunner_4p4bot (carousel_mounted_gunner_4p4bot_cycles2_noticks_result.json) | 2 / 2 | 0 | 387.2 | True | 0 | 3,382,400 / 8,482,958 | pass |
+| chillout_marine_shotgun_4p4bot (chillout_marine_shotgun_4p4bot_cycles2_noticks_result.json) | 2 / 2 | 0 | 509.6 | True | 0 | 3,382,400 / 10,736,247 | pass |
+| chillout_mounted_gunner_4p4bot (chillout_mounted_gunner_cycles2_result.json) | 2 / 2 | 0 | 383.9 | True | 0 | 3,382,400 / 8,517,258 | pass |
+| damnation_marine_shotgun_4p4bot (damnation_marine_shotgun_4p4bot_cycles2_noticks_result.json) | 2 / 2 | 0 | 533.6 | True | 0 | 3,382,400 / 11,584,983 | pass |
+| damnation_mounted_gunner_4p4bot (damnation_mounted_gunner_4p4bot_cycles2_noticks_result.json) | 2 / 2 | 0 | 408.8 | True | 0 | 3,382,400 / 9,365,994 | pass |
+| hangemhigh_marine_shotgun_4p4bot (hangemhigh_marine_shotgun_cycles2_result.json) | 2 / 2 | 0 | 525.9 | True | 0 | 3,382,400 / 10,751,154 | pass |
+| hangemhigh_mounted_gunner_4p4bot (hangemhigh_mounted_gunner_4p4bot_cycles2_noticks_result.json) | 2 / 2 | 0 | 389.3 | True | 0 | 3,382,400 / 8,532,165 | pass |
 | longest_mounted_gunner_4p4bot (longest_cycles3_noticks_result.json) | 3 / 3 | 0 | 476.4 | True | 0 | 3,382,400 / 8,335,214 | pass |
 | longest_mounted_gunner_4p4bot (longest_cycles3_ticks300_result.json) | 3 / 3 | 300 | 471.0 | True | 0 | 3,382,400 / 8,335,214 | pass |
+| longest_marine_shotgun_4p4bot (longest_marine_shotgun_4p4bot_cycles2_noticks_result.json) | 2 / 2 | 0 | 507.2 | True | 0 | 3,382,400 / 10,554,203 | pass |
+| prisoner_marine_shotgun_4p4bot (prisoner_marine_shotgun_cycles2_result.json) | 2 / 2 | 0 | 510.7 | True | 0 | 3,382,400 / 11,041,300 | pass |
+| prisoner_mounted_gunner_4p4bot (prisoner_mounted_gunner_4p4bot_cycles2_noticks_result.json) | 2 / 2 | 0 | 422.1 | True | 0 | 3,382,400 / 8,822,311 | pass |
+| putput_marine_shotgun_4p4bot (putput_marine_shotgun_4p4bot_cycles2_noticks_result.json) | 2 / 2 | 0 | 524.2 | True | 0 | 3,382,400 / 11,803,026 | pass |
+| putput_mounted_gunner_4p4bot (putput_mounted_gunner_cycles2_result.json) | 2 / 2 | 0 | 398.0 | True | 0 | 3,382,400 / 9,584,037 | pass |
+| ratrace_marine_shotgun_4p4bot (ratrace_marine_shotgun_4p4bot_cycles3_noticks_result.json) | 3 / 3 | 0 | 636.9 | True | 0 | 3,382,400 / 10,731,616 | pass |
+| ratrace_mounted_gunner_4p4bot (ratrace_mounted_gunner_4p4bot_cycles2_noticks_result.json) | 2 / 2 | 0 | 419.4 | True | 0 | 3,382,400 / 8,512,627 | pass |
 | sidewinder_marine_shotgun_4p4bot (sidewinder_cycles2_ticks300_result.json) | 2 / 2 | 300 | 514.8 | True | 0 | 3,382,400 / 12,280,840 | pass |
 | sidewinder_marine_shotgun_4p4bot (sidewinder_cycles3_noticks_timeout_result.json) | 2 / 3 | 0 | 668.4 | False | 0 | n/a / n/a | FAIL |
 | sidewinder_marine_shotgun_4p4bot (sidewinder_cycles3_ticks300_timeout_result.json) | 2 / 3 | 300 | 668.2 | False | 0 | n/a / n/a | FAIL |
+| sidewinder_mounted_gunner_4p4bot (sidewinder_mounted_gunner_4p4bot_cycles2_noticks_result.json) | 2 / 2 | 0 | 415.9 | True | 0 | 3,382,400 / 10,061,851 | pass |
+| ui (ui_cycles2_noticks_result.json) | 2 / 2 | 0 | 115.2 | True | 0 | 3,382,400 / 4,173,585 | pass |
+| wizard_marine_shotgun_4p4bot (wizard_marine_shotgun_cycles2_result.json) | 2 / 2 | 0 | 522.9 | True | 0 | 3,382,400 / 10,728,262 | pass |
+| wizard_mounted_gunner_4p4bot (wizard_mounted_gunner_4p4bot_cycles2_noticks_result.json) | 2 / 2 | 0 | 373.3 | True | 0 | 3,382,400 / 8,509,273 | pass |
 
 ## Provenance
 

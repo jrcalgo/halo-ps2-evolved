@@ -35,7 +35,7 @@ The row failed earlier (`game_load() failed.`, then `file_create('z:saved') erro
 
 ## Repeated load/release
 
-Multi-cycle runs (`tools/c2_profile_boot_matrix.py --cycles N [--ticks T]`, results in `build/m2-c2-gaps-reuse/*_result.json`, summarized under `reuse_evidence` in the JSON and in the matrix report) pass on three rows: `longest_mounted_gunner_4p4bot` 3 cycles with and without 300 ticks, `bloodgulch_mounted_gunner_4p4bot` 3 cycles with 300 ticks, `sidewinder_marine_shotgun_4p4bot` 2 cycles with 300 ticks. In cycles 2..N every owner used/high/failures, tag and BSP cache current/peak and backing used/high equal the previous cycle, with zero failures and resets rising by 1 per cycle. Two 3-cycle sidewinder attempts hit the 600 s guest bound after cycle 2 and are recorded as failures. The other 23 rows were not cycled. The ticks are one local player with no bots, so this is not the 4-player/4-bot workload. See `m2-c2-gaps-reuse-2026-10-24.md`.
+Multi-cycle runs (`tools/c2_profile_boot_matrix.py --cycles N [--ticks T]`, results in `build/m2-c2-gaps-reuse/*_result.json`, summarized under `reuse_evidence` in the JSON and in the matrix report) pass on all 26 selected rows plus `ui` (30 result files including 2 failing sidewinder attempts): 2 cycles with no ticks on most rows, 3 cycles on `longest_mounted_gunner_4p4bot` (with and without 300 ticks), `bloodgulch_mounted_gunner_4p4bot` (300 ticks) and `ratrace_marine_shotgun_4p4bot` (0-byte tag margin, no ticks), and `sidewinder_marine_shotgun_4p4bot` 2 cycles with 300 ticks. In cycles 2..N every owner used/high/failures, tag and BSP cache current/peak and backing used/high equal the previous cycle, with zero failures and resets rising by 1 per cycle. Two 3-cycle sidewinder attempts hit the 600 s guest bound after cycle 2 and are recorded as failures. With 2 cycles the cycles 2..N identity is a single sample (cycle 1 equals cycle 2). The ticks are one local player with no bots, so this is not the 4-player/4-bot workload. See `m2-c2-gaps-reuse-2026-10-24.md`.
 
 ## Earlier diagnostic scenarios
 
@@ -44,7 +44,7 @@ The capacity, 2-player workload, 4-player workload and UI lifecycle diagnostics 
 ## Limits
 
 - Load-and-release only. No 2p/4p gameplay workload, bot spawn, endless-survival reuse or network co-op is measured by the matrix rows.
-- The per-row fit entries are single load/release cycles; repeated-cycle reuse is shown only on the three rows above (sidewinder for 2 cycles).
+- The per-row fit entries are single load/release cycles; repeated-cycle reuse is shown on every row (2 cycles; 3 on three rows; sidewinder_marine_shotgun limited to 2 by the guest bound).
 - The 26 selected-row ELFs were built before the cycle-loop edit to `main.c` (default 1 cycle, +256 B measured on `longest`); they were not rebuilt.
 - The UI row is one load/release cycle; the two-cycle UI lifecycle proof remains the earlier M2 ui lifecycle guest report.
 - C2.7 in-flight DMA and C2.8 renderer drain are carried to C3.10 and C3.11 by the 2026-10-24 amendment. The matrix has no renderer readers and cannot stand in for them.
