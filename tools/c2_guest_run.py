@@ -25,6 +25,7 @@ import signal
 import subprocess
 import sys
 import time
+import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -602,7 +603,10 @@ def capture_window(display, base):
 def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
               maps_dir=PROBE / "maps", production_tuple=None,
               guest_package_root="build/m2-c2-r3-selected-packages", stage_paths=(),
-              capture_dir=None, capture_markers=(), emu_mode="interpreter"):
+              capture_dir=None, capture_markers=(), emu_mode="interpreter",
+              invocation_id=None):
+    launch_id = uuid.uuid4().hex
+    launch_started_unix_ns = time.time_ns()
     lane_run = out_dir / "runs" / which
     if lane_run.exists():
         shutil.rmtree(lane_run)
@@ -642,6 +646,10 @@ def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
         info = capture_window(env["DISPLAY"], capture_base / f"capture-{base_index:02d}-{tag}")
         info["marker"] = marker
         info["display"] = env["DISPLAY"]
+        info["launch_id"] = launch_id
+        info["captured_unix_ns"] = time.time_ns()
+        if info.get("file") and Path(info["file"]).is_file():
+            info["sha256"] = sha256(Path(info["file"]))
         return info
 
     with (lane_run / "launcher.log").open("w") as launcher:
@@ -697,9 +705,14 @@ def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
         markers = {name: any(line.startswith(prefix) for line in lines)
                    for name, prefix in WORKLOAD_MARKERS.items()}
     result = {"run": which, "elf": elf_info["path"], "elf_sha256": elf_info["sha256"],
+            "invocation_id": invocation_id, "launch_id": launch_id,
+            "launch_started_unix_ns": launch_started_unix_ns,
+            "launch_completed_unix_ns": time.time_ns(), "pcsx2_pid": process.pid,
             "exit": exit_status, "elapsed_seconds": elapsed, "log": str(log),
+            "log_sha256": sha256(log) if log.is_file() else None,
             "pcsx2_config": config_identity,
             "halo_lines_saved": str(lane_run / "halo_ps2_local.txt"), "halo_line_count": len(lines),
+            "halo_lines_sha256": sha256(lane_run / "halo_ps2_local.txt"),
             "captures": captures,
             "markers": markers, "markers_all_present": all(markers.values()),
             "summary": summarize(lines)}
@@ -766,9 +779,26 @@ def main():
     out_dir = args.output_dir.resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
     selected = ["partition-selected"] if args.production_elf else ([args.only] if args.only else list(RUNS))
-    display, xvfb = ensure_display()
+    invocation_id = uuid.uuid4().hex
+    manifest_path = out_dir / "manifest.json"
+    # Replace any old manifest before touching the display. If Xvfb or PCSX2 startup
+    # fails, consumers must see this invocation's failure, never a previous pass.
+    bootstrap = {"lane": "guest", "invocation_id": invocation_id,
+                 "started_unix_ns": time.time_ns(), "output_dir": str(out_dir),
+                 "no_run_errors": False, "elfs": {}, "runs": []}
+    write_manifest(manifest_path, bootstrap)
+    try:
+        display, xvfb = ensure_display()
+    except Exception as error:
+        bootstrap["runs"] = [{"run": name, "error": f"{type(error).__name__}: {error}"}
+                             for name in selected]
+        write_manifest(manifest_path, bootstrap)
+        print(f"display/launch setup failed: {error}", file=sys.stderr)
+        return 1
     os.environ["DISPLAY"] = display
-    manifest = {"lane": "guest", "date": "2026-10-24", "display": display,
+    manifest = {"lane": "guest", "invocation_id": invocation_id,
+                "started_unix_ns": bootstrap["started_unix_ns"],
+                "date": "2026-10-24", "display": display,
                 "pcsx2": str(PCSX2), "pcsx2_sha256": sha256(PCSX2),
                 "guest_reserve_start": hex(GUEST_RESERVE_START), "timeout_seconds": args.timeout,
                 "output_dir": str(out_dir),
@@ -856,7 +886,8 @@ def main():
                                                     if args.production_elf else None),
                                                    args.guest_package_root, args.stage_path,
                                                    args.capture_dir, args.capture_marker,
-                                                   emu_mode=args.emu_mode))
+                                                   emu_mode=args.emu_mode,
+                                                   invocation_id=invocation_id))
             except Exception as error:  # record the failure and keep the partial manifest
                 manifest["runs"].append({"run": which, "error": f"{type(error).__name__}: {error}"})
             write_manifest(manifest_path, manifest)
@@ -877,7 +908,7 @@ def main():
         else:
             print(run["run"], run["exit"], "lines", run["halo_line_count"],
                   "markers_all_present", run["markers_all_present"])
-    return 0
+    return 0 if manifest["no_run_errors"] else 1
 
 
 if __name__ == "__main__":

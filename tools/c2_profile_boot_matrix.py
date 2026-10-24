@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import fcntl
+import hashlib
 import json
 import os
 import shutil
@@ -836,6 +837,14 @@ EMU_MODE = "interpreter"
 def guest_row(row: str, elf: Path, plan: dict, out: Path, timeout: int = GUEST_TIMEOUT,
               process_timeout: int = GUEST_PROCESS_TIMEOUT, extra_stage_paths=(),
               released_map: str | None = None, capture_markers=()) -> tuple[bool, str]:
+    # These directories are owned exclusively by this row attempt. Remove them before
+    # invoking the runner so a display/launch failure cannot leave prior logs, captures,
+    # or a manifest available to the result parser.
+    for path in (out / "guest", out / "captures", out / "guest.log"):
+        if path.is_symlink() or path.is_file():
+            path.unlink()
+        elif path.is_dir():
+            shutil.rmtree(path)
     command = [sys.executable, "-I", str(ROOT / "tools/c2_guest_run.py"),
                "--timeout", str(timeout), "--output-dir", str(out / "guest"),
                "--production-elf", str(elf), "--package-tree", str(plan["package_tree"]),
@@ -857,6 +866,57 @@ def guest_row(row: str, elf: Path, plan: dict, out: Path, timeout: int = GUEST_T
     if rc:
         return False, f"guest runner exited {rc}; see {out / 'guest.log'}"
     return True, ""
+
+
+def validate_guest_provenance(out: Path, attempt_started_unix_ns: int,
+                              emu_mode: str, expected_captures: int = 0) -> tuple[dict | None, str]:
+    """Accept only logs/captures produced by this successful guest launch."""
+    manifest_path = out / "guest/manifest.json"
+    if not manifest_path.is_file():
+        return None, "guest runner produced no manifest for this attempt"
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        return None, f"guest manifest is unreadable: {error}"
+    runs = [run for run in manifest.get("runs", [])
+            if run.get("run") == "partition-selected" and "error" not in run]
+    if len(runs) != 1:
+        return None, f"expected one current partition-selected guest run, found {len(runs)}"
+    run = runs[0]
+    launch_id = run.get("launch_id")
+    started = run.get("launch_started_unix_ns")
+    if (not launch_id or not manifest.get("invocation_id") or
+            run.get("invocation_id") != manifest.get("invocation_id") or
+            not isinstance(started, int) or started < attempt_started_unix_ns):
+        return None, "guest manifest does not identify a launch from this attempt"
+    config = run.get("pcsx2_config", {})
+    if config.get("emu_mode") != emu_mode or config.get("emu_mode_verified") is not True:
+        return None, f"PCSX2 {emu_mode} settings were not verified for this launch"
+    for field, hash_field in (("log", "log_sha256"), ("halo_lines_saved", "halo_lines_sha256")):
+        path = Path(run.get(field, ""))
+        if not path.is_file() or path.stat().st_mtime_ns < started:
+            return None, f"current guest {field} is missing or predates this launch"
+        if not run.get(hash_field) or sha256_file(path) != run[hash_field]:
+            return None, f"current guest {field} hash does not match its manifest"
+    captures = run.get("captures", [])
+    if len(captures) != expected_captures:
+        return None, f"expected {expected_captures} current captures, found {len(captures)}"
+    for capture in captures:
+        path = Path(capture.get("file", ""))
+        if (capture.get("launch_id") != launch_id or not path.is_file() or
+                not isinstance(capture.get("captured_unix_ns"), int) or
+                capture["captured_unix_ns"] < started or path.stat().st_mtime_ns < started or
+                not capture.get("sha256") or sha256_file(path) != capture["sha256"]):
+            return None, "capture is missing, stale, or belongs to a different guest launch"
+    return run, ""
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
 
 
 def prepare_render_tree() -> Path:
@@ -953,9 +1013,18 @@ def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1
         if elf is None:
             raise RuntimeError(why)
         result["elf"] = str(elf.relative_to(ROOT))
+        guest_attempt_started_ns = time.time_ns()
         ok, why = guest_row(row, elf, plan, out, capture_markers=(
             [f"c3-frame kind=periodic frame={render_frames // 2 // 30 * 30} ", "c3-render-held "]
             if render_views else ()))
+        if not ok:
+            raise RuntimeError(why)
+        guest_run, provenance_error = validate_guest_provenance(
+            out, guest_attempt_started_ns, EMU_MODE,
+            expected_captures=2 if render_views else 0)
+        if guest_run is None:
+            raise RuntimeError(provenance_error)
+        result["guest_launch_id"] = guest_run["launch_id"]
         log_path = out / "guest/runs/partition-selected/halo_ps2_local.txt"
         lines = read_guest_lines(log_path)
         result["guest_log"] = str(log_path.relative_to(ROOT))
@@ -974,9 +1043,7 @@ def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1
             result["failing_checks"] = parsed["failing_checks"] + [k for k, v in rc["checks"].items() if not v]
             parsed = {**parsed, "failing_checks": result["failing_checks"]}
             result["reasons"].extend(rc["reasons"])
-            result["captures"] = json.loads(
-                (out / "guest/manifest.json").read_text())["runs"][-1].get("captures", []) \
-                if (out / "guest/manifest.json").is_file() else []
+            result["captures"] = guest_run.get("captures", [])
             # A held capture must show the game, not a black frame (C3 capture reliability).
             held = [c for c in result["captures"] if "c3-render-held" in c.get("marker", "")]
             held_fraction = held[0].get("nonblack_fraction") if held else None
@@ -985,18 +1052,15 @@ def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1
                 result["failing_checks"] = [*result["failing_checks"], "held_capture_nonblack"]
                 parsed = {**parsed, "failing_checks": result["failing_checks"]}
                 result["reasons"].append(f"held capture is black (non-black fraction {held_fraction})")
-        if (out / "guest/manifest.json").is_file():
-            run_config = json.loads((out / "guest/manifest.json").read_text())["runs"][-1].get("pcsx2_config", {})
-            result["emu_mode_verified"] = run_config.get("emu_mode_verified")
-            if EMU_MODE == "recompiler" and not run_config.get("emu_mode_verified"):
-                result["failing_checks"] = [*result["failing_checks"], "emu_mode_recompiler_not_seen"]
-                parsed = {**parsed, "failing_checks": result["failing_checks"]}
-                result["reasons"].append("PCSX2 log shows no EE recompiler reset in recompiler mode")
+        run_config = guest_run.get("pcsx2_config", {})
+        result["emu_mode_verified"] = run_config.get("emu_mode_verified")
+        if not run_config.get("emu_mode_verified"):
+            result["failing_checks"] = [*result["failing_checks"], "emu_mode_not_verified"]
+            parsed = {**parsed, "failing_checks": result["failing_checks"]}
+            result["reasons"].append(f"PCSX2 {EMU_MODE} mode was not verified")
         result["ce_failure_lines"] = ce_failure_lines(out / "guest/runs/partition-selected/emu.txt")
         if parsed["failing_checks"] and result["ce_failure_lines"]:
             result["reasons"].append("CE reported: " + " | ".join(result["ce_failure_lines"][:2]))
-        if not ok:
-            result["reasons"].insert(0, why)
         result["pass"] = bool(ok and not parsed["failing_checks"])
     except Exception as error:  # record and keep the matrix moving
         result["reasons"].append(f"{type(error).__name__}: {error}")
