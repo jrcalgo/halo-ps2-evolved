@@ -1,0 +1,3478 @@
+{
+  "format": "hcu-step7-schema-gap-layout-v1",
+  "inventory": "docs/reports/m2-step7-bsp-member-inventory-2026-10-22.json",
+  "inventory_sha256": "29fa47457d98782d61a8b09a20f5d84d2d9e336640b4b3bbd3000a6305206d15",
+  "source_discovery": "docs/reports/m2-step7-schema-gap-source-discovery-2026-10-22.json",
+  "source_discovery_sha256": "1e037a95cf98af7fec81d250aa1ff4267bbe17bcea7ab6849d997422b65238c6",
+  "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+  "compiler": "mips64r5900el-ps2-elf-gcc (GCC) 15.2.0",
+  "exact_source_rebuild": {
+    "status": "layer-measured",
+    "compiled_units": 371,
+    "failed_units": 0
+  },
+  "type_size_results": {
+    "predicted_resource": {
+      "status": "passed",
+      "expected_schema_size": 8,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/cache/predicted_resources.h",
+        "line": 23,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_00.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_00.o"
+    },
+    "structure_weather_palette_entry": {
+      "status": "passed",
+      "expected_schema_size": 240,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+        "line": 235,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_01.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_01.o"
+    },
+    "structure_weather_polyhedron": {
+      "status": "passed",
+      "expected_schema_size": 32,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+        "line": 252,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_01.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_01.o"
+    },
+    "real_plane3d": {
+      "status": "passed",
+      "expected_schema_size": 16,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/math/real_math.h",
+        "line": 501,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_02.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_02.o"
+    },
+    "real_point2d": {
+      "status": "passed",
+      "expected_schema_size": 8,
+      "tag_kind": "union",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/math/real_math.h",
+        "line": 410,
+        "tag_kind": "union"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_02.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_02.o"
+    },
+    "real_point3d": {
+      "status": "passed",
+      "expected_schema_size": 12,
+      "tag_kind": "union",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/math/real_math.h",
+        "line": 418,
+        "tag_kind": "union"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_02.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_02.o"
+    },
+    "structure_breakable_surface": {
+      "status": "passed",
+      "expected_schema_size": 48,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/physics/breakable_surfaces.h",
+        "line": 46,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_03.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_03.o"
+    },
+    "bsp2d_node": {
+      "status": "passed",
+      "expected_schema_size": 20,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/physics/bsp2d.h",
+        "line": 30,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_04.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_04.o"
+    },
+    "bsp3d_node": {
+      "status": "passed",
+      "expected_schema_size": 12,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/physics/bsp3d.h",
+        "line": 38,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_05.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_05.o"
+    },
+    "bsp2d_reference": {
+      "status": "passed",
+      "expected_schema_size": 8,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/physics/collision_bsp.c",
+        "line": 206,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_06.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_06.o"
+    },
+    "collision_leaf": {
+      "status": "passed",
+      "expected_schema_size": 8,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/physics/collision_bsp.c",
+        "line": 199,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_06.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_06.o"
+    },
+    "collision_surface": {
+      "status": "passed",
+      "expected_schema_size": 12,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/physics/collision_bsp_definitions.h",
+        "line": 35,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_07.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_07.o"
+    },
+    "collision_vertex": {
+      "status": "passed",
+      "expected_schema_size": 16,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/physics/collision_bsp_definitions.h",
+        "line": 51,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_07.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_07.o"
+    },
+    "structure_lens_flare_marker": {
+      "status": "passed",
+      "expected_schema_size": 16,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c",
+        "line": 288,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_08.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_08.o"
+    },
+    "detail_object": {
+      "status": "passed",
+      "expected_schema_size": 6,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_detail_objects.c",
+        "line": 108,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_09.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_09.o"
+    },
+    "structure_detail_object_data": {
+      "status": "passed",
+      "expected_schema_size": 64,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_detail_objects.c",
+        "line": 173,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_09.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_09.o"
+    },
+    "render_lighting": {
+      "status": "passed",
+      "expected_schema_size": 116,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/render/render.h",
+        "line": 44,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_10.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_10.o"
+    },
+    "map_leaf_face": {
+      "status": "passed",
+      "expected_schema_size": 16,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/structures/leaf_map.c",
+        "line": 179,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_11.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_11.o"
+    },
+    "leaf_portal": {
+      "status": "passed",
+      "expected_schema_size": 24,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/structures/leaf_map.h",
+        "line": 31,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_12.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_12.o"
+    },
+    "structure_background_sound_palette_entry": {
+      "status": "passed",
+      "expected_schema_size": 116,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "line": 116,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+    },
+    "structure_cluster": {
+      "status": "passed",
+      "expected_schema_size": 104,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "line": 89,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+    },
+    "structure_collision_material": {
+      "status": "passed",
+      "expected_schema_size": 20,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "line": 222,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+    },
+    "structure_fog_palette_entry": {
+      "status": "passed",
+      "expected_schema_size": 136,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "line": 168,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+    },
+    "structure_fog_plane": {
+      "status": "passed",
+      "expected_schema_size": 32,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "line": 152,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+    },
+    "structure_fog_region": {
+      "status": "passed",
+      "expected_schema_size": 40,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "line": 145,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+    },
+    "structure_leaf": {
+      "status": "passed",
+      "expected_schema_size": 16,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "line": 33,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+    },
+    "structure_lightmap": {
+      "status": "passed",
+      "expected_schema_size": 32,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "line": 68,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+    },
+    "structure_material": {
+      "status": "passed",
+      "expected_schema_size": 256,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "line": 50,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+    },
+    "structure_runtime_decal": {
+      "status": "passed",
+      "expected_schema_size": 16,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "line": 136,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+    },
+    "structure_sound_environment_palette_entry": {
+      "status": "passed",
+      "expected_schema_size": 80,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "line": 126,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+    },
+    "structure_surface": {
+      "status": "passed",
+      "expected_schema_size": 6,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "line": 42,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+    },
+    "structure_cluster_portal": {
+      "status": "passed",
+      "expected_schema_size": 64,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/structures/structures.c",
+        "line": 134,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_14.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_14.o"
+    },
+    "structure_surface_reference": {
+      "status": "passed",
+      "expected_schema_size": 8,
+      "tag_kind": "struct",
+      "declaration": {
+        "path": "submodules/halo-ce-universal/source/structures/structures.c",
+        "line": 145,
+        "tag_kind": "struct"
+      },
+      "source_unit_in_closure": null,
+      "source_unit_status": null,
+      "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_14.c",
+      "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_14.o"
+    }
+  },
+  "probe_groups": [
+    {
+      "translation_unit_kind": "header",
+      "source": "submodules/halo-ce-universal/source/cache/predicted_resources.h",
+      "probe_source": "build/hcu-step7-step8-c0/schema-gap-layout/layout_00.c",
+      "probe_source_sha256": "d2993e649a5158fd5dd9517feed406caddfd9c9e6a6150598ad6246e6e73f211",
+      "object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_00.o",
+      "object_sha256": "daaa8661cbcb2c7d0d470122fcde720bd1416c2b6ca363de8b96ceef3a9b5c1c",
+      "command": [
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-gcc",
+        "-std=gnu89",
+        "-Os",
+        "-mabi=n32",
+        "-fms-extensions",
+        "-fshort-wchar",
+        "-fcommon",
+        "-fno-strict-aliasing",
+        "-fno-delete-null-pointer-checks",
+        "-ffp-contract=off",
+        "-fsigned-char",
+        "-fwrapv",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-G0",
+        "-D_EE",
+        "-D__STRICT_ANSI__",
+        "-w",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/linux/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include/xdk",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/main",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cseries",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/sound",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bink",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved films",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved games",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cache",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/units",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/text",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tag_files",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/structures",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shell",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shaders",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/scenario",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/render",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/rasterizer",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/physics",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects/widgets",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/networking",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/models",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory/zlib",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/math",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tool",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/items",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/interface",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/input",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/hs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/effects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/editor",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/dialogs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/devices",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cutscene",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/camera",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bungie_net",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bitmaps",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/ai",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/common/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/include",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include/halo_ps2_prefix.h",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-ps2-closure/all-no-bootstrap-memory/halo_ps2_msvc_semantics.h",
+        "-c",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_00.c",
+        "-o",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_00.o"
+      ],
+      "status": "passed",
+      "diagnostics": ""
+    },
+    {
+      "translation_unit_kind": "source",
+      "source": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+      "probe_source": "build/hcu-step7-step8-c0/schema-gap-layout/layout_01.c",
+      "probe_source_sha256": "14a140057b5020df62ee7633c7ba1a27500f2b345f491c36b47c45d6de89954f",
+      "object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_01.o",
+      "object_sha256": "09ffe31db9aa5d5545ea630479e113c8a4d4295eb8e60efb16d5819799b4cb27",
+      "command": [
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-gcc",
+        "-std=gnu89",
+        "-Os",
+        "-mabi=n32",
+        "-fms-extensions",
+        "-fshort-wchar",
+        "-fcommon",
+        "-fno-strict-aliasing",
+        "-fno-delete-null-pointer-checks",
+        "-ffp-contract=off",
+        "-fsigned-char",
+        "-fwrapv",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-G0",
+        "-D_EE",
+        "-D__STRICT_ANSI__",
+        "-w",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/linux/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include/xdk",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/main",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cseries",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/sound",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bink",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved films",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved games",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cache",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/units",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/text",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tag_files",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/structures",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shell",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shaders",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/scenario",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/render",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/rasterizer",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/physics",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects/widgets",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/networking",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/models",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory/zlib",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/math",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tool",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/items",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/interface",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/input",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/hs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/effects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/editor",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/dialogs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/devices",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cutscene",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/camera",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bungie_net",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bitmaps",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/ai",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/common/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/include",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include/halo_ps2_prefix.h",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-ps2-closure/all-no-bootstrap-memory/halo_ps2_msvc_semantics.h",
+        "-c",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_01.c",
+        "-o",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_01.o"
+      ],
+      "status": "passed",
+      "diagnostics": ""
+    },
+    {
+      "translation_unit_kind": "header",
+      "source": "submodules/halo-ce-universal/source/math/real_math.h",
+      "probe_source": "build/hcu-step7-step8-c0/schema-gap-layout/layout_02.c",
+      "probe_source_sha256": "3f56744d74c0dd3c5826a1de35be5fbbb7a52c17fed69e110b389ac72178eba4",
+      "object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_02.o",
+      "object_sha256": "9a010c16e7e24f94a9498c834f67608f4b4a779d4d2ac464771e92743f7e4d62",
+      "command": [
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-gcc",
+        "-std=gnu89",
+        "-Os",
+        "-mabi=n32",
+        "-fms-extensions",
+        "-fshort-wchar",
+        "-fcommon",
+        "-fno-strict-aliasing",
+        "-fno-delete-null-pointer-checks",
+        "-ffp-contract=off",
+        "-fsigned-char",
+        "-fwrapv",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-G0",
+        "-D_EE",
+        "-D__STRICT_ANSI__",
+        "-w",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/linux/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include/xdk",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/main",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cseries",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/sound",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bink",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved films",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved games",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cache",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/units",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/text",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tag_files",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/structures",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shell",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shaders",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/scenario",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/render",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/rasterizer",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/physics",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects/widgets",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/networking",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/models",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory/zlib",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/math",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tool",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/items",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/interface",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/input",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/hs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/effects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/editor",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/dialogs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/devices",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cutscene",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/camera",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bungie_net",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bitmaps",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/ai",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/common/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/include",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include/halo_ps2_prefix.h",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-ps2-closure/all-no-bootstrap-memory/halo_ps2_msvc_semantics.h",
+        "-c",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_02.c",
+        "-o",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_02.o"
+      ],
+      "status": "passed",
+      "diagnostics": ""
+    },
+    {
+      "translation_unit_kind": "header",
+      "source": "submodules/halo-ce-universal/source/physics/breakable_surfaces.h",
+      "probe_source": "build/hcu-step7-step8-c0/schema-gap-layout/layout_03.c",
+      "probe_source_sha256": "e703afc0e646c07b6fccbb9a2cc2926c89213df20b05153ae279741f1d654086",
+      "object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_03.o",
+      "object_sha256": "2b0001f202cc4b8e286a1e9488da09b3e7ffbdd399270c97669b9c623b064403",
+      "command": [
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-gcc",
+        "-std=gnu89",
+        "-Os",
+        "-mabi=n32",
+        "-fms-extensions",
+        "-fshort-wchar",
+        "-fcommon",
+        "-fno-strict-aliasing",
+        "-fno-delete-null-pointer-checks",
+        "-ffp-contract=off",
+        "-fsigned-char",
+        "-fwrapv",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-G0",
+        "-D_EE",
+        "-D__STRICT_ANSI__",
+        "-w",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/linux/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include/xdk",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/main",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cseries",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/sound",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bink",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved films",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved games",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cache",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/units",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/text",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tag_files",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/structures",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shell",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shaders",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/scenario",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/render",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/rasterizer",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/physics",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects/widgets",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/networking",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/models",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory/zlib",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/math",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tool",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/items",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/interface",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/input",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/hs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/effects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/editor",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/dialogs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/devices",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cutscene",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/camera",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bungie_net",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bitmaps",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/ai",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/common/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/include",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include/halo_ps2_prefix.h",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-ps2-closure/all-no-bootstrap-memory/halo_ps2_msvc_semantics.h",
+        "-c",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_03.c",
+        "-o",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_03.o"
+      ],
+      "status": "passed",
+      "diagnostics": ""
+    },
+    {
+      "translation_unit_kind": "header",
+      "source": "submodules/halo-ce-universal/source/physics/bsp2d.h",
+      "probe_source": "build/hcu-step7-step8-c0/schema-gap-layout/layout_04.c",
+      "probe_source_sha256": "291d3e20a1116398409d1befc194bb215f6ab072582a15d49354fd0896990c56",
+      "object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_04.o",
+      "object_sha256": "f699fe517fcfc9dbcf26697b698d4d9879f6be8a4944dce7c79557d911cb7acf",
+      "command": [
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-gcc",
+        "-std=gnu89",
+        "-Os",
+        "-mabi=n32",
+        "-fms-extensions",
+        "-fshort-wchar",
+        "-fcommon",
+        "-fno-strict-aliasing",
+        "-fno-delete-null-pointer-checks",
+        "-ffp-contract=off",
+        "-fsigned-char",
+        "-fwrapv",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-G0",
+        "-D_EE",
+        "-D__STRICT_ANSI__",
+        "-w",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/linux/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include/xdk",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/main",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cseries",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/sound",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bink",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved films",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved games",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cache",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/units",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/text",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tag_files",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/structures",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shell",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shaders",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/scenario",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/render",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/rasterizer",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/physics",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects/widgets",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/networking",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/models",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory/zlib",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/math",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tool",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/items",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/interface",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/input",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/hs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/effects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/editor",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/dialogs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/devices",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cutscene",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/camera",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bungie_net",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bitmaps",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/ai",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/common/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/include",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include/halo_ps2_prefix.h",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-ps2-closure/all-no-bootstrap-memory/halo_ps2_msvc_semantics.h",
+        "-c",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_04.c",
+        "-o",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_04.o"
+      ],
+      "status": "passed",
+      "diagnostics": ""
+    },
+    {
+      "translation_unit_kind": "header",
+      "source": "submodules/halo-ce-universal/source/physics/bsp3d.h",
+      "probe_source": "build/hcu-step7-step8-c0/schema-gap-layout/layout_05.c",
+      "probe_source_sha256": "6a9fc584ba41841a0cc4c20b593ca1b1e7999a491e817bcd78cb1bf2d37f92dc",
+      "object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_05.o",
+      "object_sha256": "7f3c73cb18ff71e59279caee1533be7ace6a6e8bac140d0b7adb33851c9d148b",
+      "command": [
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-gcc",
+        "-std=gnu89",
+        "-Os",
+        "-mabi=n32",
+        "-fms-extensions",
+        "-fshort-wchar",
+        "-fcommon",
+        "-fno-strict-aliasing",
+        "-fno-delete-null-pointer-checks",
+        "-ffp-contract=off",
+        "-fsigned-char",
+        "-fwrapv",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-G0",
+        "-D_EE",
+        "-D__STRICT_ANSI__",
+        "-w",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/linux/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include/xdk",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/main",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cseries",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/sound",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bink",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved films",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved games",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cache",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/units",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/text",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tag_files",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/structures",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shell",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shaders",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/scenario",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/render",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/rasterizer",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/physics",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects/widgets",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/networking",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/models",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory/zlib",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/math",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tool",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/items",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/interface",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/input",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/hs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/effects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/editor",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/dialogs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/devices",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cutscene",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/camera",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bungie_net",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bitmaps",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/ai",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/common/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/include",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include/halo_ps2_prefix.h",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-ps2-closure/all-no-bootstrap-memory/halo_ps2_msvc_semantics.h",
+        "-c",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_05.c",
+        "-o",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_05.o"
+      ],
+      "status": "passed",
+      "diagnostics": ""
+    },
+    {
+      "translation_unit_kind": "source",
+      "source": "submodules/halo-ce-universal/source/physics/collision_bsp.c",
+      "probe_source": "build/hcu-step7-step8-c0/schema-gap-layout/layout_06.c",
+      "probe_source_sha256": "2dae23e4cd2367e2b3fa7d135f0d5b0ae8419286edc566fec0aa0c647611fc96",
+      "object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_06.o",
+      "object_sha256": "570606ceeed03533af48330650faab51c0aa336b8bf45a80f1dc74e286b82fed",
+      "command": [
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-gcc",
+        "-std=gnu89",
+        "-Os",
+        "-mabi=n32",
+        "-fms-extensions",
+        "-fshort-wchar",
+        "-fcommon",
+        "-fno-strict-aliasing",
+        "-fno-delete-null-pointer-checks",
+        "-ffp-contract=off",
+        "-fsigned-char",
+        "-fwrapv",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-G0",
+        "-D_EE",
+        "-D__STRICT_ANSI__",
+        "-w",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/linux/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include/xdk",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/main",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cseries",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/sound",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bink",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved films",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved games",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cache",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/units",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/text",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tag_files",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/structures",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shell",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shaders",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/scenario",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/render",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/rasterizer",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/physics",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects/widgets",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/networking",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/models",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory/zlib",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/math",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tool",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/items",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/interface",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/input",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/hs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/effects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/editor",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/dialogs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/devices",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cutscene",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/camera",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bungie_net",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bitmaps",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/ai",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/common/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/include",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include/halo_ps2_prefix.h",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-ps2-closure/all-no-bootstrap-memory/halo_ps2_msvc_semantics.h",
+        "-c",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_06.c",
+        "-o",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_06.o"
+      ],
+      "status": "passed",
+      "diagnostics": ""
+    },
+    {
+      "translation_unit_kind": "header",
+      "source": "submodules/halo-ce-universal/source/physics/collision_bsp_definitions.h",
+      "probe_source": "build/hcu-step7-step8-c0/schema-gap-layout/layout_07.c",
+      "probe_source_sha256": "b6c87839ca6efdaa91beaf6a5ebe3bfe30c2f64c6f35060045df392d0b354490",
+      "object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_07.o",
+      "object_sha256": "07f482445831f788310f629bdecb8e0ac0cba70afdd15b75aa881aa205ae7fac",
+      "command": [
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-gcc",
+        "-std=gnu89",
+        "-Os",
+        "-mabi=n32",
+        "-fms-extensions",
+        "-fshort-wchar",
+        "-fcommon",
+        "-fno-strict-aliasing",
+        "-fno-delete-null-pointer-checks",
+        "-ffp-contract=off",
+        "-fsigned-char",
+        "-fwrapv",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-G0",
+        "-D_EE",
+        "-D__STRICT_ANSI__",
+        "-w",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/linux/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include/xdk",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/main",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cseries",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/sound",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bink",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved films",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved games",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cache",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/units",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/text",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tag_files",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/structures",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shell",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shaders",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/scenario",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/render",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/rasterizer",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/physics",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects/widgets",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/networking",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/models",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory/zlib",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/math",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tool",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/items",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/interface",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/input",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/hs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/effects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/editor",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/dialogs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/devices",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cutscene",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/camera",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bungie_net",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bitmaps",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/ai",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/common/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/include",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include/halo_ps2_prefix.h",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-ps2-closure/all-no-bootstrap-memory/halo_ps2_msvc_semantics.h",
+        "-c",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_07.c",
+        "-o",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_07.o"
+      ],
+      "status": "passed",
+      "diagnostics": ""
+    },
+    {
+      "translation_unit_kind": "source",
+      "source": "submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c",
+      "probe_source": "build/hcu-step7-step8-c0/schema-gap-layout/layout_08.c",
+      "probe_source_sha256": "50e69927f9fe161ee8d60980c0920c07348e648106433b079379bb359647c154",
+      "object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_08.o",
+      "object_sha256": "e1c717e84c9e816d555aba2fe54b3d8d335c29824b5e2e61a9b1ba83ce8982f6",
+      "command": [
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-gcc",
+        "-std=gnu89",
+        "-Os",
+        "-mabi=n32",
+        "-fms-extensions",
+        "-fshort-wchar",
+        "-fcommon",
+        "-fno-strict-aliasing",
+        "-fno-delete-null-pointer-checks",
+        "-ffp-contract=off",
+        "-fsigned-char",
+        "-fwrapv",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-G0",
+        "-D_EE",
+        "-D__STRICT_ANSI__",
+        "-w",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/linux/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include/xdk",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/main",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cseries",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/sound",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bink",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved films",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved games",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cache",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/units",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/text",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tag_files",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/structures",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shell",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shaders",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/scenario",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/render",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/rasterizer",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/physics",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects/widgets",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/networking",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/models",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory/zlib",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/math",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tool",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/items",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/interface",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/input",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/hs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/effects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/editor",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/dialogs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/devices",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cutscene",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/camera",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bungie_net",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bitmaps",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/ai",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/common/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/include",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include/halo_ps2_prefix.h",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-ps2-closure/all-no-bootstrap-memory/halo_ps2_msvc_semantics.h",
+        "-c",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_08.c",
+        "-o",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_08.o"
+      ],
+      "status": "passed",
+      "diagnostics": ""
+    },
+    {
+      "translation_unit_kind": "source",
+      "source": "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_detail_objects.c",
+      "probe_source": "build/hcu-step7-step8-c0/schema-gap-layout/layout_09.c",
+      "probe_source_sha256": "fde9e26a6f075936788cdadc42207a790b20ce2a5eb799df07deff3a7f666c2e",
+      "object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_09.o",
+      "object_sha256": "9ee23469c44c8a9051301022d617755bfe6ed256e89abe7c4a4c14a87807aac8",
+      "command": [
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-gcc",
+        "-std=gnu89",
+        "-Os",
+        "-mabi=n32",
+        "-fms-extensions",
+        "-fshort-wchar",
+        "-fcommon",
+        "-fno-strict-aliasing",
+        "-fno-delete-null-pointer-checks",
+        "-ffp-contract=off",
+        "-fsigned-char",
+        "-fwrapv",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-G0",
+        "-D_EE",
+        "-D__STRICT_ANSI__",
+        "-w",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/linux/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include/xdk",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/main",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cseries",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/sound",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bink",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved films",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved games",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cache",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/units",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/text",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tag_files",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/structures",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shell",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shaders",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/scenario",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/render",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/rasterizer",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/physics",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects/widgets",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/networking",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/models",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory/zlib",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/math",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tool",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/items",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/interface",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/input",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/hs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/effects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/editor",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/dialogs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/devices",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cutscene",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/camera",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bungie_net",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bitmaps",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/ai",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/common/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/include",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include/halo_ps2_prefix.h",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-ps2-closure/all-no-bootstrap-memory/halo_ps2_msvc_semantics.h",
+        "-c",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_09.c",
+        "-o",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_09.o"
+      ],
+      "status": "passed",
+      "diagnostics": ""
+    },
+    {
+      "translation_unit_kind": "header",
+      "source": "submodules/halo-ce-universal/source/render/render.h",
+      "probe_source": "build/hcu-step7-step8-c0/schema-gap-layout/layout_10.c",
+      "probe_source_sha256": "8a7bd8df7e6fd54c8a91125361f8c05104d2c256e818008ef270d4d94a4c2d55",
+      "object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_10.o",
+      "object_sha256": "7bc48789e6026499632916ae1c37a3d18f2fedc532208792897f618fa5a64f73",
+      "command": [
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-gcc",
+        "-std=gnu89",
+        "-Os",
+        "-mabi=n32",
+        "-fms-extensions",
+        "-fshort-wchar",
+        "-fcommon",
+        "-fno-strict-aliasing",
+        "-fno-delete-null-pointer-checks",
+        "-ffp-contract=off",
+        "-fsigned-char",
+        "-fwrapv",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-G0",
+        "-D_EE",
+        "-D__STRICT_ANSI__",
+        "-w",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/linux/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include/xdk",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/main",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cseries",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/sound",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bink",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved films",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved games",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cache",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/units",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/text",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tag_files",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/structures",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shell",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shaders",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/scenario",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/render",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/rasterizer",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/physics",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects/widgets",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/networking",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/models",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory/zlib",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/math",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tool",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/items",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/interface",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/input",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/hs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/effects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/editor",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/dialogs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/devices",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cutscene",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/camera",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bungie_net",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bitmaps",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/ai",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/common/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/include",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include/halo_ps2_prefix.h",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-ps2-closure/all-no-bootstrap-memory/halo_ps2_msvc_semantics.h",
+        "-c",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_10.c",
+        "-o",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_10.o"
+      ],
+      "status": "passed",
+      "diagnostics": ""
+    },
+    {
+      "translation_unit_kind": "source",
+      "source": "submodules/halo-ce-universal/source/structures/leaf_map.c",
+      "probe_source": "build/hcu-step7-step8-c0/schema-gap-layout/layout_11.c",
+      "probe_source_sha256": "b7d2ad64315954621505b856b6ac3f52ef7d0f728b45a343323ae4ab5ddf71a3",
+      "object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_11.o",
+      "object_sha256": "d5c6a4865b7af6e6332edfd3da8c0ee7658cf3215a0bc9ad77ede19c73e05eee",
+      "command": [
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-gcc",
+        "-std=gnu89",
+        "-Os",
+        "-mabi=n32",
+        "-fms-extensions",
+        "-fshort-wchar",
+        "-fcommon",
+        "-fno-strict-aliasing",
+        "-fno-delete-null-pointer-checks",
+        "-ffp-contract=off",
+        "-fsigned-char",
+        "-fwrapv",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-G0",
+        "-D_EE",
+        "-D__STRICT_ANSI__",
+        "-w",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/linux/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include/xdk",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/main",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cseries",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/sound",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bink",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved films",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved games",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cache",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/units",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/text",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tag_files",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/structures",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shell",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shaders",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/scenario",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/render",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/rasterizer",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/physics",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects/widgets",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/networking",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/models",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory/zlib",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/math",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tool",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/items",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/interface",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/input",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/hs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/effects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/editor",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/dialogs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/devices",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cutscene",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/camera",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bungie_net",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bitmaps",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/ai",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/common/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/include",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include/halo_ps2_prefix.h",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-ps2-closure/all-no-bootstrap-memory/halo_ps2_msvc_semantics.h",
+        "-c",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_11.c",
+        "-o",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_11.o"
+      ],
+      "status": "passed",
+      "diagnostics": ""
+    },
+    {
+      "translation_unit_kind": "header",
+      "source": "submodules/halo-ce-universal/source/structures/leaf_map.h",
+      "probe_source": "build/hcu-step7-step8-c0/schema-gap-layout/layout_12.c",
+      "probe_source_sha256": "ca185042afbc577728971e4ca855b7003e48c8a290191ec4e914b795207ef8f6",
+      "object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_12.o",
+      "object_sha256": "7cc294515b46698e32c77b480a59f15f5ebb2281cb32b28786ecbfafa60d6eeb",
+      "command": [
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-gcc",
+        "-std=gnu89",
+        "-Os",
+        "-mabi=n32",
+        "-fms-extensions",
+        "-fshort-wchar",
+        "-fcommon",
+        "-fno-strict-aliasing",
+        "-fno-delete-null-pointer-checks",
+        "-ffp-contract=off",
+        "-fsigned-char",
+        "-fwrapv",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-G0",
+        "-D_EE",
+        "-D__STRICT_ANSI__",
+        "-w",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/linux/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include/xdk",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/main",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cseries",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/sound",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bink",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved films",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved games",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cache",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/units",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/text",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tag_files",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/structures",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shell",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shaders",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/scenario",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/render",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/rasterizer",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/physics",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects/widgets",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/networking",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/models",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory/zlib",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/math",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tool",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/items",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/interface",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/input",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/hs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/effects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/editor",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/dialogs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/devices",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cutscene",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/camera",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bungie_net",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bitmaps",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/ai",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/common/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/include",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include/halo_ps2_prefix.h",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-ps2-closure/all-no-bootstrap-memory/halo_ps2_msvc_semantics.h",
+        "-c",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_12.c",
+        "-o",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_12.o"
+      ],
+      "status": "passed",
+      "diagnostics": ""
+    },
+    {
+      "translation_unit_kind": "header",
+      "source": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+      "probe_source": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+      "probe_source_sha256": "dd9fc9010dc99b052d72aa985816a7d9ee69b6102facb9cbad26e6ba7b67b8b1",
+      "object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o",
+      "object_sha256": "49250ca515a27d53253067fd01109e1525485f3ea876b1521e83c0cfbfa6909b",
+      "command": [
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-gcc",
+        "-std=gnu89",
+        "-Os",
+        "-mabi=n32",
+        "-fms-extensions",
+        "-fshort-wchar",
+        "-fcommon",
+        "-fno-strict-aliasing",
+        "-fno-delete-null-pointer-checks",
+        "-ffp-contract=off",
+        "-fsigned-char",
+        "-fwrapv",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-G0",
+        "-D_EE",
+        "-D__STRICT_ANSI__",
+        "-w",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/linux/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include/xdk",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/main",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cseries",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/sound",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bink",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved films",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved games",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cache",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/units",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/text",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tag_files",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/structures",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shell",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shaders",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/scenario",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/render",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/rasterizer",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/physics",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects/widgets",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/networking",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/models",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory/zlib",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/math",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tool",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/items",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/interface",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/input",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/hs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/effects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/editor",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/dialogs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/devices",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cutscene",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/camera",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bungie_net",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bitmaps",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/ai",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/common/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/include",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include/halo_ps2_prefix.h",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-ps2-closure/all-no-bootstrap-memory/halo_ps2_msvc_semantics.h",
+        "-c",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "-o",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      ],
+      "status": "passed",
+      "diagnostics": ""
+    },
+    {
+      "translation_unit_kind": "source",
+      "source": "submodules/halo-ce-universal/source/structures/structures.c",
+      "probe_source": "build/hcu-step7-step8-c0/schema-gap-layout/layout_14.c",
+      "probe_source_sha256": "b6a7c9353c885fde8f2b9fb1d28758ab488c20240622b5aab09885457f101dc8",
+      "object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_14.o",
+      "object_sha256": "13f2524ba136e21ff2c345490fe7a3de9f756f2b2a99d125ffa5fd5ad9c3d5fa",
+      "command": [
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-gcc",
+        "-std=gnu89",
+        "-Os",
+        "-mabi=n32",
+        "-fms-extensions",
+        "-fshort-wchar",
+        "-fcommon",
+        "-fno-strict-aliasing",
+        "-fno-delete-null-pointer-checks",
+        "-ffp-contract=off",
+        "-fsigned-char",
+        "-fwrapv",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-G0",
+        "-D_EE",
+        "-D__STRICT_ANSI__",
+        "-w",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/linux/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include/xdk",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/main",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cseries",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/sound",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bink",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved films",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved games",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cache",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/units",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/text",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tag_files",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/structures",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shell",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shaders",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/scenario",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/render",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/rasterizer",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/physics",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects/widgets",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/networking",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/models",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory/zlib",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/math",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tool",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/items",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/interface",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/input",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/hs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/game",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/effects",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/editor",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/dialogs",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/devices",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cutscene",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/camera",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bungie_net",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bitmaps",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/ai",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/common/include",
+        "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/include",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include/halo_ps2_prefix.h",
+        "-include",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-ps2-closure/all-no-bootstrap-memory/halo_ps2_msvc_semantics.h",
+        "-c",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_14.c",
+        "-o",
+        "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/schema-gap-layout/layout_14.o"
+      ],
+      "status": "passed",
+      "diagnostics": ""
+    }
+  ],
+  "ranges": [
+    {
+      "definition_id": "2982592",
+      "definition": "leaf_portal",
+      "schema_range": {
+        "offset": 0,
+        "size": 12
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/leaf_map.h",
+          "line": 31,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 24,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/leaf_map.h",
+          "line": 31,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_12.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_12.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2982808",
+      "definition": "map_leaf_face",
+      "schema_range": {
+        "offset": 0,
+        "size": 4
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/leaf_map.c",
+          "line": 179,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 16,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/leaf_map.c",
+          "line": 179,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_11.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_11.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2982896",
+      "definition": "structure_runtime_decal",
+      "schema_range": {
+        "offset": 0,
+        "size": 16
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 136,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 16,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 136,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2982912",
+      "definition": "structure_detail_object_data",
+      "schema_range": {
+        "offset": 48,
+        "size": 16
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_detail_objects.c",
+          "line": 173,
+          "tag_kind": "struct"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c",
+          "line": 148,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 64,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_detail_objects.c",
+          "line": 173,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_09.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_09.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2983144",
+      "definition": "detail_object_z_reference_vector",
+      "schema_range": {
+        "offset": 0,
+        "size": 16
+      },
+      "classification": "unclassified",
+      "source_declarations": [],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "no-source-declaration-found",
+      "sizeof_evidence": null,
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2983160",
+      "definition": "detail_object_count",
+      "schema_range": {
+        "offset": 0,
+        "size": 2
+      },
+      "classification": "unclassified",
+      "source_declarations": [],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "no-source-declaration-found",
+      "sizeof_evidence": null,
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2983176",
+      "definition": "detail_object",
+      "schema_range": {
+        "offset": 0,
+        "size": 6
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_detail_objects.c",
+          "line": 108,
+          "tag_kind": "struct"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c",
+          "line": 159,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 6,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_detail_objects.c",
+          "line": 108,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_09.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_09.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2983192",
+      "definition": "detail_object_cell",
+      "schema_range": {
+        "offset": 0,
+        "size": 32
+      },
+      "classification": "unclassified",
+      "source_declarations": [],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "no-source-declaration-found",
+      "sizeof_evidence": null,
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2983208",
+      "definition": "structure_sound_environment_palette_entry",
+      "schema_range": {
+        "offset": 0,
+        "size": 32
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 126,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 80,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 126,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2983208",
+      "definition": "structure_sound_environment_palette_entry",
+      "schema_range": {
+        "offset": 48,
+        "size": 32
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 126,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 80,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 126,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2983336",
+      "definition": "structure_background_sound_palette_entry",
+      "schema_range": {
+        "offset": 0,
+        "size": 32
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 116,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 116,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 116,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2983336",
+      "definition": "structure_background_sound_palette_entry",
+      "schema_range": {
+        "offset": 48,
+        "size": 68
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 116,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 116,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 116,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2983472",
+      "definition": "structure_weather_polyhedron",
+      "schema_range": {
+        "offset": 0,
+        "size": 20
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+          "line": 252,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 32,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+          "line": 252,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_01.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_01.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2983560",
+      "definition": "structure_weather_palette_entry",
+      "schema_range": {
+        "offset": 0,
+        "size": 32
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/scenario/wind.c",
+          "line": 71,
+          "tag_kind": "struct"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+          "line": 235,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 240,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+          "line": 235,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_01.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_01.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2983560",
+      "definition": "structure_weather_palette_entry",
+      "schema_range": {
+        "offset": 48,
+        "size": 80
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/scenario/wind.c",
+          "line": 71,
+          "tag_kind": "struct"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+          "line": 235,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 240,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+          "line": 235,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_01.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_01.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2983560",
+      "definition": "structure_weather_palette_entry",
+      "schema_range": {
+        "offset": 144,
+        "size": 96
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/scenario/wind.c",
+          "line": 71,
+          "tag_kind": "struct"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+          "line": 235,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 240,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+          "line": 235,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_01.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_01.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2983768",
+      "definition": "structure_fog_palette_entry",
+      "schema_range": {
+        "offset": 0,
+        "size": 32
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 168,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 136,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 168,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2983768",
+      "definition": "structure_fog_palette_entry",
+      "schema_range": {
+        "offset": 48,
+        "size": 88
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 168,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 136,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 168,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2983896",
+      "definition": "structure_fog_region",
+      "schema_range": {
+        "offset": 0,
+        "size": 36
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 145,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 40,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 145,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2984024",
+      "definition": "structure_fog_plane",
+      "schema_range": {
+        "offset": 4,
+        "size": 16
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 152,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 32,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 152,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2984184",
+      "definition": "structure_breakable_surface",
+      "schema_range": {
+        "offset": 0,
+        "size": 48
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/breakable_surfaces.h",
+          "line": 46,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 48,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/physics/breakable_surfaces.h",
+          "line": 46,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_03.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_03.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2984200",
+      "definition": "structure_cluster_portal",
+      "schema_range": {
+        "offset": 4,
+        "size": 48
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structures.c",
+          "line": 134,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 64,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structures.c",
+          "line": 134,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_14.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_14.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2984328",
+      "definition": "structure_cluster",
+      "schema_range": {
+        "offset": 0,
+        "size": 4
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 89,
+          "tag_kind": "struct"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c",
+          "line": 275,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 104,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 89,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2984328",
+      "definition": "structure_cluster",
+      "schema_range": {
+        "offset": 10,
+        "size": 30
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 89,
+          "tag_kind": "struct"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c",
+          "line": 275,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 104,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 89,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2984328",
+      "definition": "structure_cluster",
+      "schema_range": {
+        "offset": 64,
+        "size": 4
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 89,
+          "tag_kind": "struct"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c",
+          "line": 275,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 104,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 89,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2984760",
+      "definition": "structure_mirror",
+      "schema_range": {
+        "offset": 0,
+        "size": 36
+      },
+      "classification": "unclassified",
+      "source_declarations": [],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "no-source-declaration-found",
+      "sizeof_evidence": null,
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2984928",
+      "definition": "structure_subcluster",
+      "schema_range": {
+        "offset": 0,
+        "size": 24
+      },
+      "classification": "unclassified",
+      "source_declarations": [],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "no-source-declaration-found",
+      "sizeof_evidence": null,
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2985016",
+      "definition": "predicted_resource",
+      "schema_range": {
+        "offset": 2,
+        "size": 2
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/cache/predicted_resources.h",
+          "line": 23,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 8,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/cache/predicted_resources.h",
+          "line": 23,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_00.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_00.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2985480",
+      "definition": "structure_lens_flare_marker",
+      "schema_range": {
+        "offset": 0,
+        "size": 15
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c",
+          "line": 288,
+          "tag_kind": "struct"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_lens_flares.c",
+          "line": 95,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 16,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c",
+          "line": 288,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_08.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_08.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2985696",
+      "definition": "structure_lightmap",
+      "schema_range": {
+        "offset": 0,
+        "size": 20
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 68,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 32,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 68,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2985784",
+      "definition": "structure_material",
+      "schema_range": {
+        "offset": 16,
+        "size": 24
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 50,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 256,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 50,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2985784",
+      "definition": "structure_material",
+      "schema_range": {
+        "offset": 156,
+        "size": 16
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 50,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 256,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 50,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2985784",
+      "definition": "structure_material",
+      "schema_range": {
+        "offset": 174,
+        "size": 42
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 50,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 256,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 50,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2986056",
+      "definition": "structure_surface",
+      "schema_range": {
+        "offset": 0,
+        "size": 6
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 42,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 6,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 42,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2986072",
+      "definition": "structure_surface_reference",
+      "schema_range": {
+        "offset": 4,
+        "size": 4
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structures.c",
+          "line": 145,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 8,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structures.c",
+          "line": 145,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_14.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_14.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2986160",
+      "definition": "structure_leaf",
+      "schema_range": {
+        "offset": 0,
+        "size": 8
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 33,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 16,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 33,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2986160",
+      "definition": "structure_leaf",
+      "schema_range": {
+        "offset": 10,
+        "size": 6
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 33,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 16,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 33,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2986248",
+      "definition": "structure_node",
+      "schema_range": {
+        "offset": 0,
+        "size": 6
+      },
+      "classification": "unclassified",
+      "source_declarations": [],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "no-source-declaration-found",
+      "sizeof_evidence": null,
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2986264",
+      "definition": "structure_collision_material",
+      "schema_range": {
+        "offset": 16,
+        "size": 2
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 222,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 20,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 222,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_13.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2986432",
+      "definition": "render_lighting",
+      "schema_range": {
+        "offset": 0,
+        "size": 12
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/render/render.h",
+          "line": 44,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 116,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/render/render.h",
+          "line": 44,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_10.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_10.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2986432",
+      "definition": "render_lighting",
+      "schema_range": {
+        "offset": 14,
+        "size": 50
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/render/render.h",
+          "line": 44,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 116,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/render/render.h",
+          "line": 44,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_10.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_10.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2986432",
+      "definition": "render_lighting",
+      "schema_range": {
+        "offset": 66,
+        "size": 50
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/render/render.h",
+          "line": 44,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 116,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/render/render.h",
+          "line": 44,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_10.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_10.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2989376",
+      "definition": "collision_vertex",
+      "schema_range": {
+        "offset": 0,
+        "size": 12
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp_definitions.h",
+          "line": 51,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 16,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp_definitions.h",
+          "line": 51,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_07.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_07.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2989624",
+      "definition": "collision_surface",
+      "schema_range": {
+        "offset": 0,
+        "size": 4
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp_definitions.h",
+          "line": 35,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 12,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp_definitions.h",
+          "line": 35,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_07.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_07.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2989624",
+      "definition": "collision_surface",
+      "schema_range": {
+        "offset": 8,
+        "size": 2
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp_definitions.h",
+          "line": 35,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 12,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp_definitions.h",
+          "line": 35,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_07.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_07.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2989880",
+      "definition": "bsp2d_node",
+      "schema_range": {
+        "offset": 0,
+        "size": 20
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/bsp2d.h",
+          "line": 30,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 20,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/physics/bsp2d.h",
+          "line": 30,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_04.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_04.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2989896",
+      "definition": "bsp2d_reference",
+      "schema_range": {
+        "offset": 0,
+        "size": 8
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp.c",
+          "line": 206,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 8,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp.c",
+          "line": 206,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_06.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_06.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2989912",
+      "definition": "collision_leaf",
+      "schema_range": {
+        "offset": 0,
+        "size": 8
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp.c",
+          "line": 199,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 8,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp.c",
+          "line": 199,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_06.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_06.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2989928",
+      "definition": "bsp3d_node",
+      "schema_range": {
+        "offset": 4,
+        "size": 8
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/bsp3d.h",
+          "line": 38,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 12,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/physics/bsp3d.h",
+          "line": 38,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_05.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_05.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2990016",
+      "definition": "real_plane3d",
+      "schema_range": {
+        "offset": 0,
+        "size": 16
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/math/real_math.h",
+          "line": 501,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 16,
+        "tag_kind": "struct",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/math/real_math.h",
+          "line": 501,
+          "tag_kind": "struct"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_02.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_02.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2990032",
+      "definition": "real_point3d",
+      "schema_range": {
+        "offset": 0,
+        "size": 12
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/math/real_math.h",
+          "line": 418,
+          "tag_kind": "union"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 12,
+        "tag_kind": "union",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/math/real_math.h",
+          "line": 418,
+          "tag_kind": "union"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_02.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_02.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2990048",
+      "definition": "real_point2d",
+      "schema_range": {
+        "offset": 0,
+        "size": 8
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/math/real_math.h",
+          "line": 410,
+          "tag_kind": "union"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "passed",
+      "sizeof_evidence": {
+        "status": "passed",
+        "expected_schema_size": 8,
+        "tag_kind": "union",
+        "declaration": {
+          "path": "submodules/halo-ce-universal/source/math/real_math.h",
+          "line": 410,
+          "tag_kind": "union"
+        },
+        "source_unit_in_closure": null,
+        "source_unit_status": null,
+        "probe": "build/hcu-step7-step8-c0/schema-gap-layout/layout_02.c",
+        "probe_object": "build/hcu-step7-step8-c0/schema-gap-layout/layout_02.o"
+      },
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2990064",
+      "definition": "byte",
+      "schema_range": {
+        "offset": 0,
+        "size": 1
+      },
+      "classification": "unclassified",
+      "source_declarations": [],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "no-source-declaration-found",
+      "sizeof_evidence": null,
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    },
+    {
+      "definition_id": "2990080",
+      "definition": "long",
+      "schema_range": {
+        "offset": 0,
+        "size": 4
+      },
+      "classification": "unclassified",
+      "source_declarations": [],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim.",
+      "sizeof_status": "no-source-declaration-found",
+      "sizeof_evidence": null,
+      "byte_range_classification": "unclassified",
+      "semantic_consumer_disposition": "unresolved"
+    }
+  ],
+  "summary": {
+    "range_count": 54,
+    "sizeof_passed_ranges": 46,
+    "sizeof_failed_ranges": 0,
+    "ranges_unclassified": 54,
+    "note": "Whole-type sizeof agreement does not identify individual bytes, prove preservation, or establish safe removal. Member-offset assertions and consumer dispositions remain required."
+  }
+}

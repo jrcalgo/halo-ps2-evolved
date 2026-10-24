@@ -1,0 +1,923 @@
+{
+  "format": "hcu-step7-schema-gap-source-discovery-v1",
+  "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+  "gap_count": 54,
+  "interpretation": "Source declaration discovery is not a layout classification. A gap remains open until exact ABI compiler layout or a tested byte-preservation rule classifies it; semantic consumer disposition is separate.",
+  "gaps": [
+    {
+      "definition_id": "2982592",
+      "definition": "leaf_portal",
+      "schema_range": {
+        "offset": 0,
+        "size": 12
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/leaf_map.h",
+          "line": 31,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2982808",
+      "definition": "map_leaf_face",
+      "schema_range": {
+        "offset": 0,
+        "size": 4
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/leaf_map.c",
+          "line": 179,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2982896",
+      "definition": "structure_runtime_decal",
+      "schema_range": {
+        "offset": 0,
+        "size": 16
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 136,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2982912",
+      "definition": "structure_detail_object_data",
+      "schema_range": {
+        "offset": 48,
+        "size": 16
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_detail_objects.c",
+          "line": 173,
+          "tag_kind": "struct"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c",
+          "line": 148,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2983144",
+      "definition": "detail_object_z_reference_vector",
+      "schema_range": {
+        "offset": 0,
+        "size": 16
+      },
+      "classification": "unclassified",
+      "source_declarations": [],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2983160",
+      "definition": "detail_object_count",
+      "schema_range": {
+        "offset": 0,
+        "size": 2
+      },
+      "classification": "unclassified",
+      "source_declarations": [],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2983176",
+      "definition": "detail_object",
+      "schema_range": {
+        "offset": 0,
+        "size": 6
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_detail_objects.c",
+          "line": 108,
+          "tag_kind": "struct"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c",
+          "line": 159,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2983192",
+      "definition": "detail_object_cell",
+      "schema_range": {
+        "offset": 0,
+        "size": 32
+      },
+      "classification": "unclassified",
+      "source_declarations": [],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2983208",
+      "definition": "structure_sound_environment_palette_entry",
+      "schema_range": {
+        "offset": 0,
+        "size": 32
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 126,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2983208",
+      "definition": "structure_sound_environment_palette_entry",
+      "schema_range": {
+        "offset": 48,
+        "size": 32
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 126,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2983336",
+      "definition": "structure_background_sound_palette_entry",
+      "schema_range": {
+        "offset": 0,
+        "size": 32
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 116,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2983336",
+      "definition": "structure_background_sound_palette_entry",
+      "schema_range": {
+        "offset": 48,
+        "size": 68
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 116,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2983472",
+      "definition": "structure_weather_polyhedron",
+      "schema_range": {
+        "offset": 0,
+        "size": 20
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+          "line": 252,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2983560",
+      "definition": "structure_weather_palette_entry",
+      "schema_range": {
+        "offset": 0,
+        "size": 32
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/scenario/wind.c",
+          "line": 71,
+          "tag_kind": "struct"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+          "line": 235,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2983560",
+      "definition": "structure_weather_palette_entry",
+      "schema_range": {
+        "offset": 48,
+        "size": 80
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/scenario/wind.c",
+          "line": 71,
+          "tag_kind": "struct"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+          "line": 235,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2983560",
+      "definition": "structure_weather_palette_entry",
+      "schema_range": {
+        "offset": 144,
+        "size": 96
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/scenario/wind.c",
+          "line": 71,
+          "tag_kind": "struct"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+          "line": 235,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2983768",
+      "definition": "structure_fog_palette_entry",
+      "schema_range": {
+        "offset": 0,
+        "size": 32
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 168,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2983768",
+      "definition": "structure_fog_palette_entry",
+      "schema_range": {
+        "offset": 48,
+        "size": 88
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 168,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2983896",
+      "definition": "structure_fog_region",
+      "schema_range": {
+        "offset": 0,
+        "size": 36
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 145,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2984024",
+      "definition": "structure_fog_plane",
+      "schema_range": {
+        "offset": 4,
+        "size": 16
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 152,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2984184",
+      "definition": "structure_breakable_surface",
+      "schema_range": {
+        "offset": 0,
+        "size": 48
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/breakable_surfaces.h",
+          "line": 46,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2984200",
+      "definition": "structure_cluster_portal",
+      "schema_range": {
+        "offset": 4,
+        "size": 48
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structures.c",
+          "line": 134,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2984328",
+      "definition": "structure_cluster",
+      "schema_range": {
+        "offset": 0,
+        "size": 4
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 89,
+          "tag_kind": "struct"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c",
+          "line": 275,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2984328",
+      "definition": "structure_cluster",
+      "schema_range": {
+        "offset": 10,
+        "size": 30
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 89,
+          "tag_kind": "struct"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c",
+          "line": 275,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2984328",
+      "definition": "structure_cluster",
+      "schema_range": {
+        "offset": 64,
+        "size": 4
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 89,
+          "tag_kind": "struct"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c",
+          "line": 275,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2984760",
+      "definition": "structure_mirror",
+      "schema_range": {
+        "offset": 0,
+        "size": 36
+      },
+      "classification": "unclassified",
+      "source_declarations": [],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2984928",
+      "definition": "structure_subcluster",
+      "schema_range": {
+        "offset": 0,
+        "size": 24
+      },
+      "classification": "unclassified",
+      "source_declarations": [],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2985016",
+      "definition": "predicted_resource",
+      "schema_range": {
+        "offset": 2,
+        "size": 2
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/cache/predicted_resources.h",
+          "line": 23,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2985480",
+      "definition": "structure_lens_flare_marker",
+      "schema_range": {
+        "offset": 0,
+        "size": 15
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c",
+          "line": 288,
+          "tag_kind": "struct"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_lens_flares.c",
+          "line": 95,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2985696",
+      "definition": "structure_lightmap",
+      "schema_range": {
+        "offset": 0,
+        "size": 20
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 68,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2985784",
+      "definition": "structure_material",
+      "schema_range": {
+        "offset": 16,
+        "size": 24
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 50,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2985784",
+      "definition": "structure_material",
+      "schema_range": {
+        "offset": 156,
+        "size": 16
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 50,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2985784",
+      "definition": "structure_material",
+      "schema_range": {
+        "offset": 174,
+        "size": 42
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 50,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2986056",
+      "definition": "structure_surface",
+      "schema_range": {
+        "offset": 0,
+        "size": 6
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 42,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2986072",
+      "definition": "structure_surface_reference",
+      "schema_range": {
+        "offset": 4,
+        "size": 4
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structures.c",
+          "line": 145,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2986160",
+      "definition": "structure_leaf",
+      "schema_range": {
+        "offset": 0,
+        "size": 8
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 33,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2986160",
+      "definition": "structure_leaf",
+      "schema_range": {
+        "offset": 10,
+        "size": 6
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 33,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2986248",
+      "definition": "structure_node",
+      "schema_range": {
+        "offset": 0,
+        "size": 6
+      },
+      "classification": "unclassified",
+      "source_declarations": [],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2986264",
+      "definition": "structure_collision_material",
+      "schema_range": {
+        "offset": 16,
+        "size": 2
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+          "line": 222,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2986432",
+      "definition": "render_lighting",
+      "schema_range": {
+        "offset": 0,
+        "size": 12
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/render/render.h",
+          "line": 44,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2986432",
+      "definition": "render_lighting",
+      "schema_range": {
+        "offset": 14,
+        "size": 50
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/render/render.h",
+          "line": 44,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2986432",
+      "definition": "render_lighting",
+      "schema_range": {
+        "offset": 66,
+        "size": 50
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/render/render.h",
+          "line": 44,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2989376",
+      "definition": "collision_vertex",
+      "schema_range": {
+        "offset": 0,
+        "size": 12
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp_definitions.h",
+          "line": 51,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2989624",
+      "definition": "collision_surface",
+      "schema_range": {
+        "offset": 0,
+        "size": 4
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp_definitions.h",
+          "line": 35,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2989624",
+      "definition": "collision_surface",
+      "schema_range": {
+        "offset": 8,
+        "size": 2
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp_definitions.h",
+          "line": 35,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2989880",
+      "definition": "bsp2d_node",
+      "schema_range": {
+        "offset": 0,
+        "size": 20
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/bsp2d.h",
+          "line": 30,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2989896",
+      "definition": "bsp2d_reference",
+      "schema_range": {
+        "offset": 0,
+        "size": 8
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp.c",
+          "line": 206,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2989912",
+      "definition": "collision_leaf",
+      "schema_range": {
+        "offset": 0,
+        "size": 8
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp.c",
+          "line": 199,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2989928",
+      "definition": "bsp3d_node",
+      "schema_range": {
+        "offset": 4,
+        "size": 8
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/bsp3d.h",
+          "line": 38,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2990016",
+      "definition": "real_plane3d",
+      "schema_range": {
+        "offset": 0,
+        "size": 16
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/math/real_math.h",
+          "line": 501,
+          "tag_kind": "struct"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2990032",
+      "definition": "real_point3d",
+      "schema_range": {
+        "offset": 0,
+        "size": 12
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/math/real_math.h",
+          "line": 418,
+          "tag_kind": "union"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2990048",
+      "definition": "real_point2d",
+      "schema_range": {
+        "offset": 0,
+        "size": 8
+      },
+      "classification": "unclassified",
+      "source_declarations": [
+        {
+          "path": "submodules/halo-ce-universal/source/math/real_math.h",
+          "line": 410,
+          "tag_kind": "union"
+        }
+      ],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2990064",
+      "definition": "byte",
+      "schema_range": {
+        "offset": 0,
+        "size": 1
+      },
+      "classification": "unclassified",
+      "source_declarations": [],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    },
+    {
+      "definition_id": "2990080",
+      "definition": "long",
+      "schema_range": {
+        "offset": 0,
+        "size": 4
+      },
+      "classification": "unclassified",
+      "source_declarations": [],
+      "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
+    }
+  ]
+}

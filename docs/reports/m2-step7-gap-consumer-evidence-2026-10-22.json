@@ -1,0 +1,4604 @@
+{
+  "format": "m2-step7-gap-consumer-evidence-v1",
+  "generated_by": "tools/audit_step7_gap_consumer_evidence.py",
+  "input_artifacts": {
+    "docs/reports/m2-step7-bsp-member-inventory-2026-10-22.json": "29fa47457d98782d61a8b09a20f5d84d2d9e336640b4b3bbd3000a6305206d15",
+    "docs/reports/m2-step7-schema-gap-dwarf-members-2026-10-22.json": "6b9edb0ccd7a4fc88ecf5a3bf7cbb7cb2a7938657fe6ab33e03f2da1cd51a540"
+  },
+  "rows": [
+    {
+      "candidate_ce_source_files": [
+        "source/physics/collisions.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 543,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane = *bsp_result.plane;"
+            },
+            {
+              "line": 546,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "plane3d_negate(&collision->plane, &collision->plane);"
+            },
+            {
+              "line": 600,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "plane = fog_plane->plane;"
+            },
+            {
+              "line": 617,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane = plane;"
+            },
+            {
+              "line": 621,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "plane3d_negate(&collision->plane, &collision->plane);"
+            },
+            {
+              "line": 703,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "point_from_line3d(&collision->point, &collision->plane.n, 0.00024414062f, &collision->point);"
+            },
+            {
+              "line": 707,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "real vector_dot = dot_product3d(vector, &collision->plane.n);"
+            },
+            {
+              "line": 762,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane = bsp_result.plane;"
+            },
+            {
+              "line": 842,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "result.bsp_result.plane,"
+            },
+            {
+              "line": 843,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "&exit_collision->plane);"
+            },
+            {
+              "line": 846,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "plane3d_negate(&exit_collision->plane, &exit_collision->plane);"
+            },
+            {
+              "line": 1086,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision.plane.n.k > 0.76604444f)"
+            },
+            {
+              "line": 1169,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n = normal;"
+            },
+            {
+              "line": 1171,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.d = REAL_MAX;"
+            },
+            {
+              "line": 1182,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.i = 0.0f;"
+            },
+            {
+              "line": 1183,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.j = 0.0f;"
+            },
+            {
+              "line": 1184,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.k = 0.0f;"
+            },
+            {
+              "line": 1324,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "valid_real_plane3d(&collision->plane),"
+            },
+            {
+              "line": 1328,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "\"&collision->plane\","
+            },
+            {
+              "line": 1329,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.i,"
+            },
+            {
+              "line": 1330,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.j,"
+            },
+            {
+              "line": 1331,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.k,"
+            },
+            {
+              "line": 1332,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.d));"
+            },
+            {
+              "line": 1337,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clip_plane = collisions[new_clip_indices[0]].plane;"
+            },
+            {
+              "line": 1343,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (dot_product3d(&clipped_velocity, &collisions[clip_indices[0]].plane.n) < -_real_epsilon &&"
+            },
+            {
+              "line": 1345,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "&collisions[new_clip_indices[0]].plane,"
+            },
+            {
+              "line": 1346,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "&collisions[clip_indices[0]].plane,"
+            },
+            {
+              "line": 1360,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (dot_product3d(&clipped_velocity, &collisions[clip_indices[1]].plane.n) < -_real_epsilon &&"
+            },
+            {
+              "line": 1362,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "&collisions[new_clip_indices[0]].plane,"
+            },
+            {
+              "line": 1363,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "&collisions[new_clip_indices[1]].plane,"
+            },
+            {
+              "line": 1364,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "&collisions[clip_indices[1]].plane,"
+            },
+            {
+              "line": 1379,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "dot_product3d(&clipped_velocity, &collisions[clip_indices[1]].plane.n) < -_real_epsilon &&"
+            },
+            {
+              "line": 1381,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "&collisions[new_clip_indices[0]].plane,"
+            },
+            {
+              "line": 1382,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "&collisions[clip_indices[1]].plane,"
+            },
+            {
+              "line": 1479,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (clip_collision->plane.n.k < minimum_k)"
+            },
+            {
+              "line": 1481,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "minimum_k = clip_collision->plane.n.k;"
+            },
+            {
+              "line": 1494,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "cross_product3d(&clip_line_vector, &steepest->plane.n, &collision->plane.n);"
+            },
+            {
+              "line": 1498,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "cross_product3d(&steepest->plane.n, &clip_line_vector, &collision->plane.n);"
+            },
+            {
+              "line": 1507,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "(real_point3d *)&collision->plane.n);"
+            },
+            {
+              "line": 1510,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (normalize3d(&collision->plane.n) != 0.0f)"
+            },
+            {
+              "line": 1512,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.d = dot_product3d((real_vector3d *)&clip_line_point, &collision->plane.n);"
+            },
+            {
+              "line": 1527,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "&steepest->plane.n,"
+            },
+            {
+              "line": 1528,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "-steepest->plane.n.k,"
+            },
+            {
+              "line": 1529,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "(real_point3d *)&collision->plane.n);"
+            },
+            {
+              "line": 1530,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (normalize3d(&collision->plane.n) != 0.0f)"
+            },
+            {
+              "line": 1532,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.d = dot_product3d((real_vector3d *)&clip_point, &collision->plane.n);"
+            },
+            {
+              "line": 1541,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n = *global_up3d;"
+            },
+            {
+              "line": 1542,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.d = dot_product3d((real_vector3d *)&clip_point, &collision->plane.n);"
+            },
+            {
+              "line": 1707,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane = result.plane;"
+            },
+            {
+              "line": 1734,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "result.bsp_result.plane,"
+            },
+            {
+              "line": 1735,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "&collision->plane);"
+            },
+            {
+              "line": 1738,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "plane3d_negate(&collision->plane, &collision->plane);"
+            }
+          ],
+          "member_extent": {
+            "offset": 0,
+            "size": 12
+          },
+          "name": "plane",
+          "overlap": {
+            "offset": 0,
+            "size": 12
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 12,
+            "size": 8
+          },
+          "name": "child_indices",
+          "overlap": {
+            "offset": 12,
+            "size": 8
+          }
+        }
+      ],
+      "definition": "bsp2d_node",
+      "definition_id": "2989880",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "bsp2d_node.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_m3_collision_oracle.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ceb9cd8430aa547a57f257c9cb05fa20c1534590ce97d1be8bbf2e3328498688"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 20
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/physics/collisions.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 544,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (bsp_result.plane_designator & LONG_MIN)"
+            },
+            {
+              "line": 556,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane_designator = bsp_result.plane_designator;"
+            },
+            {
+              "line": 768,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane_designator = NONE;"
+            },
+            {
+              "line": 844,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (result.bsp_result.plane_designator & LONG_MIN)"
+            },
+            {
+              "line": 857,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "exit_collision->plane_designator = result.bsp_result.plane_designator;"
+            },
+            {
+              "line": 1174,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane_designator = NONE;"
+            },
+            {
+              "line": 1714,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane_designator = NONE;"
+            },
+            {
+              "line": 1736,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (result.bsp_result.plane_designator & LONG_MIN)"
+            },
+            {
+              "line": 1749,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane_designator = result.bsp_result.plane_designator;"
+            }
+          ],
+          "member_extent": {
+            "offset": 0,
+            "size": 4
+          },
+          "name": "plane_designator",
+          "overlap": {
+            "offset": 0,
+            "size": 4
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 4,
+            "size": 4
+          },
+          "name": "root_index",
+          "overlap": {
+            "offset": 4,
+            "size": 4
+          }
+        }
+      ],
+      "definition": "bsp2d_reference",
+      "definition_id": "2989896",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "bsp2d_reference.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_m3_collision_oracle.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ceb9cd8430aa547a57f257c9cb05fa20c1534590ce97d1be8bbf2e3328498688"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 8
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/physics/collisions.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 4,
+            "size": 8
+          },
+          "name": "children",
+          "overlap": {
+            "offset": 4,
+            "size": 8
+          }
+        }
+      ],
+      "definition": "bsp3d_node",
+      "definition_id": "2989928",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "bsp3d_node.<unclassified@0x4>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_m3_collision_oracle.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ceb9cd8430aa547a57f257c9cb05fa20c1534590ce97d1be8bbf2e3328498688"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 4,
+        "size": 8
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/physics/collisions.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 557,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->flags = bsp_result.flags;"
+            },
+            {
+              "line": 763,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->flags = 0;"
+            },
+            {
+              "line": 858,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "exit_collision->flags = result.bsp_result.flags;"
+            },
+            {
+              "line": 1175,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->flags = 0;"
+            },
+            {
+              "line": 1469,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->flags = 0;"
+            },
+            {
+              "line": 1622,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "!(object->object.flags & FLAG(_object_invisible_bit)))"
+            },
+            {
+              "line": 1687,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "!TEST_FLAG(object->object.flags, _object_invisible_bit) &&"
+            },
+            {
+              "line": 1715,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->flags = 0;"
+            },
+            {
+              "line": 1750,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->flags = result.bsp_result.flags;"
+            },
+            {
+              "line": 1793,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "!TEST_FLAG(object->object.flags, _object_invisible_bit) &&"
+            },
+            {
+              "line": 1794,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "!TEST_FLAG(object->object.flags, _object_no_collisions_bit) &&"
+            },
+            {
+              "line": 1815,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "!TEST_FLAG(biped->biped.flags, _biped_movement_passes_through_bipeds_bit)) &&"
+            }
+          ],
+          "member_extent": {
+            "offset": 0,
+            "size": 2
+          },
+          "name": "flags",
+          "overlap": {
+            "offset": 0,
+            "size": 2
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 2,
+            "size": 2
+          },
+          "name": "bsp2d_reference_count",
+          "overlap": {
+            "offset": 2,
+            "size": 2
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 4,
+            "size": 4
+          },
+          "name": "first_bsp2d_reference_index",
+          "overlap": {
+            "offset": 4,
+            "size": 4
+          }
+        }
+      ],
+      "definition": "collision_leaf",
+      "definition_id": "2989912",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "collision_leaf.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_m3_collision_oracle.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ceb9cd8430aa547a57f257c9cb05fa20c1534590ce97d1be8bbf2e3328498688"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 8
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/physics/collisions.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 544,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (bsp_result.plane_designator & LONG_MIN)"
+            },
+            {
+              "line": 556,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane_designator = bsp_result.plane_designator;"
+            },
+            {
+              "line": 768,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane_designator = NONE;"
+            },
+            {
+              "line": 844,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (result.bsp_result.plane_designator & LONG_MIN)"
+            },
+            {
+              "line": 857,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "exit_collision->plane_designator = result.bsp_result.plane_designator;"
+            },
+            {
+              "line": 1174,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane_designator = NONE;"
+            },
+            {
+              "line": 1714,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane_designator = NONE;"
+            },
+            {
+              "line": 1736,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (result.bsp_result.plane_designator & LONG_MIN)"
+            },
+            {
+              "line": 1749,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane_designator = result.bsp_result.plane_designator;"
+            }
+          ],
+          "member_extent": {
+            "offset": 0,
+            "size": 4
+          },
+          "name": "plane_designator",
+          "overlap": {
+            "offset": 0,
+            "size": 4
+          }
+        }
+      ],
+      "definition": "collision_surface",
+      "definition_id": "2989624",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "collision_surface.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_m3_collision_oracle.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ceb9cd8430aa547a57f257c9cb05fa20c1534590ce97d1be8bbf2e3328498688"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 4
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/physics/collisions.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 557,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->flags = bsp_result.flags;"
+            },
+            {
+              "line": 763,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->flags = 0;"
+            },
+            {
+              "line": 858,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "exit_collision->flags = result.bsp_result.flags;"
+            },
+            {
+              "line": 1175,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->flags = 0;"
+            },
+            {
+              "line": 1469,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->flags = 0;"
+            },
+            {
+              "line": 1622,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "!(object->object.flags & FLAG(_object_invisible_bit)))"
+            },
+            {
+              "line": 1687,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "!TEST_FLAG(object->object.flags, _object_invisible_bit) &&"
+            },
+            {
+              "line": 1715,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->flags = 0;"
+            },
+            {
+              "line": 1750,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->flags = result.bsp_result.flags;"
+            },
+            {
+              "line": 1793,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "!TEST_FLAG(object->object.flags, _object_invisible_bit) &&"
+            },
+            {
+              "line": 1794,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "!TEST_FLAG(object->object.flags, _object_no_collisions_bit) &&"
+            },
+            {
+              "line": 1815,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "!TEST_FLAG(biped->biped.flags, _biped_movement_passes_through_bipeds_bit)) &&"
+            }
+          ],
+          "member_extent": {
+            "offset": 8,
+            "size": 1
+          },
+          "name": "flags",
+          "overlap": {
+            "offset": 8,
+            "size": 1
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 558,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->breakable_surface_index = bsp_result.breakable_surface_index;"
+            },
+            {
+              "line": 764,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->breakable_surface_index = 0;"
+            },
+            {
+              "line": 859,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "exit_collision->breakable_surface_index = result.bsp_result.breakable_surface_index;"
+            },
+            {
+              "line": 1176,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->breakable_surface_index = 0;"
+            },
+            {
+              "line": 1470,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->breakable_surface_index = 0;"
+            },
+            {
+              "line": 1716,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->breakable_surface_index = 0;"
+            },
+            {
+              "line": 1751,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->breakable_surface_index = result.bsp_result.breakable_surface_index;"
+            }
+          ],
+          "member_extent": {
+            "offset": 9,
+            "size": 1
+          },
+          "name": "breakable_surface_index",
+          "overlap": {
+            "offset": 9,
+            "size": 1
+          }
+        }
+      ],
+      "definition": "collision_surface",
+      "definition_id": "2989624",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "collision_surface.<unclassified@0x8>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_m3_collision_oracle.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ceb9cd8430aa547a57f257c9cb05fa20c1534590ce97d1be8bbf2e3328498688"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 8,
+        "size": 2
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/physics/collisions.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 697,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "COLLISION_POINT_FROM_LINE3D(point, vector, collision->t, &collision->point);"
+            },
+            {
+              "line": 701,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "scenario_leaf_index_from_point(&collision->point) != collision->location.leaf_index)"
+            },
+            {
+              "line": 703,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "point_from_line3d(&collision->point, &collision->plane.n, 0.00024414062f, &collision->point);"
+            },
+            {
+              "line": 704,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "scenario_location_from_point(&collision->location, &collision->point);"
+            },
+            {
+              "line": 713,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "COLLISION_POINT_FROM_LINE3D(point, vector, collision->t, &collision->point);"
+            },
+            {
+              "line": 714,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "scenario_location_from_point(&collision->location, &collision->point);"
+            },
+            {
+              "line": 730,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "(real_vector3d *)&collision->point);"
+            },
+            {
+              "line": 731,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "scenario_location_from_point(&collision->location, &collision->point);"
+            },
+            {
+              "line": 795,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "COLLISION_POINT_FROM_LINE3D(point, vector, collision->t, &collision->point);"
+            },
+            {
+              "line": 796,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "scenario_location_from_point(&collision->location, &collision->point);"
+            },
+            {
+              "line": 869,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "COLLISION_POINT_FROM_LINE3D(point, vector, exit_collision->t, &exit_collision->point);"
+            },
+            {
+              "line": 1094,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "*new_position = collision.point;"
+            },
+            {
+              "line": 1125,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "*new_position = collision.point;"
+            },
+            {
+              "line": 1181,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "COLLISION_POINT_FROM_LINE3D(point, vector, collision->t, &collision->point);"
+            },
+            {
+              "line": 1316,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "position = collision->point;"
+            },
+            {
+              "line": 1404,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clipped_position = collision->point;"
+            },
+            {
+              "line": 1466,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->point = collisions[clip_indices[clip_count - 1]].point;"
+            },
+            {
+              "line": 1917,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "real_point3d *contact = &collision->point;"
+            },
+            {
+              "line": 1939,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->point = *point;"
+            }
+          ],
+          "member_extent": {
+            "offset": 0,
+            "size": 12
+          },
+          "name": "point",
+          "overlap": {
+            "offset": 0,
+            "size": 12
+          }
+        }
+      ],
+      "definition": "collision_vertex",
+      "definition_id": "2989376",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "collision_vertex.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_m3_collision_oracle.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ceb9cd8430aa547a57f257c9cb05fa20c1534590ce97d1be8bbf2e3328498688"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 12
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_detail_objects.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 431,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c",
+              "source_excerpt": "(short)fast_ftol(render.camera.position.x * 0.125f - 0.5f),"
+            },
+            {
+              "line": 432,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c",
+              "source_excerpt": "(short)fast_ftol(render.camera.position.y * 0.125f - 0.5f),"
+            },
+            {
+              "line": 433,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c",
+              "source_excerpt": "(short)fast_ftol(render.camera.position.z * 0.125f - 0.5f) };"
+            },
+            {
+              "line": 647,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c",
+              "source_excerpt": "detail_object_position.i = (real)detail_object->position[0];"
+            },
+            {
+              "line": 648,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c",
+              "source_excerpt": "detail_object_position.j = (real)detail_object->position[1];"
+            },
+            {
+              "line": 649,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c",
+              "source_excerpt": "detail_object_position.k = (real)detail_object->position[2];"
+            },
+            {
+              "line": 653,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c",
+              "source_excerpt": "(real)detail_object->position[0]);"
+            },
+            {
+              "line": 656,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c",
+              "source_excerpt": "(real)detail_object->position[1]);"
+            }
+          ],
+          "member_extent": {
+            "offset": 0,
+            "size": 3
+          },
+          "name": "position",
+          "overlap": {
+            "offset": 0,
+            "size": 3
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 3,
+            "size": 1
+          },
+          "name": "data",
+          "overlap": {
+            "offset": 3,
+            "size": 1
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 4,
+            "size": 2
+          },
+          "name": "color",
+          "overlap": {
+            "offset": 4,
+            "size": 2
+          }
+        }
+      ],
+      "definition": "detail_object",
+      "definition_id": "2983176",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "detail_object.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_detail_object_consumer.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "1beab7cc411b30ba14c0e2801967c335504f306288b28a7f8b1241719e171559"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 6
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_visibility.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 1041,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+              "source_excerpt": "if (portal->plane_index < 0 ||"
+            },
+            {
+              "line": 1042,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+              "source_excerpt": "portal->plane_index >= TAG_BLOCK_GET_ELEMENT("
+            },
+            {
+              "line": 1059,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+              "source_excerpt": "portal->plane_index,"
+            }
+          ],
+          "member_extent": {
+            "offset": 0,
+            "size": 4
+          },
+          "name": "plane_index",
+          "overlap": {
+            "offset": 0,
+            "size": 4
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 4,
+            "size": 8
+          },
+          "name": "leaf_indices",
+          "overlap": {
+            "offset": 4,
+            "size": 8
+          }
+        }
+      ],
+      "definition": "leaf_portal",
+      "definition_id": "2982592",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "leaf_portal.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_portal_visibility.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "32867ddecc501db0afd4939e0eebe55471d95e5208a3ccdf2c1b4e23ffadfcfd"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 12
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_visibility.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 0,
+            "size": 4
+          },
+          "name": "node_index",
+          "overlap": {
+            "offset": 0,
+            "size": 4
+          }
+        }
+      ],
+      "definition": "map_leaf_face",
+      "definition_id": "2982808",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "map_leaf_face.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_portal_visibility.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "32867ddecc501db0afd4939e0eebe55471d95e5208a3ccdf2c1b4e23ffadfcfd"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 4
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/cache/predicted_resources.c",
+        "source/camera/observer.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 64,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/cache/predicted_resources.c",
+              "source_excerpt": "predicted_resource->resource_index,"
+            },
+            {
+              "line": 97,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/cache/predicted_resources.c",
+              "source_excerpt": "predicted_resource->resource_index,"
+            },
+            {
+              "line": 115,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/cache/predicted_resources.c",
+              "source_excerpt": "predicted_resource->resource_index);"
+            }
+          ],
+          "member_extent": {
+            "offset": 2,
+            "size": 2
+          },
+          "name": "resource_index",
+          "overlap": {
+            "offset": 2,
+            "size": 2
+          }
+        }
+      ],
+      "definition": "predicted_resource",
+      "definition_id": "2985016",
+      "direct_member_fixture_claims": [
+        {
+          "claim": "Host fixture extracts CE predicted_resource_valid and proves bitmap resource_index acceptance/rejection at valid, end, and negative indices; also exercises sound group and missing-tag rejection.",
+          "member": "resource_index",
+          "test": "tests/test_hcu_mp_predicted_resource_member.py"
+        }
+      ],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "predicted_resource.<unclassified@0x2>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_predicted_resource_member.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "8628349721891c84a484834dfea37a4530381a9a5e64065c206aefca3b0946d4"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 2,
+        "size": 2
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/physics/collisions.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 603,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "vector_dot = dot_product3d(&plane.n, vector);"
+            },
+            {
+              "line": 703,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "point_from_line3d(&collision->point, &collision->plane.n, 0.00024414062f, &collision->point);"
+            },
+            {
+              "line": 707,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "real vector_dot = dot_product3d(vector, &collision->plane.n);"
+            },
+            {
+              "line": 1086,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision.plane.n.k > 0.76604444f)"
+            },
+            {
+              "line": 1169,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n = normal;"
+            },
+            {
+              "line": 1182,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.i = 0.0f;"
+            },
+            {
+              "line": 1183,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.j = 0.0f;"
+            },
+            {
+              "line": 1184,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.k = 0.0f;"
+            },
+            {
+              "line": 1220,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "&plane->n,"
+            },
+            {
+              "line": 1232,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "real distance = -dot_product3d(velocity, &plane->n);"
+            },
+            {
+              "line": 1234,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clipped_velocity->i = plane->n.i * distance + velocity->i;"
+            },
+            {
+              "line": 1235,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clipped_velocity->j = plane->n.j * distance + velocity->j;"
+            },
+            {
+              "line": 1236,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clipped_velocity->k = plane->n.k * distance + velocity->k;"
+            },
+            {
+              "line": 1329,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.i,"
+            },
+            {
+              "line": 1330,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.j,"
+            },
+            {
+              "line": 1331,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.k,"
+            },
+            {
+              "line": 1343,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (dot_product3d(&clipped_velocity, &collisions[clip_indices[0]].plane.n) < -_real_epsilon &&"
+            },
+            {
+              "line": 1360,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (dot_product3d(&clipped_velocity, &collisions[clip_indices[1]].plane.n) < -_real_epsilon &&"
+            },
+            {
+              "line": 1379,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "dot_product3d(&clipped_velocity, &collisions[clip_indices[1]].plane.n) < -_real_epsilon &&"
+            },
+            {
+              "line": 1431,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clip_plane.n.i,"
+            },
+            {
+              "line": 1432,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clip_plane.n.j,"
+            },
+            {
+              "line": 1433,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clip_plane.n.k,"
+            },
+            {
+              "line": 1479,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (clip_collision->plane.n.k < minimum_k)"
+            },
+            {
+              "line": 1481,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "minimum_k = clip_collision->plane.n.k;"
+            },
+            {
+              "line": 1494,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "cross_product3d(&clip_line_vector, &steepest->plane.n, &collision->plane.n);"
+            },
+            {
+              "line": 1498,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "cross_product3d(&steepest->plane.n, &clip_line_vector, &collision->plane.n);"
+            },
+            {
+              "line": 1507,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "(real_point3d *)&collision->plane.n);"
+            },
+            {
+              "line": 1510,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (normalize3d(&collision->plane.n) != 0.0f)"
+            },
+            {
+              "line": 1512,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.d = dot_product3d((real_vector3d *)&clip_line_point, &collision->plane.n);"
+            },
+            {
+              "line": 1527,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "&steepest->plane.n,"
+            },
+            {
+              "line": 1528,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "-steepest->plane.n.k,"
+            },
+            {
+              "line": 1529,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "(real_point3d *)&collision->plane.n);"
+            },
+            {
+              "line": 1530,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (normalize3d(&collision->plane.n) != 0.0f)"
+            },
+            {
+              "line": 1532,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.d = dot_product3d((real_vector3d *)&clip_point, &collision->plane.n);"
+            },
+            {
+              "line": 1541,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n = *global_up3d;"
+            },
+            {
+              "line": 1542,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.d = dot_product3d((real_vector3d *)&clip_point, &collision->plane.n);"
+            }
+          ],
+          "member_extent": {
+            "offset": 0,
+            "size": 12
+          },
+          "name": "n",
+          "overlap": {
+            "offset": 0,
+            "size": 12
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 601,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "plane.d -= fog->plane_distance;"
+            },
+            {
+              "line": 1171,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.d = REAL_MAX;"
+            },
+            {
+              "line": 1332,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.d));"
+            },
+            {
+              "line": 1434,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clip_plane.d));"
+            },
+            {
+              "line": 1512,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.d = dot_product3d((real_vector3d *)&clip_line_point, &collision->plane.n);"
+            },
+            {
+              "line": 1532,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.d = dot_product3d((real_vector3d *)&clip_point, &collision->plane.n);"
+            },
+            {
+              "line": 1542,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.d = dot_product3d((real_vector3d *)&clip_point, &collision->plane.n);"
+            }
+          ],
+          "member_extent": {
+            "offset": 12,
+            "size": 4
+          },
+          "name": "d",
+          "overlap": {
+            "offset": 12,
+            "size": 4
+          }
+        }
+      ],
+      "definition": "real_plane3d",
+      "definition_id": "2990016",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "real_plane3d.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_m3_collision_oracle.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ceb9cd8430aa547a57f257c9cb05fa20c1534590ce97d1be8bbf2e3328498688"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 16
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/physics/collisions.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 603,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "vector_dot = dot_product3d(&plane.n, vector);"
+            },
+            {
+              "line": 703,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "point_from_line3d(&collision->point, &collision->plane.n, 0.00024414062f, &collision->point);"
+            },
+            {
+              "line": 707,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "real vector_dot = dot_product3d(vector, &collision->plane.n);"
+            },
+            {
+              "line": 1086,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision.plane.n.k > 0.76604444f)"
+            },
+            {
+              "line": 1169,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n = normal;"
+            },
+            {
+              "line": 1182,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.i = 0.0f;"
+            },
+            {
+              "line": 1183,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.j = 0.0f;"
+            },
+            {
+              "line": 1184,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.k = 0.0f;"
+            },
+            {
+              "line": 1220,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "&plane->n,"
+            },
+            {
+              "line": 1232,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "real distance = -dot_product3d(velocity, &plane->n);"
+            },
+            {
+              "line": 1234,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clipped_velocity->i = plane->n.i * distance + velocity->i;"
+            },
+            {
+              "line": 1235,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clipped_velocity->j = plane->n.j * distance + velocity->j;"
+            },
+            {
+              "line": 1236,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clipped_velocity->k = plane->n.k * distance + velocity->k;"
+            },
+            {
+              "line": 1329,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.i,"
+            },
+            {
+              "line": 1330,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.j,"
+            },
+            {
+              "line": 1331,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.k,"
+            },
+            {
+              "line": 1343,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (dot_product3d(&clipped_velocity, &collisions[clip_indices[0]].plane.n) < -_real_epsilon &&"
+            },
+            {
+              "line": 1360,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (dot_product3d(&clipped_velocity, &collisions[clip_indices[1]].plane.n) < -_real_epsilon &&"
+            },
+            {
+              "line": 1379,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "dot_product3d(&clipped_velocity, &collisions[clip_indices[1]].plane.n) < -_real_epsilon &&"
+            },
+            {
+              "line": 1431,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clip_plane.n.i,"
+            },
+            {
+              "line": 1432,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clip_plane.n.j,"
+            },
+            {
+              "line": 1433,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clip_plane.n.k,"
+            },
+            {
+              "line": 1479,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (clip_collision->plane.n.k < minimum_k)"
+            },
+            {
+              "line": 1481,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "minimum_k = clip_collision->plane.n.k;"
+            },
+            {
+              "line": 1494,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "cross_product3d(&clip_line_vector, &steepest->plane.n, &collision->plane.n);"
+            },
+            {
+              "line": 1498,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "cross_product3d(&steepest->plane.n, &clip_line_vector, &collision->plane.n);"
+            },
+            {
+              "line": 1507,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "(real_point3d *)&collision->plane.n);"
+            },
+            {
+              "line": 1510,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (normalize3d(&collision->plane.n) != 0.0f)"
+            },
+            {
+              "line": 1512,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.d = dot_product3d((real_vector3d *)&clip_line_point, &collision->plane.n);"
+            },
+            {
+              "line": 1527,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "&steepest->plane.n,"
+            },
+            {
+              "line": 1528,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "-steepest->plane.n.k,"
+            },
+            {
+              "line": 1529,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "(real_point3d *)&collision->plane.n);"
+            },
+            {
+              "line": 1530,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (normalize3d(&collision->plane.n) != 0.0f)"
+            },
+            {
+              "line": 1532,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.d = dot_product3d((real_vector3d *)&clip_point, &collision->plane.n);"
+            },
+            {
+              "line": 1541,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n = *global_up3d;"
+            },
+            {
+              "line": 1542,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.d = dot_product3d((real_vector3d *)&clip_point, &collision->plane.n);"
+            }
+          ],
+          "member_extent": {
+            "offset": 0,
+            "size": 8
+          },
+          "name": "n",
+          "overlap": {
+            "offset": 0,
+            "size": 8
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 0,
+            "size": 8
+          },
+          "name": "(anonymous member; DWARF name unavailable)",
+          "overlap": {
+            "offset": 0,
+            "size": 8
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 0,
+            "size": 8
+          },
+          "name": "(anonymous member; DWARF name unavailable)",
+          "overlap": {
+            "offset": 0,
+            "size": 8
+          }
+        }
+      ],
+      "definition": "real_point2d",
+      "definition_id": "2990048",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "real_point2d.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_m3_collision_oracle.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ceb9cd8430aa547a57f257c9cb05fa20c1534590ce97d1be8bbf2e3328498688"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 8
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/physics/collisions.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 603,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "vector_dot = dot_product3d(&plane.n, vector);"
+            },
+            {
+              "line": 703,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "point_from_line3d(&collision->point, &collision->plane.n, 0.00024414062f, &collision->point);"
+            },
+            {
+              "line": 707,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "real vector_dot = dot_product3d(vector, &collision->plane.n);"
+            },
+            {
+              "line": 1086,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision.plane.n.k > 0.76604444f)"
+            },
+            {
+              "line": 1169,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n = normal;"
+            },
+            {
+              "line": 1182,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.i = 0.0f;"
+            },
+            {
+              "line": 1183,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.j = 0.0f;"
+            },
+            {
+              "line": 1184,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.k = 0.0f;"
+            },
+            {
+              "line": 1220,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "&plane->n,"
+            },
+            {
+              "line": 1232,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "real distance = -dot_product3d(velocity, &plane->n);"
+            },
+            {
+              "line": 1234,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clipped_velocity->i = plane->n.i * distance + velocity->i;"
+            },
+            {
+              "line": 1235,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clipped_velocity->j = plane->n.j * distance + velocity->j;"
+            },
+            {
+              "line": 1236,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clipped_velocity->k = plane->n.k * distance + velocity->k;"
+            },
+            {
+              "line": 1329,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.i,"
+            },
+            {
+              "line": 1330,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.j,"
+            },
+            {
+              "line": 1331,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n.k,"
+            },
+            {
+              "line": 1343,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (dot_product3d(&clipped_velocity, &collisions[clip_indices[0]].plane.n) < -_real_epsilon &&"
+            },
+            {
+              "line": 1360,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (dot_product3d(&clipped_velocity, &collisions[clip_indices[1]].plane.n) < -_real_epsilon &&"
+            },
+            {
+              "line": 1379,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "dot_product3d(&clipped_velocity, &collisions[clip_indices[1]].plane.n) < -_real_epsilon &&"
+            },
+            {
+              "line": 1431,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clip_plane.n.i,"
+            },
+            {
+              "line": 1432,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clip_plane.n.j,"
+            },
+            {
+              "line": 1433,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "clip_plane.n.k,"
+            },
+            {
+              "line": 1479,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (clip_collision->plane.n.k < minimum_k)"
+            },
+            {
+              "line": 1481,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "minimum_k = clip_collision->plane.n.k;"
+            },
+            {
+              "line": 1494,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "cross_product3d(&clip_line_vector, &steepest->plane.n, &collision->plane.n);"
+            },
+            {
+              "line": 1498,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "cross_product3d(&steepest->plane.n, &clip_line_vector, &collision->plane.n);"
+            },
+            {
+              "line": 1507,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "(real_point3d *)&collision->plane.n);"
+            },
+            {
+              "line": 1510,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (normalize3d(&collision->plane.n) != 0.0f)"
+            },
+            {
+              "line": 1512,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.d = dot_product3d((real_vector3d *)&clip_line_point, &collision->plane.n);"
+            },
+            {
+              "line": 1527,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "&steepest->plane.n,"
+            },
+            {
+              "line": 1528,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "-steepest->plane.n.k,"
+            },
+            {
+              "line": 1529,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "(real_point3d *)&collision->plane.n);"
+            },
+            {
+              "line": 1530,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "if (normalize3d(&collision->plane.n) != 0.0f)"
+            },
+            {
+              "line": 1532,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.d = dot_product3d((real_vector3d *)&clip_point, &collision->plane.n);"
+            },
+            {
+              "line": 1541,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.n = *global_up3d;"
+            },
+            {
+              "line": 1542,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/collisions.c",
+              "source_excerpt": "collision->plane.d = dot_product3d((real_vector3d *)&clip_point, &collision->plane.n);"
+            }
+          ],
+          "member_extent": {
+            "offset": 0,
+            "size": 12
+          },
+          "name": "n",
+          "overlap": {
+            "offset": 0,
+            "size": 12
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 0,
+            "size": 12
+          },
+          "name": "(anonymous member; DWARF name unavailable)",
+          "overlap": {
+            "offset": 0,
+            "size": 12
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 0,
+            "size": 12
+          },
+          "name": "(anonymous member; DWARF name unavailable)",
+          "overlap": {
+            "offset": 0,
+            "size": 12
+          }
+        }
+      ],
+      "definition": "real_point3d",
+      "definition_id": "2990032",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "real_point3d.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_m3_collision_oracle.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ceb9cd8430aa547a57f257c9cb05fa20c1534590ce97d1be8bbf2e3328498688"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 12
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_render.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 0,
+            "size": 12
+          },
+          "name": "ambient_color",
+          "overlap": {
+            "offset": 0,
+            "size": 12
+          }
+        }
+      ],
+      "definition": "render_lighting",
+      "definition_id": "2986432",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "render_lighting.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_lightmap_surface_consumer.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 12
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_render.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 14,
+            "size": 2
+          },
+          "name": "pad",
+          "overlap": {
+            "offset": 14,
+            "size": 2
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 16,
+            "size": 48
+          },
+          "name": "distant_lights",
+          "overlap": {
+            "offset": 16,
+            "size": 48
+          }
+        }
+      ],
+      "definition": "render_lighting",
+      "definition_id": "2986432",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "render_lighting.<unclassified@0xe>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_lightmap_surface_consumer.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 14,
+        "size": 50
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_render.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 66,
+            "size": 2
+          },
+          "name": "pad1",
+          "overlap": {
+            "offset": 66,
+            "size": 2
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 68,
+            "size": 8
+          },
+          "name": "point_light_indices",
+          "overlap": {
+            "offset": 68,
+            "size": 8
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 76,
+            "size": 16
+          },
+          "name": "reflection_tint_color",
+          "overlap": {
+            "offset": 76,
+            "size": 16
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 92,
+            "size": 12
+          },
+          "name": "shadow_vector",
+          "overlap": {
+            "offset": 92,
+            "size": 12
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 104,
+            "size": 12
+          },
+          "name": "shadow_color",
+          "overlap": {
+            "offset": 104,
+            "size": 12
+          }
+        }
+      ],
+      "definition": "render_lighting",
+      "definition_id": "2986432",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "render_lighting.<unclassified@0x42>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_lightmap_surface_consumer.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 66,
+        "size": 50
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/sound/sound_environment.c",
+        "source/scenario/scenario.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 0,
+            "size": 32
+          },
+          "name": "unused0",
+          "overlap": {
+            "offset": 0,
+            "size": 32
+          }
+        }
+      ],
+      "definition": "structure_background_sound_palette_entry",
+      "definition_id": "2983336",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_background_sound_palette_entry.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_sound_scenery_runtime.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "659ab98a333118719c39573e8a34b6c8d070e13c5bdd771baf6db7d1ce766736"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 32
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/sound/sound_environment.c",
+        "source/scenario/scenario.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 48,
+            "size": 68
+          },
+          "name": "unused30",
+          "overlap": {
+            "offset": 48,
+            "size": 68
+          }
+        }
+      ],
+      "definition": "structure_background_sound_palette_entry",
+      "definition_id": "2983336",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_background_sound_palette_entry.<unclassified@0x30>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_sound_scenery_runtime.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "659ab98a333118719c39573e8a34b6c8d070e13c5bdd771baf6db7d1ce766736"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 48,
+        "size": 68
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/physics/breakable_surfaces.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 291,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/breakable_surfaces.c",
+              "source_excerpt": "if (point_in_sphere(&breakable_surface->centroid, &damage_data->epicenter, radius))"
+            }
+          ],
+          "member_extent": {
+            "offset": 0,
+            "size": 12
+          },
+          "name": "centroid",
+          "overlap": {
+            "offset": 0,
+            "size": 12
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 288,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/breakable_surfaces.c",
+              "source_excerpt": "real radius = breakable_surface->bounding_radius;"
+            }
+          ],
+          "member_extent": {
+            "offset": 12,
+            "size": 4
+          },
+          "name": "bounding_radius",
+          "overlap": {
+            "offset": 12,
+            "size": 4
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 295,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/breakable_surfaces.c",
+              "source_excerpt": "breakable_surface_effect(breakable_surface_index, damage_data, breakable_surface->collision_surface_index);"
+            },
+            {
+              "line": 331,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/physics/breakable_surfaces.c",
+              "source_excerpt": "breakable_surface_effect(breakable_surface_index, &damage, breakable_surface->collision_surface_index);"
+            }
+          ],
+          "member_extent": {
+            "offset": 16,
+            "size": 4
+          },
+          "name": "collision_surface_index",
+          "overlap": {
+            "offset": 16,
+            "size": 4
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 20,
+            "size": 28
+          },
+          "name": "unused",
+          "overlap": {
+            "offset": 20,
+            "size": 28
+          }
+        }
+      ],
+      "definition": "structure_breakable_surface",
+      "definition_id": "2984184",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_breakable_surface.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_breakable_runtime.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "e6da6bafbc86967a0f748293042d7dd790983ed7574c812bd199e1af65cf4d91"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 48
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_visibility.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 408,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+              "source_excerpt": "render.visible_sky_index = cluster->sky_index;"
+            }
+          ],
+          "member_extent": {
+            "offset": 0,
+            "size": 2
+          },
+          "name": "sky_index",
+          "overlap": {
+            "offset": 0,
+            "size": 2
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 2,
+            "size": 2
+          },
+          "name": "fog_reference",
+          "overlap": {
+            "offset": 2,
+            "size": 2
+          }
+        }
+      ],
+      "definition": "structure_cluster",
+      "definition_id": "2984328",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_cluster.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_portal_visibility.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "32867ddecc501db0afd4939e0eebe55471d95e5208a3ccdf2c1b4e23ffadfcfd"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 4
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_visibility.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 10,
+            "size": 30
+          },
+          "name": "unusedA",
+          "overlap": {
+            "offset": 10,
+            "size": 30
+          }
+        }
+      ],
+      "definition": "structure_cluster",
+      "definition_id": "2984328",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_cluster.<unclassified@0xa>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_portal_visibility.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "32867ddecc501db0afd4939e0eebe55471d95e5208a3ccdf2c1b4e23ffadfcfd"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 10,
+        "size": 30
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_visibility.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 52,
+            "size": 52
+          },
+          "name": "unused34",
+          "overlap": {
+            "offset": 64,
+            "size": 4
+          }
+        }
+      ],
+      "definition": "structure_cluster",
+      "definition_id": "2984328",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_cluster.<unclassified@0x40>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_portal_visibility.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "32867ddecc501db0afd4939e0eebe55471d95e5208a3ccdf2c1b4e23ffadfcfd"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 64,
+        "size": 4
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_visibility.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 1041,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+              "source_excerpt": "if (portal->plane_index < 0 ||"
+            },
+            {
+              "line": 1042,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+              "source_excerpt": "portal->plane_index >= TAG_BLOCK_GET_ELEMENT("
+            },
+            {
+              "line": 1059,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+              "source_excerpt": "portal->plane_index,"
+            }
+          ],
+          "member_extent": {
+            "offset": 4,
+            "size": 4
+          },
+          "name": "plane_index",
+          "overlap": {
+            "offset": 4,
+            "size": 4
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 8,
+            "size": 12
+          },
+          "name": "centroid",
+          "overlap": {
+            "offset": 8,
+            "size": 12
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 20,
+            "size": 4
+          },
+          "name": "bounding_radius",
+          "overlap": {
+            "offset": 20,
+            "size": 4
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 24,
+            "size": 4
+          },
+          "name": "flags",
+          "overlap": {
+            "offset": 24,
+            "size": 4
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 28,
+            "size": 24
+          },
+          "name": "unused",
+          "overlap": {
+            "offset": 28,
+            "size": 24
+          }
+        }
+      ],
+      "definition": "structure_cluster_portal",
+      "definition_id": "2984200",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_cluster_portal.<unclassified@0x4>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_portal_visibility.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "32867ddecc501db0afd4939e0eebe55471d95e5208a3ccdf2c1b4e23ffadfcfd"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 4,
+        "size": 48
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/physics/collisions.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 16,
+            "size": 2
+          },
+          "name": "pad",
+          "overlap": {
+            "offset": 16,
+            "size": 2
+          }
+        }
+      ],
+      "definition": "structure_collision_material",
+      "definition_id": "2986264",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_collision_material.<unclassified@0x10>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_m3_collision_oracle.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ceb9cd8430aa547a57f257c9cb05fa20c1534590ce97d1be8bbf2e3328498688"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 16,
+        "size": 2
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_detail_objects.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 24,
+            "size": 40
+          },
+          "name": "reserved18",
+          "overlap": {
+            "offset": 48,
+            "size": 16
+          }
+        }
+      ],
+      "definition": "structure_detail_object_data",
+      "definition_id": "2982912",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_detail_object_data.<unclassified@0x30>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_detail_object_consumer.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "1beab7cc411b30ba14c0e2801967c335504f306288b28a7f8b1241719e171559"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 48,
+        "size": 16
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/scenario/scenario.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 0,
+            "size": 32
+          },
+          "name": "unused",
+          "overlap": {
+            "offset": 0,
+            "size": 32
+          }
+        }
+      ],
+      "definition": "structure_fog_palette_entry",
+      "definition_id": "2983768",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_fog_palette_entry.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_weather_particle_all13.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "8096219496432da09b9b292d829aa02ca36f28d4cb08f7f859e0de5adde30b0a"
+        },
+        {
+          "path": "tests/test_location.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "41e7d4b844922afc6027533c18f56203d86079fbeadf0a327775868b88a0edd0"
+        }
+      ],
+      "related_reports": [
+        {
+          "path": "docs/reports/m2-step7-mp-valid-fog-selection-all13-2026-10-22.md",
+          "relation": "supporting report; not itself an executable fixture",
+          "sha256": "ab86531e007e46eb6909c7cd70a31133650852c98a1327dbefa64a518a4e9dd6"
+        }
+      ],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 32
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/scenario/scenario.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 48,
+            "size": 88
+          },
+          "name": "unused2",
+          "overlap": {
+            "offset": 48,
+            "size": 88
+          }
+        }
+      ],
+      "definition": "structure_fog_palette_entry",
+      "definition_id": "2983768",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_fog_palette_entry.<unclassified@0x30>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_weather_particle_all13.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "8096219496432da09b9b292d829aa02ca36f28d4cb08f7f859e0de5adde30b0a"
+        },
+        {
+          "path": "tests/test_location.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "41e7d4b844922afc6027533c18f56203d86079fbeadf0a327775868b88a0edd0"
+        }
+      ],
+      "related_reports": [
+        {
+          "path": "docs/reports/m2-step7-mp-valid-fog-selection-all13-2026-10-22.md",
+          "relation": "supporting report; not itself an executable fixture",
+          "sha256": "ab86531e007e46eb6909c7cd70a31133650852c98a1327dbefa64a518a4e9dd6"
+        }
+      ],
+      "schema_gap_range": {
+        "offset": 48,
+        "size": 88
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_fog_planes.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 4,
+            "size": 16
+          },
+          "name": "plane",
+          "overlap": {
+            "offset": 4,
+            "size": 16
+          }
+        }
+      ],
+      "definition": "structure_fog_plane",
+      "definition_id": "2984024",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_fog_plane.<unclassified@0x4>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_wind_package.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "582e716a1808c684708b5c887da54785f54e3db347b5af292c97f043b046bc38"
+        },
+        {
+          "path": "tests/test_location.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "41e7d4b844922afc6027533c18f56203d86079fbeadf0a327775868b88a0edd0"
+        }
+      ],
+      "related_reports": [
+        {
+          "path": "docs/reports/m2-step7-fog-plane-consumer-qualification-2026-10-21.md",
+          "relation": "supporting report; not itself an executable fixture",
+          "sha256": "fd00e24bd8444a8ec730f94663d0bd6ea56d80235c44510e8d08503e0ef9617b"
+        }
+      ],
+      "schema_gap_range": {
+        "offset": 4,
+        "size": 16
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/scenario/scenario.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 0,
+            "size": 36
+          },
+          "name": "unused",
+          "overlap": {
+            "offset": 0,
+            "size": 36
+          }
+        }
+      ],
+      "definition": "structure_fog_region",
+      "definition_id": "2983896",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_fog_region.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_weather_particle_all13.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "8096219496432da09b9b292d829aa02ca36f28d4cb08f7f859e0de5adde30b0a"
+        },
+        {
+          "path": "tests/test_location.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "41e7d4b844922afc6027533c18f56203d86079fbeadf0a327775868b88a0edd0"
+        }
+      ],
+      "related_reports": [
+        {
+          "path": "docs/reports/m2-step7-mp-valid-fog-selection-all13-2026-10-22.md",
+          "relation": "supporting report; not itself an executable fixture",
+          "sha256": "ab86531e007e46eb6909c7cd70a31133650852c98a1327dbefa64a518a4e9dd6"
+        }
+      ],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 36
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_visibility.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 1338,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+              "source_excerpt": "dequantize_byte_to_real_rectangle3d(parent_bounds, &leaf->bounds, &leaf_bounds);"
+            }
+          ],
+          "member_extent": {
+            "offset": 0,
+            "size": 6
+          },
+          "name": "bounds",
+          "overlap": {
+            "offset": 0,
+            "size": 6
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 6,
+            "size": 2
+          },
+          "name": "pad",
+          "overlap": {
+            "offset": 6,
+            "size": 2
+          }
+        }
+      ],
+      "definition": "structure_leaf",
+      "definition_id": "2986160",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_leaf.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_portal_visibility.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "32867ddecc501db0afd4939e0eebe55471d95e5208a3ccdf2c1b4e23ffadfcfd"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 8
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_visibility.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 1310,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+              "source_excerpt": "leaf->surface_reference_count < 0 ||"
+            },
+            {
+              "line": 1312,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+              "source_excerpt": "structure->surface_references.count - leaf->surface_reference_count)"
+            },
+            {
+              "line": 1355,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+              "source_excerpt": "reference_index < leaf->surface_reference_count + leaf->first_surface_reference_index;"
+            }
+          ],
+          "member_extent": {
+            "offset": 10,
+            "size": 2
+          },
+          "name": "surface_reference_count",
+          "overlap": {
+            "offset": 10,
+            "size": 2
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 1309,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+              "source_excerpt": "if (leaf->first_surface_reference_index < 0 ||"
+            },
+            {
+              "line": 1311,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+              "source_excerpt": "leaf->first_surface_reference_index >"
+            },
+            {
+              "line": 1354,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+              "source_excerpt": "for (reference_index = leaf->first_surface_reference_index;"
+            },
+            {
+              "line": 1355,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+              "source_excerpt": "reference_index < leaf->surface_reference_count + leaf->first_surface_reference_index;"
+            }
+          ],
+          "member_extent": {
+            "offset": 12,
+            "size": 4
+          },
+          "name": "first_surface_reference_index",
+          "overlap": {
+            "offset": 12,
+            "size": 4
+          }
+        }
+      ],
+      "definition": "structure_leaf",
+      "definition_id": "2986160",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_leaf.<unclassified@0xa>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_portal_visibility.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "32867ddecc501db0afd4939e0eebe55471d95e5208a3ccdf2c1b4e23ffadfcfd"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 10,
+        "size": 6
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_lens_flares.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 540,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/structures/structure_lens_flares.c",
+              "source_excerpt": "marker->position = position;"
+            },
+            {
+              "line": 592,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_lens_flares.c",
+              "source_excerpt": "real_point3d test_point = marker->position;"
+            }
+          ],
+          "member_extent": {
+            "offset": 0,
+            "size": 12
+          },
+          "name": "position",
+          "overlap": {
+            "offset": 0,
+            "size": 12
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 12,
+            "size": 1
+          },
+          "name": "i_direction",
+          "overlap": {
+            "offset": 12,
+            "size": 1
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 13,
+            "size": 1
+          },
+          "name": "j_direction",
+          "overlap": {
+            "offset": 13,
+            "size": 1
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 14,
+            "size": 1
+          },
+          "name": "k_direction",
+          "overlap": {
+            "offset": 14,
+            "size": 1
+          }
+        }
+      ],
+      "definition": "structure_lens_flare_marker",
+      "definition_id": "2985480",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_lens_flare_marker.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_lens_flare_consumer.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "005ea3db352e56fc06d5fa0c0d07e3620a720534f470163da78d6b447aef3cdc"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 15
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_bsp_definitions.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 0,
+            "size": 2
+          },
+          "name": "bitmap_index",
+          "overlap": {
+            "offset": 0,
+            "size": 2
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 2,
+            "size": 2
+          },
+          "name": "pad",
+          "overlap": {
+            "offset": 2,
+            "size": 2
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 4,
+            "size": 16
+          },
+          "name": "unused",
+          "overlap": {
+            "offset": 4,
+            "size": 16
+          }
+        }
+      ],
+      "definition": "structure_lightmap",
+      "definition_id": "2985696",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_lightmap.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_lightmap_surface_consumer.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 20
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_bsp_definitions.c",
+        "source/structures/structures.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 16,
+            "size": 2
+          },
+          "name": "permutation_index",
+          "overlap": {
+            "offset": 16,
+            "size": 2
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 916,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "collision.flags,"
+            },
+            {
+              "line": 1056,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "fog->fog_definition_flags = definition->flags;"
+            },
+            {
+              "line": 1098,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "fog->fog_definition_flags = definition->flags;"
+            }
+          ],
+          "member_extent": {
+            "offset": 18,
+            "size": 2
+          },
+          "name": "flags",
+          "overlap": {
+            "offset": 18,
+            "size": 2
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 109,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.c",
+              "source_excerpt": "if (surface_index<TAG_BLOCK_GET_ELEMENT(&curr_lightmap->materials, 0, struct structure_material)->first_surface_index)"
+            },
+            {
+              "line": 118,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.c",
+              "source_excerpt": "TAG_BLOCK_GET_ELEMENT(&curr_lightmap->materials, curr_lightmap->materials.count-1, struct structure_material)->first_surface_index)"
+            },
+            {
+              "line": 149,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.c",
+              "source_excerpt": "if (surface_index < TAG_BLOCK_GET_ELEMENT(&lightmap->materials, 0, struct structure_material)->first_surface_index)"
+            },
+            {
+              "line": 161,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.c",
+              "source_excerpt": "if (surface_index<curr_material->first_surface_index)"
+            },
+            {
+              "line": 168,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.c",
+              "source_excerpt": "if (surface_index<curr_material->first_surface_index+curr_material->surface_count)"
+            },
+            {
+              "line": 188,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.c",
+              "source_excerpt": "match_assert(\"c:\\\\halo\\\\SOURCE\\\\structures\\\\structure_bsp_definitions.c\", 102, surface_index>=material->first_surface_index);"
+            },
+            {
+              "line": 189,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.c",
+              "source_excerpt": "match_assert(\"c:\\\\halo\\\\SOURCE\\\\structures\\\\structure_bsp_definitions.c\", 103, surface_index<material->first_surface_index+material->surface_count);"
+            },
+            {
+              "line": 191,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.c",
+              "source_excerpt": "return surface_index >= material->first_surface_index &&"
+            },
+            {
+              "line": 192,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.c",
+              "source_excerpt": "surface_index < material->first_surface_index + material->surface_count;"
+            }
+          ],
+          "member_extent": {
+            "offset": 20,
+            "size": 4
+          },
+          "name": "first_surface_index",
+          "overlap": {
+            "offset": 20,
+            "size": 4
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 117,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.c",
+              "source_excerpt": "TAG_BLOCK_GET_ELEMENT(&curr_lightmap->materials, curr_lightmap->materials.count-1, struct structure_material)->surface_count+"
+            },
+            {
+              "line": 168,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.c",
+              "source_excerpt": "if (surface_index<curr_material->first_surface_index+curr_material->surface_count)"
+            },
+            {
+              "line": 189,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.c",
+              "source_excerpt": "match_assert(\"c:\\\\halo\\\\SOURCE\\\\structures\\\\structure_bsp_definitions.c\", 103, surface_index<material->first_surface_index+material->surface_count);"
+            },
+            {
+              "line": 192,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.c",
+              "source_excerpt": "surface_index < material->first_surface_index + material->surface_count;"
+            }
+          ],
+          "member_extent": {
+            "offset": 24,
+            "size": 4
+          },
+          "name": "surface_count",
+          "overlap": {
+            "offset": 24,
+            "size": 4
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 393,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "distance_squared3d(point, &portal->centroid) <"
+            },
+            {
+              "line": 809,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "&portal->centroid,"
+            }
+          ],
+          "member_extent": {
+            "offset": 28,
+            "size": 12
+          },
+          "name": "centroid",
+          "overlap": {
+            "offset": 28,
+            "size": 12
+          }
+        }
+      ],
+      "definition": "structure_material",
+      "definition_id": "2985784",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_material.<unclassified@0x10>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_lightmap_surface_consumer.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 16,
+        "size": 24
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_bsp_definitions.c",
+        "source/structures/structures.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 662,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "point_from_line3d(point0, &fog_plane->plane.n, -render.fog.planar_maximum_distance, &offset_point0);"
+            },
+            {
+              "line": 663,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "point_from_line3d(point1, &fog_plane->plane.n, -render.fog.planar_maximum_distance, &offset_point1);"
+            },
+            {
+              "line": 1064,
+              "mode_hint": "assignment_syntax",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "fog->plane = TAG_BLOCK_GET_ELEMENT("
+            },
+            {
+              "line": 1067,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "struct structure_fog_plane_render)->plane;"
+            },
+            {
+              "line": 1093,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "fog->plane.d += offset;"
+            },
+            {
+              "line": 1094,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "scale_vector3d(&fog->plane.n, offset, &vector_offset);"
+            }
+          ],
+          "member_extent": {
+            "offset": 156,
+            "size": 16
+          },
+          "name": "plane",
+          "overlap": {
+            "offset": 156,
+            "size": 16
+          }
+        }
+      ],
+      "definition": "structure_material",
+      "definition_id": "2985784",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_material.<unclassified@0x9c>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_lightmap_surface_consumer.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 156,
+        "size": 16
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_bsp_definitions.c",
+        "source/structures/structures.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 174,
+            "size": 2
+          },
+          "name": "copious_unused_space",
+          "overlap": {
+            "offset": 174,
+            "size": 2
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 367,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "long vertex_count = portal->vertices.count;"
+            },
+            {
+              "line": 419,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "&portal->vertices,"
+            },
+            {
+              "line": 585,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "if (material->vertices.type =="
+            },
+            {
+              "line": 587,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "material->vertices.type =="
+            },
+            {
+              "line": 647,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "vertex_index < fog_plane->vertices.count;"
+            },
+            {
+              "line": 650,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "short next_vertex_index = (short)((vertex_index + 1) % fog_plane->vertices.count);"
+            },
+            {
+              "line": 652,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "&fog_plane->vertices,"
+            },
+            {
+              "line": 656,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "&fog_plane->vertices,"
+            }
+          ],
+          "member_extent": {
+            "offset": 176,
+            "size": 20
+          },
+          "name": "vertices",
+          "overlap": {
+            "offset": 176,
+            "size": 20
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 196,
+            "size": 20
+          },
+          "name": "lightmap_vertices",
+          "overlap": {
+            "offset": 196,
+            "size": 20
+          }
+        }
+      ],
+      "definition": "structure_material",
+      "definition_id": "2985784",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_material.<unclassified@0xae>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_lightmap_surface_consumer.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 174,
+        "size": 42
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_runtime_decals.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 230,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_runtime_decals.c",
+              "source_excerpt": "decal_new(definition_index, &runtime_decal->position, &normal, 1.0f, 1, NONE, FALSE);"
+            }
+          ],
+          "member_extent": {
+            "offset": 0,
+            "size": 12
+          },
+          "name": "position",
+          "overlap": {
+            "offset": 0,
+            "size": 12
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 202,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_runtime_decals.c",
+              "source_excerpt": "if (runtime_decal->palette_index >= global_scenario_get()->decal_palette.count)"
+            },
+            {
+              "line": 210,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_runtime_decals.c",
+              "source_excerpt": "runtime_decal->palette_index,"
+            }
+          ],
+          "member_extent": {
+            "offset": 12,
+            "size": 1
+          },
+          "name": "palette_index",
+          "overlap": {
+            "offset": 12,
+            "size": 1
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 13,
+            "size": 1
+          },
+          "name": "unused",
+          "overlap": {
+            "offset": 13,
+            "size": 1
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 224,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_runtime_decals.c",
+              "source_excerpt": "runtime_decal->yaw * (_pi / 127.f),"
+            }
+          ],
+          "member_extent": {
+            "offset": 14,
+            "size": 1
+          },
+          "name": "yaw",
+          "overlap": {
+            "offset": 14,
+            "size": 1
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 225,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_runtime_decals.c",
+              "source_excerpt": "runtime_decal->pitch * (_pi / 254.f),"
+            }
+          ],
+          "member_extent": {
+            "offset": 15,
+            "size": 1
+          },
+          "name": "pitch",
+          "overlap": {
+            "offset": 15,
+            "size": 1
+          }
+        }
+      ],
+      "definition": "structure_runtime_decal",
+      "definition_id": "2982896",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_runtime_decal.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_runtime_decals_consumer.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "44f12dcaa9a9983790cf6a71ad964d12dee0877b20a2bae8fda6706b9a829fea"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 16
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/sound/sound_environment.c",
+        "source/scenario/scenario.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 0,
+            "size": 32
+          },
+          "name": "unused0",
+          "overlap": {
+            "offset": 0,
+            "size": 32
+          }
+        }
+      ],
+      "definition": "structure_sound_environment_palette_entry",
+      "definition_id": "2983208",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_sound_environment_palette_entry.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_sound_scenery_runtime.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "659ab98a333118719c39573e8a34b6c8d070e13c5bdd771baf6db7d1ce766736"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 32
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/sound/sound_environment.c",
+        "source/scenario/scenario.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 48,
+            "size": 32
+          },
+          "name": "unused30",
+          "overlap": {
+            "offset": 48,
+            "size": 32
+          }
+        }
+      ],
+      "definition": "structure_sound_environment_palette_entry",
+      "definition_id": "2983208",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_sound_environment_palette_entry.<unclassified@0x30>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_sound_scenery_runtime.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "659ab98a333118719c39573e8a34b6c8d070e13c5bdd771baf6db7d1ce766736"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 48,
+        "size": 32
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_render.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 307,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_render.c",
+              "source_excerpt": "surface->vertex_indices[0];"
+            },
+            {
+              "line": 309,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_render.c",
+              "source_excerpt": "surface->vertex_indices[1];"
+            },
+            {
+              "line": 311,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_render.c",
+              "source_excerpt": "surface->vertex_indices[2];"
+            },
+            {
+              "line": 417,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_render.c",
+              "source_excerpt": "triangles[0] = surface->vertex_indices[0];"
+            },
+            {
+              "line": 418,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_render.c",
+              "source_excerpt": "triangles[1] = surface->vertex_indices[1];"
+            },
+            {
+              "line": 419,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structure_render.c",
+              "source_excerpt": "triangles[2] = surface->vertex_indices[2];"
+            }
+          ],
+          "member_extent": {
+            "offset": 0,
+            "size": 6
+          },
+          "name": "vertex_indices",
+          "overlap": {
+            "offset": 0,
+            "size": 6
+          }
+        }
+      ],
+      "definition": "structure_surface",
+      "definition_id": "2986056",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_surface.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_lightmap_surface_consumer.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 6
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/structures/structure_visibility.c",
+        "source/structures/structures.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 545,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "if (surface_reference->bsp3d_node_index != NONE)"
+            },
+            {
+              "line": 552,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/structures/structures.c",
+              "source_excerpt": "surface_reference->bsp3d_node_index,"
+            }
+          ],
+          "member_extent": {
+            "offset": 4,
+            "size": 4
+          },
+          "name": "bsp3d_node_index",
+          "overlap": {
+            "offset": 4,
+            "size": 4
+          }
+        }
+      ],
+      "definition": "structure_surface_reference",
+      "definition_id": "2986072",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_surface_reference.<unclassified@0x4>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_lightmap_surface_consumer.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8"
+        },
+        {
+          "path": "tests/test_hcu_mp_portal_visibility.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "32867ddecc501db0afd4939e0eebe55471d95e5208a3ccdf2c1b4e23ffadfcfd"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 4,
+        "size": 4
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/scenario/wind.c",
+        "source/effects/weather_particle_systems.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 0,
+            "size": 32
+          },
+          "name": "name",
+          "overlap": {
+            "offset": 0,
+            "size": 32
+          }
+        }
+      ],
+      "definition": "structure_weather_palette_entry",
+      "definition_id": "2983560",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_weather_palette_entry.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_weather_particle_consumer.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "a7b0fc527b66bcc3bd2a480afdb53dcac88ede3c6f7e0ea35a8b74c95e682b50"
+        },
+        {
+          "path": "tests/test_hcu_mp_wind_package.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "582e716a1808c684708b5c887da54785f54e3db347b5af292c97f043b046bc38"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 32
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/scenario/wind.c",
+        "source/effects/weather_particle_systems.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 48,
+            "size": 2
+          },
+          "name": "pad30",
+          "overlap": {
+            "offset": 48,
+            "size": 2
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 50,
+            "size": 2
+          },
+          "name": "runtime_particle_system_global_function_index",
+          "overlap": {
+            "offset": 50,
+            "size": 2
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 52,
+            "size": 32
+          },
+          "name": "particle_system_global_function_name",
+          "overlap": {
+            "offset": 52,
+            "size": 32
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 84,
+            "size": 44
+          },
+          "name": "particle_system_unused",
+          "overlap": {
+            "offset": 84,
+            "size": 44
+          }
+        }
+      ],
+      "definition": "structure_weather_palette_entry",
+      "definition_id": "2983560",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_weather_palette_entry.<unclassified@0x30>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_weather_particle_consumer.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "a7b0fc527b66bcc3bd2a480afdb53dcac88ede3c6f7e0ea35a8b74c95e682b50"
+        },
+        {
+          "path": "tests/test_hcu_mp_wind_package.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "582e716a1808c684708b5c887da54785f54e3db347b5af292c97f043b046bc38"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 48,
+        "size": 80
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/scenario/wind.c",
+        "source/effects/weather_particle_systems.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 249,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/scenario/wind.c",
+              "source_excerpt": "&weather_palette->wind_direction);"
+            }
+          ],
+          "member_extent": {
+            "offset": 144,
+            "size": 12
+          },
+          "name": "wind_direction",
+          "overlap": {
+            "offset": 144,
+            "size": 12
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 257,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/scenario/wind.c",
+              "source_excerpt": "scale = weather_palette->wind_magnitude * state->velocity;"
+            }
+          ],
+          "member_extent": {
+            "offset": 156,
+            "size": 4
+          },
+          "name": "wind_magnitude",
+          "overlap": {
+            "offset": 156,
+            "size": 4
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 160,
+            "size": 2
+          },
+          "name": "padA0",
+          "overlap": {
+            "offset": 160,
+            "size": 2
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 162,
+            "size": 2
+          },
+          "name": "wind_global_function_index",
+          "overlap": {
+            "offset": 162,
+            "size": 2
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 164,
+            "size": 32
+          },
+          "name": "wind_global_function_name",
+          "overlap": {
+            "offset": 164,
+            "size": 32
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 196,
+            "size": 44
+          },
+          "name": "wind_unused",
+          "overlap": {
+            "offset": 196,
+            "size": 44
+          }
+        }
+      ],
+      "definition": "structure_weather_palette_entry",
+      "definition_id": "2983560",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_weather_palette_entry.<unclassified@0x90>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_weather_particle_consumer.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "a7b0fc527b66bcc3bd2a480afdb53dcac88ede3c6f7e0ea35a8b74c95e682b50"
+        },
+        {
+          "path": "tests/test_hcu_mp_wind_package.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "582e716a1808c684708b5c887da54785f54e3db347b5af292c97f043b046bc38"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 144,
+        "size": 96
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    },
+    {
+      "candidate_ce_source_files": [
+        "source/effects/weather_particle_systems.c"
+      ],
+      "compiled_member_overlaps": [
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 464,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+              "source_excerpt": "if (distance_squared3d(&render.camera.position, &polyhedron->bounding_sphere_center)<"
+            }
+          ],
+          "member_extent": {
+            "offset": 0,
+            "size": 12
+          },
+          "name": "bounding_sphere_center",
+          "overlap": {
+            "offset": 0,
+            "size": 12
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [
+            {
+              "line": 465,
+              "mode_hint": "read_or_unknown",
+              "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+              "source_excerpt": "(maximum_distance + polyhedron->bounding_sphere_radius)*(maximum_distance + polyhedron->bounding_sphere_radius))"
+            }
+          ],
+          "member_extent": {
+            "offset": 12,
+            "size": 4
+          },
+          "name": "bounding_sphere_radius",
+          "overlap": {
+            "offset": 12,
+            "size": 4
+          }
+        },
+        {
+          "access_search_limit": "Only explicit .field/->field spellings in listed candidate files; macros, aliases, indirect code, and call reachability are not resolved.",
+          "explicit_accesses_in_candidate_sources": [],
+          "member_extent": {
+            "offset": 16,
+            "size": 4
+          },
+          "name": "unused",
+          "overlap": {
+            "offset": 16,
+            "size": 4
+          }
+        }
+      ],
+      "definition": "structure_weather_polyhedron",
+      "definition_id": "2983472",
+      "direct_member_fixture_claims": [],
+      "fixture_status": "related_fixture_exists",
+      "inventory_path": "structure_weather_polyhedron.<unclassified@0x0>",
+      "limitation": "DWARF overlap identifies source-layout members only. Textual accesses and related fixtures do not establish complete semantic behavior or target execution.",
+      "related_fixtures": [
+        {
+          "path": "tests/test_hcu_mp_weather_particle_consumer.py",
+          "relation": "related consumer fixture; not proof that every overlapping member is observed",
+          "sha256": "a7b0fc527b66bcc3bd2a480afdb53dcac88ede3c6f7e0ea35a8b74c95e682b50"
+        }
+      ],
+      "related_reports": [],
+      "schema_gap_range": {
+        "offset": 0,
+        "size": 20
+      },
+      "semantic_qualification": "open",
+      "target_consumer_execution": false
+    }
+  ],
+  "source_pins": {
+    "docs/reports/m2-step7-bsp-member-inventory-2026-10-22.json": "29fa47457d98782d61a8b09a20f5d84d2d9e336640b4b3bbd3000a6305206d15",
+    "docs/reports/m2-step7-fog-plane-consumer-qualification-2026-10-21.md": "fd00e24bd8444a8ec730f94663d0bd6ea56d80235c44510e8d08503e0ef9617b",
+    "docs/reports/m2-step7-mp-valid-fog-selection-all13-2026-10-22.md": "ab86531e007e46eb6909c7cd70a31133650852c98a1327dbefa64a518a4e9dd6",
+    "docs/reports/m2-step7-schema-gap-dwarf-members-2026-10-22.json": "6b9edb0ccd7a4fc88ecf5a3bf7cbb7cb2a7938657fe6ab33e03f2da1cd51a540",
+    "submodules/halo-ce-universal/source/cache/predicted_resources.c": "c2f81e7cab0307a5cb33f2094837556b3638594711a2e88dc187a1ec1c093eb4",
+    "submodules/halo-ce-universal/source/camera/observer.c": "3615f6fa451c3c7774552f6d8de8d24fac4e4c490cce4abd9b411a63e0131ce9",
+    "submodules/halo-ce-universal/source/effects/weather_particle_systems.c": "5c6f2cbe81276d89203890b1dbba3eb833125b2eb1c8c24c4c96dd74d61360b3",
+    "submodules/halo-ce-universal/source/physics/breakable_surfaces.c": "a8349a2a064dcdc969153ebf81eaaa2a5528dc56c733ab0f1efb75e7d680a8e9",
+    "submodules/halo-ce-universal/source/physics/collisions.c": "16581f812393db63428fcf426acaad33bebe0687393db4a7fc4febccc7ca45c3",
+    "submodules/halo-ce-universal/source/scenario/scenario.c": "22aef8353c6f4a1067d0e51e78565783d5f7c911e3b4d73f40ad49269a2546c0",
+    "submodules/halo-ce-universal/source/scenario/wind.c": "b4464221406b8388a77815afd84a179f9b8fe2c835f841b34caa6f6bc815f911",
+    "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.c": "c15b1b1b6ab0b8c24e494e3bf3a5340eca89899ded49f900a2b544241374afee",
+    "submodules/halo-ce-universal/source/structures/structure_detail_objects.c": "471e7a77c5f92bcd8587ffccd9f3cffe7cf7cabec94189f02e0a0231b2314a5a",
+    "submodules/halo-ce-universal/source/structures/structure_lens_flares.c": "44bcdc435f01d56a21822164e3aaa53df5fde56903e463453117699ca866306d",
+    "submodules/halo-ce-universal/source/structures/structure_render.c": "ce7240bf9643d98c6c10242465a1d6b9b557422b8986c0b41b0ac7fb75c090b6",
+    "submodules/halo-ce-universal/source/structures/structure_runtime_decals.c": "b8414f1c1d1305fcc23beafd6e74486485ce79078cc61868dfba35bde4023f58",
+    "submodules/halo-ce-universal/source/structures/structure_visibility.c": "9f1d05ac81293ecd895986561ceea0413383a7d43e8ec6cbfe3453a211b55a25",
+    "submodules/halo-ce-universal/source/structures/structures.c": "644dff5a5f5a0e1d4a6ae5f71109afde647809f67401775f2dc8c74d3ca87c3f",
+    "tests/test_hcu_mp_breakable_runtime.py": "e6da6bafbc86967a0f748293042d7dd790983ed7574c812bd199e1af65cf4d91",
+    "tests/test_hcu_mp_detail_object_consumer.py": "1beab7cc411b30ba14c0e2801967c335504f306288b28a7f8b1241719e171559",
+    "tests/test_hcu_mp_lens_flare_consumer.py": "005ea3db352e56fc06d5fa0c0d07e3620a720534f470163da78d6b447aef3cdc",
+    "tests/test_hcu_mp_lightmap_surface_consumer.py": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8",
+    "tests/test_hcu_mp_portal_visibility.py": "32867ddecc501db0afd4939e0eebe55471d95e5208a3ccdf2c1b4e23ffadfcfd",
+    "tests/test_hcu_mp_predicted_resource_member.py": "8628349721891c84a484834dfea37a4530381a9a5e64065c206aefca3b0946d4",
+    "tests/test_hcu_mp_sound_scenery_runtime.py": "659ab98a333118719c39573e8a34b6c8d070e13c5bdd771baf6db7d1ce766736",
+    "tests/test_hcu_mp_weather_particle_all13.py": "8096219496432da09b9b292d829aa02ca36f28d4cb08f7f859e0de5adde30b0a",
+    "tests/test_hcu_mp_weather_particle_consumer.py": "a7b0fc527b66bcc3bd2a480afdb53dcac88ede3c6f7e0ea35a8b74c95e682b50",
+    "tests/test_hcu_mp_wind_package.py": "582e716a1808c684708b5c887da54785f54e3db347b5af292c97f043b046bc38",
+    "tests/test_hcu_runtime_decals_consumer.py": "44f12dcaa9a9983790cf6a71ad964d12dee0877b20a2bae8fda6706b9a829fea",
+    "tests/test_location.py": "41e7d4b844922afc6027533c18f56203d86079fbeadf0a327775868b88a0edd0",
+    "tests/test_m3_collision_oracle.py": "ceb9cd8430aa547a57f257c9cb05fa20c1534590ce97d1be8bbf2e3328498688"
+  },
+  "summary": {
+    "compiled_member_overlap_ranges": 46,
+    "limitations": [
+      "Textual source access is discovery evidence, not call-graph/data-flow proof.",
+      "A consumer fixture can be related to a type without asserting every overlapping member.",
+      "Host harness execution does not establish PCSX2 or physical-console behavior.",
+      "Retained bytes and compiler layout do not establish the correct relocated pointer domain."
+    ],
+    "member_overlap_segments": 99,
+    "ranges_with_related_fixture": 46,
+    "ranges_with_related_report_only": 0,
+    "ranges_with_target_consumer_execution": 0,
+    "ranges_without_mapped_fixture": 0,
+    "semantic_qualifications_closed": 0
+  }
+}
