@@ -15,19 +15,23 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import audit_hcu_c2_budget_elf_owners as owners  # noqa: E402
 
-FRESH_ELF = ROOT / "build/hcu-parent-link-probe/hcu-gameplay-machine.elf"
+FRESH_ELF = ROOT / "build/m2-c2-resume-budget-v3/hcu-gameplay-machine-partition-sidewinder_marine_shotgun_4p4bot.elf"
 BUDGET = ROOT / "config/memory-budget.json"
 
 
-def _reservation_from_budget():
+def _budget_bytes(name):
     for region in json.loads(BUDGET.read_text())["regions"]:
-        if region["name"] == "elf_static":
+        if region["name"] == name:
             return region["bytes"]
-    raise KeyError("elf_static")
+    raise KeyError(name)
+
+
+def _reservation_from_budget():
+    return _budget_bytes("elf_static")
 
 
 def test_reservation_is_read_from_budget():
-    assert owners.elf_static_reservation() == _reservation_from_budget() == 2097152
+    assert owners.elf_static_reservation() == _reservation_from_budget()
 
 
 def test_owner_rules_name_a_source_and_class():
@@ -50,8 +54,14 @@ def test_fresh_gameplay_elf_attribution_reconciles():
     assert res["diagnostic_in_elf_static_total"] <= res["unowned_bss_bytes"]
     assert res["unowned_non_diagnostic_bss_bytes"] == \
         res["unowned_bss_bytes"] - res["diagnostic_in_elf_static_total"]
-    # elf_static need is code plus unowned .bss, and the overflow is against the budget.
-    assert res["elf_static_need_bytes"] == res["code_and_constant_bytes"] + res["unowned_bss_bytes"]
+    # Budget v3: elf_static need is the file-backed LOAD bytes; NOBITS goes to resident_gameplay.
+    assert res["elf_static_need_bytes"] == res["file_backed_load_bytes"] == \
+        sum(l["filesz"] for l in res["load_segments"])
+    assert res["nobits_bytes"] == sum(l["memsz"] - l["filesz"] for l in res["load_segments"])
+    assert res["resident_gameplay_after_nobits_bytes"] == \
+        res["resident_gameplay_capacity_bytes"] - res["nobits_bytes"]
+    assert res["resident_gameplay_capacity_bytes"] == _budget_bytes("resident_gameplay")
+    assert res["elf_static_margin_bytes"] == res["elf_static_reservation_bytes"] - res["elf_static_need_bytes"]
     assert res["elf_static_excess_bytes"] == max(0, res["elf_static_need_bytes"] - res["elf_static_reservation_bytes"])
     assert res["elf_static_fits"] == (res["elf_static_need_bytes"] <= res["elf_static_reservation_bytes"])
 

@@ -16,26 +16,33 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 BUDGET = ROOT / "config/memory-budget.json"
 
+def _budget_bytes(name):
+    for region in json.loads(BUDGET.read_text())["regions"]:
+        if region["name"] == name:
+            return region["bytes"]
+    raise KeyError(name)
+
+
 # Measured high-water records. "peak" is the largest observed use of the
 # region's bytes; "complete" means every byte the region owns was accounted in
 # that run. Sources are repository paths.
 DONORS = {
     "resident_gameplay": {
-        "reserved": 6815744,
+        "reserved": _budget_bytes("resident_gameplay"),
         "peak": 3107656,
         "complete": False,
         "source": "docs/reports/m2-step8-ce-four-local-player-workload-2026-10-22.md (game-state peak only; one 4-player Sidewinder run)",
         "note": "game-state peak excludes claims, UI and nested owners not in that run; 54,456 B below the 3,162,112 B CPU backing",
     },
     "streaming": {
-        "reserved": 1572864,
+        "reserved": _budget_bytes("streaming"),
         "peak": 1572864 - 587336,
         "complete": False,
         "source": "docs/reports/m2-c2-r3-elf-budget-2026-10-23.md (587,336 B slack, workload not recorded)",
         "note": "slack is a single measurement without a multiplayer worst case",
     },
     "dynamic_simulation": {
-        "reserved": 2621440,
+        "reserved": _budget_bytes("dynamic_simulation"),
         "peak": None,
         "complete": False,
         "source": "docs/reports/mp-step8-dynamic-pool-pressure-2026-10-22.md (no high-water exists)",

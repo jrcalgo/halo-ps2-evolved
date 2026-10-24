@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """C2.3 ELF owner attribution for linked HCU probe ELFs.
 
-Every static symbol of the probe's .bss and .data is classified once: as a
-named budget owner (its bytes are counted in that region, not in elf_static),
-as diagnostic-only content linked into the image, or as unowned static state
-that stays in elf_static. The sections that are code and constants always stay
-in elf_static. The result is an exact table, so no byte is counted twice.
+Budget v3 accounting: elf_static is charged the file-backed LOAD bytes (no
+NOBITS); ELF NOBITS is reported separately as charged to resident_gameplay.
+The per-symbol classification below is informational attribution.
+
+Every static symbol of the probe's .bss and .data is classified once for
+owner attribution. NOBITS is charged to resident_gameplay regardless of symbol
+classification; diagnostic-only content is a subset of those NOBITS bytes.
+File-backed LOAD bytes are charged to elf_static. The result reports both
+accounting bases, so no byte is counted twice.
 
 Classification is by symbol name, from the CE and port sources that define the
 symbol (see OWNER_RULES). A symbol not listed is unowned static state.
@@ -89,6 +93,37 @@ def section_sizes(elf):
     return sizes
 
 
+def load_segments(elf):
+    """PT_LOAD rows: (vaddr, filesz, memsz). filesz is file-backed, memsz-filesz is NOBITS."""
+    out = subprocess.run([str(READELF), "-lW", str(elf)], capture_output=True, text=True, check=True).stdout
+    rows = []
+    for line in out.splitlines():
+        p = line.split()
+        if p and p[0] == "LOAD":
+            rows.append({"vaddr": int(p[2], 16), "filesz": int(p[4], 16), "memsz": int(p[5], 16)})
+    return rows
+
+
+def alloc_section_bytes(elf):
+    """Allocated section bytes split by NOBITS vs file-backed (SHF_ALLOC only)."""
+    out = subprocess.run([str(READELF), "-SW", str(elf)], capture_output=True, text=True, check=True).stdout
+    file_backed = nobits = 0
+    for line in out.splitlines():
+        parts = line.replace("[", " ").replace("]", " ").split()
+        # nr name type addr off size es [flags] lk inf al
+        if len(parts) < 7 or not parts[1].startswith("."):
+            continue
+        flags = parts[7] if len(parts) >= 11 else ""
+        if "A" not in flags:
+            continue
+        size = int(parts[5], 16)
+        if parts[2] == "NOBITS":
+            nobits += size
+        else:
+            file_backed += size
+    return file_backed, nobits
+
+
 def symbols(elf):
     out = subprocess.run([str(NM), "-S", "-t", "d", str(elf)], capture_output=True, text=True, check=True).stdout
     rows = []
@@ -99,14 +134,18 @@ def symbols(elf):
     return rows
 
 
-def elf_static_reservation():
-    # The reservation is the budget's, read from config/memory-budget.json; the
-    # audit never carries its own copy of the number.
+def budget_region_bytes(name):
+    # Capacities are the budget's, read from config/memory-budget.json; the
+    # audit never carries its own copy of a number.
     budget = json.loads((ROOT / "config/memory-budget.json").read_text())
     for region in budget["regions"]:
-        if region["name"] == ELF_STATIC:
+        if region["name"] == name:
             return region["bytes"]
-    raise KeyError("config/memory-budget.json has no elf_static region")
+    raise KeyError(f"config/memory-budget.json has no {name} region")
+
+
+def elf_static_reservation():
+    return budget_region_bytes(ELF_STATIC)
 
 
 def source_lines(elf, addresses):
@@ -153,8 +192,17 @@ def attribute(elf, top=30):
     # unowned_bss is every .bss byte that no named region counts, so it includes
     # the diagnostic bytes (diag_total is a subset of it, not an addition to it).
     unowned_bss = bss_bytes - owned_total
-    elf_static_need = code_bytes + unowned_bss
+    # Budget v3: elf_static holds the file-backed LOAD bytes (PROGBITS/alloc,
+    # no NOBITS). ELF NOBITS (memsz - filesz) is charged to resident_gameplay at
+    # boot (src/stream/hcu_main.c). The owned/unowned .bss split above is
+    # informational attribution; it no longer decides elf_static.
+    loads = load_segments(elf)
+    file_backed = sum(l["filesz"] for l in loads)
+    nobits = sum(l["memsz"] - l["filesz"] for l in loads)
+    sec_file_backed, sec_nobits = alloc_section_bytes(elf)
+    elf_static_need = file_backed
     reservation = elf_static_reservation()
+    resident_cap = budget_region_bytes("resident_gameplay")
     return {
         "elf": str(elf),
         "sections": {k: sec.get(k, 0) for k in CODE_SECTIONS + (".bss",)},
@@ -172,7 +220,17 @@ def attribute(elf, top=30):
         "diagnostic_in_elf_static_total": diag_total,
         "unowned_bss_bytes": unowned_bss,
         "unowned_non_diagnostic_bss_bytes": unowned_bss - diag_total,
+        "load_segments": loads,
+        "file_backed_load_bytes": file_backed,
+        "alloc_section_file_backed_bytes": sec_file_backed,
+        "alloc_section_nobits_bytes": sec_nobits,
+        "nobits_bytes": nobits,
+        "nobits_charged_to": "resident_gameplay",
+        "resident_gameplay_capacity_bytes": resident_cap,
+        "resident_gameplay_after_nobits_bytes": resident_cap - nobits,
+        "resident_gameplay_nobits_fits": nobits <= resident_cap,
         "elf_static_need_bytes": elf_static_need,
+        "elf_static_margin_bytes": reservation - elf_static_need,
         "elf_static_reservation_bytes": reservation,
         "elf_static_fits": elf_static_need <= reservation,
         "elf_static_excess_bytes": max(0, elf_static_need - reservation),
@@ -199,8 +257,11 @@ def main(argv=None):
     print(json.dumps({k: result[k] for k in (
         "text_bytes", "rodata_bytes", "data_bytes", "code_and_constant_bytes", "bss_bytes",
         "owned_bss_total", "owned_bss_by_region", "diagnostic_in_elf_static_total",
-        "unowned_non_diagnostic_bss_bytes", "unowned_bss_bytes", "elf_static_need_bytes",
-        "elf_static_reservation_bytes", "elf_static_fits", "elf_static_excess_bytes")}, indent=1))
+        "unowned_non_diagnostic_bss_bytes", "unowned_bss_bytes", "file_backed_load_bytes",
+        "elf_static_need_bytes", "elf_static_reservation_bytes", "elf_static_fits",
+        "elf_static_excess_bytes", "elf_static_margin_bytes", "nobits_bytes",
+        "resident_gameplay_capacity_bytes", "resident_gameplay_after_nobits_bytes",
+        "resident_gameplay_nobits_fits")}, indent=1))
     return 0
 
 

@@ -6,8 +6,8 @@ report and the archived profile memory audit), derives the versioned guarded
 map/render partition that the planner in src/stream/hcu_memory_profile.c
 accepts, adds the renderer terms (packet workspace, reserved texture pages,
 texture-cache pages, simultaneous staging), checks everything against
-config/memory-budget.json (committed 27,787,264 bytes, reserve 5,767,168
-bytes), and attributes the static symbols of linked EE ELFs to their owners
+config/memory-budget.json (committed and reserve bytes are read from the
+config, version 3 at the time of writing), and attributes the static symbols of linked EE ELFs to their owners
 (tools/audit_hcu_c2_budget_elf_owners.py) so each byte is counted once.
 
 Writes (build/m2-c2-r2-budget/):
@@ -52,10 +52,14 @@ RESIDENCY_SEGMENT_BYTES = 65536
 ALIGN = 16
 CLAIM_BITS = 32
 CLAIM_WORD = 4
-COMMITTED = 27787264
-RESERVE = 5767168
+_BUDGET_CONFIG = json.loads((ROOT / "config/memory-budget.json").read_text())
+COMMITTED = _BUDGET_CONFIG["committed_bytes"]
+RESERVE = _BUDGET_CONFIG["reserve_bytes"]
+LOW_KERNEL_BYTES = 0x00100000
+HIGH_KERNEL_START = 0x01f80000
+BOOT_BACKING_BYTES = 24117248  # MEM_LAYOUT_V2_BYTES, submodules/halo-ps2/engine/src/core/mem.h
 MAX_PROFILE_VERSION = 2
-RESIDENT_CAP = 6815744
+RESIDENT_CAP = next(r["bytes"] for r in _BUDGET_CONFIG["regions"] if r["name"] == "resident_gameplay")
 
 
 def align16(value):
@@ -116,6 +120,7 @@ def budget_check(budget):
         "committed_bytes": committed,
         "reserve_bytes": reserve,
         "reserve_start_offset": committed,
+        "reserve_start_physical": LOW_KERNEL_BYTES + next(r["bytes"] for r in regions if r["name"] == "elf_static") + BOOT_BACKING_BYTES,
         "pass": ok,
         "regions": {r["name"]: r["bytes"] for r in regions},
     }
@@ -254,7 +259,7 @@ def main(argv=None):
 
     budget_static = next(r["bytes"] for r in budget["regions"] if r["name"] == "elf_static")
     budget_streaming = next(r["bytes"] for r in budget["regions"] if r["name"] == "streaming")
-    elfs = [elf_audit(Path(e), budget_result["committed_bytes"], budget_static, budget_streaming, None)
+    elfs = [elf_audit(Path(e), budget_result["reserve_start_physical"], budget_static, budget_streaming, None)
             for e in args.elf]
 
     table = {

@@ -20,12 +20,13 @@ TOOLS = ROOT / "tools"
 sys.path.insert(0, str(TOOLS))
 import audit_hcu_c2_budget_elf_owners as owners  # noqa: E402
 
-PROBE = ROOT / "build/hcu-parent-link-probe/hcu-gameplay-machine-step8-mp-workload-tagcache-4477120.elf"
+PROBE = ROOT / "build/m2-c2-resume-budget-v3/hcu-gameplay-machine-partition-sidewinder_marine_shotgun_4p4bot.elf"
 TABLE_C = ROOT / "src/stream/hcu_memory_profile.c"
 MAP_RENDER = 6291456 + 4194304
 RESERVE_PER_OUTER_GUARD = 16
-COMMITTED = 27787264
-ELF_STATIC = 2097152
+_REGIONS = {r["name"]: r["bytes"] for r in json.loads((ROOT / "config/memory-budget.json").read_text())["regions"]}
+COMMITTED = json.loads((ROOT / "config/memory-budget.json").read_text())["committed_bytes"]
+ELF_STATIC = _REGIONS["elf_static"]
 
 
 def run_audit(out, elfs=()):
@@ -62,9 +63,11 @@ def test_c_table_matches_generated_rows():
         table, _ = run_audit(Path(d))
     text = TABLE_C.read_text()
     found = re.findall(r'\{ "([^"]+)", \{ HCU_MEMORY_PROFILE_VERSION_1, (\d+), (\d+), (\d+), (\d+) \} \}', text)
-    assert len(found) == 27
+    generated = [row for row in found if row[0] != "bots_sidewinder"]
+    assert len(found) == 28
+    assert len(generated) == 27
     by_name = {r["name"]: r for r in table["profiles"]}
-    for name, tag, bsp, render, residency in found:
+    for name, tag, bsp, render, residency in generated:
         r = by_name[name]
         assert (r["tag_cache_bytes"], r["structure_bsp_bytes"], r["render_texture_bytes"],
                 r["residency_bytes"]) == (int(tag), int(bsp), int(render), int(residency)), name
@@ -78,6 +81,7 @@ def test_inc_is_byte_identical_to_c_rows():
     start = "static const hcu_memory_partition_entry_t hcu_partition_table_v2[] = {\n"
     assert text.count(start) == 1
     body = text.split(start, 1)[1].split("\n};", 1)[0]
+    body = re.sub(r'^\s*\{ "bots_sidewinder",[^\n]*\n', '', body, flags=re.MULTILINE)
     assert inc == body + "\n"
 
 
@@ -109,7 +113,7 @@ def test_elf_attribution_counts_each_bss_byte_once():
     diag = res["diagnostic_in_elf_static_total"]
     assert named == res["owned_bss_total"]
     assert named + res["unowned_bss_bytes"] == res["bss_bytes"]
-    assert res["elf_static_need_bytes"] == res["code_and_constant_bytes"] + res["unowned_bss_bytes"]
+    assert res["elf_static_need_bytes"] == res["file_backed_load_bytes"]
     assert diag <= res["bss_bytes"]
     names = [s for s in res["owned_rows"]] + res["diagnostic_in_elf_static"]
     assert len({r.get("symbol", r.get("name")) for r in names}) == len(names)
