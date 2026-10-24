@@ -76,6 +76,11 @@ def byte_array(data: bytes, indent: str = "\t") -> str:
     return "\n".join(lines)
 
 
+def c_string(text: str) -> str:
+    """Escape a manifest string for a C string literal (CE paths use backslashes)."""
+    return text.replace("\\", "\\\\").replace('"', '\\"')
+
+
 def sha_array(hex_digest: str) -> str:
     raw = bytes.fromhex(hex_digest)
     return "{ " + ", ".join(f"0x{b:02x}" for b in raw) + " }"
@@ -94,6 +99,9 @@ def build_header(row: str, package_root: Path, asset_root: Path) -> str:
         raise HeaderError(f"manifest names {profile.get('name')!r}, expected {row!r}")
     profile_id = int(profile["id"])
     map_name = profile["map"]
+    scenario_path = profile.get("scenario", {}).get("path") or manifest.get("source_inputs", {}).get("scenario")
+    if not scenario_path:
+        raise HeaderError(f"manifest for {row} names no scenario path")
 
     package_sha = sha256_file(package_path)
     if package_sha != manifest["package_sha256"]:
@@ -144,6 +152,7 @@ def build_header(row: str, package_root: Path, asset_root: Path) -> str:
     out.append("")
     out.append(f'#define HCU_C2_IMAGE_ROW "{row}"')
     out.append(f'#define HCU_C2_IMAGE_MAP "{map_name}"')
+    out.append(f'#define HCU_C2_IMAGE_SCENARIO "{c_string(scenario_path)}"')
     out.append(f"#define HCU_C2_IMAGE_PROFILE_ID {profile_id}u")
     out.append(f'#define HCU_C2_IMAGE_PACKAGE_PATH "{package_rel}"')
     out.append(f"#define HCU_C2_IMAGE_PACKAGE_BYTES {package_bytes}u")

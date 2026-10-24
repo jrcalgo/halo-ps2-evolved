@@ -189,6 +189,9 @@ class HcuProfileImageTest(unittest.TestCase):
         digest = ", ".join(f"0x{b:02x}" for b in bytes.fromhex(manifest["package_sha256"]))
         self.assertIn(f"HCU_C2_IMAGE_PACKAGE_SHA256[32] = {{ {digest} }}", text)
         self.assertIn("HCU_C2_IMAGE_PACKAGE_PATH \"build/m2-c2-r3-selected-packages/pkg/", text)
+        scenario = manifest["profile"]["scenario"]["path"].replace("\\", "\\\\")
+        self.assertIn(f'#define HCU_C2_IMAGE_SCENARIO "{scenario}"', text)
+        self.assertIn(f'#define HCU_C2_IMAGE_MAP "{manifest["profile"]["map"]}"', text)
         self.assertIn("#define HCU_C2_IMAGE_METADATA_BYTES 51124u", text)
         self.assertIn("#define HCU_C2_IMAGE_METADATA_STORAGE_BYTES 51092u", text)
         self.assertIn("#define HCU_C2_IMAGE_SOURCE_COUNT 5u", text)
@@ -225,6 +228,22 @@ class HcuProfileImageTest(unittest.TestCase):
         errors = [line for line in result.stderr.splitlines() if "error" in line]
         self.assertEqual(result.returncode, 0, msg="\n".join(errors))
         self.assertEqual(errors, [])
+
+    def test_runtime_guest_loads_the_selected_row_not_a_fixed_map(self):
+        ce = (HCU / "source/main/main.c").read_text(encoding="utf-8")
+        start = ce.index("void main_loop(")
+        guest = ce[start:ce.index("main_initialize_time();", start)]
+        self.assertNotIn("sidewinder", guest.lower())
+        self.assertIn("hcu_c2_runtime_scenario_path,", guest)
+        self.assertIn("const char *map_name = hcu_c2_runtime_map_name;", guest)
+        for marker in ("production-ce-map-loaded result=%d map=%s", "production-ce-map-released result=%d map=%s",
+                       "tag-count=%ld tag-bytes=%u bsp-bytes=%u", "mounted=%d tag-bytes=%u bsp-bytes=%u"):
+            self.assertIn(marker, guest)
+        self.assertIn("extern char hcu_c2_runtime_map_name[64];", self.source)
+        self.assertIn("HCU_C2_IMAGE_SCENARIO,", self.source)
+        fill = self.source.index("strncpy(hcu_c2_runtime_map_name")
+        self.assertLess(fill, self.source.index("result = halo_shell_main();"))
+        self.assertIn("char hcu_c2_runtime_map_name[64]", ce)
 
     def test_makefile_names_the_row_header_only_when_selected(self):
         self.assertIn("WORLD_HCU_PARTITION_PROFILE ?=", self.mk)

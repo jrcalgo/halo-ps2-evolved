@@ -37,6 +37,15 @@
 #include HALO_HCU_PROFILE_IMAGE_HEADER
 /* Decode scratch for one 64 KiB segment, carved from the section scratch arena. */
 #define HCU_C2_STREAM_SCRATCH_BYTES 65536u
+
+#ifdef HALO_HCU_HEADLESS_RUNTIME_GUEST
+/* The headless runtime guest (CE main.c, HALO_PS2_C2_PRODUCTION_RUNTIME_GUEST)
+ * loads whichever map and scenario the generated row header pins. CE's main.c
+ * defines these buffers (so the rooted CE image has no unresolved symbol and
+ * one rooted object serves every row); this entry fills them before the shell. */
+extern char hcu_c2_runtime_map_name[64];
+extern char hcu_c2_runtime_scenario_path[256];
+#endif
 #endif
 
 #ifndef HALO_HCU_TAG_CACHE_BYTES
@@ -1100,6 +1109,11 @@ int main(int argc, char **argv)
 #endif
 	hcu_report_cache_owners("before-shell");
 	hcu_report_owner_telemetry("before-shell");
+#if defined(HALO_HCU_HEADLESS_RUNTIME_GUEST) && defined(HALO_HCU_PROFILE_IMAGE_HEADER)
+	strncpy(hcu_c2_runtime_map_name, HCU_C2_IMAGE_MAP, sizeof(hcu_c2_runtime_map_name) - 1);
+	strncpy(hcu_c2_runtime_scenario_path, HCU_C2_IMAGE_SCENARIO,
+		sizeof(hcu_c2_runtime_scenario_path) - 1);
+#endif
 	result = halo_shell_main();
 	hcu_report_cache_owners("after-shell");
 	hcu_report_owner_telemetry("after-shell");
