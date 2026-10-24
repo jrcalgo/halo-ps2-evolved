@@ -6,6 +6,7 @@ already defines them.
 """
 from __future__ import annotations
 
+import os
 import re
 import argparse
 import subprocess
@@ -20,6 +21,8 @@ COMMENT = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
 PREPROC = re.compile(r"^\s*#.*?(?<!\\)$", re.M | re.S)
 SKIP = {
 	"halo_ps2_render_snapshot_begin", "halo_ps2_render_snapshot_commit",
+	# C3: weak writer hooks; the parent snapshot bank (src/stream/hcu_snapshot_bank.c) implements them.
+	"halo_ps2_frame_snapshot_begin", "halo_ps2_frame_snapshot_commit",
     # Implemented by the real PS2 memory provider. Keep undefined references
     # unresolved in every profile so the provider object must satisfy them.
     "ps2_step8_dynamic_sim_diagnostics",
@@ -435,6 +438,9 @@ def main() -> None:
         if not args.no_bootstrap_memory or args.m2_ui_lifecycle_test:
             parser.error("--production-runtime-guest requires --no-bootstrap-memory and is separate from diagnostics")
         OUT = ROOT / "build/hcu-ps2-closure/all-no-bootstrap-memory-production-runtime-guest"
+    if os.environ.get("HCU_C3") == "1":
+        # C3 (opt-in) closure lives beside, never inside, the default closure directory.
+        OUT = OUT.with_name(OUT.name + "-hcu-c3")
     build, prefix, env, _jobs = environment()
     compiler = prefix / "ee/bin/mips64r5900el-ps2-elf-gcc"
     nm = prefix / "ee/bin/mips64r5900el-ps2-elf-nm"

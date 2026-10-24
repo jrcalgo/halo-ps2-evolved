@@ -40,6 +40,8 @@ PROFILE_SOURCE = ROOT / "src/stream/hcu_memory_profile.c"
 DEFAULT_PACKAGE_ROOT = ROOT / "build/m2-c2-r3-selected-packages/pkg"
 LINK_LOCK = ROOT / "build/.hcu-parent-link-probe.lock"
 REUSE_ROOT = ROOT / "build/m2-c2-gaps-reuse"  # output root for --cycles/--ticks runs
+C3_ROOT = ROOT / "build/c3/integrate"        # output root for --c3 rows (summary.json is never written)
+RESULT_ROOT = MATRIX                           # switched to C3_ROOT by --c3
 FOREIGN_ROOT = ROOT / "build/m2-c2-foreign"   # output root for --successor runs
 # --successor-fault value -> (guest HALO_PS2_C2_SUCCESSOR_MODE, result directory label)
 SUCCESSOR_CASES = {"none": (1, "replace"), "preflight": (2, "failed-preflight"),
@@ -827,7 +829,7 @@ def guest_row(row: str, elf: Path, plan: dict, out: Path, timeout: int = GUEST_T
 
 
 def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1, ticks: int = 0) -> dict:
-    out = (MATRIX if cycles == 1 and not ticks else REUSE_ROOT) / row
+    out = (RESULT_ROOT if cycles == 1 and not ticks else REUSE_ROOT) / row
     out.mkdir(parents=True, exist_ok=True)
     started = time.time()
     result: dict = {"row": row, "pass": False, "reasons": [], "started_unix": int(started),
@@ -957,6 +959,7 @@ def previously_passed(row: str) -> bool:
 
 
 def main(argv=None) -> int:
+    global RESULT_ROOT
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--rows", help="comma-separated row names (default: every row with a selected package)")
     parser.add_argument("--jobs-link", type=int, default=1,
@@ -968,6 +971,9 @@ def main(argv=None) -> int:
     parser.add_argument("--ticks", type=int, default=0,
                         help="in-map CE ticks to run per cycle (default 0)")
     parser.add_argument("--skip-existing", action="store_true", help="skip rows whose result.json already passed")
+    parser.add_argument("--c3", action="store_true",
+                        help=("run the opt-in HCU_C3=1 variant: closure, link and guest use the C3 flags and results "
+                              "go to build/c3/integrate/<row>/; summary.json is not written"))
     parser.add_argument("--successor", metavar="ROW",
                         help=("run the guest successor sequence on the one --rows row: after its map loads, replace it with "
                               "ROW's map through the real map service; results go to build/m2-c2-foreign/<row>/"))
@@ -1002,6 +1008,12 @@ def main(argv=None) -> int:
         parser.error("--cycles must be at least 1 and --ticks at least 0")
     if args.jobs_link < 1:
         parser.error("--jobs-link must be at least 1")
+    if args.c3:
+        if args.cycles != 1 or args.ticks or args.successor:
+            parser.error("--c3 runs the default single-cycle rows only")
+        # Every subprocess (closure, link probe, guest runner) inherits HCU_C3=1.
+        os.environ["HCU_C3"] = "1"
+        RESULT_ROOT = C3_ROOT
     summary = []
     for row in rows:
         if args.skip_existing and previously_passed(row):
@@ -1011,6 +1023,8 @@ def main(argv=None) -> int:
         summary.append(result)
         print(f"{row}: {'PASS' if result['pass'] else 'FAIL'} {'; '.join(result['reasons'][:2])}", flush=True)
     if args.cycles != 1 or args.ticks:
+        return 0 if all(r["pass"] for r in summary) else 1
+    if args.c3:
         return 0 if all(r["pass"] for r in summary) else 1
     MATRIX.mkdir(parents=True, exist_ok=True)
     (MATRIX / "summary.json").write_text(json.dumps(

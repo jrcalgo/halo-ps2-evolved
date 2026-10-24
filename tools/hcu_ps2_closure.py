@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
+import os
 import json
 from pathlib import Path
 import re
@@ -57,6 +58,7 @@ PS2_SERVICES = {
     "display_error_when_main_menu_loaded", "display_errors_deferred_until_cinematic_stop",
     "display_scenario_help", "interrupt_result",
     "halo_ps2_render_snapshot_begin", "halo_ps2_render_snapshot_commit",
+    "halo_ps2_frame_snapshot_begin", "halo_ps2_frame_snapshot_commit",
 }
 PS2_SERVICE_PREFIXES = (
     "cache_file_", "cache_files_", "texture_cache_", "sound_cache_", "_texture_cache_", "_sound_cache_",
@@ -336,6 +338,10 @@ def main() -> None:
         if not args.no_bootstrap_memory or args.m2_ui_lifecycle_test:
             parser.error("--production-runtime-guest requires --no-bootstrap-memory and is separate from diagnostics")
         profile += "-production-runtime-guest"
+    # C3 (opt-in HCU_C3=1): a separate closure directory with the CE frame-snapshot define.
+    hcu_c3 = os.environ.get("HCU_C3") == "1"
+    if hcu_c3:
+        profile += "-hcu-c3"
     output = build / "hcu-ps2-closure" / (args.layer + profile)
     output.mkdir(parents=True, exist_ok=True)
     header = HCU / manifest["prefix"]
@@ -377,6 +383,7 @@ def main() -> None:
                              if args.step8_mp_capacity_diagnostic else []) +
                             (["HALO_PS2_STEP8_MP_WORKLOAD_ONLY"]
                              if args.step8_mp_workload_only else []) +
+                            (["HALO_PS2_C3_FRAME_SNAPSHOT"] if hcu_c3 else []) +
                             ([f"HALO_PS2_STEP8_MP_WORKLOAD_PLAYERS={args.step8_mp_workload_players}"]
                              if args.step8_mp_workload_only else []) +
                             (["HALO_PS2_M2_ANIMATION_TRACE"]
@@ -428,6 +435,8 @@ def main() -> None:
             extra.append("-DHALO_PS2_M2_ANIMATION_TRACE")
         if args.production_runtime_guest and relative == "source/main/main.c":
             extra.append("-DHALO_PS2_C2_PRODUCTION_RUNTIME_GUEST")
+        if hcu_c3:
+            extra.append("-DHALO_PS2_C3_FRAME_SNAPSHOT")
         pending.append((relative, source, obj, extra))
     objects = []
     compiled_object_sources = []
@@ -519,6 +528,9 @@ def main() -> None:
                 # Keep the real CE frame registry query in the same rooted
                 # translation unit as its private active-state singleton.
                 roots.append("halo_ps2_bitmap_frame_is_active")
+            if hcu_c3:
+                # C3: the parent sound recorder binds this CE seam from hcu_main.c.
+                roots.append("halo_ps2_sound_request_bind_sink")
             rooted_link = subprocess.run(
                 [str(linker), "-r", "--gc-sections", *[arg for name in roots for arg in ("-u", name)],
                  f"@{response}", "-o", str(rooted)],

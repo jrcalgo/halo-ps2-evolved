@@ -95,6 +95,11 @@ extern unsigned hcu_c2_successor_fault_count;
 #endif
 #include "stream/hcu_render_telemetry.h"
 #include "halo_ps2_owner_counters.h"
+/* C3:world begin */
+#if defined(HCU_C3)
+#include "stream/hcu_render_world.h"
+#endif
+/* C3:world end */
 
 static hcu_map_service s_map_service;
 
@@ -785,6 +790,7 @@ static void hcu_report_cache_owners(const char *phase)
 }
 
 /* C3:replace begin */
+#if defined(HCU_C3_FRAME_SNAPSHOT)
 #include "stream/hcu_sound_requests.h"
 /* Defined by the CE port (ps2_sound_cache.c). Each CE sound request reaches
  * the recorder below; the audio backend is not qualified (SPU2). */
@@ -808,6 +814,7 @@ static void hcu_c3_sound_request_sink(void *context, const void *sound,
 	request.pitch = 1.0f;
 	(void)hcu_sound_requests_submit(&s_c3_sound_queue, &request);
 }
+#endif
 /* C3:replace end */
 
 /* Map boundary telemetry: the owner counters and the cache owners at each
@@ -820,6 +827,7 @@ static void hcu_map_boundary_report(void *context, const char *phase,
 	printf("HALO_PS2_LOCAL m2-cycle-boundary phase=%s cycle=%u\n", phase, cycle);
 	hcu_report_owner_telemetry(phase);
 	/* C3:replace begin */
+#if defined(HCU_C3_FRAME_SNAPSHOT)
 	/* Drain once per boundary. The audio side is not qualified, so drained
 	 * records are only counted, never played. */
 	{
@@ -831,6 +839,7 @@ static void hcu_map_boundary_report(void *context, const char *phase,
 	printf("HALO_PS2_LOCAL renderer-readers phase=%s outstanding=%u refused=%u\n",
 		phase, hcu_map_service_reader_count(&s_map_service),
 		s_map_service.reader_refused);
+#endif
 	/* C3:replace end */
 	if (hcu_map_service_residency_snapshot(&s_map_service, &residency) &&
 		residency.valid && residency.map.bound) {
@@ -1402,9 +1411,23 @@ int main(int argc, char **argv)
 	/* Per-cycle telemetry at each map boundary. NULL hook costs nothing. */
 	(void)hcu_map_service_set_boundary_hook(&s_map_service,
 		hcu_map_boundary_report, NULL);
+	/* C3:world begin */
+#if defined(HCU_C3)
+	{
+		/* No profile package carries a BSPS section, so no world can be bound yet.
+		 * The renderer keeps its flat/empty state until the producer exists. */
+		const uint8_t *c3_bsps = NULL;
+		size_t c3_bsps_bytes = 0;
+		if (hcu_render_world_profile_bsps(&s_map_service, &c3_bsps, &c3_bsps_bytes) != 0)
+			printf("[c3] world source: no BSPS section in the profile package\n");
+	}
+#endif
+	/* C3:world end */
 	/* C3:replace begin */
+#if defined(HCU_C3_FRAME_SNAPSHOT)
 	hcu_sound_requests_init(&s_c3_sound_queue);
 	halo_ps2_sound_request_bind_sink(hcu_c3_sound_request_sink, NULL);
+#endif
 	/* C3:replace end */
 	/* Legacy bootstrap map storage is released only after the renderer fence
 	 * has retired. Without this gate the unload path would free live GS/DMA

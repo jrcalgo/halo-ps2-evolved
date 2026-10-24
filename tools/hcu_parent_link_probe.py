@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -265,6 +266,10 @@ def main() -> None:
                       "-m2-animation-trace" if args.m2_animation_trace else "")
     if args.headless_runtime_guest:
         closure_suffix += "-production-runtime-guest"
+    # C3 (opt-in HCU_C3=1) reads its own closure directory, written by the closure and link scripts.
+    hcu_c3 = os.environ.get("HCU_C3") == "1"
+    if hcu_c3:
+        closure_suffix += "-hcu-c3"
     hcu_closure = build / "hcu-ps2-closure" / (
         "all-no-bootstrap-memory" + closure_suffix)
     parent_output = output / "parent-sections-os"

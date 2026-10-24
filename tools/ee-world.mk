@@ -81,6 +81,15 @@ EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_main.o \
 	$(WORLD_OUTPUT)/stream/hcu_filexio_irx.o \
 	$(WORLD_OUTPUT)/stream/ctag_ps2_backend.o
 WORLD_FILEXIO := 1
+# C3 (opt-in HCU_C3=1): snapshot bank, sound-request recorder, render content and frame layout.
+ifeq ($(HCU_C3),1)
+EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_snapshot_bank.o \
+	$(WORLD_OUTPUT)/stream/hcu_sound_requests.o \
+	$(WORLD_OUTPUT)/stream/hcu_render_content.o \
+	$(WORLD_OUTPUT)/stream/hcu_render_frame.o \
+	$(WORLD_OUTPUT)/stream/hcu_render_media.o \
+	$(WORLD_OUTPUT)/stream/hcu_render_world.o
+endif
 else
 EE_OBJS += $(WORLD_OUTPUT)/main.o
 endif
@@ -288,6 +297,43 @@ $(WORLD_OUTPUT)/stream/hcu_render_snapshot.o: src/stream/hcu_render_snapshot.c
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
 		-I$(HCU_ROOT)/port/ps2/include -c $< -o $@
+ifeq ($(HCU_C3),1)
+$(WORLD_OUTPUT)/stream/hcu_snapshot_bank.o: src/stream/hcu_snapshot_bank.c src/stream/hcu_snapshot_bank.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
+		-I$(HCU_ROOT)/port/ps2/include -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_sound_requests.o: src/stream/hcu_sound_requests.c src/stream/hcu_sound_requests.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_render_content.o: src/stream/hcu_render_content.c src/stream/hcu_render_content.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_render_frame.o: src/stream/hcu_render_frame.c src/stream/hcu_render_frame.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+$(WORLD_OUTPUT)/stream/hcu_render_media.o: src/stream/hcu_render_media.c src/stream/hcu_render_media.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) -D_EE $(EE_INCS) -I$(ENGINE)/src -Isrc \
+		-I$(PS2SDK)/ee/include -I$(PS2SDK)/common/include \
+		-I$(HCU_ROOT)/port/ps2/include -I$(HCU_ROOT)/source \
+		-I$(HCU_ROOT)/port/include -fshort-wchar \
+		-I$(HCU_ROOT)/source/cseries -DHALO_PS2=1 \
+		-include $(HCU_ROOT)/port/ps2/include/halo_ps2_prefix.h \
+		-c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_render_world.o: src/stream/hcu_render_world.c src/stream/hcu_render_world.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) -D_EE $(EE_INCS) -I$(ENGINE)/src -Isrc \
+		-I$(PS2SDK)/ee/include -I$(PS2SDK)/common/include \
+		-I$(HCU_ROOT)/port/ps2/include -I$(HCU_ROOT)/source \
+		-I$(HCU_ROOT)/port/include -fshort-wchar \
+		-I$(HCU_ROOT)/source/cseries -DHALO_PS2=1 \
+		-include $(HCU_ROOT)/port/ps2/include/halo_ps2_prefix.h \
+		-c $< -o $@
+endif
 endif
 
 $(WORLD_OUTPUT)/stream/hcu_memory_bind.o: src/stream/hcu_memory_bind.c
@@ -319,6 +365,11 @@ EE_INCS = -I$(ENGINE)/src
 EE_CFLAGS = -std=gnu11 -Wall -Wextra -Wno-unused-parameter -MMD -MP -G0 \
 	-ffile-prefix-map=$(PS2SDK)=/ps2sdk
 EE_CFLAGS += $(EE_OPTFLAGS)
+# C3 umbrella (opt-in): the parent and the CE port compile the same frame-snapshot path.
+HCU_C3 ?= 0
+ifeq ($(HCU_C3),1)
+EE_CFLAGS += -DHCU_C3_FRAME_SNAPSHOT -DHALO_PS2_C3_FRAME_SNAPSHOT
+endif
 ifeq ($(WORLD_HCU_LINK_PROBE),1)
 # Diagnostic-only granularity lets the combined link discard unreferenced
 # parent functions/data; it does not alter behavior of retained sections.
