@@ -1,0 +1,195 @@
+{
+  "format": "hcu-step8-historical-workload-pin-availability-v1",
+  "git_object_scans": {
+    ".": {
+      "blob_objects_checked": 1980,
+      "objects_checked": 2589
+    },
+    "submodules/halo-64": {
+      "blob_objects_checked": 1418,
+      "objects_checked": 1760
+    },
+    "submodules/halo-ce-universal": {
+      "blob_objects_checked": 19909,
+      "objects_checked": 45091
+    },
+    "submodules/halo-ps2": {
+      "blob_objects_checked": 547,
+      "objects_checked": 856
+    }
+  },
+  "parent_head": "cb54638d3f61dbb0d976ff9aa8beedcf57358839",
+  "pins": {
+    "21188c9068a30a0fb5b4bda3c1ce35902745de51aa48e757c80c9c7ea9f8d6be": {
+      "availability": "not_found",
+      "current_expected_path_sha256": "ed9ef373263d9a634d51220815a260d0d4a502c478d78676a4267d232653b2d1",
+      "description": "Historical four-local-player linker-driver source pin",
+      "exact_git_blob_matches": [],
+      "exact_worktree_matches": [],
+      "expected_path": "tools/hcu_ps2_link.py",
+      "report_evidence": [
+        {
+          "contains_pin": true,
+          "path": "docs/reports/m2-step8-ce-four-local-player-workload-2026-10-22.md",
+          "sha256": "d5e6897e0bf3bb9d58f10084bf413b1f9afb26a148710b73814b9ffb54256311"
+        }
+      ],
+      "report_paths": [
+        "docs/reports/m2-step8-ce-four-local-player-workload-2026-10-22.md"
+      ]
+    },
+    "29091d26012bf2b9470f2abcdd10b7cca2e8d7ae6e2c6fc2f4134348c52540a2": {
+      "availability": "not_found",
+      "current_expected_path_sha256": "68ed8b98c02e5bce971365c6e26322f781b58dc3af980b45b262fe9a0faa0530",
+      "description": "Historical PCSX2 recompiler settings for the 13-map target probe",
+      "exact_git_blob_matches": [],
+      "exact_worktree_matches": [],
+      "expected_path": "build/hcu-ps2-closure/emulator-m1-recompiler-5b536c94e7b44a4ca19636cc2cfecacd/data/PCSX2/inis/PCSX2.ini",
+      "report_evidence": [
+        {
+          "contains_pin": true,
+          "path": "docs/reports/m2-step7-bsp-collision-pvs-current-target-probe-2026-10-22.json",
+          "sha256": "3d1247cc434280ab629382a736b766e71dee41a960d0944f7bd3bf8e1c4eece1"
+        }
+      ],
+      "report_paths": [
+        "docs/reports/m2-step7-bsp-collision-pvs-current-target-probe-2026-10-22.json"
+      ]
+    },
+    "4aaa2fb86459d77e4a5527b1109558cfcc17190517fa55e9006ba59b7ff59c9b": {
+      "availability": "not_found",
+      "current_expected_path_sha256": "7c0890f5858931b79c13e180d145a838a38ca16aaadceeb58ff4a25e3ed9929a",
+      "description": "Historical four-local-player closure-driver source pin",
+      "exact_git_blob_matches": [],
+      "exact_worktree_matches": [],
+      "expected_path": "tools/hcu_ps2_closure.py",
+      "report_evidence": [
+        {
+          "contains_pin": true,
+          "path": "docs/reports/m2-step8-ce-four-local-player-workload-2026-10-22.md",
+          "sha256": "d5e6897e0bf3bb9d58f10084bf413b1f9afb26a148710b73814b9ffb54256311"
+        }
+      ],
+      "report_paths": [
+        "docs/reports/m2-step8-ce-four-local-player-workload-2026-10-22.md"
+      ]
+    },
+    "613b3e3bf0f1cf5a45679050df9cb37839973379a5b0b644937af43c809e4c7c": {
+      "availability": "not_found",
+      "current_expected_path_sha256": "682f66b35395a8011055c33d58b8a168ef5fc871632e3b0e9f9c6af7d9a86f95",
+      "description": "Historical all-map candidate build report JSON",
+      "exact_git_blob_matches": [],
+      "exact_worktree_matches": [],
+      "expected_path": "build/hcu-parent-link-probe/result-step8-mp-capacity-tagcache-4477120.json",
+      "report_evidence": [
+        {
+          "contains_pin": true,
+          "path": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+          "sha256": "31763459e3a919a0cc3721d19b281f19a930dfac819f15f16393ddfef1477ac6"
+        }
+      ],
+      "report_paths": [
+        "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md"
+      ]
+    },
+    "6544719db660b6be9b277f983a5a270ff9eb83ccf66c2e77d38a164ee6383a85": {
+      "availability": "not_found",
+      "current_expected_path_sha256": "1e17dddb254825cf2b8c485fdcd6516d84210c4670f5a3e66d2dbaa4cb8a448e",
+      "description": "Historical PCSX2 interpreter settings for the 13-map target probe",
+      "exact_git_blob_matches": [],
+      "exact_worktree_matches": [],
+      "expected_path": "build/hcu-ps2-closure/emulator-m1-interpreter-c98db8627d234473a8dc263c3288852d/data/PCSX2/inis/PCSX2.ini",
+      "report_evidence": [
+        {
+          "contains_pin": true,
+          "path": "docs/reports/m2-step7-bsp-collision-pvs-current-target-probe-2026-10-22.json",
+          "sha256": "3d1247cc434280ab629382a736b766e71dee41a960d0944f7bd3bf8e1c4eece1"
+        }
+      ],
+      "report_paths": [
+        "docs/reports/m2-step7-bsp-collision-pvs-current-target-probe-2026-10-22.json"
+      ]
+    },
+    "987af62554e1cc95b299ce361d743300c617f96a7cac24028c1a338c4da97d88": {
+      "availability": "not_found",
+      "current_expected_path_sha256": "54f4e20e0c88715884f76c8fae41e877d154b2cdda485f967e1c0c104d84b2ac",
+      "description": "Historical CE actor ILP32 runner source pin",
+      "exact_git_blob_matches": [],
+      "exact_worktree_matches": [],
+      "expected_path": "tools/test_hcu_step8_ce_actor_ilp32.py",
+      "report_evidence": [
+        {
+          "contains_pin": true,
+          "path": "docs/reports/m2-step8-ce-actor-ilp32-attempt.md",
+          "sha256": "0a30865335d3c955c9f9bd58c59c958606c86212902d54da5e3669b55371f133"
+        }
+      ],
+      "report_paths": [
+        "docs/reports/m2-step8-ce-actor-ilp32-attempt.md"
+      ]
+    },
+    "beee81293b9059ca2f51c04e6b49897e607e332750fe7f14fa201c2077258bf0": {
+      "availability": "not_found",
+      "current_expected_path_sha256": "3f8efe1407f44a1f74d3a5f0d8c7c8941173d19f54ef17ffef258ce320ff93e3",
+      "description": "Historical all-map candidate PCSX2 ELF",
+      "exact_git_blob_matches": [],
+      "exact_worktree_matches": [],
+      "expected_path": "build/hcu-parent-link-probe/hcu-gameplay-machine-step8-mp-capacity-tagcache-4477120.elf",
+      "report_evidence": [
+        {
+          "contains_pin": true,
+          "path": "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md",
+          "sha256": "31763459e3a919a0cc3721d19b281f19a930dfac819f15f16393ddfef1477ac6"
+        }
+      ],
+      "report_paths": [
+        "docs/reports/step8-mp-all-map-candidate-pcsx2-2026-10-22.md"
+      ]
+    },
+    "d3f36c62a3915c4565b0ab8b21de05f540a650a6cb1d727636a4fc5ec12a21df": {
+      "availability": "not_found",
+      "current_expected_path_sha256": "1b998826143b3c155193aaee93e4d083c21c3ac3a9f86abb863762e70cece05d",
+      "description": "Historical CE four-local-player diagnostic source",
+      "exact_git_blob_matches": [],
+      "exact_worktree_matches": [],
+      "expected_path": "submodules/halo-ce-universal/source/main/ps2_m2_ui_lifecycle_test.c",
+      "report_evidence": [
+        {
+          "contains_pin": true,
+          "path": "docs/reports/m2-step8-ce-four-local-player-workload-2026-10-22.md",
+          "sha256": "d5e6897e0bf3bb9d58f10084bf413b1f9afb26a148710b73814b9ffb54256311"
+        },
+        {
+          "contains_pin": true,
+          "path": "docs/reports/m2-step8-ce-actor-workload-boundary.md",
+          "sha256": "9df2966b00a786aa85490cc479ed885b340cb3a68d031ce137253f9a69cae0b0"
+        }
+      ],
+      "report_paths": [
+        "docs/reports/m2-step8-ce-four-local-player-workload-2026-10-22.md",
+        "docs/reports/m2-step8-ce-actor-workload-boundary.md"
+      ]
+    }
+  },
+  "scope": "Exact-byte availability only. Current expected source paths and report-linked workload build roots are scanned; no rebuilt or current substitute is treated as historical evidence.",
+  "worktree_scan": {
+    "bytes_checked": 9161921735,
+    "files_checked": 10270,
+    "read_errors": []
+  },
+  "worktree_search_roots": [
+    "build/hcu-parent-link-probe",
+    "build/hcu-ps2-closure/emulator-m1-interpreter-c98db8627d234473a8dc263c3288852d/data/PCSX2/inis",
+    "build/hcu-ps2-closure/emulator-m1-recompiler-5b536c94e7b44a4ca19636cc2cfecacd/data/PCSX2/inis",
+    "submodules/halo-ce-universal/source/main",
+    "tools",
+    "build/hcu-parent-link-probe",
+    "build/hcu-step8-actor-ilp32",
+    "build/step8-vehicle-seat-actors",
+    "build/hcu-step8-mp-workload",
+    "build/hcu-ps2-closure/emulator-m1-recompiler-3a78e285374b453f9cb18b6e2ae61fdf",
+    "build/hcu-ps2-closure/emulator-m1-interpreter-15c010c1a47041618f6c159e1c41621e",
+    "build/hcu-ps2-closure",
+    ".local"
+  ]
+}
