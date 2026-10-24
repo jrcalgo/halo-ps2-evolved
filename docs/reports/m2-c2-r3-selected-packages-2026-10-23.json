@@ -1,0 +1,838 @@
+{
+  "format": "hcu-c2-selected-package-audit-v1",
+  "matrix": "build/m2-c2-session-map-capacity-2026-10-23/matrix.json",
+  "packages": [
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 730200,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 6838920,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 6838920,
+      "ctag_relocation_staging_bytes": 130212,
+      "matrix_row": {
+        "bsp_payload_bytes": 730200,
+        "claims_bitmap_payload_capacity_floor_bytes": 946140,
+        "ctag_relocation_staging_bytes": 130212,
+        "remaining_after_relocation_and_claim_floor_bytes": 1840288,
+        "resident_ce_bytes": 6838920
+      },
+      "media_bytes_independent": 20672616,
+      "name": "beavercreek_marine_shotgun_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 27942218,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/beavercreek_marine_shotgun_4p4bot/beavercreek_marine_shotgun_4p4bot.hcp",
+      "package_sha256": "80ab72ab844a1429d633d4dcdad8f4d967200f80266da3ecf24bf4618115e7b0",
+      "producer_validation": "passed",
+      "second_build_sha256": "80ab72ab844a1429d633d4dcdad8f4d967200f80266da3ecf24bf4618115e7b0",
+      "selected_variants": [
+        {
+          "path": "characters\\marine\\marine shotgun",
+          "source_datum": 3972205391,
+          "source_map": "c10",
+          "source_map_sha256": "423d50a4d7fb7b3c280d7e0806d67e136b2b6a51468ed0be6ee9415e5f129e7d"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 730200,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 4619931,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 4619931,
+      "ctag_relocation_staging_bytes": 82200,
+      "matrix_row": {
+        "bsp_payload_bytes": 730200,
+        "claims_bitmap_payload_capacity_floor_bytes": 668767,
+        "ctag_relocation_staging_bytes": 82200,
+        "remaining_after_relocation_and_claim_floor_bytes": 4384662,
+        "resident_ce_bytes": 4619931
+      },
+      "media_bytes_independent": 16544328,
+      "name": "beavercreek_mounted_gunner_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 21384880,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/beavercreek_mounted_gunner_4p4bot/beavercreek_mounted_gunner_4p4bot.hcp",
+      "package_sha256": "0753725e79543eb05b02c0e050ee3d6b16d6e6a46b406fb6aa7f5dc3ba192cb9",
+      "producer_validation": "passed",
+      "second_build_sha256": "0753725e79543eb05b02c0e050ee3d6b16d6e6a46b406fb6aa7f5dc3ba192cb9",
+      "selected_variants": [
+        {
+          "path": "vehicles\\c_dropship\\cd_gun\\cd gun turret gunner",
+          "source_datum": 3892905621,
+          "source_map": "a30",
+          "source_map_sha256": "287959f34a7379a1dbec5fec15b4d94d17fe97ccd861f5c0c8fc80148b7ed293"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 1303092,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 7014967,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 7014967,
+      "ctag_relocation_staging_bytes": 133160,
+      "matrix_row": {
+        "bsp_payload_bytes": 1303092,
+        "claims_bitmap_payload_capacity_floor_bytes": 1039758,
+        "ctag_relocation_staging_bytes": 133160,
+        "remaining_after_relocation_and_claim_floor_bytes": 994783,
+        "resident_ce_bytes": 7014967
+      },
+      "media_bytes_independent": 22099204,
+      "name": "bloodgulch_marine_shotgun_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 29553137,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/bloodgulch_marine_shotgun_4p4bot/bloodgulch_marine_shotgun_4p4bot.hcp",
+      "package_sha256": "8920cf61f83b739440dc8b06bc3bd173a463e411716dc3550b1443a2b0c4c126",
+      "producer_validation": "passed",
+      "second_build_sha256": "8920cf61f83b739440dc8b06bc3bd173a463e411716dc3550b1443a2b0c4c126",
+      "selected_variants": [
+        {
+          "path": "characters\\marine\\marine shotgun",
+          "source_datum": 3972205391,
+          "source_map": "c10",
+          "source_map_sha256": "423d50a4d7fb7b3c280d7e0806d67e136b2b6a51468ed0be6ee9415e5f129e7d"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 1303092,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 4795978,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 4795978,
+      "ctag_relocation_staging_bytes": 85148,
+      "matrix_row": {
+        "bsp_payload_bytes": 1303092,
+        "claims_bitmap_payload_capacity_floor_bytes": 762384,
+        "ctag_relocation_staging_bytes": 85148,
+        "remaining_after_relocation_and_claim_floor_bytes": 3539158,
+        "resident_ce_bytes": 4795978
+      },
+      "media_bytes_independent": 17970916,
+      "name": "bloodgulch_mounted_gunner_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 22995783,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/bloodgulch_mounted_gunner_4p4bot/bloodgulch_mounted_gunner_4p4bot.hcp",
+      "package_sha256": "426f1408bdf8b9e68617c9295772db789aca533637785d632369ddfb53c56d6a",
+      "producer_validation": "passed",
+      "second_build_sha256": "426f1408bdf8b9e68617c9295772db789aca533637785d632369ddfb53c56d6a",
+      "selected_variants": [
+        {
+          "path": "vehicles\\c_dropship\\cd_gun\\cd gun turret gunner",
+          "source_datum": 3892905621,
+          "source_map": "a30",
+          "source_map_sha256": "287959f34a7379a1dbec5fec15b4d94d17fe97ccd861f5c0c8fc80148b7ed293"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 1354156,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 6892084,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 6892084,
+      "ctag_relocation_staging_bytes": 130672,
+      "matrix_row": {
+        "bsp_payload_bytes": 1354156,
+        "claims_bitmap_payload_capacity_floor_bytes": 1030780,
+        "ctag_relocation_staging_bytes": 130672,
+        "remaining_after_relocation_and_claim_floor_bytes": 1078068,
+        "resident_ce_bytes": 6892084
+      },
+      "media_bytes_independent": 20582988,
+      "name": "boardingaction_marine_shotgun_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 27906677,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/boardingaction_marine_shotgun_4p4bot/boardingaction_marine_shotgun_4p4bot.hcp",
+      "package_sha256": "0cd974b925082f3c1a0178ab00400efc0e692be6eaf85c0d191ca7b66eeb8541",
+      "producer_validation": "passed",
+      "second_build_sha256": "0cd974b925082f3c1a0178ab00400efc0e692be6eaf85c0d191ca7b66eeb8541",
+      "selected_variants": [
+        {
+          "path": "characters\\marine\\marine shotgun",
+          "source_datum": 3972205391,
+          "source_map": "c10",
+          "source_map_sha256": "423d50a4d7fb7b3c280d7e0806d67e136b2b6a51468ed0be6ee9415e5f129e7d"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 1354156,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 4673095,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 4673095,
+      "ctag_relocation_staging_bytes": 82660,
+      "matrix_row": {
+        "bsp_payload_bytes": 1354156,
+        "claims_bitmap_payload_capacity_floor_bytes": 753407,
+        "ctag_relocation_staging_bytes": 82660,
+        "remaining_after_relocation_and_claim_floor_bytes": 3622442,
+        "resident_ce_bytes": 4673095
+      },
+      "media_bytes_independent": 16454700,
+      "name": "boardingaction_mounted_gunner_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 21349323,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/boardingaction_mounted_gunner_4p4bot/boardingaction_mounted_gunner_4p4bot.hcp",
+      "package_sha256": "e64960aac7c31f6ab41efa2baab11df65cc0607ceb6625cfd6d9de8c57d41771",
+      "producer_validation": "passed",
+      "second_build_sha256": "e64960aac7c31f6ab41efa2baab11df65cc0607ceb6625cfd6d9de8c57d41771",
+      "selected_variants": [
+        {
+          "path": "vehicles\\c_dropship\\cd_gun\\cd gun turret gunner",
+          "source_datum": 3892905621,
+          "source_map": "a30",
+          "source_map_sha256": "287959f34a7379a1dbec5fec15b4d94d17fe97ccd861f5c0c8fc80148b7ed293"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 515248,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 6811643,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 6811643,
+      "ctag_relocation_staging_bytes": 130100,
+      "matrix_row": {
+        "bsp_payload_bytes": 515248,
+        "claims_bitmap_payload_capacity_floor_bytes": 915862,
+        "ctag_relocation_staging_bytes": 130100,
+        "remaining_after_relocation_and_claim_floor_bytes": 2112907,
+        "resident_ce_bytes": 6811643
+      },
+      "media_bytes_independent": 19655120,
+      "name": "carousel_marine_shotgun_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 26895513,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/carousel_marine_shotgun_4p4bot/carousel_marine_shotgun_4p4bot.hcp",
+      "package_sha256": "1cfa70a35adc3947e949c6a8305cac8acc0f4883ff14f9ad330dc349e1283f01",
+      "producer_validation": "passed",
+      "second_build_sha256": "1cfa70a35adc3947e949c6a8305cac8acc0f4883ff14f9ad330dc349e1283f01",
+      "selected_variants": [
+        {
+          "path": "characters\\marine\\marine shotgun",
+          "source_datum": 3972205391,
+          "source_map": "c10",
+          "source_map_sha256": "423d50a4d7fb7b3c280d7e0806d67e136b2b6a51468ed0be6ee9415e5f129e7d"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 515248,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 4592654,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 4592654,
+      "ctag_relocation_staging_bytes": 82088,
+      "matrix_row": {
+        "bsp_payload_bytes": 515248,
+        "claims_bitmap_payload_capacity_floor_bytes": 638488,
+        "ctag_relocation_staging_bytes": 82088,
+        "remaining_after_relocation_and_claim_floor_bytes": 4657282,
+        "resident_ce_bytes": 4592654
+      },
+      "media_bytes_independent": 15526832,
+      "name": "carousel_mounted_gunner_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 20338255,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/carousel_mounted_gunner_4p4bot/carousel_mounted_gunner_4p4bot.hcp",
+      "package_sha256": "532421b47e33972548ae9d10a901c54999d41bc46680d480e38b2764dead5381",
+      "producer_validation": "passed",
+      "second_build_sha256": "532421b47e33972548ae9d10a901c54999d41bc46680d480e38b2764dead5381",
+      "selected_variants": [
+        {
+          "path": "vehicles\\c_dropship\\cd_gun\\cd gun turret gunner",
+          "source_datum": 3892905621,
+          "source_map": "a30",
+          "source_map_sha256": "287959f34a7379a1dbec5fec15b4d94d17fe97ccd861f5c0c8fc80148b7ed293"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 573416,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 6786551,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 6786551,
+      "ctag_relocation_staging_bytes": 129544,
+      "matrix_row": {
+        "bsp_payload_bytes": 573416,
+        "claims_bitmap_payload_capacity_floor_bytes": 919996,
+        "ctag_relocation_staging_bytes": 129544,
+        "remaining_after_relocation_and_claim_floor_bytes": 2076253,
+        "resident_ce_bytes": 6786551
+      },
+      "media_bytes_independent": 19342696,
+      "name": "chillout_marine_shotgun_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 26555056,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/chillout_marine_shotgun_4p4bot/chillout_marine_shotgun_4p4bot.hcp",
+      "package_sha256": "303cef1f08bbad39bfdd5f4c387b54746f3b3792af0bb973197917a52832e498",
+      "producer_validation": "passed",
+      "second_build_sha256": "303cef1f08bbad39bfdd5f4c387b54746f3b3792af0bb973197917a52832e498",
+      "selected_variants": [
+        {
+          "path": "characters\\marine\\marine shotgun",
+          "source_datum": 3972205391,
+          "source_map": "c10",
+          "source_map_sha256": "423d50a4d7fb7b3c280d7e0806d67e136b2b6a51468ed0be6ee9415e5f129e7d"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 573416,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 4567562,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 4567562,
+      "ctag_relocation_staging_bytes": 81532,
+      "matrix_row": {
+        "bsp_payload_bytes": 573416,
+        "claims_bitmap_payload_capacity_floor_bytes": 642623,
+        "ctag_relocation_staging_bytes": 81532,
+        "remaining_after_relocation_and_claim_floor_bytes": 4620627,
+        "resident_ce_bytes": 4567562
+      },
+      "media_bytes_independent": 15214408,
+      "name": "chillout_mounted_gunner_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 19997702,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/chillout_mounted_gunner_4p4bot/chillout_mounted_gunner_4p4bot.hcp",
+      "package_sha256": "e802c0e5bd82bf7d5d1a257079754edb084d280415eea8ec9376c1f02597aced",
+      "producer_validation": "passed",
+      "second_build_sha256": "e802c0e5bd82bf7d5d1a257079754edb084d280415eea8ec9376c1f02597aced",
+      "selected_variants": [
+        {
+          "path": "vehicles\\c_dropship\\cd_gun\\cd gun turret gunner",
+          "source_datum": 3892905621,
+          "source_map": "a30",
+          "source_map_sha256": "287959f34a7379a1dbec5fec15b4d94d17fe97ccd861f5c0c8fc80148b7ed293"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 1326816,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 6881623,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 6881623,
+      "ctag_relocation_staging_bytes": 131292,
+      "matrix_row": {
+        "bsp_payload_bytes": 1326816,
+        "claims_bitmap_payload_capacity_floor_bytes": 1026055,
+        "ctag_relocation_staging_bytes": 131292,
+        "remaining_after_relocation_and_claim_floor_bytes": 1119974,
+        "resident_ce_bytes": 6881623
+      },
+      "media_bytes_independent": 21028768,
+      "name": "damnation_marine_shotgun_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 28343289,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/damnation_marine_shotgun_4p4bot/damnation_marine_shotgun_4p4bot.hcp",
+      "package_sha256": "3d92fb625e43ba888e8c87e74fbd3fa40496d75c5a880b51e435425d07543b5a",
+      "producer_validation": "passed",
+      "second_build_sha256": "3d92fb625e43ba888e8c87e74fbd3fa40496d75c5a880b51e435425d07543b5a",
+      "selected_variants": [
+        {
+          "path": "characters\\marine\\marine shotgun",
+          "source_datum": 3972205391,
+          "source_map": "c10",
+          "source_map_sha256": "423d50a4d7fb7b3c280d7e0806d67e136b2b6a51468ed0be6ee9415e5f129e7d"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 1326816,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 4662634,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 4662634,
+      "ctag_relocation_staging_bytes": 83280,
+      "matrix_row": {
+        "bsp_payload_bytes": 1326816,
+        "claims_bitmap_payload_capacity_floor_bytes": 748682,
+        "ctag_relocation_staging_bytes": 83280,
+        "remaining_after_relocation_and_claim_floor_bytes": 3664348,
+        "resident_ce_bytes": 4662634
+      },
+      "media_bytes_independent": 16900480,
+      "name": "damnation_mounted_gunner_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 21785935,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/damnation_mounted_gunner_4p4bot/damnation_mounted_gunner_4p4bot.hcp",
+      "package_sha256": "59d088c9a9c523355d40aa50d986e161a56f8930c0d8bd6d32547bf7c9be9c1c",
+      "producer_validation": "passed",
+      "second_build_sha256": "59d088c9a9c523355d40aa50d986e161a56f8930c0d8bd6d32547bf7c9be9c1c",
+      "selected_variants": [
+        {
+          "path": "vehicles\\c_dropship\\cd_gun\\cd gun turret gunner",
+          "source_datum": 3892905621,
+          "source_map": "a30",
+          "source_map_sha256": "287959f34a7379a1dbec5fec15b4d94d17fe97ccd861f5c0c8fc80148b7ed293"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 595848,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 6778930,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 6778930,
+      "ctag_relocation_staging_bytes": 128884,
+      "matrix_row": {
+        "bsp_payload_bytes": 595848,
+        "claims_bitmap_payload_capacity_floor_bytes": 921848,
+        "ctag_relocation_staging_bytes": 128884,
+        "remaining_after_relocation_and_claim_floor_bytes": 2060250,
+        "resident_ce_bytes": 6778930
+      },
+      "media_bytes_independent": 19917432,
+      "name": "hangemhigh_marine_shotgun_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 27120721,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/hangemhigh_marine_shotgun_4p4bot/hangemhigh_marine_shotgun_4p4bot.hcp",
+      "package_sha256": "f730aa8f548027023c0e7d380def04e94e883a427a7afb5ca6e437912e41dd0a",
+      "producer_validation": "passed",
+      "second_build_sha256": "f730aa8f548027023c0e7d380def04e94e883a427a7afb5ca6e437912e41dd0a",
+      "selected_variants": [
+        {
+          "path": "characters\\marine\\marine shotgun",
+          "source_datum": 3972205391,
+          "source_map": "c10",
+          "source_map_sha256": "423d50a4d7fb7b3c280d7e0806d67e136b2b6a51468ed0be6ee9415e5f129e7d"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 595848,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 4559941,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 4559941,
+      "ctag_relocation_staging_bytes": 80872,
+      "matrix_row": {
+        "bsp_payload_bytes": 595848,
+        "claims_bitmap_payload_capacity_floor_bytes": 644474,
+        "ctag_relocation_staging_bytes": 80872,
+        "remaining_after_relocation_and_claim_floor_bytes": 4604625,
+        "resident_ce_bytes": 4559941
+      },
+      "media_bytes_independent": 15789144,
+      "name": "hangemhigh_mounted_gunner_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 20563383,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/hangemhigh_mounted_gunner_4p4bot/hangemhigh_mounted_gunner_4p4bot.hcp",
+      "package_sha256": "675d29677db1248f13bb4add2277d7772a9febfac9c99d51c758d1737a828a9c",
+      "producer_validation": "passed",
+      "second_build_sha256": "675d29677db1248f13bb4add2277d7772a9febfac9c99d51c758d1737a828a9c",
+      "selected_variants": [
+        {
+          "path": "vehicles\\c_dropship\\cd_gun\\cd gun turret gunner",
+          "source_datum": 3892905621,
+          "source_map": "a30",
+          "source_map_sha256": "287959f34a7379a1dbec5fec15b4d94d17fe97ccd861f5c0c8fc80148b7ed293"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 377388,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 6797019,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 6797019,
+      "ctag_relocation_staging_bytes": 129252,
+      "matrix_row": {
+        "bsp_payload_bytes": 377388,
+        "claims_bitmap_payload_capacity_floor_bytes": 896801,
+        "ctag_relocation_staging_bytes": 129252,
+        "remaining_after_relocation_and_claim_floor_bytes": 2285300,
+        "resident_ce_bytes": 6797019
+      },
+      "media_bytes_independent": 19401516,
+      "name": "longest_marine_shotgun_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 26622976,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/longest_marine_shotgun_4p4bot/longest_marine_shotgun_4p4bot.hcp",
+      "package_sha256": "a33dc337bc8235263b37006af735c6a6bc49dd9c52f4460f6e83fe0572bea6c9",
+      "producer_validation": "passed",
+      "second_build_sha256": "a33dc337bc8235263b37006af735c6a6bc49dd9c52f4460f6e83fe0572bea6c9",
+      "selected_variants": [
+        {
+          "path": "characters\\marine\\marine shotgun",
+          "source_datum": 3972205391,
+          "source_map": "c10",
+          "source_map_sha256": "423d50a4d7fb7b3c280d7e0806d67e136b2b6a51468ed0be6ee9415e5f129e7d"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 377388,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 4578030,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 4578030,
+      "ctag_relocation_staging_bytes": 81240,
+      "matrix_row": {
+        "bsp_payload_bytes": 377388,
+        "claims_bitmap_payload_capacity_floor_bytes": 619428,
+        "ctag_relocation_staging_bytes": 81240,
+        "remaining_after_relocation_and_claim_floor_bytes": 4829674,
+        "resident_ce_bytes": 4578030
+      },
+      "media_bytes_independent": 15273228,
+      "name": "longest_mounted_gunner_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 20065718,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/longest_mounted_gunner_4p4bot/longest_mounted_gunner_4p4bot.hcp",
+      "package_sha256": "9b115f105bc6fa0bf4e81de54251652d65242232539570f78f4ca268e17b324c",
+      "producer_validation": "passed",
+      "second_build_sha256": "9b115f105bc6fa0bf4e81de54251652d65242232539570f78f4ca268e17b324c",
+      "selected_variants": [
+        {
+          "path": "vehicles\\c_dropship\\cd_gun\\cd gun turret gunner",
+          "source_datum": 3892905621,
+          "source_map": "a30",
+          "source_map_sha256": "287959f34a7379a1dbec5fec15b4d94d17fe97ccd861f5c0c8fc80148b7ed293"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 888336,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 6774164,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 6774164,
+      "ctag_relocation_staging_bytes": 128952,
+      "matrix_row": {
+        "bsp_payload_bytes": 888336,
+        "claims_bitmap_payload_capacity_floor_bytes": 957813,
+        "ctag_relocation_staging_bytes": 128952,
+        "remaining_after_relocation_and_claim_floor_bytes": 1736495,
+        "resident_ce_bytes": 6774164
+      },
+      "media_bytes_independent": 20081504,
+      "name": "prisoner_marine_shotgun_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 27280270,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/prisoner_marine_shotgun_4p4bot/prisoner_marine_shotgun_4p4bot.hcp",
+      "package_sha256": "6de39100fbf35e7069c2d4d154f697077d983895e3193e66d8b8e48e7a33b5c8",
+      "producer_validation": "passed",
+      "second_build_sha256": "6de39100fbf35e7069c2d4d154f697077d983895e3193e66d8b8e48e7a33b5c8",
+      "selected_variants": [
+        {
+          "path": "characters\\marine\\marine shotgun",
+          "source_datum": 3972205391,
+          "source_map": "c10",
+          "source_map_sha256": "423d50a4d7fb7b3c280d7e0806d67e136b2b6a51468ed0be6ee9415e5f129e7d"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 888336,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 4555175,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 4555175,
+      "ctag_relocation_staging_bytes": 80940,
+      "matrix_row": {
+        "bsp_payload_bytes": 888336,
+        "claims_bitmap_payload_capacity_floor_bytes": 680439,
+        "ctag_relocation_staging_bytes": 80940,
+        "remaining_after_relocation_and_claim_floor_bytes": 4280870,
+        "resident_ce_bytes": 4555175
+      },
+      "media_bytes_independent": 15953216,
+      "name": "prisoner_mounted_gunner_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 20722932,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/prisoner_mounted_gunner_4p4bot/prisoner_mounted_gunner_4p4bot.hcp",
+      "package_sha256": "7ac4d0b7e37cce77f1642035ddd3eec1f7ee18f92ee9241c3f86ac7db735ab92",
+      "producer_validation": "passed",
+      "second_build_sha256": "7ac4d0b7e37cce77f1642035ddd3eec1f7ee18f92ee9241c3f86ac7db735ab92",
+      "selected_variants": [
+        {
+          "path": "vehicles\\c_dropship\\cd_gun\\cd gun turret gunner",
+          "source_datum": 3892905621,
+          "source_map": "a30",
+          "source_map_sha256": "287959f34a7379a1dbec5fec15b4d94d17fe97ccd861f5c0c8fc80148b7ed293"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 1643044,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 6782226,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 6782226,
+      "ctag_relocation_staging_bytes": 128792,
+      "matrix_row": {
+        "bsp_payload_bytes": 1643044,
+        "claims_bitmap_payload_capacity_floor_bytes": 1053159,
+        "ctag_relocation_staging_bytes": 128792,
+        "remaining_after_relocation_and_claim_floor_bytes": 878539,
+        "resident_ce_bytes": 6782226
+      },
+      "media_bytes_independent": 19957956,
+      "name": "putput_marine_shotgun_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 27165229,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/putput_marine_shotgun_4p4bot/putput_marine_shotgun_4p4bot.hcp",
+      "package_sha256": "3e7ffb50dc0f0e412c267d8fccf3c5e67026ff885c66cf6b4ae463fb83ac3897",
+      "producer_validation": "passed",
+      "second_build_sha256": "3e7ffb50dc0f0e412c267d8fccf3c5e67026ff885c66cf6b4ae463fb83ac3897",
+      "selected_variants": [
+        {
+          "path": "characters\\marine\\marine shotgun",
+          "source_datum": 3972205391,
+          "source_map": "c10",
+          "source_map_sha256": "423d50a4d7fb7b3c280d7e0806d67e136b2b6a51468ed0be6ee9415e5f129e7d"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 1643044,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 4563237,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 4563237,
+      "ctag_relocation_staging_bytes": 80780,
+      "matrix_row": {
+        "bsp_payload_bytes": 1643044,
+        "claims_bitmap_payload_capacity_floor_bytes": 775786,
+        "ctag_relocation_staging_bytes": 80780,
+        "remaining_after_relocation_and_claim_floor_bytes": 3422913,
+        "resident_ce_bytes": 4563237
+      },
+      "media_bytes_independent": 15829668,
+      "name": "putput_mounted_gunner_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 20607891,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/putput_mounted_gunner_4p4bot/putput_mounted_gunner_4p4bot.hcp",
+      "package_sha256": "6235819dbba5895ce76e9b21ecc61f8988de3d0f62b334bc547475a81f57f214",
+      "producer_validation": "passed",
+      "second_build_sha256": "6235819dbba5895ce76e9b21ecc61f8988de3d0f62b334bc547475a81f57f214",
+      "selected_variants": [
+        {
+          "path": "vehicles\\c_dropship\\cd_gun\\cd gun turret gunner",
+          "source_datum": 3892905621,
+          "source_map": "a30",
+          "source_map_sha256": "287959f34a7379a1dbec5fec15b4d94d17fe97ccd861f5c0c8fc80148b7ed293"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 550804,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 6804448,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 6804448,
+      "ctag_relocation_staging_bytes": 129792,
+      "matrix_row": {
+        "bsp_payload_bytes": 550804,
+        "claims_bitmap_payload_capacity_floor_bytes": 919407,
+        "ctag_relocation_staging_bytes": 129792,
+        "remaining_after_relocation_and_claim_floor_bytes": 2081309,
+        "resident_ce_bytes": 6804448
+      },
+      "media_bytes_independent": 19650116,
+      "name": "ratrace_marine_shotgun_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 26881791,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/ratrace_marine_shotgun_4p4bot/ratrace_marine_shotgun_4p4bot.hcp",
+      "package_sha256": "5f74c2aee5c648f1f10b2b94595849bde4135b8b74f3911db131862752be5900",
+      "producer_validation": "passed",
+      "second_build_sha256": "5f74c2aee5c648f1f10b2b94595849bde4135b8b74f3911db131862752be5900",
+      "selected_variants": [
+        {
+          "path": "characters\\marine\\marine shotgun",
+          "source_datum": 3972205391,
+          "source_map": "c10",
+          "source_map_sha256": "423d50a4d7fb7b3c280d7e0806d67e136b2b6a51468ed0be6ee9415e5f129e7d"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 550804,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 4585459,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 4585459,
+      "ctag_relocation_staging_bytes": 81780,
+      "matrix_row": {
+        "bsp_payload_bytes": 550804,
+        "claims_bitmap_payload_capacity_floor_bytes": 642033,
+        "ctag_relocation_staging_bytes": 81780,
+        "remaining_after_relocation_and_claim_floor_bytes": 4625684,
+        "resident_ce_bytes": 4585459
+      },
+      "media_bytes_independent": 15521828,
+      "name": "ratrace_mounted_gunner_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 20324533,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/ratrace_mounted_gunner_4p4bot/ratrace_mounted_gunner_4p4bot.hcp",
+      "package_sha256": "05a22915e70c189aad4ef1312c2eb7f6b5c2485306ce600ba83eb4c47043d5d8",
+      "producer_validation": "passed",
+      "second_build_sha256": "05a22915e70c189aad4ef1312c2eb7f6b5c2485306ce600ba83eb4c47043d5d8",
+      "selected_variants": [
+        {
+          "path": "vehicles\\c_dropship\\cd_gun\\cd gun turret gunner",
+          "source_datum": 3892905621,
+          "source_map": "a30",
+          "source_map_sha256": "287959f34a7379a1dbec5fec15b4d94d17fe97ccd861f5c0c8fc80148b7ed293"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 1993740,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 6913928,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 6913928,
+      "ctag_relocation_staging_bytes": 131764,
+      "matrix_row": {
+        "bsp_payload_bytes": 1993740,
+        "claims_bitmap_payload_capacity_floor_bytes": 1113459,
+        "ctag_relocation_staging_bytes": 131764,
+        "remaining_after_relocation_and_claim_floor_bytes": 332869,
+        "resident_ce_bytes": 6913928
+      },
+      "media_bytes_independent": 22181836,
+      "name": "sidewinder_marine_shotgun_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 29531846,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/sidewinder_marine_shotgun_4p4bot/sidewinder_marine_shotgun_4p4bot.hcp",
+      "package_sha256": "24bf404dadbd0e7ccc806b60052e0b564728efbd253be9453bfb6650e994d648",
+      "producer_validation": "passed",
+      "second_build_sha256": "24bf404dadbd0e7ccc806b60052e0b564728efbd253be9453bfb6650e994d648",
+      "selected_variants": [
+        {
+          "path": "characters\\marine\\marine shotgun",
+          "source_datum": 3972205391,
+          "source_map": "c10",
+          "source_map_sha256": "423d50a4d7fb7b3c280d7e0806d67e136b2b6a51468ed0be6ee9415e5f129e7d"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 1993740,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 4694939,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 4694939,
+      "ctag_relocation_staging_bytes": 83752,
+      "matrix_row": {
+        "bsp_payload_bytes": 1993740,
+        "claims_bitmap_payload_capacity_floor_bytes": 836085,
+        "ctag_relocation_staging_bytes": 83752,
+        "remaining_after_relocation_and_claim_floor_bytes": 2877244,
+        "resident_ce_bytes": 4694939
+      },
+      "media_bytes_independent": 18053548,
+      "name": "sidewinder_mounted_gunner_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 22974508,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/sidewinder_mounted_gunner_4p4bot/sidewinder_mounted_gunner_4p4bot.hcp",
+      "package_sha256": "08ff98bbcf73ba23a71503872d2d0683c70c33879bd2d94948e2bfb215d12cfa",
+      "producer_validation": "passed",
+      "second_build_sha256": "08ff98bbcf73ba23a71503872d2d0683c70c33879bd2d94948e2bfb215d12cfa",
+      "selected_variants": [
+        {
+          "path": "vehicles\\c_dropship\\cd_gun\\cd gun turret gunner",
+          "source_datum": 3892905621,
+          "source_map": "a30",
+          "source_map_sha256": "287959f34a7379a1dbec5fec15b4d94d17fe97ccd861f5c0c8fc80148b7ed293"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 556944,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 6792902,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 6792902,
+      "ctag_relocation_staging_bytes": 129808,
+      "matrix_row": {
+        "bsp_payload_bytes": 556944,
+        "claims_bitmap_payload_capacity_floor_bytes": 918731,
+        "ctag_relocation_staging_bytes": 129808,
+        "remaining_after_relocation_and_claim_floor_bytes": 2087375,
+        "resident_ce_bytes": 6792902
+      },
+      "media_bytes_independent": 19452736,
+      "name": "wizard_marine_shotgun_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 26672426,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/wizard_marine_shotgun_4p4bot/wizard_marine_shotgun_4p4bot.hcp",
+      "package_sha256": "fd440bf473a361b54ca857effc5ae33561005f75e3fa38dbe411fced28c3efda",
+      "producer_validation": "passed",
+      "second_build_sha256": "fd440bf473a361b54ca857effc5ae33561005f75e3fa38dbe411fced28c3efda",
+      "selected_variants": [
+        {
+          "path": "characters\\marine\\marine shotgun",
+          "source_datum": 3972205391,
+          "source_map": "c10",
+          "source_map_sha256": "423d50a4d7fb7b3c280d7e0806d67e136b2b6a51468ed0be6ee9415e5f129e7d"
+        }
+      ]
+    },
+    {
+      "bsp_matches_row": true,
+      "bsp_payload_bytes": 556944,
+      "byte_identical_across_builds": true,
+      "ce_image_bytes": 4573913,
+      "ce_matches_row": true,
+      "ce_resident_bytes": 4573913,
+      "ctag_relocation_staging_bytes": 81796,
+      "matrix_row": {
+        "bsp_payload_bytes": 556944,
+        "claims_bitmap_payload_capacity_floor_bytes": 641358,
+        "ctag_relocation_staging_bytes": 81796,
+        "remaining_after_relocation_and_claim_floor_bytes": 4631749,
+        "resident_ce_bytes": 4573913
+      },
+      "media_bytes_independent": 15324448,
+      "name": "wizard_mounted_gunner_4p4bot",
+      "native_mount_preflight": "failed: fixture raw tag read (see report)",
+      "package_bytes": 20115184,
+      "package_path": "build/m2-c2-r3-selected-packages/pkg/wizard_mounted_gunner_4p4bot/wizard_mounted_gunner_4p4bot.hcp",
+      "package_sha256": "736c8f6ce375aaf825b2e276a5b8ecb49e4bbc13f7d98051310d7a85104f17de",
+      "producer_validation": "passed",
+      "second_build_sha256": "736c8f6ce375aaf825b2e276a5b8ecb49e4bbc13f7d98051310d7a85104f17de",
+      "selected_variants": [
+        {
+          "path": "vehicles\\c_dropship\\cd_gun\\cd gun turret gunner",
+          "source_datum": 3892905621,
+          "source_map": "a30",
+          "source_map_sha256": "287959f34a7379a1dbec5fec15b4d94d17fe97ccd861f5c0c8fc80148b7ed293"
+        }
+      ]
+    }
+  ]
+}
