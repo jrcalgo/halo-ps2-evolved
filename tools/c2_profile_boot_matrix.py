@@ -64,7 +64,7 @@ EXTRA_PACKAGE_ROOTS = {
     "ui": ROOT / "build/m2-c2-residual-packages/ui-tree/pkg",
 }
 
-RESERVE = 0x1A40000          # budget v3 reserve start (kernel-reservation reserve=)
+RESERVE = 0x1A60000          # budget v4 reserve start (kernel-reservation reserve=)
 LINK_TIMEOUT = 3600
 GUEST_TIMEOUT = 600          # guest seconds
 GUEST_PROCESS_TIMEOUT = 700  # host seconds for the whole c2_guest_run process

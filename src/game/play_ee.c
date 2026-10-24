@@ -43,7 +43,7 @@ static collide_pill_stats s_last;
 #define PLAY_FLY 16
 #define PLAY_GRENADE_CAPACITY GRENADE_CARRY_MAX
 #define PLAY_WEAPON_SLOTS 32
-#define PLAY_EE_COMMITTED_BYTES 28049408u /* config/memory-budget.json v3 */
+#define PLAY_EE_COMMITTED_BYTES 28180480u /* config/memory-budget.json v4 */
 
 static gun s_gun;
 static gun_trigger_pair s_trigger_pair;
@@ -846,7 +846,7 @@ void __wrap_flycam_update(camera_t *cam, const fly_input *in, float dt)
     s_was_out = s_body.out_of_world;
 }
 
-/* Top-left budget strip. 30 Hz frame is 33.3 ms. Committed EE RAM is 28,049,408 B
+/* Top-left budget strip. 30 Hz frame is 33.3 ms. Committed EE RAM is 28,180,480 B
  * of the 32 MiB machine. Texture upload cap is 1.5 MiB. Pill lists hold 256. */
 void __wrap_profiler_overlay(const profiler_t *p, text_batch_t *b)
 {

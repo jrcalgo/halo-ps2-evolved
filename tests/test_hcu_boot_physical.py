@@ -44,20 +44,20 @@ def kernel_markers(stack=0x01FE0000):
     return (f"HALO_PS2_LOCAL kernel-stack base=0x{stack:x} size=131072 "
             f"end=0x{stack + 131072:x}\n"
             "HALO_PS2_LOCAL kernel-reservation low=0x0 low_bytes=1048576 "
-            "high=0x1f80000 high_bytes=524288 reserve=0x1a40000 "
-            "reserve_bytes=5505024")
+            "high=0x1f80000 high_bytes=524288 reserve=0x1a60000 "
+            "reserve_bytes=5373952")
 
 
 def test_guest_placement_marker_proves_nonoverlap():
     boot = 0x004FC900
     end = boot + sum(CAPS.values())
     log = ("HALO_PS2_LOCAL memory-physical elf_end=0x4f0288 "
-           f"boot=0x{boot:x} boot_end=0x{end:x} reserve=0x1a40000 "
+           f"boot=0x{boot:x} boot_end=0x{end:x} reserve=0x1a60000 "
            "allocator_gap=284\n" + arena_markers(boot) + "\n" +
            kernel_markers())
     evidence = physical_memory_evidence(log)
     assert evidence["nonoverlapping"] is True
-    assert evidence["headroom_bytes"] == 0x1a40000 - end
+    assert evidence["headroom_bytes"] == 0x1a60000 - end
     assert evidence["allocator_gap_bytes"] == 284
     assert evidence["arenas_complete_and_valid"]
     assert len(evidence["arenas"]) == 9
@@ -65,7 +65,7 @@ def test_guest_placement_marker_proves_nonoverlap():
 
 def test_guest_placement_marker_rejects_reserve_overlap():
     log = ("HALO_PS2_LOCAL memory-physical elf_end=0x4f0288 "
-           "boot=0x4f04a0 boot_end=0x1a41000 reserve=0x1a40000 "
+           "boot=0x4f04a0 boot_end=0x1a61000 reserve=0x1a60000 "
            "allocator_gap=100\n" + arena_markers(0x4f04a0) + "\n" +
            kernel_markers())
     assert physical_memory_evidence(log)["nonoverlapping"] is False
@@ -76,7 +76,7 @@ def test_guest_placement_rejects_missing_or_overlapping_arena_records():
     boot = 0x004FC900
     end = boot + sum(CAPS.values())
     marker = (f"HALO_PS2_LOCAL memory-physical elf_end=0x4f0288 "
-              f"boot=0x{boot:x} boot_end=0x{end:x} reserve=0x1a40000 "
+              f"boot=0x{boot:x} boot_end=0x{end:x} reserve=0x1a60000 "
               "allocator_gap=284\n")
     suffix = "\n" + kernel_markers()
     assert not physical_memory_evidence(
@@ -95,7 +95,7 @@ def test_later_guest_halt_retains_m1_boundary_and_physical_evidence():
     end = boot + sum(CAPS.values())
     log = ("HALO_PS2_LOCAL game-initialize-done\n"
            f"HALO_PS2_LOCAL memory-physical elf_end=0x4f0288 "
-           f"boot=0x{boot:x} boot_end=0x{end:x} reserve=0x1a40000 "
+           f"boot=0x{boot:x} boot_end=0x{end:x} reserve=0x1a60000 "
            "allocator_gap=284\n" + arena_markers(boot) + "\n" + kernel_markers() + "\n"
            "HALO_PS2_LOCAL m1-ui-map-request\n"
            "HALO_PS2_LOCAL halt missing-bsp\n")
@@ -142,7 +142,7 @@ def test_guest_physical_intervals_are_bound_to_exact_linked_image(tmp_path):
     end = boot + sum(CAPS.values())
     elf_end = 0x004FC800
     log = (f"HALO_PS2_LOCAL memory-physical elf_end=0x{elf_end:x} "
-           f"boot=0x{boot:x} boot_end=0x{end:x} reserve=0x1a40000 "
+           f"boot=0x{boot:x} boot_end=0x{end:x} reserve=0x1a60000 "
            f"allocator_gap={boot - elf_end}\n" + arena_markers(boot) + "\n" +
            kernel_markers() + "\nHALO_PS2_LOCAL memory-ready canaries=10\n")
     physical = physical_memory_evidence(log)

@@ -88,13 +88,13 @@ extern unsigned hcu_c2_successor_fault_count;
 #define HALO_HCU_ASSET_ROOT "host:/"
 #endif
 
-/* config/memory-budget.json version 3. Physical EE layout, derived from named
- * constants: 1 MiB low kernel, then elf_static (2,359,296 bytes) holding the
+/* config/memory-budget.json version 4. Physical EE layout, derived from named
+ * constants: 1 MiB low kernel, then elf_static (2,490,368 bytes) holding the
  * file-backed ELF sections, then the single boot backing (MEM_LAYOUT_V2_BYTES),
  * then the uncommitted reserve up to the 0x01f80000 high kernel reservation.
  * ELF NOBITS is charged to resident_gameplay, not to elf_static. */
 #define HCU_LOW_KERNEL_BYTES 0x00100000u
-#define HCU_ELF_STATIC_BYTES 2359296u
+#define HCU_ELF_STATIC_BYTES 2490368u
 #define HCU_FILE_BACKED_END (HCU_LOW_KERNEL_BYTES + HCU_ELF_STATIC_BYTES)
 #define HCU_RESERVE_START (HCU_FILE_BACKED_END + (unsigned)MEM_LAYOUT_V2_BYTES)
 #define HCU_RESERVE_END 0x01f80000u

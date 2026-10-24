@@ -38,8 +38,8 @@ READELF = ROOT / "build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-readelf"
 PROFILE_TEMPLATE = ROOT / ("build/hcu-ps2-closure/"
                            "emulator-m1-interpreter-0139052a7cf940829aa1384ca8c0152f/data")
 
-# Budget v3: the reserve starts after 1 MiB low kernel + elf_static + the boot backing
-# (MEM_LAYOUT_V2_BYTES = 24,117,248), i.e. 0x1a40000. Derived from config/memory-budget.json,
+# Budget v4: the reserve starts after 1 MiB low kernel + elf_static + the boot backing
+# (MEM_LAYOUT_V2_BYTES = 24,117,248), i.e. 0x1a60000. Derived from config/memory-budget.json,
 # matching HCU_RESERVE_START in src/stream/hcu_main.c.
 MEM_LAYOUT_V2_BYTES = 24117248
 LOW_KERNEL_BYTES = 0x100000

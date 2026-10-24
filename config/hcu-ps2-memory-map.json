@@ -85,7 +85,7 @@
     "checkpoint": {"kind": "unknown", "bytes": null, "reason": "Reserved checkpoint storage has no measured HCU machine use."},
     "audio": {"kind": "unknown", "bytes": null, "reason": "CE sound staging is bound but its combined-image peak has not been measured; SPU2 is separate."},
     "frame_scratch": {"kind": "host-fixture", "bytes": 275491, "evidence": "tests/test_retail_ui_ctag_mount.py retail UI CTAG mount fixture; not a production map peak."},
-    "uncommitted_reserve": {"kind": "reserved", "bytes": 0, "evidence": "config/memory-budget.json keeps 5,505,024 bytes uncommitted (version 3); allocation into this region is forbidden."}
+    "uncommitted_reserve": {"kind": "reserved", "bytes": 0, "evidence": "config/memory-budget.json keeps 5,373,952 bytes uncommitted (version 4); allocation into this region is forbidden."}
   },
   "bootstrap_profile": {
     "name": "ui-map-bootstrap",

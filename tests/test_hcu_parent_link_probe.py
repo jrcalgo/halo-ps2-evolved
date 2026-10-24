@@ -55,10 +55,10 @@ def test_physical_placement_rejects_overlapping_load_intervals():
 
 
 def test_physical_placement_rejects_file_overage_and_reserve_overlap():
-    segment = {"start": 0x100000, "file_end": 0x340880,
+    segment = {"start": 0x100000, "file_end": 0x360880,
                "memory_end": 0x4f6888}
     symbols = named_symbols(
-        "00100000 T _ftext\n00340880 D _fbss\n004f6888 B _end\n",
+        "00100000 T _ftext\n00360880 D _fbss\n004f6888 B _end\n",
         {"_ftext", "_fbss", "_end"})
     report = physical_placement(segment, symbols)
     assert report["necessary_conditions_pass"] is False

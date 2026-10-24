@@ -1,15 +1,15 @@
 # Memory record
 
-M11's memory acceptance is met by the measurements below. The versioned split is `config/memory-budget.json` version 3. A byte counted in two regions is a failed account. Version 3 spent 262,144 bytes of the reserve on `elf_static` (user-approved 2026-10-24); the reserve is now 5,505,024 bytes.
+M11's memory acceptance is met by the measurements below. The versioned split is `config/memory-budget.json` version 4. A byte counted in two regions is a failed account. Version 3 spent 262,144 bytes of the reserve on `elf_static`; version 4 spent a further 131,072 bytes (both user-approved 2026-10-24). The reserve is now 5,373,952 bytes.
 
 ## Budget
 
-The contract is 28,049,408 bytes committed plus a 5,505,024-byte reserve, 32 MiB total (33,554,432 bytes). Version 2 was 27,787,264 committed plus 5,767,168 reserve. Host checks reject a total other than that and reject overlapping claims. Those checks do not run on the EE.
+The contract is 28,180,480 bytes committed plus a 5,373,952-byte reserve, 32 MiB total (33,554,432 bytes). Version 3 was 28,049,408 committed plus 5,505,024 reserve. Version 2 was 27,787,264 committed plus 5,767,168 reserve. Host checks reject a total other than that and reject overlapping claims. Those checks do not run on the EE.
 
 | Region | Bytes | Role |
 |---|---:|---|
 | system_kernel | 1,572,864 | kernel, stacks, IOP/EE buffers |
-| elf_static | 2,359,296 | executable sections, constants, static tables |
+| elf_static | 2,490,368 | executable sections, constants, static tables |
 | resident_gameplay | 6,815,744 | permanent data |
 | current_bsp | 6,291,456 | map data |
 | texture_cache | 4,194,304 | EE RAM for textures and lightmaps |
@@ -19,9 +19,9 @@ The contract is 28,049,408 bytes committed plus a 5,505,024-byte reserve, 32 MiB
 | checkpoint | 524,288 | checkpoint storage |
 | audio | 524,288 | audio staging |
 | frame_scratch | 393,216 | frame scratch |
-| uncommitted_reserve | 5,505,024 | reserve |
+| uncommitted_reserve | 5,373,952 | reserve |
 
-`elf_static` holds only the file-backed ELF bytes (PROGBITS, allocated). ELF NOBITS (`_end - _fbss`) is charged to `resident_gameplay` at boot, not to `elf_static`. Physically the file-backed sections must end by 0x00340000 (1 MiB low kernel plus `elf_static`), the boot backing must end by the reserve start 0x01a40000, and the reserve is [0x01a40000, 0x01f80000). The top 512 KiB [0x01f80000, 0x02000000) holds the kernel stack. The version 3 note: 262,144 B moved from the uncommitted reserve to `elf_static` after the production gameplay ELF's file-backed bytes measured 2,193,924 B against 2,097,152 B. See `docs/reports/m2-c2-budget-v3-2026-10-24.md`.
+`elf_static` holds only the file-backed ELF bytes (PROGBITS, allocated). ELF NOBITS (`_end - _fbss`) is charged to `resident_gameplay` at boot, not to `elf_static`. Physically the file-backed sections must end by 0x00360000 (1 MiB low kernel plus `elf_static`), the boot backing must end by the reserve start 0x01a60000, and the reserve is [0x01a60000, 0x01f80000). The top 512 KiB [0x01f80000, 0x02000000) holds the kernel stack. The version 3 note: 262,144 B moved from the uncommitted reserve to `elf_static` after the production gameplay ELF's file-backed bytes measured 2,193,924 B against 2,097,152 B. See `docs/reports/m2-c2-budget-v3-2026-10-24.md`. The version 4 note: 131,072 B more moved after the C3 production gameplay ELF measured 2,361,604 file-backed bytes against 2,359,296 B (2,308 B over). See `docs/reports/m3-c3-budget-v4-2026-10-24.md`.
 
 Stacks stay inside `system_kernel` until a measured split is versioned. GS VRAM is a separate 4 MiB store and is not one of these EE regions.
 

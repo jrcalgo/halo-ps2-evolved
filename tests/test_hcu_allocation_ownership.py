@@ -76,7 +76,7 @@ class HcuAllocationOwnershipTests(unittest.TestCase):
         candidate = machine["memory_ledger"]["candidate_allocated_bytes_by_region"]
         self.assertEqual(candidate["elf_static"], audit["elf_load_accounting"]["file_backed_load_bytes"])
         self.assertEqual(candidate["resident_gameplay"], audit["elf_load_accounting"]["nobits_load_bytes"])
-        self.assertLessEqual(candidate["elf_static"], 2359296)
+        self.assertLessEqual(candidate["elf_static"], 2490368)
         gate = subprocess.run(
             [sys.executable, str(ROOT / "tools/hcu_ps2_m0_gate.py")],
             cwd=ROOT, capture_output=True, text=True, check=True,
