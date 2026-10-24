@@ -807,11 +807,17 @@ static void hcu_report_cache_owners(const char *phase)
 /* C3:replace begin */
 #if defined(HCU_C3_FRAME_SNAPSHOT)
 #include "stream/hcu_sound_requests.h"
-/* Defined by the CE port (ps2_sound_cache.c). Each CE sound request reaches
- * the recorder below; the audio backend is not qualified (SPU2). */
+/* Defined by the CE port (ps2_sound_cache.c). This seam reports permutation
+ * cache requests only; playback event context is unavailable here. */
 void halo_ps2_sound_request_bind_sink(
 	void (*sink)(void *context, const void *sound, int block, int load,
 		int reference, int accepted),
+	void *context);
+void halo_ps2_sound_playback_bind_sink(
+	void (*sink)(void *context, const void *sound, int event,
+		int owner_kind, unsigned owner_datum, int has_position,
+		float x, float y, float z, int priority, float gain, float pitch,
+		unsigned game_time),
 	void *context);
 static hcu_sound_request_queue s_c3_sound_queue;
 static void hcu_c3_sound_request_sink(void *context, const void *sound,
@@ -819,14 +825,47 @@ static void hcu_c3_sound_request_sink(void *context, const void *sound,
 {
 	hcu_sound_request request;
 	(void)context;
-	(void)accepted;
 	memset(&request, 0, sizeof(request));
-	request.event = HCU_SOUND_EVENT_PERMUTATION;
+	request.event = HCU_SOUND_EVENT_PERMUTATION_REQUEST;
 	request.permutation = (uint32_t)(uintptr_t)sound;
+	request.owner_datum = UINT32_MAX;
+	request.sound_index = UINT32_MAX;
 	request.flags = (uint8_t)((block ? 1u : 0u) | (load ? 2u : 0u) |
 		(reference ? 4u : 0u));
-	request.gain = 1.0f;
-	request.pitch = 1.0f;
+	request.priority = UINT8_MAX;
+	request.accepted = accepted ? 1u : 0u;
+	/* Owner, position, priority, gain, pitch and game time are not arguments
+	 * to _sound_cache_sound_request. Leave them explicitly unknown. */
+	request.gain = 0.0f;
+	request.pitch = 0.0f;
+	request.metadata_known = 0;
+	(void)hcu_sound_requests_submit(&s_c3_sound_queue, &request);
+}
+static void hcu_c3_sound_playback_sink(void *context, const void *sound,
+	int event, int owner_kind, unsigned owner_datum, int has_position,
+	float x, float y, float z, int priority, float gain, float pitch,
+	unsigned game_time)
+{
+	hcu_sound_request request;
+	(void)context;
+	memset(&request, 0, sizeof(request));
+	request.event = (uint16_t)event;
+	request.permutation = (uint32_t)(uintptr_t)sound;
+	request.owner_kind = owner_kind >= HCU_SOUND_OWNER_NONE &&
+		owner_kind <= HCU_SOUND_OWNER_UNATTACHED ? (uint16_t)owner_kind :
+		HCU_SOUND_OWNER_NONE;
+	request.owner_datum = owner_kind >= 0 ? (uint32_t)owner_datum : UINT32_MAX;
+	request.sound_index = UINT32_MAX;
+	request.has_position = has_position ? 1u : 0u;
+	request.position[0] = x;
+	request.position[1] = y;
+	request.position[2] = z;
+	request.priority = priority >= 0 && priority < 255 ? (uint8_t)priority : UINT8_MAX;
+	request.accepted = 1u; /* CE queued it; this does not mean it was rendered. */
+	request.gain = gain;
+	request.pitch = pitch;
+	request.game_time = (uint32_t)game_time;
+	request.metadata_known = (uint8_t)(0x1cu | (has_position ? 0x02u : 0u) | 0x20u);
 	(void)hcu_sound_requests_submit(&s_c3_sound_queue, &request);
 }
 #endif
@@ -2113,6 +2152,7 @@ int main(int argc, char **argv)
 #if defined(HCU_C3_FRAME_SNAPSHOT)
 	hcu_sound_requests_init(&s_c3_sound_queue);
 	halo_ps2_sound_request_bind_sink(hcu_c3_sound_request_sink, NULL);
+	halo_ps2_sound_playback_bind_sink(hcu_c3_sound_playback_sink, NULL);
 #endif
 	/* C3:replace end */
 	/* Legacy bootstrap map storage is released only after the renderer fence

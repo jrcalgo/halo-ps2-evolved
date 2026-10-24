@@ -20,7 +20,7 @@ extern "C" {
 
 typedef enum {
 	HCU_SOUND_EVENT_NONE = 0,
-	HCU_SOUND_EVENT_PERMUTATION = 1,   /* _sound_cache_sound_request seam */
+	HCU_SOUND_EVENT_PERMUTATION_REQUEST = 1, /* cache request, not playback */
 	HCU_SOUND_EVENT_IMPULSE = 2,
 	HCU_SOUND_EVENT_LOOPING_START = 3,
 	HCU_SOUND_EVENT_LOOPING_STOP = 4,
@@ -46,7 +46,9 @@ typedef struct {
 	uint8_t has_position;
 	uint8_t priority;           /* CE sound priority, 0 lowest */
 	uint8_t flags;              /* bit 0 block, bit 1 load, bit 2 reference */
-	uint8_t reserved;
+	uint8_t accepted;           /* cache seam result; not playback success */
+	uint8_t metadata_known;     /* bit 0 owner, 1 position, 2 priority, 3 gain, 4 pitch, 5 time */
+	uint8_t reserved[3];
 	float gain;                 /* playback gain, 1.0 nominal */
 	float pitch;                /* playback pitch multiplier, 1.0 nominal */
 	uint32_t game_time;         /* CE game time in ticks at submit */

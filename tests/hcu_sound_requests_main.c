@@ -20,8 +20,10 @@ static hcu_sound_request make(uint16_t event, uint32_t permutation)
 	r.position[2] = 3.25f;
 	r.priority = 5;
 	r.flags = 0x5u;
+	r.accepted = 1u;
 	r.gain = 0.75f;
 	r.pitch = 1.25f;
+	r.metadata_known = 0x3fu;
 	r.game_time = 99u;
 	return r;
 }
@@ -65,7 +67,7 @@ int main(void)
 
 	/* Fill exactly to capacity, then one more is rejected without evicting. */
 	for (i = 0; i < HCU_SOUND_REQUEST_CAPACITY; ++i) {
-		in[i] = make(HCU_SOUND_EVENT_PERMUTATION, (uint32_t)(0x100u + i));
+		in[i] = make(HCU_SOUND_EVENT_PERMUTATION_REQUEST, (uint32_t)(0x100u + i));
 		assert(hcu_sound_requests_submit(&queue, &in[i]));
 	}
 	assert(!hcu_sound_requests_submit(&queue, &in[0]));
@@ -86,6 +88,7 @@ int main(void)
 		assert(out[i].priority == 5 && out[i].flags == 0x5u);
 		assert(out[i].gain == 0.75f && out[i].pitch == 1.25f);
 		assert(out[i].game_time == 99u && out[i].sound_index == 7u);
+		assert(out[i].accepted == 1u && out[i].metadata_known == 0x3fu);
 	}
 	n = hcu_sound_requests_drain(&queue, out, HCU_SOUND_REQUEST_CAPACITY + 4);
 	assert(n == HCU_SOUND_REQUEST_CAPACITY - 10);

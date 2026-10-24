@@ -10,11 +10,15 @@ static int request_valid(const hcu_sound_request *request)
 		return 0;
 	if (request->owner_kind > HCU_SOUND_OWNER_UNATTACHED)
 		return 0;
+	if (request->metadata_known & ~0x3fu)
+		return 0;
 	if (request->flags & ~0x7u)
 		return 0;
-	if (!(request->gain >= 0.0f) || !(request->pitch > 0.0f))
+	if ((request->metadata_known & 0x08u) && !(request->gain >= 0.0f))
 		return 0;
-	if (request->has_position) {
+	if ((request->metadata_known & 0x10u) && !(request->pitch > 0.0f))
+		return 0;
+	if ((request->metadata_known & 0x02u) && request->has_position) {
 		size_t i;
 		for (i = 0; i < 3; ++i)
 			if (request->position[i] != request->position[i])
