@@ -1,0 +1,78 @@
+{
+  "format": "hcu-c2-guarded-memory-partition-implementation-v1",
+  "date": "2026-10-23",
+  "scope": "API implementation and focused synthetic provider validation; not a measured fit qualification",
+  "api": {
+    "header": "src/stream/hcu_memory_profile.h",
+    "implementation": "src/stream/hcu_memory_profile.c",
+    "version": 1,
+    "activation": "explicit complete hcu_memory_profile_t required; not wired into production startup",
+    "planning_is_pure": true,
+    "bind_before_physical_memory_allocate": true,
+    "rejects_rebind_after_allocate_ready_or_incomplete": true,
+    "provider_failure_commits_no_layout_changes": true,
+    "runtime_guard_check": "hcu_memory_partition_guards_intact verifies the exact owner pointers, nested tag/BSP canary, moved map/render canary, and suffix canary"
+  },
+  "backing_partition": {
+    "source": {
+      "current_bsp_bytes": 6291456,
+      "inter_region_guard_bytes": 16,
+      "texture_cache_bytes": 4194304,
+      "payload_parent_capacity_bytes": 10485760
+    },
+    "sample_profile_fixture": {
+      "tag_cache_bytes": 4685920,
+      "structure_bsp_bytes": 1993744,
+      "tag_bsp_internal_guard_bytes": 16,
+      "map_parent_bytes": 6679680,
+      "render_texture_bytes": 3806080,
+      "render_parent_bytes": 3806080,
+      "map_render_outer_guard_bytes": 16,
+      "suffix_outer_guard_preserved": true,
+      "bsp_alignment_bytes": 0,
+      "texture_alignment_bytes": 0,
+      "claims_scratch_bytes": 834960,
+      "claims_formula": "ceil((tag_cache_bytes + structure_bsp_bytes) / 32) * 4",
+      "nested_owners": {
+        "current_bsp": ["tag_cache", "tag_bsp_internal_guard", "structure_bsp"],
+        "texture_cache": ["render_texture"],
+        "resident_gameplay": ["game_state", "claims_scratch"]
+      }
+    },
+    "fit_qualified": false,
+    "renderer_high_water_measured": false
+  },
+  "validation": {
+    "focused_native_command": "cc -std=gnu99 -O0 -g -Wall -Wextra -DHALO_PS2_NO_BOOTSTRAP_MEMORY -Itests/hcu_ps2_memory_shim -Isubmodules/halo-ps2/engine/src -Isubmodules/halo-ce-universal/port/ps2/include -Isrc submodules/halo-ce-universal/port/ps2/src/ps2_memory.c src/stream/hcu_memory_bind.c src/stream/hcu_memory_profile.c tests/hcu_mp_production_bind_capacity_main.c submodules/halo-ps2/engine/src/core/mem.c -o /tmp/profile-test && /tmp/profile-test",
+    "focused_native_exit_code": 0,
+    "focused_native_markers": [
+      "profile-v1 tag=4685920 bsp=1993744 map_parent=6679680 internal_guard=16 texture=3806080 render_parent=3806080 claims=834960",
+      "profile-v1-invalid version=1 alignment=1 bounds=1 used=1 adjacency=1 plan_atomic=1",
+      "profile-v1-provider-failure rollback=1 cursors=1 provider-spans=1 canary=1",
+      "provider-locked-rebind rejected=1 ready0=unchanged ready1=unchanged spans=unchanged cursors=unchanged contents=unchanged"
+    ],
+    "python_runner_command": "python3 tools/test_hcu_mp_production_bind_capacity.py",
+    "python_runner_compilation": "passed; produced an ELF 32-bit i386 executable",
+    "python_runner_execution": "passed outside the sandbox; ILP32 fixture and source audit completed",
+    "python_runner_manifest": {
+      "path": "build/mp-production-binder-capacity-1792807638276695796/manifest.json",
+      "sha256": "931cfa8548bee284bfffa7fe3ae02ab027e0cb491c53f9d08bc056c0d3aa463e"
+    },
+    "ilp32_artifact": "build/mp-production-binder-capacity-1792807638276695796/production-binder-capacity",
+    "ilp32_artifact_sha256": "db111ce02e616494ef8a04a81bf680413e31d2a62d45874bc9c868e27fea8394",
+    "ee_target_compiler_available": true,
+    "ee_target_compile": {
+      "command": "PATH=/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin:/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/bin:$PATH make -B -f tools/ee-world.mk /tmp/hcu-target-check/stream/hcu_memory_profile.o WORLD_OUTPUT=/tmp/hcu-target-check WORLD_HCU_MEMORY_BRIDGE=1 PS2DEV=/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install PS2SDK=/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk (also compiled hcu_memory_bind.o)",
+      "result": "passed compile-only",
+      "profile_object": "/tmp/hcu-target-check/stream/hcu_memory_profile.o",
+      "profile_object_sha256": "debbf29edd66e11bfb4fb879d6fd258d86d884923b6c531abe3875756fe8504d",
+      "binder_object": "/tmp/hcu-target-check/stream/hcu_memory_bind.o",
+      "binder_object_sha256": "30b51a06bf0b7aca46033b49ef4c89b70fad15ef643e901fa39a262cf47df618"
+    },
+    "diff_check": "passed"
+  },
+  "remaining_wiring": [
+    "Select and pass a complete explicit profile from production startup before physical_memory_allocate.",
+    "Measure render cache high water and other live overlap before making any profile fit claim."
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "existing_ui_bots_sidewinder_references": [
+    {
+      "package": "build/m2-c2-hcp2-primary/ui.hcp",
+      "sha256": "4ad8b57b7515b074d16d2b89e4f1787a9e37d6f6ab6127ababe9ac1d40a72ed7"
+    },
+    {
+      "package": "build/m2-c2-hcp2-primary/bots-sidewinder.hcp",
+      "sha256": "bdf9559fec754b9007825e133d38d1e619a730f4b8ceaa87273d1c492ef5dea3"
+    }
+  ],
+  "format": "hcu-selected-session-hcp2-evidence-v1",
+  "non2d_evidence": {
+    "survival_report": "docs/reports/m2-c2-survival-non2d-consumers-2026-10-23.json",
+    "ui_report": "docs/reports/m2-c2-ui-non2d-consumers-2026-10-23.json"
+  },
+  "package_catalog_policy": "Both package manifests preserve availability of all 255 selectable retained catalog occurrences.",
+  "profiles": [
+    {
+      "actor_binding_count": 1,
+      "chunk_binding_count": 878,
+      "dependency_count": 2901,
+      "manifest_path": "build/m2-c2-selected-session/marine-shotgun/sidewinder-marine-shotgun4p4bot.json",
+      "manifest_sha256": "11efa25bcc26c3ab7db7ffec9c4f2a7767166573a1709aa07a7a458607e91ec4",
+      "native_preflight": "passed",
+      "native_report_path": "build/m2-c2-selected-session/native-marine-shotgun/result.json",
+      "package_bytes": 29531846,
+      "package_path": "build/m2-c2-selected-session/marine-shotgun/sidewinder-marine-shotgun4p4bot.hcp",
+      "package_sha256": "de1fe2872bc6b423b634cfe260e9e4274853abe74c4247d933201fb75d159045",
+      "producer_validation": {
+        "bitmap_coverage": {
+          "excluded_nonconsumer_images": 36,
+          "images": 755,
+          "serialized_images": 719
+        },
+        "bsp_count": 1,
+        "media_chunk_count": 871,
+        "media_reader_source_sha256": "c6dd7d6990c00bbab890ca7a6593676559045abff5a9e1d8c0dffe153c2e0ed9",
+        "package_sha256": "de1fe2872bc6b423b634cfe260e9e4274853abe74c4247d933201fb75d159045",
+        "profile_id": 26,
+        "scenario": "levels\\test\\sidewinder\\sidewinder",
+        "tag_count": 2901
+      },
+      "selected_catalog": {
+        "complete_catalog_availability_preserved": true,
+        "retained_roster_sha256": "85cfecaaf351a1fddec0d0179f3437eb3344e1394ceadcc04eba80d4590da300",
+        "selectable_catalog_occurrences": 255,
+        "selected_variants": [
+          {
+            "path": "characters\\marine\\marine shotgun",
+            "source_datum": 3972205391,
+            "source_map": "c10",
+            "source_map_sha256": "423d50a4d7fb7b3c280d7e0806d67e136b2b6a51468ed0be6ee9415e5f129e7d"
+          }
+        ],
+        "selection_sha256": "1908e1c43d809f2f83071ab7fa2b0e5a008fa4a177621a65ec0d2f4ba6102bdc"
+      },
+      "selection": "sidewinder-marine-shotgun4p4bot"
+    },
+    {
+      "actor_binding_count": 1,
+      "chunk_binding_count": 729,
+      "dependency_count": 1909,
+      "manifest_path": "build/m2-c2-selected-session/mounted-gunner/sidewinder-mounted-gunner4p4bot.json",
+      "manifest_sha256": "7b693d3f3bc24d21c7b9ce4754ae05f4e423a0a2230eda7e9b59d3b1fcc5c6a5",
+      "native_preflight": "passed",
+      "native_report_path": "build/m2-c2-selected-session/native-mounted-gunner/result.json",
+      "package_bytes": 22974508,
+      "package_path": "build/m2-c2-selected-session/mounted-gunner/sidewinder-mounted-gunner4p4bot.hcp",
+      "package_sha256": "95d5e3a830033e3cb9c446e339dad3de8d9b224ae771246a995f929d78afb7cc",
+      "producer_validation": {
+        "bitmap_coverage": {
+          "excluded_nonconsumer_images": 32,
+          "images": 613,
+          "serialized_images": 581
+        },
+        "bsp_count": 1,
+        "media_chunk_count": 722,
+        "media_reader_source_sha256": "c6dd7d6990c00bbab890ca7a6593676559045abff5a9e1d8c0dffe153c2e0ed9",
+        "package_sha256": "95d5e3a830033e3cb9c446e339dad3de8d9b224ae771246a995f929d78afb7cc",
+        "profile_id": 26,
+        "scenario": "levels\\test\\sidewinder\\sidewinder",
+        "tag_count": 1909
+      },
+      "selected_catalog": {
+        "complete_catalog_availability_preserved": true,
+        "retained_roster_sha256": "85cfecaaf351a1fddec0d0179f3437eb3344e1394ceadcc04eba80d4590da300",
+        "selectable_catalog_occurrences": 255,
+        "selected_variants": [
+          {
+            "path": "vehicles\\c_dropship\\cd_gun\\cd gun turret gunner",
+            "source_datum": 3892905621,
+            "source_map": "a30",
+            "source_map_sha256": "287959f34a7379a1dbec5fec15b4d94d17fe97ccd861f5c0c8fc80148b7ed293"
+          }
+        ],
+        "selection_sha256": "ebeb8a4d564d4df4eaca8d4f4c8723ae021f447606a308ea9a4776af5dc3beb7"
+      },
+      "selection": "sidewinder-mounted-gunner4p4bot"
+    }
+  ],
+  "scope": "Complete selected Sidewinder HCP2 packages built from exact roster selection identities using the C1 importer/media package producer; this is package and native file-preflight evidence, not runtime workload evidence.",
+  "workload_limitation": "local_players=4 and spartan_bots=4 are selection metadata only; no actual 4P4bot workload is claimed."
+}

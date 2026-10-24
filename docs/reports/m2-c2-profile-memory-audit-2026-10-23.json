@@ -1,0 +1,1156 @@
+{
+  "accounting_and_gaps": [
+    "C1 resident_ce_bytes is the decoded CE image requirement; relocation-table bytes are separately reported as loader staging and excluded from that resident figure. They must be counted if live during a competing staging interval.",
+    "BSP bytes are schema-derived C1 CBSP payload sizes, not a measured CE runtime allocator high water. BSP relocation, validation scratch, indexes/claims and alignment are not included in resident_ce_plus_bsp_bytes.",
+    "C1 media bytes are independently addressable on-disk chunks; this report does not treat all media as simultaneously resident. It includes no renderer cache high water, decoded chunk/workspace overlap, source-copy overlap, DMA lifetime, or texture residency measurement.",
+    "Production startup still uses the legacy fixed split. The new versioned profile API can partition the combined 10 MiB with nested and outer guards, but no fully measured production profile has been wired. Claims are charged to resident_gameplay after game state, and CTAG relocations to streaming staging; neither is subtracted from map/render backing.",
+    "Alignment is reported as a structural upper bound, not folded into payload totals: production layout allocation order has up to 183 bytes of cursor alignment slop (8 x 15-byte 16-alignment gaps plus one 63-byte DMA gap); guarded mode adds ten 16-byte guards (160 bytes) plus the same slop. Exact per-profile padding depends on backing address and preceding cursor.",
+    "The claims requirement uses the real 32-bit word formula ceil((aligned_tag_capacity + aligned_bsp_capacity)/32)*4. Per-profile capacities are 16-byte aligned payload floors; actual capacities and runtime BSP high-water may be larger. Cross-owner sums are informative totals and cannot be compared against a single owner's capacity.",
+    "C1 tag_count and bsp_count expose index population, but production index/claims metadata beyond the claims bitmap, validator scratch, renderer cache high water, decoded chunk/workspace overlap, source-copy overlap, DMA lifetime, and texture residency are not measured by these manifests.",
+    "Survival profile tag images contain all imported combat roster variants. Runtime active-roster streaming/eviction or another bounded residency design has not shown that those CE pointers can be safely absent while inactive."
+  ],
+  "alignment_bounds": {
+    "arena_alloc_alignment": 16,
+    "candidate_three_region_partition_max_alignment_slop_bytes": 45,
+    "dma_region_alignment": 64,
+    "guarded_layout_fixed_guard_bytes": 160,
+    "guarded_layout_guard_bytes_each": 16,
+    "guarded_layout_guard_count": 10,
+    "guarded_layout_max_cursor_alignment_slop_bytes": 183,
+    "note": "Upper bounds from mem_layout_v2_init allocation order. Exact padding depends on backing address and prior cursor; these bytes are distinct from payload and 16-byte guards.",
+    "production_layout_max_cursor_alignment_slop_bytes": 183,
+    "production_layout_region_count": 9
+  },
+  "candidate_partition_bytes": {
+    "bsp": 1993712,
+    "combined": 10485760,
+    "nominal_10mib": 10485760,
+    "render": 4014928,
+    "tag": 4477120
+  },
+  "date": "2026-10-23",
+  "format": "hcu-c2-c1-profile-memory-audit-v1",
+  "inputs": {
+    "arena_layout": {
+      "path": "submodules/halo-ps2/engine/src/core/mem.c",
+      "sha256": "b3200864ada17c213b80ae17bc6fe8d69c5d8609189b2d269e41ba04d723eab7"
+    },
+    "c1_qualification": {
+      "path": "docs/reports/m2-c1-qualification-2026-10-23.json",
+      "qualified": true,
+      "requirements": {
+        "C1.1": "pass",
+        "C1.2": "pass",
+        "C1.3": "pass",
+        "C1.4": "pass",
+        "C1.5": "pass",
+        "C1.6": "pass"
+      },
+      "sha256": "5db2da13630d640095b9c5807fe027de3dc2ee767f7d696aa172bc713a54c12a"
+    },
+    "memory_budget": {
+      "committed_bytes": 27787264,
+      "path": "config/memory-budget.json",
+      "reserve_bytes": 5767168,
+      "sha256": "67ef6d6085de71c22e3998a355cb2f79a8123837b7b14e89593a0d497de21b74",
+      "version": 2
+    },
+    "production_binder": {
+      "path": "src/stream/hcu_memory_bind.c",
+      "sha256": "e58097ae81288df6ec35fc1f44d207c6753cdfd3c6ad0860980e6f4c47bc2812"
+    },
+    "profile_specs": {
+      "path": "build/m2-c1-corpus-rebuild-v3/specs.json",
+      "profile_count": 27,
+      "sha256": "f9443f6ecb4f66bd0d166b85442687ec277dc54dc7dfda8271cbc6c875170b93"
+    }
+  },
+  "production_regions_bytes": {
+    "current_bsp": 6291456,
+    "dma_commands": 1179648,
+    "dynamic_simulation": 2621440,
+    "frame_scratch": 393216,
+    "resident_gameplay": 6815744,
+    "streaming": 1572864,
+    "texture_cache": 4194304
+  },
+  "profiles": [
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 2288,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 98932,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 890357,
+      "ctag_relocation_table_bytes": 10040,
+      "independently_addressable_media_bytes": 1174352,
+      "kind": "ui",
+      "manifest_sha256": "1463718a37362a14e41c284503a955e2d1421b49a6f78921a3528d63c2a6ec86",
+      "map_owner_over_candidate_bytes": -5679407,
+      "normalized_ctag_bytes": 799229,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 2288,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": 9694304,
+          "tag_capacity_bytes": 789152
+        },
+        "resident_gameplay": {
+          "claims_bytes": 98932
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 10040
+        }
+      },
+      "package_file_bytes": 1980506,
+      "package_sha256": "4583d75d4b2416887a870c577efb03834bae40658358aa74ba681a9b102c0400",
+      "pointer_relocations": 2510,
+      "profile": "ui",
+      "relocation_table_staging_bytes": 10040,
+      "render_residual_in_nominal_10mib_bytes": 9694335,
+      "resident_ce_bytes": 789137,
+      "resident_ce_plus_bsp_bytes": 791425,
+      "tag_bsp_over_current_production_map_region_bytes": -5500031,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 801465,
+      "tag_count": 366,
+      "tag_over_candidate_bytes": -3687983,
+      "tag_relocations": 497
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 730200,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 655012,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 5895082,
+      "ctag_relocation_table_bytes": 78796,
+      "independently_addressable_media_bytes": 13236840,
+      "kind": "bots",
+      "manifest_sha256": "e033e4320783e12d5ad46c476b8bd8aa41dec34ae018a39389dd5452c1da458d",
+      "map_owner_over_candidate_bytes": -1230762,
+      "normalized_ctag_bytes": 4588718,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 730208,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": 5245664,
+          "tag_capacity_bytes": 4509872
+        },
+        "resident_gameplay": {
+          "claims_bytes": 655012
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 78796
+        }
+      },
+      "package_file_bytes": 17893593,
+      "package_sha256": "eaba16be1479043a90e018dcb84885c300d0a5c05fe3d6d46165a6c65db98488",
+      "pointer_relocations": 19699,
+      "profile": "bots-beavercreek",
+      "relocation_table_staging_bytes": 78796,
+      "render_residual_in_nominal_10mib_bytes": 5245690,
+      "resident_ce_bytes": 4509870,
+      "resident_ce_plus_bsp_bytes": 5240070,
+      "tag_bsp_over_current_production_map_region_bytes": -1051386,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 5318866,
+      "tag_count": 1812,
+      "tag_over_candidate_bytes": 32750,
+      "tag_relocations": 5254
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 1303092,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 748628,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 6737637,
+      "ctag_relocation_table_bytes": 81744,
+      "independently_addressable_media_bytes": 14559076,
+      "kind": "bots",
+      "manifest_sha256": "4e8483e917987248ae1bce3ecee14139304275ff5a42f62bb7b2ed065ed288ab",
+      "map_owner_over_candidate_bytes": -481823,
+      "normalized_ctag_bytes": 4767713,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 1303104,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": 4496720,
+          "tag_capacity_bytes": 4685920
+        },
+        "resident_gameplay": {
+          "claims_bytes": 748628
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 81744
+        }
+      },
+      "package_file_bytes": 19396128,
+      "package_sha256": "a6ba59b956186e21b1f40130bb808146010709c05b4a4692e5de81347e1591cf",
+      "pointer_relocations": 20436,
+      "profile": "bots-bloodgulch",
+      "relocation_table_staging_bytes": 81744,
+      "render_residual_in_nominal_10mib_bytes": 4496751,
+      "resident_ce_bytes": 4685917,
+      "resident_ce_plus_bsp_bytes": 5989009,
+      "tag_bsp_over_current_production_map_region_bytes": -302447,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 6070753,
+      "tag_count": 1879,
+      "tag_over_candidate_bytes": 208797,
+      "tag_relocations": 5361
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 1354156,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 739652,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 6656842,
+      "ctag_relocation_table_bytes": 79256,
+      "independently_addressable_media_bytes": 13165836,
+      "kind": "bots",
+      "manifest_sha256": "9872228e1cd8724907efdcfafb09ee22706284ad287232e90bbc7e860360f264",
+      "map_owner_over_candidate_bytes": -553642,
+      "normalized_ctag_bytes": 4642342,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 1354160,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": 4568544,
+          "tag_capacity_bytes": 4563040
+        },
+        "resident_gameplay": {
+          "claims_bytes": 739652
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 79256
+        }
+      },
+      "package_file_bytes": 17876004,
+      "package_sha256": "7be21c2eb36438367cffbde32823e4e84a5113595b81d802b3359cf0c5a8ee86",
+      "pointer_relocations": 19814,
+      "profile": "bots-boardingaction",
+      "relocation_table_staging_bytes": 79256,
+      "render_residual_in_nominal_10mib_bytes": 4568570,
+      "resident_ce_bytes": 4563034,
+      "resident_ce_plus_bsp_bytes": 5917190,
+      "tag_bsp_over_current_production_map_region_bytes": -374266,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 5996446,
+      "tag_count": 1808,
+      "tag_over_candidate_bytes": 85914,
+      "tag_relocations": 5280
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 515248,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 624732,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 5622573,
+      "ctag_relocation_table_bytes": 78684,
+      "independently_addressable_media_bytes": 12181392,
+      "kind": "bots",
+      "manifest_sha256": "78cec3e655ecd83f7cbdaa0943ea8e8651aaccde5e5808c4148c92b6895b857d",
+      "map_owner_over_candidate_bytes": -1472991,
+      "normalized_ctag_bytes": 4561329,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 515248,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": 5487888,
+          "tag_capacity_bytes": 4482608
+        },
+        "resident_gameplay": {
+          "claims_bytes": 624732
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 78684
+        }
+      },
+      "package_file_bytes": 16810472,
+      "package_sha256": "bd90942b482af7c570d1b7cec1457be0c84ae7b43024637fc14d6236f76ea902",
+      "pointer_relocations": 19671,
+      "profile": "bots-carousel",
+      "relocation_table_staging_bytes": 78684,
+      "render_residual_in_nominal_10mib_bytes": 5487919,
+      "resident_ce_bytes": 4482593,
+      "resident_ce_plus_bsp_bytes": 4997841,
+      "tag_bsp_over_current_production_map_region_bytes": -1293615,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 5076525,
+      "tag_count": 1789,
+      "tag_over_candidate_bytes": 5473,
+      "tag_relocations": 5249
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 573416,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 628868,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 5659785,
+      "ctag_relocation_table_bytes": 78128,
+      "independently_addressable_media_bytes": 12017288,
+      "kind": "bots",
+      "manifest_sha256": "43ecd0693aa5c267434d7391d7811f9f8cc5382679535bd42500920c07863884",
+      "map_owner_over_candidate_bytes": -1439915,
+      "normalized_ctag_bytes": 4535681,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 573424,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": 5454816,
+          "tag_capacity_bytes": 4457504
+        },
+        "resident_gameplay": {
+          "claims_bytes": 628868
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 78128
+        }
+      },
+      "package_file_bytes": 16619871,
+      "package_sha256": "dc263e1b838d536137bc4ebe515dbe0552509cc8f89b22c94ea8aa67b4f27203",
+      "pointer_relocations": 19532,
+      "profile": "bots-chillout",
+      "relocation_table_staging_bytes": 78128,
+      "render_residual_in_nominal_10mib_bytes": 5454843,
+      "resident_ce_bytes": 4457501,
+      "resident_ce_plus_bsp_bytes": 5030917,
+      "tag_bsp_over_current_production_map_region_bytes": -1260539,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 5109045,
+      "tag_count": 1775,
+      "tag_over_candidate_bytes": -19619,
+      "tag_relocations": 5239
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 1326816,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 734924,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 6614313,
+      "ctag_relocation_table_bytes": 79876,
+      "independently_addressable_media_bytes": 13401376,
+      "kind": "bots",
+      "manifest_sha256": "a14fb2b03dba61e0472752f5a3bd21b64f35fa75d34a586dffd42c01b6ccd3f6",
+      "map_owner_over_candidate_bytes": -591443,
+      "normalized_ctag_bytes": 4632501,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 1326816,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": 4606352,
+          "tag_capacity_bytes": 4552576
+        },
+        "resident_gameplay": {
+          "claims_bytes": 734924
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 79876
+        }
+      },
+      "package_file_bytes": 18102136,
+      "package_sha256": "6cd41ca9878b0654ae22fbe34d3131d949f1e692286da8a5c9890d9fb0d62b29",
+      "pointer_relocations": 19969,
+      "profile": "bots-damnation",
+      "relocation_table_staging_bytes": 79876,
+      "render_residual_in_nominal_10mib_bytes": 4606371,
+      "resident_ce_bytes": 4552573,
+      "resident_ce_plus_bsp_bytes": 5879389,
+      "tag_bsp_over_current_production_map_region_bytes": -412067,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 5959265,
+      "tag_count": 1831,
+      "tag_over_candidate_bytes": 75453,
+      "tag_relocations": 5314
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 595848,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 630720,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 5676448,
+      "ctag_relocation_table_bytes": 77468,
+      "independently_addressable_media_bytes": 12579224,
+      "kind": "bots",
+      "manifest_sha256": "584933e6d53df4466a99de3b3f67c374fffb8eca80b6b289eb3520fd8910d03a",
+      "map_owner_over_candidate_bytes": -1425104,
+      "normalized_ctag_bytes": 4527400,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 595856,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": 5440000,
+          "tag_capacity_bytes": 4449888
+        },
+        "resident_gameplay": {
+          "claims_bytes": 630720
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 77468
+        }
+      },
+      "package_file_bytes": 17172448,
+      "package_sha256": "a47b1a5eb7fe26aaf4104149a6d51dc440194b0011246b4aefff83e8d93aa365",
+      "pointer_relocations": 19367,
+      "profile": "bots-hangemhigh",
+      "relocation_table_staging_bytes": 77468,
+      "render_residual_in_nominal_10mib_bytes": 5440032,
+      "resident_ce_bytes": 4449880,
+      "resident_ce_plus_bsp_bytes": 5045728,
+      "tag_bsp_over_current_production_map_region_bytes": -1245728,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 5123196,
+      "tag_count": 1754,
+      "tag_over_candidate_bytes": -27240,
+      "tag_relocations": 5217
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 377388,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 605672,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 5451029,
+      "ctag_relocation_table_bytes": 77836,
+      "independently_addressable_media_bytes": 12059372,
+      "kind": "bots",
+      "manifest_sha256": "2cc444465cc29a71671ff5ca8740a2fb84c6d599ed29c1d1dce25ee9cfd7d831",
+      "map_owner_over_candidate_bytes": -1625475,
+      "normalized_ctag_bytes": 4545857,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 377392,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": 5640368,
+          "tag_capacity_bytes": 4467984
+        },
+        "resident_gameplay": {
+          "claims_bytes": 605672
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 77836
+        }
+      },
+      "package_file_bytes": 16671055,
+      "package_sha256": "476a1f001d9e6fee6046934e88cdd93a16de7ce033edbe1058012051993f3cb3",
+      "pointer_relocations": 19459,
+      "profile": "bots-longest",
+      "relocation_table_staging_bytes": 77836,
+      "render_residual_in_nominal_10mib_bytes": 5640403,
+      "resident_ce_bytes": 4467969,
+      "resident_ce_plus_bsp_bytes": 4845357,
+      "tag_bsp_over_current_production_map_region_bytes": -1446099,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 4923193,
+      "tag_count": 1769,
+      "tag_over_candidate_bytes": -9151,
+      "tag_relocations": 5227
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 888336,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 666684,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 6000134,
+      "ctag_relocation_table_bytes": 77536,
+      "independently_addressable_media_bytes": 12765376,
+      "kind": "bots",
+      "manifest_sha256": "38795e8adc081eb234876c364170104c55a4f16f04d99cf29e6871b6d42c4dc5",
+      "map_owner_over_candidate_bytes": -1137382,
+      "normalized_ctag_bytes": 4522702,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 888336,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": 5152288,
+          "tag_capacity_bytes": 4445120
+        },
+        "resident_gameplay": {
+          "claims_bytes": 666684
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 77536
+        }
+      },
+      "package_file_bytes": 17353981,
+      "package_sha256": "d29fd1a2da00a06c1a36b9ba40d94fdd8ea790bced1689bb1380a4da9c5c27c4",
+      "pointer_relocations": 19384,
+      "profile": "bots-prisoner",
+      "relocation_table_staging_bytes": 77536,
+      "render_residual_in_nominal_10mib_bytes": 5152310,
+      "resident_ce_bytes": 4445114,
+      "resident_ce_plus_bsp_bytes": 5333450,
+      "tag_bsp_over_current_production_map_region_bytes": -958006,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 5410986,
+      "tag_count": 1758,
+      "tag_over_candidate_bytes": -32006,
+      "tag_relocations": 5226
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 1643044,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 762032,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 6858252,
+      "ctag_relocation_table_bytes": 77376,
+      "independently_addressable_media_bytes": 12599332,
+      "kind": "bots",
+      "manifest_sha256": "c3a79048c80afd4dd9c56521175e9d84f4f2dec4faff729e994d4abbe9dda4de",
+      "map_owner_over_candidate_bytes": -374612,
+      "normalized_ctag_bytes": 4530604,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 1643056,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": 4389504,
+          "tag_capacity_bytes": 4453184
+        },
+        "resident_gameplay": {
+          "claims_bytes": 762032
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 77376
+        }
+      },
+      "package_file_bytes": 17195868,
+      "package_sha256": "c98ab057fd2177a577e7768a50c398749b917fb2f836218b66be96d634d20fe8",
+      "pointer_relocations": 19344,
+      "profile": "bots-putput",
+      "relocation_table_staging_bytes": 77376,
+      "render_residual_in_nominal_10mib_bytes": 4389540,
+      "resident_ce_bytes": 4453176,
+      "resident_ce_plus_bsp_bytes": 6096220,
+      "tag_bsp_over_current_production_map_region_bytes": -195236,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 6173596,
+      "tag_count": 1748,
+      "tag_over_candidate_bytes": -23944,
+      "tag_relocations": 5198
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 550804,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 628280,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 5654482,
+      "ctag_relocation_table_bytes": 78376,
+      "independently_addressable_media_bytes": 12231780,
+      "kind": "bots",
+      "manifest_sha256": "f770a278527b9fbadab1b76b08e47e1c8d38940d6eed5bf30be45eb28c195352",
+      "map_owner_over_candidate_bytes": -1444630,
+      "normalized_ctag_bytes": 4553826,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 550816,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": 5459520,
+          "tag_capacity_bytes": 4475408
+        },
+        "resident_gameplay": {
+          "claims_bytes": 628280
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 78376
+        }
+      },
+      "package_file_bytes": 16853006,
+      "package_sha256": "a9456204c8ddc87142cf96bdf7daa3212d778913a62b9fe073f9ea6ae0f569de",
+      "pointer_relocations": 19594,
+      "profile": "bots-ratrace",
+      "relocation_table_staging_bytes": 78376,
+      "render_residual_in_nominal_10mib_bytes": 5459558,
+      "resident_ce_bytes": 4475398,
+      "resident_ce_plus_bsp_bytes": 5026202,
+      "tag_bsp_over_current_production_map_region_bytes": -1265254,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 5104578,
+      "tag_count": 1783,
+      "tag_over_candidate_bytes": -1722,
+      "tag_relocations": 5237
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 1993740,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 822328,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 7400946,
+      "ctag_relocation_table_bytes": 80348,
+      "independently_addressable_media_bytes": 14712332,
+      "kind": "bots",
+      "manifest_sha256": "18842875328e2708628b8caa4ac0761fc9a00aaa4a6365a1eb7ae1eb877489f3",
+      "map_owner_over_candidate_bytes": 107786,
+      "normalized_ctag_bytes": 4665278,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 1993744,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": 3907120,
+          "tag_capacity_bytes": 4584880
+        },
+        "resident_gameplay": {
+          "claims_bytes": 822328
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 80348
+        }
+      },
+      "package_file_bytes": 19446229,
+      "package_sha256": "5571144b6f5558e0c5463b308f76fd12f5eac426221a01414c2337c5575e0209",
+      "pointer_relocations": 20087,
+      "profile": "bots-sidewinder",
+      "relocation_table_staging_bytes": 80348,
+      "render_residual_in_nominal_10mib_bytes": 3907142,
+      "resident_ce_bytes": 4584878,
+      "resident_ce_plus_bsp_bytes": 6578618,
+      "tag_bsp_over_current_production_map_region_bytes": 287162,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 6658966,
+      "tag_count": 1830,
+      "tag_over_candidate_bytes": 107758,
+      "tag_relocations": 5323
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 556944,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 627600,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 5648396,
+      "ctag_relocation_table_bytes": 78392,
+      "independently_addressable_media_bytes": 12065088,
+      "kind": "bots",
+      "manifest_sha256": "774f4fce1762fef6b4ab6ba2581e11ec82dafcda7d7c0e385a9dd9607e7c0634",
+      "map_owner_over_candidate_bytes": -1450036,
+      "normalized_ctag_bytes": 4542296,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 556944,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": 5464944,
+          "tag_capacity_bytes": 4463856
+        },
+        "resident_gameplay": {
+          "claims_bytes": 627600
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 78392
+        }
+      },
+      "package_file_bytes": 16674425,
+      "package_sha256": "6475635e7f35f3535c8146b49ec0a203b14cdd1b9ec82b193bec5b56e638912d",
+      "pointer_relocations": 19598,
+      "profile": "bots-wizard",
+      "relocation_table_staging_bytes": 78392,
+      "render_residual_in_nominal_10mib_bytes": 5464964,
+      "resident_ce_bytes": 4463852,
+      "resident_ce_plus_bsp_bytes": 5020796,
+      "tag_bsp_over_current_production_map_region_bytes": -1270660,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 5099188,
+      "tag_count": 1777,
+      "tag_over_candidate_bytes": -13268,
+      "tag_relocations": 5241
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 730200,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 3270828,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 29437443,
+      "ctag_relocation_table_bytes": 580488,
+      "independently_addressable_media_bytes": 102824584,
+      "kind": "survival",
+      "manifest_sha256": "9e5e75f6cdd8fcab30403629c60271b3df58e3517b81b5a64bf89c3f445d9f8c",
+      "map_owner_over_candidate_bytes": 19695783,
+      "normalized_ctag_bytes": 26016955,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 730208,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": -15680880,
+          "tag_capacity_bytes": 25436416
+        },
+        "resident_gameplay": {
+          "claims_bytes": 3270828
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 580488
+        }
+      },
+      "package_file_bytes": 129212051,
+      "package_sha256": "9618e182cfce09e5052de40a02961c5fa14aa9791ae0e3d6f9c4d6a778633578",
+      "pointer_relocations": 145122,
+      "profile": "survival-beavercreek",
+      "relocation_table_staging_bytes": 580488,
+      "render_residual_in_nominal_10mib_bytes": -15680855,
+      "resident_ce_bytes": 25436415,
+      "resident_ce_plus_bsp_bytes": 26166615,
+      "tag_bsp_over_current_production_map_region_bytes": 19875159,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 26747103,
+      "tag_count": 10700,
+      "tag_over_candidate_bytes": 20959295,
+      "tag_relocations": 38558
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 1303092,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 3364448,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 30280002,
+      "ctag_relocation_table_bytes": 583436,
+      "independently_addressable_media_bytes": 104146820,
+      "kind": "survival",
+      "manifest_sha256": "56460c084f836fb25992b7851481229379d18983b838fe976a9455faca81dc73",
+      "map_owner_over_candidate_bytes": 20444722,
+      "normalized_ctag_bytes": 26195950,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 1303104,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": -16429824,
+          "tag_capacity_bytes": 25612464
+        },
+        "resident_gameplay": {
+          "claims_bytes": 3364448
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 583436
+        }
+      },
+      "package_file_bytes": 130714570,
+      "package_sha256": "07879a43baf4beb10cd01f81f494f0a864b69aaa2299018e1e7e1d15b1837c35",
+      "pointer_relocations": 145859,
+      "profile": "survival-bloodgulch",
+      "relocation_table_staging_bytes": 583436,
+      "render_residual_in_nominal_10mib_bytes": -16429794,
+      "resident_ce_bytes": 25612462,
+      "resident_ce_plus_bsp_bytes": 26915554,
+      "tag_bsp_over_current_production_map_region_bytes": 20624098,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 27498990,
+      "tag_count": 10767,
+      "tag_over_candidate_bytes": 21135342,
+      "tag_relocations": 38665
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 1354156,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 3355468,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 30199203,
+      "ctag_relocation_table_bytes": 580948,
+      "independently_addressable_media_bytes": 102753580,
+      "kind": "survival",
+      "manifest_sha256": "12ec0903720c02ae6ea770808f19fcf262c9cc4f70cd31c6d4530a22429d2f65",
+      "map_owner_over_candidate_bytes": 20372903,
+      "normalized_ctag_bytes": 26070579,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 1354160,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": -16358000,
+          "tag_capacity_bytes": 25489584
+        },
+        "resident_gameplay": {
+          "claims_bytes": 3355468
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 580948
+        }
+      },
+      "package_file_bytes": 129194462,
+      "package_sha256": "dfed53c59fcb55a8b446555b9a4b3a0a6c3e2342aafa594f02397f6cfddb73fe",
+      "pointer_relocations": 145237,
+      "profile": "survival-boardingaction",
+      "relocation_table_staging_bytes": 580948,
+      "render_residual_in_nominal_10mib_bytes": -16357975,
+      "resident_ce_bytes": 25489579,
+      "resident_ce_plus_bsp_bytes": 26843735,
+      "tag_bsp_over_current_production_map_region_bytes": 20552279,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 27424683,
+      "tag_count": 10696,
+      "tag_over_candidate_bytes": 21012459,
+      "tag_relocations": 38584
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 515248,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 3240552,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 29164938,
+      "ctag_relocation_table_bytes": 580376,
+      "independently_addressable_media_bytes": 101769136,
+      "kind": "survival",
+      "manifest_sha256": "abd902e75e417f47f0826e2fbf5b343ed29b4ae284b78817206ce0bb6c5b816f",
+      "map_owner_over_candidate_bytes": 19453554,
+      "normalized_ctag_bytes": 25989566,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 515248,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": -15438656,
+          "tag_capacity_bytes": 25409152
+        },
+        "resident_gameplay": {
+          "claims_bytes": 3240552
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 580376
+        }
+      },
+      "package_file_bytes": 128128914,
+      "package_sha256": "432e29a6d2156a9871ab1a054ea50a9d3e1d902863e5b2a403b4f55dfa455e58",
+      "pointer_relocations": 145094,
+      "profile": "survival-carousel",
+      "relocation_table_staging_bytes": 580376,
+      "render_residual_in_nominal_10mib_bytes": -15438626,
+      "resident_ce_bytes": 25409138,
+      "resident_ce_plus_bsp_bytes": 25924386,
+      "tag_bsp_over_current_production_map_region_bytes": 19632930,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 26504762,
+      "tag_count": 10677,
+      "tag_over_candidate_bytes": 20932018,
+      "tag_relocations": 38553
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 573416,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 3244684,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 29202146,
+      "ctag_relocation_table_bytes": 579820,
+      "independently_addressable_media_bytes": 101605032,
+      "kind": "survival",
+      "manifest_sha256": "c5be60daaea605d68df42aa1173bfd38380ce2e806360290906a88330f1cb2c2",
+      "map_owner_over_candidate_bytes": 19486630,
+      "normalized_ctag_bytes": 25963918,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 573424,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": -15471728,
+          "tag_capacity_bytes": 25384048
+        },
+        "resident_gameplay": {
+          "claims_bytes": 3244684
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 579820
+        }
+      },
+      "package_file_bytes": 127938313,
+      "package_sha256": "0a739b4a44d8af1dd2362de37eca0fba9445936a2986690f1b5e24f520584a48",
+      "pointer_relocations": 144955,
+      "profile": "survival-chillout",
+      "relocation_table_staging_bytes": 579820,
+      "render_residual_in_nominal_10mib_bytes": -15471702,
+      "resident_ce_bytes": 25384046,
+      "resident_ce_plus_bsp_bytes": 25957462,
+      "tag_bsp_over_current_production_map_region_bytes": 19666006,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 26537282,
+      "tag_count": 10663,
+      "tag_over_candidate_bytes": 20906926,
+      "tag_relocations": 38543
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 1326816,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 3350744,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 30156678,
+      "ctag_relocation_table_bytes": 581568,
+      "independently_addressable_media_bytes": 102967040,
+      "kind": "survival",
+      "manifest_sha256": "51b81c5c3a33d846d508ed31ba38ac1c903efc0fafd4e19b1bbe6fae33df3239",
+      "map_owner_over_candidate_bytes": 20335102,
+      "normalized_ctag_bytes": 26060738,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 1326816,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": -16320192,
+          "tag_capacity_bytes": 25479120
+        },
+        "resident_gameplay": {
+          "claims_bytes": 3350744
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 581568
+        }
+      },
+      "package_file_bytes": 129398418,
+      "package_sha256": "3d04734fbc2f70c3467ff97e7e134a808ead3610572cf30a78a4ce9d7de52a34",
+      "pointer_relocations": 145392,
+      "profile": "survival-damnation",
+      "relocation_table_staging_bytes": 581568,
+      "render_residual_in_nominal_10mib_bytes": -16320174,
+      "resident_ce_bytes": 25479118,
+      "resident_ce_plus_bsp_bytes": 26805934,
+      "tag_bsp_over_current_production_map_region_bytes": 20514478,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 27387502,
+      "tag_count": 10719,
+      "tag_over_candidate_bytes": 21001998,
+      "tag_relocations": 38618
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 595848,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 3246536,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 29218809,
+      "ctag_relocation_table_bytes": 579160,
+      "independently_addressable_media_bytes": 102166968,
+      "kind": "survival",
+      "manifest_sha256": "302407e4e8d3b2fa9ae0720d6649f150809545d83ed590dbf29a5b89eabf22cc",
+      "map_owner_over_candidate_bytes": 19501441,
+      "normalized_ctag_bytes": 25955637,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 595856,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": -15486544,
+          "tag_capacity_bytes": 25376432
+        },
+        "resident_gameplay": {
+          "claims_bytes": 3246536
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 579160
+        }
+      },
+      "package_file_bytes": 128490906,
+      "package_sha256": "36a3ca9a1f77b7bdd262c706bcdd938f0b74bc9465b295320e8dd590a104de47",
+      "pointer_relocations": 144790,
+      "profile": "survival-hangemhigh",
+      "relocation_table_staging_bytes": 579160,
+      "render_residual_in_nominal_10mib_bytes": -15486513,
+      "resident_ce_bytes": 25376425,
+      "resident_ce_plus_bsp_bytes": 25972273,
+      "tag_bsp_over_current_production_map_region_bytes": 19680817,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 26551433,
+      "tag_count": 10642,
+      "tag_over_candidate_bytes": 20899305,
+      "tag_relocations": 38521
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 377388,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 3221492,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 28993394,
+      "ctag_relocation_table_bytes": 579528,
+      "independently_addressable_media_bytes": 101647116,
+      "kind": "survival",
+      "manifest_sha256": "95ce1572c6bb9695142292d00b44f1a32623466c27a8fbfe2989920fe3db27c0",
+      "map_owner_over_candidate_bytes": 19301070,
+      "normalized_ctag_bytes": 25974094,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 377392,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": -15286176,
+          "tag_capacity_bytes": 25394528
+        },
+        "resident_gameplay": {
+          "claims_bytes": 3221492
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 579528
+        }
+      },
+      "package_file_bytes": 127989497,
+      "package_sha256": "45b0cba3f96b42f84e981b24f182a22d4e345f2f1fe05cc4dbf165af32a0c5aa",
+      "pointer_relocations": 144882,
+      "profile": "survival-longest",
+      "relocation_table_staging_bytes": 579528,
+      "render_residual_in_nominal_10mib_bytes": -15286142,
+      "resident_ce_bytes": 25394514,
+      "resident_ce_plus_bsp_bytes": 25771902,
+      "tag_bsp_over_current_production_map_region_bytes": 19480446,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 26351430,
+      "tag_count": 10657,
+      "tag_over_candidate_bytes": 20917394,
+      "tag_relocations": 38531
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 888336,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 3282500,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 29542495,
+      "ctag_relocation_table_bytes": 579228,
+      "independently_addressable_media_bytes": 102353120,
+      "kind": "survival",
+      "manifest_sha256": "4775324a3c197963f11d37e5dbe4b4fb91edb9232916e00e620179a43acd8a18",
+      "map_owner_over_candidate_bytes": 19789163,
+      "normalized_ctag_bytes": 25950939,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 888336,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": -15774256,
+          "tag_capacity_bytes": 25371664
+        },
+        "resident_gameplay": {
+          "claims_bytes": 3282500
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 579228
+        }
+      },
+      "package_file_bytes": 128672439,
+      "package_sha256": "bd052d24319ea37845a7c7144699c5e22c5e83374c019b615b7ac6c6d988f09b",
+      "pointer_relocations": 144807,
+      "profile": "survival-prisoner",
+      "relocation_table_staging_bytes": 579228,
+      "render_residual_in_nominal_10mib_bytes": -15774235,
+      "resident_ce_bytes": 25371659,
+      "resident_ce_plus_bsp_bytes": 26259995,
+      "tag_bsp_over_current_production_map_region_bytes": 19968539,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 26839223,
+      "tag_count": 10646,
+      "tag_over_candidate_bytes": 20894539,
+      "tag_relocations": 38530
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 1643044,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 3377848,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 30400613,
+      "ctag_relocation_table_bytes": 579068,
+      "independently_addressable_media_bytes": 102187076,
+      "kind": "survival",
+      "manifest_sha256": "2e4b67cb9a80a72186e50a7ded79927b148a99552ff9a8f8b406883c1e9643b4",
+      "map_owner_over_candidate_bytes": 20551933,
+      "normalized_ctag_bytes": 25958841,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 1643056,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": -16537040,
+          "tag_capacity_bytes": 25379728
+        },
+        "resident_gameplay": {
+          "claims_bytes": 3377848
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 579068
+        }
+      },
+      "package_file_bytes": 128514326,
+      "package_sha256": "bf7fd8085ae28d300250d99202a7edb681f25e973da04db1104f70ab3c7cc3bf",
+      "pointer_relocations": 144767,
+      "profile": "survival-putput",
+      "relocation_table_staging_bytes": 579068,
+      "render_residual_in_nominal_10mib_bytes": -16537005,
+      "resident_ce_bytes": 25379721,
+      "resident_ce_plus_bsp_bytes": 27022765,
+      "tag_bsp_over_current_production_map_region_bytes": 20731309,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 27601833,
+      "tag_count": 10636,
+      "tag_over_candidate_bytes": 20902601,
+      "tag_relocations": 38502
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 550804,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 3244044,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 29196363,
+      "ctag_relocation_table_bytes": 580048,
+      "independently_addressable_media_bytes": 101819524,
+      "kind": "survival",
+      "manifest_sha256": "d2e5ddd7349cd4335a63e389c1b885390629b6a6bb76516b30c16bb8f0916995",
+      "map_owner_over_candidate_bytes": 19481487,
+      "normalized_ctag_bytes": 25981615,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 550816,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": -15466592,
+          "tag_capacity_bytes": 25401520
+        },
+        "resident_gameplay": {
+          "claims_bytes": 3244044
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 580048
+        }
+      },
+      "package_file_bytes": 128170848,
+      "package_sha256": "9a215e2603d02d50008906f5c00afc7aaf1b2e726f2207ced93d2c7602a953c7",
+      "pointer_relocations": 145012,
+      "profile": "survival-ratrace",
+      "relocation_table_staging_bytes": 580048,
+      "render_residual_in_nominal_10mib_bytes": -15466559,
+      "resident_ce_bytes": 25401515,
+      "resident_ce_plus_bsp_bytes": 25952319,
+      "tag_bsp_over_current_production_map_region_bytes": 19660863,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 26532367,
+      "tag_count": 10670,
+      "tag_over_candidate_bytes": 20924395,
+      "tag_relocations": 38541
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 1993740,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 3438148,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 30943311,
+      "ctag_relocation_table_bytes": 582040,
+      "independently_addressable_media_bytes": 104300076,
+      "kind": "survival",
+      "manifest_sha256": "304fa541d5c5bb6678fdf39de1c4ba77708a1cac4b1011ab35614ae7d5a57abf",
+      "map_owner_over_candidate_bytes": 21034331,
+      "normalized_ctag_bytes": 26093515,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 1993744,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": -17019424,
+          "tag_capacity_bytes": 25511424
+        },
+        "resident_gameplay": {
+          "claims_bytes": 3438148
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 582040
+        }
+      },
+      "package_file_bytes": 130764687,
+      "package_sha256": "ef9a06124118fc418f46a69aa5f6afacaadc07f04a99f2fa09bfc2d206234cb1",
+      "pointer_relocations": 145510,
+      "profile": "survival-sidewinder",
+      "relocation_table_staging_bytes": 582040,
+      "render_residual_in_nominal_10mib_bytes": -17019403,
+      "resident_ce_bytes": 25511423,
+      "resident_ce_plus_bsp_bytes": 27505163,
+      "tag_bsp_over_current_production_map_region_bytes": 21213707,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 28087203,
+      "tag_count": 10718,
+      "tag_over_candidate_bytes": 21034303,
+      "tag_relocations": 38627
+    },
+    {
+      "bsp_count": 1,
+      "bsp_payload_bytes": 556944,
+      "claims_bitmap_if_aligned_payload_capacities_bytes": 3243420,
+      "cross_owner_tag_bsp_claims_payload_sum_bytes": 29190761,
+      "ctag_relocation_table_bytes": 580084,
+      "independently_addressable_media_bytes": 101652832,
+      "kind": "survival",
+      "manifest_sha256": "fa10c3b072617bdee5a266118bf319bd383b397318aeac23807ed6434f9767c3",
+      "map_owner_over_candidate_bytes": 19476509,
+      "normalized_ctag_bytes": 25970533,
+      "owner_requirements": {
+        "map_render": {
+          "bsp_capacity_bytes": 556944,
+          "inner_guard_bytes": 16,
+          "remaining_for_render_before_render_alignment_bytes": -15461600,
+          "tag_capacity_bytes": 25390400
+        },
+        "resident_gameplay": {
+          "claims_bytes": 3243420
+        },
+        "streaming_map_owner": {
+          "ctag_relocation_staging_bytes": 580084
+        }
+      },
+      "package_file_bytes": 127992883,
+      "package_sha256": "06591fcf40b2b7433b8d8f3099a4d5b09e94f12e8d67bf949f26b82241c27bbd",
+      "pointer_relocations": 145021,
+      "profile": "survival-wizard",
+      "relocation_table_staging_bytes": 580084,
+      "render_residual_in_nominal_10mib_bytes": -15461581,
+      "resident_ce_bytes": 25390397,
+      "resident_ce_plus_bsp_bytes": 25947341,
+      "tag_bsp_over_current_production_map_region_bytes": 19655885,
+      "tag_bsp_plus_relocation_staging_lower_bound_bytes": 26527425,
+      "tag_count": 10665,
+      "tag_over_candidate_bytes": 20913277,
+      "tag_relocations": 38545
+    }
+  ],
+  "scope": "C2 requirements 1-3 measurement/audit only; not production fit or C2 exit",
+  "summary": {
+    "all_profiles_fit_candidate_tag_bsp_split": false,
+    "candidate_is_fit_qualified": false,
+    "candidate_map_owner_shortfall_for_max_bot_bytes": 107786,
+    "candidate_tag_shortfall_for_max_bot_bytes": 208797,
+    "cross_owner_sum_is_not_a_map_render_requirement": true,
+    "current_production_binding_fit_qualified": false,
+    "max_bot_map_owner_profile": "bots-sidewinder",
+    "max_bot_profile": "bots-bloodgulch",
+    "max_bot_relocation_staging_bytes": 81744,
+    "max_bot_resident_ce_bytes": 4685917,
+    "max_bot_resident_owner_claims_bytes": 822328,
+    "max_bot_tag_bsp_over_current_production_map_region_bytes": 287162,
+    "max_bot_tag_bsp_payload_lower_bound_bytes": 6578618,
+    "max_bot_tag_bsp_payload_lower_bound_profile": "bots-sidewinder",
+    "max_bot_tag_plus_bsp_bytes": 6578618,
+    "max_survival_profile": "survival-bloodgulch",
+    "max_survival_resident_ce_bytes": 25612462,
+    "profile_count": 27,
+    "render_residual_for_max_bot_in_10mib_bytes": 3907142,
+    "survival_exceeds_entire_10mib_bytes": 15126702,
+    "survival_requires_roster_residency_or_proven_eviction": true
+  }
+}

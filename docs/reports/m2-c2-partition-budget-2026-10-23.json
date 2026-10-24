@@ -1,0 +1,465 @@
+{
+ "format": "hcu-m2-c2-partition-budget-evidence-v1",
+ "date": "2026-10-23",
+ "lane": "partition",
+ "requirements": [
+  "C2.1",
+  "C2.2",
+  "C2.3"
+ ],
+ "scope": "Versioned profile-v2 partition table for the 26 measured Blood Gulch-style map/matrix CE+BSP cases, selector API, host and EE compile evidence, committed-memory and ELF placement audit. Not a runtime or workload fit proof.",
+ "source_files": {
+  "partition_table_selector": {
+   "path": "src/stream/hcu_memory_profile.c",
+   "role": "generated table and selector"
+  },
+  "partition_table_header": {
+   "path": "src/stream/hcu_memory_profile.h"
+  },
+  "audit_script": {
+   "path": "tools/audit_hcu_c2_partition_budget.py",
+   "sha256": "c5176562492a5f993de60c27f6edf1a500f82f45cbb5f0b64cafdbc42ac12c40"
+  },
+  "host_table_test": {
+   "path": "tests/hcu_mp_partition_table_main.c",
+   "sha256": "e6d23c94677b841568dd779dce54956e9becfc21ea16edc7e0e60e84486126a0"
+  },
+  "capacity_input": {
+   "path": "docs/reports/m2-c2-session-map-capacity-2026-10-23.json",
+   "sha256": "c35fc183f80491e383b06faa1ac138bbde6a946877a31d6ca2e30cc3bd103c50"
+  },
+  "budget_input": {
+   "path": "config/memory-budget.json",
+   "sha256": "67ef6d6085de71c22e3998a355cb2f79a8123837b7b14e89593a0d497de21b74"
+  }
+ },
+ "committed_budget": {
+  "total_bytes": 33554432,
+  "committed_bytes": 27787264,
+  "reserve_bytes": 5767168,
+  "reserve_start_offset": 27787264,
+  "pass": true,
+  "regions": {
+   "system_kernel": 1572864,
+   "elf_static": 2097152,
+   "resident_gameplay": 6815744,
+   "current_bsp": 6291456,
+   "texture_cache": 4194304,
+   "dynamic_simulation": 2621440,
+   "dma_commands": 1179648,
+   "streaming": 1572864,
+   "checkpoint": 524288,
+   "audio": 524288,
+   "frame_scratch": 393216,
+   "uncommitted_reserve": 5767168
+  }
+ },
+ "partition_table": {
+  "version": 2,
+  "map_render_backing_bytes": 10485760,
+  "rows": [
+   {
+    "name": "beavercreek_marine_shotgun_4p4bot",
+    "map_matrix_case": "marine_shotgun",
+    "tag_cache_bytes": 6838928,
+    "structure_bsp_bytes": 730208,
+    "map_parent_bytes": 7569152,
+    "render_texture_bytes": 2916608,
+    "claims_scratch_bytes": 946144,
+    "resident_gameplay_need_bytes": 4374496,
+    "resident_margin_bytes": 2441248,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 2916608
+   },
+   {
+    "name": "beavercreek_mounted_gunner_4p4bot",
+    "map_matrix_case": "mounted_gunner",
+    "tag_cache_bytes": 4619936,
+    "structure_bsp_bytes": 730208,
+    "map_parent_bytes": 5350160,
+    "render_texture_bytes": 5135600,
+    "claims_scratch_bytes": 668768,
+    "resident_gameplay_need_bytes": 4097120,
+    "resident_margin_bytes": 2718624,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 5135600
+   },
+   {
+    "name": "bloodgulch_marine_shotgun_4p4bot",
+    "map_matrix_case": "marine_shotgun",
+    "tag_cache_bytes": 7014976,
+    "structure_bsp_bytes": 1303104,
+    "map_parent_bytes": 8318096,
+    "render_texture_bytes": 2167664,
+    "claims_scratch_bytes": 1039760,
+    "resident_gameplay_need_bytes": 4468112,
+    "resident_margin_bytes": 2347632,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 2167664
+   },
+   {
+    "name": "bloodgulch_mounted_gunner_4p4bot",
+    "map_matrix_case": "mounted_gunner",
+    "tag_cache_bytes": 4795984,
+    "structure_bsp_bytes": 1303104,
+    "map_parent_bytes": 6099104,
+    "render_texture_bytes": 4386656,
+    "claims_scratch_bytes": 762388,
+    "resident_gameplay_need_bytes": 4190740,
+    "resident_margin_bytes": 2625004,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 4386656
+   },
+   {
+    "name": "boardingaction_marine_shotgun_4p4bot",
+    "map_matrix_case": "marine_shotgun",
+    "tag_cache_bytes": 6892096,
+    "structure_bsp_bytes": 1354160,
+    "map_parent_bytes": 8246272,
+    "render_texture_bytes": 2239488,
+    "claims_scratch_bytes": 1030784,
+    "resident_gameplay_need_bytes": 4459136,
+    "resident_margin_bytes": 2356608,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 2239488
+   },
+   {
+    "name": "boardingaction_mounted_gunner_4p4bot",
+    "map_matrix_case": "mounted_gunner",
+    "tag_cache_bytes": 4673104,
+    "structure_bsp_bytes": 1354160,
+    "map_parent_bytes": 6027280,
+    "render_texture_bytes": 4458480,
+    "claims_scratch_bytes": 753408,
+    "resident_gameplay_need_bytes": 4181760,
+    "resident_margin_bytes": 2633984,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 4458480
+   },
+   {
+    "name": "carousel_marine_shotgun_4p4bot",
+    "map_matrix_case": "marine_shotgun",
+    "tag_cache_bytes": 6811648,
+    "structure_bsp_bytes": 515248,
+    "map_parent_bytes": 7326912,
+    "render_texture_bytes": 3158848,
+    "claims_scratch_bytes": 915864,
+    "resident_gameplay_need_bytes": 4344216,
+    "resident_margin_bytes": 2471528,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 3158848
+   },
+   {
+    "name": "carousel_mounted_gunner_4p4bot",
+    "map_matrix_case": "mounted_gunner",
+    "tag_cache_bytes": 4592656,
+    "structure_bsp_bytes": 515248,
+    "map_parent_bytes": 5107920,
+    "render_texture_bytes": 5377840,
+    "claims_scratch_bytes": 638488,
+    "resident_gameplay_need_bytes": 4066840,
+    "resident_margin_bytes": 2748904,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 5377840
+   },
+   {
+    "name": "chillout_marine_shotgun_4p4bot",
+    "map_matrix_case": "marine_shotgun",
+    "tag_cache_bytes": 6786560,
+    "structure_bsp_bytes": 573424,
+    "map_parent_bytes": 7360000,
+    "render_texture_bytes": 3125760,
+    "claims_scratch_bytes": 920000,
+    "resident_gameplay_need_bytes": 4348352,
+    "resident_margin_bytes": 2467392,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 3125760
+   },
+   {
+    "name": "chillout_mounted_gunner_4p4bot",
+    "map_matrix_case": "mounted_gunner",
+    "tag_cache_bytes": 4567568,
+    "structure_bsp_bytes": 573424,
+    "map_parent_bytes": 5141008,
+    "render_texture_bytes": 5344752,
+    "claims_scratch_bytes": 642624,
+    "resident_gameplay_need_bytes": 4070976,
+    "resident_margin_bytes": 2744768,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 5344752
+   },
+   {
+    "name": "damnation_marine_shotgun_4p4bot",
+    "map_matrix_case": "marine_shotgun",
+    "tag_cache_bytes": 6881632,
+    "structure_bsp_bytes": 1326816,
+    "map_parent_bytes": 8208464,
+    "render_texture_bytes": 2277296,
+    "claims_scratch_bytes": 1026056,
+    "resident_gameplay_need_bytes": 4454408,
+    "resident_margin_bytes": 2361336,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 2277296
+   },
+   {
+    "name": "damnation_mounted_gunner_4p4bot",
+    "map_matrix_case": "mounted_gunner",
+    "tag_cache_bytes": 4662640,
+    "structure_bsp_bytes": 1326816,
+    "map_parent_bytes": 5989472,
+    "render_texture_bytes": 4496288,
+    "claims_scratch_bytes": 748684,
+    "resident_gameplay_need_bytes": 4177036,
+    "resident_margin_bytes": 2638708,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 4496288
+   },
+   {
+    "name": "hangemhigh_marine_shotgun_4p4bot",
+    "map_matrix_case": "marine_shotgun",
+    "tag_cache_bytes": 6778944,
+    "structure_bsp_bytes": 595856,
+    "map_parent_bytes": 7374816,
+    "render_texture_bytes": 3110944,
+    "claims_scratch_bytes": 921852,
+    "resident_gameplay_need_bytes": 4350204,
+    "resident_margin_bytes": 2465540,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 3110944
+   },
+   {
+    "name": "hangemhigh_mounted_gunner_4p4bot",
+    "map_matrix_case": "mounted_gunner",
+    "tag_cache_bytes": 4559952,
+    "structure_bsp_bytes": 595856,
+    "map_parent_bytes": 5155824,
+    "render_texture_bytes": 5329936,
+    "claims_scratch_bytes": 644476,
+    "resident_gameplay_need_bytes": 4072828,
+    "resident_margin_bytes": 2742916,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 5329936
+   },
+   {
+    "name": "longest_marine_shotgun_4p4bot",
+    "map_matrix_case": "marine_shotgun",
+    "tag_cache_bytes": 6797024,
+    "structure_bsp_bytes": 377392,
+    "map_parent_bytes": 7174432,
+    "render_texture_bytes": 3311328,
+    "claims_scratch_bytes": 896804,
+    "resident_gameplay_need_bytes": 4325156,
+    "resident_margin_bytes": 2490588,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 3311328
+   },
+   {
+    "name": "longest_mounted_gunner_4p4bot",
+    "map_matrix_case": "mounted_gunner",
+    "tag_cache_bytes": 4578032,
+    "structure_bsp_bytes": 377392,
+    "map_parent_bytes": 4955440,
+    "render_texture_bytes": 5530320,
+    "claims_scratch_bytes": 619428,
+    "resident_gameplay_need_bytes": 4047780,
+    "resident_margin_bytes": 2767964,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 5530320
+   },
+   {
+    "name": "prisoner_marine_shotgun_4p4bot",
+    "map_matrix_case": "marine_shotgun",
+    "tag_cache_bytes": 6774176,
+    "structure_bsp_bytes": 888336,
+    "map_parent_bytes": 7662528,
+    "render_texture_bytes": 2823232,
+    "claims_scratch_bytes": 957816,
+    "resident_gameplay_need_bytes": 4386168,
+    "resident_margin_bytes": 2429576,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 2823232
+   },
+   {
+    "name": "prisoner_mounted_gunner_4p4bot",
+    "map_matrix_case": "mounted_gunner",
+    "tag_cache_bytes": 4555184,
+    "structure_bsp_bytes": 888336,
+    "map_parent_bytes": 5443536,
+    "render_texture_bytes": 5042224,
+    "claims_scratch_bytes": 680440,
+    "resident_gameplay_need_bytes": 4108792,
+    "resident_margin_bytes": 2706952,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 5042224
+   },
+   {
+    "name": "putput_marine_shotgun_4p4bot",
+    "map_matrix_case": "marine_shotgun",
+    "tag_cache_bytes": 6782240,
+    "structure_bsp_bytes": 1643056,
+    "map_parent_bytes": 8425312,
+    "render_texture_bytes": 2060448,
+    "claims_scratch_bytes": 1053164,
+    "resident_gameplay_need_bytes": 4481516,
+    "resident_margin_bytes": 2334228,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 2060448
+   },
+   {
+    "name": "putput_mounted_gunner_4p4bot",
+    "map_matrix_case": "mounted_gunner",
+    "tag_cache_bytes": 4563248,
+    "structure_bsp_bytes": 1643056,
+    "map_parent_bytes": 6206320,
+    "render_texture_bytes": 4279440,
+    "claims_scratch_bytes": 775788,
+    "resident_gameplay_need_bytes": 4204140,
+    "resident_margin_bytes": 2611604,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 4279440
+   },
+   {
+    "name": "ratrace_marine_shotgun_4p4bot",
+    "map_matrix_case": "marine_shotgun",
+    "tag_cache_bytes": 6804448,
+    "structure_bsp_bytes": 550816,
+    "map_parent_bytes": 7355280,
+    "render_texture_bytes": 3130480,
+    "claims_scratch_bytes": 919408,
+    "resident_gameplay_need_bytes": 4347760,
+    "resident_margin_bytes": 2467984,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 3130480
+   },
+   {
+    "name": "ratrace_mounted_gunner_4p4bot",
+    "map_matrix_case": "mounted_gunner",
+    "tag_cache_bytes": 4585472,
+    "structure_bsp_bytes": 550816,
+    "map_parent_bytes": 5136304,
+    "render_texture_bytes": 5349456,
+    "claims_scratch_bytes": 642036,
+    "resident_gameplay_need_bytes": 4070388,
+    "resident_margin_bytes": 2745356,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 5349456
+   },
+   {
+    "name": "sidewinder_marine_shotgun_4p4bot",
+    "map_matrix_case": "marine_shotgun",
+    "tag_cache_bytes": 6913936,
+    "structure_bsp_bytes": 1993744,
+    "map_parent_bytes": 8907696,
+    "render_texture_bytes": 1578064,
+    "claims_scratch_bytes": 1113460,
+    "resident_gameplay_need_bytes": 4541812,
+    "resident_margin_bytes": 2273932,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 1578064
+   },
+   {
+    "name": "sidewinder_mounted_gunner_4p4bot",
+    "map_matrix_case": "mounted_gunner",
+    "tag_cache_bytes": 4694944,
+    "structure_bsp_bytes": 1993744,
+    "map_parent_bytes": 6688704,
+    "render_texture_bytes": 3797056,
+    "claims_scratch_bytes": 836088,
+    "resident_gameplay_need_bytes": 4264440,
+    "resident_margin_bytes": 2551304,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 3797056
+   },
+   {
+    "name": "wizard_marine_shotgun_4p4bot",
+    "map_matrix_case": "marine_shotgun",
+    "tag_cache_bytes": 6792912,
+    "structure_bsp_bytes": 556944,
+    "map_parent_bytes": 7349872,
+    "render_texture_bytes": 3135888,
+    "claims_scratch_bytes": 918732,
+    "resident_gameplay_need_bytes": 4347084,
+    "resident_margin_bytes": 2468660,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 3135888
+   },
+   {
+    "name": "wizard_mounted_gunner_4p4bot",
+    "map_matrix_case": "mounted_gunner",
+    "tag_cache_bytes": 4573920,
+    "structure_bsp_bytes": 556944,
+    "map_parent_bytes": 5130880,
+    "render_texture_bytes": 5354880,
+    "claims_scratch_bytes": 641360,
+    "resident_gameplay_need_bytes": 4069712,
+    "resident_margin_bytes": 2746032,
+    "fits_guarded_map_render_backing": true,
+    "render_margin_before_renderer_minimum_bytes": 5354880
+   }
+  ],
+  "profiles_fit": 26,
+  "profiles_checked": 26,
+  "smallest_render_margin": {
+   "profile": "sidewinder_marine_shotgun_4p4bot",
+   "bytes": 1578064
+  },
+  "largest_render_margin": {
+   "profile": "longest_mounted_gunner_4p4bot",
+   "bytes": 5530320
+  },
+  "max_claims_scratch_bytes": 1113460
+ },
+ "elf_placement": [
+  {
+   "path": "build/hcu-parent-link-probe/hcu-gameplay-machine-step8-mp-workload-tagcache-4477120.elf",
+   "highest_guest_byte_exclusive": 5215380,
+   "below_reserve": true,
+   "load_mem_size_total": 4166804,
+   "elf_static_plus_streaming_budget_bytes": 3670016,
+   "excess_over_elf_static_plus_streaming_bytes": 496788,
+   "accounted_inside_elf_static_plus_streaming": false
+  }
+ ],
+ "tests": [
+  {
+   "command": "cc -std=gnu99 -O0 -g -Wall -Wextra -DHALO_PS2_NO_BOOTSTRAP_MEMORY -Itests/hcu_ps2_memory_shim -Isubmodules/halo-ps2/engine/src -Isubmodules/halo-ce-universal/port/ps2/include -Isrc submodules/halo-ce-universal/port/ps2/src/ps2_memory.c src/stream/hcu_memory_bind.c src/stream/hcu_memory_profile.c tests/hcu_mp_production_bind_capacity_main.c submodules/halo-ps2/engine/src/core/mem.c && run",
+   "outcome": "exit 0; profile-v1 markers unchanged"
+  },
+  {
+   "command": "cc -std=gnu99 -O0 ... src/stream/hcu_memory_profile.c tests/hcu_mp_partition_table_main.c submodules/halo-ps2/engine/src/core/mem.c -Wl,--unresolved-symbols=ignore-all && run",
+   "outcome": "partition-table-v2 rows=26 failures=0 (exit 0)"
+  },
+  {
+   "command": "make -B -f tools/ee-world.mk <out>/stream/hcu_memory_profile.o <out>/stream/hcu_memory_bind.o WORLD_HCU_MEMORY_BRIDGE=1 (EE toolchain)",
+   "outcome": "passed compile-only; hcu_memory_profile.o sha256 2255630f65e5fff87d0912d001dbf0a69745c257ee58a5e2bb4d37092d7d9261"
+  },
+  {
+   "command": "python3 -I tools/audit_hcu_c2_partition_budget.py --elf <step8 probe> --elf <parent-link probe>",
+   "outcome": "committed_pass=true; 26/26 fit"
+  },
+  {
+   "command": "python3 tools/test_hcu_mp_production_bind_capacity.py",
+   "outcome": "FAILED to compile in the submodule: 8 errors in submodules/halo-ce-universal/port/ps2/src/ps2_memory.c (undeclared sdk_malloc_preactivation_calls, malloc_refused_unbound); that file has uncommitted edits from another lane. Not caused by src/stream/hcu_memory_profile.c. Earlier run passed per the C2 status."
+  },
+  {
+   "command": "git diff --check (repo, touched files)",
+   "outcome": "passed"
+  }
+ ],
+ "remaining_limitations": {
+  "C2.1": [
+   "Only 26 map/matrix CE+BSP cases measured; the status file cites 27 archived profiles, the 27th is not in the capacity matrix.",
+   "Complete selected media/binding packages exist only for the two Sidewinder selected sessions (build/m2-c2-selected-session), not for every selected profile.",
+   "Renderer indices/live set/workspaces, simultaneous staging and workload peaks are unmeasured; the texture-cache residual (render margin) is the only render-side number."
+  ],
+  "C2.2": [
+   "Production startup does not call hcu_memory_partition_select_v2 yet (hcu_main.c is outside this lane).",
+   "No renderer minimum texture-cache size is measured, so a 'fit' means the CE+BSP+guard fit, not a renderable partition."
+  ],
+  "C2.3": [
+   "Probe ELF memory sizes exceed elf_static(2 MiB)+streaming(1.5 MiB) reservations: step8 probe by 496,788 bytes, parent-link probe by 1,184,948 bytes. Those ELFs are older probes, not the final C2 tree.",
+   "No combined final ELF with guest placement inside named regions was linked; only the LOAD extents (highest 0x4f9494 and 0x5a14b4) were checked against the reserve start 27,787,264 (0x1A80000), and both are below it.",
+   "ILP32 runner currently fails to compile (submodule ps2_memory.c edits by another lane)."
+  ]
+ }
+}

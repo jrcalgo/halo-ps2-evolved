@@ -1,0 +1,129 @@
+{
+  "format": "hcu-m2-c2-dma-owner-implementation-v1",
+  "date": "2026-10-23",
+  "phase": "C2.7",
+  "status": "implemented_compile_and_host_checks_passed",
+  "authority": "This report records the snapshot/DMA ownership implementation in this phase. It supersedes earlier C2 audit statements that counted a separate snapshot DMA payload slab inside dma_commands.",
+  "implementation": {
+    "snapshot_payload_slab": "removed; snapshot binding owns only its exact two-bank frame_scratch span",
+    "snapshot_matrix_emission": "hcu_render_snapshot_emit_chain(chain_t*) appends a bounded VIF1 unpack CNT tag and payload to caller-owned renderer chain storage; TTE low word is VIF0 NOP and high word is VIF1 UNPACK, followed by matrix data; it is not yet connected to an integrated C3 draw loop",
+    "renderer_dma_layout": {
+      "geometry_chain_count": 2,
+      "geometry_chain_qwords_each": 32768,
+      "upload_chain_count": 2,
+      "upload_chain_qwords_each": 4096,
+      "bytes_per_qword": 16,
+      "reserved_bytes": 1179648,
+      "layout_order": [
+        "geometry[0]",
+        "geometry[1]",
+        "upload[0]",
+        "upload[1]"
+      ],
+      "reserved_once_with_arena_alloc": true
+    },
+    "renderer_workspace": {
+      "bytes": 5632,
+      "owner": "frame_scratch exact arena_alloc span",
+      "subranges": {
+        "vu_init_packet_scratch": {
+          "offset": 0,
+          "bytes": 4096
+        },
+        "persistent_environment_packet": {
+          "offset": 4096,
+          "bytes": 1024
+        },
+        "font_upload_chain_scratch": {
+          "offset": 5120,
+          "bytes": 512
+        }
+      }
+    },
+    "frame_scratch_owners": {
+      "snapshot_alignment": 16,
+      "renderer_workspace_alignment": 64,
+      "canary_bytes_after_each_owner": 16,
+      "canary_pattern": "0xC7",
+      "canary_check_point": "immediately after halo_shell_main returns and before backing storage is freed",
+      "remaining_frame_scratch": "left available after exact owner spans, guards, and alignment padding",
+      "parent_high_water": "reported from frame_scratch arena; nested owner spans are counted once"
+    },
+    "renderer_binding": "HCU startup binds caller-owned DMA and workspace before shell entry; it does not initialize graphics or invoke bsp_render_init",
+    "rebind_policy": "layout binder rejects initialized/in-flight state; pointer layout validates 64-byte alignment, exact total byte count, and address-end overflow",
+    "standalone_compatibility": "standalone renderer retains its prior heap-backed fallback when no external storage is bound",
+    "diagnostic_clear": "M3 clear diagnostic borrows geometry chain 0 before bsp_render_init while renderer chains are idle"
+  },
+  "source_and_fixture_sha256": {
+    "src/stream/hcu_main.c": "f0f55e9edf87929e9ba8d9079a3a09723091aa69f4934112ee3fd813edb5b4f8",
+    "src/stream/hcu_render_snapshot.c": "6a23907536604e7f8b70cc7d52e9248f83c1e648721498c0498bb92d59cac50f",
+    "src/stream/hcu_render_snapshot.h": "0e8da9c55c3ee7bf5e070a53f84769cddcb7177a7a34e04fdb5b55301b7d7864",
+    "submodules/halo-ps2/engine/src/render/bsp_render.c": "641e30a49f5c1e2d4376c834685aacbec446218841e35310275519df129494d4",
+    "submodules/halo-ps2/engine/src/render/bsp_render.h": "b66cf93853eb1f649380fd3ce4b1b7d6912b36f13e369be8e17423faecafee49",
+    "submodules/halo-ps2/engine/src/render/storage.h": "543ba5857c32ee3a4d53afc62ae9b80102e602a81ca88358f3afa3a1be4f7e08",
+    "submodules/halo-ps2/engine/src/core/mem.c": "b3200864ada17c213b80ae17bc6fe8d69c5d8609189b2d269e41ba04d723eab7",
+    "submodules/halo-ps2/engine/src/core/mem.h": "3ce941b26bba3bcd95761f80e7564dbc0faf3f5bdc5d347ab523358e8d06eac7",
+    "submodules/halo-ce-universal/port/ps2/src/ps2_render.c": "11fa72c6cec53fef96b503d55c0d9e6eb85a99f339c33c6a54ad9995738ae750",
+    "tests/bsp_render_storage_main.c": "1d9943f49252f351826bd66990bf03836ea8341eb6f67db7ad52dd60468648a9",
+    "tests/test_bsp_render_storage.py": "52d33574d7ca3d39b494f0ec819672eb2cad0c35727fb21243b682530bc69e6f",
+    "tests/hcu_render_snapshot_main.c": "3a037584f5d4686896560279883ebbf7cd738c2db39a345162829af0265e67c5",
+    "tests/test_hcu_render_snapshot.py": "83418492e6dc291461d3a2273f713108aa4a38f9f82118d4c787f3c4ff881647",
+    "tests/test_hcu_snapshot_machine_binding.py": "b2b2fc737342f79d92f765238eb58423c646822e608536651fec2d5660d76eee",
+    "tests/test_hcu_m3_tick_render_invariance.py": "69a32dc8d13453ef7a47c112edc0fea12a79b220c448d6da26bfe73a095cacaf",
+    "docs/toolchain.md": "e618057f50de1f8d1ccdbab8f7c46d49073ab3189648d14d97b8b4d06839c871",
+    "build/toolchain/compiler-sdk.json": "ac72757fd392314c4097a6f06da86df9ea7ed5677372bd34add44b3a0e09ec9b"
+  },
+  "host_verification": {
+    "current_source_command": "pytest -q tests/test_hcu_render_snapshot.py",
+    "current_source_result": "passed",
+    "current_source_test_count": 3,
+    "current_source_note": "Run after the VIF0/VIF1 TTE correction; fixture checks both TTE halves and the first matrix float at the immediately following payload position.",
+    "prior_focused_command": "pytest -q tests/test_bsp_render_storage.py tests/test_hcu_snapshot_machine_binding.py tests/test_hcu_render_snapshot.py tests/test_hcu_m3_tick_render_invariance.py",
+    "prior_focused_result": "passed",
+    "prior_focused_test_count": 7,
+    "prior_focused_note": "This run preceded the final VIF word-order correction. The snapshot suite was rerun after that source change; the other three fixtures are unaffected by the VIF encoding change.",
+    "provenance": "Recorded completed runs; no tests rerun for report generation."
+  },
+  "ee_compile_verification": {
+    "compiler": "mips64r5900el-ps2-elf-gcc (GCC) 15.2.0",
+    "toolchain_evidence": "docs/toolchain.md; build/toolchain/compiler-sdk.json status passed; PS2SDK pinned identity a3ce5d035ceae1218dc0b83e465d1e5c927d951d",
+    "command_provenance": "Exact make invocations and compiler command lines are recoverable from the completed execution records. No separate compiler transcript file was retained.",
+    "compile_only": true,
+    "runtime_executed": false,
+    "compile_only_limitation": "Only target object compilation was performed. No target link, emulator run, hardware run, or integrated C3 drawing/render submission was verified.",
+    "objects": [
+      {
+        "source": "submodules/halo-ps2/engine/src/render/bsp_render.c",
+        "object": "submodules/halo-ps2/engine/src/render/bsp_render.o",
+        "object_sha256": "de9d3f5b669344b3f38a5733880ef36d6f7d4e13f6d582327ac1d0a4b5dc57fa",
+        "working_directory": "submodules/halo-ps2/engine",
+        "make_command": "PATH=/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin:/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/bin:$PATH make -B -C submodules/halo-ps2/engine src/render/bsp_render.o PS2DEV=/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install PS2SDK=/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk",
+        "compiler_command": "mips64r5900el-ps2-elf-gcc -D_EE -G0 -O2 -Wall -gdwarf-2 -gz -std=gnu11 -Wextra -Wno-unused-parameter -MMD -MP -I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/include -I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/common/include -I. -Isrc -c src/render/bsp_render.c -o src/render/bsp_render.o",
+        "result": "passed"
+      },
+      {
+        "source": "src/stream/hcu_main.c",
+        "object": "/tmp/hcu-target-check/stream/hcu_main.o",
+        "object_sha256": "27a7db6df6cf8fbda784fbc305a6936fe87b50b2c89bec2445b716897e5edc26",
+        "working_directory": "/home/ai/Documents/GitHub/haloce-decomp-ps2",
+        "make_command": "PATH=/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin:/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/bin:$PATH make -B -f tools/ee-world.mk /tmp/hcu-target-check/stream/hcu_main.o WORLD_OUTPUT=/tmp/hcu-target-check WORLD_HCU_GAMEPLAY=1 WORLD_HCU_ASSET_ROOT='host:/' PS2DEV=/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install PS2SDK=/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk",
+        "compiler_command": "mips64r5900el-ps2-elf-gcc -D_EE -G0 -O2 -Wall -gdwarf-2 -gz -std=gnu11 -Wall -Wextra -Wno-unused-parameter -MMD -MP -G0 -ffile-prefix-map=/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk=/ps2sdk -O2 -DHALO_FILE_USE_FILEXIO -I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/include -I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/common/include -I. -Isubmodules/halo-ps2/engine/src -I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/rpc/filexio/include -Isrc -Isubmodules/halo-ce-universal/port/ps2/include -Isubmodules/halo-ce-universal/source -Isubmodules/halo-ce-universal/port/include -fshort-wchar -Isubmodules/halo-ce-universal/source/cseries -DHALO_PS2=1 -DHALO_HCU_TAG_CACHE_BYTES=2097152 -DHALO_HCU_ASSET_ROOT=\\\"host:/\\\" -DHALO_PS2_STEP8_MP_WORKLOAD_PLAYERS=2 -include submodules/halo-ce-universal/port/ps2/include/halo_ps2_prefix.h -c src/stream/hcu_main.c -o /tmp/hcu-target-check/stream/hcu_main.o",
+        "result": "passed"
+      },
+      {
+        "source": "src/stream/hcu_render_snapshot.c",
+        "object": "/tmp/hcu-target-check/stream/hcu_render_snapshot.o",
+        "object_sha256": "af1cd28cc3b2af99db5ee9543f02f806332a8b013020ea385a4aa06188a584d1",
+        "working_directory": "/home/ai/Documents/GitHub/haloce-decomp-ps2",
+        "make_command": "PATH=/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin:/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/bin:$PATH make -B -f tools/ee-world.mk /tmp/hcu-target-check/stream/hcu_render_snapshot.o WORLD_OUTPUT=/tmp/hcu-target-check WORLD_HCU_GAMEPLAY=1 WORLD_HCU_ASSET_ROOT='host:/' PS2DEV=/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install PS2SDK=/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk",
+        "compiler_command": "mips64r5900el-ps2-elf-gcc -D_EE -G0 -O2 -Wall -gdwarf-2 -gz -std=gnu11 -Wall -Wextra -Wno-unused-parameter -MMD -MP -G0 -ffile-prefix-map=/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk=/ps2sdk -O2 -DHALO_FILE_USE_FILEXIO -I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/include -I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/common/include -I. -Isubmodules/halo-ps2/engine/src -I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/rpc/filexio/include -Isrc -Isubmodules/halo-ce-universal/port/ps2/include -c src/stream/hcu_render_snapshot.c -o /tmp/hcu-target-check/stream/hcu_render_snapshot.o",
+        "result": "passed",
+        "reason": "Compiled after the VIF TTE encoding source change."
+      }
+    ]
+  },
+  "unverified": [
+    "No target runtime high-water observation for geometry/upload chain use; HCU binds and reserves the region but the actual CE/C3 render loop is not integrated.",
+    "No target-side canary exercise was run; canary checks are implemented in startup/shell return and host/source fixtures validate the wiring."
+  ]
+}
