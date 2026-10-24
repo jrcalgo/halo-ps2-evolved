@@ -250,7 +250,7 @@ def _ctag_decode(ctag_bytes):
 
 def build_one(spec, maps_dir:Path, manifest:dict, producers:dict, *, report_failures=False, cache=None,
               source_inputs=None, runtime_layout_probe=None, presentation=None,
-              consumer_exclusions=None) -> tuple[bytes|None,dict,dict]:
+              consumer_exclusions=None, render_bsp=None) -> tuple[bytes|None,dict,dict]:
     bsp_inputs=prepare_profile_bsp_roots(spec,maps_dir,manifest,cache)
     sources=_source_set(spec,maps_dir,cache)
     scenario=spec['scenario']
@@ -326,8 +326,19 @@ def build_one(spec, maps_dir:Path, manifest:dict, producers:dict, *, report_fail
             {'unadmitted.ctag':result['ctag']})
     media_chunks={i+1:bytes(c['data']) for i,c in enumerate(media['chunks'])}
     sound_meta=json.dumps({'format':'hcu-profile-sound-metadata-v1','sources':media['sound_metadata']},sort_keys=True,separators=(',',':')).encode()
+    render=None
+    if render_bsp is not None:
+        # Opt-in C3 render chunks (BSPS/TEXS/LMn) for one scenario-map BSP index.
+        import hcu_render_media as _render_media  # noqa: E402
+        render=_render_media.build(maps_dir/f"{spec['scenario']['source']}.map",int(render_bsp))
     try:
-        package=encode_hcp(spec['id'],{'ce':result['ctag'],'media':media_chunks,'sound_meta':sound_meta})
+        if render is None:
+            package=encode_hcp(spec['id'],{'ce':result['ctag'],'media':media_chunks,'sound_meta':sound_meta})
+        else:
+            typed={(1,0):result['ctag'],(3,0):sound_meta}
+            typed.update({(2,cid):blob for cid,blob in media_chunks.items()})
+            typed.update(render['chunks'])
+            package=encode_hcp(spec['id'],typed)
     except (ValueError,OSError,KeyError,IndexError,struct.error) as exc:
         if not report_failures: raise
         return (None,{'format':'hcu-profile-diagnostic-v1','profile':spec['name'],'roots':spec['roots'],
@@ -374,6 +385,8 @@ def build_one(spec, maps_dir:Path, manifest:dict, producers:dict, *, report_fail
         'tag_index_remaps':result['tag_index_remaps'],
         'media':media_json_summary(media),'package_sha256':sha_bytes(package),
         'reproducibility':{'sha256':sha_bytes(package)}}
+    if render is not None:
+        profile_manifest['render_media']=render['manifest']
     profile_manifest['memory'].update({
         'package_file_bytes':len(package),
         'independently_addressable_media_bytes':media['memory']['independently_addressable_converted_bytes'],
@@ -399,6 +412,9 @@ def main(argv=None):
     ap.add_argument('--weapon-report',type=Path,default=DEFAULT_WEAPONS)
     ap.add_argument('--schema-elf',type=Path,default=DEFAULT_ELF)
     ap.add_argument('--output',type=Path,required=True)
+    ap.add_argument('--render-media',action='store_true',
+        help='opt-in: append BSPS/TEXS/LMn render chunks for the selected BSP index (C3)')
+    ap.add_argument('--render-bsp',type=int,default=0,help='structure BSP index for --render-media')
     ap.add_argument('--consumer-exclusions',type=Path,default=None,
         help='pinned exclusion rows; bitmap media with only excluded live consumers is omitted and recorded')
     args=ap.parse_args(argv)
@@ -501,7 +517,8 @@ def main(argv=None):
         package,profile_manifest,artifacts=build_one(spec,args.maps,manifest,producers,
             report_failures=args.report_failures,cache=cache,source_inputs=source_inputs,
             runtime_layout_probe=runtime_layout_evidence,presentation=cache.presentation,
-            consumer_exclusions=consumer_exclusions)
+            consumer_exclusions=consumer_exclusions,
+            render_bsp=(args.render_bsp if args.render_media else None))
         if args.session_selection and package is not None:
             catalog_rows=[r for r in roster.get('variants',[]) if
                 (r.get('disposition')=='combat' and r.get('recipe')) or
@@ -519,7 +536,8 @@ def main(argv=None):
             package2,manifest2,artifacts2=build_one(spec,args.maps,manifest,producers,
                 report_failures=args.report_failures,cache=BuildCache(),source_inputs=source_inputs,
                 runtime_layout_probe=runtime_layout_evidence,presentation=cache.presentation,
-                consumer_exclusions=consumer_exclusions)
+                consumer_exclusions=consumer_exclusions,
+                render_bsp=(args.render_bsp if args.render_media else None))
             if (package2,manifest2,artifacts2)!=(package,profile_manifest,artifacts):
                 raise ValueError(f'{stem}: independent rebuild differs')
             profile_manifest.setdefault('reproducibility',{})['independent_rebuild_equal']=True

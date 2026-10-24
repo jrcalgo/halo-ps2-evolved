@@ -64,7 +64,7 @@ int hcu_asset_profile_preflight_reader(hcu_asset_profile_read_at reader,void *co
 		if(ver==1) n=le32(row+12);
 		else { n=le32(row+12); lo=le32(row+16); ls=le32(row+20); idx=le32(row+24); nseg=le32(row+28); }
 		uint64_t canonical=((uint64_t)last_end+15u)&~(uint64_t)15u;
-		if(type<1||type>3||(type!=2&&id)||!n||(ver==1&&type==2&&n>65536u)||
+		if(!hcu_asset_chunk_id_valid(type,id)||!n||(ver==1&&type==2&&n>65536u)||
 			(off&15u)||off!=canonical||off>total||n>total-off) return HCU_ASSET_PROFILE_E_BOUNDS;
 		if(!zeroes(&(hcu_asset_profile_view){.read_at=reader,.reader_context=context,.total_bytes=total},last_end,off-last_end)) return HCU_ASSET_PROFILE_E_FORMAT;
 		if(ver==1) {
@@ -210,7 +210,18 @@ int hcu_asset_profile_read_chunk(const hcu_asset_profile_view*v,uint32_t type,ui
 	sha256_init(&s);while(at<e.size){uint32_t k=e.size-at<sizeof(b)?e.size-at:(uint32_t)sizeof(b);if(!read_range_unchecked(v,&e,at,b,k))return HCU_ASSET_PROFILE_E_BOUNDS;sha256_update(&s,b,k);at+=k;}sha256_final(&s,dig);if(memcmp(dig,e.sha256,32))return HCU_ASSET_PROFILE_E_HASH;
 	at=0;sha256_init(&s);while(at<e.size){uint32_t k=e.size-at<sizeof(b)?e.size-at:(uint32_t)sizeof(b);if(!read_range_unchecked(v,&e,at,b,k)){memset(dst,0,e.size);return HCU_ASSET_PROFILE_E_BOUNDS;}sha256_update(&s,b,k);memcpy((uint8_t*)dst+at,b,k);at+=k;}sha256_final(&s,dig);if(memcmp(dig,e.sha256,32)||!verify_segment_hashes(v,&e)){memset(dst,0,e.size);return HCU_ASSET_PROFILE_E_HASH;}return 0;
 }
-int hcu_asset_profile_lifetime(uint32_t t,uint32_t*l){if(!l)return -1;if(t==1||t==3)*l=1;else if(t==2)*l=2;else return -3;return 0;}
+static const hcu_asset_chunk_kind chunk_kinds[] = {
+	{HCU_ASSET_CHUNK_CE, "CE", HCU_ASSET_LIFETIME_MAP_UNLOAD, 0},
+	{HCU_ASSET_CHUNK_MEDIA, "MEDIA", HCU_ASSET_LIFETIME_REQUEST, 1},
+	{HCU_ASSET_CHUNK_SOUND_META, "SOUND_META", HCU_ASSET_LIFETIME_MAP_UNLOAD, 0},
+	{HCU_ASSET_CHUNK_BSPS, "BSPS", HCU_ASSET_LIFETIME_MAP_UNLOAD, 1},
+	{HCU_ASSET_CHUNK_TEXS, "TEXS", HCU_ASSET_LIFETIME_MAP_UNLOAD, 1},
+	{HCU_ASSET_CHUNK_LIGHTMAP, "LMn", HCU_ASSET_LIFETIME_MAP_UNLOAD, 1}};
+int hcu_asset_chunk_kind_lookup(uint32_t type,hcu_asset_chunk_kind*kind)
+{ uint32_t i; if(!kind)return HCU_ASSET_PROFILE_E_ARGUMENT; for(i=0;i<sizeof chunk_kinds/sizeof chunk_kinds[0];i++) if(chunk_kinds[i].type==type){*kind=chunk_kinds[i];return HCU_ASSET_PROFILE_OK;} return HCU_ASSET_PROFILE_E_FORMAT; }
+int hcu_asset_chunk_id_valid(uint32_t type,uint32_t id)
+{ hcu_asset_chunk_kind k; return hcu_asset_chunk_kind_lookup(type,&k)==HCU_ASSET_PROFILE_OK && (k.keyed||id==0); }
+int hcu_asset_profile_lifetime(uint32_t t,uint32_t*l){hcu_asset_chunk_kind k;if(!l)return -1;if(hcu_asset_chunk_kind_lookup(t,&k)!=HCU_ASSET_PROFILE_OK)return -3;*l=k.lifetime;return 0;}
 int hcu_asset_profile_accounting(const hcu_asset_profile_view*v,uint32_t t,uint32_t id,uint32_t*b)
 {hcu_asset_chunk_view e;uint64_t n;if(!v||!b)return -1;if(hcu_asset_profile_lookup(v,t,id,&e))return -3;n=((uint64_t)e.size+15)&~(uint64_t)15;if(n>0xffffffffu)return -6;*b=(uint32_t)n;return 0;}
 

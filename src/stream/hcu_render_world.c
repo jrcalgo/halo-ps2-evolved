@@ -75,14 +75,23 @@ int hcu_render_world_is_current(const hcu_render_world *w, const hcu_map_service
 	return bsp == &w->bsp && generation == w->generation;
 }
 
+static const uint8_t *s_profile_bsps;
+static size_t s_profile_bsps_bytes;
+
+void hcu_render_world_publish_profile_bsps(const uint8_t *bsps, size_t bytes)
+{
+	s_profile_bsps = bytes ? bsps : NULL;
+	s_profile_bsps_bytes = s_profile_bsps ? bytes : 0;
+}
+
 int hcu_render_world_profile_bsps(const hcu_map_service *service,
 	const uint8_t **bsps, size_t *bytes)
 {
-	/* The mounted package has CBSP (CE structure BSP) and BITM chunks only. No
-	 * BSPS v2 section, TEXS shader table or LMn lightmap is packaged, so there is
-	 * nothing to point to. Do not synthesize one here. */
+	/* Returns the verified BSPS bytes that hcu_render_media_load placed in the
+	 * caller-owned BSP span. Nothing is synthesized: a package built without
+	 * --render-media leaves nothing published and this stays NO_PRODUCER. */
 	(void)service;
-	if (bsps) *bsps = NULL;
-	if (bytes) *bytes = 0;
-	return HCU_RENDER_WORLD_E_NO_PRODUCER;
+	if (bsps) *bsps = s_profile_bsps;
+	if (bytes) *bytes = s_profile_bsps_bytes;
+	return s_profile_bsps ? HCU_RENDER_WORLD_OK : HCU_RENDER_WORLD_E_NO_PRODUCER;
 }

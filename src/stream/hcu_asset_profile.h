@@ -6,6 +6,10 @@
 
 enum { HCU_ASSET_CHUNK_CE = 1, HCU_ASSET_CHUNK_MEDIA = 2,
 	HCU_ASSET_CHUNK_SOUND_META = 3, HCU_ASSET_PROFILE_MAX_CHUNKS = 65536 };
+/* C3 render chunks (opt-in producer: tools/hcu_render_media.py). Keyed by the
+ * structure BSP index: BSPS v2 section, TEXS shader pack and LMn lightmap pages. */
+enum { HCU_ASSET_CHUNK_BSPS = 4, HCU_ASSET_CHUNK_TEXS = 5,
+	HCU_ASSET_CHUNK_LIGHTMAP = 6 };
 /* Independently decoded MEDIA resources have a persistent chunk cap. This is
  * separate from HP2's 64 KiB LZ4 history window. */
 #define HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES 65536u
@@ -44,6 +48,12 @@ int hcu_asset_profile_read_range(const hcu_asset_profile_view *view,
 	uint32_t type, uint32_t chunk_id, uint32_t logical_offset,
 	void *destination, uint32_t size);
 int hcu_asset_profile_lifetime(uint32_t type, uint32_t *lifetime);
+/* Chunk-kind table. Kinds 1 and 3 are unkeyed (id 0); kinds 2, 4, 5 and 6 are
+ * keyed by chunk id. Unknown kinds are refused by every format check. */
+typedef struct { uint32_t type; const char *name; uint32_t lifetime; int keyed; } hcu_asset_chunk_kind;
+int hcu_asset_chunk_kind_lookup(uint32_t type, hcu_asset_chunk_kind *kind);
+/* Nonzero when (type, chunk_id) is a known kind with a legal id. */
+int hcu_asset_chunk_id_valid(uint32_t type, uint32_t chunk_id);
 /* Capacity of one aligned decode target. The streamed directory is not a
  * resident allocation. Count the view and caller-owned source once separately. */
 int hcu_asset_profile_accounting(const hcu_asset_profile_view *view,

@@ -15,6 +15,18 @@ V1_RECORD = struct.Struct("<4I32s")
 V2_RECORD = struct.Struct("<8I32s32s")
 RECORD = V2_RECORD
 CHUNK_TYPES = {"ce": (1, 0), "media": (2, None), "sound_meta": (3, 0)}
+# C3 render chunks (opt-in). Keyed by the selected BSP index so each BSPS, TEXS
+# and LMn triple is addressable per structure BSP. Kinds 1 and 3 are unkeyed.
+CHUNK_BSPS, CHUNK_TEXS, CHUNK_LIGHTMAP = 4, 5, 6
+KEYED_KINDS = frozenset({2, CHUNK_BSPS, CHUNK_TEXS, CHUNK_LIGHTMAP})
+KNOWN_KINDS = frozenset({1, 2, 3}) | frozenset({CHUNK_BSPS, CHUNK_TEXS, CHUNK_LIGHTMAP})
+
+
+def chunk_kind_valid(kind: int, chunk_id: int) -> bool:
+    """Mirror of hcu_asset_chunk_id_valid: known kind, id zero unless keyed."""
+    if kind not in KNOWN_KINDS:
+        return False
+    return kind in KEYED_KINDS or chunk_id == 0
 ALIGNMENT = 16
 MAX_CHUNKS = 65536
 MAX_MEDIA_CHUNK_BYTES = 65536
@@ -42,8 +54,8 @@ def _normalize(chunks):
     if (1, 0) not in normalized or (3, 0) not in normalized:
         raise ProfileError("CE and sound metadata roots are required")
     ordered = sorted(normalized.items())
-    if any(kind not in (1, 2, 3) or not 0 <= kind <= 0xffffffff or
-           not 0 <= cid <= 0xffffffff or (kind != 2 and cid != 0)
+    if any(not chunk_kind_valid(kind, cid) or not 0 <= kind <= 0xffffffff or
+           not 0 <= cid <= 0xffffffff
            for (kind, cid), _data in ordered):
         raise ProfileError("invalid chunk type/id")
     if len(ordered) > MAX_CHUNKS:

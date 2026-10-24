@@ -199,7 +199,7 @@ def parse_package(data: bytes, *, expected_package_sha256: str,
             if previous is not None and key <= previous:
                 raise ProfileValidationError("HCP entries are duplicated or out of order")
             previous = key
-            if kind not in (1, 2, 3) or (kind != 2 and cid != 0) or not size:
+            if not chunks.chunk_kind_valid(kind, cid) or not size:
                 raise ProfileValidationError("invalid HCP chunk identity or size")
             if kind == 2 and size > chunks.MAX_MEDIA_CHUNK_BYTES:
                 raise ProfileValidationError("HCP media chunk exceeds 65536-byte decoded limit")
@@ -227,7 +227,7 @@ def parse_package(data: bytes, *, expected_package_sha256: str,
             if previous is not None and order <= previous:
                 raise ProfileValidationError("HCP2 physical entries are duplicated or out of order")
             previous = order
-            if kind not in (1, 2, 3) or (kind != 2 and cid != 0) or not size:
+            if not chunks.chunk_kind_valid(kind, cid) or not size:
                 raise ProfileValidationError("invalid HCP2 chunk identity or size")
             if size > chunks.MAX_SEGMENT_BYTES or not logical_size or not segment_count:
                 raise ProfileValidationError("invalid HCP2 segment/logical size")
@@ -502,7 +502,7 @@ def _check_cbsp(blob,row,bindings,media,tag_image,tags,declared,schema,profile_m
 
 def validate(data: bytes, manifest: dict, schema_manifest: dict, *,
              expected_package_sha256: str, expected_profile_id: int,
-             expected_scenario: str) -> dict:
+             expected_scenario: str, render_maps_dir=None) -> dict:
     """Validate packaged CE closure against its manifest and real schema.
 
     Accepts the ``hcu-built-profile-v1`` builder manifest. Media chunks and
@@ -656,6 +656,11 @@ def validate(data: bytes, manifest: dict, schema_manifest: dict, *,
     typed_refs=rules.typed_references(decoded.image,schema_manifest,manifest.get('tag_index_remaps',[]))
     bitmap_coverage=_check_bitmap_coverage(decoded.image,schema_manifest,actual,declared,media,bindings,bitmap_consumers,
         profile_kind=(manifest.get('profile') or {}).get('kind'),typed=typed_refs)
+    try:
+        import hcu_render_media as _render_media  # C3 opt-in render chunks (kinds 4, 5, 6)
+        render_summary = _render_media.check_render_chunks(package["chunks"], manifest, maps_dir=render_maps_dir)
+    except _render_media.RenderMediaError as error:
+        raise ProfileValidationError(str(error)) from error
     sound = package["chunks"][(3, 0)]
     try:
         sound_obj = json.loads(sound)
@@ -676,7 +681,7 @@ def validate(data: bytes, manifest: dict, schema_manifest: dict, *,
         raise ProfileValidationError('sound identity metadata does not match CE sound tags')
     return {"profile_id": expected_profile_id, "scenario": expected_scenario,
             "tag_count": len(actual), "media_chunk_count": len(chunk_rows),
-            "bitmap_coverage":bitmap_coverage,"bsp_count":len(bsp_owners),
+            "bitmap_coverage":bitmap_coverage,"bsp_count":len(bsp_owners),"render_media":render_summary,
             "media_reader_source_sha256":media_read.source_sha256 if media_read else None,
             "package_sha256": _sha(data)}
 

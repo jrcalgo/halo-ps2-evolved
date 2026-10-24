@@ -62,12 +62,13 @@ int hcu_render_world_unbind(hcu_render_world *w, hcu_map_service *service);
  * same map generation. */
 int hcu_render_world_is_current(const hcu_render_world *w, const hcu_map_service *service);
 
-/* Producer seam: the BSPS bytes for the mounted profile. The profile package
- * does not carry a BSPS section today (CBSP and BITM only), so this returns
- * HCU_RENDER_WORLD_E_NO_PRODUCER and writes NULL outputs. See the report for the
- * smallest producer change. */
+/* Producer seam: the BSPS bytes of the mounted profile, as placed by
+ * hcu_render_media_load (hcu_render_media.h). NO_PRODUCER with NULL outputs when
+ * the package carries no BSPS chunk or nothing is loaded. */
 int hcu_render_world_profile_bsps(const hcu_map_service *service,
 	const uint8_t **bsps, size_t *bytes);
+/* Set by hcu_render_media_load / cleared by hcu_render_media_clear. */
+void hcu_render_world_publish_profile_bsps(const uint8_t *bsps, size_t bytes);
 
 #ifdef __cplusplus
 }
