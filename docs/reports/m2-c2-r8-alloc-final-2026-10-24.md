@@ -76,3 +76,11 @@ The alloc-a file (`docs/reports/m2-c2-r6-alloc-a-verdicts.json`, untracked, anot
 6. **The alloc-a file is untracked and overridden.** Its three object rows were replaced by the final layer. Owner: the alloc-a lane should reconcile the file with this report before it is committed.
 
 Nothing in this lane was run on PCSX2 or hardware. No EE memory fit, workload trace or console result is claimed.
+
+## C2.6 counter correction follow-up (2026-10-24)
+
+The object-pool producer now passes `allocation_failures` and `reallocation_failures` separately to the PS2 owner counter. The published `failures` value is their saturating sum. These source counters overlap for a refused moving reallocate: the replacement block allocation fails and then the reallocate operation returns false, so the aggregate intentionally reflects both recorded failure events. This replaces the earlier comment that claimed a refused reallocation was counted once as an allocation.
+
+The UI widget pool now routes each of its three allocation and three resize callsites through small reporting wrappers. A failed positive-size request increments `HALO_PS2_OWNER_WIDGET_POOL`; pool capacity, current use, and the stack pool's existing high-water value are sampled without enlarging the pool or its data structure. Pool reset increments its reset count and starts a new high-water window. The PS2 owner-counter ID/API is ready for the parent HCU owner-row binding; no guest trace from the changed source is claimed here.
+
+Focused verification: `python3 -m pytest -q tests/test_hcu_ce_owner_counters.py tests/test_hcu_c2_alloc_b.py` — **21 passed**. This includes host execution of the counter producer, ILP32 compilation of the PS2 port counter, saturated failure aggregation, widget owner update/failure/reset behavior, and source checks that all current widget stack-pool callsites use the reporting wrappers. `git diff --check` is clean for the touched CE source, port counter, and focused test files.

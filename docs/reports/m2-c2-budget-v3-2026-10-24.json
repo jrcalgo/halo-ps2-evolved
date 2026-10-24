@@ -1,0 +1,71 @@
+{
+  "report": "m2-c2-budget-v3-2026-10-24",
+  "date": "2026-10-24",
+  "budget_version": 3,
+  "authorization": "User-approved transfer of 262144 bytes from uncommitted_reserve to elf_static.",
+  "budget": {
+    "total_bytes": 33554432,
+    "version_2_committed_bytes": 27787264,
+    "version_2_reserve_bytes": 5767168,
+    "version_3_committed_bytes": 28049408,
+    "version_3_reserve_bytes": 5505024,
+    "committed_delta_bytes": 262144,
+    "reserve_delta_bytes": -262144,
+    "elf_static_version_2_bytes": 2097152,
+    "elf_static_version_3_bytes": 2359296,
+    "unchanged_other_committed_regions_bytes": 25690112,
+    "reserve_physical_interval_hex": [
+      "0x01a40000",
+      "0x01f80000"
+    ],
+    "high_kernel_stack_interval_hex": [
+      "0x01f80000",
+      "0x02000000"
+    ],
+    "file_backed_elf_end_hex": "0x00340000"
+  },
+  "selected_profile": "sidewinder_marine_shotgun_4p4bot",
+  "asset_profile": "host",
+  "asset_root": "host:/",
+  "package": {
+    "path": "build/m2-c2-r3-selected-packages/pkg/sidewinder_marine_shotgun_4p4bot/sidewinder_marine_shotgun_4p4bot.hcp",
+    "sha256": "24bf404dadbd0e7ccc806b60052e0b564728efbd253be9453bfb6650e994d648"
+  },
+  "elf": {
+    "path": "build/m2-c2-resume-budget-v3/hcu-gameplay-machine-partition-sidewinder_marine_shotgun_4p4bot.elf",
+    "sha256": "ae69bb05de0068f0b2e50f136e2e7f48eb6cc1fa84b219244e98876a312da8e0",
+    "file_backed_load_bytes": 2250500,
+    "v2_elf_static_excess_bytes": 153348,
+    "v3_elf_static_capacity_bytes": 2359296,
+    "v3_elf_static_margin_bytes": 108796,
+    "pt_load_nobits_bytes": 1811648,
+    "nobits_owner": "resident_gameplay",
+    "resident_gameplay_capacity_bytes": 6815744,
+    "resident_gameplay_remaining_after_nobits_bytes": 5004096,
+    "undefined_symbol_count": 0,
+    "link_acceptance": false
+  },
+  "measurement_provenance": {
+    "link_command": "flock -n build/.hcu-parent-link-probe.lock python3 tools/hcu_parent_link_probe.py --asset-profile host --partition-profile sidewinder_marine_shotgun_4p4bot",
+    "toolchain": {
+      "compiler": "build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-gcc",
+      "compiler_sha256": "d7b570c6044e0b19338331f29f8ec0612795511ec3287f68dfa3c271ef09cb1d",
+      "compiler_version": "mips64r5900el-ps2-elf-gcc (GCC) 15.2.0",
+      "linker_sha256": "892acf51a3c56899dbfdeb2b8a7ed79e4338bfad93fd41b019c799f91dd8e805"
+    },
+    "root_head": "b9fe048c46f6d9ce698a532b6bc8616ca886569d",
+    "halo_ps2_head": "0bd07e5902150a744af81289262a34f0f5a30a62",
+    "halo_ce_universal_head": "e7df343cb033293e0161d51dae2b05223d700e4a",
+    "parent_object_count": 62,
+    "hcu_rooted_object_sha256": "9d85f3f83fb611daa7bb1c211c95bb5fc632e4f5fd6df82c9ef87a5d0e92932e",
+    "hcu_closure_report_sha256": "1ce3fb48b75cfaaec2fd4474f8439d5a642b50fd8504ba6a08cacb6e1034da03",
+    "profile_header_sha256": "8b282d5556e46fd0fa355258102071bc03ab448ed2f02c48ac7addb95fc055bc",
+    "map_sha256": "2e87f47e420ee3b53fcdaa163a771fcfebf3877669d83718374de314d26cafce",
+    "memory_audit_sha256": "ee3939323b694d9fe0856c5d2750740bbff1672b70c3644afd43ca3f2e63a401",
+    "raw_probe_report_sha256": "4d51900e1bd5c6ea5f5b0b7b8de82a3a7c08c3bcedd9ecef8f54b22e1e83949d",
+    "refreshed_probe_report_sha256": "4ba1d05b71b85697fde2af51b035448a82c9b9e39f0732ae5822d6548aa8c1cd",
+    "report_refresh_generator": "tools/refresh_hcu_parent_link_report.py",
+    "report_refresh_generator_sha256": "2e9a0bab5a97f193b898473ed795aeeb6519f0573f2e82b5ce651619590b60a0"
+  },
+  "interpretation": "File-backed PT_LOAD bytes alone are charged to elf_static. PT_LOAD memsz-filesz is charged to resident_gameplay. This section accounting is necessary capacity evidence; it does not establish runtime high-water, physical boot-pointer placement, gameplay-map admission, or C2 completion."
+}
