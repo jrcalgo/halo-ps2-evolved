@@ -50,13 +50,22 @@ class Markers(unittest.TestCase):
         self.assertTrue(found["arena"])
         self.assertFalse(found["owner-telemetry"])
         self.assertFalse(run.check_markers(lines, lifecycle=False)["map-lifecycle"])
-        self.assertIn("lifecycle-unload-reload-complete", run.check_markers(lines, lifecycle=True))
+        self.assertIn("lifecycle-owner-released", run.check_markers(lines, lifecycle=True))
+        self.assertIn("lifecycle-complete", run.check_markers(lines, lifecycle=True))
 
-    def test_lifecycle_requires_unload_or_reload(self):
-        lines = ["HALO_PS2_LOCAL m2-ui-lifecycle-owner-released cycle=1 cache=0"]
-        self.assertTrue(run.check_markers(lines, lifecycle=True)["lifecycle-unload-reload-complete"])
+    def test_lifecycle_requires_release_and_completion(self):
+        release = "HALO_PS2_LOCAL m2-ui-lifecycle-owner-released cycle=1 cache=0"
+        complete = "HALO_PS2_LOCAL m2-ui-lifecycle-complete cycles=2"
+        self.assertTrue(run.check_markers([release, complete], lifecycle=True)[
+            "lifecycle-owner-released"])
+        self.assertTrue(run.check_markers([release, complete], lifecycle=True)[
+            "lifecycle-complete"])
+        self.assertFalse(run.check_markers([release], lifecycle=True)[
+            "lifecycle-complete"])
+        self.assertFalse(run.check_markers([complete], lifecycle=True)[
+            "lifecycle-owner-released"])
         self.assertFalse(run.check_markers(["HALO_PS2_LOCAL map-mount result=0 active=1"],
-                                           lifecycle=True)["lifecycle-unload-reload-complete"])
+                                           lifecycle=True)["lifecycle-complete"])
 
 
 class Summary(unittest.TestCase):
