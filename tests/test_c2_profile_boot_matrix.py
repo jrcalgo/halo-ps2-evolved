@@ -128,7 +128,7 @@ def test_stage_plan_mounts_the_tree_at_the_header_pinned_path():
     plan = matrix.stage_plan("bots_sidewinder", root)
     manifest = json.loads((root / "bots_sidewinder/bots_sidewinder.json").read_text())
     assert plan["map"] == manifest["profile"]["map"]
-    assert plan["guest_package_root"] == "build/m2-c2-resume-runtime-guest/bots-package-tree-v2"
+    assert plan["guest_package_root"] == "build/m2-c2-residual-packages/bots-tree"
     assert plan["stage_paths"] == []
 
 
@@ -157,7 +157,7 @@ def test_ui_row_is_in_profile_table_and_resolves_to_its_package_tree():
         return
     plan = matrix.stage_plan("ui", root)
     assert plan["map"] == "ui" and plan["scenario"] == "levels\\ui\\ui"
-    assert plan["guest_package_root"].endswith("m2-c2-gaps-ui/tree")
+    assert plan["guest_package_root"].endswith("m2-c2-residual-packages/ui-tree")
 
 
 def test_ui_log_passes_with_ui_map_and_scenario():

@@ -36,10 +36,10 @@ REUSE_ROOT = ROOT / "build/m2-c2-gaps-reuse"  # output root for --cycles/--ticks
 
 # Rows whose selected package is not in the default corpus tree.
 EXTRA_PACKAGE_ROOTS = {
-    "bots_sidewinder": ROOT / "build/m2-c2-resume-runtime-guest/bots-package-tree-v2/pkg",
+    "bots_sidewinder": ROOT / "build/m2-c2-residual-packages/bots-tree/pkg",
     # The UI package (scenario levels/ui/ui). Its manifest is the hcp2-primary ui manifest with
     # memory.package_file_bytes set to the HCP2 file size, as tools/repack_hcu_profiles_hcp2.py does.
-    "ui": ROOT / "build/m2-c2-gaps-ui/tree/pkg",
+    "ui": ROOT / "build/m2-c2-residual-packages/ui-tree/pkg",
 }
 
 RESERVE = 0x1A40000          # budget v3 reserve start (kernel-reservation reserve=)
