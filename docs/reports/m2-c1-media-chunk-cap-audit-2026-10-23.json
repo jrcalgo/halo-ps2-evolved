@@ -1,0 +1,597 @@
+{
+  "cap_bytes": 65536,
+  "current_strict_parser": {
+    "path": "tools/hcu_profile_validate.py",
+    "sha256": "1ca85d7bab64952542cab43663dd3b6002f83cfbf49b855ffd2c5de2774c8405"
+  },
+  "current_writer": {
+    "path": "tools/hcu_profile_chunks.py",
+    "sha256": "9cdd3a5557117326d88e2c4629eda096469a40cbe6bd153aaa060ce290824a49"
+  },
+  "package_count": 27,
+  "packages": [
+    {
+      "manifest_package_sha256": "eaba16be1479043a90e018dcb84885c300d0a5c05fe3d6d46165a6c65db98488",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/bots-beavercreek.json",
+      "manifest_sha256": "e033e4320783e12d5ad46c476b8bd8aa41dec34ae018a39389dd5452c1da458d",
+      "max_media_entry": {
+        "chunk_id": 250,
+        "segment_sha256": "cddebdde55c13703439b0b0e4208194f37830c9ad66042cd11e17527ffcc52e5",
+        "size_bytes": 730200
+      },
+      "media_entry_count": 359,
+      "over_cap_media_entry_count": 75,
+      "package_path": "build/m2-c1-corpus-primary-v3/bots-beavercreek.hcp",
+      "package_sha256": "eaba16be1479043a90e018dcb84885c300d0a5c05fe3d6d46165a6c65db98488",
+      "package_sha_matches_manifest": true,
+      "profile_id": 2,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "a6ba59b956186e21b1f40130bb808146010709c05b4a4692e5de81347e1591cf",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/bots-bloodgulch.json",
+      "manifest_sha256": "4e8483e917987248ae1bce3ecee14139304275ff5a42f62bb7b2ed065ed288ab",
+      "max_media_entry": {
+        "chunk_id": 257,
+        "segment_sha256": "f59a813ea9c94717045fe93d4d9c8c4841d82962ef3fe0ba489c01e395c3672e",
+        "size_bytes": 1303092
+      },
+      "media_entry_count": 389,
+      "over_cap_media_entry_count": 78,
+      "package_path": "build/m2-c1-corpus-primary-v3/bots-bloodgulch.hcp",
+      "package_sha256": "a6ba59b956186e21b1f40130bb808146010709c05b4a4692e5de81347e1591cf",
+      "package_sha_matches_manifest": true,
+      "profile_id": 3,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "7be21c2eb36438367cffbde32823e4e84a5113595b81d802b3359cf0c5a8ee86",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/bots-boardingaction.json",
+      "manifest_sha256": "9872228e1cd8724907efdcfafb09ee22706284ad287232e90bbc7e860360f264",
+      "max_media_entry": {
+        "chunk_id": 244,
+        "segment_sha256": "16c4e8190805f150e18449f8358ed28e081abe3de058deee7cf80f1d61937a69",
+        "size_bytes": 1354156
+      },
+      "media_entry_count": 351,
+      "over_cap_media_entry_count": 70,
+      "package_path": "build/m2-c1-corpus-primary-v3/bots-boardingaction.hcp",
+      "package_sha256": "7be21c2eb36438367cffbde32823e4e84a5113595b81d802b3359cf0c5a8ee86",
+      "package_sha_matches_manifest": true,
+      "profile_id": 4,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "bd90942b482af7c570d1b7cec1457be0c84ae7b43024637fc14d6236f76ea902",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/bots-carousel.json",
+      "manifest_sha256": "78cec3e655ecd83f7cbdaa0943ea8e8651aaccde5e5808c4148c92b6895b857d",
+      "max_media_entry": {
+        "chunk_id": 248,
+        "segment_sha256": "7438e60a99ad891b7e6ac4f26074ff568781f729a1d2e88757ae13663a501e7a",
+        "size_bytes": 515248
+      },
+      "media_entry_count": 353,
+      "over_cap_media_entry_count": 70,
+      "package_path": "build/m2-c1-corpus-primary-v3/bots-carousel.hcp",
+      "package_sha256": "bd90942b482af7c570d1b7cec1457be0c84ae7b43024637fc14d6236f76ea902",
+      "package_sha_matches_manifest": true,
+      "profile_id": 5,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "dc263e1b838d536137bc4ebe515dbe0552509cc8f89b22c94ea8aa67b4f27203",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/bots-chillout.json",
+      "manifest_sha256": "43ecd0693aa5c267434d7391d7811f9f8cc5382679535bd42500920c07863884",
+      "max_media_entry": {
+        "chunk_id": 234,
+        "segment_sha256": "ebf2a704aa7a93220df2e6eff96dae4c198b5704583b6cd1e9ac0db40fe6587b",
+        "size_bytes": 573416
+      },
+      "media_entry_count": 335,
+      "over_cap_media_entry_count": 68,
+      "package_path": "build/m2-c1-corpus-primary-v3/bots-chillout.hcp",
+      "package_sha256": "dc263e1b838d536137bc4ebe515dbe0552509cc8f89b22c94ea8aa67b4f27203",
+      "package_sha_matches_manifest": true,
+      "profile_id": 6,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "6cd41ca9878b0654ae22fbe34d3131d949f1e692286da8a5c9890d9fb0d62b29",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/bots-damnation.json",
+      "manifest_sha256": "a14fb2b03dba61e0472752f5a3bd21b64f35fa75d34a586dffd42c01b6ccd3f6",
+      "max_media_entry": {
+        "chunk_id": 244,
+        "segment_sha256": "efc96a9d999861d6ce91592c9eaf58d55eb4388164b8479c3efe9c9f7d4fdf76",
+        "size_bytes": 1326816
+      },
+      "media_entry_count": 354,
+      "over_cap_media_entry_count": 71,
+      "package_path": "build/m2-c1-corpus-primary-v3/bots-damnation.hcp",
+      "package_sha256": "6cd41ca9878b0654ae22fbe34d3131d949f1e692286da8a5c9890d9fb0d62b29",
+      "package_sha_matches_manifest": true,
+      "profile_id": 7,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "a47b1a5eb7fe26aaf4104149a6d51dc440194b0011246b4aefff83e8d93aa365",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/bots-hangemhigh.json",
+      "manifest_sha256": "584933e6d53df4466a99de3b3f67c374fffb8eca80b6b289eb3520fd8910d03a",
+      "max_media_entry": {
+        "chunk_id": 220,
+        "segment_sha256": "0a39d5d5e9293a9564f1efc272f0b8179dd856edb1e8c33643b0206026ada2eb",
+        "size_bytes": 595848
+      },
+      "media_entry_count": 319,
+      "over_cap_media_entry_count": 73,
+      "package_path": "build/m2-c1-corpus-primary-v3/bots-hangemhigh.hcp",
+      "package_sha256": "a47b1a5eb7fe26aaf4104149a6d51dc440194b0011246b4aefff83e8d93aa365",
+      "package_sha_matches_manifest": true,
+      "profile_id": 8,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "476a1f001d9e6fee6046934e88cdd93a16de7ce033edbe1058012051993f3cb3",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/bots-longest.json",
+      "manifest_sha256": "2cc444465cc29a71671ff5ca8740a2fb84c6d599ed29c1d1dce25ee9cfd7d831",
+      "max_media_entry": {
+        "chunk_id": 248,
+        "segment_sha256": "80ab770b631bb09459ed5abc5464c3b8d769b764e1645078404dc73e246017a7",
+        "size_bytes": 491360
+      },
+      "media_entry_count": 319,
+      "over_cap_media_entry_count": 70,
+      "package_path": "build/m2-c1-corpus-primary-v3/bots-longest.hcp",
+      "package_sha256": "476a1f001d9e6fee6046934e88cdd93a16de7ce033edbe1058012051993f3cb3",
+      "package_sha_matches_manifest": true,
+      "profile_id": 9,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "d29fd1a2da00a06c1a36b9ba40d94fdd8ea790bced1689bb1380a4da9c5c27c4",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/bots-prisoner.json",
+      "manifest_sha256": "38795e8adc081eb234876c364170104c55a4f16f04d99cf29e6871b6d42c4dc5",
+      "max_media_entry": {
+        "chunk_id": 224,
+        "segment_sha256": "8798a6769ca06054603aa65f890b6568ceb4a6217b75ca1f07606305c442bd8e",
+        "size_bytes": 888336
+      },
+      "media_entry_count": 321,
+      "over_cap_media_entry_count": 71,
+      "package_path": "build/m2-c1-corpus-primary-v3/bots-prisoner.hcp",
+      "package_sha256": "d29fd1a2da00a06c1a36b9ba40d94fdd8ea790bced1689bb1380a4da9c5c27c4",
+      "package_sha_matches_manifest": true,
+      "profile_id": 10,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "c98ab057fd2177a577e7768a50c398749b917fb2f836218b66be96d634d20fe8",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/bots-putput.json",
+      "manifest_sha256": "c3a79048c80afd4dd9c56521175e9d84f4f2dec4faff729e994d4abbe9dda4de",
+      "max_media_entry": {
+        "chunk_id": 218,
+        "segment_sha256": "c2060e770e34439369fd22eb2dd358363e02116785dc06317d89ec739e7470a1",
+        "size_bytes": 1643044
+      },
+      "media_entry_count": 315,
+      "over_cap_media_entry_count": 66,
+      "package_path": "build/m2-c1-corpus-primary-v3/bots-putput.hcp",
+      "package_sha256": "c98ab057fd2177a577e7768a50c398749b917fb2f836218b66be96d634d20fe8",
+      "package_sha_matches_manifest": true,
+      "profile_id": 11,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "a9456204c8ddc87142cf96bdf7daa3212d778913a62b9fe073f9ea6ae0f569de",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/bots-ratrace.json",
+      "manifest_sha256": "f770a278527b9fbadab1b76b08e47e1c8d38940d6eed5bf30be45eb28c195352",
+      "max_media_entry": {
+        "chunk_id": 238,
+        "segment_sha256": "8f9fdfbdde5badae75a279262f04860f4924f9f60d347f89a5b94b131ea98e22",
+        "size_bytes": 550804
+      },
+      "media_entry_count": 339,
+      "over_cap_media_entry_count": 69,
+      "package_path": "build/m2-c1-corpus-primary-v3/bots-ratrace.hcp",
+      "package_sha256": "a9456204c8ddc87142cf96bdf7daa3212d778913a62b9fe073f9ea6ae0f569de",
+      "package_sha_matches_manifest": true,
+      "profile_id": 12,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "5571144b6f5558e0c5463b308f76fd12f5eac426221a01414c2337c5575e0209",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/bots-sidewinder.json",
+      "manifest_sha256": "18842875328e2708628b8caa4ac0761fc9a00aaa4a6365a1eb7ae1eb877489f3",
+      "max_media_entry": {
+        "chunk_id": 256,
+        "segment_sha256": "321d85549cf9be7996d10c8976f2db95bda1c8d161f494fc09c04d7e98842b64",
+        "size_bytes": 1993740
+      },
+      "media_entry_count": 371,
+      "over_cap_media_entry_count": 76,
+      "package_path": "build/m2-c1-corpus-primary-v3/bots-sidewinder.hcp",
+      "package_sha256": "5571144b6f5558e0c5463b308f76fd12f5eac426221a01414c2337c5575e0209",
+      "package_sha_matches_manifest": true,
+      "profile_id": 13,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "6475635e7f35f3535c8146b49ec0a203b14cdd1b9ec82b193bec5b56e638912d",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/bots-wizard.json",
+      "manifest_sha256": "774f4fce1762fef6b4ab6ba2581e11ec82dafcda7d7c0e385a9dd9607e7c0634",
+      "max_media_entry": {
+        "chunk_id": 226,
+        "segment_sha256": "18e217f7adfd06e868a43ded4041713b82a4132731de07dfb470a07c0f156ad4",
+        "size_bytes": 556944
+      },
+      "media_entry_count": 329,
+      "over_cap_media_entry_count": 69,
+      "package_path": "build/m2-c1-corpus-primary-v3/bots-wizard.hcp",
+      "package_sha256": "6475635e7f35f3535c8146b49ec0a203b14cdd1b9ec82b193bec5b56e638912d",
+      "package_sha_matches_manifest": true,
+      "profile_id": 14,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "9618e182cfce09e5052de40a02961c5fa14aa9791ae0e3d6f9c4d6a778633578",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/survival-beavercreek.json",
+      "manifest_sha256": "9e5e75f6cdd8fcab30403629c60271b3df58e3517b81b5a64bf89c3f445d9f8c",
+      "max_media_entry": {
+        "chunk_id": 1493,
+        "segment_sha256": "07887d8ff9903f3e552f51661cba954da6e68b88438f65243b787ab09cfc8171",
+        "size_bytes": 960464
+      },
+      "media_entry_count": 2173,
+      "over_cap_media_entry_count": 565,
+      "package_path": "build/m2-c1-corpus-primary-v3/survival-beavercreek.hcp",
+      "package_sha256": "9618e182cfce09e5052de40a02961c5fa14aa9791ae0e3d6f9c4d6a778633578",
+      "package_sha_matches_manifest": true,
+      "profile_id": 15,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "07879a43baf4beb10cd01f81f494f0a864b69aaa2299018e1e7e1d15b1837c35",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/survival-bloodgulch.json",
+      "manifest_sha256": "56460c084f836fb25992b7851481229379d18983b838fe976a9455faca81dc73",
+      "max_media_entry": {
+        "chunk_id": 1486,
+        "segment_sha256": "a450040e0863f1609ac7043a73c48fcda5eee15c589ef2cd9161e2c48d562266",
+        "size_bytes": 1303092
+      },
+      "media_entry_count": 2203,
+      "over_cap_media_entry_count": 568,
+      "package_path": "build/m2-c1-corpus-primary-v3/survival-bloodgulch.hcp",
+      "package_sha256": "07879a43baf4beb10cd01f81f494f0a864b69aaa2299018e1e7e1d15b1837c35",
+      "package_sha_matches_manifest": true,
+      "profile_id": 16,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "dfed53c59fcb55a8b446555b9a4b3a0a6c3e2342aafa594f02397f6cfddb73fe",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/survival-boardingaction.json",
+      "manifest_sha256": "12ec0903720c02ae6ea770808f19fcf262c9cc4f70cd31c6d4530a22429d2f65",
+      "max_media_entry": {
+        "chunk_id": 1473,
+        "segment_sha256": "ef431fb992389f8906ffc7bac6b60689d632f692793f5d26b21131e7a359b878",
+        "size_bytes": 1354156
+      },
+      "media_entry_count": 2165,
+      "over_cap_media_entry_count": 560,
+      "package_path": "build/m2-c1-corpus-primary-v3/survival-boardingaction.hcp",
+      "package_sha256": "dfed53c59fcb55a8b446555b9a4b3a0a6c3e2342aafa594f02397f6cfddb73fe",
+      "package_sha_matches_manifest": true,
+      "profile_id": 17,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "432e29a6d2156a9871ab1a054ea50a9d3e1d902863e5b2a403b4f55dfa455e58",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/survival-carousel.json",
+      "manifest_sha256": "abd902e75e417f47f0826e2fbf5b343ed29b4ae284b78817206ce0bb6c5b816f",
+      "max_media_entry": {
+        "chunk_id": 1489,
+        "segment_sha256": "07887d8ff9903f3e552f51661cba954da6e68b88438f65243b787ab09cfc8171",
+        "size_bytes": 960464
+      },
+      "media_entry_count": 2167,
+      "over_cap_media_entry_count": 560,
+      "package_path": "build/m2-c1-corpus-primary-v3/survival-carousel.hcp",
+      "package_sha256": "432e29a6d2156a9871ab1a054ea50a9d3e1d902863e5b2a403b4f55dfa455e58",
+      "package_sha_matches_manifest": true,
+      "profile_id": 18,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "0a739b4a44d8af1dd2362de37eca0fba9445936a2986690f1b5e24f520584a48",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/survival-chillout.json",
+      "manifest_sha256": "c5be60daaea605d68df42aa1173bfd38380ce2e806360290906a88330f1cb2c2",
+      "max_media_entry": {
+        "chunk_id": 1475,
+        "segment_sha256": "07887d8ff9903f3e552f51661cba954da6e68b88438f65243b787ab09cfc8171",
+        "size_bytes": 960464
+      },
+      "media_entry_count": 2149,
+      "over_cap_media_entry_count": 558,
+      "package_path": "build/m2-c1-corpus-primary-v3/survival-chillout.hcp",
+      "package_sha256": "0a739b4a44d8af1dd2362de37eca0fba9445936a2986690f1b5e24f520584a48",
+      "package_sha_matches_manifest": true,
+      "profile_id": 19,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "3d04734fbc2f70c3467ff97e7e134a808ead3610572cf30a78a4ce9d7de52a34",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/survival-damnation.json",
+      "manifest_sha256": "51b81c5c3a33d846d508ed31ba38ac1c903efc0fafd4e19b1bbe6fae33df3239",
+      "max_media_entry": {
+        "chunk_id": 1471,
+        "segment_sha256": "380f8e81df22ca57e6b4622fabed0659fbd441750d3c7434a83ceaf941a68641",
+        "size_bytes": 1326816
+      },
+      "media_entry_count": 2166,
+      "over_cap_media_entry_count": 561,
+      "package_path": "build/m2-c1-corpus-primary-v3/survival-damnation.hcp",
+      "package_sha256": "3d04734fbc2f70c3467ff97e7e134a808ead3610572cf30a78a4ce9d7de52a34",
+      "package_sha_matches_manifest": true,
+      "profile_id": 20,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "36a3ca9a1f77b7bdd262c706bcdd938f0b74bc9465b295320e8dd590a104de47",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/survival-hangemhigh.json",
+      "manifest_sha256": "302407e4e8d3b2fa9ae0720d6649f150809545d83ed590dbf29a5b89eabf22cc",
+      "max_media_entry": {
+        "chunk_id": 1461,
+        "segment_sha256": "07887d8ff9903f3e552f51661cba954da6e68b88438f65243b787ab09cfc8171",
+        "size_bytes": 960464
+      },
+      "media_entry_count": 2133,
+      "over_cap_media_entry_count": 563,
+      "package_path": "build/m2-c1-corpus-primary-v3/survival-hangemhigh.hcp",
+      "package_sha256": "36a3ca9a1f77b7bdd262c706bcdd938f0b74bc9465b295320e8dd590a104de47",
+      "package_sha_matches_manifest": true,
+      "profile_id": 21,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "45b0cba3f96b42f84e981b24f182a22d4e345f2f1fe05cc4dbf165af32a0c5aa",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/survival-longest.json",
+      "manifest_sha256": "95ce1572c6bb9695142292d00b44f1a32623466c27a8fbfe2989920fe3db27c0",
+      "max_media_entry": {
+        "chunk_id": 1463,
+        "segment_sha256": "07887d8ff9903f3e552f51661cba954da6e68b88438f65243b787ab09cfc8171",
+        "size_bytes": 960464
+      },
+      "media_entry_count": 2133,
+      "over_cap_media_entry_count": 560,
+      "package_path": "build/m2-c1-corpus-primary-v3/survival-longest.hcp",
+      "package_sha256": "45b0cba3f96b42f84e981b24f182a22d4e345f2f1fe05cc4dbf165af32a0c5aa",
+      "package_sha_matches_manifest": true,
+      "profile_id": 22,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "bd052d24319ea37845a7c7144699c5e22c5e83374c019b615b7ac6c6d988f09b",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/survival-prisoner.json",
+      "manifest_sha256": "4775324a3c197963f11d37e5dbe4b4fb91edb9232916e00e620179a43acd8a18",
+      "max_media_entry": {
+        "chunk_id": 1467,
+        "segment_sha256": "07887d8ff9903f3e552f51661cba954da6e68b88438f65243b787ab09cfc8171",
+        "size_bytes": 960464
+      },
+      "media_entry_count": 2135,
+      "over_cap_media_entry_count": 561,
+      "package_path": "build/m2-c1-corpus-primary-v3/survival-prisoner.hcp",
+      "package_sha256": "bd052d24319ea37845a7c7144699c5e22c5e83374c019b615b7ac6c6d988f09b",
+      "package_sha_matches_manifest": true,
+      "profile_id": 23,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "bf7fd8085ae28d300250d99202a7edb681f25e973da04db1104f70ab3c7cc3bf",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/survival-putput.json",
+      "manifest_sha256": "2e4b67cb9a80a72186e50a7ded79927b148a99552ff9a8f8b406883c1e9643b4",
+      "max_media_entry": {
+        "chunk_id": 1447,
+        "segment_sha256": "ecde8f4534fcf8ef1e2f274775c3c26070e33e05c04d96c034fd8afe994d6274",
+        "size_bytes": 1643044
+      },
+      "media_entry_count": 2129,
+      "over_cap_media_entry_count": 556,
+      "package_path": "build/m2-c1-corpus-primary-v3/survival-putput.hcp",
+      "package_sha256": "bf7fd8085ae28d300250d99202a7edb681f25e973da04db1104f70ab3c7cc3bf",
+      "package_sha_matches_manifest": true,
+      "profile_id": 24,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "9a215e2603d02d50008906f5c00afc7aaf1b2e726f2207ced93d2c7602a953c7",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/survival-ratrace.json",
+      "manifest_sha256": "d2e5ddd7349cd4335a63e389c1b885390629b6a6bb76516b30c16bb8f0916995",
+      "max_media_entry": {
+        "chunk_id": 1479,
+        "segment_sha256": "07887d8ff9903f3e552f51661cba954da6e68b88438f65243b787ab09cfc8171",
+        "size_bytes": 960464
+      },
+      "media_entry_count": 2153,
+      "over_cap_media_entry_count": 559,
+      "package_path": "build/m2-c1-corpus-primary-v3/survival-ratrace.hcp",
+      "package_sha256": "9a215e2603d02d50008906f5c00afc7aaf1b2e726f2207ced93d2c7602a953c7",
+      "package_sha_matches_manifest": true,
+      "profile_id": 25,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "ef9a06124118fc418f46a69aa5f6afacaadc07f04a99f2fa09bfc2d206234cb1",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/survival-sidewinder.json",
+      "manifest_sha256": "304fa541d5c5bb6678fdf39de1c4ba77708a1cac4b1011ab35614ae7d5a57abf",
+      "max_media_entry": {
+        "chunk_id": 1485,
+        "segment_sha256": "14c3ad02cc07b4648681fd1cc9e05a1c384bdf1a7b0375d29adfa0ac7eb3af9e",
+        "size_bytes": 1993740
+      },
+      "media_entry_count": 2185,
+      "over_cap_media_entry_count": 566,
+      "package_path": "build/m2-c1-corpus-primary-v3/survival-sidewinder.hcp",
+      "package_sha256": "ef9a06124118fc418f46a69aa5f6afacaadc07f04a99f2fa09bfc2d206234cb1",
+      "package_sha_matches_manifest": true,
+      "profile_id": 26,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "06591fcf40b2b7433b8d8f3099a4d5b09e94f12e8d67bf949f26b82241c27bbd",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/survival-wizard.json",
+      "manifest_sha256": "fa10c3b072617bdee5a266118bf319bd383b397318aeac23807ed6434f9767c3",
+      "max_media_entry": {
+        "chunk_id": 1467,
+        "segment_sha256": "07887d8ff9903f3e552f51661cba954da6e68b88438f65243b787ab09cfc8171",
+        "size_bytes": 960464
+      },
+      "media_entry_count": 2143,
+      "over_cap_media_entry_count": 559,
+      "package_path": "build/m2-c1-corpus-primary-v3/survival-wizard.hcp",
+      "package_sha256": "06591fcf40b2b7433b8d8f3099a4d5b09e94f12e8d67bf949f26b82241c27bbd",
+      "package_sha_matches_manifest": true,
+      "profile_id": 27,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    },
+    {
+      "manifest_package_sha256": "4583d75d4b2416887a870c577efb03834bae40658358aa74ba681a9b102c0400",
+      "manifest_path": "build/m2-c1-corpus-primary-v3/ui.json",
+      "manifest_sha256": "1463718a37362a14e41c284503a955e2d1421b49a6f78921a3528d63c2a6ec86",
+      "max_media_entry": {
+        "chunk_id": 62,
+        "segment_sha256": "6c7ef7155534be2c79e492e224ccdf59531ef4bddc82f9f15ef53dfd56f2cde8",
+        "size_bytes": 177536
+      },
+      "media_entry_count": 65,
+      "over_cap_media_entry_count": 6,
+      "package_path": "build/m2-c1-corpus-primary-v3/ui.hcp",
+      "package_sha256": "4583d75d4b2416887a870c577efb03834bae40658358aa74ba681a9b102c0400",
+      "package_sha_matches_manifest": true,
+      "profile_id": 1,
+      "strict_validator": {
+        "accepted": false,
+        "error": "HCP media chunk exceeds 65536-byte decoded limit",
+        "error_type": "ProfileValidationError"
+      }
+    }
+  ],
+  "profiles_directory": "build/m2-c1-corpus-primary-v3",
+  "qualification": {
+    "format": "hcu-c1-qualification-v1",
+    "path": "docs/reports/m2-c1-qualification-2026-10-23.json",
+    "qualified": true,
+    "sha256": "5db2da13630d640095b9c5807fe027de3dc2ee767f7d696aa172bc713a54c12a",
+    "status": "pass",
+    "summary": {
+      "failed": 0,
+      "open": 0,
+      "passed": 6
+    }
+  },
+  "schema": "hcu-c1-media-chunk-cap-audit-v1",
+  "strict_validator_fail_count": 27,
+  "strict_validator_pass_count": 0
+}

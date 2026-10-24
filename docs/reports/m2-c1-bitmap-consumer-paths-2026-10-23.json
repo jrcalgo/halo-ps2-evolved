@@ -1,0 +1,151 @@
+{
+  "schema": "hcu-c1-bitmap-consumer-paths-v1",
+  "date": "2026-10-23",
+  "result": "concrete-minimal-seam-identified; no live UI/effect bitmap consumer qualified",
+  "scope": "Trace retained CE HUD/interface bitmap and sprite selection to PS2 packet construction; distinguish BSP base material texture use from model OTEX coverage.",
+  "findings": [
+    {
+      "id": "ce-hud-path",
+      "entry": "submodules/halo-ce-universal/source/interface/hud.c:hud_draw_screen",
+      "path": [
+        "hud_draw_screen() [direct frame caller: interface_render() in source/interface/interface.c:728] -> hud_render_weapon_interface()/hud_render_unit_interface()/hud_render_nav_points()/hud_render_damage_indicators()",
+        "submodules/halo-ce-universal/source/interface/hud_weapon.c and hud_unit.c -> hud_draw_bitmap_with_meter()/hud_draw_bitmap_direct()",
+        "hud_retrieve_bitmap_and_bounding_rect(bitmap_group_index, sequence_index, frame_index, bitmap**, clip**) selects sequence sprite.bitmap_index and returns bitmap plus UV clip",
+        "hud_draw_bitmap_direct(bitmap, placement, point, clip, scale, theta, color, is_interface_bitmap) -> hud_draw_bitmap_internal(...) builds 4 dynamic_screen_vertex records with position, UV, color",
+        "hud_draw_bitmap_internal -> rasterizer_psuedo_dynamic_screen_quad_draw(parameters, vertices)"
+      ],
+      "parameters": "dynamic_screen_geometry_parameters contains bitmap_data *map[0], map scale/texture scale, point-sampling, blend; 4 vertices carry screen position, UV and ARGB color.",
+      "host_callers": "interface_render() directly calls hud_draw_screen() at interface.c:728. hud_draw_screen wraps HUD draws with rasterizer_hud_begin/end and invokes weapon, unit, nav-point and damage HUD. hud_draw.c element/number/meter callers resolve sprite bitmap and clip then call hud_draw_bitmap_direct/hud_draw_bitmap_with_meter. interface_draw_bitmap is an additional concrete call from hud.c for the multiplayer HUD marker. This is CE source call reachability; the inspected PS2 engine main.c does not call CE hud_draw_screen: its loop calls bsp_render_build(...), waits/presents and bsp_render_kick(...).",
+      "reach": "In CE game code, hud_draw_screen is reached from normal per-player interface/HUD frame flow; within this source slice it wraps its content in rasterizer_hud_begin/end. The inspected PS2 engine main.c does not call CE hud_draw_screen: its own loop calls bsp_render_build(...), waits/presents and bsp_render_kick(...). So source call reachability does not constitute an integrated PS2 runtime path."
+    },
+    {
+      "id": "rasterizer-stub-and-actual-gs",
+      "entry": "submodules/halo-ce-universal/source/rasterizer/rasterizer.c:rasterizer_psuedo_dynamic_screen_quad_draw",
+      "path": "Thin dispatch wrapper to _rasterizer_psuedo_dynamic_screen_quad_draw. The definition is the Xbox D3D implementation in source/rasterizer/xbox/rasterizer_xbox_dynavobgeom.c, with global_d3d_device/D3D dynamic screen geometry calls; it is not a PS2 backend. The target-side executable clone is the declaration/dispatch source, not a target adaptation. PS2 GS packet builder lives separately in halo-ps2 engine/src/render/bsp_render.c and chain/upload/gs modules. No wrapper translating CE dynamic_screen_vertex + bitmap_data to the PS2 chain/GS texcache was found.",
+      "minimal_implementation": "Introduce a bitmap quad submission seam at the current PS2 frame-chain boundary: accept decoded/retained image descriptor or independently serialized bitmap handle, source dimensions, sprite UV rectangle, screen rectangle/rotation, tint/alpha, and blend mode; resolve a stable image key to texcache residency; emit 2 triangles with UV and color using existing chain/VU or direct packed GS sprite packet. Call it from an HCU screen-quad consumer implemented for this target, with a first test using one UI bitmap/sprite. Keep per-frame upload budget, deferred eviction rule (current/previous frame), and immutable snapshot data; do not route via the Xbox D3D function."
+    },
+    {
+      "id": "best-existing-consumer-shape",
+      "entry": "submodules/halo-ce-universal/source/interface/interface.c:interface_draw_bitmap",
+      "path": "Smallest proven CE geometry semantic is one textured quad; its exact arguments include bitmap, screen point, optional normalized clip/sprite UV, scale, rotation, fade. hud_draw_bitmap_direct adds placement semantics but resolves to the same 4-vertex draw. Reuse semantic input, not Xbox backend implementation."
+    },
+    {
+      "id": "existing-bitmap-texture-paths",
+      "entry": "submodules/halo-ps2/engine/src/world/world.c:world_load and world_load_objects",
+      "path": "world_load opens BSPn and TEXS/LMn for BSP material path; src_binding adapts object OTEX bindings. tex.c parses TEXS; bsp_render.c emits BSP GS draw packets. docs/09-tex-section.md defines TEXS as BSP lightmap-material base texture table; object/sky/particle/UI consumers are later scope; it explicitly calls out dropped BSP detail/bump/self-illumination/reflection maps. Object OTEX is separate from BSP TEXS."
+    },
+    {
+      "id": "media-status-correction",
+      "entry": "docs/reports/m2-c1-media-coverage-2026-10-23.json:admission and map_bitmap_status_counts",
+      "path": "The inventory says 987 bitmap records covered by model OTEX, 1,311 unsupported effect/sprite, 1,792 unsupported/unbound. A bitmap whose actual owner is an senv/sotr/schi/etc shader used by a structure BSP material can be bound through BSP TEXS and consumed by bsp_render; that does not require UI bitmap drawing and is not represented by the model_OTEX consumer label. Correct attribution needs owner shader tag id -> BSPS material shader_id crosswalk and TEXS binding, while retaining the genuinely unsupported cases (e.g. part/lens sprite owners and standalone UI roots). Current count labels alone do not prove every unbound record is a BSP material."
+    }
+  ],
+  "documentation_consulted": {
+    "halo_ps2": [
+      "docs/01-ps2-architecture.md",
+      "docs/03-engine-architecture.md",
+      "docs/05-halo-ce-data.md",
+      "docs/09-tex-section.md"
+    ],
+    "halo_ce": [
+      "docs/custom_edition_caches.md",
+      "docs/mods.md"
+    ],
+    "halo64_n64": [
+      "port/n64/docs/pc-expansion/README.md",
+      "PROVENANCE.md"
+    ],
+    "empty_or_missing_in_checkout": [
+      "ps2sdk/docs",
+      "ps2client/doc",
+      "ps2sdk/iop/usb/usbhdfsd/doc",
+      "ps2sdk/iop/iLink/IEEE1394_disk/doc",
+      "ps2sdk/iop/iLink/iLinkman/doc",
+      "ps2sdk/ee/rpc/camera/doc"
+    ]
+  },
+  "limitations": [
+    "Source inspection only; no runtime HCP UI bitmap or sprite draw was executed.",
+    "No qualified HCP profile currently supplies UI/effect bitmap consumers; the existing UI profile attempt failed at media admission.",
+    "The PS2 compositor seam is an implementation proposal; no code or budget change is included.",
+    "The bitmap coverage inventory does not publish the BSP material shader-id crosswalk needed to reclassify the count definitively."
+  ],
+  "evidence_files": [
+    {
+      "path": "submodules/halo-ce-universal/source/interface/hud_draw.c",
+      "sha256": "a629370cb794726c8f04d63ea6083c3387973dab8afc5b6ad0dbd04c2d995a8d"
+    },
+    {
+      "path": "submodules/halo-ce-universal/source/interface/interface.c",
+      "sha256": "daae4d7fdcf3cbac1a709cf532b818bc939477735255e8aa37d4e88ef0d92670"
+    },
+    {
+      "path": "submodules/halo-ce-universal/source/interface/hud.c",
+      "sha256": "114c40dd9f63a88256ca6385d104db3187af4427980a4362dd1c4c9371d4663f"
+    },
+    {
+      "path": "submodules/halo-ce-universal/source/rasterizer/rasterizer.c",
+      "sha256": "f306b55f34adfba603af46b173d804cb924ab3e9fd75e5ae25ff2c40c2eaf3f8"
+    },
+    {
+      "path": "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_dynavobgeom.c",
+      "sha256": "ff50bbc9c793cd5cde715a0b307ada2ce52cf03627896a1fe11975fc8b49b575"
+    },
+    {
+      "path": "submodules/halo-ce-universal/port/linux/game/hud_hires_tags.c",
+      "sha256": "6e7c93ac1c6113781bc5b7ca50a20001ffad02b0126278febb00325ce50449bd"
+    },
+    {
+      "path": "submodules/halo-ps2/engine/src/main.c",
+      "sha256": "856122bbedc70418ec1350b3a4011c33efc71e1c1d727ca314aa6f3e5cbb6b08"
+    },
+    {
+      "path": "submodules/halo-ps2/engine/src/render/bsp_render.c",
+      "sha256": "def69c8d881067f9270182fbe7c2ffb066ca4fbbbed8beafabc0b96dd91f5780"
+    },
+    {
+      "path": "submodules/halo-ps2/engine/src/render/texcache.c",
+      "sha256": "ca96034bb8172af24dd6b604559bea96dc53e34b980ff3295663102d8c920990"
+    },
+    {
+      "path": "submodules/halo-ps2/engine/src/world/world.c",
+      "sha256": "08953825220bc667de7cf86379c2953d00c483a31847089290fbe083723e4505"
+    },
+    {
+      "path": "submodules/halo-ps2/engine/src/world/tex.c",
+      "sha256": "af80b631ff572f0d4913b96924a60a3f2fdcccf66593166733afca847403193f"
+    },
+    {
+      "path": "submodules/halo-ps2/docs/09-tex-section.md",
+      "sha256": "b59999903e0b84a9988fd65e605be72223097a40c6934e55731218322fc393a4"
+    },
+    {
+      "path": "submodules/halo-ps2/docs/03-engine-architecture.md",
+      "sha256": "9fd93ea4aa13cd1454617a64bf26291c7d7f078c2d4b4365fd5cba0a4666c488"
+    },
+    {
+      "path": "submodules/halo-ps2/docs/05-halo-ce-data.md",
+      "sha256": "0bfc024417c348005f45a115763328f208e965e5829600b80cc5264f973356c9"
+    },
+    {
+      "path": "docs/reports/m2-c1-media-coverage-2026-10-23.json",
+      "sha256": "ca622f0fc42877fea8a71361699dc3b701f2789a941b22958f96dada895f6130"
+    },
+    {
+      "path": "submodules/halo-ce-universal/docs/mods.md",
+      "sha256": "af1f5c0ad57941753d4b908972fa6278075d31bcac6e3881f8cf4bd8801988c0"
+    },
+    {
+      "path": "submodules/halo-ce-universal/docs/custom_edition_caches.md",
+      "sha256": "6790c640dd88b48c1fb03386c9d48a43d9a862050ab48109d26e65c4de084b29"
+    },
+    {
+      "path": "submodules/halo-64/port/n64/docs/pc-expansion/README.md",
+      "sha256": "b1beeb66098fa1360ca403e40fa3442f1bd89377d2cb002c7529aa45242da841"
+    },
+    {
+      "path": "submodules/halo-64/port/n64/docs/pc-expansion/PROVENANCE.md",
+      "sha256": "fadf910f5e82e06f05c1ca4521c9f18e51f4df437fb0fc50c08612541a627ceb"
+    }
+  ]
+}

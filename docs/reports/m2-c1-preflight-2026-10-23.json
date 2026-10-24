@@ -1,0 +1,66 @@
+{
+  "format": "hcu-c1-preflight-audit-v1",
+  "date": "2026-10-23",
+  "result": "fail-closed-envelope-and-preflight-boundary-present; production-profile-compatibility-open",
+  "checks": {
+    "registration": [
+      "Profile registration requires a nonzero expected profile id, canonical catalog map name, bounded HCP image reader, externally supplied exact package SHA-256, and non-null compatibility callback.",
+      "Before registration commits state, HCP header/directory bounds, canonical chunk ordering, all chunk SHA-256 values, the full package SHA-256, and the callback are checked.",
+      "A failed registration leaves the prior service registration, live mount, source reader, and arenas unchanged."
+    ],
+    "map_preflight": [
+      "A requested profile name must match the target catalog map name.",
+      "Every invocation rereads and verifies the HCP package and all chunks, then invokes the mandatory compatibility callback before same-map reuse, pending staging, source open, or arena marks.",
+      "The callback is invoked both when registering and at map preflight and is documented as read-only and fail closed.",
+      "CE residency remains the existing CTAG-backed mount. The stored profile view is validation metadata only; no claim is made that profile CE bytes are published to CE."
+    ],
+    "fixture": [
+      "The lifecycle fixture accepts a structurally valid HCP envelope containing opaque CE, media, and sound-metadata byte strings when a fixture callback checks their presence and accepts the map name. Those payloads are not valid CTAG/HSM1/MODL/OTEX/ANIM fixtures, so this is not inner-format validation.",
+      "It rejects a callback/map mismatch without service mutation.",
+      "It rejects a changed sound-metadata chunk even after the in-package chunk hash is updated, because the external whole-package pin no longer matches.",
+      "It rejects same-map preflight after profile backing bytes change, preserving the active CE/service snapshot."
+    ]
+  },
+  "compatibility_limitations": [
+    "No production profile-registration caller or product compatibility validator is currently wired. The lifecycle callback is fixture-only and checks map-name identity plus chunk presence; it does not check CE envelope/schema/scenario metadata, media structure/bounds, or source bindings. Therefore this gate does not establish admission of an imported profile in the product.",
+    "The current HCP directory binds each chunk's type, id, extent, and digest, but carries no typed dependency rows mapping tag handles/datums and source keys to media chunk ids or HP2 section tags. A profile-specific callback must supply that externally pinned mapping before a profile can be admitted.",
+    "tools/hcu_profile_import.py resolves tag-reference and typed-index dependencies across selected source maps and emits file_data source descriptors, but the HCP encoder does not serialize those dependency relationships. The importer can therefore combine roots from multiple maps without the HCP package itself proving their target identity.",
+    "tools/hcu_profile_media.py converts selected model/animation assets into MODL, OTEX, and ANIM chunks. Bitmap bindings are only accepted through a qualified OTEX model binding. Sound metadata is identity/request metadata only; SPU2 sample payload playback remains a separate path.",
+    "The current map-service loader still mounts CTAG from the catalog HP2 package and uses its existing resource/source path. It does not mount HCP CE data or dispatch HCP media chunks. The mandatory callback is a compatibility seam, not a runtime importer or media loader.",
+    "The CRNG resource index is map-file-only. The contract documents that separate bitmaps.map and sounds.map sources need explicit corpus and source support before they can be admitted."
+  ],
+  "source_identity_sha256": {
+    "src/stream/hcu_map_service.c": "878b950427148ce043fc81c148f7d0f661c5bd7ef3d576caf7c9f1403ae65ac4",
+    "src/stream/hcu_map_service.h": "92284b7f2aa51d9ae33313fe4944ff906875d1c4b92d52d2a0efa9d3c8f96a87",
+    "src/stream/hcu_asset_profile.c": "a81f0dbeaac7b3f49192c8a42fde2c0e50a4cf86ae1e12047340250c2de233ac",
+    "src/stream/hcu_asset_profile.h": "7f1c3cf23ef188d0c89ad0e6d56d104bea8c7f97d5ebcda20672248088fea373",
+    "tools/hcu_profile_chunks.py": "d7bfdaa69725f4f5b7ccb1e317fc52d074f6a8125c42c1dc449447e609c0c611",
+    "tools/hcu_profile_import.py": "b91f9b1b415d7ddd542130ad40a139efb0120a4291d9500d24de1b7b75fdbc12",
+    "tools/hcu_profile_media.py": "bef3470b1b10b4e4f57cc6571cbc08b3df6612454dbfabd30103e38363184d19",
+    "tools/ctag.py": "37c24f66d85f3b54e7db1b5e5e75db541fd7d8fe3d61779d6e09a1c2468fbd68",
+    "tests/hcu_ce_map_lifecycle_main.c": "0b2e941f1ab438f545a156937ca241f9a8c09130850e1542c7b7b12407d229ec",
+    "tests/test_hcu_ce_map_lifecycle.py": "fbd81b4ba98a5c14ac4b59cfcc32683219177b3167f293fffacb9ac666eb992e",
+    "tests/test_hcu_asset_profile_chunks.py": "2fc3ba7299472cb580a653a7a73880f8454a859745ddcf1933162bf0e81794bf",
+    "tools/ee-world.mk": "8bf5d04f16a7facf16344a59d982baeb07fb659a003d80de96f75d0b5e488141"
+  },
+  "reference_document_sha256": {
+    "submodules/halo-ps2/docs/07-hp2-format.md": "77fe572703abaecb2dd7997f43b3801df6be7f545b8b40db35db436310efc0c5",
+    "submodules/halo-ps2/docs/05-halo-ce-data.md": "0bfc024417c348005f45a115763328f208e965e5829600b80cc5264f973356c9",
+    "submodules/halo-ce-universal/docs/custom_edition_caches.md": "6790c640dd88b48c1fb03386c9d48a43d9a862050ab48109d26e65c4de084b29",
+    "submodules/halo-64/port/n64/docs/pc-expansion/README.md": "b1beeb66098fa1360ca403e40fa3442f1bd89377d2cb002c7529aa45242da841",
+    "submodules/ps2client/doc/ps2netfs-protocol.txt": "86a0eede2f79ba73dec17cf7fc333a7dc0112ffe31b00207d163026a7c89d485",
+    "submodules/ps2client/doc/ps2link-protocol.txt": "abaeedd9be18ef099a86fb394447740aa71d5465200c6b29c092a60e89e0644f",
+    "submodules/ps2sdk/iop/usb/usbhdfsd/doc/usb_mass/README": "7a0c9da96e2dd219ce57cdd65ad73f21c0ea409d86c6b17d5ffa97844fc8e52a",
+    "submodules/ps2sdk/iop/iLink/IEEE1394_disk/doc/KnownBugs.txt": "1a2b2a43df99aa0f82737324e3f7eddccbd6547a1e7bb1057ee05e926d4021d7",
+    "submodules/ps2sdk/iop/iLink/iLinkman/doc/Notes.txt": "3fd043174fe8dc34031f38ebd4c4213c4910a6269e207104bf40e82e2a165d44",
+    "docs/hcu-tag-loader-contract.md": "804a60ed954642d0e1d4a10f6973cc49bdbd4d31a8df87b9eca2c00cb8130d01",
+    "tools/cbsp.py": "3c33e4d73458db4c61a922373fa0eeb0101d84f790b3e9e2d93218eff280c716"
+  },
+  "verification": {
+    "commands": [
+      "python3 -m pytest -q tests/test_hcu_asset_profile_chunks.py tests/test_hcu_ce_map_lifecycle.py",
+      "python3 -m pytest -q tests/test_hcu_ce_map_lifecycle.py (escalated after sandbox SIGSYS skip)"
+    ],
+    "result": "The sandbox run reported 4 passed and 1 skipped (native ILP32 process blocked with SIGSYS); the escalated lifecycle rerun reported 1 passed."
+  }
+}

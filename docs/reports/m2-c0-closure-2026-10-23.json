@@ -1,0 +1,82 @@
+{
+  "byte_dispositions": {
+    "disposition_rows": 164,
+    "inventory_rows": 164,
+    "issues": [],
+    "unclassified_member_dispositions": 0,
+    "unexplained_removals": 0
+  },
+  "checks": [
+    {
+      "evidence": "Repository/toolchain/schema/budget/map/package pins, dirty-source manifest, all compiled sources and reproducible current packages.",
+      "item": 1,
+      "passed": true
+    },
+    {
+      "evidence": "Every row records required fields and individual identity availability; incomplete identities cannot qualify a row; execution modes have separate records.",
+      "item": 2,
+      "passed": true
+    },
+    {
+      "evidence": "11 swarm reports, 28 Step 8 reports, and 15 MP reports in 11 scoped groups; imported diagnostic results are never promoted.",
+      "item": 3,
+      "passed": true
+    },
+    {
+      "evidence": "164 member dispositions with complete definition byte coverage, linked compiler ownership, explicit normalization policies, retained-byte tests and synthetic nonempty coverage.",
+      "item": 4,
+      "passed": true
+    },
+    {
+      "evidence": "Current dependency freshness plus passing mutation/invalidation tests. Missing historical run settings keep exact-run acceptance partial.",
+      "item": 5,
+      "passed": true
+    }
+  ],
+  "format": "hcu-c0-closure-v1",
+  "freshness": {
+    "independent_rows_preserved": 75,
+    "repository_state_drift_count": 0,
+    "rows_checked": 75,
+    "rows_marked_stale": 0,
+    "stale_identity_count": 0
+  },
+  "identity_accounting": {
+    "exact_path_hash_bindings": 1447,
+    "explicit_dispositions": 0,
+    "missing_current_files": 6,
+    "stale_hashes": 134,
+    "unclassified_identity_count": 0
+  },
+  "ledger_path": "docs/reports/m2-step7-step8-closure-ledger-2026-10-22.json",
+  "ledger_sha256": "e26aa9b9c5f146d1066bd302f9fd20c12cb2d7f24fe4cfc40da2aa7c1513ec7b",
+  "remaining_acceptance": [
+    "All unresolved identities remain missing evidence on their original acceptance rows.",
+    "Opaque member/runtime semantics, renderer integration, bots, survival, memory/timing and final exact-build qualification remain governed by C1-C7.",
+    "24 historical package invocation paths remain unavailable; current 36-package reproduction is recorded separately."
+  ],
+  "scope": "C0 baseline, evidence accounting and byte dispositions only. Step 7/8 consumer, rendering, workload and exact-build acceptance remain open.",
+  "status": "complete",
+  "step_status": {
+    "step7": {
+      "partial_rows": 34,
+      "qualified_rows": 1,
+      "status": "open",
+      "unrun_rows": 1
+    },
+    "step8": {
+      "partial_rows": 35,
+      "qualified_rows": 0,
+      "status": "open",
+      "unrun_rows": 4
+    }
+  },
+  "validation": {
+    "errors": 0,
+    "failures": 0,
+    "path": "build/hcu-step7-step8-c0/c0-validation.xml",
+    "sha256": "0c662df22e7298e1bb145e853bd937ee674924b861adfa0d896129eacae03b82",
+    "skipped": 0,
+    "tests": 173
+  }
+}
