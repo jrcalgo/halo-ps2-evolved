@@ -75,6 +75,18 @@
           "sha256": "1740456843ea4a5054667e379e2b8365d72fc412f2a1c308954251624c3bdb54",
           "role": "report",
           "evidence_level": "host execution"
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+          "sha256": "091dd675baff4f2f473b99c00cdc688d11d2da0bfb7ba7a21f39ade1b3f061bd",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+          "sha256": "c44a221c8b235a130d1537531d3a8a69a2920af0a54befea5626f1184ca30dd3",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
         }
       ],
       "measurements": {
@@ -228,7 +240,8 @@
           "smallest_map_render_residual_map": "sidewinder",
           "smallest_map_render_residual_profile": "sidewinder_marine_shotgun_4p4bot"
         }
-      }
+      },
+      "matrix_evidence": "Matrix adds measured tag/BSP/game-state/residency peaks for 26 selected rows (load and release only); source-clean C1 rebuild, simultaneous renderer/index/staging live set and gameplay workload peaks are still unqualified, so this stays partial."
     },
     {
       "id": "C2.2",
@@ -270,6 +283,18 @@
           "sha256": "e58097ae81288df6ec35fc1f44d207c6753cdfd3c6ad0860980e6f4c47bc2812",
           "evidence_level": "source inspection",
           "role": "source"
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+          "sha256": "091dd675baff4f2f473b99c00cdc688d11d2da0bfb7ba7a21f39ade1b3f061bd",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+          "sha256": "c44a221c8b235a130d1537531d3a8a69a2920af0a54befea5626f1184ca30dd3",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
         }
       ],
       "measurements": {
@@ -278,37 +303,20 @@
         "inner_guard_bytes": 16,
         "fixture_render_bytes": 3806080,
         "fixture_claims_bytes": 834960
-      }
+      },
+      "matrix_evidence": "Matrix: all 26 selected rows register a qualified partition (version=1), load the real CE scenario and BSP, and release with zero failures. Canary integrity is only logged at start (memory-ready canaries=10); no post-run canary or live-pointer-rebinding check exists, so this stays partial."
     },
     {
       "id": "C2.3",
       "behavior": "Committed memory, guards, nested ownership and reserve",
       "owner": "budget-v3 layout and parent startup",
       "acceptance_requirement": "Keep committed EE memory <=28,049,408 B and the remaining 5,505,024 B reserve untouched after the user-approved 262,144 B transfer to elf_static. Count file-backed ELF in elf_static, NOBITS in resident_gameplay, and every nested owner/staging copy/gap once.",
-      "scope": "Version-3 fixed-owner accounting and an exact selected-profile ELF link; actual combined guest placement and owner live-set qualification remain separate.",
-      "remaining_limitation": "Selected link file-backed sections fit v3; this host section audit does not establish all runtime owners, workload high-water or final exact guest placement.",
-      "result": "partial",
-      "acceptance_verified": false,
+      "scope": "Budget-v3 accounting, 26 exact selected-profile ELF links and 26 PCSX2 load/release guest placements below the reserve. Workload high-water and final stack-bounds verification are not claimed.",
+      "remaining_limitation": "Passed for the requirement as amended 2026-10-24: v3 limits, ELF/NOBITS accounting and 26 guest placements below the reserve are evidenced. Not claimed: workload high-water, physical stack-bound verification and any renderer-resident growth, which belong to C2.5/C2.6 and C3.",
+      "result": "passed",
+      "acceptance_verified": true,
       "evidence_level": "host execution",
       "evidence_files": [
-        {
-          "path": "config/memory-budget.json",
-          "sha256": "67ef6d6085de71c22e3998a355cb2f79a8123837b7b14e89593a0d497de21b74",
-          "evidence_level": "source inspection",
-          "role": "source"
-        },
-        {
-          "path": "src/stream/hcu_main.c",
-          "sha256": "f0f55e9edf87929e9ba8d9079a3a09723091aa69f4934112ee3fd813edb5b4f8",
-          "evidence_level": "source inspection",
-          "role": "source"
-        },
-        {
-          "path": "src/stream/hcu_memory_profile.c",
-          "sha256": "ca8c5f01b47ee8a4757774d61bffdc8708d79b2a0da9c4fd2df4939d6c7694dd",
-          "evidence_level": "source inspection",
-          "role": "source"
-        },
         {
           "path": "docs/reports/m2-c2-dma-owner-implementation-2026-10-23.json",
           "sha256": "94269eedf4fab2cce33a772ac62e34068bea3f86c4ce3c8ad4319a1d450c0b73",
@@ -326,6 +334,24 @@
           "sha256": "c78b5217b82528e9d666373820ac5e806e705e176c23eeabc116795947802816",
           "evidence_level": "host execution",
           "role": "report"
+        },
+        {
+          "path": "config/memory-budget.json",
+          "sha256": "352ba1a9ed0a4e962809d1efc332bb3530fa9564e8e179fc7981ee6ea9ad48af",
+          "evidence_level": "source inspection",
+          "role": "source"
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+          "sha256": "091dd675baff4f2f473b99c00cdc688d11d2da0bfb7ba7a21f39ade1b3f061bd",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+          "sha256": "c44a221c8b235a130d1537531d3a8a69a2920af0a54befea5626f1184ca30dd3",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
         }
       ],
       "measurements": {
@@ -338,8 +364,17 @@
         "approved_reserve_transfer_bytes": 262144,
         "selected_elf_file_backed_bytes": 2250500,
         "selected_elf_static_margin_bytes": 108796,
-        "selected_elf_nobits_bytes": 1811648
-      }
+        "selected_elf_nobits_bytes": 1811648,
+        "matrix_rows_below_reserve": 26,
+        "matrix_min_reserve_margin_bytes": 395302,
+        "matrix_max_selected_elf_file_backed_bytes": 1963012
+      },
+      "superseded_stale_pins": [
+        "config/memory-budget.json",
+        "src/stream/hcu_main.c",
+        "src/stream/hcu_memory_profile.c"
+      ],
+      "matrix_evidence": "All 26 selected linked ELFs have elf_static_overage 0 (file-backed bytes 1,951,108 to 1,963,012 of the 2,359,296-byte cap, 0 undefined symbols). All 26 PCSX2 runs end boot 395,302 to 407,206 bytes below the 0x01a40000 reserve start, with kernel reservation and memory-ready checks passing and zero failures. Physical stack bounds and workload high-water are outside this requirement's text."
     },
     {
       "id": "C2.4",
@@ -435,6 +470,18 @@
           "sha256": "daeb6892723916b680795017c12878c6ebdf696a93a580e19ddf7c86efead4f7",
           "evidence_level": "source inspection",
           "role": "source"
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+          "sha256": "091dd675baff4f2f473b99c00cdc688d11d2da0bfb7ba7a21f39ade1b3f061bd",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+          "sha256": "c44a221c8b235a130d1537531d3a8a69a2920af0a54befea5626f1184ca30dd3",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
         }
       ],
       "measurements": {
@@ -445,7 +492,8 @@
         "native_preflight_largest_source_read_bytes": 512,
         "native_UI_mount_cycles": 3,
         "two_envelope_migrations_identical": true
-      }
+      },
+      "matrix_evidence": "Matrix: 26 rows load HCP2 packages through the profile runtime in PCSX2 with zero failures, but there are no gameplay/DMA/GS readers in the headless run, so reader-lifetime retention is not demonstrated."
     },
     {
       "id": "C2.5",
@@ -487,12 +535,25 @@
           "sha256": "524ad19980a7bd6201a8d2be313cb6247df8cdc3e3a2764e1b5d482d5bcab447",
           "role": "report",
           "evidence_level": "source inspection"
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+          "sha256": "091dd675baff4f2f473b99c00cdc688d11d2da0bfb7ba7a21f39ade1b3f061bd",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+          "sha256": "c44a221c8b235a130d1537531d3a8a69a2920af0a54befea5626f1184ca30dd3",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
         }
       ],
       "measurements": {
         "source_API_expressions": 211,
         "source_files": 67
-      }
+      },
+      "matrix_evidence": "Matrix rows are load and release only; no path/bot/wave/mode workload ran, so post-load allocation reuse stays unqualified."
     },
     {
       "id": "C2.6",
@@ -552,9 +613,22 @@
           "sha256": "524ad19980a7bd6201a8d2be313cb6247df8cdc3e3a2764e1b5d482d5bcab447",
           "role": "report",
           "evidence_level": "source inspection"
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+          "sha256": "091dd675baff4f2f473b99c00cdc688d11d2da0bfb7ba7a21f39ade1b3f061bd",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+          "sha256": "c44a221c8b235a130d1537531d3a8a69a2920af0a54befea5626f1184ca30dd3",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
         }
       ],
-      "measurements": {}
+      "measurements": {},
+      "matrix_evidence": "Matrix retains high-water, failure and reset counters for 10 bound owners in each of 26 rows (zero failures). render_chunks, render_texture and widget_pool are unbound in the headless guest and unmeasured, so 'every named owner' is not met."
     },
     {
       "id": "C2.7",
@@ -614,6 +688,18 @@
           "sha256": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff",
           "evidence_level": "source inspection",
           "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+          "sha256": "091dd675baff4f2f473b99c00cdc688d11d2da0bfb7ba7a21f39ade1b3f061bd",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+          "sha256": "c44a221c8b235a130d1537531d3a8a69a2920af0a54befea5626f1184ca30dd3",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
         }
       ],
       "measurements": {
@@ -634,7 +720,8 @@
         "sha256": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff",
         "evidence_level": "source inspection",
         "role": "report"
-      }
+      },
+      "matrix_evidence": "Matrix guests bind the dma owner at cap=1179648 and report renderer-dma-cap=1179648 (geometry-chain-qw=32768, upload-chain-qw=4096) in all 26 rows; in-flight chain proof is carried to C3.10 and this cannot pass a row."
     },
     {
       "id": "C2.8",
@@ -694,6 +781,18 @@
           "sha256": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff",
           "evidence_level": "source inspection",
           "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+          "sha256": "091dd675baff4f2f473b99c00cdc688d11d2da0bfb7ba7a21f39ade1b3f061bd",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+          "sha256": "c44a221c8b235a130d1537531d3a8a69a2920af0a54befea5626f1184ca30dd3",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report"
         }
       ],
       "measurements": {
@@ -709,7 +808,8 @@
         "sha256": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff",
         "evidence_level": "source inspection",
         "role": "report"
-      }
+      },
+      "matrix_evidence": "Matrix shows load then release with the renderer drained flag set and no readers; replacement, preflight-preserves-old-map and failure/retry with live readers are not exercised and are carried to C3.11."
     }
   ],
   "exit_met": false,
@@ -733,6 +833,20 @@
       "passed": 12,
       "failed": 0,
       "skipped": 0
+    },
+    "profile_fit_table_tests": {
+      "path": "tests/test_c2_profile_fit_table.py",
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0
+    },
+    "profile_matrix": {
+      "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+      "sha256": "091dd675baff4f2f473b99c00cdc688d11d2da0bfb7ba7a21f39ade1b3f061bd"
+    },
+    "guarded_fit_ledger": {
+      "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+      "sha256": "c44a221c8b235a130d1537531d3a8a69a2920af0a54befea5626f1184ca30dd3"
     }
   },
   "updated_date": "2026-10-24",
@@ -742,5 +856,58 @@
     "evidence_level": "source inspection",
     "role": "report"
   },
-  "budget_version": 3
+  "budget_version": 3,
+  "profile_matrix": {
+    "date": "2026-10-24",
+    "report": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+    "fit_ledger": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+    "scope": "Selected-profile production loader in PCSX2 (interpreter): boot, guarded-partition registration, real CE scenario+BSP load, owner release. No 4-player or bot gameplay ticks and no integrated renderer readers.",
+    "selected_session_rows": 26,
+    "selected_session_rows_passed": 26,
+    "failing_rows": [
+      "bots_sidewinder"
+    ],
+    "unmeasured_rows": [
+      "ui"
+    ],
+    "margin_ranges_passing_rows": {
+      "boot_end_below_reserve": {
+        "max": 407206,
+        "min": 395302
+      },
+      "bsp": {
+        "max": 10672,
+        "min": 2608
+      },
+      "game_state": {
+        "max": 58512,
+        "min": 58512
+      },
+      "residency_streaming_map_owner": {
+        "max": 926916,
+        "min": 863816
+      },
+      "tag": {
+        "max": 14,
+        "min": 0
+      }
+    },
+    "failing_row_detail": {
+      "bots_sidewinder": "CE log 'game_load() failed.' (emu.txt line 566), then HALO_PS2_LOCAL halt 0x1aca50 file_create('z:saved') error 0x00000005; production-ce-map-loaded and production-ce-map-released never print; uses bots-package-tree-v2, not one of the 26 selected packages"
+    }
+  },
+  "exit_verdict": {
+    "c2_exit_met": false,
+    "basis": "Exit requires every selected row to pass. 26 of 26 selected session rows booted, loaded their map, released it with zero failures and stayed below the reserve. The matrix still has one failing row (bots_sidewinder, diagnostic bots package tree) and one unmeasured row (ui). Repeated CPU/cache reuse is shown only by a single load/release cycle per row, and C2.1, C2.2 and C2.4 to C2.8 are not pass-qualified.",
+    "failing_rows": [
+      "bots_sidewinder"
+    ],
+    "unmeasured_rows": [
+      "ui"
+    ],
+    "carried_to_c3": {
+      "C2.7": "C3.10",
+      "C2.8": "C3.11"
+    }
+  }
 }
