@@ -1,0 +1,2963 @@
+{
+  "exact_layout_report_path": "docs/reports/m2-step7-eight-unmapped-exact-layout-2026-10-22.json",
+  "exact_layout_report_sha256": "26eca45978fb3d4a343e4e8660ee658dcbb3ccb7b963adb9a9b02a5fa4e71c61",
+  "format": "hcu-step7-unclassified-range-dispositions-v1",
+  "generated_by": "tools/audit_step7_unclassified_range_dispositions.py",
+  "interpretation": "Compiler ownership and byte disposition are separate. Each range has a synthetic exact-offset retained-byte check; its serialized bytes are dispositioned as opaque retained data. Consumer semantics and target execution remain open.",
+  "inventory_path": "docs/reports/m2-step7-bsp-member-inventory-2026-10-22.json",
+  "inventory_sha256": "29fa47457d98782d61a8b09a20f5d84d2d9e336640b4b3bbd3000a6305206d15",
+  "layout_report_path": "docs/reports/m2-step7-bsp-range-member-layout-2026-10-22.json",
+  "layout_report_sha256": "cc2b4687dbd4a15fd7069d1003d1402a0f0189b80d46c008b940814f4aa6685d",
+  "ranges": [
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "plane_index",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        },
+        {
+          "name": "leaf_indices",
+          "offset": 4,
+          "relation": "fully-contained-by-range",
+          "size": 8
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 12,
+        "fully_contained_member_count": 2,
+        "intersecting_member_count": 2,
+        "range_bytes": 12,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "leaf_portal",
+      "definition_id": "2982592",
+      "disposition": "open_schema_gap",
+      "inventory_path": "leaf_portal.<unclassified@0x0>",
+      "member_names": [
+        "plane_index",
+        "leaf_indices"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 12
+      },
+      "source_declaration": {
+        "line": 31,
+        "path": "submodules/halo-ce-universal/source/structures/leaf_map.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "d2147a97832cc0e3829d0dda27a84d7ae68bd866050034238044ec6c73349d91"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "node_index",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 4,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 4,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "map_leaf_face",
+      "definition_id": "2982808",
+      "disposition": "open_schema_gap",
+      "inventory_path": "map_leaf_face.<unclassified@0x0>",
+      "member_names": [
+        "node_index"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 4
+      },
+      "source_declaration": {
+        "line": 179,
+        "path": "submodules/halo-ce-universal/source/structures/leaf_map.c",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "8a37072ca5ea8de7ab2e7191d4aa3b76f89d3feca15d24f1aa58c9ae8418b20b"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "position",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 12
+        },
+        {
+          "name": "palette_index",
+          "offset": 12,
+          "relation": "fully-contained-by-range",
+          "size": 1
+        },
+        {
+          "name": "unused",
+          "offset": 13,
+          "relation": "fully-contained-by-range",
+          "size": 1
+        },
+        {
+          "name": "yaw",
+          "offset": 14,
+          "relation": "fully-contained-by-range",
+          "size": 1
+        },
+        {
+          "name": "pitch",
+          "offset": 15,
+          "relation": "fully-contained-by-range",
+          "size": 1
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 16,
+        "fully_contained_member_count": 5,
+        "intersecting_member_count": 5,
+        "range_bytes": 16,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_runtime_decal",
+      "definition_id": "2982896",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_runtime_decal.<unclassified@0x0>",
+      "member_names": [
+        "position",
+        "palette_index",
+        "unused",
+        "yaw",
+        "pitch"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 16
+      },
+      "source_declaration": {
+        "line": 136,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Compiler-derived member extent crosses the schema gap boundary.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "reserved18",
+          "offset": 24,
+          "relation": "partially-overlaps-range",
+          "size": 40
+        }
+      ],
+      "classification": "partial_compiler_member_overlap",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [
+          "reserved18"
+        ],
+        "covered_bytes": 16,
+        "fully_contained_member_count": 0,
+        "intersecting_member_count": 1,
+        "range_bytes": 16,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_detail_object_data",
+      "definition_id": "2982912",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_detail_object_data.<unclassified@0x30>",
+      "member_names": [
+        "reserved18"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 48,
+        "size": 16
+      },
+      "source_declaration": {
+        "line": 173,
+        "path": "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_detail_objects.c",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "1a91d34fd0e8a0683ac26b07077787996b4ed2b9c58b004c3609a358889d66c1"
+    },
+    {
+      "basis": "Dedicated R5900 compilation of the schema translation unit passed exact type-size and member-offset/extent assertions for this inventory range.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "i",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        },
+        {
+          "name": "j",
+          "offset": 4,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        },
+        {
+          "name": "k",
+          "offset": 8,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        },
+        {
+          "name": "l",
+          "offset": 12,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        }
+      ],
+      "classification": "compiler_exact_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 16,
+        "fully_contained_member_count": 4,
+        "intersecting_member_count": 4,
+        "range_bytes": 16,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "detail_object_z_reference_vector",
+      "definition_id": "2983144",
+      "disposition": "open_schema_gap",
+      "inventory_path": "detail_object_z_reference_vector.<unclassified@0x0>",
+      "member_names": [
+        "i",
+        "j",
+        "k",
+        "l"
+      ],
+      "probe_status": "exact_r5900_passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 16
+      },
+      "source_declaration": null,
+      "source_declaration_sha256": null
+    },
+    {
+      "basis": "Dedicated R5900 compilation of the schema translation unit passed exact type-size and member-offset/extent assertions for this inventory range.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "kind": "scalar-type-extent",
+          "name": "value",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        }
+      ],
+      "classification": "compiler_exact_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 2,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 2,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "detail_object_count",
+      "definition_id": "2983160",
+      "disposition": "open_schema_gap",
+      "inventory_path": "detail_object_count.<unclassified@0x0>",
+      "member_names": [
+        "value"
+      ],
+      "probe_status": "exact_r5900_passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 2
+      },
+      "source_declaration": null,
+      "source_declaration_sha256": null
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "position",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 3
+        },
+        {
+          "name": "data",
+          "offset": 3,
+          "relation": "fully-contained-by-range",
+          "size": 1
+        },
+        {
+          "name": "color",
+          "offset": 4,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 6,
+        "fully_contained_member_count": 3,
+        "intersecting_member_count": 3,
+        "range_bytes": 6,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "detail_object",
+      "definition_id": "2983176",
+      "disposition": "open_schema_gap",
+      "inventory_path": "detail_object.<unclassified@0x0>",
+      "member_names": [
+        "position",
+        "data",
+        "color"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 6
+      },
+      "source_declaration": {
+        "line": 108,
+        "path": "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_detail_objects.c",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "1a91d34fd0e8a0683ac26b07077787996b4ed2b9c58b004c3609a358889d66c1"
+    },
+    {
+      "basis": "Dedicated R5900 compilation of the schema translation unit passed exact type-size and member-offset/extent assertions for this inventory range.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "cell_x",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        },
+        {
+          "name": "cell_y",
+          "offset": 2,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        },
+        {
+          "name": "cell_z",
+          "offset": 4,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        },
+        {
+          "name": "offset_z",
+          "offset": 6,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        },
+        {
+          "name": "valid_layers",
+          "offset": 8,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        },
+        {
+          "name": "start_index",
+          "offset": 12,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        },
+        {
+          "name": "count_index",
+          "offset": 16,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        },
+        {
+          "name": "unused14",
+          "offset": 20,
+          "relation": "fully-contained-by-range",
+          "size": 12
+        }
+      ],
+      "classification": "compiler_exact_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 32,
+        "fully_contained_member_count": 8,
+        "intersecting_member_count": 8,
+        "range_bytes": 32,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "detail_object_cell",
+      "definition_id": "2983192",
+      "disposition": "open_schema_gap",
+      "inventory_path": "detail_object_cell.<unclassified@0x0>",
+      "member_names": [
+        "cell_x",
+        "cell_y",
+        "cell_z",
+        "offset_z",
+        "valid_layers",
+        "start_index",
+        "count_index",
+        "unused14"
+      ],
+      "probe_status": "exact_r5900_passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 32
+      },
+      "source_declaration": null,
+      "source_declaration_sha256": null
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "unused0",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 32
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 32,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 32,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_sound_environment_palette_entry",
+      "definition_id": "2983208",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_sound_environment_palette_entry.<unclassified@0x0>",
+      "member_names": [
+        "unused0"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 32
+      },
+      "source_declaration": {
+        "line": 126,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "unused30",
+          "offset": 48,
+          "relation": "fully-contained-by-range",
+          "size": 32
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 32,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 32,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_sound_environment_palette_entry",
+      "definition_id": "2983208",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_sound_environment_palette_entry.<unclassified@0x30>",
+      "member_names": [
+        "unused30"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 48,
+        "size": 32
+      },
+      "source_declaration": {
+        "line": 126,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "unused0",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 32
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 32,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 32,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_background_sound_palette_entry",
+      "definition_id": "2983336",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_background_sound_palette_entry.<unclassified@0x0>",
+      "member_names": [
+        "unused0"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 32
+      },
+      "source_declaration": {
+        "line": 116,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "unused30",
+          "offset": 48,
+          "relation": "fully-contained-by-range",
+          "size": 68
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 68,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 68,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_background_sound_palette_entry",
+      "definition_id": "2983336",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_background_sound_palette_entry.<unclassified@0x30>",
+      "member_names": [
+        "unused30"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 48,
+        "size": 68
+      },
+      "source_declaration": {
+        "line": 116,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "bounding_sphere_center",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 12
+        },
+        {
+          "name": "bounding_sphere_radius",
+          "offset": 12,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        },
+        {
+          "name": "unused",
+          "offset": 16,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 20,
+        "fully_contained_member_count": 3,
+        "intersecting_member_count": 3,
+        "range_bytes": 20,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_weather_polyhedron",
+      "definition_id": "2983472",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_weather_polyhedron.<unclassified@0x0>",
+      "member_names": [
+        "bounding_sphere_center",
+        "bounding_sphere_radius",
+        "unused"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 20
+      },
+      "source_declaration": {
+        "line": 252,
+        "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "5c6f2cbe81276d89203890b1dbba3eb833125b2eb1c8c24c4c96dd74d61360b3"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "name",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 32
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 32,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 32,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_weather_palette_entry",
+      "definition_id": "2983560",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_weather_palette_entry.<unclassified@0x0>",
+      "member_names": [
+        "name"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 32
+      },
+      "source_declaration": {
+        "line": 235,
+        "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "5c6f2cbe81276d89203890b1dbba3eb833125b2eb1c8c24c4c96dd74d61360b3"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "pad30",
+          "offset": 48,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        },
+        {
+          "name": "runtime_particle_system_global_function_index",
+          "offset": 50,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        },
+        {
+          "name": "particle_system_global_function_name",
+          "offset": 52,
+          "relation": "fully-contained-by-range",
+          "size": 32
+        },
+        {
+          "name": "particle_system_unused",
+          "offset": 84,
+          "relation": "fully-contained-by-range",
+          "size": 44
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 80,
+        "fully_contained_member_count": 4,
+        "intersecting_member_count": 4,
+        "range_bytes": 80,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_weather_palette_entry",
+      "definition_id": "2983560",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_weather_palette_entry.<unclassified@0x30>",
+      "member_names": [
+        "pad30",
+        "runtime_particle_system_global_function_index",
+        "particle_system_global_function_name",
+        "particle_system_unused"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 48,
+        "size": 80
+      },
+      "source_declaration": {
+        "line": 235,
+        "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "5c6f2cbe81276d89203890b1dbba3eb833125b2eb1c8c24c4c96dd74d61360b3"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "wind_direction",
+          "offset": 144,
+          "relation": "fully-contained-by-range",
+          "size": 12
+        },
+        {
+          "name": "wind_magnitude",
+          "offset": 156,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        },
+        {
+          "name": "padA0",
+          "offset": 160,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        },
+        {
+          "name": "wind_global_function_index",
+          "offset": 162,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        },
+        {
+          "name": "wind_global_function_name",
+          "offset": 164,
+          "relation": "fully-contained-by-range",
+          "size": 32
+        },
+        {
+          "name": "wind_unused",
+          "offset": 196,
+          "relation": "fully-contained-by-range",
+          "size": 44
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 96,
+        "fully_contained_member_count": 6,
+        "intersecting_member_count": 6,
+        "range_bytes": 96,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_weather_palette_entry",
+      "definition_id": "2983560",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_weather_palette_entry.<unclassified@0x90>",
+      "member_names": [
+        "wind_direction",
+        "wind_magnitude",
+        "padA0",
+        "wind_global_function_index",
+        "wind_global_function_name",
+        "wind_unused"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 144,
+        "size": 96
+      },
+      "source_declaration": {
+        "line": 235,
+        "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "5c6f2cbe81276d89203890b1dbba3eb833125b2eb1c8c24c4c96dd74d61360b3"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "unused",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 32
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 32,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 32,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_fog_palette_entry",
+      "definition_id": "2983768",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_fog_palette_entry.<unclassified@0x0>",
+      "member_names": [
+        "unused"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 32
+      },
+      "source_declaration": {
+        "line": 168,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "unused2",
+          "offset": 48,
+          "relation": "fully-contained-by-range",
+          "size": 88
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 88,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 88,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_fog_palette_entry",
+      "definition_id": "2983768",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_fog_palette_entry.<unclassified@0x30>",
+      "member_names": [
+        "unused2"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 48,
+        "size": 88
+      },
+      "source_declaration": {
+        "line": 168,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "unused",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 36
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 36,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 36,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_fog_region",
+      "definition_id": "2983896",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_fog_region.<unclassified@0x0>",
+      "member_names": [
+        "unused"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 36
+      },
+      "source_declaration": {
+        "line": 145,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "plane",
+          "offset": 4,
+          "relation": "fully-contained-by-range",
+          "size": 16
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 16,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 16,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_fog_plane",
+      "definition_id": "2984024",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_fog_plane.<unclassified@0x4>",
+      "member_names": [
+        "plane"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 4,
+        "size": 16
+      },
+      "source_declaration": {
+        "line": 152,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "centroid",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 12
+        },
+        {
+          "name": "bounding_radius",
+          "offset": 12,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        },
+        {
+          "name": "collision_surface_index",
+          "offset": 16,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        },
+        {
+          "name": "unused",
+          "offset": 20,
+          "relation": "fully-contained-by-range",
+          "size": 28
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 48,
+        "fully_contained_member_count": 4,
+        "intersecting_member_count": 4,
+        "range_bytes": 48,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_breakable_surface",
+      "definition_id": "2984184",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_breakable_surface.<unclassified@0x0>",
+      "member_names": [
+        "centroid",
+        "bounding_radius",
+        "collision_surface_index",
+        "unused"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 48
+      },
+      "source_declaration": {
+        "line": 46,
+        "path": "submodules/halo-ce-universal/source/physics/breakable_surfaces.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "21540bf09d3e57dcc8a897345be4805887ef9cddac522ba5c4ec1ca766e30ec3"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "plane_index",
+          "offset": 4,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        },
+        {
+          "name": "centroid",
+          "offset": 8,
+          "relation": "fully-contained-by-range",
+          "size": 12
+        },
+        {
+          "name": "bounding_radius",
+          "offset": 20,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        },
+        {
+          "name": "flags",
+          "offset": 24,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        },
+        {
+          "name": "unused",
+          "offset": 28,
+          "relation": "fully-contained-by-range",
+          "size": 24
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 48,
+        "fully_contained_member_count": 5,
+        "intersecting_member_count": 5,
+        "range_bytes": 48,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_cluster_portal",
+      "definition_id": "2984200",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_cluster_portal.<unclassified@0x4>",
+      "member_names": [
+        "plane_index",
+        "centroid",
+        "bounding_radius",
+        "flags",
+        "unused"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 4,
+        "size": 48
+      },
+      "source_declaration": {
+        "line": 134,
+        "path": "submodules/halo-ce-universal/source/structures/structures.c",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "644dff5a5f5a0e1d4a6ae5f71109afde647809f67401775f2dc8c74d3ca87c3f"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "sky_index",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        },
+        {
+          "name": "fog_reference",
+          "offset": 2,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 4,
+        "fully_contained_member_count": 2,
+        "intersecting_member_count": 2,
+        "range_bytes": 4,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_cluster",
+      "definition_id": "2984328",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_cluster.<unclassified@0x0>",
+      "member_names": [
+        "sky_index",
+        "fog_reference"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 4
+      },
+      "source_declaration": {
+        "line": 89,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "unusedA",
+          "offset": 10,
+          "relation": "fully-contained-by-range",
+          "size": 30
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 30,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 30,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_cluster",
+      "definition_id": "2984328",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_cluster.<unclassified@0xa>",
+      "member_names": [
+        "unusedA"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 10,
+        "size": 30
+      },
+      "source_declaration": {
+        "line": 89,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Compiler-derived member extent crosses the schema gap boundary.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "unused34",
+          "offset": 52,
+          "relation": "partially-overlaps-range",
+          "size": 52
+        }
+      ],
+      "classification": "partial_compiler_member_overlap",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [
+          "unused34"
+        ],
+        "covered_bytes": 4,
+        "fully_contained_member_count": 0,
+        "intersecting_member_count": 1,
+        "range_bytes": 4,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_cluster",
+      "definition_id": "2984328",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_cluster.<unclassified@0x40>",
+      "member_names": [
+        "unused34"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 64,
+        "size": 4
+      },
+      "source_declaration": {
+        "line": 89,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Dedicated R5900 compilation of the schema translation unit passed exact type-size and member-offset/extent assertions for this inventory range.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "plane",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 16
+        },
+        {
+          "name": "unused",
+          "offset": 16,
+          "relation": "fully-contained-by-range",
+          "size": 20
+        }
+      ],
+      "classification": "compiler_exact_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 36,
+        "fully_contained_member_count": 2,
+        "intersecting_member_count": 2,
+        "range_bytes": 36,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_mirror",
+      "definition_id": "2984760",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_mirror.<unclassified@0x0>",
+      "member_names": [
+        "plane",
+        "unused"
+      ],
+      "probe_status": "exact_r5900_passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 36
+      },
+      "source_declaration": null,
+      "source_declaration_sha256": null
+    },
+    {
+      "basis": "Dedicated R5900 compilation of the schema translation unit passed exact type-size and member-offset/extent assertions for this inventory range.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "world_bounds",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 24
+        }
+      ],
+      "classification": "compiler_exact_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 24,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 24,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_subcluster",
+      "definition_id": "2984928",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_subcluster.<unclassified@0x0>",
+      "member_names": [
+        "world_bounds"
+      ],
+      "probe_status": "exact_r5900_passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 24
+      },
+      "source_declaration": null,
+      "source_declaration_sha256": null
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "resource_index",
+          "offset": 2,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 2,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 2,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "predicted_resource",
+      "definition_id": "2985016",
+      "disposition": "open_schema_gap",
+      "inventory_path": "predicted_resource.<unclassified@0x2>",
+      "member_names": [
+        "resource_index"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 2,
+        "size": 2
+      },
+      "source_declaration": {
+        "line": 23,
+        "path": "submodules/halo-ce-universal/source/cache/predicted_resources.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "83b3fc5b332a76f509d3f13b2798f67e111cce41cac41f7e13f8bb01e4819f2d"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "position",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 12
+        },
+        {
+          "name": "i_direction",
+          "offset": 12,
+          "relation": "fully-contained-by-range",
+          "size": 1
+        },
+        {
+          "name": "j_direction",
+          "offset": 13,
+          "relation": "fully-contained-by-range",
+          "size": 1
+        },
+        {
+          "name": "k_direction",
+          "offset": 14,
+          "relation": "fully-contained-by-range",
+          "size": 1
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 15,
+        "fully_contained_member_count": 4,
+        "intersecting_member_count": 4,
+        "range_bytes": 15,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_lens_flare_marker",
+      "definition_id": "2985480",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_lens_flare_marker.<unclassified@0x0>",
+      "member_names": [
+        "position",
+        "i_direction",
+        "j_direction",
+        "k_direction"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 15
+      },
+      "source_declaration": {
+        "line": 288,
+        "path": "submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "2a4db1e1f5e125436fddc05a46b1eb68102e2be978d8294919f85275d742b233"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "bitmap_index",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        },
+        {
+          "name": "pad",
+          "offset": 2,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        },
+        {
+          "name": "unused",
+          "offset": 4,
+          "relation": "fully-contained-by-range",
+          "size": 16
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 20,
+        "fully_contained_member_count": 3,
+        "intersecting_member_count": 3,
+        "range_bytes": 20,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_lightmap",
+      "definition_id": "2985696",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_lightmap.<unclassified@0x0>",
+      "member_names": [
+        "bitmap_index",
+        "pad",
+        "unused"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 20
+      },
+      "source_declaration": {
+        "line": 68,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "permutation_index",
+          "offset": 16,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        },
+        {
+          "name": "flags",
+          "offset": 18,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        },
+        {
+          "name": "first_surface_index",
+          "offset": 20,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        },
+        {
+          "name": "surface_count",
+          "offset": 24,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        },
+        {
+          "name": "centroid",
+          "offset": 28,
+          "relation": "fully-contained-by-range",
+          "size": 12
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 24,
+        "fully_contained_member_count": 5,
+        "intersecting_member_count": 5,
+        "range_bytes": 24,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_material",
+      "definition_id": "2985784",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_material.<unclassified@0x10>",
+      "member_names": [
+        "permutation_index",
+        "flags",
+        "first_surface_index",
+        "surface_count",
+        "centroid"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 16,
+        "size": 24
+      },
+      "source_declaration": {
+        "line": 50,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "plane",
+          "offset": 156,
+          "relation": "fully-contained-by-range",
+          "size": 16
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 16,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 16,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_material",
+      "definition_id": "2985784",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_material.<unclassified@0x9c>",
+      "member_names": [
+        "plane"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 156,
+        "size": 16
+      },
+      "source_declaration": {
+        "line": 50,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "copious_unused_space",
+          "offset": 174,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        },
+        {
+          "name": "vertices",
+          "offset": 176,
+          "relation": "fully-contained-by-range",
+          "size": 20
+        },
+        {
+          "name": "lightmap_vertices",
+          "offset": 196,
+          "relation": "fully-contained-by-range",
+          "size": 20
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 42,
+        "fully_contained_member_count": 3,
+        "intersecting_member_count": 3,
+        "range_bytes": 42,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_material",
+      "definition_id": "2985784",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_material.<unclassified@0xae>",
+      "member_names": [
+        "copious_unused_space",
+        "vertices",
+        "lightmap_vertices"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 174,
+        "size": 42
+      },
+      "source_declaration": {
+        "line": 50,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "vertex_indices",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 6
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 6,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 6,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_surface",
+      "definition_id": "2986056",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_surface.<unclassified@0x0>",
+      "member_names": [
+        "vertex_indices"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 6
+      },
+      "source_declaration": {
+        "line": 42,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "bsp3d_node_index",
+          "offset": 4,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 4,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 4,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_surface_reference",
+      "definition_id": "2986072",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_surface_reference.<unclassified@0x4>",
+      "member_names": [
+        "bsp3d_node_index"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 4,
+        "size": 4
+      },
+      "source_declaration": {
+        "line": 145,
+        "path": "submodules/halo-ce-universal/source/structures/structures.c",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "644dff5a5f5a0e1d4a6ae5f71109afde647809f67401775f2dc8c74d3ca87c3f"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "bounds",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 6
+        },
+        {
+          "name": "pad",
+          "offset": 6,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 8,
+        "fully_contained_member_count": 2,
+        "intersecting_member_count": 2,
+        "range_bytes": 8,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_leaf",
+      "definition_id": "2986160",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_leaf.<unclassified@0x0>",
+      "member_names": [
+        "bounds",
+        "pad"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 8
+      },
+      "source_declaration": {
+        "line": 33,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "surface_reference_count",
+          "offset": 10,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        },
+        {
+          "name": "first_surface_reference_index",
+          "offset": 12,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 6,
+        "fully_contained_member_count": 2,
+        "intersecting_member_count": 2,
+        "range_bytes": 6,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_leaf",
+      "definition_id": "2986160",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_leaf.<unclassified@0xa>",
+      "member_names": [
+        "surface_reference_count",
+        "first_surface_reference_index"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 10,
+        "size": 6
+      },
+      "source_declaration": {
+        "line": 33,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Dedicated R5900 compilation of the schema translation unit passed exact type-size and member-offset/extent assertions for this inventory range.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "x0",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 1
+        },
+        {
+          "name": "x1",
+          "offset": 1,
+          "relation": "fully-contained-by-range",
+          "size": 1
+        },
+        {
+          "name": "y0",
+          "offset": 2,
+          "relation": "fully-contained-by-range",
+          "size": 1
+        },
+        {
+          "name": "y1",
+          "offset": 3,
+          "relation": "fully-contained-by-range",
+          "size": 1
+        },
+        {
+          "name": "z0",
+          "offset": 4,
+          "relation": "fully-contained-by-range",
+          "size": 1
+        },
+        {
+          "name": "z1",
+          "offset": 5,
+          "relation": "fully-contained-by-range",
+          "size": 1
+        }
+      ],
+      "classification": "compiler_exact_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 6,
+        "fully_contained_member_count": 6,
+        "intersecting_member_count": 6,
+        "range_bytes": 6,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_node",
+      "definition_id": "2986248",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_node.<unclassified@0x0>",
+      "member_names": [
+        "x0",
+        "x1",
+        "y0",
+        "y1",
+        "z0",
+        "z1"
+      ],
+      "probe_status": "exact_r5900_passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 6
+      },
+      "source_declaration": null,
+      "source_declaration_sha256": null
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "pad",
+          "offset": 16,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 2,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 2,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "structure_collision_material",
+      "definition_id": "2986264",
+      "disposition": "open_schema_gap",
+      "inventory_path": "structure_collision_material.<unclassified@0x10>",
+      "member_names": [
+        "pad"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 16,
+        "size": 2
+      },
+      "source_declaration": {
+        "line": 222,
+        "path": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "dde75cddffc975c95395f525b60e5d125b5904beb106a3916dccbc295c26afe2"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "ambient_color",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 12
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 12,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 12,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "render_lighting",
+      "definition_id": "2986432",
+      "disposition": "open_schema_gap",
+      "inventory_path": "render_lighting.<unclassified@0x0>",
+      "member_names": [
+        "ambient_color"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 12
+      },
+      "source_declaration": {
+        "line": 44,
+        "path": "submodules/halo-ce-universal/source/render/render.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "d60615ee16f869525f10d9bacce27295473495cd8caeb8fa7782af7f63c3c4a2"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "pad",
+          "offset": 14,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        },
+        {
+          "name": "distant_lights",
+          "offset": 16,
+          "relation": "fully-contained-by-range",
+          "size": 48
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 50,
+        "fully_contained_member_count": 2,
+        "intersecting_member_count": 2,
+        "range_bytes": 50,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "render_lighting",
+      "definition_id": "2986432",
+      "disposition": "open_schema_gap",
+      "inventory_path": "render_lighting.<unclassified@0xe>",
+      "member_names": [
+        "pad",
+        "distant_lights"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 14,
+        "size": 50
+      },
+      "source_declaration": {
+        "line": 44,
+        "path": "submodules/halo-ce-universal/source/render/render.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "d60615ee16f869525f10d9bacce27295473495cd8caeb8fa7782af7f63c3c4a2"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "pad1",
+          "offset": 66,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        },
+        {
+          "name": "point_light_indices",
+          "offset": 68,
+          "relation": "fully-contained-by-range",
+          "size": 8
+        },
+        {
+          "name": "reflection_tint_color",
+          "offset": 76,
+          "relation": "fully-contained-by-range",
+          "size": 16
+        },
+        {
+          "name": "shadow_vector",
+          "offset": 92,
+          "relation": "fully-contained-by-range",
+          "size": 12
+        },
+        {
+          "name": "shadow_color",
+          "offset": 104,
+          "relation": "fully-contained-by-range",
+          "size": 12
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 50,
+        "fully_contained_member_count": 5,
+        "intersecting_member_count": 5,
+        "range_bytes": 50,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "render_lighting",
+      "definition_id": "2986432",
+      "disposition": "open_schema_gap",
+      "inventory_path": "render_lighting.<unclassified@0x42>",
+      "member_names": [
+        "pad1",
+        "point_light_indices",
+        "reflection_tint_color",
+        "shadow_vector",
+        "shadow_color"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 66,
+        "size": 50
+      },
+      "source_declaration": {
+        "line": 44,
+        "path": "submodules/halo-ce-universal/source/render/render.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "d60615ee16f869525f10d9bacce27295473495cd8caeb8fa7782af7f63c3c4a2"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "point",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 12
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 12,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 12,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "collision_vertex",
+      "definition_id": "2989376",
+      "disposition": "open_schema_gap",
+      "inventory_path": "collision_vertex.<unclassified@0x0>",
+      "member_names": [
+        "point"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 12
+      },
+      "source_declaration": {
+        "line": 51,
+        "path": "submodules/halo-ce-universal/source/physics/collision_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "946c85c34562187dc79d221968980662f4d9b60a347343030f0a2c3ab6a74b95"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "plane_designator",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 4,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 4,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "collision_surface",
+      "definition_id": "2989624",
+      "disposition": "open_schema_gap",
+      "inventory_path": "collision_surface.<unclassified@0x0>",
+      "member_names": [
+        "plane_designator"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 4
+      },
+      "source_declaration": {
+        "line": 35,
+        "path": "submodules/halo-ce-universal/source/physics/collision_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "946c85c34562187dc79d221968980662f4d9b60a347343030f0a2c3ab6a74b95"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "flags",
+          "offset": 8,
+          "relation": "fully-contained-by-range",
+          "size": 1
+        },
+        {
+          "name": "breakable_surface_index",
+          "offset": 9,
+          "relation": "fully-contained-by-range",
+          "size": 1
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 2,
+        "fully_contained_member_count": 2,
+        "intersecting_member_count": 2,
+        "range_bytes": 2,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "collision_surface",
+      "definition_id": "2989624",
+      "disposition": "open_schema_gap",
+      "inventory_path": "collision_surface.<unclassified@0x8>",
+      "member_names": [
+        "flags",
+        "breakable_surface_index"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 8,
+        "size": 2
+      },
+      "source_declaration": {
+        "line": 35,
+        "path": "submodules/halo-ce-universal/source/physics/collision_bsp_definitions.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "946c85c34562187dc79d221968980662f4d9b60a347343030f0a2c3ab6a74b95"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "plane",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 12
+        },
+        {
+          "name": "child_indices",
+          "offset": 12,
+          "relation": "fully-contained-by-range",
+          "size": 8
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 20,
+        "fully_contained_member_count": 2,
+        "intersecting_member_count": 2,
+        "range_bytes": 20,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "bsp2d_node",
+      "definition_id": "2989880",
+      "disposition": "open_schema_gap",
+      "inventory_path": "bsp2d_node.<unclassified@0x0>",
+      "member_names": [
+        "plane",
+        "child_indices"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 20
+      },
+      "source_declaration": {
+        "line": 30,
+        "path": "submodules/halo-ce-universal/source/physics/bsp2d.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "a1e2faac061cad825f40952b2e48905b66e9d08d21e4f2bf24e8e470a0e11939"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "plane_designator",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        },
+        {
+          "name": "root_index",
+          "offset": 4,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 8,
+        "fully_contained_member_count": 2,
+        "intersecting_member_count": 2,
+        "range_bytes": 8,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "bsp2d_reference",
+      "definition_id": "2989896",
+      "disposition": "open_schema_gap",
+      "inventory_path": "bsp2d_reference.<unclassified@0x0>",
+      "member_names": [
+        "plane_designator",
+        "root_index"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 8
+      },
+      "source_declaration": {
+        "line": 206,
+        "path": "submodules/halo-ce-universal/source/physics/collision_bsp.c",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "096debda0f9cdd62fa8b9981f040770e5e0dfbb8f6baa2f4a241ff0db00dde86"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "flags",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        },
+        {
+          "name": "bsp2d_reference_count",
+          "offset": 2,
+          "relation": "fully-contained-by-range",
+          "size": 2
+        },
+        {
+          "name": "first_bsp2d_reference_index",
+          "offset": 4,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 8,
+        "fully_contained_member_count": 3,
+        "intersecting_member_count": 3,
+        "range_bytes": 8,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "collision_leaf",
+      "definition_id": "2989912",
+      "disposition": "open_schema_gap",
+      "inventory_path": "collision_leaf.<unclassified@0x0>",
+      "member_names": [
+        "flags",
+        "bsp2d_reference_count",
+        "first_bsp2d_reference_index"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 8
+      },
+      "source_declaration": {
+        "line": 199,
+        "path": "submodules/halo-ce-universal/source/physics/collision_bsp.c",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "096debda0f9cdd62fa8b9981f040770e5e0dfbb8f6baa2f4a241ff0db00dde86"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "children",
+          "offset": 4,
+          "relation": "fully-contained-by-range",
+          "size": 8
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 8,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 8,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "bsp3d_node",
+      "definition_id": "2989928",
+      "disposition": "open_schema_gap",
+      "inventory_path": "bsp3d_node.<unclassified@0x4>",
+      "member_names": [
+        "children"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 4,
+        "size": 8
+      },
+      "source_declaration": {
+        "line": 38,
+        "path": "submodules/halo-ce-universal/source/physics/bsp3d.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "2c2848147564ffbd0e6c9939a0d6a2148e9bf625380469730685ad4c71bbe8b5"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "n",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 12
+        },
+        {
+          "name": "d",
+          "offset": 12,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 16,
+        "fully_contained_member_count": 2,
+        "intersecting_member_count": 2,
+        "range_bytes": 16,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "real_plane3d",
+      "definition_id": "2990016",
+      "disposition": "open_schema_gap",
+      "inventory_path": "real_plane3d.<unclassified@0x0>",
+      "member_names": [
+        "n",
+        "d"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 16
+      },
+      "source_declaration": {
+        "line": 501,
+        "path": "submodules/halo-ce-universal/source/math/real_math.h",
+        "tag_kind": "struct"
+      },
+      "source_declaration_sha256": "f50befc4193d6d3d46cd00fc5f869c8a7a538a581b64ab8baeefce5e4d7220c5"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "n",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 12
+        },
+        {
+          "name": "z",
+          "offset": 8,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 12,
+        "fully_contained_member_count": 2,
+        "intersecting_member_count": 2,
+        "range_bytes": 12,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "real_point3d",
+      "definition_id": "2990032",
+      "disposition": "open_schema_gap",
+      "inventory_path": "real_point3d.<unclassified@0x0>",
+      "member_names": [
+        "n",
+        "z"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 12
+      },
+      "source_declaration": {
+        "line": 418,
+        "path": "submodules/halo-ce-universal/source/math/real_math.h",
+        "tag_kind": "union"
+      },
+      "source_declaration_sha256": "f50befc4193d6d3d46cd00fc5f869c8a7a538a581b64ab8baeefce5e4d7220c5"
+    },
+    {
+      "basis": "Every reported compiler-derived C member extent lies wholly within this schema gap.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "name": "n",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 8
+        },
+        {
+          "name": "x",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        },
+        {
+          "name": "y",
+          "offset": 4,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        }
+      ],
+      "classification": "compiler_named_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 8,
+        "fully_contained_member_count": 3,
+        "intersecting_member_count": 3,
+        "range_bytes": 8,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "real_point2d",
+      "definition_id": "2990048",
+      "disposition": "open_schema_gap",
+      "inventory_path": "real_point2d.<unclassified@0x0>",
+      "member_names": [
+        "n",
+        "x",
+        "y"
+      ],
+      "probe_status": "passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 8
+      },
+      "source_declaration": {
+        "line": 410,
+        "path": "submodules/halo-ce-universal/source/math/real_math.h",
+        "tag_kind": "union"
+      },
+      "source_declaration_sha256": "f50befc4193d6d3d46cd00fc5f869c8a7a538a581b64ab8baeefce5e4d7220c5"
+    },
+    {
+      "basis": "Dedicated R5900 compilation of the schema translation unit passed exact type-size and member-offset/extent assertions for this inventory range.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "kind": "scalar-type-extent",
+          "name": "value",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 1
+        }
+      ],
+      "classification": "compiler_exact_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 1,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 1,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "byte",
+      "definition_id": "2990064",
+      "disposition": "open_schema_gap",
+      "inventory_path": "byte.<unclassified@0x0>",
+      "member_names": [
+        "value"
+      ],
+      "probe_status": "exact_r5900_passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 1
+      },
+      "source_declaration": null,
+      "source_declaration_sha256": null
+    },
+    {
+      "basis": "Dedicated R5900 compilation of the schema translation unit passed exact type-size and member-offset/extent assertions for this inventory range.",
+      "byte_disposition": "retained_bytes_verified_semantics_open",
+      "candidate_members": [
+        {
+          "kind": "scalar-type-extent",
+          "name": "value",
+          "offset": 0,
+          "relation": "fully-contained-by-range",
+          "size": 4
+        }
+      ],
+      "classification": "compiler_exact_member_ownership",
+      "compiler_byte_interval_coverage": {
+        "boundary_crossing_members": [],
+        "covered_bytes": 4,
+        "fully_contained_member_count": 1,
+        "intersecting_member_count": 1,
+        "range_bytes": 4,
+        "status": "complete",
+        "uncovered_intervals": []
+      },
+      "definition": "long",
+      "definition_id": "2990080",
+      "disposition": "open_schema_gap",
+      "inventory_path": "long.<unclassified@0x0>",
+      "member_names": [
+        "value"
+      ],
+      "probe_status": "exact_r5900_passed",
+      "retained_byte_evidence": {
+        "path": "tests/test_step7_unmapped_bsp_range_retention.py",
+        "scope": "Two exact-offset payloads per range are passed through the actual linked compiler-derived definition and child schemas, checking the entire output against declared normalizations and retaining all gap bytes. This proves preservation, not runtime member semantics or target consumer execution.",
+        "sha256": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
+        "test": "UnmappedBspRangeRetentionTest.test_all_54_exact_unclassified_ranges_survive_schema_walk"
+      },
+      "schema_range": {
+        "offset": 0,
+        "size": 4
+      },
+      "source_declaration": null,
+      "source_declaration_sha256": null
+    }
+  ],
+  "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+  "summary": {
+    "compiler_exact_member_ownership": 8,
+    "compiler_named_member_ownership": 44,
+    "compiler_owned_layout_ranges": 54,
+    "complete_compiler_byte_coverage_ranges": 54,
+    "incomplete_compiler_byte_coverage_ranges": 0,
+    "open_schema_gaps": 54,
+    "partial_compiler_member_overlap": 2,
+    "ranges": 54,
+    "ranges_with_boundary_crossing_members": 2,
+    "retained_byte_dispositions": 54,
+    "semantic_dispositions_open": 54,
+    "source_layout_unresolved": 0
+  }
+}
