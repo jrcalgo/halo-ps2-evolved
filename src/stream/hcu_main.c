@@ -228,9 +228,24 @@ static int hcu_renderer_drained(void *ctx)
  * missing frame owner is safe there only while no bitmap frame or BSP kick
  * has ever started; all other builds keep requiring the real frame owner. */
 #ifdef HALO_HCU_HEADLESS_RUNTIME_GUEST
+/* C3:render begin */
+#if defined(HCU_C3)
+/* Set once the C3 render loop has drained GS/DMA, stopped reading the world and released its world
+ * reader and media (hcu_c3_render_map_release); cleared when it loads a map. A started renderer in this
+ * state has no reference to any map byte, so the headless release may proceed. */
+static int s_c3_render_quiescent;
+#endif
+/* C3:render end */
 static int hcu_renderer_never_started(void *ctx)
 {
 	(void)ctx;
+	/* C3:render begin */
+#if defined(HCU_C3)
+	if (s_c3_render_quiescent && halo_ps2_bitmap_frame_is_active() == 0 &&
+		hcu_bitmap_renderer_attachment_count() == 0 && hcu_renderer_drained(NULL))
+		return 1;
+#endif
+	/* C3:render end */
 	return bsp_render_kick_seq() == 0 &&
 		halo_ps2_bitmap_frame_is_active() == 0 &&
 		hcu_bitmap_renderer_attachment_count() == 0;
@@ -991,6 +1006,284 @@ static uintptr_t ee_physical_address(const void *pointer)
 		return address & 0x1fffffffu;
 	return address;
 }
+
+/* C3:render begin */
+/* C3.4/C3.5/C3.6/C3.10 render loop for the headless runtime guest. Compiled only with HCU_C3 and
+ * only when <hcu_c3_render.h> (written by tools/c2_profile_boot_matrix.py --c3 --render-views N)
+ * is on the include path; it defines HCU_C3_RENDER_VIEWS (1..4) and HCU_C3_RENDER_FRAMES. The CE
+ * guest calls the three hooks below (halo-ce-universal source/main/main.c, C3:render blocks):
+ * after the map loads, once per in-map tick, and before the map is released. */
+#if defined(HCU_C3) && defined(HALO_HCU_HEADLESS_RUNTIME_GUEST) && defined(__has_include)
+#if __has_include(<hcu_c3_render.h>)
+#include <hcu_c3_render.h>
+#define HCU_C3_RENDER_BUILT 1
+#endif
+#endif
+#ifdef HCU_C3_RENDER_BUILT
+#include "stream/hcu_render_media.h"
+#include "stream/hcu_render_frame.h"
+#include "render/camera.h"
+#ifndef HCU_C3_RENDER_VIEWS
+#define HCU_C3_RENDER_VIEWS 1
+#endif
+#ifndef HCU_C3_RENDER_FRAMES
+#define HCU_C3_RENDER_FRAMES 300
+#endif
+#ifndef HCU_C3_RENDER_HOLD_VSYNCS
+#define HCU_C3_RENDER_HOLD_VSYNCS 240
+#endif
+#define HCU_C3_DEG 0.017453292519943295f
+
+typedef struct {
+	int active, gs_ready;
+	uint32_t frames;
+	hcu_render_media media;
+	hcu_render_world world;
+	arena_t level;
+	video_t video;
+	hcu_render_frame_state state;
+	uint32_t bank_views;
+	uint32_t draw_batches_last, draw_tris_last, uploads_last, textured_miss_last;
+} hcu_c3_render_state;
+
+static hcu_c3_render_state s_c3r;
+static qword_t s_c3_prime_packet[8] __attribute__((aligned(64)));
+
+static void hcu_c3_flush(void *base, size_t bytes)
+{
+	SyncDCache(base, (uint8_t *)base + bytes);
+}
+
+/* Fixed spawn cameras (x y z yaw pitch, degrees); view 0 is the independently checked Blood Gulch
+ * reference valley view, the rest are other fixed Blood Gulch vantage points. They do not come from
+ * the CE snapshot bank: the headless guest never runs CE render_frame, so no snapshot is published. */
+static const float s_c3_cameras[4][5] = {
+	{ 65.0f, -95.0f, 9.0f, -70.0f, -5.0f },
+	{ 98.49f, -157.64f, 3.10f, 76.1f, 0.0f },
+	{ 65.0f, -145.0f, 32.0f, 84.0f, -5.0f },
+	{ 118.0f, -105.0f, 32.0f, -167.0f, -5.0f }
+};
+
+static void hcu_c3_make_camera(camera_t *c, unsigned view)
+{
+	camera_init(c);
+	c->far_z = 4000.0f;
+	c->pos[0] = s_c3_cameras[view][0];
+	c->pos[1] = s_c3_cameras[view][1];
+	c->pos[2] = s_c3_cameras[view][2];
+	c->yaw = s_c3_cameras[view][3] * HCU_C3_DEG;
+	c->pitch = s_c3_cameras[view][4] * HCU_C3_DEG;
+}
+
+/* Queue one GS FINISH (no allocation: a static packet). The renderer's present and clear_world both
+ * wait for a pending FINISH, and graph_wait_vsync() consumes it. */
+static void hcu_c3_prime_finish(void)
+{
+	packet2_t p;
+	memset(&p, 0, sizeof p);
+	p.max_qwords_count = 8;
+	p.type = P2_TYPE_NORMAL;
+	p.mode = P2_MODE_NORMAL;
+	p.base = p.next = s_c3_prime_packet;
+	packet2_update(&p, draw_finish(p.next));
+	dma_channel_send_packet2(&p, DMA_CHANNEL_GIF, 1);
+	dma_wait_fast();
+}
+
+static void hcu_c3_gs_init(void)
+{
+	if (s_c3r.gs_ready) return;
+	dma_channel_initialize(DMA_CHANNEL_GIF, NULL, 0);
+	dma_channel_fast_waits(DMA_CHANNEL_GIF);
+	video_init(&s_c3r.video);
+	if (bsp_render_init(&s_c3r.video)) {
+		printf("HALO_PS2_FAIL c3-render bsp_render_init\n");
+		return;
+	}
+	hcu_c3_prime_finish();
+	s_c3r.gs_ready = 1;
+}
+
+void hcu_c3_render_map_loaded(const char *map_name)
+{
+	uint8_t *base;
+	size_t bytes, quarter;
+	hcu_render_media_span bsps, tex;
+	hcu_render_world_span owner;
+	int rc;
+	memset(&s_c3r.media, 0, sizeof s_c3r.media);
+	s_c3_render_quiescent = 0;
+	s_c3r.active = 0;
+	s_c3r.frames = 0;
+	hcu_render_frame_reset(&s_c3r.state);
+	if (!s_partition_selected || !s_partition.render_texture_base ||
+		s_partition.render_texture_bytes < 4096u) {
+		printf("HALO_PS2_FAIL c3-render partition render_texture owner unavailable\n");
+		return;
+	}
+	/* render_texture, bound as the partition table defines it: the first quarter holds BSPS, the second
+	 * TEXS + lightmaps, the remaining half is the renderer's level arena (visibility, bindings, cache). */
+	/* The owner is 16-byte aligned; the renderer media spans need 64. The pad is charged to the owner. */
+	base = (uint8_t *)(((uintptr_t)s_partition.render_texture_base + 63u) & ~(uintptr_t)63u);
+	bytes = s_partition.render_texture_bytes - (size_t)(base - (uint8_t *)s_partition.render_texture_base);
+	quarter = (bytes / 4u) & ~(size_t)63u;
+	bsps.base = base;            bsps.bytes = quarter;
+	tex.base = base + quarter;   tex.bytes = quarter;
+	rc = hcu_render_media_load(&s_c3r.media, &s_map_service.profile_view, 0, bsps, tex, hcu_c3_flush);
+	if (rc != HCU_RENDER_MEDIA_OK) {
+		printf("HALO_PS2_FAIL c3-render media-load rc=%d map=%s\n", rc, map_name);
+		return;
+	}
+	owner.base = base;
+	owner.bytes = bytes;
+	rc = hcu_render_world_bind(&s_c3r.world, &s_map_service, owner, s_c3r.media.bsps,
+		s_c3r.media.bsps_bytes, &s_c3r.media.source);
+	if (rc != HCU_RENDER_WORLD_OK) {
+		printf("HALO_PS2_FAIL c3-render world-bind rc=%d\n", rc);
+		hcu_render_media_clear(&s_c3r.media);
+		return;
+	}
+	arena_init(&s_c3r.level, "c3_render_level", base + 2u * quarter, bytes - 2u * quarter);
+	hcu_c3_gs_init();
+	if (!s_c3r.gs_ready) goto fail;
+	if (bsp_render_set_world(&s_c3r.level, &s_c3r.world.bsp, &s_c3r.media.source)) {
+		printf("HALO_PS2_FAIL c3-render set_world\n");
+		goto fail;
+	}
+	s_c3r.bank_views = 0;
+#ifdef HCU_C3_FRAME_SNAPSHOT
+	{
+		const halo_ps2_frame_snapshot *latest = hcu_snapshot_bank_latest();
+		s_c3r.bank_views = latest ? latest->view_count : 0;
+	}
+#endif
+	s_c3r.active = 1;
+	printf("HALO_PS2_LOCAL c3-render-ready map=%s views=%u frames=%u bsps=%u texs=%u lm=%u texture-count=%u "
+		"render-texture-base=0x%x render-texture-bytes=%u media-bsps-used=%u media-tex-used=%u level-arena-used=%u level-arena-cap=%u "
+		"camera-source=fixed-spawn bank-views=%u world-reader-count=%u\n",
+		map_name, (unsigned)HCU_C3_RENDER_VIEWS, (unsigned)HCU_C3_RENDER_FRAMES,
+		(unsigned)s_c3r.media.bsps_bytes, (unsigned)s_c3r.media.texs_bytes, (unsigned)s_c3r.media.lm_bytes,
+		(unsigned)s_c3r.media.source.texture_count, (unsigned)ee_physical_address(base), (unsigned)bytes,
+		(unsigned)s_c3r.media.bsps_span_used, (unsigned)s_c3r.media.tex_span_used,
+		(unsigned)s_c3r.level.used, (unsigned)s_c3r.level.cap, (unsigned)s_c3r.bank_views,
+		(unsigned)hcu_map_service_reader_count(&s_map_service));
+	return;
+fail:
+	(void)hcu_render_world_unbind(&s_c3r.world, &s_map_service);
+	hcu_render_media_clear(&s_c3r.media);
+}
+
+static void hcu_c3_print_frame(const char *kind)
+{
+	bsp_render_frame_counters fc;
+	const render_stats_t *rs = bsp_render_stats();
+	u32 seq = bsp_render_kick_seq();
+	bsp_render_frame_counters_get(&fc);
+	printf("HALO_PS2_LOCAL c3-frame kind=%s frame=%u views=%u chain-bytes=%u upload-bytes=%u uploads=%u overflow=%u "
+		"frames=%u kick-seq=%u fence=%d prev-fence=%d idle-redirects=%u idle-violations=%u emit-failures=%u "
+		"batches=%u triangles=%u tex-hits=%u tex-misses=%u tex-failed=%u tex-deferred=%u untextured=%u "
+		"clusters-visible=%u/%u pages-free=%u "
+		"state-begun=%u state-submitted=%u state-age-adv=%u state-budget-resets=%u state-views=%u\n",
+		kind, (unsigned)s_c3r.frames, (unsigned)fc.views_last, (unsigned)fc.chain_bytes_last,
+		(unsigned)fc.upload_bytes_last, (unsigned)rs->uploads, (unsigned)fc.overflow_total,
+		(unsigned)fc.frames_total, (unsigned)seq, (int)bsp_render_fence_observed(seq),
+		seq > 1u ? (int)bsp_render_fence_observed(seq - 1u) : 1,
+		(unsigned)bsp_render_idle_redirects(), (unsigned)bsp_render_idle_violations(),
+		(unsigned)bsp_render_emit_failures(), (unsigned)rs->batches, (unsigned)rs->triangles,
+		(unsigned)rs->tex_hits, (unsigned)rs->tex_misses, (unsigned)rs->tex_failed,
+		(unsigned)rs->tex_deferred, (unsigned)rs->untextured_batches,
+		(unsigned)rs->clusters_visible, (unsigned)rs->clusters_total, (unsigned)rs->pages_free,
+		(unsigned)s_c3r.state.frames_begun, (unsigned)s_c3r.state.frames_submitted,
+		(unsigned)s_c3r.state.cache_age_advances, (unsigned)s_c3r.state.upload_budget_resets,
+		(unsigned)s_c3r.state.views_rendered);
+}
+
+void hcu_c3_render_tick(int tick)
+{
+	hcu_render_layout layout;
+	bsp_viewport vp;
+	camera_t cam;
+	unsigned v;
+	(void)tick;
+	if (!s_c3r.active || s_c3r.frames >= (uint32_t)HCU_C3_RENDER_FRAMES) return;
+	if (hcu_render_layout_compute((uint32_t)HCU_C3_RENDER_VIEWS, VIDEO_WIDTH, VIDEO_HEIGHT, &layout) != 0 ||
+		hcu_render_frame_begin(&s_c3r.state, (uint32_t)HCU_C3_RENDER_VIEWS) != 0 ||
+		bsp_render_frame_begin(s_c3r.frames) != 0) {
+		printf("HALO_PS2_FAIL c3-render frame-begin frame=%u\n", (unsigned)s_c3r.frames);
+		s_c3r.active = 0;
+		return;
+	}
+	for (v = 0; v < layout.view_count; ++v) {
+		memset(&vp, 0, sizeof vp);
+		vp.x = layout.views[v].x; vp.y = layout.views[v].y;
+		vp.w = layout.views[v].w; vp.h = layout.views[v].h;
+		hcu_c3_make_camera(&cam, v);
+		if (bsp_render_view(&cam, NULL, &vp) != 0) {
+			printf("HALO_PS2_FAIL c3-render view=%u frame=%u\n", v, (unsigned)s_c3r.frames);
+			s_c3r.active = 0;
+			return;
+		}
+	}
+	if (layout.clear.w > 0) {
+		memset(&vp, 0, sizeof vp);
+		vp.x = layout.clear.x; vp.y = layout.clear.y; vp.w = layout.clear.w; vp.h = layout.clear.h;
+		vp.clear = 1; vp.clear_rgb[0] = 16; vp.clear_rgb[1] = 16; vp.clear_rgb[2] = 24;
+		(void)bsp_render_view(NULL, NULL, &vp);
+	}
+	/* Same order as the viewer's frame: build, wait for the previous kick's GS FINISH, present, kick. */
+	bsp_render_wait_gpu();
+	video_wait_gpu();
+	video_present(&s_c3r.video);
+	if (bsp_render_frame_end(&s_c3r.video) != 0 || hcu_render_frame_end(&s_c3r.state) != 0) {
+		printf("HALO_PS2_FAIL c3-render frame-end frame=%u\n", (unsigned)s_c3r.frames);
+		s_c3r.active = 0;
+		return;
+	}
+	s_c3r.frames++;
+	if (s_c3r.frames == 1u || (s_c3r.frames % 30u) == 0u)
+		hcu_c3_print_frame("periodic");
+	if (s_c3r.frames == (uint32_t)HCU_C3_RENDER_FRAMES) {
+		unsigned i;
+		bsp_render_wait_gpu();
+		video_wait_gpu();
+		hcu_c3_print_frame("final");
+		/* Hold the last presented frame on screen so the host can capture it. */
+		video_present(&s_c3r.video);
+		printf("HALO_PS2_LOCAL c3-render-held views=%u frames=%u\n", (unsigned)HCU_C3_RENDER_VIEWS,
+			(unsigned)s_c3r.frames);
+		for (i = 0; i < (unsigned)HCU_C3_RENDER_HOLD_VSYNCS; ++i) graph_wait_vsync();
+	}
+}
+
+/* Order: drain GS/DMA, stop the renderer reading the world, unbind the world reader, clear the media. The
+ * CE dispose and owner release that follow wait on the reader table. */
+void hcu_c3_render_map_release(void)
+{
+	bsp_render_frame_counters fc;
+	int world_rc = -99;
+	uint32_t readers_before, readers_after;
+	if (!s_c3r.media.loaded && !s_c3r.world.bound) return;
+	/* No video_wait_gpu() here: graph_wait_vsync() (the hold and presents) clears the GS FINISH flag, so
+	 * waiting for it would spin forever. bsp_render_wait_gpu() is bounded and its observations stick. */
+	bsp_render_wait_gpu();
+	dma_wait_fast();
+	hcu_c3_prime_finish();   /* the hold's vsyncs consumed the last FINISH; clear_world waits for one */
+	bsp_render_clear_world();
+	readers_before = hcu_map_service_reader_count(&s_map_service);
+	if (s_c3r.world.bound)
+		world_rc = hcu_render_world_unbind(&s_c3r.world, &s_map_service);
+	readers_after = hcu_map_service_reader_count(&s_map_service);
+	hcu_render_media_clear(&s_c3r.media);
+	s_c3r.active = 0;
+	s_c3_render_quiescent = (world_rc == 0 || world_rc == -99) && readers_after == 0;
+	bsp_render_frame_counters_get(&fc);
+	printf("HALO_PS2_LOCAL c3-render-teardown order=drain,clear-world,unbind-reader,media-clear world-unbind=%d "
+		"readers-before=%u readers-after=%u frames=%u overflow=%u media-loaded=%d\n",
+		world_rc, (unsigned)readers_before, (unsigned)readers_after, (unsigned)fc.frames_total,
+		(unsigned)fc.overflow_total, s_c3r.media.loaded);
+}
+#endif
+/* C3:render end */
 
 static int hcu_guard_intact(const uint8_t *guard, uint8_t pattern)
 {

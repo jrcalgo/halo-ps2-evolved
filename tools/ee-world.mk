@@ -368,7 +368,7 @@ EE_CFLAGS += $(EE_OPTFLAGS)
 # C3 umbrella (opt-in): the parent and the CE port compile the same frame-snapshot path.
 HCU_C3 ?= 0
 ifeq ($(HCU_C3),1)
-EE_CFLAGS += -DHCU_C3_FRAME_SNAPSHOT -DHALO_PS2_C3_FRAME_SNAPSHOT
+EE_CFLAGS += -DHCU_C3=1 -DHCU_C3_FRAME_SNAPSHOT -DHALO_PS2_C3_FRAME_SNAPSHOT
 endif
 ifeq ($(WORLD_HCU_LINK_PROBE),1)
 # Diagnostic-only granularity lets the combined link discard unreferenced

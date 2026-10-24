@@ -27,6 +27,7 @@ import argparse
 import fcntl
 import json
 import os
+import shutil
 import re
 import signal
 import subprocess
@@ -42,6 +43,8 @@ LINK_LOCK = ROOT / "build/.hcu-parent-link-probe.lock"
 REUSE_ROOT = ROOT / "build/m2-c2-gaps-reuse"  # output root for --cycles/--ticks runs
 C3_ROOT = ROOT / "build/c3/integrate"        # output root for --c3 rows (summary.json is never written)
 RESULT_ROOT = MATRIX                           # switched to C3_ROOT by --c3
+RENDER_ROOT = ROOT / "build/c3/render-loop"   # output root for --c3 --render-views runs (v<N>/<row>)
+RENDER_PACKAGE_TREE = ROOT / "build/c3/render-tree"  # <tree>/pkg -> build/c3/render-packages (BSPS/TEXS/LMn chunks)
 FOREIGN_ROOT = ROOT / "build/m2-c2-foreign"   # output root for --successor runs
 # --successor-fault value -> (guest HALO_PS2_C2_SUCCESSOR_MODE, result directory label)
 SUCCESSOR_CASES = {"none": (1, "replace"), "preflight": (2, "failed-preflight"),
@@ -772,7 +775,8 @@ def run_group(command: list[str], *, log: Path, timeout: int, env: dict | None =
 
 
 def link_row(row: str, package_root: Path, out: Path, cycles: int = 1, ticks: int = 0,
-             include_dir: Path | None = None) -> tuple[Path | None, str]:
+             include_dir: Path | None = None, render_views: int = 0,
+             render_frames: int = 300) -> tuple[Path | None, str]:
     """Link the row's runtime-guest ELF under out/link, holding the shared link lock.
 
     include_dir (the --successor headers) is added to C_INCLUDE_PATH for every compile."""
@@ -792,6 +796,14 @@ def link_row(row: str, package_root: Path, out: Path, cycles: int = 1, ticks: in
             f"#define HALO_PS2_C2_PRODUCTION_RUNTIME_CYCLES {cycles}\n"
             f"#define HALO_PS2_C2_PRODUCTION_RUNTIME_TICKS {ticks}\n")
         include_dirs.append(str(cycles_dir))
+    if render_views:
+        # hcu_main.c includes <hcu_c3_render.h> under HCU_C3 when it exists (C3:render block).
+        render_dir = out / "render-inc"
+        render_dir.mkdir(parents=True, exist_ok=True)
+        (render_dir / "hcu_c3_render.h").write_text(
+            f"#define HCU_C3_RENDER_VIEWS {render_views}\n"
+            f"#define HCU_C3_RENDER_FRAMES {render_frames}\n")
+        include_dirs.append(str(render_dir))
     if include_dir is not None:
         include_dirs.append(str(include_dir))
     if include_dirs:
@@ -809,7 +821,7 @@ def link_row(row: str, package_root: Path, out: Path, cycles: int = 1, ticks: in
 
 def guest_row(row: str, elf: Path, plan: dict, out: Path, timeout: int = GUEST_TIMEOUT,
               process_timeout: int = GUEST_PROCESS_TIMEOUT, extra_stage_paths=(),
-              released_map: str | None = None) -> tuple[bool, str]:
+              released_map: str | None = None, capture_markers=()) -> tuple[bool, str]:
     command = [sys.executable, "-I", str(ROOT / "tools/c2_guest_run.py"),
                "--timeout", str(timeout), "--output-dir", str(out / "guest"),
                "--production-elf", str(elf), "--package-tree", str(plan["package_tree"]),
@@ -818,6 +830,10 @@ def guest_row(row: str, elf: Path, plan: dict, out: Path, timeout: int = GUEST_T
                "--production-profile-id", str(plan["profile_id"])]
     if released_map:
         command += ["--production-release-map", released_map]
+    if capture_markers:
+        command += ["--capture-dir", str(out / "captures")]
+        for marker in capture_markers:
+            command += ["--capture-marker", marker]
     for path in dict.fromkeys([*plan["stage_paths"], *extra_stage_paths]):
         command += ["--stage-path", path]
     rc, timed_out = run_group(command, log=out / "guest.log", timeout=process_timeout)
@@ -828,8 +844,76 @@ def guest_row(row: str, elf: Path, plan: dict, out: Path, timeout: int = GUEST_T
     return True, ""
 
 
-def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1, ticks: int = 0) -> dict:
-    out = (RESULT_ROOT if cycles == 1 and not ticks else REUSE_ROOT) / row
+def prepare_render_tree() -> Path:
+    """Stage build/c3/render-tree/pkg from build/c3/render-packages.
+
+    The HCP is symlinked unchanged (its SHA-256 pin is still checked by the guest runner). The render-media
+    producer left memory.package_file_bytes at the pre-render-chunk size, so the staged manifest copy carries the
+    HCP's real size, as tools/repack_hcu_profiles_hcp2.py does for a re-enveloped package; nothing else changes."""
+    source = ROOT / "build/c3/render-packages"
+    pkg = RENDER_PACKAGE_TREE / "pkg"
+    if pkg.is_symlink():
+        pkg.unlink()
+    for directory in sorted(p for p in source.iterdir() if p.is_dir()):
+        row = directory.name
+        hcp, manifest = directory / f"{row}.hcp", directory / f"{row}.json"
+        if not (hcp.is_file() and manifest.is_file()):
+            continue
+        out = pkg / row
+        out.mkdir(parents=True, exist_ok=True)
+        link = out / hcp.name
+        if link.is_symlink() or link.exists():
+            link.unlink()
+        try:
+            os.link(hcp, link)  # the image header pins the staged path, so it must not resolve back to render-packages
+        except OSError:
+            shutil.copy2(hcp, link)
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+        real = hcp.stat().st_size
+        if data["memory"]["package_file_bytes"] != real:
+            data["memory"]["package_file_bytes_before_render_stage"] = data["memory"]["package_file_bytes"]
+            data["memory"]["package_file_bytes"] = real
+        (out / manifest.name).write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return pkg
+
+
+def render_checks(lines: list[str], views: int, frames: int) -> dict:
+    """C3 render-loop evidence from the guest log: ready, final counters, teardown order, no render failure."""
+    out = {"checks": {}, "reasons": []}
+    ready = [l for l in lines if "c3-render-ready " in l]
+    final = [l for l in lines if "c3-frame kind=final " in l]
+    held = [l for l in lines if "c3-render-held " in l]
+    down = [l for l in lines if "c3-render-teardown " in l]
+    fails = [l for l in lines if "HALO_PS2_FAIL c3-render" in l]
+    ff = fields_of(final[-1]) if final else {}
+    tf = fields_of(down[-1]) if down else {}
+    checks = {
+        "render_ready": len(ready) == 1,
+        "render_no_failure": not fails,
+        "render_final_frames": ff.get("frame") == str(frames) and ff.get("frames") == str(frames),
+        # a 3-view frame also submits the unused-quadrant clear as a fourth renderer view
+        "render_views": ff.get("views") == str(views + (1 if views == 3 else 0)),
+        "render_overflow_zero": ff.get("overflow") == "0",
+        "render_idle_violations_zero": ff.get("idle-violations") == "0" and ff.get("emit-failures") == "0",
+        "render_held": len(held) == 1,
+        "render_ticks": any("production-ce-ticks result=1 " in l for l in lines),
+        "render_teardown": bool(down) and tf.get("world-unbind") == "0" and tf.get("readers-after") == "0"
+                           and tf.get("media-loaded") == "0",
+    }
+    out["checks"] = checks
+    out["reasons"] = [f"render check failed: {k}" for k, v in checks.items() if not v]
+    out["final"] = ff
+    out["teardown"] = tf
+    out["failures"] = fails
+    return out
+
+
+def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1, ticks: int = 0,
+            render_views: int = 0, render_frames: int = 300) -> dict:
+    if render_views:
+        out = RENDER_ROOT / f"v{render_views}" / row
+    else:
+        out = (RESULT_ROOT if cycles == 1 and not ticks else REUSE_ROOT) / row
     out.mkdir(parents=True, exist_ok=True)
     started = time.time()
     result: dict = {"row": row, "pass": False, "reasons": [], "started_unix": int(started),
@@ -847,23 +931,34 @@ def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1
             cwd=ROOT, capture_output=True, text=True)
         if header.returncode:
             raise RuntimeError(f"row header failed: {header.stderr.strip()}")
-        elf, why = link_row(row, package_root, out, cycles, ticks)
+        elf, why = link_row(row, package_root, out, cycles, ticks, None, render_views, render_frames)
         if elf is None:
             raise RuntimeError(why)
         result["elf"] = str(elf.relative_to(ROOT))
-        ok, why = guest_row(row, elf, plan, out)
+        ok, why = guest_row(row, elf, plan, out, capture_markers=(
+            [f"c3-frame kind=periodic frame={render_frames // 2 // 30 * 30} ", "c3-render-held "]
+            if render_views else ()))
         log_path = out / "guest/runs/partition-selected/halo_ps2_local.txt"
         lines = read_guest_lines(log_path)
         result["guest_log"] = str(log_path.relative_to(ROOT))
         result["guest_line_count"] = len(lines)
         parsed = parse_guest_log(lines, row, plan["map"])
         result.update(parsed)
-        if cycles != 1 or ticks:
+        if (cycles != 1 or ticks) and not render_views:
             multi = parse_cycles(lines, plan["map"], cycles, ticks)
             result["cycle_checks"] = multi
             parsed = {**parsed, "failing_checks": parsed["failing_checks"] + multi["failing_checks"]}
             result["failing_checks"] = parsed["failing_checks"]
             result["reasons"].extend(multi["reasons"])
+        if render_views:
+            rc = render_checks(lines, render_views, render_frames)
+            result["render"] = {"views": render_views, "frames": render_frames, **rc}
+            result["failing_checks"] = parsed["failing_checks"] + [k for k, v in rc["checks"].items() if not v]
+            parsed = {**parsed, "failing_checks": result["failing_checks"]}
+            result["reasons"].extend(rc["reasons"])
+            result["captures"] = json.loads(
+                (out / "guest/manifest.json").read_text())["runs"][-1].get("captures", []) \
+                if (out / "guest/manifest.json").is_file() else []
         result["ce_failure_lines"] = ce_failure_lines(out / "guest/runs/partition-selected/emu.txt")
         if parsed["failing_checks"] and result["ce_failure_lines"]:
             result["reasons"].append("CE reported: " + " | ".join(result["ce_failure_lines"][:2]))
@@ -950,6 +1045,29 @@ def run_successor(row: str, succ_row: str, fault: str = "none", ticks: int = SUC
     return result
 
 
+def write_summary(updated: list[dict] | None = None) -> None:
+    """Rebuild build/m2-c2-matrix/summary.json from every per-row result.json under the matrix directory.
+
+    A --rows run passes only its own results; they replace those rows' entries and every other row comes
+    from its result.json, so a partial run never shrinks the summary."""
+    entries: dict[str, dict] = {}
+    for path in sorted(MATRIX.glob("*/result.json")):
+        try:
+            data = json.loads(path.read_text())
+        except (OSError, ValueError):
+            continue
+        if data.get("state") == "running" or "row" not in data:
+            continue
+        entries[data["row"]] = {"row": data["row"], "pass": data.get("pass") is True,
+                                "reasons": data.get("reasons", [])[:3]}
+    for r in updated or []:
+        entries[r["row"]] = {"row": r["row"], "pass": r["pass"], "reasons": r["reasons"][:3]}
+    MATRIX.mkdir(parents=True, exist_ok=True)
+    order = profile_rows()
+    rows = sorted(entries.values(), key=lambda e: (order.index(e["row"]) if e["row"] in order else len(order), e["row"]))
+    (MATRIX / "summary.json").write_text(json.dumps({"rows": rows}, indent=2) + "\n")
+
+
 def previously_passed(row: str) -> bool:
     path = MATRIX / row / "result.json"
     try:
@@ -974,6 +1092,14 @@ def main(argv=None) -> int:
     parser.add_argument("--c3", action="store_true",
                         help=("run the opt-in HCU_C3=1 variant: closure, link and guest use the C3 flags and results "
                               "go to build/c3/integrate/<row>/; summary.json is not written"))
+    parser.add_argument("--render-views", type=int, choices=(1, 2, 3, 4), default=0,
+                        help=("with --c3: build the C3 render loop (hcu_main.c C3:render block) for N views, run it in "
+                              "PCSX2 with framebuffer captures; results go to build/c3/render-loop/v<N>/<row>/"))
+    parser.add_argument("--render-frames", type=int, default=300,
+                        help="frames the render loop draws with --render-views (default %(default)s; must be a multiple of 30)")
+    parser.add_argument("--package-root", type=Path,
+                        help=("override the selected package root (<root>/<row>/<row>.hcp + .json); with --render-views the "
+                              "default is the C3 render package tree build/c3/render-tree/pkg"))
     parser.add_argument("--successor", metavar="ROW",
                         help=("run the guest successor sequence on the one --rows row: after its map loads, replace it with "
                               "ROW's map through the real map service; results go to build/m2-c2-foreign/<row>/"))
@@ -1008,9 +1134,22 @@ def main(argv=None) -> int:
         parser.error("--cycles must be at least 1 and --ticks at least 0")
     if args.jobs_link < 1:
         parser.error("--jobs-link must be at least 1")
+    if args.render_views and not args.c3:
+        parser.error("--render-views needs --c3")
+    if args.render_views:
+        if args.render_frames < 30 or args.render_frames % 30:
+            parser.error("--render-frames must be a positive multiple of 30")
+        if args.cycles != 1 or args.ticks or args.skip_existing:
+            parser.error("--render-views sets its own tick count (frames + 5); do not pass --cycles/--ticks/--skip-existing")
+        if not args.package_root:
+            args.package_root = prepare_render_tree()
+    if args.package_root and not args.c3:
+        parser.error("--package-root needs --c3")
     if args.c3:
-        if args.cycles != 1 or args.ticks or args.successor:
+        if (args.cycles != 1 or args.ticks) and not args.render_views:
             parser.error("--c3 runs the default single-cycle rows only")
+        if args.successor:
+            parser.error("--c3 cannot be combined with --successor")
         # Every subprocess (closure, link probe, guest runner) inherits HCU_C3=1.
         os.environ["HCU_C3"] = "1"
         RESULT_ROOT = C3_ROOT
@@ -1019,17 +1158,16 @@ def main(argv=None) -> int:
         if args.skip_existing and previously_passed(row):
             print(f"{row}: skipped (previous pass)")
             continue
-        result = run_row(row, cycles=args.cycles, ticks=args.ticks)
+        result = run_row(row, args.package_root, cycles=args.cycles,
+                         ticks=(args.render_frames + 5) if args.render_views else args.ticks,
+                         render_views=args.render_views, render_frames=args.render_frames)
         summary.append(result)
         print(f"{row}: {'PASS' if result['pass'] else 'FAIL'} {'; '.join(result['reasons'][:2])}", flush=True)
-    if args.cycles != 1 or args.ticks:
+    if args.cycles != 1 or args.ticks or args.render_views:
         return 0 if all(r["pass"] for r in summary) else 1
     if args.c3:
         return 0 if all(r["pass"] for r in summary) else 1
-    MATRIX.mkdir(parents=True, exist_ok=True)
-    (MATRIX / "summary.json").write_text(json.dumps(
-        {"rows": [{"row": r["row"], "pass": r["pass"], "reasons": r["reasons"][:3]} for r in summary]},
-        indent=2) + "\n")
+    write_summary(summary)
     return 0 if all(r["pass"] for r in summary) else 1
 
 

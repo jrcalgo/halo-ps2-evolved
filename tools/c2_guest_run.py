@@ -447,9 +447,27 @@ def stage_host_paths(lane_run: Path, relative_paths):
     return staged
 
 
+FFMPEG = shutil.which("ffmpeg") or "/home/ai/miniconda3/envs/dl/bin/ffmpeg"
+
+
+def capture_root(display, base):
+    """C3: `xwd -root` of the guest display, converted to PNG. Returns a result dict."""
+    xwd = base.with_suffix(".xwd")
+    png = base.with_suffix(".png")
+    env = {**os.environ, "DISPLAY": display}
+    r = subprocess.run(["xwd", "-root", "-silent", "-out", str(xwd)], env=env, capture_output=True)
+    if r.returncode != 0:
+        return {"file": None, "error": r.stderr.decode(errors="replace").strip()}
+    c = subprocess.run([FFMPEG, "-loglevel", "error", "-y", "-i", str(xwd), str(png)], capture_output=True)
+    if c.returncode != 0:
+        return {"file": str(xwd), "error": "ffmpeg: " + c.stderr.decode(errors="replace").strip()}
+    return {"file": str(png), "xwd": str(xwd), "bytes": png.stat().st_size}
+
+
 def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
               maps_dir=PROBE / "maps", production_tuple=None,
-              guest_package_root="build/m2-c2-r3-selected-packages", stage_paths=()):
+              guest_package_root="build/m2-c2-r3-selected-packages", stage_paths=(),
+              capture_dir=None, capture_markers=()):
     lane_run = out_dir / "runs" / which
     if lane_run.exists():
         shutil.rmtree(lane_run)
@@ -471,11 +489,24 @@ def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
     env = {**os.environ, "APPIMAGE_EXTRACT_AND_RUN": "1", "QT_QPA_PLATFORM": "xcb"}
     start = time.monotonic()
     guest_terminal = None
+    captures = []
     with (lane_run / "launcher.log").open("w") as launcher:
         process = subprocess.Popen(command, cwd=lane_run, env=env, stdout=launcher,
                                    stderr=subprocess.STDOUT, start_new_session=True)
         deadline = time.monotonic() + timeout
+        pending_markers = list(capture_markers)
         while process.poll() is None and time.monotonic() < deadline:
+            if capture_dir and pending_markers:
+                log_text = log.read_text(errors="replace") if log.exists() else ""
+                for marker in list(pending_markers):
+                    if marker in log_text:
+                        pending_markers.remove(marker)
+                        Path(capture_dir).mkdir(parents=True, exist_ok=True)
+                        tag = re.sub(r"[^A-Za-z0-9]+", "-", marker).strip("-")
+                        info = capture_root(os.environ.get("DISPLAY", ":99"),
+                                            Path(capture_dir) / f"capture-{len(captures) + 1:02d}-{tag}")
+                        info["marker"] = marker
+                        captures.append(info)
             guest_terminal = _run_terminal(which, log)
             if guest_terminal:
                 # Let PCSX2 flush the CE teardown tail before stopping it.
@@ -501,6 +532,7 @@ def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
             "exit": exit_status, "elapsed_seconds": elapsed, "log": str(log),
             "pcsx2_config": config_identity,
             "halo_lines_saved": str(lane_run / "halo_ps2_local.txt"), "halo_line_count": len(lines),
+            "captures": captures,
             "markers": markers, "markers_all_present": all(markers.values()),
             "summary": summarize(lines)}
     if which == "partition-selected":
@@ -542,6 +574,10 @@ def main():
                         help="repo-relative file to symlink into the guest host:/ root (repeatable)")
     parser.add_argument("--maps-dir", type=Path, default=PROBE / "maps",
                         help="directory exposed at host:/maps for the guest")
+    parser.add_argument("--capture-dir", type=Path,
+                        help="C3: save an `xwd -root` PNG of the guest display here when a --capture-marker appears in the log")
+    parser.add_argument("--capture-marker", action="append", default=[],
+                        help="log substring that triggers one capture (repeatable)")
     parser.add_argument("--production-row", default="sidewinder_marine_shotgun_4p4bot")
     parser.add_argument("--production-map", default="sidewinder")
     parser.add_argument("--production-release-map",
@@ -647,7 +683,8 @@ def main():
                                                      "package_bytes": manifest["runtime_profile"]["package_bytes"],
                                                      "released_map": args.production_release_map}
                                                     if args.production_elf else None),
-                                                   args.guest_package_root, args.stage_path))
+                                                   args.guest_package_root, args.stage_path,
+                                                   args.capture_dir, args.capture_marker))
             except Exception as error:  # record the failure and keep the partial manifest
                 manifest["runs"].append({"run": which, "error": f"{type(error).__name__}: {error}"})
             write_manifest(manifest_path, manifest)
