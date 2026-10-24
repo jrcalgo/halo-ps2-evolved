@@ -8,27 +8,28 @@
 
 unsigned long tag_validate_claims_buffer_size(void);
 
-static void restore_region_marks(mem_layout_v2_t *layout,
-	const size_t marks[MEM_LAYOUT_V2_REGION_COUNT])
+static void restore_region_state(mem_layout_v2_t *layout,
+	const arena_t saved[MEM_LAYOUT_V2_REGION_COUNT])
 {
 	int region;
 	for (region = 0; region < MEM_LAYOUT_V2_REGION_COUNT; region++)
-		layout->regions[region].used = marks[region];
+		layout->regions[region] = saved[region];
 }
 
 int hcu_memory_bind_parent_v2(mem_layout_v2_t *layout,
 	size_t tag_cache_bytes)
 {
 	arena_t *resident, *bsp, *texture, *dynamic, *audio;
-	size_t marks[MEM_LAYOUT_V2_REGION_COUNT];
+	arena_t saved_regions[MEM_LAYOUT_V2_REGION_COUNT];
 	void *game_state, *tag_cache, *claims;
 	unsigned long claims_bytes;
 	int region;
 
-	if (!layout || tag_cache_bytes == 0 || tag_cache_bytes > ULONG_MAX)
+	if (!layout || tag_cache_bytes == 0 || tag_cache_bytes > ULONG_MAX ||
+		!physical_memory_bindings_clean())
 		return -1;
 	for (region = 0; region < MEM_LAYOUT_V2_REGION_COUNT; region++)
-		marks[region] = layout->regions[region].used;
+		saved_regions[region] = layout->regions[region];
 
 	resident = mem_layout_v2_get(layout, MEM_LAYOUT_V2_RESIDENT_GAMEPLAY);
 	bsp = mem_layout_v2_get(layout, MEM_LAYOUT_V2_CURRENT_BSP);
@@ -76,6 +77,6 @@ fail:
 	/* This is a one-shot boot initializer. No CE allocations may exist yet, so
 	 * releasing the provider is safe and makes a corrected retry deterministic. */
 	physical_memory_free();
-	restore_region_marks(layout, marks);
+	restore_region_state(layout, saved_regions);
 	return -1;
 }

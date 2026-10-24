@@ -20,10 +20,14 @@ typedef struct {
     unsigned char *storage;
     size_t stride, high_water;
     uint64_t next_serial;
+    uint32_t request_failures, reset_count, reset_failures;
     staging_slot slots[STAGING_SLOTS];
 } staging_pool;
 
 int staging_init(staging_pool *, void *, size_t);
+/* Quiescent reset preserves serials and lifetime telemetry, so stale tickets
+ * cannot name a newly reused slot. Refused while a worker or reader owns bytes. */
+int staging_reset(staging_pool *);
 int staging_request(staging_pool *, uint32_t map, size_t, staging_ticket *);
 void *staging_begin(staging_pool *, staging_ticket);
 int staging_complete(staging_pool *, staging_ticket, size_t bytes, int ok);

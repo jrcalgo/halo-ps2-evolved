@@ -1,8 +1,11 @@
 #include "staging.h"
 #include <string.h>
 
+static void increment(uint32_t *value) {
+    if (*value != UINT32_MAX) ++*value;
+}
 static staging_slot *lookup(staging_pool *p, staging_ticket t) {
-    if (t.slot >= STAGING_SLOTS || !t.serial) return NULL;
+    if (!p || t.slot >= STAGING_SLOTS || !t.serial) return NULL;
     staging_slot *s = &p->slots[t.slot];
     return s->state != ST_FREE && s->serial == t.serial ? s : NULL;
 }
@@ -13,8 +16,24 @@ int staging_init(staging_pool *p, void *storage, size_t bytes) {
     p->stride = bytes / STAGING_SLOTS;
     return 1;
 }
+int staging_reset(staging_pool *p) {
+    if (!p || !p->storage || !p->stride) return 0;
+    for (unsigned i = 0; i < STAGING_SLOTS; ++i) {
+        if (p->slots[i].state != ST_FREE) {
+            increment(&p->reset_failures);
+            return 0;
+        }
+    }
+    memset(p->slots, 0, sizeof(p->slots));
+    increment(&p->reset_count);
+    return 1;
+}
 int staging_request(staging_pool *p, uint32_t map, size_t bytes, staging_ticket *t) {
-    if (!t || !bytes || bytes > p->stride || p->next_serial == UINT64_MAX) return 0;
+    if (!p) return 0;
+    if (!p->storage || !t || !bytes || bytes > p->stride || p->next_serial == UINT64_MAX) {
+        increment(&p->request_failures);
+        return 0;
+    }
     for (unsigned i = 0; i < STAGING_SLOTS; ++i) {
         staging_slot *s = &p->slots[i];
         if (s->state != ST_FREE) continue;
@@ -26,6 +45,7 @@ int staging_request(staging_pool *p, uint32_t map, size_t bytes, staging_ticket 
         if (used > p->high_water) p->high_water = used;
         return 1;
     }
+    increment(&p->request_failures);
     return 0;
 }
 void *staging_begin(staging_pool *p, staging_ticket t) {

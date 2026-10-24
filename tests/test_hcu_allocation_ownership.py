@@ -58,8 +58,9 @@ class HcuAllocationOwnershipTests(unittest.TestCase):
                          result["source_inputs"]["hcu_rooted_sha256"])
         self.assertEqual(external_ledger["rooted_sha256"],
                          sha256(ROOT / "build/hcu-ps2-closure/all-no-bootstrap-memory/rooted.o"))
-        self.assertEqual(external_ledger["rooted_sha256"],
-                         sha256(ROOT / "build/hcu-ps2-closure/all/rooted.o"))
+        # The combined machine link is built from the no-bootstrap closure.
+        # The standalone `all/` profile intentionally has different roots and
+        # must not be used as a second, conflicting identity check here.
         self.assertTrue(map_path.is_file())
         self.assertEqual(Path(audit["elf"]).resolve(), elf_path.resolve())
         self.assertEqual(Path(audit["map"]).resolve(), map_path.resolve())

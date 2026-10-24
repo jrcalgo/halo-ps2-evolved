@@ -51,9 +51,9 @@ static void test_memory_layout_v2(void)
 		memcmp(&g_layout, &untouched, sizeof g_layout) == 0);
 
 	arena_init(&backing, "ee-managed", g_layout_storage + 1,
-		MEM_LAYOUT_V2_BYTES + 15u);
+		MEM_LAYOUT_V2_BYTES + 63u);
 	expect("v2-layout-exact-capacity", mem_layout_v2_init(&g_layout, &backing) == 0 &&
-		backing.used == MEM_LAYOUT_V2_BYTES + 15u);
+		backing.used == MEM_LAYOUT_V2_BYTES + 63u);
 	for (i = 0; i < MEM_LAYOUT_V2_REGION_COUNT; i++) {
 		const arena_t *region = mem_layout_v2_get_const(&g_layout,
 			(mem_layout_v2_region_t)i);
@@ -61,18 +61,25 @@ static void test_memory_layout_v2(void)
 			((uintptr_t)region->base & 15u) != 0 || region->used != 0 ||
 			strcmp(region->name, names[i]) != 0)
 			contiguous = 0;
-		if (i > 0 && g_layout.regions[i - 1].base + g_layout.regions[i - 1].cap !=
-			g_layout.regions[i].base)
-			contiguous = 0;
+		if (i > 0) {
+			uintptr_t previous_end = (uintptr_t)g_layout.regions[i - 1].base +
+				g_layout.regions[i - 1].cap;
+			uintptr_t current = (uintptr_t)g_layout.regions[i].base;
+			if (current < previous_end ||
+				(i != MEM_LAYOUT_V2_DMA_COMMANDS && current != previous_end) ||
+				(i == MEM_LAYOUT_V2_DMA_COMMANDS &&
+					(current - previous_end > 63u || (current & 63u) != 0u)))
+				contiguous = 0;
+		}
 	}
-	expect("v2-layout-names-capacities-and-disjoint-order", contiguous);
+	expect("v2-layout-names-capacities-and-aligned-disjoint-order", contiguous);
 	expect("v2-layout-invalid-region-rejected",
 		mem_layout_v2_get(&g_layout, (mem_layout_v2_region_t)-1) == NULL &&
 		mem_layout_v2_get_const(&g_layout, MEM_LAYOUT_V2_REGION_COUNT) == NULL);
 	before = g_layout;
 	expect("v2-layout-second-carve-fails-atomically",
 		mem_layout_v2_init(&g_layout, &backing) == -1 &&
-		backing.used == MEM_LAYOUT_V2_BYTES + 15u &&
+		backing.used == MEM_LAYOUT_V2_BYTES + 63u &&
 		memcmp(&g_layout, &before, sizeof g_layout) == 0);
 }
 
@@ -100,36 +107,45 @@ int main(void)
 	expect("reject-null-arena", arena_alloc(NULL, 1, 1) == NULL);
 	arena_init(&invalid_base, "null-base", NULL, 16);
 	expect("reject-null-base", arena_alloc(&invalid_base, 1, 1) == NULL &&
-		invalid_base.used == 0);
+		invalid_base.used == 0 && invalid_base.failed_allocations == 1);
 	arena_init(&address_overflow, "address-overflow",
 		(void *)(uintptr_t)(UINTPTR_MAX - 7u), 32);
 	expect("reject-address-range-overflow",
 		arena_alloc(&address_overflow, 1, 16) == NULL &&
-		address_overflow.used == 0 && address_overflow.high == 0);
+		address_overflow.used == 0 && address_overflow.high == 0 &&
+		address_overflow.failed_allocations == 1);
 
 	aligned = arena_alloc(&arena, 1, 16);
 	address = (uintptr_t)aligned;
 	expect("align-16", aligned != NULL && (address % 16u) == 0);
 	expect("reject-non-power-alignment", arena_alloc(&arena, 1, 3) == NULL);
 	expect("reject-zero-alignment", arena_alloc(&arena, 1, 0) == NULL);
+	expect("allocation-failures-counted",
+		arena.failed_allocations == 2);
 
 	mark = arena_mark(&arena);
 	expect("scratch-alloc", arena_alloc(&arena, 8, 1) != NULL);
 	expect("lifetime-future-mark", release_checked(&arena, arena.used + 1, &used_after) == -1);
+	arena_release(&arena, arena.used + 1);
 	expect("lifetime-used-unchanged", arena.used == mark + 8);
 	expect("scratch-release", release_checked(&arena, mark, &used_after) == 0 && used_after == mark);
+	expect("release-counters",
+		arena.release_count == 1 && arena.invalid_releases == 1);
 
 	high_before_reset = arena.high;
 	arena_reset(&arena);
-	expect("scratch-reset", arena.used == 0 && arena.high == high_before_reset);
+	expect("scratch-reset", arena.used == 0 && arena.high == high_before_reset &&
+		arena.reset_count == 1);
 
 	rejected = arena_alloc(&arena, sizeof storage + 1, 1);
 	expect("exhaustion", rejected == NULL && arena.used == 0);
 	expect("occupy-one", arena_alloc(&arena, 16, 1) != NULL);
 	expect("sub-arena-exhaustion", arena_sub(&child, &arena, "child", sizeof storage) == -1);
+	expect("exhaustion-counter", arena.failed_allocations == 4);
 
 	arena_init(&overflow, "overflow", tiny, sizeof tiny);
-	expect("size-overflow", arena_alloc(&overflow, SIZE_MAX, 1) == NULL && overflow.used == 0);
+	expect("size-overflow", arena_alloc(&overflow, SIZE_MAX, 1) == NULL &&
+		overflow.used == 0 && overflow.failed_allocations == 1);
 	test_memory_layout_v2();
 
 	printf("  {\"check\":\"sentinel\",\"pass\":true}\n ],\n \"layout_v2\":[\n");

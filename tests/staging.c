@@ -7,10 +7,14 @@ int main(void) {
     staging_ticket t[4], extra, old;
     assert(!staging_init(&p, storage, 3));
     assert(staging_init(&p, storage, sizeof storage));
+    assert(p.reset_count == 0 && p.request_failures == 0);
     assert(!staging_request(&p, 1, 257, &extra));
     for (unsigned i=0;i<4;i++) assert(staging_request(&p, 1, 256, &t[i]));
     assert(p.high_water == sizeof storage);
     assert(!staging_request(&p, 2, 1, &extra));
+    assert(p.request_failures == 2);
+    assert(!staging_reset(&p));
+    assert(p.reset_failures == 1 && p.reset_count == 0);
     memset(staging_begin(&p,t[0]), 0x5a,256);
     assert(!staging_begin(&p,t[0]));
     assert(staging_begin(&p,t[1]));
@@ -57,7 +61,16 @@ int main(void) {
     assert(!staging_dma_complete(&p, extra));
     assert(staging_release(&p, extra));
     assert(staging_map_drained(&p, 7));
+    old = extra;
+    assert(staging_reset(&p));
+    assert(p.reset_count == 1 && p.high_water == sizeof storage);
+    assert(p.request_failures == 2 && p.reset_failures == 1);
+    assert(staging_request(&p, 7, 16, &extra));
+    assert(extra.serial > old.serial);
+    assert(!staging_begin(&p, old));
+    staging_cancel_map(&p, 7);
     p.next_serial=UINT64_MAX;
     assert(!staging_request(&p,3,1,&extra));
+    assert(p.request_failures == 3);
     return 0;
 }
