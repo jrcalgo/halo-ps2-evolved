@@ -1,0 +1,4427 @@
+{
+  "compiler_layout": {
+    "assertion_count": 81,
+    "assertions": "structure_bsp sizeof/offsetof/field-size against linked schema and all omitted root members",
+    "command": [
+      "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-gcc",
+      "-std=gnu89",
+      "-Os",
+      "-mabi=n32",
+      "-fms-extensions",
+      "-fshort-wchar",
+      "-fcommon",
+      "-fno-strict-aliasing",
+      "-fno-delete-null-pointer-checks",
+      "-ffp-contract=off",
+      "-fsigned-char",
+      "-fwrapv",
+      "-ffunction-sections",
+      "-fdata-sections",
+      "-G0",
+      "-D_EE",
+      "-D__STRICT_ANSI__",
+      "-w",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/linux/game",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/include/xdk",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/main",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cseries",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/sound",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bink",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved films",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/saved games",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cache",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/units",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/text",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tag_files",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/structures",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shell",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/shaders",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/scenario",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/render",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/rasterizer",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/physics",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/objects/widgets",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/networking",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/models",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/memory/zlib",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/math",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/tool",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/items",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/interface",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/input",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/hs",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/game",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/effects",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/editor",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/dialogs",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/devices",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/cutscene",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/camera",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bungie_net",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/bitmaps",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/source/ai",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/common/include",
+      "-I/home/ai/Documents/GitHub/haloce-decomp-ps2/build/toolchain/install/ps2sdk/ee/include",
+      "-include",
+      "/home/ai/Documents/GitHub/haloce-decomp-ps2/submodules/halo-ce-universal/port/ps2/include/halo_ps2_prefix.h",
+      "-include",
+      "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-ps2-closure/all-no-bootstrap-memory/halo_ps2_msvc_semantics.h",
+      "-c",
+      "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/structure_bsp_member_layout.c",
+      "-o",
+      "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/hcu-step7-step8-c0/structure_bsp_member_layout.o"
+    ],
+    "compiler": "mips64r5900el-ps2-elf-gcc (GCC) 15.2.0",
+    "diagnostics": "",
+    "object_path": "build/hcu-step7-step8-c0/structure_bsp_member_layout.o",
+    "object_sha256": "c69e827eb9e96a68a67e921b403efac78076d24bddca669ca89fb535076cf58c",
+    "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+    "source_path": "build/hcu-step7-step8-c0/structure_bsp_member_layout.c",
+    "source_sha256": "b8cc2f2920d574d5d143c65a11c392edda456846f2ba15b7a102bf721deb8197",
+    "status": "passed"
+  },
+  "definition": "structure_bsp",
+  "definition_count": 48,
+  "definitions": [
+    {
+      "definition_id": "2989880",
+      "members": [],
+      "name": "bsp2d_node",
+      "serialized_size": 20,
+      "unrepresented_ranges": [
+        {
+          "next_member": null,
+          "offset": 0,
+          "size": 20
+        }
+      ]
+    },
+    {
+      "definition_id": "2989896",
+      "members": [],
+      "name": "bsp2d_reference",
+      "serialized_size": 8,
+      "unrepresented_ranges": [
+        {
+          "next_member": null,
+          "offset": 0,
+          "size": 8
+        }
+      ]
+    },
+    {
+      "definition_id": "2989928",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 4,
+          "flags": 0,
+          "kind": "block_index",
+          "maximum": 0,
+          "name": "plane_designator",
+          "offset": 0,
+          "size": 4,
+          "target_level": 1,
+          "target_offset": 12
+        }
+      ],
+      "name": "bsp3d_node",
+      "serialized_size": 12,
+      "unrepresented_ranges": [
+        {
+          "next_member": null,
+          "offset": 4,
+          "size": 8
+        }
+      ]
+    },
+    {
+      "definition_id": "2990064",
+      "members": [],
+      "name": "byte",
+      "serialized_size": 1,
+      "unrepresented_ranges": [
+        {
+          "next_member": null,
+          "offset": 0,
+          "size": 1
+        }
+      ]
+    },
+    {
+      "definition_id": "2988624",
+      "members": [
+        {
+          "child_definition_id": "2990016",
+          "child_definition_name": "real_plane3d",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 65536,
+          "name": "bsp3d.planes",
+          "offset": 12,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2989928",
+          "child_definition_name": "bsp3d_node",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 131072,
+          "name": "bsp3d.nodes",
+          "offset": 0,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2989912",
+          "child_definition_name": "collision_leaf",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 65536,
+          "name": "leaves",
+          "offset": 24,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2989896",
+          "child_definition_name": "bsp2d_reference",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 131072,
+          "name": "bsp2d_references",
+          "offset": 36,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2989880",
+          "child_definition_name": "bsp2d_node",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 65535,
+          "name": "bsp2d.nodes",
+          "offset": 48,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2989376",
+          "child_definition_name": "collision_vertex",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 131072,
+          "name": "vertices",
+          "offset": 84,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2989464",
+          "child_definition_name": "collision_edge",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 262144,
+          "name": "edges",
+          "offset": 72,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2989624",
+          "child_definition_name": "collision_surface",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 131072,
+          "name": "surfaces",
+          "offset": 60,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "count": 1,
+          "element_size": 0,
+          "flags": 0,
+          "kind": "check",
+          "maximum": 0,
+          "name": "structure_collision_bsp_check",
+          "offset": 0,
+          "size": 0,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "collision_bsp",
+      "serialized_size": 96,
+      "unrepresented_ranges": []
+    },
+    {
+      "definition_id": "2989464",
+      "members": [
+        {
+          "count": 2,
+          "element_size": 4,
+          "flags": 0,
+          "kind": "block_index",
+          "maximum": 0,
+          "name": "vertex_indices",
+          "offset": 0,
+          "size": 8,
+          "target_level": 1,
+          "target_offset": 84
+        },
+        {
+          "count": 2,
+          "element_size": 4,
+          "flags": 0,
+          "kind": "block_index",
+          "maximum": 0,
+          "name": "edge_indices",
+          "offset": 8,
+          "size": 8,
+          "target_level": 1,
+          "target_offset": 72
+        },
+        {
+          "count": 2,
+          "element_size": 4,
+          "flags": 1,
+          "kind": "block_index",
+          "maximum": 0,
+          "name": "surface_indices",
+          "offset": 16,
+          "size": 8,
+          "target_level": 1,
+          "target_offset": 60
+        }
+      ],
+      "name": "collision_edge",
+      "serialized_size": 24,
+      "unrepresented_ranges": []
+    },
+    {
+      "definition_id": "2989912",
+      "members": [],
+      "name": "collision_leaf",
+      "serialized_size": 8,
+      "unrepresented_ranges": [
+        {
+          "next_member": null,
+          "offset": 0,
+          "size": 8
+        }
+      ]
+    },
+    {
+      "definition_id": "2989624",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 4,
+          "flags": 0,
+          "kind": "block_index",
+          "maximum": 0,
+          "name": "first_edge_index",
+          "offset": 4,
+          "size": 4,
+          "target_level": 1,
+          "target_offset": 72
+        },
+        {
+          "count": 1,
+          "element_size": 2,
+          "flags": 1,
+          "kind": "block_index",
+          "maximum": 0,
+          "name": "material_index",
+          "offset": 10,
+          "size": 2,
+          "target_level": -1,
+          "target_offset": 164
+        }
+      ],
+      "name": "collision_surface",
+      "serialized_size": 12,
+      "unrepresented_ranges": [
+        {
+          "next_member": "first_edge_index",
+          "offset": 0,
+          "size": 4
+        },
+        {
+          "next_member": "material_index",
+          "offset": 8,
+          "size": 2
+        }
+      ]
+    },
+    {
+      "definition_id": "2989376",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 4,
+          "flags": 0,
+          "kind": "block_index",
+          "maximum": 0,
+          "name": "first_edge_index",
+          "offset": 12,
+          "size": 4,
+          "target_level": 1,
+          "target_offset": 72
+        }
+      ],
+      "name": "collision_vertex",
+      "serialized_size": 16,
+      "unrepresented_ranges": [
+        {
+          "next_member": "first_edge_index",
+          "offset": 0,
+          "size": 12
+        }
+      ]
+    },
+    {
+      "definition_id": "2983176",
+      "members": [],
+      "name": "detail_object",
+      "serialized_size": 6,
+      "unrepresented_ranges": [
+        {
+          "next_member": null,
+          "offset": 0,
+          "size": 6
+        }
+      ]
+    },
+    {
+      "definition_id": "2983192",
+      "members": [],
+      "name": "detail_object_cell",
+      "serialized_size": 32,
+      "unrepresented_ranges": [
+        {
+          "next_member": null,
+          "offset": 0,
+          "size": 32
+        }
+      ]
+    },
+    {
+      "definition_id": "2983160",
+      "members": [],
+      "name": "detail_object_count",
+      "serialized_size": 2,
+      "unrepresented_ranges": [
+        {
+          "next_member": null,
+          "offset": 0,
+          "size": 2
+        }
+      ]
+    },
+    {
+      "definition_id": "2983144",
+      "members": [],
+      "name": "detail_object_z_reference_vector",
+      "serialized_size": 16,
+      "unrepresented_ranges": [
+        {
+          "next_member": null,
+          "offset": 0,
+          "size": 16
+        }
+      ]
+    },
+    {
+      "definition_id": "2982432",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 4,
+          "flags": 0,
+          "kind": "reset",
+          "maximum": 0,
+          "name": "bsp",
+          "offset": 0,
+          "size": 4,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2982680",
+          "child_definition_name": "map_leaf",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 65536,
+          "name": "leaves",
+          "offset": 4,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2982592",
+          "child_definition_name": "leaf_portal",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 131072,
+          "name": "portals",
+          "offset": 16,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "leaf_map",
+      "serialized_size": 28,
+      "unrepresented_ranges": []
+    },
+    {
+      "definition_id": "2982592",
+      "members": [
+        {
+          "child_definition_id": "2990032",
+          "child_definition_name": "real_point3d",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 65536,
+          "name": "vertices",
+          "offset": 12,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "leaf_portal",
+      "serialized_size": 24,
+      "unrepresented_ranges": [
+        {
+          "next_member": "vertices",
+          "offset": 0,
+          "size": 12
+        }
+      ]
+    },
+    {
+      "definition_id": "2990080",
+      "members": [],
+      "name": "long",
+      "serialized_size": 4,
+      "unrepresented_ranges": [
+        {
+          "next_member": null,
+          "offset": 0,
+          "size": 4
+        }
+      ]
+    },
+    {
+      "definition_id": "2982680",
+      "members": [
+        {
+          "child_definition_id": "2982808",
+          "child_definition_name": "map_leaf_face",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 65536,
+          "name": "faces",
+          "offset": 0,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2990080",
+          "child_definition_name": "long",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 65536,
+          "name": "portal_designators",
+          "offset": 12,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "map_leaf",
+      "serialized_size": 24,
+      "unrepresented_ranges": []
+    },
+    {
+      "definition_id": "2982808",
+      "members": [
+        {
+          "child_definition_id": "2990048",
+          "child_definition_name": "real_point2d",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 65536,
+          "name": "vertices",
+          "offset": 4,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "map_leaf_face",
+      "serialized_size": 16,
+      "unrepresented_ranges": [
+        {
+          "next_member": "vertices",
+          "offset": 0,
+          "size": 4
+        }
+      ]
+    },
+    {
+      "definition_id": "2985016",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 2,
+          "flags": 0,
+          "kind": "enum",
+          "maximum": 2,
+          "name": "type",
+          "offset": 0,
+          "size": 2,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "count": 1,
+          "element_size": 4,
+          "flags": 1,
+          "groups": [
+            "bitm",
+            "snd!"
+          ],
+          "kind": "tag_index",
+          "maximum": 0,
+          "name": "tag_index",
+          "offset": 4,
+          "size": 4,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "predicted_resource",
+      "serialized_size": 8,
+      "unrepresented_ranges": [
+        {
+          "next_member": "tag_index",
+          "offset": 2,
+          "size": 2
+        }
+      ]
+    },
+    {
+      "definition_id": "2990016",
+      "members": [],
+      "name": "real_plane3d",
+      "serialized_size": 16,
+      "unrepresented_ranges": [
+        {
+          "next_member": null,
+          "offset": 0,
+          "size": 16
+        }
+      ]
+    },
+    {
+      "definition_id": "2990048",
+      "members": [],
+      "name": "real_point2d",
+      "serialized_size": 8,
+      "unrepresented_ranges": [
+        {
+          "next_member": null,
+          "offset": 0,
+          "size": 8
+        }
+      ]
+    },
+    {
+      "definition_id": "2990032",
+      "members": [],
+      "name": "real_point3d",
+      "serialized_size": 12,
+      "unrepresented_ranges": [
+        {
+          "next_member": null,
+          "offset": 0,
+          "size": 12
+        }
+      ]
+    },
+    {
+      "definition_id": "2986432",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 2,
+          "flags": 0,
+          "kind": "enum",
+          "maximum": 3,
+          "name": "distant_light_count",
+          "offset": 12,
+          "size": 2,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "count": 1,
+          "element_size": 2,
+          "flags": 0,
+          "kind": "enum",
+          "maximum": 1,
+          "name": "point_light_count",
+          "offset": 64,
+          "size": 2,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "render_lighting",
+      "serialized_size": 116,
+      "unrepresented_ranges": [
+        {
+          "next_member": "distant_light_count",
+          "offset": 0,
+          "size": 12
+        },
+        {
+          "next_member": "point_light_count",
+          "offset": 14,
+          "size": 50
+        },
+        {
+          "next_member": null,
+          "offset": 66,
+          "size": 50
+        }
+      ]
+    },
+    {
+      "definition_id": "2983336",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 16,
+          "flags": 1,
+          "groups": [
+            "lsnd"
+          ],
+          "kind": "reference",
+          "maximum": 0,
+          "name": "background_sound",
+          "offset": 32,
+          "size": 16,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "structure_background_sound_palette_entry",
+      "serialized_size": 116,
+      "unrepresented_ranges": [
+        {
+          "next_member": "background_sound",
+          "offset": 0,
+          "size": 32
+        },
+        {
+          "next_member": null,
+          "offset": 48,
+          "size": 68
+        }
+      ]
+    },
+    {
+      "definition_id": "2984184",
+      "members": [],
+      "name": "structure_breakable_surface",
+      "serialized_size": 48,
+      "unrepresented_ranges": [
+        {
+          "next_member": null,
+          "offset": 0,
+          "size": 48
+        }
+      ]
+    },
+    {
+      "definition_id": "2981296",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 16,
+          "flags": 1,
+          "groups": [
+            "bitm"
+          ],
+          "kind": "reference",
+          "maximum": 0,
+          "name": "lightmap_group",
+          "offset": 0,
+          "size": 16,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2986432",
+          "child_definition_name": "render_lighting",
+          "count": 1,
+          "element_size": 116,
+          "flags": 0,
+          "kind": "struct",
+          "maximum": 0,
+          "name": "default_lighting",
+          "offset": 44,
+          "size": 116,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2986264",
+          "child_definition_name": "structure_collision_material",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 512,
+          "name": "collision_materials",
+          "offset": 164,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2988624",
+          "child_definition_name": "collision_bsp",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 1,
+          "name": "collision_bsp",
+          "offset": 176,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2986248",
+          "child_definition_name": "structure_node",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 131072,
+          "name": "nodes",
+          "offset": 188,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2986160",
+          "child_definition_name": "structure_leaf",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 65536,
+          "name": "leaves",
+          "offset": 224,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2986072",
+          "child_definition_name": "structure_surface_reference",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 262144,
+          "name": "surface_references",
+          "offset": 236,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2986056",
+          "child_definition_name": "structure_surface",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 131072,
+          "name": "surfaces",
+          "offset": 248,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2985696",
+          "child_definition_name": "structure_lightmap",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 128,
+          "name": "lightmaps",
+          "offset": 260,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2985568",
+          "child_definition_name": "structure_lens_flare",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 256,
+          "name": "lens_flares",
+          "offset": 284,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2985480",
+          "child_definition_name": "structure_lens_flare_marker",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 65536,
+          "name": "lens_flare_markers",
+          "offset": 296,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2984328",
+          "child_definition_name": "structure_cluster",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 512,
+          "name": "clusters",
+          "offset": 308,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "count": 1,
+          "element_size": 20,
+          "flags": 0,
+          "kind": "data",
+          "maximum": 65536,
+          "name": "cluster_data",
+          "offset": 320,
+          "size": 20,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2984200",
+          "child_definition_name": "structure_cluster_portal",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 512,
+          "name": "cluster_portals",
+          "offset": 340,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2984184",
+          "child_definition_name": "structure_breakable_surface",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 256,
+          "name": "breakable_surfaces",
+          "offset": 364,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2984024",
+          "child_definition_name": "structure_fog_plane",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 32,
+          "name": "fog_planes",
+          "offset": 376,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2983896",
+          "child_definition_name": "structure_fog_region",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 32,
+          "name": "fog_regions",
+          "offset": 388,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2983768",
+          "child_definition_name": "structure_fog_palette_entry",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 32,
+          "name": "fog_palette",
+          "offset": 400,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2983560",
+          "child_definition_name": "structure_weather_palette_entry",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 32,
+          "name": "weather_palette",
+          "offset": 436,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2983472",
+          "child_definition_name": "structure_weather_polyhedron",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 32,
+          "name": "weather_polyhedra",
+          "offset": 448,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2990064",
+          "child_definition_name": "byte",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 131072,
+          "name": "pathfinding_surfaces",
+          "offset": 484,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2990064",
+          "child_definition_name": "byte",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 262144,
+          "name": "pathfinding_edges",
+          "offset": 496,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2983336",
+          "child_definition_name": "structure_background_sound_palette_entry",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 64,
+          "name": "background_sound_palette",
+          "offset": 508,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2983208",
+          "child_definition_name": "structure_sound_environment_palette_entry",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 64,
+          "name": "sound_environment_palette",
+          "offset": 520,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "count": 1,
+          "element_size": 20,
+          "flags": 0,
+          "kind": "data",
+          "maximum": 65536,
+          "name": "sound_cluster_data",
+          "offset": 532,
+          "size": 20,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2982912",
+          "child_definition_name": "structure_detail_object_data",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 1,
+          "name": "detail_object_data",
+          "offset": 588,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2982896",
+          "child_definition_name": "structure_runtime_decal",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 6144,
+          "name": "runtime_decals",
+          "offset": 600,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2982432",
+          "child_definition_name": "leaf_map",
+          "count": 1,
+          "element_size": 28,
+          "flags": 0,
+          "kind": "struct",
+          "maximum": 0,
+          "name": "leaf_map",
+          "offset": 620,
+          "size": 28,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "count": 1,
+          "element_size": 0,
+          "flags": 0,
+          "kind": "check",
+          "maximum": 0,
+          "name": "structure_bsp_check",
+          "offset": 0,
+          "size": 0,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "structure_bsp",
+      "serialized_size": 648,
+      "unrepresented_ranges": [
+        {
+          "next_member": "default_lighting",
+          "offset": 16,
+          "size": 28
+        },
+        {
+          "next_member": "collision_materials",
+          "offset": 160,
+          "size": 4
+        },
+        {
+          "next_member": "leaves",
+          "offset": 200,
+          "size": 24
+        },
+        {
+          "next_member": "lens_flares",
+          "offset": 272,
+          "size": 12
+        },
+        {
+          "next_member": "breakable_surfaces",
+          "offset": 352,
+          "size": 12
+        },
+        {
+          "next_member": "weather_palette",
+          "offset": 412,
+          "size": 24
+        },
+        {
+          "next_member": "pathfinding_surfaces",
+          "offset": 460,
+          "size": 24
+        },
+        {
+          "next_member": "detail_object_data",
+          "offset": 552,
+          "size": 36
+        },
+        {
+          "next_member": "leaf_map",
+          "offset": 612,
+          "size": 8
+        }
+      ]
+    },
+    {
+      "definition_id": "2984328",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 2,
+          "flags": 1,
+          "kind": "block_index",
+          "maximum": 0,
+          "name": "background_sound_palette_index",
+          "offset": 4,
+          "size": 2,
+          "target_level": -1,
+          "target_offset": 508
+        },
+        {
+          "count": 1,
+          "element_size": 2,
+          "flags": 1,
+          "kind": "block_index",
+          "maximum": 0,
+          "name": "sound_environment_palette_index",
+          "offset": 6,
+          "size": 2,
+          "target_level": -1,
+          "target_offset": 520
+        },
+        {
+          "count": 1,
+          "element_size": 2,
+          "flags": 1,
+          "kind": "block_index",
+          "maximum": 0,
+          "name": "weather_palette_index",
+          "offset": 8,
+          "size": 2,
+          "target_level": -1,
+          "target_offset": 436
+        },
+        {
+          "child_definition_id": "2985016",
+          "child_definition_name": "predicted_resource",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 1024,
+          "name": "predicted_resources",
+          "offset": 40,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2984928",
+          "child_definition_name": "structure_subcluster",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 4096,
+          "name": "subclusters",
+          "offset": 52,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2990080",
+          "child_definition_name": "long",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 32768,
+          "name": "surface_indices",
+          "offset": 68,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2984760",
+          "child_definition_name": "structure_mirror",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 16,
+          "name": "mirrors",
+          "offset": 80,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2984672",
+          "child_definition_name": "structure_portal_index",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 128,
+          "name": "portal_indices",
+          "offset": 92,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "structure_cluster",
+      "serialized_size": 104,
+      "unrepresented_ranges": [
+        {
+          "next_member": "background_sound_palette_index",
+          "offset": 0,
+          "size": 4
+        },
+        {
+          "next_member": "predicted_resources",
+          "offset": 10,
+          "size": 30
+        },
+        {
+          "next_member": "surface_indices",
+          "offset": 64,
+          "size": 4
+        }
+      ]
+    },
+    {
+      "definition_id": "2984200",
+      "members": [
+        {
+          "count": 2,
+          "element_size": 2,
+          "flags": 0,
+          "kind": "block_index",
+          "maximum": 0,
+          "name": "cluster_indices",
+          "offset": 0,
+          "size": 4,
+          "target_level": -1,
+          "target_offset": 308
+        },
+        {
+          "child_definition_id": "2990032",
+          "child_definition_name": "real_point3d",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 128,
+          "name": "vertices",
+          "offset": 52,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "structure_cluster_portal",
+      "serialized_size": 64,
+      "unrepresented_ranges": [
+        {
+          "next_member": "vertices",
+          "offset": 4,
+          "size": 48
+        }
+      ]
+    },
+    {
+      "definition_id": "2986264",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 16,
+          "flags": 1,
+          "groups": [
+            "shdr"
+          ],
+          "kind": "reference",
+          "maximum": 0,
+          "name": "shader",
+          "offset": 0,
+          "size": 16,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "count": 1,
+          "element_size": 2,
+          "flags": 1,
+          "kind": "enum",
+          "maximum": 33,
+          "name": "runtime_physics_material_type",
+          "offset": 18,
+          "size": 2,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "structure_collision_material",
+      "serialized_size": 20,
+      "unrepresented_ranges": [
+        {
+          "next_member": "runtime_physics_material_type",
+          "offset": 16,
+          "size": 2
+        }
+      ]
+    },
+    {
+      "definition_id": "2982912",
+      "members": [
+        {
+          "child_definition_id": "2983192",
+          "child_definition_name": "detail_object_cell",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 262144,
+          "name": "cells",
+          "offset": 0,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2983176",
+          "child_definition_name": "detail_object",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 2097152,
+          "name": "detail_objects",
+          "offset": 12,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2983160",
+          "child_definition_name": "detail_object_count",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 8388608,
+          "name": "counts",
+          "offset": 24,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2983144",
+          "child_definition_name": "detail_object_z_reference_vector",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 8388608,
+          "name": "z_reference_vectors",
+          "offset": 36,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "count": 1,
+          "element_size": 0,
+          "flags": 0,
+          "kind": "check",
+          "maximum": 0,
+          "name": "structure_detail_object_data_check",
+          "offset": 0,
+          "size": 0,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "structure_detail_object_data",
+      "serialized_size": 64,
+      "unrepresented_ranges": [
+        {
+          "next_member": null,
+          "offset": 48,
+          "size": 16
+        }
+      ]
+    },
+    {
+      "definition_id": "2983768",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 16,
+          "flags": 1,
+          "groups": [
+            "fog "
+          ],
+          "kind": "reference",
+          "maximum": 0,
+          "name": "fog",
+          "offset": 32,
+          "size": 16,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "structure_fog_palette_entry",
+      "serialized_size": 136,
+      "unrepresented_ranges": [
+        {
+          "next_member": "fog",
+          "offset": 0,
+          "size": 32
+        },
+        {
+          "next_member": null,
+          "offset": 48,
+          "size": 88
+        }
+      ]
+    },
+    {
+      "definition_id": "2984024",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 2,
+          "flags": 1,
+          "kind": "block_index",
+          "maximum": 0,
+          "name": "region_index",
+          "offset": 0,
+          "size": 2,
+          "target_level": -1,
+          "target_offset": 388
+        },
+        {
+          "count": 1,
+          "element_size": 2,
+          "flags": 1,
+          "kind": "enum",
+          "maximum": 33,
+          "name": "runtime_material_type",
+          "offset": 2,
+          "size": 2,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2990032",
+          "child_definition_name": "real_point3d",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 4096,
+          "name": "vertices",
+          "offset": 20,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "structure_fog_plane",
+      "serialized_size": 32,
+      "unrepresented_ranges": [
+        {
+          "next_member": "vertices",
+          "offset": 4,
+          "size": 16
+        }
+      ]
+    },
+    {
+      "definition_id": "2983896",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 2,
+          "flags": 1,
+          "kind": "block_index",
+          "maximum": 0,
+          "name": "fog_palette_index",
+          "offset": 36,
+          "size": 2,
+          "target_level": -1,
+          "target_offset": 400
+        },
+        {
+          "count": 1,
+          "element_size": 2,
+          "flags": 1,
+          "kind": "block_index",
+          "maximum": 0,
+          "name": "weather_palette_index",
+          "offset": 38,
+          "size": 2,
+          "target_level": -1,
+          "target_offset": 436
+        }
+      ],
+      "name": "structure_fog_region",
+      "serialized_size": 40,
+      "unrepresented_ranges": [
+        {
+          "next_member": "fog_palette_index",
+          "offset": 0,
+          "size": 36
+        }
+      ]
+    },
+    {
+      "definition_id": "2986160",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 2,
+          "flags": 0,
+          "kind": "block_index",
+          "maximum": 0,
+          "name": "cluster_index",
+          "offset": 8,
+          "size": 2,
+          "target_level": -1,
+          "target_offset": 308
+        }
+      ],
+      "name": "structure_leaf",
+      "serialized_size": 16,
+      "unrepresented_ranges": [
+        {
+          "next_member": "cluster_index",
+          "offset": 0,
+          "size": 8
+        },
+        {
+          "next_member": null,
+          "offset": 10,
+          "size": 6
+        }
+      ]
+    },
+    {
+      "definition_id": "2985568",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 16,
+          "flags": 1,
+          "groups": [
+            "lens"
+          ],
+          "kind": "reference",
+          "maximum": 0,
+          "name": "lens_flare",
+          "offset": 0,
+          "size": 16,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "structure_lens_flare",
+      "serialized_size": 16,
+      "unrepresented_ranges": []
+    },
+    {
+      "definition_id": "2985480",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 1,
+          "flags": 2,
+          "kind": "block_index",
+          "maximum": 0,
+          "name": "lens_flare_index",
+          "offset": 15,
+          "size": 1,
+          "target_level": -1,
+          "target_offset": 284
+        }
+      ],
+      "name": "structure_lens_flare_marker",
+      "serialized_size": 16,
+      "unrepresented_ranges": [
+        {
+          "next_member": "lens_flare_index",
+          "offset": 0,
+          "size": 15
+        }
+      ]
+    },
+    {
+      "definition_id": "2985696",
+      "members": [
+        {
+          "child_definition_id": "2985784",
+          "child_definition_name": "structure_material",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 2048,
+          "name": "materials",
+          "offset": 20,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "structure_lightmap",
+      "serialized_size": 32,
+      "unrepresented_ranges": [
+        {
+          "next_member": "materials",
+          "offset": 0,
+          "size": 20
+        }
+      ]
+    },
+    {
+      "definition_id": "2985784",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 16,
+          "flags": 1,
+          "groups": [
+            "shdr"
+          ],
+          "kind": "reference",
+          "maximum": 0,
+          "name": "shader",
+          "offset": 0,
+          "size": 16,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2986432",
+          "child_definition_name": "render_lighting",
+          "count": 1,
+          "element_size": 116,
+          "flags": 0,
+          "kind": "struct",
+          "maximum": 0,
+          "name": "lighting",
+          "offset": 40,
+          "size": 116,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "count": 1,
+          "element_size": 2,
+          "flags": 1,
+          "kind": "block_index",
+          "maximum": 0,
+          "name": "breakable_surface_index",
+          "offset": 172,
+          "size": 2,
+          "target_level": -1,
+          "target_offset": 364
+        },
+        {
+          "count": 1,
+          "element_size": 20,
+          "flags": 0,
+          "kind": "data",
+          "maximum": 4864000,
+          "name": "uncompressed_vertex_data",
+          "offset": 216,
+          "size": 20,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "count": 1,
+          "element_size": 20,
+          "flags": 0,
+          "kind": "data",
+          "maximum": 2560000,
+          "name": "compressed_vertex_data",
+          "offset": 236,
+          "size": 20,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "structure_material",
+      "serialized_size": 256,
+      "unrepresented_ranges": [
+        {
+          "next_member": "lighting",
+          "offset": 16,
+          "size": 24
+        },
+        {
+          "next_member": "breakable_surface_index",
+          "offset": 156,
+          "size": 16
+        },
+        {
+          "next_member": "uncompressed_vertex_data",
+          "offset": 174,
+          "size": 42
+        }
+      ]
+    },
+    {
+      "definition_id": "2984760",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 16,
+          "flags": 1,
+          "groups": [
+            "shdr"
+          ],
+          "kind": "reference",
+          "maximum": 0,
+          "name": "shader",
+          "offset": 36,
+          "size": 16,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "child_definition_id": "2990032",
+          "child_definition_name": "real_point3d",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 256,
+          "name": "points",
+          "offset": 52,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "structure_mirror",
+      "serialized_size": 64,
+      "unrepresented_ranges": [
+        {
+          "next_member": "shader",
+          "offset": 0,
+          "size": 36
+        }
+      ]
+    },
+    {
+      "definition_id": "2986248",
+      "members": [],
+      "name": "structure_node",
+      "serialized_size": 6,
+      "unrepresented_ranges": [
+        {
+          "next_member": null,
+          "offset": 0,
+          "size": 6
+        }
+      ]
+    },
+    {
+      "definition_id": "2984672",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 2,
+          "flags": 0,
+          "kind": "block_index",
+          "maximum": 0,
+          "name": "portal_index",
+          "offset": 0,
+          "size": 2,
+          "target_level": -1,
+          "target_offset": 340
+        }
+      ],
+      "name": "structure_portal_index",
+      "serialized_size": 2,
+      "unrepresented_ranges": []
+    },
+    {
+      "definition_id": "2982896",
+      "members": [],
+      "name": "structure_runtime_decal",
+      "serialized_size": 16,
+      "unrepresented_ranges": [
+        {
+          "next_member": null,
+          "offset": 0,
+          "size": 16
+        }
+      ]
+    },
+    {
+      "definition_id": "2983208",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 16,
+          "flags": 1,
+          "groups": [
+            "snde"
+          ],
+          "kind": "reference",
+          "maximum": 0,
+          "name": "sound_environment",
+          "offset": 32,
+          "size": 16,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "structure_sound_environment_palette_entry",
+      "serialized_size": 80,
+      "unrepresented_ranges": [
+        {
+          "next_member": "sound_environment",
+          "offset": 0,
+          "size": 32
+        },
+        {
+          "next_member": null,
+          "offset": 48,
+          "size": 32
+        }
+      ]
+    },
+    {
+      "definition_id": "2984928",
+      "members": [
+        {
+          "child_definition_id": "2990080",
+          "child_definition_name": "long",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 128,
+          "name": "surface_indices",
+          "offset": 24,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "structure_subcluster",
+      "serialized_size": 36,
+      "unrepresented_ranges": [
+        {
+          "next_member": "surface_indices",
+          "offset": 0,
+          "size": 24
+        }
+      ]
+    },
+    {
+      "definition_id": "2986056",
+      "members": [],
+      "name": "structure_surface",
+      "serialized_size": 6,
+      "unrepresented_ranges": [
+        {
+          "next_member": null,
+          "offset": 0,
+          "size": 6
+        }
+      ]
+    },
+    {
+      "definition_id": "2986072",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 4,
+          "flags": 0,
+          "kind": "block_index",
+          "maximum": 0,
+          "name": "surface_index",
+          "offset": 0,
+          "size": 4,
+          "target_level": -1,
+          "target_offset": 248
+        }
+      ],
+      "name": "structure_surface_reference",
+      "serialized_size": 8,
+      "unrepresented_ranges": [
+        {
+          "next_member": null,
+          "offset": 4,
+          "size": 4
+        }
+      ]
+    },
+    {
+      "definition_id": "2983560",
+      "members": [
+        {
+          "count": 1,
+          "element_size": 16,
+          "flags": 1,
+          "groups": [
+            "rain"
+          ],
+          "kind": "reference",
+          "maximum": 0,
+          "name": "particle_system",
+          "offset": 32,
+          "size": 16,
+          "target_level": 0,
+          "target_offset": 0
+        },
+        {
+          "count": 1,
+          "element_size": 16,
+          "flags": 1,
+          "groups": [
+            "wind"
+          ],
+          "kind": "reference",
+          "maximum": 0,
+          "name": "wind",
+          "offset": 128,
+          "size": 16,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "structure_weather_palette_entry",
+      "serialized_size": 240,
+      "unrepresented_ranges": [
+        {
+          "next_member": "particle_system",
+          "offset": 0,
+          "size": 32
+        },
+        {
+          "next_member": "wind",
+          "offset": 48,
+          "size": 80
+        },
+        {
+          "next_member": null,
+          "offset": 144,
+          "size": 96
+        }
+      ]
+    },
+    {
+      "definition_id": "2983472",
+      "members": [
+        {
+          "child_definition_id": "2990016",
+          "child_definition_name": "real_plane3d",
+          "count": 1,
+          "element_size": 12,
+          "flags": 0,
+          "kind": "block",
+          "maximum": 16,
+          "name": "planes",
+          "offset": 20,
+          "size": 12,
+          "target_level": 0,
+          "target_offset": 0
+        }
+      ],
+      "name": "structure_weather_polyhedron",
+      "serialized_size": 32,
+      "unrepresented_ranges": [
+        {
+          "next_member": "planes",
+          "offset": 0,
+          "size": 20
+        }
+      ]
+    }
+  ],
+  "format": "hcu-step7-bsp-member-inventory-v1",
+  "group": "sbsp",
+  "interpretation": "Compiler-derived CE schema fields and byte extents are recorded. Ranges absent from the validation schema remain unclassified until compiler-derived C member layout and CE consumers name them. No field may be removed from this inventory based on retail corpus emptiness.",
+  "member_rows": 164,
+  "members": [
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 16,
+      "flags": 1,
+      "groups": [
+        "bitm"
+      ],
+      "kind": "reference",
+      "maximum": 0,
+      "offset_within_definition": 0,
+      "path": "structure_bsp.lightmap_group",
+      "size": 16,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 0,
+      "flags": 0,
+      "kind": "check",
+      "maximum": 0,
+      "offset_within_definition": 0,
+      "path": "structure_bsp.structure_bsp_check",
+      "size": 0,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "consumer-disposition-open",
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "kind": "C-layout-member-omitted-from-validation-schema",
+      "layout_source": "source/structures/structure_bsp_definitions.h",
+      "offset_within_definition": 16,
+      "path": "structure_bsp.vehicle_floor",
+      "size": 4
+    },
+    {
+      "classification": "consumer-disposition-open",
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "kind": "C-layout-member-omitted-from-validation-schema",
+      "layout_source": "source/structures/structure_bsp_definitions.h",
+      "offset_within_definition": 20,
+      "path": "structure_bsp.vehicle_ceiling",
+      "size": 4
+    },
+    {
+      "classification": "consumer-disposition-open",
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "kind": "C-layout-member-omitted-from-validation-schema",
+      "layout_source": "source/structures/structure_bsp_definitions.h",
+      "offset_within_definition": 24,
+      "path": "structure_bsp.sad_unused[5]",
+      "size": 20
+    },
+    {
+      "child_definition_id": "2986432",
+      "child_definition_name": "render_lighting",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 116,
+      "flags": 0,
+      "kind": "struct",
+      "maximum": 0,
+      "offset_within_definition": 44,
+      "path": "structure_bsp.default_lighting",
+      "size": 116,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "consumer-disposition-open",
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "kind": "C-layout-member-omitted-from-validation-schema",
+      "layout_source": "source/structures/structure_bsp_definitions.h",
+      "offset_within_definition": 160,
+      "path": "structure_bsp.lonely_unused",
+      "size": 4
+    },
+    {
+      "child_definition_id": "2986264",
+      "child_definition_name": "structure_collision_material",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 512,
+      "offset_within_definition": 164,
+      "path": "structure_bsp.collision_materials",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2988624",
+      "child_definition_name": "collision_bsp",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 1,
+      "offset_within_definition": 176,
+      "path": "structure_bsp.collision_bsp",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2986248",
+      "child_definition_name": "structure_node",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 131072,
+      "offset_within_definition": 188,
+      "path": "structure_bsp.nodes",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "consumer-disposition-open",
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "kind": "C-layout-member-omitted-from-validation-schema",
+      "layout_source": "source/structures/structure_bsp_definitions.h",
+      "offset_within_definition": 200,
+      "path": "structure_bsp.world_bounds",
+      "size": 24
+    },
+    {
+      "child_definition_id": "2986160",
+      "child_definition_name": "structure_leaf",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 65536,
+      "offset_within_definition": 224,
+      "path": "structure_bsp.leaves",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2986072",
+      "child_definition_name": "structure_surface_reference",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 262144,
+      "offset_within_definition": 236,
+      "path": "structure_bsp.surface_references",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2986056",
+      "child_definition_name": "structure_surface",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 131072,
+      "offset_within_definition": 248,
+      "path": "structure_bsp.surfaces",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2985696",
+      "child_definition_name": "structure_lightmap",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 128,
+      "offset_within_definition": 260,
+      "path": "structure_bsp.lightmaps",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "consumer-disposition-open",
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "kind": "C-layout-member-omitted-from-validation-schema",
+      "layout_source": "source/structures/structure_bsp_definitions.h",
+      "offset_within_definition": 272,
+      "path": "structure_bsp.render_unused[3]",
+      "size": 12
+    },
+    {
+      "child_definition_id": "2985568",
+      "child_definition_name": "structure_lens_flare",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 256,
+      "offset_within_definition": 284,
+      "path": "structure_bsp.lens_flares",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2985480",
+      "child_definition_name": "structure_lens_flare_marker",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 65536,
+      "offset_within_definition": 296,
+      "path": "structure_bsp.lens_flare_markers",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2984328",
+      "child_definition_name": "structure_cluster",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 512,
+      "offset_within_definition": 308,
+      "path": "structure_bsp.clusters",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 20,
+      "flags": 0,
+      "kind": "data",
+      "maximum": 65536,
+      "offset_within_definition": 320,
+      "path": "structure_bsp.cluster_data",
+      "size": 20,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2984200",
+      "child_definition_name": "structure_cluster_portal",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 512,
+      "offset_within_definition": 340,
+      "path": "structure_bsp.cluster_portals",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "consumer-disposition-open",
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "kind": "C-layout-member-omitted-from-validation-schema",
+      "layout_source": "source/structures/structure_bsp_definitions.h",
+      "offset_within_definition": 352,
+      "path": "structure_bsp.cluster_unused[3]",
+      "size": 12
+    },
+    {
+      "child_definition_id": "2984184",
+      "child_definition_name": "structure_breakable_surface",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 256,
+      "offset_within_definition": 364,
+      "path": "structure_bsp.breakable_surfaces",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2984024",
+      "child_definition_name": "structure_fog_plane",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 32,
+      "offset_within_definition": 376,
+      "path": "structure_bsp.fog_planes",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2983896",
+      "child_definition_name": "structure_fog_region",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 32,
+      "offset_within_definition": 388,
+      "path": "structure_bsp.fog_regions",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2983768",
+      "child_definition_name": "structure_fog_palette_entry",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 32,
+      "offset_within_definition": 400,
+      "path": "structure_bsp.fog_palette",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "consumer-disposition-open",
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "kind": "C-layout-member-omitted-from-validation-schema",
+      "layout_source": "source/structures/structure_bsp_definitions.h",
+      "offset_within_definition": 412,
+      "path": "structure_bsp.fog_unused[6]",
+      "size": 24
+    },
+    {
+      "child_definition_id": "2983560",
+      "child_definition_name": "structure_weather_palette_entry",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 32,
+      "offset_within_definition": 436,
+      "path": "structure_bsp.weather_palette",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2983472",
+      "child_definition_name": "structure_weather_polyhedron",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 32,
+      "offset_within_definition": 448,
+      "path": "structure_bsp.weather_polyhedra",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "consumer-disposition-open",
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "kind": "C-layout-member-omitted-from-validation-schema",
+      "layout_source": "source/structures/structure_bsp_definitions.h",
+      "offset_within_definition": 460,
+      "path": "structure_bsp.weather_unused[6]",
+      "size": 24
+    },
+    {
+      "child_definition_id": "2990064",
+      "child_definition_name": "byte",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 131072,
+      "offset_within_definition": 484,
+      "path": "structure_bsp.pathfinding_surfaces",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2990064",
+      "child_definition_name": "byte",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 262144,
+      "offset_within_definition": 496,
+      "path": "structure_bsp.pathfinding_edges",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2983336",
+      "child_definition_name": "structure_background_sound_palette_entry",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 64,
+      "offset_within_definition": 508,
+      "path": "structure_bsp.background_sound_palette",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2983208",
+      "child_definition_name": "structure_sound_environment_palette_entry",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 64,
+      "offset_within_definition": 520,
+      "path": "structure_bsp.sound_environment_palette",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 20,
+      "flags": 0,
+      "kind": "data",
+      "maximum": 65536,
+      "offset_within_definition": 532,
+      "path": "structure_bsp.sound_cluster_data",
+      "size": 20,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "consumer-disposition-open",
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "kind": "C-layout-member-omitted-from-validation-schema",
+      "layout_source": "source/structures/structure_bsp_definitions.h",
+      "offset_within_definition": 552,
+      "path": "structure_bsp.sound_unused[6]",
+      "size": 24
+    },
+    {
+      "classification": "consumer-disposition-open",
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "kind": "C-layout-member-omitted-from-validation-schema",
+      "layout_source": "source/structures/structure_bsp_definitions.h",
+      "offset_within_definition": 576,
+      "path": "structure_bsp.markers",
+      "size": 12
+    },
+    {
+      "child_definition_id": "2982912",
+      "child_definition_name": "structure_detail_object_data",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 1,
+      "offset_within_definition": 588,
+      "path": "structure_bsp.detail_object_data",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2982896",
+      "child_definition_name": "structure_runtime_decal",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 6144,
+      "offset_within_definition": 600,
+      "path": "structure_bsp.runtime_decals",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "consumer-disposition-open",
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "kind": "C-layout-member-omitted-from-validation-schema",
+      "layout_source": "source/structures/structure_bsp_definitions.h",
+      "offset_within_definition": 612,
+      "path": "structure_bsp.diminishing_misc_unused[2]",
+      "size": 8
+    },
+    {
+      "child_definition_id": "2982432",
+      "child_definition_name": "leaf_map",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_bsp",
+      "definition_id": "2981296",
+      "element_size": 28,
+      "flags": 0,
+      "kind": "struct",
+      "maximum": 0,
+      "offset_within_definition": 620,
+      "path": "structure_bsp.leaf_map",
+      "size": 28,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "leaf_map",
+      "definition_id": "2982432",
+      "element_size": 4,
+      "flags": 0,
+      "kind": "reset",
+      "maximum": 0,
+      "offset_within_definition": 0,
+      "path": "leaf_map.bsp",
+      "size": 4,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2982680",
+      "child_definition_name": "map_leaf",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "leaf_map",
+      "definition_id": "2982432",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 65536,
+      "offset_within_definition": 4,
+      "path": "leaf_map.leaves",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2982592",
+      "child_definition_name": "leaf_portal",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "leaf_map",
+      "definition_id": "2982432",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 131072,
+      "offset_within_definition": 16,
+      "path": "leaf_map.portals",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "leaf_portal",
+      "definition_id": "2982592",
+      "kind": "schema-unrepresented-range",
+      "next_member": "vertices",
+      "offset_within_definition": 0,
+      "path": "leaf_portal.<unclassified@0x0>",
+      "size": 12
+    },
+    {
+      "child_definition_id": "2990032",
+      "child_definition_name": "real_point3d",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "leaf_portal",
+      "definition_id": "2982592",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 65536,
+      "offset_within_definition": 12,
+      "path": "leaf_portal.vertices",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2982808",
+      "child_definition_name": "map_leaf_face",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "map_leaf",
+      "definition_id": "2982680",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 65536,
+      "offset_within_definition": 0,
+      "path": "map_leaf.faces",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2990080",
+      "child_definition_name": "long",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "map_leaf",
+      "definition_id": "2982680",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 65536,
+      "offset_within_definition": 12,
+      "path": "map_leaf.portal_designators",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "map_leaf_face",
+      "definition_id": "2982808",
+      "kind": "schema-unrepresented-range",
+      "next_member": "vertices",
+      "offset_within_definition": 0,
+      "path": "map_leaf_face.<unclassified@0x0>",
+      "size": 4
+    },
+    {
+      "child_definition_id": "2990048",
+      "child_definition_name": "real_point2d",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "map_leaf_face",
+      "definition_id": "2982808",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 65536,
+      "offset_within_definition": 4,
+      "path": "map_leaf_face.vertices",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_runtime_decal",
+      "definition_id": "2982896",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 0,
+      "path": "structure_runtime_decal.<unclassified@0x0>",
+      "size": 16
+    },
+    {
+      "child_definition_id": "2983192",
+      "child_definition_name": "detail_object_cell",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_detail_object_data",
+      "definition_id": "2982912",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 262144,
+      "offset_within_definition": 0,
+      "path": "structure_detail_object_data.cells",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_detail_object_data",
+      "definition_id": "2982912",
+      "element_size": 0,
+      "flags": 0,
+      "kind": "check",
+      "maximum": 0,
+      "offset_within_definition": 0,
+      "path": "structure_detail_object_data.structure_detail_object_data_check",
+      "size": 0,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2983176",
+      "child_definition_name": "detail_object",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_detail_object_data",
+      "definition_id": "2982912",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 2097152,
+      "offset_within_definition": 12,
+      "path": "structure_detail_object_data.detail_objects",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2983160",
+      "child_definition_name": "detail_object_count",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_detail_object_data",
+      "definition_id": "2982912",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 8388608,
+      "offset_within_definition": 24,
+      "path": "structure_detail_object_data.counts",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2983144",
+      "child_definition_name": "detail_object_z_reference_vector",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_detail_object_data",
+      "definition_id": "2982912",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 8388608,
+      "offset_within_definition": 36,
+      "path": "structure_detail_object_data.z_reference_vectors",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_detail_object_data",
+      "definition_id": "2982912",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 48,
+      "path": "structure_detail_object_data.<unclassified@0x30>",
+      "size": 16
+    },
+    {
+      "classification": "unclassified",
+      "definition": "detail_object_z_reference_vector",
+      "definition_id": "2983144",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 0,
+      "path": "detail_object_z_reference_vector.<unclassified@0x0>",
+      "size": 16
+    },
+    {
+      "classification": "unclassified",
+      "definition": "detail_object_count",
+      "definition_id": "2983160",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 0,
+      "path": "detail_object_count.<unclassified@0x0>",
+      "size": 2
+    },
+    {
+      "classification": "unclassified",
+      "definition": "detail_object",
+      "definition_id": "2983176",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 0,
+      "path": "detail_object.<unclassified@0x0>",
+      "size": 6
+    },
+    {
+      "classification": "unclassified",
+      "definition": "detail_object_cell",
+      "definition_id": "2983192",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 0,
+      "path": "detail_object_cell.<unclassified@0x0>",
+      "size": 32
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_sound_environment_palette_entry",
+      "definition_id": "2983208",
+      "kind": "schema-unrepresented-range",
+      "next_member": "sound_environment",
+      "offset_within_definition": 0,
+      "path": "structure_sound_environment_palette_entry.<unclassified@0x0>",
+      "size": 32
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_sound_environment_palette_entry",
+      "definition_id": "2983208",
+      "element_size": 16,
+      "flags": 1,
+      "groups": [
+        "snde"
+      ],
+      "kind": "reference",
+      "maximum": 0,
+      "offset_within_definition": 32,
+      "path": "structure_sound_environment_palette_entry.sound_environment",
+      "size": 16,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_sound_environment_palette_entry",
+      "definition_id": "2983208",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 48,
+      "path": "structure_sound_environment_palette_entry.<unclassified@0x30>",
+      "size": 32
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_background_sound_palette_entry",
+      "definition_id": "2983336",
+      "kind": "schema-unrepresented-range",
+      "next_member": "background_sound",
+      "offset_within_definition": 0,
+      "path": "structure_background_sound_palette_entry.<unclassified@0x0>",
+      "size": 32
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_background_sound_palette_entry",
+      "definition_id": "2983336",
+      "element_size": 16,
+      "flags": 1,
+      "groups": [
+        "lsnd"
+      ],
+      "kind": "reference",
+      "maximum": 0,
+      "offset_within_definition": 32,
+      "path": "structure_background_sound_palette_entry.background_sound",
+      "size": 16,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_background_sound_palette_entry",
+      "definition_id": "2983336",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 48,
+      "path": "structure_background_sound_palette_entry.<unclassified@0x30>",
+      "size": 68
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_weather_polyhedron",
+      "definition_id": "2983472",
+      "kind": "schema-unrepresented-range",
+      "next_member": "planes",
+      "offset_within_definition": 0,
+      "path": "structure_weather_polyhedron.<unclassified@0x0>",
+      "size": 20
+    },
+    {
+      "child_definition_id": "2990016",
+      "child_definition_name": "real_plane3d",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_weather_polyhedron",
+      "definition_id": "2983472",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 16,
+      "offset_within_definition": 20,
+      "path": "structure_weather_polyhedron.planes",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_weather_palette_entry",
+      "definition_id": "2983560",
+      "kind": "schema-unrepresented-range",
+      "next_member": "particle_system",
+      "offset_within_definition": 0,
+      "path": "structure_weather_palette_entry.<unclassified@0x0>",
+      "size": 32
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_weather_palette_entry",
+      "definition_id": "2983560",
+      "element_size": 16,
+      "flags": 1,
+      "groups": [
+        "rain"
+      ],
+      "kind": "reference",
+      "maximum": 0,
+      "offset_within_definition": 32,
+      "path": "structure_weather_palette_entry.particle_system",
+      "size": 16,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_weather_palette_entry",
+      "definition_id": "2983560",
+      "kind": "schema-unrepresented-range",
+      "next_member": "wind",
+      "offset_within_definition": 48,
+      "path": "structure_weather_palette_entry.<unclassified@0x30>",
+      "size": 80
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_weather_palette_entry",
+      "definition_id": "2983560",
+      "element_size": 16,
+      "flags": 1,
+      "groups": [
+        "wind"
+      ],
+      "kind": "reference",
+      "maximum": 0,
+      "offset_within_definition": 128,
+      "path": "structure_weather_palette_entry.wind",
+      "size": 16,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_weather_palette_entry",
+      "definition_id": "2983560",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 144,
+      "path": "structure_weather_palette_entry.<unclassified@0x90>",
+      "size": 96
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_fog_palette_entry",
+      "definition_id": "2983768",
+      "kind": "schema-unrepresented-range",
+      "next_member": "fog",
+      "offset_within_definition": 0,
+      "path": "structure_fog_palette_entry.<unclassified@0x0>",
+      "size": 32
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_fog_palette_entry",
+      "definition_id": "2983768",
+      "element_size": 16,
+      "flags": 1,
+      "groups": [
+        "fog "
+      ],
+      "kind": "reference",
+      "maximum": 0,
+      "offset_within_definition": 32,
+      "path": "structure_fog_palette_entry.fog",
+      "size": 16,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_fog_palette_entry",
+      "definition_id": "2983768",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 48,
+      "path": "structure_fog_palette_entry.<unclassified@0x30>",
+      "size": 88
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_fog_region",
+      "definition_id": "2983896",
+      "kind": "schema-unrepresented-range",
+      "next_member": "fog_palette_index",
+      "offset_within_definition": 0,
+      "path": "structure_fog_region.<unclassified@0x0>",
+      "size": 36
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_fog_region",
+      "definition_id": "2983896",
+      "element_size": 2,
+      "flags": 1,
+      "kind": "block_index",
+      "maximum": 0,
+      "offset_within_definition": 36,
+      "path": "structure_fog_region.fog_palette_index",
+      "size": 2,
+      "target_level": -1,
+      "target_offset": 400
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_fog_region",
+      "definition_id": "2983896",
+      "element_size": 2,
+      "flags": 1,
+      "kind": "block_index",
+      "maximum": 0,
+      "offset_within_definition": 38,
+      "path": "structure_fog_region.weather_palette_index",
+      "size": 2,
+      "target_level": -1,
+      "target_offset": 436
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_fog_plane",
+      "definition_id": "2984024",
+      "element_size": 2,
+      "flags": 1,
+      "kind": "block_index",
+      "maximum": 0,
+      "offset_within_definition": 0,
+      "path": "structure_fog_plane.region_index",
+      "size": 2,
+      "target_level": -1,
+      "target_offset": 388
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_fog_plane",
+      "definition_id": "2984024",
+      "element_size": 2,
+      "flags": 1,
+      "kind": "enum",
+      "maximum": 33,
+      "offset_within_definition": 2,
+      "path": "structure_fog_plane.runtime_material_type",
+      "size": 2,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_fog_plane",
+      "definition_id": "2984024",
+      "kind": "schema-unrepresented-range",
+      "next_member": "vertices",
+      "offset_within_definition": 4,
+      "path": "structure_fog_plane.<unclassified@0x4>",
+      "size": 16
+    },
+    {
+      "child_definition_id": "2990032",
+      "child_definition_name": "real_point3d",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_fog_plane",
+      "definition_id": "2984024",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 4096,
+      "offset_within_definition": 20,
+      "path": "structure_fog_plane.vertices",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_breakable_surface",
+      "definition_id": "2984184",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 0,
+      "path": "structure_breakable_surface.<unclassified@0x0>",
+      "size": 48
+    },
+    {
+      "classification": "schema-declared",
+      "count": 2,
+      "definition": "structure_cluster_portal",
+      "definition_id": "2984200",
+      "element_size": 2,
+      "flags": 0,
+      "kind": "block_index",
+      "maximum": 0,
+      "offset_within_definition": 0,
+      "path": "structure_cluster_portal.cluster_indices",
+      "size": 4,
+      "target_level": -1,
+      "target_offset": 308
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_cluster_portal",
+      "definition_id": "2984200",
+      "kind": "schema-unrepresented-range",
+      "next_member": "vertices",
+      "offset_within_definition": 4,
+      "path": "structure_cluster_portal.<unclassified@0x4>",
+      "size": 48
+    },
+    {
+      "child_definition_id": "2990032",
+      "child_definition_name": "real_point3d",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_cluster_portal",
+      "definition_id": "2984200",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 128,
+      "offset_within_definition": 52,
+      "path": "structure_cluster_portal.vertices",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_cluster",
+      "definition_id": "2984328",
+      "kind": "schema-unrepresented-range",
+      "next_member": "background_sound_palette_index",
+      "offset_within_definition": 0,
+      "path": "structure_cluster.<unclassified@0x0>",
+      "size": 4
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_cluster",
+      "definition_id": "2984328",
+      "element_size": 2,
+      "flags": 1,
+      "kind": "block_index",
+      "maximum": 0,
+      "offset_within_definition": 4,
+      "path": "structure_cluster.background_sound_palette_index",
+      "size": 2,
+      "target_level": -1,
+      "target_offset": 508
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_cluster",
+      "definition_id": "2984328",
+      "element_size": 2,
+      "flags": 1,
+      "kind": "block_index",
+      "maximum": 0,
+      "offset_within_definition": 6,
+      "path": "structure_cluster.sound_environment_palette_index",
+      "size": 2,
+      "target_level": -1,
+      "target_offset": 520
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_cluster",
+      "definition_id": "2984328",
+      "element_size": 2,
+      "flags": 1,
+      "kind": "block_index",
+      "maximum": 0,
+      "offset_within_definition": 8,
+      "path": "structure_cluster.weather_palette_index",
+      "size": 2,
+      "target_level": -1,
+      "target_offset": 436
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_cluster",
+      "definition_id": "2984328",
+      "kind": "schema-unrepresented-range",
+      "next_member": "predicted_resources",
+      "offset_within_definition": 10,
+      "path": "structure_cluster.<unclassified@0xa>",
+      "size": 30
+    },
+    {
+      "child_definition_id": "2985016",
+      "child_definition_name": "predicted_resource",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_cluster",
+      "definition_id": "2984328",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 1024,
+      "offset_within_definition": 40,
+      "path": "structure_cluster.predicted_resources",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2984928",
+      "child_definition_name": "structure_subcluster",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_cluster",
+      "definition_id": "2984328",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 4096,
+      "offset_within_definition": 52,
+      "path": "structure_cluster.subclusters",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_cluster",
+      "definition_id": "2984328",
+      "kind": "schema-unrepresented-range",
+      "next_member": "surface_indices",
+      "offset_within_definition": 64,
+      "path": "structure_cluster.<unclassified@0x40>",
+      "size": 4
+    },
+    {
+      "child_definition_id": "2990080",
+      "child_definition_name": "long",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_cluster",
+      "definition_id": "2984328",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 32768,
+      "offset_within_definition": 68,
+      "path": "structure_cluster.surface_indices",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2984760",
+      "child_definition_name": "structure_mirror",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_cluster",
+      "definition_id": "2984328",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 16,
+      "offset_within_definition": 80,
+      "path": "structure_cluster.mirrors",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2984672",
+      "child_definition_name": "structure_portal_index",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_cluster",
+      "definition_id": "2984328",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 128,
+      "offset_within_definition": 92,
+      "path": "structure_cluster.portal_indices",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_portal_index",
+      "definition_id": "2984672",
+      "element_size": 2,
+      "flags": 0,
+      "kind": "block_index",
+      "maximum": 0,
+      "offset_within_definition": 0,
+      "path": "structure_portal_index.portal_index",
+      "size": 2,
+      "target_level": -1,
+      "target_offset": 340
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_mirror",
+      "definition_id": "2984760",
+      "kind": "schema-unrepresented-range",
+      "next_member": "shader",
+      "offset_within_definition": 0,
+      "path": "structure_mirror.<unclassified@0x0>",
+      "size": 36
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_mirror",
+      "definition_id": "2984760",
+      "element_size": 16,
+      "flags": 1,
+      "groups": [
+        "shdr"
+      ],
+      "kind": "reference",
+      "maximum": 0,
+      "offset_within_definition": 36,
+      "path": "structure_mirror.shader",
+      "size": 16,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2990032",
+      "child_definition_name": "real_point3d",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_mirror",
+      "definition_id": "2984760",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 256,
+      "offset_within_definition": 52,
+      "path": "structure_mirror.points",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_subcluster",
+      "definition_id": "2984928",
+      "kind": "schema-unrepresented-range",
+      "next_member": "surface_indices",
+      "offset_within_definition": 0,
+      "path": "structure_subcluster.<unclassified@0x0>",
+      "size": 24
+    },
+    {
+      "child_definition_id": "2990080",
+      "child_definition_name": "long",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_subcluster",
+      "definition_id": "2984928",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 128,
+      "offset_within_definition": 24,
+      "path": "structure_subcluster.surface_indices",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "predicted_resource",
+      "definition_id": "2985016",
+      "element_size": 2,
+      "flags": 0,
+      "kind": "enum",
+      "maximum": 2,
+      "offset_within_definition": 0,
+      "path": "predicted_resource.type",
+      "size": 2,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "predicted_resource",
+      "definition_id": "2985016",
+      "kind": "schema-unrepresented-range",
+      "next_member": "tag_index",
+      "offset_within_definition": 2,
+      "path": "predicted_resource.<unclassified@0x2>",
+      "size": 2
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "predicted_resource",
+      "definition_id": "2985016",
+      "element_size": 4,
+      "flags": 1,
+      "groups": [
+        "bitm",
+        "snd!"
+      ],
+      "kind": "tag_index",
+      "maximum": 0,
+      "offset_within_definition": 4,
+      "path": "predicted_resource.tag_index",
+      "size": 4,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_lens_flare_marker",
+      "definition_id": "2985480",
+      "kind": "schema-unrepresented-range",
+      "next_member": "lens_flare_index",
+      "offset_within_definition": 0,
+      "path": "structure_lens_flare_marker.<unclassified@0x0>",
+      "size": 15
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_lens_flare_marker",
+      "definition_id": "2985480",
+      "element_size": 1,
+      "flags": 2,
+      "kind": "block_index",
+      "maximum": 0,
+      "offset_within_definition": 15,
+      "path": "structure_lens_flare_marker.lens_flare_index",
+      "size": 1,
+      "target_level": -1,
+      "target_offset": 284
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_lens_flare",
+      "definition_id": "2985568",
+      "element_size": 16,
+      "flags": 1,
+      "groups": [
+        "lens"
+      ],
+      "kind": "reference",
+      "maximum": 0,
+      "offset_within_definition": 0,
+      "path": "structure_lens_flare.lens_flare",
+      "size": 16,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_lightmap",
+      "definition_id": "2985696",
+      "kind": "schema-unrepresented-range",
+      "next_member": "materials",
+      "offset_within_definition": 0,
+      "path": "structure_lightmap.<unclassified@0x0>",
+      "size": 20
+    },
+    {
+      "child_definition_id": "2985784",
+      "child_definition_name": "structure_material",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_lightmap",
+      "definition_id": "2985696",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 2048,
+      "offset_within_definition": 20,
+      "path": "structure_lightmap.materials",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_material",
+      "definition_id": "2985784",
+      "element_size": 16,
+      "flags": 1,
+      "groups": [
+        "shdr"
+      ],
+      "kind": "reference",
+      "maximum": 0,
+      "offset_within_definition": 0,
+      "path": "structure_material.shader",
+      "size": 16,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_material",
+      "definition_id": "2985784",
+      "kind": "schema-unrepresented-range",
+      "next_member": "lighting",
+      "offset_within_definition": 16,
+      "path": "structure_material.<unclassified@0x10>",
+      "size": 24
+    },
+    {
+      "child_definition_id": "2986432",
+      "child_definition_name": "render_lighting",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_material",
+      "definition_id": "2985784",
+      "element_size": 116,
+      "flags": 0,
+      "kind": "struct",
+      "maximum": 0,
+      "offset_within_definition": 40,
+      "path": "structure_material.lighting",
+      "size": 116,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_material",
+      "definition_id": "2985784",
+      "kind": "schema-unrepresented-range",
+      "next_member": "breakable_surface_index",
+      "offset_within_definition": 156,
+      "path": "structure_material.<unclassified@0x9c>",
+      "size": 16
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_material",
+      "definition_id": "2985784",
+      "element_size": 2,
+      "flags": 1,
+      "kind": "block_index",
+      "maximum": 0,
+      "offset_within_definition": 172,
+      "path": "structure_material.breakable_surface_index",
+      "size": 2,
+      "target_level": -1,
+      "target_offset": 364
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_material",
+      "definition_id": "2985784",
+      "kind": "schema-unrepresented-range",
+      "next_member": "uncompressed_vertex_data",
+      "offset_within_definition": 174,
+      "path": "structure_material.<unclassified@0xae>",
+      "size": 42
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_material",
+      "definition_id": "2985784",
+      "element_size": 20,
+      "flags": 0,
+      "kind": "data",
+      "maximum": 4864000,
+      "offset_within_definition": 216,
+      "path": "structure_material.uncompressed_vertex_data",
+      "size": 20,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_material",
+      "definition_id": "2985784",
+      "element_size": 20,
+      "flags": 0,
+      "kind": "data",
+      "maximum": 2560000,
+      "offset_within_definition": 236,
+      "path": "structure_material.compressed_vertex_data",
+      "size": 20,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_surface",
+      "definition_id": "2986056",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 0,
+      "path": "structure_surface.<unclassified@0x0>",
+      "size": 6
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_surface_reference",
+      "definition_id": "2986072",
+      "element_size": 4,
+      "flags": 0,
+      "kind": "block_index",
+      "maximum": 0,
+      "offset_within_definition": 0,
+      "path": "structure_surface_reference.surface_index",
+      "size": 4,
+      "target_level": -1,
+      "target_offset": 248
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_surface_reference",
+      "definition_id": "2986072",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 4,
+      "path": "structure_surface_reference.<unclassified@0x4>",
+      "size": 4
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_leaf",
+      "definition_id": "2986160",
+      "kind": "schema-unrepresented-range",
+      "next_member": "cluster_index",
+      "offset_within_definition": 0,
+      "path": "structure_leaf.<unclassified@0x0>",
+      "size": 8
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_leaf",
+      "definition_id": "2986160",
+      "element_size": 2,
+      "flags": 0,
+      "kind": "block_index",
+      "maximum": 0,
+      "offset_within_definition": 8,
+      "path": "structure_leaf.cluster_index",
+      "size": 2,
+      "target_level": -1,
+      "target_offset": 308
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_leaf",
+      "definition_id": "2986160",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 10,
+      "path": "structure_leaf.<unclassified@0xa>",
+      "size": 6
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_node",
+      "definition_id": "2986248",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 0,
+      "path": "structure_node.<unclassified@0x0>",
+      "size": 6
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_collision_material",
+      "definition_id": "2986264",
+      "element_size": 16,
+      "flags": 1,
+      "groups": [
+        "shdr"
+      ],
+      "kind": "reference",
+      "maximum": 0,
+      "offset_within_definition": 0,
+      "path": "structure_collision_material.shader",
+      "size": 16,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "structure_collision_material",
+      "definition_id": "2986264",
+      "kind": "schema-unrepresented-range",
+      "next_member": "runtime_physics_material_type",
+      "offset_within_definition": 16,
+      "path": "structure_collision_material.<unclassified@0x10>",
+      "size": 2
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "structure_collision_material",
+      "definition_id": "2986264",
+      "element_size": 2,
+      "flags": 1,
+      "kind": "enum",
+      "maximum": 33,
+      "offset_within_definition": 18,
+      "path": "structure_collision_material.runtime_physics_material_type",
+      "size": 2,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "render_lighting",
+      "definition_id": "2986432",
+      "kind": "schema-unrepresented-range",
+      "next_member": "distant_light_count",
+      "offset_within_definition": 0,
+      "path": "render_lighting.<unclassified@0x0>",
+      "size": 12
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "render_lighting",
+      "definition_id": "2986432",
+      "element_size": 2,
+      "flags": 0,
+      "kind": "enum",
+      "maximum": 3,
+      "offset_within_definition": 12,
+      "path": "render_lighting.distant_light_count",
+      "size": 2,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "render_lighting",
+      "definition_id": "2986432",
+      "kind": "schema-unrepresented-range",
+      "next_member": "point_light_count",
+      "offset_within_definition": 14,
+      "path": "render_lighting.<unclassified@0xe>",
+      "size": 50
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "render_lighting",
+      "definition_id": "2986432",
+      "element_size": 2,
+      "flags": 0,
+      "kind": "enum",
+      "maximum": 1,
+      "offset_within_definition": 64,
+      "path": "render_lighting.point_light_count",
+      "size": 2,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "render_lighting",
+      "definition_id": "2986432",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 66,
+      "path": "render_lighting.<unclassified@0x42>",
+      "size": 50
+    },
+    {
+      "child_definition_id": "2989928",
+      "child_definition_name": "bsp3d_node",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "collision_bsp",
+      "definition_id": "2988624",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 131072,
+      "offset_within_definition": 0,
+      "path": "collision_bsp.bsp3d.nodes",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "collision_bsp",
+      "definition_id": "2988624",
+      "element_size": 0,
+      "flags": 0,
+      "kind": "check",
+      "maximum": 0,
+      "offset_within_definition": 0,
+      "path": "collision_bsp.structure_collision_bsp_check",
+      "size": 0,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2990016",
+      "child_definition_name": "real_plane3d",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "collision_bsp",
+      "definition_id": "2988624",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 65536,
+      "offset_within_definition": 12,
+      "path": "collision_bsp.bsp3d.planes",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2989912",
+      "child_definition_name": "collision_leaf",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "collision_bsp",
+      "definition_id": "2988624",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 65536,
+      "offset_within_definition": 24,
+      "path": "collision_bsp.leaves",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2989896",
+      "child_definition_name": "bsp2d_reference",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "collision_bsp",
+      "definition_id": "2988624",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 131072,
+      "offset_within_definition": 36,
+      "path": "collision_bsp.bsp2d_references",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2989880",
+      "child_definition_name": "bsp2d_node",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "collision_bsp",
+      "definition_id": "2988624",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 65535,
+      "offset_within_definition": 48,
+      "path": "collision_bsp.bsp2d.nodes",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2989624",
+      "child_definition_name": "collision_surface",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "collision_bsp",
+      "definition_id": "2988624",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 131072,
+      "offset_within_definition": 60,
+      "path": "collision_bsp.surfaces",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2989464",
+      "child_definition_name": "collision_edge",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "collision_bsp",
+      "definition_id": "2988624",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 262144,
+      "offset_within_definition": 72,
+      "path": "collision_bsp.edges",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "child_definition_id": "2989376",
+      "child_definition_name": "collision_vertex",
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "collision_bsp",
+      "definition_id": "2988624",
+      "element_size": 12,
+      "flags": 0,
+      "kind": "block",
+      "maximum": 131072,
+      "offset_within_definition": 84,
+      "path": "collision_bsp.vertices",
+      "size": 12,
+      "target_level": 0,
+      "target_offset": 0
+    },
+    {
+      "classification": "unclassified",
+      "definition": "collision_vertex",
+      "definition_id": "2989376",
+      "kind": "schema-unrepresented-range",
+      "next_member": "first_edge_index",
+      "offset_within_definition": 0,
+      "path": "collision_vertex.<unclassified@0x0>",
+      "size": 12
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "collision_vertex",
+      "definition_id": "2989376",
+      "element_size": 4,
+      "flags": 0,
+      "kind": "block_index",
+      "maximum": 0,
+      "offset_within_definition": 12,
+      "path": "collision_vertex.first_edge_index",
+      "size": 4,
+      "target_level": 1,
+      "target_offset": 72
+    },
+    {
+      "classification": "schema-declared",
+      "count": 2,
+      "definition": "collision_edge",
+      "definition_id": "2989464",
+      "element_size": 4,
+      "flags": 0,
+      "kind": "block_index",
+      "maximum": 0,
+      "offset_within_definition": 0,
+      "path": "collision_edge.vertex_indices",
+      "size": 8,
+      "target_level": 1,
+      "target_offset": 84
+    },
+    {
+      "classification": "schema-declared",
+      "count": 2,
+      "definition": "collision_edge",
+      "definition_id": "2989464",
+      "element_size": 4,
+      "flags": 0,
+      "kind": "block_index",
+      "maximum": 0,
+      "offset_within_definition": 8,
+      "path": "collision_edge.edge_indices",
+      "size": 8,
+      "target_level": 1,
+      "target_offset": 72
+    },
+    {
+      "classification": "schema-declared",
+      "count": 2,
+      "definition": "collision_edge",
+      "definition_id": "2989464",
+      "element_size": 4,
+      "flags": 1,
+      "kind": "block_index",
+      "maximum": 0,
+      "offset_within_definition": 16,
+      "path": "collision_edge.surface_indices",
+      "size": 8,
+      "target_level": 1,
+      "target_offset": 60
+    },
+    {
+      "classification": "unclassified",
+      "definition": "collision_surface",
+      "definition_id": "2989624",
+      "kind": "schema-unrepresented-range",
+      "next_member": "first_edge_index",
+      "offset_within_definition": 0,
+      "path": "collision_surface.<unclassified@0x0>",
+      "size": 4
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "collision_surface",
+      "definition_id": "2989624",
+      "element_size": 4,
+      "flags": 0,
+      "kind": "block_index",
+      "maximum": 0,
+      "offset_within_definition": 4,
+      "path": "collision_surface.first_edge_index",
+      "size": 4,
+      "target_level": 1,
+      "target_offset": 72
+    },
+    {
+      "classification": "unclassified",
+      "definition": "collision_surface",
+      "definition_id": "2989624",
+      "kind": "schema-unrepresented-range",
+      "next_member": "material_index",
+      "offset_within_definition": 8,
+      "path": "collision_surface.<unclassified@0x8>",
+      "size": 2
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "collision_surface",
+      "definition_id": "2989624",
+      "element_size": 2,
+      "flags": 1,
+      "kind": "block_index",
+      "maximum": 0,
+      "offset_within_definition": 10,
+      "path": "collision_surface.material_index",
+      "size": 2,
+      "target_level": -1,
+      "target_offset": 164
+    },
+    {
+      "classification": "unclassified",
+      "definition": "bsp2d_node",
+      "definition_id": "2989880",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 0,
+      "path": "bsp2d_node.<unclassified@0x0>",
+      "size": 20
+    },
+    {
+      "classification": "unclassified",
+      "definition": "bsp2d_reference",
+      "definition_id": "2989896",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 0,
+      "path": "bsp2d_reference.<unclassified@0x0>",
+      "size": 8
+    },
+    {
+      "classification": "unclassified",
+      "definition": "collision_leaf",
+      "definition_id": "2989912",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 0,
+      "path": "collision_leaf.<unclassified@0x0>",
+      "size": 8
+    },
+    {
+      "classification": "schema-declared",
+      "count": 1,
+      "definition": "bsp3d_node",
+      "definition_id": "2989928",
+      "element_size": 4,
+      "flags": 0,
+      "kind": "block_index",
+      "maximum": 0,
+      "offset_within_definition": 0,
+      "path": "bsp3d_node.plane_designator",
+      "size": 4,
+      "target_level": 1,
+      "target_offset": 12
+    },
+    {
+      "classification": "unclassified",
+      "definition": "bsp3d_node",
+      "definition_id": "2989928",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 4,
+      "path": "bsp3d_node.<unclassified@0x4>",
+      "size": 8
+    },
+    {
+      "classification": "unclassified",
+      "definition": "real_plane3d",
+      "definition_id": "2990016",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 0,
+      "path": "real_plane3d.<unclassified@0x0>",
+      "size": 16
+    },
+    {
+      "classification": "unclassified",
+      "definition": "real_point3d",
+      "definition_id": "2990032",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 0,
+      "path": "real_point3d.<unclassified@0x0>",
+      "size": 12
+    },
+    {
+      "classification": "unclassified",
+      "definition": "real_point2d",
+      "definition_id": "2990048",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 0,
+      "path": "real_point2d.<unclassified@0x0>",
+      "size": 8
+    },
+    {
+      "classification": "unclassified",
+      "definition": "byte",
+      "definition_id": "2990064",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 0,
+      "path": "byte.<unclassified@0x0>",
+      "size": 1
+    },
+    {
+      "classification": "unclassified",
+      "definition": "long",
+      "definition_id": "2990080",
+      "kind": "schema-unrepresented-range",
+      "next_member": null,
+      "offset_within_definition": 0,
+      "path": "long.<unclassified@0x0>",
+      "size": 4
+    }
+  ],
+  "schema_declared_rows": 98,
+  "schema_elf": "build/hcu-ps2-closure/all-no-bootstrap-memory/halo-local.elf",
+  "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+  "schema_extent_overlaps": [],
+  "schema_format": "hcu-schema-manifest-v1",
+  "schema_manifest_sha256": "ce611f0d0aedb40630136e73a5955faebc186e2751ca1b0d05ff8acdc98d97af",
+  "schema_omitted_named_rows": 12,
+  "serialized_definition_bytes": 648,
+  "status": "open",
+  "unclassified_ranges": 54
+}
