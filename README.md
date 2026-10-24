@@ -1,53 +1,39 @@
-# Native PS2 Halo hybrid port
+# halo-ps2-evolved
 
-Private integration project combining selected Halo gameplay sources with PS2-native rendering and offline conversion. The governing scope and acceptance gates are in [the implementation plan](plans/0.native-ps2-halo-hybrid-port.md).
+A native PlayStation 2 port of Halo: Combat Evolved multiplayer, built by compiling the game's own decompiled simulation for the console rather than reimplementing it.
 
-M00–M10 are complete. Native and container toolchains are built, the integer-math and datum probes have executed on R5900, and a synthetic gameplay object has driven a visible PS2 triangle for the platform smoke duration. M10’s resume review repaired BSP/sky state corruption and static sky-layer conversion. The corrected fixed view, free-camera traversal, five-minute routes in both CPU modes, and retained-evidence qualification pass. M11 is in progress: host visibility and initial guarded GS culling comparisons pass; async streaming, churn and unload gates remain open. Physical-console acceptance remains open.
+## What it is
 
-## Available commands
+The project started as a hybrid: a PS2-native renderer and map pipeline driving a handful of borrowed Halo gameplay routines. It has evolved into a source-ownership port. The authoritative game now comes from the [Halo CE Universal](submodules/halo-ce-universal) source, compiled for the Emotion Engine (R5900). It handles objects, physics and collision, players and vehicles, weapons, damage, game rules, AI, HaloScript, effects and HUD decisions. This repository supplies the machine underneath it:
 
-| Command | Current behavior |
+- **The PS2 machine layer:** boot, fixed-memory arenas, pad, timer and file access, plus a platform layer that replaces the Xbox SDK calls the game expects.
+- **Rendering:** the GS/VU1/DMA renderer from [halo-ps2](submodules/halo-ps2). It consumes read-only snapshots of the simulation, so it never feeds results back into gameplay.
+- **An offline asset pipeline:** converts retail maps into bounded, verified profile packages that fit the console's memory.
+
+[Halo-64](submodules/halo-64) is the method example: Halo on the Nintendo 64, made by compiling the same CE source and swapping the platform beneath it.
+
+## Scope
+
+- Multiplayer only: the 13 stock Xbox multiplayer maps plus the UI map. Campaign missions are out of scope.
+- One to four local players in split screen, stock multiplayer modes, vehicles, Spartan bots, co-op team modes and endless survival.
+- CE's fixed 30 Hz simulation, kept intact on real PS2 limits: 32 MiB EE RAM, 4 MiB GS eDRAM, 2 MiB IOP RAM and 2 MiB SPU2 RAM. Features are fitted to the hardware, not given larger pools or heap fallbacks.
+- Delivery through Open PS2 Loader.
+
+Out of scope: network play and System Link, PAL, 60 fps and campaign.
+
+## Status
+
+Work proceeds through measured, evidence-backed milestones. A milestone closes only on host, emulator (PCSX2) or hardware evidence, never on compilation alone. The governing plans are [the HCU remake plan](plans/5.hcu-remake.md) and [M2–M4 closure](plans/7.hcu-remake-m2-m4.md). Evidence reports live under [`docs/reports`](docs/reports).
+
+## Getting started
+
+| Command | Purpose |
 |---|---|
-| `make doctor` | Local prerequisite and dependency-pin inventory |
-| `make bootstrap OFFLINE=1` | Restore pinned submodules from separately supplied private fork bundles |
-| `make test-host` | Infrastructure safety tests and upstream synthetic converter checks |
-| `make toolchain-plan` | Read-only native build preflight; exits nonzero for missing prerequisites |
-| `make host-tools` | Build/install pinned `ps2client` and `fsclient` in native or container staging |
-| `make native-prerequisites` | Verify and extract separately acquired native prerequisite packages locally |
-| `make host-abi32` | Verify and prepare the private 32-bit host runtime |
-| `make test-gameplay-host32` | Compile unchanged Halo integer math and run selected ILP32 host fixtures/negative control |
-| `make vu-smoke` | Assemble the existing renderer VU1 program without runtime claims |
-| `make smoke-elf` | Compile a minimal EE ABI/logging ELF after SDK installation |
-| `make toolchain` | Build the pinned compiler/SDK; native and container builds have passed |
-| `make probe` | Build the frozen original integer-math closure for R5900 |
-| `make test-emulator` | Visibly run the platform fixture in interpreter/recompiler modes; retains private evidence |
-| `make test-emulator SCENARIO=probe` | Visibly run the strict integer-math and datum fixtures, including their failure controls |
-| `make hybrid-elf` | Build the M08 hybrid ELF; compilation alone does not pass M08 |
-| `make test-emulator SCENARIO=hybrid` | Visibly run the 18,000-tick hybrid proof in interpreter and recompiler modes |
-| `make platform-elf` | Build the M06 platform fixture; compilation alone does not pass M06 |
-| `make reference-scenario` | Repeat the source-derived ILP32 integer-math reference |
-| `make convert MAP=bloodgulch` | Convert the privately configured Xbox map twice; existing output directories are preserved through refusal |
+| `make doctor` | Check local prerequisites and dependency pins |
+| `make bootstrap OFFLINE=1` | Restore the pinned submodules from private fork bundles |
+| `make toolchain` | Build the pinned EE/IOP compiler and PS2 SDK |
+| `make test-host` | Run host-side safety and converter tests |
 
-`elf` and `iso` remain unavailable until their implementation gates are met. Use `BUILD_ENV=container` for supported compilation and host-test targets. The [visible emulator workflow](docs/emulator.md) is implemented. M06 stability acceptance and M07 probe qualification have passed. `SCENARIO=probe` uses the strict fixture runner; a single integer-math success line is not that gate.
+Dependencies are pinned submodules under `submodules/`. Their commits are recorded in `config/dependencies.json`. See [the toolchain guide](docs/toolchain.md) and [emulator workflow](docs/emulator.md) for details.
 
-`HALO_BUILD_ROOT` selects generated output; the default is ignored `build/`. `HALO_TOOLCHAIN_SOURCE_ROOT` optionally selects compiler staging checkouts. `HALO_BUILD_JOBS` defaults to two and the driver accepts 1–64. No target changes global Git transport policy or installs system packages.
-
-The source acquisition command accepts one explicit ID from `config/toolchain-sources.json`:
-
-```sh
-python3 tools/acquire_sources.py --id SOURCE_ID --from-local /path/to/repository --offline
-```
-
-Omit `--from-local` and `--offline` only for intentional network acquisition. The command fetches the locked commit, not the current branch, and refuses existing modified or mismatched checkouts. Remote compiler acquisition requires storage headroom. Source acquisition and compiler execution are separate operations; newly acquired sources and their instructions still require audit before build acceptance.
-
-## Dependencies and local forks
-
-All upstream repositories are actual submodules under `submodules/`, initialized recursively after registration. Canonical URLs remain in `.gitmodules`; the local configuration points to ignored bare forks. `config/dependencies.json` records upstream/fork commits and complete bundle checksums.
-
-Private bundles in `.local/bundles/` must be preserved separately from source. They contain fork-only commits and are required to restore this private development baseline. A public upstream URL alone cannot supply those commits.
-
-## Status and evidence
-
-See [milestone status](docs/milestones.md), [toolchain workflow](docs/toolchain.md), and [gameplay probe audit](docs/gameplay-probe.md). Build runs retain logs and JSON results under the selected build root. Retail maps, converted packs, BIOS files, and data-bearing images must remain outside tracked source.
-
-Native prerequisite and ABI packages are extracted under ignored build directories, without host administrator changes. The ordinary sandbox blocks 32-bit execution with SIGSYS; the ILP32 fixture requires a compatible execution environment. Container images are selected by immutable image ID, run with networking disabled, and mount source read-only with separate writable output. Preserve the checksummed private image archive separately for exact offline restoration.
+Retail maps, converted packs, BIOS files and disc images are never committed. You must supply your own legally obtained game data.
