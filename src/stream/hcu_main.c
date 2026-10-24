@@ -47,6 +47,21 @@
 extern char hcu_c2_runtime_map_name[64];
 extern char hcu_c2_runtime_scenario_path[256];
 #endif
+/* Opt-in C2.8 successor guest: tools/c2_profile_boot_matrix.py --successor puts
+ * hcu_c2_successor.h (mode) and hcu_c2_succ_image.h (the successor row's image,
+ * HCU_C2_SUCC_* names) on the include path. Without both, none of the successor
+ * code below is compiled and the image is the plain single-row guest. */
+#if defined(HALO_HCU_HEADLESS_RUNTIME_GUEST) && defined(__has_include)
+#if __has_include(<hcu_c2_successor.h>) && __has_include(<hcu_c2_succ_image.h>)
+#include <hcu_c2_successor.h>
+#include <hcu_c2_succ_image.h>
+#define HCU_C2_SUCCESSOR_BUILT 1
+extern char hcu_c2_successor_map_name[64];
+extern char hcu_c2_successor_scenario_path[256];
+extern volatile int hcu_c2_successor_fault_armed;
+extern unsigned hcu_c2_successor_fault_count;
+#endif
+#endif
 #endif
 
 #ifndef HALO_HCU_TAG_CACHE_BYTES
@@ -123,6 +138,24 @@ static int hcu_sample_dynamic_simulation(void *ctx, hcu_owner_sample_t *out)
 	return 1;
 }
 
+/* HCP decoded residency is sourced only from the live verified-segment table.
+ * It is nested in render_chunks and never enters the backing-memory sum. */
+static int hcu_sample_decoded_asset_residency(void *ctx, hcu_owner_sample_t *out)
+{
+	hcu_map_residency_report report;
+	uint64_t failures;
+	(void)ctx;
+	if (!out || !hcu_map_service_residency_snapshot(&s_map_service, &report) ||
+		!report.valid || !report.map.bound || !report.map.capacity_bytes)
+		return 0;
+	failures = (uint64_t)report.map.refused_pins + report.map.verify_failures;
+	out->capacity = report.map.capacity_bytes;
+	out->used = report.map.current_bytes;
+	out->high = report.map.high_water_bytes;
+	out->failures = failures > UINT32_MAX ? UINT32_MAX : (uint32_t)failures;
+	out->resets = report.map.resets;
+	return 1;
+}
 
 /* CE-owned pools report through the always-on port counters; ctx is the
  * HALO_PS2_OWNER_* index, not a pointer. */
@@ -368,6 +401,119 @@ static int hcu_c2_compatible(void *context, const hcu_map_catalog_entry *entry,
 		strcmp(entry->identity.map_name, HCU_C2_IMAGE_MAP) == 0 &&
 		profile->profile_id == HCU_C2_IMAGE_PROFILE_ID;
 }
+
+#ifdef HCU_C2_SUCCESSOR_BUILT
+/* The successor row's package and source maps, opened beside the selected row's
+ * (the bridge has 16 slots). Tokens start closed; the selected row's slots are
+ * never touched here. */
+static hcu_c2_file s_c2s_package = { -1, 0 };
+static hcu_c2_file s_c2s_sources[HCU_C2_SUCC_SOURCE_COUNT];
+static hcu_asset_residency_entry s_c2s_residency_entries[HCU_PARTITION_RESIDENCY_SLOTS / 2u];
+static const arena_t *s_c2s_owner_arena;
+static uint32_t s_c2s_fault_bytes;
+
+static void hcu_c2s_close_files(void)
+{
+	uint32_t i;
+	if (s_c2s_package.token >= 0) hcu_file_bridge_close(s_c2s_package.token);
+	s_c2s_package.token = -1;
+	s_c2s_package.size = 0;
+	for (i = 0; i < HCU_C2_SUCC_SOURCE_COUNT; ++i) {
+		if (s_c2s_sources[i].token >= 0) hcu_file_bridge_close(s_c2s_sources[i].token);
+		s_c2s_sources[i].token = -1;
+		s_c2s_sources[i].size = 0;
+	}
+}
+
+static int hcu_c2s_open_files(void)
+{
+	uint32_t i;
+	s_c2s_package.token = -1;
+	s_c2s_package.size = 0;
+	for (i = 0; i < HCU_C2_SUCC_SOURCE_COUNT; ++i) {
+		s_c2s_sources[i].token = -1;
+		s_c2s_sources[i].size = 0;
+	}
+	if (!hcu_c2_open_file(&s_c2s_package, HCU_C2_SUCC_PACKAGE_PATH,
+			HCU_C2_SUCC_PACKAGE_BYTES)) {
+		printf("[err] cannot open pinned successor package %s at %u bytes\n",
+			HCU_C2_SUCC_PACKAGE_PATH, (unsigned)HCU_C2_SUCC_PACKAGE_BYTES);
+		return 0;
+	}
+	for (i = 0; i < HCU_C2_SUCC_SOURCE_COUNT; ++i) {
+		if (!hcu_c2_open_file(&s_c2s_sources[i], HCU_C2_SUCC_SOURCES[i].path,
+				HCU_C2_SUCC_SOURCES[i].bytes)) {
+			printf("[err] cannot open pinned successor source map %s at %u bytes\n",
+				HCU_C2_SUCC_SOURCES[i].path, (unsigned)HCU_C2_SUCC_SOURCES[i].bytes);
+			hcu_c2s_close_files();
+			return 0;
+		}
+	}
+	return 1;
+}
+
+/* Mode 2 injects a preflight package-read fault. Mode 3 faults the actual
+ * registered HCP CTAG visitor from CE's cache load (see the mount hook). */
+static int hcu_c2s_package_read_at(void *context, uint32_t offset,
+	void *destination, uint32_t size)
+{
+	int ok;
+	(void)context;
+#if HALO_PS2_C2_SUCCESSOR_MODE == 2
+	if (hcu_c2_successor_fault_armed) {
+		if (hcu_c2_successor_fault_count++ == 0)
+			printf("HALO_PS2_LOCAL successor-fault injected kind=package-read offset=%u size=%u\n",
+				(unsigned)offset, (unsigned)size);
+		return HCU_ASSET_PROFILE_E_STATE;
+	}
+#elif HALO_PS2_C2_SUCCESSOR_MODE == 3
+	/* Fail only inside the real CTAG visitor, after at least one 64 KiB
+	 * segment has reached CE's sink. Candidate preflight has callbacks_active
+	 * zero and is never faulted. */
+	if (hcu_c2_successor_fault_armed &&
+		s_map_service.profile_mount.active &&
+		s_map_service.profile_mount.callbacks_active &&
+		s_c2s_fault_bytes >= 65536u) {
+		if (hcu_c2_successor_fault_count++ == 0)
+			printf("HALO_PS2_LOCAL successor-fault injected kind=hcp-ctag-chunk-read callbacks=%u prior-bytes=%u offset=%u size=%u\n",
+				(unsigned)s_map_service.profile_mount.callbacks_active,
+				(unsigned)s_c2s_fault_bytes, (unsigned)offset, (unsigned)size);
+		return HCU_ASSET_PROFILE_E_STATE;
+	}
+#endif
+	ok = hcu_c2_read_at(&s_c2s_package, offset, destination, size);
+#if HALO_PS2_C2_SUCCESSOR_MODE == 3
+	if (ok && hcu_c2_successor_fault_armed &&
+		s_map_service.profile_mount.active &&
+		s_map_service.profile_mount.callbacks_active)
+		s_c2s_fault_bytes += size;
+#endif
+	return ok ?
+		HCU_ASSET_PROFILE_OK : HCU_ASSET_PROFILE_E_STATE;
+}
+
+static int hcu_c2s_source_read(void *context, int32_t output_datum,
+	uint32_t file_offset, uint32_t size, void *buffer, int blocking)
+{
+	uint32_t i;
+	(void)context;
+	(void)blocking;
+	for (i = 0; i < HCU_C2_SUCC_DATUM_COUNT; ++i)
+		if (HCU_C2_SUCC_DATUMS[i].output_datum == (uint32_t)output_datum) break;
+	if (i == HCU_C2_SUCC_DATUM_COUNT) return 0;
+	return hcu_c2_read_at(&s_c2s_sources[HCU_C2_SUCC_DATUMS[i].source],
+		file_offset, buffer, size);
+}
+
+static int hcu_c2s_compatible(void *context, const hcu_map_catalog_entry *entry,
+	const hcu_asset_profile_view *profile)
+{
+	(void)context;
+	return entry && profile &&
+		strcmp(entry->identity.map_name, HCU_C2_SUCC_MAP) == 0 &&
+		profile->profile_id == HCU_C2_SUCC_PROFILE_ID;
+}
+#endif
 #endif
 
 /* Registers the selected row's profile runtime with the map service. A
@@ -439,9 +585,17 @@ static int hcu_register_selected_runtime(hcu_map_service *service,
 		runtime.partition_row = HCU_C2_IMAGE_ROW;
 #endif
 		runtime.residency_entries = s_residency_entries;
+#ifdef HCU_C2_SUCCESSOR_BUILT
+		/* The successor stages beside the live map, so the two runtimes split
+		 * the row's residency span: the selected row keeps the first half. */
+		runtime.residency_entry_capacity = HCU_PARTITION_RESIDENCY_SLOTS / 2u;
+		runtime.residency_arena = s_partition.residency_base;
+		runtime.residency_arena_bytes = s_partition.residency_bytes / 2u;
+#else
 		runtime.residency_entry_capacity = HCU_PARTITION_RESIDENCY_SLOTS;
 		runtime.residency_arena = s_partition.residency_base;
 		runtime.residency_arena_bytes = s_partition.residency_bytes;
+#endif
 		if (!hcu_map_service_register_runtime(service, HCU_C2_IMAGE_MAP, &runtime)) {
 			printf("[err] partition %s: map service refused the profile runtime (digest, compatibility or span check)\n",
 				s_partition_name);
@@ -466,6 +620,83 @@ static int hcu_register_selected_runtime(hcu_map_service *service,
 	return 0;
 #endif
 }
+
+#ifdef HCU_C2_SUCCESSOR_BUILT
+/* Registers the successor row's runtime beside the selected row's. It carries
+ * its own metadata, relocation, scratch and residency spans (the second half of
+ * the row's residency span), all disjoint from the selected runtime's, and the
+ * selected row's partition caps: the successor's tag image and BSP must fit the
+ * selected row's guarded owners. */
+static int hcu_register_successor_runtime(hcu_map_service *service,
+	arena_t *owner, arena_t *scratch)
+{
+	hcu_map_profile_runtime runtime;
+	void *metadata_storage;
+	void *relocation_storage;
+	void *stream_scratch;
+	if (!s_partition_selected) return 1;
+	if (!hcu_c2s_open_files()) {
+		printf("[err] partition %s: successor package or source maps are not under the asset root\n",
+			s_partition_name);
+		return 0;
+	}
+	memset(s_c2s_residency_entries, 0, sizeof(s_c2s_residency_entries));
+	metadata_storage = arena_alloc(owner, HCU_C2_SUCC_METADATA_STORAGE_BYTES, 16);
+	relocation_storage = arena_alloc(owner, HCU_C2_SUCC_RELOCATION_BYTES, 16);
+	stream_scratch = arena_alloc(scratch, HCU_C2_STREAM_SCRATCH_BYTES, 16);
+	if (!metadata_storage || !relocation_storage || !stream_scratch) {
+		printf("[err] partition %s: owner storage cannot hold successor metadata %u, relocations %u and stream scratch %u\n",
+			s_partition_name, (unsigned)HCU_C2_SUCC_METADATA_STORAGE_BYTES,
+			(unsigned)HCU_C2_SUCC_RELOCATION_BYTES,
+			(unsigned)HCU_C2_STREAM_SCRATCH_BYTES);
+		hcu_c2s_close_files();
+		return 0;
+	}
+	memset(&runtime, 0, sizeof(runtime));
+	runtime.package_read_at = hcu_c2s_package_read_at;
+	runtime.package_size = HCU_C2_SUCC_PACKAGE_BYTES;
+	runtime.profile_id = HCU_C2_SUCC_PROFILE_ID;
+	memcpy(runtime.package_sha256, HCU_C2_SUCC_PACKAGE_SHA256, 32);
+	runtime.compatibility = hcu_c2s_compatible;
+	runtime.metadata_bytes = HCU_C2_SUCC_METADATA;
+	runtime.metadata_size = HCU_C2_SUCC_METADATA_BYTES;
+	memcpy(runtime.metadata_sha256, HCU_C2_SUCC_METADATA_SHA256, 32);
+	runtime.metadata_storage = metadata_storage;
+	runtime.metadata_storage_bytes = HCU_C2_SUCC_METADATA_STORAGE_BYTES;
+	runtime.source_read = hcu_c2s_source_read;
+	runtime.relocation_storage = relocation_storage;
+	runtime.relocation_storage_bytes = HCU_C2_SUCC_RELOCATION_BYTES;
+	runtime.stream_scratch = stream_scratch;
+	runtime.stream_scratch_bytes = HCU_C2_STREAM_SCRATCH_BYTES;
+	runtime.maximum_tag_image_bytes = (uint32_t)s_partition.tag_cache_bytes;
+	runtime.renderer_drained = hcu_renderer_drained;
+	runtime.headless_no_bitmap_consumers = 1;
+	runtime.renderer_never_started = hcu_renderer_never_started;
+	runtime.headless_candidate_admission = 1;
+	runtime.partition_row = HCU_C2_IMAGE_ROW;
+	runtime.residency_entries = s_c2s_residency_entries;
+	runtime.residency_entry_capacity = HCU_PARTITION_RESIDENCY_SLOTS / 2u;
+	runtime.residency_arena = (uint8_t *)s_partition.residency_base +
+		s_partition.residency_bytes / 2u;
+	runtime.residency_arena_bytes = s_partition.residency_bytes / 2u;
+	if (!hcu_map_service_register_successor_runtime(service, HCU_C2_SUCC_MAP, &runtime)) {
+		printf("[err] partition %s: map service refused the successor runtime for %s (digest, compatibility or disjointness)\n",
+			s_partition_name, HCU_C2_SUCC_MAP);
+		hcu_c2s_close_files();
+		return 0;
+	}
+	printf("HALO_PS2_LOCAL successor-runtime row=%s successor-row=%s map=%s profile=%u package-bytes=%u metadata-bytes=%u metadata-storage=%u relocation-bytes=%u stream-scratch=%u residency-bytes=%u residency-entries=%u\n",
+		s_partition_name, HCU_C2_SUCC_ROW, HCU_C2_SUCC_MAP,
+		(unsigned)HCU_C2_SUCC_PROFILE_ID, (unsigned)HCU_C2_SUCC_PACKAGE_BYTES,
+		(unsigned)HCU_C2_SUCC_METADATA_BYTES,
+		(unsigned)HCU_C2_SUCC_METADATA_STORAGE_BYTES,
+		(unsigned)HCU_C2_SUCC_RELOCATION_BYTES,
+		(unsigned)HCU_C2_STREAM_SCRATCH_BYTES,
+		(unsigned)runtime.residency_arena_bytes,
+		(unsigned)runtime.residency_entry_capacity);
+	return 1;
+}
+#endif
 
 /* Registers every named owner with capacities from the bound layout. Called
  * after CE binding and before the first map service request. */
@@ -497,6 +728,9 @@ static void hcu_bind_owner_telemetry(mem_layout_v2_t *layout,
 
 	hcu_owner_telemetry_bind_sampler(&s_owner_telemetry, HCU_OWNER_DYNAMIC_SIM,
 		hcu_sample_dynamic_simulation, NULL);
+	hcu_owner_telemetry_bind_sampler(&s_owner_telemetry,
+		HCU_OWNER_DECODED_ASSET_RESIDENCY,
+		hcu_sample_decoded_asset_residency, NULL);
 
 	s_owner_ctx[HCU_OWNER_TAGS].capacity = tag_bytes;
 	hcu_owner_telemetry_bind_sampler(&s_owner_telemetry, HCU_OWNER_TAGS,
@@ -550,10 +784,45 @@ static void hcu_report_cache_owners(const char *phase)
 static void hcu_map_boundary_report(void *context, const char *phase,
 	unsigned int cycle)
 {
+	hcu_map_residency_report residency;
 	(void)context;
 	printf("HALO_PS2_LOCAL m2-cycle-boundary phase=%s cycle=%u\n", phase, cycle);
 	hcu_report_owner_telemetry(phase);
+	if (hcu_map_service_residency_snapshot(&s_map_service, &residency) &&
+		residency.valid && residency.map.bound) {
+		printf("HALO_PS2_LOCAL decoded-residency phase=%s scope=map map=%s cycle=%u "
+			"active=%d bound=%d cap=%u current=%u high=%u evictions=%u "
+			"refused_evictions=%u refused_pins=%u verify_failures=%u resets=%u "
+			"lifetime_high=%u lifetime_evictions=%u lifetime_refused_evictions=%u "
+			"lifetime_refused_pins=%u lifetime_verify_failures=%u lifetime_resets=%u\n",
+			phase, residency.map_name, residency.cycle, residency.active,
+			residency.map.bound, (unsigned)residency.map.capacity_bytes,
+			(unsigned)residency.map.current_bytes,
+			(unsigned)residency.map.high_water_bytes,
+			(unsigned)residency.map.evictions,
+			(unsigned)residency.map.refused_evictions,
+			(unsigned)residency.map.refused_pins,
+			(unsigned)residency.map.verify_failures,
+			(unsigned)residency.map.resets,
+			(unsigned)residency.lifetime.high_water_bytes,
+			(unsigned)residency.lifetime.evictions,
+			(unsigned)residency.lifetime.refused_evictions,
+			(unsigned)residency.lifetime.refused_pins,
+			(unsigned)residency.lifetime.verify_failures,
+			(unsigned)residency.lifetime.resets);
+	}
 	hcu_report_cache_owners(phase);
+#ifdef HCU_C2_SUCCESSOR_BUILT
+	if (s_c2s_owner_arena)
+		printf("HALO_PS2_LOCAL arena phase=%s name=%s cap=%u used=%u high=%u "
+			"alloc_failures=%u resets=%u releases=%u invalid_releases=%u\n",
+			phase, s_c2s_owner_arena->name, (unsigned)s_c2s_owner_arena->cap,
+			(unsigned)s_c2s_owner_arena->used, (unsigned)s_c2s_owner_arena->high,
+			(unsigned)s_c2s_owner_arena->failed_allocations,
+			(unsigned)s_c2s_owner_arena->reset_count,
+			(unsigned)s_c2s_owner_arena->release_count,
+			(unsigned)s_c2s_owner_arena->invalid_releases);
+#endif
 }
 #ifdef HALO_PS2_STEP8_MP_CAPACITY_DIAGNOSTIC
 static mem_layout_v2_t *s_step8_candidate_layout;
@@ -1062,6 +1331,16 @@ int main(int argc, char **argv)
 		__real_free(backing);
 		return 1;
 	}
+#ifdef HCU_C2_SUCCESSOR_BUILT
+	s_c2s_owner_arena = &map_owner_storage;
+	if (hcu_register_successor_runtime(&s_map_service, &map_owner_storage,
+		&render_section_scratch) != 1) {
+		hcu_render_snapshot_unbind();
+		physical_memory_free();
+		__real_free(backing);
+		return 1;
+	}
+#endif
 	/* Per-cycle telemetry at each map boundary. NULL hook costs nothing. */
 	(void)hcu_map_service_set_boundary_hook(&s_map_service,
 		hcu_map_boundary_report, NULL);
@@ -1121,6 +1400,12 @@ int main(int argc, char **argv)
 	strncpy(hcu_c2_runtime_map_name, HCU_C2_IMAGE_MAP, sizeof(hcu_c2_runtime_map_name) - 1);
 	strncpy(hcu_c2_runtime_scenario_path, HCU_C2_IMAGE_SCENARIO,
 		sizeof(hcu_c2_runtime_scenario_path) - 1);
+#ifdef HCU_C2_SUCCESSOR_BUILT
+	strncpy(hcu_c2_successor_map_name, HCU_C2_SUCC_MAP,
+		sizeof(hcu_c2_successor_map_name) - 1);
+	strncpy(hcu_c2_successor_scenario_path, HCU_C2_SUCC_SCENARIO,
+		sizeof(hcu_c2_successor_scenario_path) - 1);
+#endif
 #endif
 	result = halo_shell_main();
 	hcu_report_cache_owners("after-shell");

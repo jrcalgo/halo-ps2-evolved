@@ -15,8 +15,8 @@
 #include "stream/sha256.h"
 #include <strings.h>
 
-#ifdef HCU_C1_REAL_PROFILE
-#include "hcu_c1_real_profile_expectations.h"
+#ifdef HCU_HCP2_REAL_PROFILE
+#include "hcu_hcp2_real_profile_expectations.h"
 #endif
 
 #define LIFECYCLE_TRACE_CAPACITY 64
@@ -64,7 +64,7 @@ typedef struct lifecycle_active_map_snapshot {
 static void lifecycle_snapshot_active_map(lifecycle_active_map_snapshot *snapshot);
 static void lifecycle_assert_active_map_snapshot(
 	const lifecycle_active_map_snapshot *snapshot);
-#ifdef HCU_C1_REAL_PROFILE
+#ifdef HCU_HCP2_REAL_PROFILE
 static uint8_t *lifecycle_real_profile_bytes;
 static uint32_t lifecycle_real_profile_size;
 static int lifecycle_real_profile_read(void *context, uint32_t offset,
@@ -83,12 +83,13 @@ static int lifecycle_real_profile_compatibility(void *context,
 	uint32_t i;
 	(void)context;
 	if (!entry || !profile || strcmp(entry->identity.map_name, "ui") != 0 ||
-		profile->profile_id != HCU_C1_PROFILE_ID ||
-		profile->total_bytes != HCU_C1_PACKAGE_BYTES ||
-		profile->chunk_count != HCU_C1_CHUNK_COUNT) return 0;
-	for (i = 0; i < HCU_C1_CHUNK_COUNT; ++i) {
+		profile->version != HCU_HCP2_PROFILE_VERSION ||
+		profile->profile_id != HCU_HCP2_PROFILE_ID ||
+		profile->total_bytes != HCU_HCP2_PACKAGE_BYTES ||
+		profile->chunk_count != HCU_HCP2_PHYSICAL_RECORD_COUNT) return 0;
+	for (i = 0; i < HCU_HCP2_LOGICAL_CHUNK_COUNT; ++i) {
 		hcu_asset_chunk_view actual;
-		const hcu_c1_expected_chunk *expected = &hcu_c1_expected_chunks[i];
+		const hcu_hcp2_expected_chunk *expected = &hcu_hcp2_expected_chunks[i];
 		if (hcu_asset_profile_lookup(profile, expected->type, expected->id,
 			&actual) != HCU_ASSET_PROFILE_OK || actual.size != expected->size ||
 			memcmp(actual.sha256, expected->sha256, 32) != 0) return 0;
@@ -102,10 +103,10 @@ static void lifecycle_run_real_profile(const char *profile_path)
 	FILE *input;
 	long length;
 	assert(lifecycle_real_profile_bytes == NULL);
-	input = fopen(profile_path ? profile_path : HCU_C1_PROFILE_PATH, "rb");
+	input = fopen(profile_path ? profile_path : HCU_HCP2_PROFILE_PATH, "rb");
 	assert(input != NULL && fseek(input, 0, SEEK_END) == 0);
 	length = ftell(input);
-	assert(length > 0 && (unsigned long)length == HCU_C1_PACKAGE_BYTES);
+	assert(length > 0 && (unsigned long)length == HCU_HCP2_PACKAGE_BYTES);
 	rewind(input);
 	lifecycle_real_profile_size = (uint32_t)length;
 	lifecycle_real_profile_bytes = (uint8_t *)malloc(lifecycle_real_profile_size);
@@ -115,16 +116,16 @@ static void lifecycle_run_real_profile(const char *profile_path)
 	fclose(input);
 	lifecycle_snapshot_active_map(&before);
 	assert(!hcu_map_service_register_profile(&lifecycle_service, "beavercreek",
-		HCU_C1_PROFILE_ID, lifecycle_real_profile_read, NULL,
-		lifecycle_real_profile_size, hcu_c1_package_sha256,
+		HCU_HCP2_PROFILE_ID, lifecycle_real_profile_read, NULL,
+		lifecycle_real_profile_size, hcu_hcp2_package_sha256,
 		lifecycle_real_profile_compatibility, NULL));
 	assert(memcmp(&lifecycle_service, &before.service_state,
 		sizeof(lifecycle_service)) == 0);
 	lifecycle_assert_active_map_snapshot(&before);
 	puts("ce-lifecycle actual UI HCP rejected for incompatible map before teardown");
 	assert(hcu_map_service_register_profile(&lifecycle_service, "ui",
-		HCU_C1_PROFILE_ID, lifecycle_real_profile_read, NULL,
-		lifecycle_real_profile_size, hcu_c1_package_sha256,
+		HCU_HCP2_PROFILE_ID, lifecycle_real_profile_read, NULL,
+		lifecycle_real_profile_size, hcu_hcp2_package_sha256,
 		lifecycle_real_profile_compatibility, NULL));
 	lifecycle_snapshot_active_map(&before);
 	assert(ps2_cache_preflight_map("levels\\ui\\ui"));
@@ -140,7 +141,7 @@ static void lifecycle_run_real_profile(const char *profile_path)
 	/* Damage a real package payload after registration. The same-map preflight
 	 * must reject its pinned hash while the active CE/service snapshot survives. */
 	{
-		uint32_t offset = HCU_C1_FIRST_PAYLOAD_OFFSET;
+		uint32_t offset = HCU_HCP2_FIRST_PAYLOAD_OFFSET;
 		uint8_t saved = lifecycle_real_profile_bytes[offset];
 		lifecycle_real_profile_bytes[offset] ^= 0x80;
 		lifecycle_snapshot_active_map(&before);
@@ -850,7 +851,7 @@ int main(int argc, char **argv)
 		hcu_map_service_shutdown(&lifecycle_service);
 		return 0;
 	}
-#ifdef HCU_C1_REAL_PROFILE
+#ifdef HCU_HCP2_REAL_PROFILE
 	if (argc == 4 && strcmp(argv[2], "actual-profile") == 0) {
 		assert(ps2_cache_preflight_map("levels\\ui\\ui"));
 		precache_until_ready("levels\\ui\\ui");
@@ -1041,7 +1042,7 @@ int main(int argc, char **argv)
 				memcmp(&lifecycle_service, &expected_pending,
 					sizeof(lifecycle_service)) == 0);
 			puts("ce-lifecycle same-map preflight changed only deferred request state");
-#ifdef HCU_C1_REAL_PROFILE
+#ifdef HCU_HCP2_REAL_PROFILE
 #endif
 		}
 		{

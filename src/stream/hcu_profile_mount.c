@@ -163,6 +163,31 @@ int hcu_profile_mount_inputs_match(const hcu_profile_mount *mount)
 		prepared_inputs_match(mount);
 }
 
+static void profile_mount_residency_stats(const hcu_profile_mount *mount,
+	hcu_profile_residency_stats *stats)
+{
+	memset(stats, 0, sizeof(*stats));
+	if (!mount || !mount->prepared || !mount->residency_bound) return;
+	stats->bound = 1;
+	stats->capacity_bytes = mount->residency_arena_bytes;
+	stats->current_bytes = mount->residency.resident_bytes;
+	stats->high_water_bytes = mount->residency.resident_high_water;
+	stats->evictions = mount->residency.evictions;
+	stats->refused_evictions = mount->residency.refused_evictions;
+	stats->refused_pins = mount->residency.refused_pins;
+	stats->verify_failures = mount->residency.verify_failures;
+}
+
+int hcu_profile_mount_residency_snapshot(const hcu_profile_mount *mount,
+	hcu_profile_residency_stats *stats)
+{
+	if (!mount || !stats) return HCU_PROFILE_MOUNT_E_ARGUMENT;
+	if (!mount->prepared || !mount->residency_bound)
+		return HCU_PROFILE_MOUNT_E_STATE;
+	profile_mount_residency_stats(mount, stats);
+	return HCU_PROFILE_MOUNT_OK;
+}
+
 static int resource_range_valid(const hmap_identity *identity,
 	const hcu_map_catalog_entry *catalog,
 	const hcu_profile_resource_range *range)
@@ -671,9 +696,11 @@ int hcu_profile_mount_load(hcu_profile_mount *mount)
 	return HCU_PROFILE_MOUNT_OK;
 }
 
-int hcu_profile_mount_unload(hcu_profile_mount *mount)
+int hcu_profile_mount_unload_with_residency_stats(hcu_profile_mount *mount,
+	hcu_profile_residency_stats *released_stats)
 {
 	uint32_t i;
+	hcu_profile_residency_stats stats;
 	if (!mount) return HCU_PROFILE_MOUNT_E_ARGUMENT;
 	if (mount->callbacks_active) return HCU_PROFILE_MOUNT_E_BUSY;
 	/* A pin or lease is a live reader of resident bytes. Refuse before any
@@ -696,6 +723,15 @@ int hcu_profile_mount_unload(hcu_profile_mount *mount)
 			(void)hcu_asset_residency_evict(&mount->residency, e->type,
 				e->chunk_id, e->segment, NULL);
 	}
+	profile_mount_residency_stats(mount, &stats);
+	/* A successful release is the quiescent reset boundary for this table. */
+	if (stats.bound) stats.resets = 1;
 	memset(mount, 0, sizeof(*mount));
+	if (released_stats) *released_stats = stats;
 	return HCU_PROFILE_MOUNT_OK;
+}
+
+int hcu_profile_mount_unload(hcu_profile_mount *mount)
+{
+	return hcu_profile_mount_unload_with_residency_stats(mount, NULL);
 }

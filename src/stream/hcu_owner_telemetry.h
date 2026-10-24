@@ -28,6 +28,7 @@ typedef enum {
     HCU_OWNER_BSP,               /* BACKING: current BSP / structure span */
     HCU_OWNER_RENDER_CHUNKS,     /* EE BACKING: renderer chunk arena */
     HCU_OWNER_RENDER_TEXTURE,    /* NESTED in EE RENDER_CHUNKS; currently unmeasured */
+    HCU_OWNER_DECODED_ASSET_RESIDENCY, /* NESTED in EE RENDER_CHUNKS; verified HCP segments */
     HCU_OWNER_GS_WINDOW,          /* GS BACKING: renderer texture window incl. fixed pages */
     HCU_OWNER_GS_TEXTURE,         /* NESTED in GS_WINDOW: texture cache pages */
     HCU_OWNER_STREAMING,         /* BACKING: staging pool bytes */

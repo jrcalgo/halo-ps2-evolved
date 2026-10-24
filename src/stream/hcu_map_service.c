@@ -399,6 +399,87 @@ static int profile_owner_live(const hcu_map_service *service)
 	return service->profile_mount.active || service->profile_mount.backend_mounted;
 }
 
+static uint32_t residency_sat_add(uint32_t left, uint32_t right)
+{
+	return left > UINT32_MAX - right ? UINT32_MAX : left + right;
+}
+
+static void record_residency_release(hcu_map_service *service,
+	const char *map_name, unsigned int cycle,
+	const hcu_profile_residency_stats *stats)
+{
+	hcu_profile_residency_stats *life;
+	size_t n;
+	if (!service || !map_name || !stats || !stats->bound) return;
+	service->residency_last = *stats;
+	service->residency_last_map[0] = 0;
+	n = strlen(map_name);
+	if (n >= sizeof(service->residency_last_map))
+		n = sizeof(service->residency_last_map) - 1u;
+	memcpy(service->residency_last_map, map_name, n);
+	service->residency_last_map[n] = 0;
+	service->residency_last_cycle = cycle;
+	service->residency_last_valid = 1;
+
+	life = &service->residency_lifetime;
+	life->bound = 1;
+	if (stats->capacity_bytes > life->capacity_bytes)
+		life->capacity_bytes = stats->capacity_bytes;
+	if (stats->high_water_bytes > life->high_water_bytes)
+		life->high_water_bytes = stats->high_water_bytes;
+	life->evictions = residency_sat_add(life->evictions, stats->evictions);
+	life->refused_evictions = residency_sat_add(life->refused_evictions,
+		stats->refused_evictions);
+	life->refused_pins = residency_sat_add(life->refused_pins,
+		stats->refused_pins);
+	life->verify_failures = residency_sat_add(life->verify_failures,
+		stats->verify_failures);
+	life->resets = residency_sat_add(life->resets, stats->resets);
+}
+
+int hcu_map_service_residency_snapshot(const hcu_map_service *service,
+	hcu_map_residency_report *report)
+{
+	if (!service || !report) return 0;
+	memset(report, 0, sizeof(*report));
+	report->lifetime = service->residency_lifetime;
+	if (profile_owner_live(service)) {
+		if (hcu_profile_mount_residency_snapshot(&service->profile_mount,
+			&report->map) != HCU_PROFILE_MOUNT_OK) return 0;
+		memcpy(report->map_name,
+			service->profile_mount.source_identity_snapshot.map_name,
+			sizeof(report->map_name));
+		report->map_name[sizeof(report->map_name) - 1u] = 0;
+		report->cycle = service->boundary_cycle;
+		report->active = 1;
+		report->valid = report->map.bound;
+	} else if (service->residency_last_valid) {
+		report->map = service->residency_last;
+		memcpy(report->map_name, service->residency_last_map,
+			sizeof(report->map_name));
+		report->cycle = service->residency_last_cycle;
+		report->valid = report->map.bound;
+	}
+	/* Lifetime high/capacity/event counters aggregate released maps; current is
+	 * always the exact current owner bytes of the active or last map. */
+	report->lifetime.current_bytes = report->valid ? report->map.current_bytes : 0;
+	if (report->active) {
+		report->lifetime.evictions = residency_sat_add(report->lifetime.evictions,
+			report->map.evictions);
+		report->lifetime.refused_evictions = residency_sat_add(
+			report->lifetime.refused_evictions, report->map.refused_evictions);
+		report->lifetime.refused_pins = residency_sat_add(
+			report->lifetime.refused_pins, report->map.refused_pins);
+		report->lifetime.verify_failures = residency_sat_add(
+			report->lifetime.verify_failures, report->map.verify_failures);
+	}
+	if (report->valid && report->map.capacity_bytes > report->lifetime.capacity_bytes)
+		report->lifetime.capacity_bytes = report->map.capacity_bytes;
+	if (report->valid && report->map.high_water_bytes > report->lifetime.high_water_bytes)
+		report->lifetime.high_water_bytes = report->map.high_water_bytes;
+	return 1;
+}
+
 static void discard_profile_candidate(hcu_map_service *service)
 {
 	hcu_profile_mount_init(&service->profile_candidate);
@@ -628,10 +709,14 @@ static int profile_load(hcu_map_service *service, const char *map_name)
 	hcu_profile_mount_init(&service->profile_candidate);
 	service->profile_candidate_ready = 0;
 	if (hcu_profile_mount_load(&service->profile_mount) != HCU_PROFILE_MOUNT_OK) {
+		hcu_profile_residency_stats released_stats;
 		/* Safe empty state: no backend is published and no stage remains. The
 		 * registered runtime stays available, so a later corrected preflight may
 		 * retry. */
-		(void)hcu_profile_mount_unload(&service->profile_mount);
+		if (hcu_profile_mount_unload_with_residency_stats(
+			&service->profile_mount, &released_stats) == HCU_PROFILE_MOUNT_OK)
+			record_residency_release(service, entry->identity.map_name,
+				service->boundary_cycle, &released_stats);
 		hcu_profile_mount_init(&service->profile_mount);
 		service->preflight_ready = 0;
 		service->reload_pending = 0;
@@ -661,6 +746,8 @@ static void profile_unload(hcu_map_service *service)
 	int preserve_reload = service->reload_pending;
 	int owner_live = profile_owner_live(service);
 	if (owner_live) {
+		hcu_profile_residency_stats released_stats;
+		char released_map_name[16];
 		/* CE's unloader cannot report failure. Keep the mount and its storage
 		 * published rather than unmount under a live bitmap reader; profile_load
 		 * refuses while the owner remains live. */
@@ -668,10 +755,17 @@ static void profile_unload(hcu_map_service *service)
 			printf("HALO_PS2_LOCAL profile-unload blocked reason=bitmap-leases-outstanding\n");
 			return;
 		}
-		if (hcu_profile_mount_unload(&service->profile_mount) != HCU_PROFILE_MOUNT_OK) {
+		memcpy(released_map_name,
+			service->profile_mount.source_identity_snapshot.map_name,
+			sizeof(released_map_name));
+		released_map_name[sizeof(released_map_name) - 1u] = 0;
+		if (hcu_profile_mount_unload_with_residency_stats(
+			&service->profile_mount, &released_stats) != HCU_PROFILE_MOUNT_OK) {
 			printf("HALO_PS2_LOCAL profile-unload blocked reason=callbacks-active\n");
 			return;
 		}
+		record_residency_release(service, released_map_name,
+			service->boundary_cycle, &released_stats);
 	}
 #ifdef HALO_PS2_M2_ANIMATION_TRACE
 	ps2_animation_trace_map_epoch_advance();
@@ -963,10 +1057,24 @@ int hcu_map_service_preflight(const char *map_name)
 	 * metadata, catalog, span, residency, or compatibility preflight. */
 	if (service->runtime_registered &&
 		service->runtime.headless_candidate_admission) {
-		if (!service->runtime.partition_row ||
-			!service->runtime.partition_row[0] ||
-			strcmp(service->runtime_map_name, entry->identity.map_name) != 0 ||
-			service->runtime.maximum_tag_image_bytes !=
+		/* A registered foreign successor (the opt-in C2.8 guest successor
+		 * sequence) is admitted under its own runtime, which carries the same
+		 * admission fields and is checked against the same partition row. A
+		 * service with no successor registered behaves exactly as before. */
+		const hcu_map_profile_runtime *admitted = &service->runtime;
+		if (service->successor_registered &&
+			strcmp(service->successor_map_name, entry->identity.map_name) == 0 &&
+			strcmp(service->runtime_map_name, entry->identity.map_name) != 0 &&
+			service->successor.headless_candidate_admission &&
+			service->successor.partition_row && service->runtime.partition_row &&
+			strcmp(service->successor.partition_row,
+				service->runtime.partition_row) == 0)
+			admitted = &service->successor;
+		if (!admitted->partition_row ||
+			!admitted->partition_row[0] ||
+			(admitted == &service->runtime &&
+				strcmp(service->runtime_map_name, entry->identity.map_name) != 0) ||
+			admitted->maximum_tag_image_bytes !=
 				physical_memory_get_tag_cache_size()) {
 			printf("HALO_PS2_LOCAL map-preflight rejected reason=headless-candidate-capacity map=%s row=%s\n",
 				entry->identity.map_name,
@@ -974,9 +1082,9 @@ int hcu_map_service_preflight(const char *map_name)
 			return 0;
 		}
 		printf("HALO_PS2_LOCAL map-preflight candidate row=%s map=%s profile=%u package-bytes=%u tag-cap=%lu bsp-cap=%lu\n",
-			service->runtime.partition_row, entry->identity.map_name,
-			(unsigned)service->runtime.profile_id,
-			(unsigned)service->runtime.package_size,
+			admitted->partition_row, entry->identity.map_name,
+			(unsigned)admitted->profile_id,
+			(unsigned)admitted->package_size,
 			physical_memory_get_tag_cache_size(),
 			physical_memory_get_structure_bsp_cache_size());
 		return profile_preflight(service, entry);

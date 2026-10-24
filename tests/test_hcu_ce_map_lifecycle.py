@@ -23,8 +23,11 @@ from test_hcu_scenario_bsp_switch import (  # noqa: E402
     write_sound_pas_golden_header,
     write_fog_plane_golden_header,
 )
-from hcu_profile_validate import validate_files  # noqa: E402
+from hcu_profile_validate import parse_package, validate_files  # noqa: E402
 from hcu_schema_manifest import Elf32, SchemaManifest  # noqa: E402
+
+HCP2_UI_PACKAGE_SHA256 = "4ad8b57b7515b074d16d2b89e4f1787a9e37d6f6ab6127ababe9ac1d40a72ed7"
+HCP2_UI_MANIFEST_SHA256 = "a94a3f2f4aeafefce71aa533e5914960190b35c7625c94f288842b5980866633"
 
 
 class HcuCeMapLifecycleTests(unittest.TestCase):
@@ -37,53 +40,78 @@ class HcuCeMapLifecycleTests(unittest.TestCase):
         if not compiler:
             self.skipTest("GCC unavailable for host ILP32 CE fixture")
 
-        c1_dir = ROOT / os.environ.get("HCU_C1_PROFILES", "build/m2-c1-corpus-primary-v3")
-        c1_package = c1_dir / "ui.hcp"
-        c1_manifest_path = c1_dir / "ui.json"
+        profile_dir = ROOT / os.environ.get(
+            "HCU_C2_UI_PROFILE_DIR", "build/m2-ce-map-lifecycle-host-hcp2/producer-ui-verified")
+        profile_source = profile_dir / "ui.hcp"
+        manifest_source = profile_dir / "ui.json"
         schema_elf = ROOT / "build/hcu-ps2-closure/all-no-bootstrap-memory/halo-local.elf"
-        if not c1_package.is_file() or not c1_manifest_path.is_file() or not schema_elf.is_file():
-            self.skipTest("fresh C1 UI HCP, manifest, and schema ELF are required")
-        c1_manifest = json.loads(c1_manifest_path.read_text())
+        if not profile_source.is_file() or not manifest_source.is_file() or not schema_elf.is_file():
+            self.skipTest("pinned C2 UI HCP2 package, manifest, and schema ELF are required")
+        source_manifest_bytes = manifest_source.read_bytes()
+        self.assertEqual(hashlib.sha256(source_manifest_bytes).hexdigest(), HCP2_UI_MANIFEST_SHA256,
+                         "selected HCP2 UI manifest changed; update the fixture pin explicitly")
+        profile_manifest = json.loads(source_manifest_bytes)
+        self.assertEqual(profile_manifest.get("package_sha256"), HCP2_UI_PACKAGE_SHA256)
+        self.assertEqual(profile_manifest.get("profile", {}).get("id"), 1)
+        self.assertEqual(profile_manifest.get("profile", {}).get("scenario", {}).get("path"),
+                         "levels\\ui\\ui")
+        self.assertEqual(profile_manifest.get("schema_elf_sha256"),
+                         hashlib.sha256(schema_elf.read_bytes()).hexdigest(),
+                         "HCP2 manifest must pin the exact schema ELF used by this fixture")
+        artifact_dir = ROOT / "build/m2-ce-map-lifecycle-host-hcp2"
+        profile_artifacts = artifact_dir / "profile-input"
+        profile_artifacts.mkdir(parents=True, exist_ok=True)
+        profile_package = profile_artifacts / "ui.hcp"
+        profile_manifest_path = profile_artifacts / "ui.json"
+        shutil.copyfile(profile_source, profile_package)
+        shutil.copyfile(manifest_source, profile_manifest_path)
+        self.assertEqual(hashlib.sha256(profile_package.read_bytes()).hexdigest(),
+                         HCP2_UI_PACKAGE_SHA256,
+                         "staged HCP2 UI package changed; fixture input must stay manifest-pinned")
+        self.assertEqual(hashlib.sha256(profile_manifest_path.read_bytes()).hexdigest(),
+                         HCP2_UI_MANIFEST_SHA256)
         schema_manifest = SchemaManifest(Elf32(schema_elf)).build()
         with tempfile.TemporaryDirectory() as schema_temp:
             schema_path = Path(schema_temp) / "schema.json"
             schema_path.write_text(json.dumps(schema_manifest, sort_keys=True))
             validated_profile = validate_files(
-                c1_package, c1_manifest_path, schema_path,
-                expected_package_sha256=c1_manifest["package_sha256"],
-                expected_profile_id=c1_manifest["profile"]["id"],
-                expected_scenario=c1_manifest["profile"]["scenario"]["path"],
+                profile_package, profile_manifest_path, schema_path,
+                expected_package_sha256=HCP2_UI_PACKAGE_SHA256,
+                expected_profile_id=profile_manifest["profile"]["id"],
+                expected_scenario=profile_manifest["profile"]["scenario"]["path"],
             )
-        self.assertEqual(validated_profile["package_sha256"], c1_manifest["package_sha256"])
-        package_bytes = c1_package.read_bytes()
-        magic, version, header_size, profile_id, chunk_count, directory, directory_size, total = struct.unpack_from(
+        self.assertEqual(validated_profile["package_sha256"], HCP2_UI_PACKAGE_SHA256)
+        package_bytes = profile_package.read_bytes()
+        magic, version, header_size, profile_id, physical_count, directory, directory_size, total = struct.unpack_from(
             "<4s7I", package_bytes)
         self.assertEqual((magic, version, header_size, profile_id, total),
-                         (b"HCP1", 1, 32, c1_manifest["profile"]["id"], len(package_bytes)))
-        self.assertEqual(directory_size, chunk_count * 48)
-        expected_chunks = []
-        first_payload_offset = None
-        for index in range(chunk_count):
-            kind, chunk_id, offset, size, digest = struct.unpack_from(
-                "<4I32s", package_bytes, directory + index * 48)
-            expected_chunks.append((kind, chunk_id, size, digest))
-            if first_payload_offset is None:
-                first_payload_offset = offset
-        self.assertEqual(chunk_count, validated_profile["media_chunk_count"] + 2)
-        c1_sha = hashlib.sha256(package_bytes).digest()
+                         (b"HCP2", 2, 32, profile_manifest["profile"]["id"], len(package_bytes)))
+        self.assertEqual(directory_size, physical_count * 96)
+        decoded_profile = parse_package(package_bytes,
+            expected_package_sha256=HCP2_UI_PACKAGE_SHA256,
+            expected_profile_id=profile_manifest["profile"]["id"])
+        logical_chunks = decoded_profile["directory"]
+        expected_chunks = [(row["type"], row["id"], row["size"], bytes.fromhex(row["sha256"]))
+                           for row in logical_chunks]
+        first_payload_offset = struct.unpack_from("<I", package_bytes, directory + 8)[0]
+        self.assertEqual(physical_count, len(decoded_profile["segments"]))
+        self.assertEqual(len(logical_chunks), validated_profile["media_chunk_count"] + 2)
+        profile_sha = hashlib.sha256(package_bytes).digest()
         def c_array(data):
             return ",".join(f"0x{byte:02x}" for byte in data)
         expectation_header = [
-            "#ifndef HCU_C1_REAL_PROFILE_EXPECTATIONS_H",
-            "#define HCU_C1_REAL_PROFILE_EXPECTATIONS_H",
-            "typedef struct { unsigned int type, id, size; unsigned char sha256[32]; } hcu_c1_expected_chunk;",
-            f"#define HCU_C1_PROFILE_ID {profile_id}u",
-            f"#define HCU_C1_PACKAGE_BYTES {len(package_bytes)}u",
-            f"#define HCU_C1_CHUNK_COUNT {chunk_count}u",
-            f"#define HCU_C1_PROFILE_PATH {json.dumps(str(c1_package))}",
-            f"#define HCU_C1_FIRST_PAYLOAD_OFFSET {first_payload_offset}u",
-            f"static const unsigned char hcu_c1_package_sha256[32] = {{{c_array(c1_sha)}}};",
-            "static const hcu_c1_expected_chunk hcu_c1_expected_chunks[HCU_C1_CHUNK_COUNT] = {",
+            "#ifndef HCU_HCP2_REAL_PROFILE_EXPECTATIONS_H",
+            "#define HCU_HCP2_REAL_PROFILE_EXPECTATIONS_H",
+            "typedef struct { unsigned int type, id, size; unsigned char sha256[32]; } hcu_hcp2_expected_chunk;",
+            f"#define HCU_HCP2_PROFILE_VERSION {version}u",
+            f"#define HCU_HCP2_PROFILE_ID {profile_id}u",
+            f"#define HCU_HCP2_PACKAGE_BYTES {len(package_bytes)}u",
+            f"#define HCU_HCP2_PHYSICAL_RECORD_COUNT {physical_count}u",
+            f"#define HCU_HCP2_LOGICAL_CHUNK_COUNT {len(logical_chunks)}u",
+            f"#define HCU_HCP2_PROFILE_PATH {json.dumps(str(profile_package))}",
+            f"#define HCU_HCP2_FIRST_PAYLOAD_OFFSET {first_payload_offset}u",
+            f"static const unsigned char hcu_hcp2_package_sha256[32] = {{{c_array(profile_sha)}}};",
+            "static const hcu_hcp2_expected_chunk hcu_hcp2_expected_chunks[HCU_HCP2_LOGICAL_CHUNK_COUNT] = {",
         ]
         expectation_header.extend(
             f"{{{kind}u,{chunk_id}u,{size}u,{{{c_array(digest)}}}}},"
@@ -109,7 +137,7 @@ class HcuCeMapLifecycleTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             temp = Path(temporary)
             semantics = temp / "halo_ps2_msvc_semantics.h"
-            (temp / "hcu_c1_real_profile_expectations.h").write_text("\n".join(expectation_header))
+            (temp / "hcu_hcp2_real_profile_expectations.h").write_text("\n".join(expectation_header))
             link_map = temp / "ce-lifecycle.map"
             executable = temp / "ce-lifecycle"
             write_collision_golden_header(
@@ -147,7 +175,7 @@ class HcuCeMapLifecycleTests(unittest.TestCase):
                 "-fdata-sections", "-fno-strict-aliasing",
                 "-fno-delete-null-pointer-checks", "-DHCU_BSP_RETAIL_INTEGRATION=1",
                 "-DHALO_PS2=1", "-DHALO_PS2_M2_ANIMATION_TRACE=1",
-                "-DHCU_C1_REAL_PROFILE=1",
+                "-DHCU_HCP2_REAL_PROFILE=1",
                 "-include", str(ROOT / "tests/hcu_scenario_host32_prefix.h"),
                 "-include", str(semantics), "-w",
             ]
@@ -307,14 +335,12 @@ class HcuCeMapLifecycleTests(unittest.TestCase):
             (retained / "manifest.json").write_text(
                 json.dumps(manifest, indent=2, sort_keys=True) + "\n")
 
-            artifact_dir = ROOT / "build/m2-c1-real-preflight"
-            artifact_dir.mkdir(parents=True, exist_ok=True)
             stable_assets = artifact_dir / "assets"
             stable_maps = stable_assets / "maps"
             stable_maps.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(package, stable_maps / "ui.hp2")
             shutil.copyfile(source_map, stable_maps / "ui.map")
-            stable_assets_link = Path("/tmp") / f"hcu-c1-{hashlib.sha256(str(artifact_dir).encode()).hexdigest()[:8]}"
+            stable_assets_link = Path("/tmp") / f"hcu-c2-hcp2-{hashlib.sha256(str(artifact_dir).encode()).hexdigest()[:8]}"
             if stable_assets_link.is_symlink():
                 stable_assets_link.unlink()
             stable_assets_link.symlink_to(stable_assets, target_is_directory=True)
@@ -324,7 +350,7 @@ class HcuCeMapLifecycleTests(unittest.TestCase):
             real_link_map = artifact_dir / "ce-lifecycle.map"
             real_link_map.write_bytes(link_map.read_bytes())
             real_profile_run = subprocess.run(
-                [str(real_executable), str(stable_assets_link) + "/", "actual-profile", str(c1_package)],
+                [str(real_executable), str(stable_assets_link) + "/", "actual-profile", str(profile_package)],
                 capture_output=True, text=True)
             self.assertEqual(real_profile_run.returncode, 0,
                              real_profile_run.stdout + real_profile_run.stderr)
@@ -338,12 +364,15 @@ class HcuCeMapLifecycleTests(unittest.TestCase):
             (artifact_dir / "runtime.log").write_text(real_log)
             result = {
                 "result": "passed",
-                "scope": "actual C1 UI HCP exact identity/chunk inventory through CE pre-unload map service",
-                "command": [str(real_executable), str(stable_assets_link) + "/", "actual-profile", str(c1_package)],
+                "scope": "exact pinned HCP2 UI identity/logical chunk inventory through CE pre-unload map service",
+                "command": [str(real_executable), str(stable_assets_link) + "/", "actual-profile", str(profile_package)],
                 "compile_command": command,
                 "host_validation": validated_profile,
                 "profile_package_sha256": hashlib.sha256(package_bytes).hexdigest(),
-                "profile_manifest_sha256": hashlib.sha256(c1_manifest_path.read_bytes()).hexdigest(),
+                "profile_manifest_sha256": hashlib.sha256(profile_manifest_path.read_bytes()).hexdigest(),
+                "profile_format": "HCP2 v2",
+                "profile_source_package": str(profile_source),
+                "profile_source_manifest": str(manifest_source),
                 "schema_elf_sha256": hashlib.sha256(schema_elf.read_bytes()).hexdigest(),
                 "lifecycle_fixture_source_sha256": hashlib.sha256(
                     (ROOT / "tests/hcu_ce_map_lifecycle_main.c").read_bytes()).hexdigest(),

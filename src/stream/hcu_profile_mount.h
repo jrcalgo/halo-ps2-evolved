@@ -41,6 +41,21 @@ typedef struct {
 typedef int (*hcu_profile_source_read_fn)(void *context, int32_t output_datum,
 	uint32_t file_offset, uint32_t size, void *buffer, int blocking);
 
+/* Actual decoded HCP segment residency. `capacity_bytes` is the caller-bound
+ * arena span; the remaining byte counters come only from verified segment
+ * pins and successful evictions. */
+typedef struct {
+	size_t capacity_bytes;
+	uint32_t current_bytes;
+	uint32_t high_water_bytes;
+	uint32_t evictions;
+	uint32_t refused_evictions;
+	uint32_t refused_pins;
+	uint32_t verify_failures;
+	uint32_t resets;
+	uint8_t bound;
+} hcu_profile_residency_stats;
+
 /* One residency slot is one verified HCP2 segment, so the arena is sized in
  * whole 64 KiB segments. */
 #define HCU_PROFILE_MOUNT_RESIDENCY_SEGMENT_BYTES HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES
@@ -94,6 +109,9 @@ int hcu_profile_mount_bind_residency(hcu_profile_mount *mount,
 /* Recheck the immutable view, catalog and decoded binding pins without
  * overwriting storage retained by a live CE map. No callback may be active. */
 int hcu_profile_mount_inputs_match(const hcu_profile_mount *mount);
+/* Read actual live table counters while the mount still owns its arena. */
+int hcu_profile_mount_residency_snapshot(const hcu_profile_mount *mount,
+	hcu_profile_residency_stats *stats);
 /* Read-only preflight. HCP itself stays in caller-owned storage/file-backed
  * reads. The profile must already have passed package SHA and HCP preflight.
  * Scratch and relocations are caller-owned, disjoint spans that remain valid
@@ -113,6 +131,10 @@ int hcu_profile_mount_load(hcu_profile_mount *mount);
 /* Backend unpublishes CTAG/CBSP visitors and CE cache state before returning.
  * Caller may release profile/source/tables/scratch only after success. */
 int hcu_profile_mount_unload(hcu_profile_mount *mount);
+/* Like unload, but captures counters after release evictions and before the
+ * mount is cleared. Output is unchanged when unload fails. */
+int hcu_profile_mount_unload_with_residency_stats(hcu_profile_mount *mount,
+	hcu_profile_residency_stats *released_stats);
 
 #ifdef __cplusplus
 }

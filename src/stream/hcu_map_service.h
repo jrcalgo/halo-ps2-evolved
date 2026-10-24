@@ -72,6 +72,19 @@ typedef struct {
 } hcu_map_profile_runtime;
 
 typedef struct {
+	int valid;
+	int active;
+	char map_name[16];
+	unsigned int cycle;
+	/* Current map/run scope. On release, current_bytes is the actual residual
+	 * table value after teardown (normally zero); high/counters survive it. */
+	hcu_profile_residency_stats map;
+	/* Service lifetime: max capacity/high-water, sums for event counters, and
+	 * successful quiescent table resets. Nested bytes are never backing totals. */
+	hcu_profile_residency_stats lifetime;
+} hcu_map_residency_report;
+
+typedef struct {
 	arena_t *map_arena;
 	arena_t *section_scratch;
 	ctag_mount mount;
@@ -122,6 +135,11 @@ typedef struct {
 	hcu_map_service_boundary_fn boundary_hook;
 	void *boundary_context;
 	unsigned int boundary_cycle;
+	char residency_last_map[16];
+	unsigned int residency_last_cycle;
+	int residency_last_valid;
+	hcu_profile_residency_stats residency_last;
+	hcu_profile_residency_stats residency_lifetime;
 } hcu_map_service;
 
 	/* Register the parent-owned loader/unloader after FileXio is initialized.
@@ -139,6 +157,10 @@ int hcu_map_service_init_with_scratch(hcu_map_service *service,
 int hcu_map_service_init_with_arenas(hcu_map_service *service,
 	mem_layout_v2_t *layout, const char *asset_root,
 	arena_t *map_owner, arena_t *section_scratch);
+/* Snapshot the actual segment table for the active map, or the most recently
+ * released map, plus service-lifetime high-water and event totals. */
+int hcu_map_service_residency_snapshot(const hcu_map_service *service,
+	hcu_map_residency_report *report);
 /* Non-mutating map preflight; caller invokes before unloading the old scenario. */
 int hcu_map_service_preflight(const char *map_name);
 /* Pin a profile to one catalog map identity and an externally pinned exact HCP

@@ -77,9 +77,12 @@ int main(void) {
 
     /* EE render arena and GS window/cache are separate memory domains. */
     hcu_owner_sample_t chunks = {500, 100, 450, 1, 0};
+    hcu_owner_sample_t decoded_residency = {256, 64, 192, 1, 1};
     hcu_owner_sample_t gs_window = {1000, 800, 900, 1, 2};
     hcu_owner_sample_t gs_texture = {500, 300, 350, 0, 1};
     assert(hcu_owner_telemetry_bind_sampler(&t, HCU_OWNER_RENDER_CHUNKS, fake_render_sampler, &chunks));
+    assert(hcu_owner_telemetry_bind_sampler(&t, HCU_OWNER_DECODED_ASSET_RESIDENCY,
+        fake_render_sampler, &decoded_residency));
     assert(hcu_owner_telemetry_bind_sampler(&t, HCU_OWNER_GS_WINDOW, fake_render_sampler, &gs_window));
     assert(hcu_owner_telemetry_bind_sampler(&t, HCU_OWNER_GS_TEXTURE, fake_render_sampler, &gs_texture));
 
@@ -103,6 +106,10 @@ int main(void) {
     assert(r.rows[HCU_OWNER_WIDGET_POOL].domain == HCU_OWNER_DOMAIN_EE);
     assert(!r.rows[HCU_OWNER_WIDGET_POOL].bound);
     assert(!r.rows[HCU_OWNER_RENDER_TEXTURE].bound);
+    assert(r.rows[HCU_OWNER_DECODED_ASSET_RESIDENCY].bound);
+    assert(r.rows[HCU_OWNER_DECODED_ASSET_RESIDENCY].kind == HCU_OWNER_KIND_NESTED);
+    assert(r.rows[HCU_OWNER_DECODED_ASSET_RESIDENCY].parent == HCU_OWNER_RENDER_CHUNKS);
+    assert(r.rows[HCU_OWNER_DECODED_ASSET_RESIDENCY].domain == HCU_OWNER_DOMAIN_EE);
     assert(r.rows[HCU_OWNER_GS_WINDOW].domain == HCU_OWNER_DOMAIN_GS);
     assert(r.rows[HCU_OWNER_GS_TEXTURE].kind == HCU_OWNER_KIND_NESTED);
     assert(r.rows[HCU_OWNER_GS_TEXTURE].parent == HCU_OWNER_GS_WINDOW);
@@ -130,7 +137,7 @@ int main(void) {
 
     /* Expected literal values: game state 1000 + dyn 300 + tags 5000 + bsp 2000
      * + chunks 500 + streaming 1024 + scratch 64 + dma 1179648 + audio 0. Nested
-     * object/actor/widget/GS texture rows are not added, and GS window is separate. */
+     * object/actor/widget/render/decoded-residency/GS texture rows are not added. */
     assert(r.backing_capacity == 1000u + 300u + 5000u + 2000u + 500u + 1024u + 64u + 1179648u);
     /* Used sum: 650 + 120 + 4000 + 1800 + 100 + 512 + 64 + 1179648 (game-state
      * used is the last note, 650). */
@@ -141,6 +148,10 @@ int main(void) {
     assert(r.backing_resets == 1u);
 
     /* Nested capacity larger than parent makes the report invalid. */
+    decoded_residency.capacity = 501;
+    assert(hcu_owner_telemetry_snapshot(&t, &r));
+    assert(r.nested_within_parent == 0);
+    decoded_residency.capacity = 256;
     gs_texture.capacity = 1200;
     assert(hcu_owner_telemetry_snapshot(&t, &r));
     assert(r.nested_within_parent == 0);

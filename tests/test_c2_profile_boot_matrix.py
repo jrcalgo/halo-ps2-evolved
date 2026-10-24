@@ -180,6 +180,9 @@ def cycle_lines(cycles, map_name="sidewinder", ticks=0, used=3107696, high=(6913
         ]
         if ticks:
             lines.append(P + f"production-ce-ticks result=1 map={map_name} cycle={c} ticks={ticks} local-players=1")
+            lines.append(P + f"production-ce-tick-allocations map={map_name} cycle={c} ticks={ticks} coverage=wrapped-compat-malloc "
+                "malloc=3/3/0 calloc=0/0/0 realloc=0/0/0 free=3/3/0 requested=48 "
+                "current-start=0 current-end=0 peak=64 sdk-malloc=0 sdk-realloc=0 sdk-free=0 refused-unbound=0")
         lines += [
             P + f"m2-cycle-boundary phase=map-released cycle={c}",
             P + f"owner-telemetry phase=map-released partition=x backing_cap=1 backing_used=3382400 backing_high=8335214 backing_failures=0 backing_resets={r}",
@@ -228,9 +231,397 @@ def test_ticks_required_when_requested():
     assert matrix.parse_cycles(cycle_lines(2, ticks=300), "sidewinder", 2, 300)["failing_checks"] == []
     missing = matrix.parse_cycles(cycle_lines(2), "sidewinder", 2, 300)
     assert "cycle_1_ticks" in missing["failing_checks"]
+    assert "cycle_1_tick_allocations" in missing["failing_checks"]
+
+
+def test_postload_allocator_phase_is_reported_and_rejects_failures_or_fallbacks():
+    lines = cycle_lines(1, ticks=300)
+    parsed = matrix.parse_cycles(lines, "sidewinder", 1, 300)
+    trace = parsed["per_cycle"][0]["tick_allocations"]
+    assert trace["malloc"] == {"attempts": 3, "successes": 3, "failures": 0}
+    assert trace["peak"] == 64
+    lines = [line.replace("malloc=3/3/0", "malloc=3/2/1") if "production-ce-tick-allocations" in line else line
+             for line in lines]
+    parsed = matrix.parse_cycles(lines, "sidewinder", 1, 300)
+    assert "cycle_1_tick_allocations" in parsed["failing_checks"]
+
+
+def test_postload_allocator_growth_after_warmup_is_reported():
+    lines = cycle_lines(3, ticks=300)
+    lines = [line.replace("peak=64", "peak=80") if "production-ce-tick-allocations" in line
+             and "cycle=3" in line else line for line in lines]
+    parsed = matrix.parse_cycles(lines, "sidewinder", 3, 300)
+    assert "postload_allocator_reused_cycles_2_to_n" in parsed["failing_checks"]
+    assert parsed["postload_allocator_cycles_2_to_n_drift"]
 
 
 def test_failed_cycle_marker_fails():
     lines = [l.replace("result=1", "result=0", 1)
              if "production-ce-map-released" in l and " cycle=2 " in l else l for l in cycle_lines(3)]
     assert "cycle_2_released" in matrix.parse_cycles(lines, "sidewinder", 3)["failing_checks"]
+
+
+# ---- --successor: guest foreign replacement, failed preflight, fail-then-retry ----
+
+A_ROW, A_MAP = "boardingaction_mounted_gunner_4p4bot", "boardingaction"
+B_ROW, B_MAP = "damnation_mounted_gunner_4p4bot", "damnation"
+A_TAG, A_BSP, B_TAG, B_BSP = 4673095, 1343488, 4662634, 1320960
+
+
+def _step(step, result, old_m, new_m, tag, bsp, scenario=1, bsp_ok=1, fault=0, tag_failures=0,
+          bsp_failures=0, mount_rejections=0):
+    return (P + f"production-ce-successor-step step={step} result={result} old={A_MAP} old-mounted={old_m} "
+                f"new={B_MAP} new-mounted={new_m} tag-bytes={tag} bsp-bytes={bsp} tag-failures={tag_failures} bsp-failures={bsp_failures} "
+                f"mount-rejections={mount_rejections} tag-unmounts=0 bsp-unmounts=0 tag-resets=0 bsp-resets=0 scenario={scenario} "
+                f"bsp={bsp_ok} fault-count={fault}")
+
+
+def _boundary(phase, cycle, resets, pubs, used_tags=0, *, backing_failures=0,
+              tag_failures=0, tag_resets=None, bsp_resets=None, tag_publications=None,
+              tag_unmounts=None, bsp_publications=None, bsp_unmounts=None,
+              game_state_resets=None):
+    tag_resets = resets if tag_resets is None else tag_resets
+    bsp_resets = resets if bsp_resets is None else bsp_resets
+    tag_publications = pubs if tag_publications is None else tag_publications
+    bsp_publications = pubs if bsp_publications is None else bsp_publications
+    tag_unmounts = resets if tag_unmounts is None else tag_unmounts
+    bsp_unmounts = resets if bsp_unmounts is None else bsp_unmounts
+    game_state_resets = resets if game_state_resets is None else game_state_resets
+    return [
+        P + f"m2-cycle-boundary phase={phase} cycle={cycle}",
+        P + f"owner-telemetry phase={phase} partition={A_ROW} backing_cap=1 backing_used=3382400 backing_high=8335214 backing_failures={backing_failures} backing_resets={resets} nested_within_parent=1 renderer_drained=1",
+        P + f"owner-telemetry phase={phase} name=game_state kind=backing parent=- bound=1 cap=1 used=3107696 high=3107696 failures=0 resets={game_state_resets}",
+        P + f"owner-telemetry phase={phase} name=tags kind=backing parent=- bound=1 cap=1 used={used_tags} high={A_TAG} failures={tag_failures} resets={tag_resets}",
+        P + f"owner-telemetry phase={phase} name=bsp kind=backing parent=- bound=1 cap=1 used=0 high={A_BSP} failures=0 resets={bsp_resets}",
+        P + f"cache-owner phase={phase} name=tags current=0 peak={A_TAG} publications={tag_publications} failures={tag_failures} unmounts={tag_unmounts} resets={tag_resets}",
+        P + f"cache-owner phase={phase} name=bsp current=0 peak={A_BSP} publications={bsp_publications} failures=0 unmounts={bsp_unmounts} resets={bsp_resets} lease_failures=0",
+        P + f"arena phase={phase} name=streaming_map_owner cap=1048576 used=300000 high=300000 alloc_failures=0 resets=0 releases=0 invalid_releases=0",
+    ]
+
+
+def _common_head(mode, ticks=30):
+    lines = good_log(A_ROW, A_MAP)[:11]
+    lines[2] = P + f"partition-selected name={A_ROW} version=1 tag=4673104 bsp=1354160 texture=529472 residency=1048576 qualified=1"
+    lines[10] = (P + f"production-ce-map-loaded result=1 map={A_MAP} scenario=1 tag-table=1 tag-count=2901 "
+                     f"tag-bytes={A_TAG} bsp-bytes={A_BSP} cycle=1 cycles=1")
+    lines += _boundary("map-loaded", 1, 0, 1, used_tags=A_TAG)
+    lines.insert(11, P + f"successor-runtime row={A_ROW} successor-row={B_ROW} map={B_MAP} profile=22 package-bytes=20000000 "
+                       f"metadata-bytes=41148 metadata-storage=41116 relocation-bytes=81240 stream-scratch=65536 "
+                       f"residency-bytes=524288 residency-entries=8")
+    lines.append(P + f"production-ce-successor-begin mode={mode} old={A_MAP} new={B_MAP} old-tag-bytes={A_TAG} "
+                     f"old-bsp-bytes={A_BSP} ticks={ticks}")
+    return lines
+
+
+def _released(map_name):
+    return P + f"production-ce-map-released result=1 map={map_name} mounted=0 tag-bytes=0 bsp-bytes=0 cycle=1 cycles=1"
+
+
+def _ok_attempt(fault=0, stage_passes=2):
+    stage = P + f"profile-preflight result=1 map={B_MAP} successor=1"
+    return ([_step("preflight", 1, 1, 0, A_TAG, A_BSP, fault=fault), stage,
+             _step("dispose", 1, 1, 0, A_TAG, A_BSP, fault=fault)]
+            + _boundary("map-released", 1, 1, 1)
+            + [_step("unload", 1, 0, 0, 0, 0, fault=fault), stage,
+               P + f"map-mount result=1 active=1 map={B_MAP} source=profile-runtime"]
+            + _boundary("map-loaded", 2, 1, 2, used_tags=B_TAG)
+            + [_step("load", 1, 0, 1, 0, 0, fault=fault),
+               _step("new-map", 1, 0, 1, B_TAG, B_BSP, fault=fault)])
+
+
+def _loaded_and_usable(ticks=30):
+    return [P + f"production-ce-successor-loaded result=1 old={A_MAP} old-mounted=0 new={B_MAP} scenario=1 tag-table=1 "
+                f"tag-count=2800 tag-bytes={B_TAG} bsp-bytes={B_BSP}",
+            P + f"production-ce-successor-usable result=1 old={A_MAP} ticks={ticks} local-players=1 new={B_MAP}"]
+
+
+def replace_log():
+    lines = _common_head(1) + _ok_attempt() + _loaded_and_usable()
+    return lines + _boundary("map-released", 2, 2, 2) + [_released(B_MAP)]
+
+
+def failed_preflight_log():
+    lines = _common_head(2)
+    lines += [P + "successor-fault injected kind=package-read offset=0 size=64",
+              P + f"profile-preflight rejected reason=successor-package-gate map={B_MAP}",
+              _step("preflight", 0, 1, 0, A_TAG, A_BSP, fault=1),
+              _step("after-failed-preflight", 1, 1, 0, A_TAG, A_BSP, fault=1),
+              P + f"production-ce-successor-usable result=1 old={A_MAP} ticks=30 local-players=1"]
+    return lines + _boundary("map-released", 1, 1, 1) + [_released(A_MAP)]
+
+
+def retry_log():
+    successor_stage = P + f"profile-preflight result=1 map={B_MAP} successor=1"
+    lines = _common_head(3)
+    lines += [_step("preflight", 1, 1, 0, A_TAG, A_BSP), successor_stage,
+              _step("dispose", 1, 1, 0, A_TAG, A_BSP)]
+    lines += _boundary("map-released", 1, 1, 1)
+    lines += [_step("unload", 1, 0, 0, 0, 0), successor_stage,
+              P + f"map-mount result=1 active=1 map={B_MAP} source=profile-runtime"]
+    lines += _boundary("map-loaded", 2, 2, 1)
+    lines += [P + "successor-fault injected kind=hcp-ctag-chunk-read callbacks=1 prior-bytes=67264 offset=44000 size=96",
+              P + "cache-owner phase=map-released name=tags current=0 peak=4673095 publications=1 failures=1 unmounts=2 resets=2",
+              P + "successor-fault-cleanup game-load=0 delayed-error-consumed=1 mounted=0 scenario=0"]
+    lines += _boundary("map-released", 2, 2, 1, backing_failures=1, tag_failures=1,
+                       tag_resets=2, bsp_resets=1, tag_publications=1, tag_unmounts=2,
+                       bsp_publications=1, bsp_unmounts=1)
+    lines += [_step("load", 0, 0, 0, 0, 0, scenario=0, bsp_ok=0, fault=1, tag_failures=1),
+              _step("after-failed-load", 1, 0, 0, 0, 0, scenario=0, bsp_ok=0, fault=1, tag_failures=1),
+              P + f"production-ce-successor-retry old={A_MAP} new={B_MAP}",
+              _step("preflight", 1, 0, 0, 0, 0, fault=1, tag_failures=1),
+              P + f"profile-preflight result=1 map={B_MAP}",
+              _step("dispose", 1, 0, 0, 0, 0, fault=1, tag_failures=1),
+              _step("unload", 1, 0, 0, 0, 0, fault=1, tag_failures=1),
+              P + f"map-mount result=1 active=1 map={B_MAP} source=profile-runtime"]
+    lines += _boundary("map-loaded", 3, 5, 1, tag_failures=1, tag_resets=2, bsp_resets=1)
+    lines += [_step("load", 1, 0, 1, 0, 0, fault=1, tag_failures=1),
+              _step("new-map", 1, 0, 1, B_TAG, B_BSP, fault=1, tag_failures=1)]
+    lines += _loaded_and_usable()
+    lines += _boundary("map-released", 3, 8, 2, backing_failures=1, tag_failures=1,
+                       tag_resets=3, bsp_resets=2, tag_publications=2, tag_unmounts=3,
+                       bsp_publications=2, bsp_unmounts=2, game_state_resets=2)
+    return lines + [_released(B_MAP)]
+
+
+def parse_succ(lines, mode, ticks=30):
+    return matrix.parse_successor_log(lines, A_ROW, A_MAP, B_ROW, B_MAP, mode, ticks)
+
+
+def test_successor_replacement_log_passes_with_full_evidence():
+    parsed = parse_succ(replace_log(), 1)
+    assert parsed["failing_checks"] == [], parsed["reasons"]
+    assert parsed["values"]["steps"] == ["preflight", "dispose", "unload", "load", "new-map"]
+    assert parsed["values"]["successor_tag_margin"] == 4673104 - B_TAG
+    assert parsed["values"]["successor_bsp_margin"] == 1354160 - B_BSP
+    assert parsed["values"]["boundary_sequence"] == [("map-loaded", 1), ("map-released", 1), ("map-loaded", 2), ("map-released", 2)]
+    assert parsed["values"]["renderer_drained_at_boundaries"] == ["1"] * 4
+
+
+def test_successor_replacement_requires_old_tags_live_at_dispose_and_released_at_unload():
+    lines = replace_log()
+    bad = [l.replace("step=dispose result=1 old=boardingaction old-mounted=1", "step=dispose result=1 old=boardingaction old-mounted=0")
+           for l in lines]
+    assert "step_1_dispose" in parse_succ(bad, 1)["failing_checks"]
+    bad = [l.replace("step=unload result=1 old=boardingaction old-mounted=0 new=damnation new-mounted=0 tag-bytes=0",
+                     f"step=unload result=1 old=boardingaction old-mounted=0 new=damnation new-mounted=0 tag-bytes={A_TAG}")
+           for l in lines]
+    assert "step_2_unload" in parse_succ(bad, 1)["failing_checks"]
+
+
+def test_successor_replacement_fails_when_old_map_survives_or_successor_exceeds_caps():
+    lines = [l.replace("old-mounted=0 new=damnation scenario=1", "old-mounted=1 new=damnation scenario=1")
+             for l in replace_log()]
+    assert "successor_loaded" in parse_succ(lines, 1)["failing_checks"]
+    big = [l.replace(f"tag-bytes={B_TAG} bsp-bytes={B_BSP}", f"tag-bytes=4673105 bsp-bytes={B_BSP}")
+           if "successor-loaded" in l else l for l in replace_log()]
+    assert "successor_fits_row_caps" in parse_succ(big, 1)["failing_checks"]
+
+
+def test_successor_replacement_rejects_a_fault_or_missing_boundary():
+    lines = replace_log() + [P + "successor-fault injected kind=package-read offset=0 size=64"]
+    assert "fault_gate" in parse_succ(lines, 1)["failing_checks"]
+    lines = [l for l in replace_log() if "phase=map-loaded cycle=2" not in l]
+    assert "boundary_sequence" in parse_succ(lines, 1)["failing_checks"]
+
+
+def test_successor_replacement_requires_unpublish_before_successor_mount():
+    lines = replace_log()
+    mount = next(i for i, l in enumerate(lines) if "map-mount result=1 active=1 map=damnation" in l)
+    unload = next(i for i, l in enumerate(lines) if "step=unload" in l)
+    lines[mount], lines[unload] = lines[unload], lines[mount]
+    assert "unpublish_before_successor_load" in parse_succ(lines, 1)["failing_checks"]
+
+
+def test_failed_preflight_keeps_old_map_and_ends_on_old_release():
+    parsed = parse_succ(failed_preflight_log(), 2)
+    assert parsed["failing_checks"] == [], parsed["reasons"]
+    assert parsed["values"]["successor_package_gate_rejections"] == 1
+    assert parsed["values"]["boundary_sequence"] == [("map-loaded", 1), ("map-released", 1)]
+
+
+def test_failed_preflight_fails_if_old_owner_changed_or_released_early():
+    lines = [l.replace(f"step=after-failed-preflight result=1 old=boardingaction old-mounted=1 new=damnation new-mounted=0 tag-bytes={A_TAG}",
+                       "step=after-failed-preflight result=1 old=boardingaction old-mounted=1 new=damnation new-mounted=0 tag-bytes=0")
+             for l in failed_preflight_log()]
+    assert "step_1_after-failed-preflight" in parse_succ(lines, 2)["failing_checks"]
+    early = failed_preflight_log()
+    early[-1:-1] = _boundary("map-released", 1, 1, 1)
+    assert "boundary_sequence" in parse_succ(early, 2)["failing_checks"]
+    # a preflight that unexpectedly passes is not a failed-preflight run
+    passed = [l.replace("step=preflight result=0", "step=preflight result=1") for l in failed_preflight_log()]
+    assert parse_succ(passed, 2)["failing_checks"]
+
+
+def test_failed_preflight_requires_usable_old_map_and_the_injected_fault():
+    lines = [l for l in failed_preflight_log() if "successor-usable" not in l]
+    assert "usable_after_sequence" in parse_succ(lines, 2)["failing_checks"]
+    lines = [l for l in failed_preflight_log() if "successor-fault" not in l]
+    assert "fault_gate" in parse_succ(lines, 2)["failing_checks"]
+    lines = failed_preflight_log()
+    lines = [l.replace("scenario=1 bsp=1", "scenario=0 bsp=1") if "after-failed-preflight" in l else l for l in lines]
+    assert "old_map_scenario_and_bsp_kept" in parse_succ(lines, 2)["failing_checks"]
+
+
+def test_successor_mode_must_match_the_guest_begin_line():
+    assert "successor_begin" in parse_succ(replace_log(), 2)["failing_checks"]
+    assert "successor_begin" in parse_succ(replace_log(), 1, ticks=60)["failing_checks"]
+
+
+def test_successor_counters_are_zero_on_every_line():
+    lines = [l.replace("tag-failures=0", "tag-failures=1") if "step=load" in l else l for l in replace_log()]
+    assert "step_owner_counters_zero" in parse_succ(lines, 1)["failing_checks"]
+    lines = [l.replace("alloc_failures=0", "alloc_failures=2") if "phase=map-loaded cycle" not in l and l.startswith(P + "arena phase=map-loaded")
+             else l for l in replace_log()]
+    assert "failures_zero" in parse_succ(lines, 1)["failing_checks"]
+
+
+def test_successor_header_renames_the_row_image_without_touching_content():
+    root = matrix.package_root_for(B_ROW)
+    if root is None:
+        return
+    text = matrix.successor_header_text(B_ROW, root)
+    assert "HCU_C2_IMAGE_" not in text and "hcu_c2_image_" not in text
+    assert f'#define HCU_C2_SUCC_MAP "{B_MAP}"' in text
+    assert f'#define HCU_C2_SUCC_ROW "{B_ROW}"' in text
+    assert "HCU_C2_SUCC_METADATA[HCU_C2_SUCC_METADATA_BYTES]" in text
+
+
+def test_successor_includes_carry_mode_ticks_and_image(tmp_path):
+    root = matrix.package_root_for(B_ROW)
+    if root is None:
+        return
+    include = matrix.write_successor_includes(tmp_path, B_ROW, root, 3, 45)
+    mode = (include / "hcu_c2_successor.h").read_text()
+    assert "HALO_PS2_C2_SUCCESSOR_MODE 3" in mode and "HALO_PS2_C2_SUCCESSOR_TICKS 45" in mode
+    assert (include / "hcu_c2_succ_image.h").read_text().startswith("/* Generated by tools/c2_profile_image_header.py")
+
+
+def test_successor_stage_paths_add_only_files_outside_the_selected_tree():
+    root = matrix.package_root_for(B_ROW)
+    if root is None:
+        return
+    plan = {"stage_paths": [], "guest_package_root": "build/m2-c2-r3-selected-packages"}
+    assert matrix.successor_stage_paths(plan, {"stage_paths": []}, B_ROW, root) == []
+    ui_root = matrix.package_root_for("ui")
+    if ui_root is not None:
+        paths = matrix.successor_stage_paths(plan, {"stage_paths": []}, "ui", ui_root)
+        assert paths == ["build/m2-c2-residual-packages/ui-tree/pkg/ui/ui.hcp"]
+
+
+def test_successor_cli_validation_and_output_root(monkeypatch, capsys):
+    def refuse(*args, **kwargs):
+        raise AssertionError("must not run")
+    monkeypatch.setattr(matrix, "run_successor", refuse)
+    monkeypatch.setattr(matrix, "run_row", refuse)
+    for argv in (["--successor", B_ROW], ["--rows", f"{A_ROW},{B_ROW}", "--successor", B_ROW],
+                 ["--rows", A_ROW, "--successor", B_ROW, "--cycles", "2"],
+                 ["--rows", A_ROW, "--successor", "not_a_row"], ["--successor-fault", "load"],
+                 ["--rows", A_ROW, "--successor", B_ROW, "--successor-ticks", "0"]):
+        try:
+            matrix.main(argv)
+        except SystemExit as stop:
+            assert stop.code == 2, argv
+        else:
+            raise AssertionError(argv)
+    assert matrix.FOREIGN_ROOT == ROOT / "build/m2-c2-foreign"
+    assert matrix.FOREIGN_ROOT != matrix.MATRIX
+
+
+def test_successor_run_never_rewrites_the_matrix_summary(monkeypatch, tmp_path):
+    summary = tmp_path / "summary.json"
+    summary.write_text("untouched")
+    monkeypatch.setattr(matrix, "MATRIX", tmp_path)
+    called = []
+    monkeypatch.setattr(matrix, "run_successor",
+                        lambda *a, **k: called.append(a) or {"pass": True, "reasons": [], "case": "replace"})
+    assert matrix.main(["--rows", A_ROW, "--successor", B_ROW]) == 0
+    assert called == [(A_ROW, B_ROW, "none", matrix.SUCCESSOR_TICKS)]
+    assert summary.read_text() == "untouched"
+
+
+def test_successor_rejects_same_row_and_same_map(monkeypatch, tmp_path):
+    monkeypatch.setattr(matrix, "FOREIGN_ROOT", tmp_path)
+    result = matrix.run_successor(A_ROW, A_ROW)
+    assert not result["pass"] and "must differ" in result["reasons"][0]
+    result = matrix.run_successor(A_ROW, "boardingaction_marine_shotgun_4p4bot")
+    assert not result["pass"] and "foreign successor needs a different map" in result["reasons"][0]
+    assert (tmp_path / A_ROW / f"{A_ROW}-replace/result.json").is_file()
+
+
+def test_released_map_parameter_accepts_a_successor_terminal_release():
+    lines = good_log()
+    lines[-1] = lines[-1].replace("map=sidewinder", "map=damnation")
+    assert "map_released" in parse(lines)["failing_checks"]
+    assert "map_released" not in matrix.parse_guest_log(lines, ROW, "sidewinder", released_map="damnation")["failing_checks"]
+
+
+def test_fail_then_retry_log_passes_with_empty_state_between_attempts():
+    parsed = parse_succ(retry_log(), 3)
+    assert parsed["failing_checks"] == [], parsed["reasons"]
+    assert parsed["values"]["steps"] == ["preflight", "dispose", "unload", "load", "after-failed-load",
+                                         "preflight", "dispose", "unload", "load", "new-map"]
+    assert parsed["values"]["successor_stage_passes"] == 2
+    assert parsed["values"]["successor_mounts"] == 2
+    assert parsed["values"]["successor_package_gate_rejections"] == 0
+    assert parsed["values"]["boundary_sequence"] == [
+        ("map-loaded", 1), ("map-released", 1), ("map-loaded", 2),
+        ("map-released", 2), ("map-loaded", 3), ("map-released", 3)]
+    assert parsed["values"]["expected_failure_counter_lines"]
+    assert parsed["values"]["fault_lines"][0].find("prior-bytes=67264") >= 0
+
+
+def test_fail_then_retry_fails_without_a_retry_or_with_residue_after_failure():
+    lines = [l for l in retry_log() if "production-ce-successor-loaded" not in l]
+    assert "successor_loaded" in parse_succ(lines, 3)["failing_checks"]
+    lines = [l.replace("step=after-failed-load result=1 old=boardingaction old-mounted=0 new=damnation new-mounted=0 tag-bytes=0",
+                       f"step=after-failed-load result=1 old=boardingaction old-mounted=0 new=damnation new-mounted=0 tag-bytes={B_TAG}")
+             for l in retry_log()]
+    assert "step_4_after-failed-load" in parse_succ(lines, 3)["failing_checks"]
+    # a log that never failed the first load is not a fail-then-retry run
+    lines = replace_log()
+    assert "step_sequence" in parse_succ(lines, 3)["failing_checks"]
+
+
+def test_fail_then_retry_requires_two_mounts_and_two_preflight_stages_with_no_gate_rejection():
+    lines = retry_log() + [P + f"profile-preflight rejected reason=successor-package-gate map={B_MAP}"]
+    assert "fault_gate" in parse_succ(lines, 3)["failing_checks"]
+    parsed = parse_succ(retry_log(), 3)
+    assert parsed["values"]["successor_package_gate_rejections"] == 0
+    assert parsed["values"]["successor_stage_passes"] == 2
+    assert parsed["values"]["successor_mounts"] == 2
+    first = next(i for i, l in enumerate(retry_log()) if l.endswith("successor=1"))
+    lines = retry_log()
+    del lines[first]
+    assert "successor_stages_and_mount" in parse_succ(lines, 3)["failing_checks"]
+
+
+def test_fail_then_retry_requires_active_partial_ctag_fault_and_one_exact_failure():
+    original = retry_log()
+    for old, new in (
+        ("callbacks=1", "callbacks=0"),
+        ("prior-bytes=67264", "prior-bytes=65535"),
+    ):
+        changed = [line.replace(old, new) if "successor-fault injected" in line else line for line in original]
+        assert "fault_gate" in parse_succ(changed, 3)["failing_checks"]
+
+    extra = [line.replace("tag-failures=1", "tag-failures=2", 1)
+             if "step=load result=0" in line else line for line in original]
+    assert "step_owner_counters_expected_once" in parse_succ(extra, 3)["failing_checks"]
+    before_fault = [line.replace("step=preflight result=1", "step=preflight result=1", 1)
+                    .replace("tag-failures=0", "tag-failures=1", 1)
+                    if "step=preflight result=1" in line else line for line in original]
+    assert "step_owner_counters_expected_once" in parse_succ(before_fault, 3)["failing_checks"]
+    bsp = [line.replace("bsp-failures=0", "bsp-failures=1", 1)
+           if "step=load result=0" in line else line for line in original]
+    assert "step_owner_counters_expected_once" in parse_succ(bsp, 3)["failing_checks"]
+
+
+def test_fail_then_retry_requires_safe_cleanup_before_valid_retry():
+    lines = [line for line in retry_log() if "successor-fault-cleanup" not in line]
+    assert "fault_gate" in parse_succ(lines, 3)["failing_checks"]
+    duplicate = retry_log()
+    duplicate.append(next(line for line in duplicate if "successor-fault injected" in line))
+    assert "fault_gate" in parse_succ(duplicate, 3)["failing_checks"]
+    failed_retry = [line.replace("step=new-map result=1", "step=new-map result=0", 1)
+                    if "step=new-map result=1" in line else line for line in retry_log()]
+    assert "step_9_new-map" in parse_succ(failed_retry, 3)["failing_checks"]

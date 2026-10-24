@@ -378,7 +378,8 @@ def _int_field(fields: dict[str, str], key: str) -> int:
 
 
 def production_tuple_qualification(lines: list[str], row: str, map_name: str,
-                                   profile_id: int, package_bytes: int) -> dict:
+                                   profile_id: int, package_bytes: int,
+                                   released_map: str | None = None) -> dict:
     base = production_guest_qualification(lines)
     markers = {}
     for key, prefix in (("partition", "HALO_PS2_LOCAL partition-selected "),
@@ -406,7 +407,7 @@ def production_tuple_qualification(lines: list[str], row: str, map_name: str,
             _int_field(loaded, "tag-bytes") > 0 and
             _int_field(loaded, "bsp-bytes") > 0,
         "ce_owner_released": released.get("result") == "1" and
-            released.get("map") == map_name and released.get("mounted") == "0" and
+            released.get("map") == (released_map or map_name) and released.get("mounted") == "0" and
             released.get("tag-bytes") == "0" and released.get("bsp-bytes") == "0",
     }
     base["tuple_checks"] = checks
@@ -543,6 +544,8 @@ def main():
                         help="directory exposed at host:/maps for the guest")
     parser.add_argument("--production-row", default="sidewinder_marine_shotgun_4p4bot")
     parser.add_argument("--production-map", default="sidewinder")
+    parser.add_argument("--production-release-map",
+                        help="expected terminal map after an opt-in successor lifecycle guest")
     parser.add_argument("--production-profile-id", type=int, default=26)
     args = parser.parse_args()
     if args.source_elf and not args.only:
@@ -641,7 +644,8 @@ def main():
                                                    args.maps_dir,
                                                    ({"row": row, "map_name": args.production_map,
                                                      "profile_id": args.production_profile_id,
-                                                     "package_bytes": manifest["runtime_profile"]["package_bytes"]}
+                                                     "package_bytes": manifest["runtime_profile"]["package_bytes"],
+                                                     "released_map": args.production_release_map}
                                                     if args.production_elf else None),
                                                    args.guest_package_root, args.stage_path))
             except Exception as error:  # record the failure and keep the partial manifest

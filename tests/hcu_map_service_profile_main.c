@@ -176,14 +176,41 @@ int hcu_profile_mount_load(hcu_profile_mount *mount)
 	}
 	mount->backend_mounted = 1;
 	mount->active = 1;
+	/* Script a real-looking decoded segment working set for the service
+	 * lifetime tests; capacity remains the runtime's caller-bound span. */
+	mount->residency.resident_bytes = 4096u;
+	mount->residency.resident_high_water = 8192u;
+	mount->residency.evictions = 2u;
+	mount->residency.refused_evictions = 1u;
+	mount->residency.refused_pins = 0u;
+	mount->residency.verify_failures = 0u;
 	memset(s_live_tags, mount->source_identity_snapshot.map_name[0],
 		sizeof(s_live_tags));
 	trace_event("publish", mount->source_identity_snapshot.map_name);
 	return HCU_PROFILE_MOUNT_OK;
 }
 
-int hcu_profile_mount_unload(hcu_profile_mount *mount)
+int hcu_profile_mount_residency_snapshot(const hcu_profile_mount *mount,
+	hcu_profile_residency_stats *stats)
 {
+	if (!mount || !stats) return HCU_PROFILE_MOUNT_E_ARGUMENT;
+	if (!mount->prepared || !mount->residency_bound) return HCU_PROFILE_MOUNT_E_STATE;
+	memset(stats, 0, sizeof(*stats));
+	stats->bound = 1;
+	stats->capacity_bytes = mount->residency_arena_bytes;
+	stats->current_bytes = mount->residency.resident_bytes;
+	stats->high_water_bytes = mount->residency.resident_high_water;
+	stats->evictions = mount->residency.evictions;
+	stats->refused_evictions = mount->residency.refused_evictions;
+	stats->refused_pins = mount->residency.refused_pins;
+	stats->verify_failures = mount->residency.verify_failures;
+	return HCU_PROFILE_MOUNT_OK;
+}
+
+int hcu_profile_mount_unload_with_residency_stats(hcu_profile_mount *mount,
+	hcu_profile_residency_stats *released_stats)
+{
+	hcu_profile_residency_stats stats;
 	++s_unload_calls;
 	if (!mount) return HCU_PROFILE_MOUNT_E_ARGUMENT;
 	if (mount->callbacks_active) return HCU_PROFILE_MOUNT_E_BUSY;
@@ -194,8 +221,19 @@ int hcu_profile_mount_unload(hcu_profile_mount *mount)
 		memset(s_live_tags, 0, sizeof(s_live_tags));
 		trace_event("unpublish", mount->source_identity_snapshot.map_name);
 	}
+	if (mount->prepared && mount->residency_bound) {
+		(void)hcu_profile_mount_residency_snapshot(mount, &stats);
+		stats.current_bytes = 0;
+		stats.resets = 1;
+	} else memset(&stats, 0, sizeof(stats));
 	memset(mount, 0, sizeof(*mount));
+	if (released_stats) *released_stats = stats;
 	return HCU_PROFILE_MOUNT_OK;
+}
+
+int hcu_profile_mount_unload(hcu_profile_mount *mount)
+{
+	return hcu_profile_mount_unload_with_residency_stats(mount, NULL);
 }
 
 unsigned long physical_memory_get_tag_cache_size(void)
@@ -311,6 +349,7 @@ static hcu_map_profile_runtime make_runtime(const memory_image *package,
 	size_t metadata_storage_bytes, const hcu_bitmap_frame_owner *owner)
 {
 	hcu_map_profile_runtime runtime;
+	hcu_map_residency_report residency_report;
 	memset(&runtime, 0, sizeof(runtime));
 	runtime.package_read_at = image_read;
 	runtime.package_context = (void *)package;
@@ -360,6 +399,14 @@ static void dispose_reads_live_tags(void)
 	assert(s_live_tags[0] == 'u');
 	assert(s_live_tags[sizeof(s_live_tags) - 1u] == 'u');
 }
+
+#ifdef HALO_HCU_HEADLESS_RUNTIME_GUEST
+static int headless_never_started(void *context)
+{
+	(void)context;
+	return 1;
+}
+#endif
 
 /* Boundary hook recorder: phase and cycle of every boundary, in call order. */
 static char s_boundary_phase[8][16];
@@ -555,19 +602,46 @@ int main(int argc, char **argv)
 	map_unloader(&service);
 	assert(s_unload_calls == 1 && s_unmount_calls == 1);
 	expect_live_owner(&service, 0);
+	assert(hcu_map_service_residency_snapshot(&service, &residency_report));
+	assert(residency_report.valid && !residency_report.active);
+	assert(strcmp(residency_report.map_name, "ui") == 0 && residency_report.cycle == 1u);
+	assert(residency_report.map.bound && residency_report.map.capacity_bytes > 0);
+	assert(residency_report.map.current_bytes == 0u &&
+		residency_report.map.high_water_bytes == 8192u &&
+		residency_report.map.evictions == 2u &&
+		residency_report.map.refused_evictions == 1u &&
+		residency_report.map.resets == 1u);
+	assert(residency_report.lifetime.high_water_bytes == 8192u &&
+		residency_report.lifetime.resets == 1u);
 	s_load_failures_remaining = 1;
 	assert(map_loader(&service, "ui") == 0);
 	expect_live_owner(&service, 0);
 	expect_no_stage(&service);
 	assert(service.runtime_registered);
+	assert(hcu_map_service_residency_snapshot(&service, &residency_report));
+	assert(residency_report.valid && !residency_report.active);
+	assert(residency_report.map.current_bytes == 0u &&
+		residency_report.map.high_water_bytes == 0u &&
+		residency_report.map.resets == 1u);
+	assert(residency_report.lifetime.high_water_bytes == 8192u &&
+		residency_report.lifetime.resets == 2u);
 	printf("PASS post-unload load failure leaves a safe empty state\n");
 
 	/* 8. Retry after the failure publishes again. */
 	assert(hcu_map_service_preflight("ui") == 1);
 	assert(map_loader(&service, "ui") == 1);
 	expect_live_owner(&service, 1);
+	assert(hcu_map_service_residency_snapshot(&service, &residency_report));
+	assert(residency_report.valid && residency_report.active &&
+		residency_report.map.current_bytes == 4096u &&
+		residency_report.map.high_water_bytes == 8192u);
 	map_unloader(&service);
 	expect_live_owner(&service, 0);
+	assert(hcu_map_service_residency_snapshot(&service, &residency_report));
+	assert(residency_report.valid && !residency_report.active &&
+		residency_report.map.current_bytes == 0u &&
+		residency_report.map.high_water_bytes == 8192u &&
+		residency_report.lifetime.resets == 3u);
 	assert(hcu_map_service_unregister_runtime(&service));
 	printf("PASS retry after empty state reloads the same runtime\n");
 
@@ -726,6 +800,76 @@ int main(int argc, char **argv)
 		assert(hcu_map_service_unregister_runtime(&service));
 		printf("PASS retry after failed load publishes successor B\n");
 	}
+
+#ifdef HALO_HCU_HEADLESS_RUNTIME_GUEST
+	/* 11b. Headless candidate admission of a foreign successor (the opt-in C2.8
+	 * guest sequence). The successor is admitted under its own runtime when it
+	 * names the same partition row as the selected runtime; A's own preflight is
+	 * unchanged. Without the successor branch B would be refused as
+	 * headless-candidate-capacity. */
+	{
+		hcu_map_profile_runtime successor;
+		s_trace_count = 0;
+		runtime = make_runtime(&package, package_sha, meta_ok, meta_ok_size,
+			meta_ok_sha, s_metadata_storage, sizeof(s_metadata_storage), NULL);
+		runtime.headless_no_bitmap_consumers = 1;
+		runtime.renderer_never_started = headless_never_started;
+		runtime.headless_candidate_admission = 1;
+		runtime.partition_row = "row_a";
+		assert(hcu_map_service_register_runtime(&service, "ui", &runtime));
+		successor = make_runtime(&package, package_sha, meta_ok, meta_ok_size,
+			meta_ok_sha, s_b_metadata_storage, sizeof(s_b_metadata_storage), NULL);
+		successor.relocation_storage = s_b_relocation_storage;
+		successor.relocation_storage_bytes = sizeof(s_b_relocation_storage);
+		successor.stream_scratch = s_b_stream_scratch;
+		successor.stream_scratch_bytes = sizeof(s_b_stream_scratch);
+		successor.residency_entries = s_b_residency_entries;
+		successor.residency_entry_capacity = sizeof(s_b_residency_entries) /
+			sizeof(s_b_residency_entries[0]);
+		successor.residency_arena = s_b_residency_arena;
+		successor.residency_arena_bytes = sizeof(s_b_residency_arena);
+		successor.headless_no_bitmap_consumers = 1;
+		successor.renderer_never_started = headless_never_started;
+		successor.headless_candidate_admission = 1;
+		successor.partition_row = "row_a";
+		assert(hcu_map_service_register_successor_runtime(&service, "beavercreek", &successor));
+		assert(hcu_map_service_preflight("ui") == 1);
+		assert(map_loader(&service, "ui") == 1);
+		expect_live_owner(&service, 1);
+		/* A successor that names another partition row is refused; A stays live. */
+		service.successor.partition_row = "row_b";
+		assert(!hcu_map_service_preflight("beavercreek"));
+		assert(!service.successor_staged);
+		expect_live_owner(&service, 1);
+		assert(s_live_tags[0] == 'u');
+		service.successor.partition_row = "row_a";
+		printf("PASS headless admission refuses a successor of another partition row\n");
+		/* B passes CE's pre-unload check while A stays live and untouched. */
+		assert(hcu_map_service_preflight("beavercreek") == 1);
+		assert(service.successor_staged && service.reload_pending);
+		expect_live_owner(&service, 1);
+		assert(s_live_tags[0] == 'u');
+		/* An unknown map is still refused by the same branch. */
+		assert(!hcu_map_service_preflight("carousel"));
+		assert(hcu_map_service_preflight("beavercreek") == 1);
+		s_dispose_callback = dispose_reads_live_tags;
+		map_unloader(&service);
+		s_dispose_callback = NULL;
+		expect_live_owner(&service, 0);
+		assert(map_loader(&service, "beavercreek") == 1);
+		expect_live_owner(&service, 1);
+		assert(s_live_tags[0] == 'b');
+		assert(strcmp(service.runtime_map_name, "beavercreek") == 0);
+		/* B's own cycles keep being admitted as the selected runtime. */
+		map_unloader(&service);
+		assert(hcu_map_service_preflight("beavercreek") == 1);
+		assert(map_loader(&service, "beavercreek") == 1);
+		map_unloader(&service);
+		expect_live_owner(&service, 0);
+		assert(hcu_map_service_unregister_runtime(&service));
+		printf("PASS headless admission accepts a registered foreign successor under its own runtime\n");
+	}
+#endif
 
 	/* 5. Legacy production path: a busy renderer keeps a published owner, and
 	 * the successor load and shutdown are refused until the fence retires. The
