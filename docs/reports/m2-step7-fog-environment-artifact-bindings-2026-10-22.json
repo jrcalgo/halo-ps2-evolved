@@ -1,0 +1,530 @@
+{
+  "bindings": [
+    {
+      "binding_basis": "retained historical generated unittest; exact bytes are present. Regenerating with the current checked-in runner and current base fixture yields a different digest because tests/test_hcu_mp_capacity.py has since changed. This preserves historical identity and does not upgrade evidence.",
+      "bytes": 64571,
+      "categories": [
+        "input_hashes",
+        "harness_hashes",
+        "reported_hash_pins"
+      ],
+      "core_row_index": 6,
+      "path": "build/m2-mp-fog-selection-1792693186821210956/test_hcu_mp_fog_selection_generated.py",
+      "reported_label": "Generated unittest",
+      "sha256": "1ea51d79b0a251e5e15b7a0da95b015f98d20d64259fb7a48becf74eb34a1e2b",
+      "source_report": "docs/reports/m2-step7-mp-valid-fog-selection-all13-2026-10-22.md",
+      "source_report_sha256": "ab86531e007e46eb6909c7cd70a31133650852c98a1327dbefa64a518a4e9dd6",
+      "step": 7,
+      "subcheck": "fog-reference"
+    },
+    {
+      "binding_basis": "retained historical generated unittest; exact bytes are present. Regenerating with the current checked-in runner and current base fixture yields a different digest because tests/test_hcu_mp_capacity.py has since changed. This preserves historical identity and does not upgrade evidence.",
+      "bytes": 57813,
+      "categories": [
+        "input_hashes",
+        "harness_hashes",
+        "reported_hash_pins"
+      ],
+      "core_row_index": 6,
+      "path": "build/m2-mp-invalid-fog-all-1792692847325171777/test_hcu_mp_capacity_fog_invalid_all.py",
+      "reported_label": "Generated unittest",
+      "sha256": "54feee0eac0b880e0e6585dcad1a0319af4af95fb83b84dafc5dd01bbe26d07c",
+      "source_report": "docs/reports/m2-step7-mp-invalid-fog-reference-all13-2026-10-22.md",
+      "source_report_sha256": "fa073e7f1a015cc7ae4813cca574e45265d811223af1b86a8d3d7c8a7c5ffbac",
+      "step": 7,
+      "subcheck": "fog-reference"
+    }
+  ],
+  "documented_absences": [
+    {
+      "absence_status": "exact historical artifact unavailable in exhaustive current-worktree search; candidate bytes rehashed during C0 identity refresh",
+      "binding_basis": "The report preserves the historical digest but the exact executable/link map is absent. Current similarly named artifacts do not match and are explicitly not substituted. The run report says stdout was not retained; this absence record does not upgrade the underlying host evidence.",
+      "candidates_checked": [
+        {
+          "actual_sha256": "3587b9b7313471bcbcc5ac82c4c4a8c2e86a662f452bdc31d55c31e8d7a37274",
+          "bytes": 477120,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/hcu-mpct-tail-pad8-1792685467702906005/retained/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "64d006d42e1ce7803a0f01874cb721fe58574a2f503fda66e73d69182c18ef3a",
+          "bytes": 477252,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/hcu-mpct-tail-pad8-1792686058123701250/retained/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "2eadc685ce5a02745fd46419d5deb6db077e92755d701da0ec64ac8e27bb7b60",
+          "bytes": 478192,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/hcu-mpct-tail-pad8-1792686083271653084/retained/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "32be8f0aa4644ac217144eceb8c056ec28cab04412bcba10433f51618f1787d1",
+          "bytes": 478192,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/hcu-mpct-tail-pad8-1792686105053657413/retained/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "c4659f1da711ac2f5a17e90e479225c848c89ebb2b20ccb3fa903a5d201ae42a",
+          "bytes": 478192,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/hcu-mpct-tail-pad8-1792688465527390945/retained/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "977ee6fecc9fa77798041882cd3b55d429d72b253e78bccb7a606a9a67aea815",
+          "bytes": 472720,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-edge-runtime-1792685769549911498/retained/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "274302cf2de9911eaf730116f9e834801d5fa74e4c18c473a0fffa8597d67659",
+          "bytes": 472720,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-edge-runtime-1792685805145394980/retained/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "bd28e69c19ecb9a89cd116f85f171e1304cb6b359c8c24542d7d5959f3ca0b9a",
+          "bytes": 472720,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-edge-runtime-1792685860740420752/retained/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "015c2905a430ab9881177f5e861110fb90b147603d3cbc1364f6fee64904981b",
+          "bytes": 472720,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-edge-runtime-1792688142371578057/retained/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "a763b9c947d1c32d442d5888b64de9cdb50fbe1abb95092edc96a051f72de5ea",
+          "bytes": 472720,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-edge-runtime-1792688759517816097/retained/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "2e0b94d409f9878965de188589e24fe79271d88c9d06ff5c59a667941e6f8454",
+          "bytes": 481144,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-edge-runtime-1792693532914764252/retained/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "f7ffa4094dc1133ee16d08cbf3a357268d29a222db28f36459b9b0d617e2c2da",
+          "bytes": 468160,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-invalid-fog-all-1792688572597136526/retained/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "038a0c3696ef9a641003a4e33c1b52e946263f76bb136179ea468139e743df2d",
+          "bytes": 468160,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-invalid-fog-all-1792688763666582094/retained/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "4623d6d77323c1f38ee4eaf977d9c6fca0e82d0db4e995d67cea3e69b1db0814",
+          "bytes": 468304,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-nested-census-13/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "05d0da34bdd2900410f9abfc59b70199f41a052c89e899210dff2d166c3a2ca3",
+          "bytes": 482320,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-sound-scenery-runtime-13/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "fc3738cc06a7562eaa911e792061184e1569b65e99cee6a2d65b4efac26a43a6",
+          "bytes": 482320,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-sound-scenery-runtime-final/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "b499f87b88c6c3cd2c41af071ade574d65fddb87b6bb16c0a8a2f600eefa952e",
+          "bytes": 468236,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-visible-pvs-sound-1792686341889656427/retained/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "b9fd499ae120d28baef60f549dd01519285db49e4576eaf7afb1f58c84c05acb",
+          "bytes": 482408,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-weather-wind-13/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "a535571a352979ebe59f5aa46e14d2380cc17c5b7baca615ab5a6388caee9645",
+          "bytes": 464052,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-step7-late-b000-failure-atomicity-20261022/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "58c197a54a0ddff57c3aef63406e115d3d64157e26445d016f02ea3b4e00bf12",
+          "bytes": 468160,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-1792688781277405742/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "0c3e922ea23e916d121238a0de6f340753f9737980007ea3bded35a3794a6d8c",
+          "bytes": 472412,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-1792692475237061867/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "645c43fb72086ae644d0f9aa74854f67edd193f380b4547b134f96108084bcb9",
+          "bytes": 472412,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-1792692653270809273/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "939b7a44fe1f20a0d319880c557623b5c930ea593b60b0021b0cb09a009c2f58",
+          "bytes": 472412,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-1792692847324952261/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "bef640bd7c6bd8b89f69c3378adef6d9e547a581c1e4a18a75cd4bde9041f3ff",
+          "bytes": 476640,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-selection-1792693186821610382/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "e1a5c2e4686086071163144fc54374ee047fb956896088f38af2430a36f41ec4",
+          "bytes": 476640,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-selection-1792693510597612582/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "6ee0ee335c614b18f8999775b8a06ce784091a3de80f64a1e83eea6756b9358f",
+          "bytes": 476640,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-selection-1792696165759090577/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "c3988f61a27209ccf8d02683ff43c74cbaf41c48fc3d0f3ef96d908d1f12effa",
+          "bytes": 476640,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-selection-1792696178915535083/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "fca1515d58c52f68ceadff4e7143061019aafd97c04944ca00ac01d32a6af06d",
+          "bytes": 476640,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-selection-1792696379414655921/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "04c2f76b0941ef1e5f1b5180785f3e3e03f19448ca8787bc7ec8473157d19a82",
+          "bytes": 480736,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-selection-1792696425464382832/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "589e4487b5e5499d62f79720b02fc82c34ae9ca7f293b02f80f5a897241970a5",
+          "bytes": 472412,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-verified/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "a0ee79ea79138a14bfa599e8437ff6aa69d4a9786ebbb5ab63ab47c909a35d69",
+          "bytes": 472412,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-verified-final/mp-weather-wind-location"
+        },
+        {
+          "actual_sha256": "3c7698d06ceedb3d5bf2f3b1377fa462047197665f84b9f7198684a7e50ddafa",
+          "bytes": 468236,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-vps-sound/mp-weather-wind-location"
+        }
+      ],
+      "categories": [
+        "fixture_hashes",
+        "reported_hash_pins"
+      ],
+      "core_row_index": 7,
+      "exact_artifact_path": null,
+      "expected_sha256": "6384890a0adce6195bc150a78609be2de9b606899c017770a62b8321ebc4e392",
+      "reported_label": "Native fixture `mp-weather-wind-location`",
+      "scan_file_count": 32,
+      "scan_scope": "Exhaustive current-worktree SHA-256 scan of every build/** regular file named exactly mp-weather-wind-location; 32 files found, zero matched the reported digest. Also the separately listed report-linked candidates are members of this scan.",
+      "source_report": "docs/reports/m2-step7-mp-fogged-sound-environment-2026-10-22.md",
+      "source_report_sha256": "a076e9f90c1f6e3c549ed7ca97ba82d4f88accdca95a209993039cb4c0d1a9a2",
+      "step": 7,
+      "subcheck": "environment-consumers"
+    },
+    {
+      "absence_status": "exact historical artifact unavailable in exhaustive current-worktree search; candidate bytes rehashed during C0 identity refresh",
+      "binding_basis": "The report preserves the historical digest but the exact executable/link map is absent. Current similarly named artifacts do not match and are explicitly not substituted. The run report says stdout was not retained; this absence record does not upgrade the underlying host evidence.",
+      "candidates_checked": [
+        {
+          "actual_sha256": "4fee4facb914362c55fc8a3263b987e130027c32e9e0738f630c67bb20d5f3d7",
+          "bytes": 461137,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/hcu-mpct-tail-pad8-1792685467702906005/retained/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "20b2c060a6dadde29a6809c02513fcd70f0975dbf0d0d29b370a798e0b30f2bd",
+          "bytes": 465570,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/hcu-mpct-tail-pad8-1792686058123701250/retained/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "ffb30268850cf69b916d9626d1366fa846c406400954b19a884b35196b02a7e2",
+          "bytes": 466495,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/hcu-mpct-tail-pad8-1792686083271653084/retained/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "058b5828e81645c61797e21f2e99b4876b1e921315f02c5983f526d793d9a840",
+          "bytes": 466495,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/hcu-mpct-tail-pad8-1792686105053657413/retained/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "eb42ce22542e2031ef7e6b5c03dfab9bc37b6075e999bd1cfd0b7c0670be8992",
+          "bytes": 466495,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/hcu-mpct-tail-pad8-1792688465527390945/retained/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "15e41b088df8c101d13704387fa3348fa73fc3640155a6f8fcf89323b6cf34fe",
+          "bytes": 458543,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-edge-runtime-1792685769549911498/retained/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "ac145a03e02bb90ebf683352971d4c37448734097a466fd708a5465d1443d5e0",
+          "bytes": 458543,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-edge-runtime-1792685805145394980/retained/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "35df302a9547d8be3a367dbf1f825d41aee7f9d551f29971855d3d9d74fdb5a8",
+          "bytes": 458471,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-edge-runtime-1792685860740420752/retained/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "665d9bf9d978599dd8139ccaa13577c1f628e3facc5b8c4cfdd7f043937047e7",
+          "bytes": 458471,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-edge-runtime-1792688142371578057/retained/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "5a22a459f738314b2fb9b82d70637b7900d657d64d2dd31fa99df6b0822a47c0",
+          "bytes": 458471,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-edge-runtime-1792688759517816097/retained/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "d0a3e9e51617a8691c613875a33ede6d687894863502adbda19f0e7794fc42b4",
+          "bytes": 459316,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-edge-runtime-1792693532914764252/retained/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "391843050c082f101068145afab675b77f610244931ddfedd8fd90d8ef21f4fa",
+          "bytes": 456922,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-invalid-fog-all-1792688572597136526/retained/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "704845c201c4a55d15618b507c12f1a97bf134c02024a882b875ad4054a63e40",
+          "bytes": 456922,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-invalid-fog-all-1792688763666582094/retained/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "60666138eaa277b45e8d63dc495e7c2961e7d3db58573290dfba9f0f257dfcdd",
+          "bytes": 457479,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-nested-census-13/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "f5bf4685c7ea0f0ceeabfece4511b693e8d5f3b969d2b29cf472d6e54d883688",
+          "bytes": 463768,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-sound-scenery-runtime-13/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "281225e3d01eeb2efa4e53f174c0cb2babbfb8bcdea29bb6220cce15455d6ee5",
+          "bytes": 463768,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-sound-scenery-runtime-final/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "7199e526707228c471581c2bda255ba7daf5f0b0690baba3ab0b5a0c2d9dcc39",
+          "bytes": 457181,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-visible-pvs-sound-1792686341889656427/retained/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "1fa87864400144f1a3686a78a8a1101aaebb7049f32753e2c0dec9d8a7aa4739",
+          "bytes": 464027,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-mp-weather-wind-13/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "b867bcc9ec5dd53c13447b9462c30c150f0955b26b199c562591ce120c2adb59",
+          "bytes": 456922,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/m2-step7-late-b000-failure-atomicity-20261022/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "bc1dfdb21a051b8d89fbc38eca7b6081f8994f535331e04929674b1c68b9b1c4",
+          "bytes": 456922,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-1792688781277405742/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "8f7b5367786c0e57b42e6b8328ee87d8cd202ce495eff40606fb54323966b0a8",
+          "bytes": 457479,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-1792692475237061867/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "687bc8ad543824b2e1b2a0102a59d21c30d049212214324669635f29755039e3",
+          "bytes": 457479,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-1792692653270809273/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "d41ffc2e6587be5e1335f7fd9c12bbce73093b5a11ab2e90ff54a075f0a35fd1",
+          "bytes": 457479,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-1792692847324952261/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "c18b0e1e7e59a57848f4cb10aac4043e594bdc08b44d5703968f246eaab11b2d",
+          "bytes": 457825,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-selection-1792693186821610382/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "d32084c1785e38113058bfd60cd61fff31a5eb389d31303933347b1439e44cd5",
+          "bytes": 457825,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-selection-1792693510597612582/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "db5dc31864875bce8b47d965b12496fdc2c0d285575b269fdb0f3c64cbedad0c",
+          "bytes": 457825,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-selection-1792696165759090577/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "3cc606dd63d7ea7fcc5d3f7b36921740439c73e373e16e2894f206fb16669418",
+          "bytes": 457825,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-selection-1792696178915535083/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "2875ecabcf2f29da019d87f9fdfcbacd2f12db17d3202061b2c3cedb55bdb5c8",
+          "bytes": 457825,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-selection-1792696379414655921/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "87da11db93785493a86b392a021f83a427d8efaef57fa8009d1fa98445d4cbf2",
+          "bytes": 457825,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-selection-1792696425464382832/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "9ef9b642363dc56c624fa9494bb10fa0a83728c60acb1d9975db0dd0b35581a5",
+          "bytes": 457479,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-verified/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "355c76b4a18e598c300a367fd5ced3cc2b9344c662d740f467b0c198c4bcf198",
+          "bytes": 457479,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-fog-verified-final/mp-weather-wind-location.map"
+        },
+        {
+          "actual_sha256": "bbcc67aff0e5d342ff42733607d96a4190320298be1a5be44ff1fac4b8530d37",
+          "bytes": 457181,
+          "exists": true,
+          "matches_expected": false,
+          "path": "build/mp-vps-sound/mp-weather-wind-location.map"
+        }
+      ],
+      "categories": [
+        "fixture_hashes",
+        "reported_hash_pins"
+      ],
+      "core_row_index": 7,
+      "exact_artifact_path": null,
+      "expected_sha256": "940bea8a574d1635733edde428e91aa151af4db825cf35752cf53f46ada2cc5a",
+      "reported_label": "Fixture link map",
+      "scan_file_count": 32,
+      "scan_scope": "Exhaustive current-worktree SHA-256 scan of every build/** regular file named exactly mp-weather-wind-location.map; 32 files found, zero matched the reported digest. Also the separately listed report-linked candidates are members of this scan.",
+      "source_report": "docs/reports/m2-step7-mp-fogged-sound-environment-2026-10-22.md",
+      "source_report_sha256": "a076e9f90c1f6e3c549ed7ca97ba82d4f88accdca95a209993039cb4c0d1a9a2",
+      "step": 7,
+      "subcheck": "environment-consumers"
+    }
+  ],
+  "format": "hcu-step7-row-specific-artifact-bindings-v1",
+  "policy": "Bind only current artifacts whose exact bytes match the source-report pin and whose core row/source report identities match. Unavailable pins remain unbound and receive an explicit scoped absence record. These records do not upgrade evidence level or result."
+}
