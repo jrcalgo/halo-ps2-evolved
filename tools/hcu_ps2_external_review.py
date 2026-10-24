@@ -9,10 +9,11 @@ import sys
 
 from build_toolchain import ROOT
 
-REPORT = ROOT / "build/hcu-ps2-closure/all/result.json"
-ROOTED = ROOT / "build/hcu-ps2-closure/all/rooted.o"
+PROFILE = ROOT / "build/hcu-ps2-closure/all-no-bootstrap-memory"
+REPORT = PROFILE / "result.json"
+ROOTED = PROFILE / "rooted.o"
 LEDGER = ROOT / "docs/hcu-source-backed-review/hcu-ps2-external-review.json"
-GENERATED = ROOT / "build/hcu-ps2-closure/all/ps2_platform.c"
+GENERATED = PROFILE / "ps2_platform.c"
 APPROVED = {"implemented", "state-adapter", "excluded-proven"}
 REAL_BODY = {"implemented", "state-adapter"}
 

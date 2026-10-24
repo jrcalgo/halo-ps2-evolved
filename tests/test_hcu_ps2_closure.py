@@ -339,6 +339,62 @@ class HcuPs2ClosureClassification(unittest.TestCase):
         self.assertIn('"m1-boundary": "HALO_PS2_LOCAL m1-ui-map-request"',
                       (ROOT / "tools/test_hcu_boot.py").read_text())
 
+    def test_m2_ui_lifecycle_diagnostic_is_opt_in_and_uses_normal_menu_path(self):
+        main = (HCU / "source/main/main.c").read_text()
+        loop = main[main.index("void main_loop(\n\tvoid)\n{"):]
+        setup = loop.index("main_setup_connection();")
+        initialized = loop.index("main_initialize_time();", setup)
+        diagnostic = loop.index("HALO_PS2_M2_UI_LIFECYCLE_TEST", initialized)
+        steady_loop = loop.index("while (TRUE)", diagnostic)
+        self.assertLess(setup, initialized)
+        self.assertLess(initialized, diagnostic)
+        self.assertLess(diagnostic, steady_loop)
+        self.assertIn("hcu_m2_ui_lifecycle_test_run();", loop[diagnostic:steady_loop])
+        self.assertNotIn("main_menu_unload();", loop[diagnostic:steady_loop])
+        self.assertNotIn("main_menu_load();", loop[diagnostic:steady_loop])
+        scenario = (HCU / "source/scenario/scenario.c").read_text()
+        unload = scenario[scenario.index("void scenario_unload("):]
+        self.assertLess(unload.index("global_scenario = NULL;"),
+                        unload.index('scenario_m2_ui_lifecycle_trace("ce-unpublished")'))
+        self.assertLess(unload.index('scenario_m2_ui_lifecycle_trace("ce-unpublished")'),
+                        unload.index("ps2_cache_release_map_owner()"))
+        closure = (ROOT / "tools/hcu_ps2_closure.py").read_text()
+        self.assertIn('parser.add_argument("--m2-ui-lifecycle-test"', closure)
+        self.assertIn('WORLD_HCU_M2_UI_LIFECYCLE_TEST=',
+                      (ROOT / "tools/hcu_parent_link_probe.py").read_text())
+        lifecycle = (HCU / "source/main/ps2_m2_ui_lifecycle_test.c").read_text()
+        self.assertIn("hcu_map_service_lifecycle_fail_preflight_once();", lifecycle)
+        self.assertIn("hcu_map_service_lifecycle_arm_deferred_failure_once();",
+                      lifecycle)
+        self.assertIn("main_load_ui_scenario(FALSE);", lifecycle)
+        self.assertIn("main_menu_load();", lifecycle)
+        self.assertIn("global_collision_bsp", lifecycle)
+        self.assertIn("global_bsp3d", lifecycle)
+        self.assertIn("global_game_globals", lifecycle)
+        self.assertIn("cache_files_tag_instances(&tag_count)", lifecycle)
+        self.assertNotIn("hcu_map_service_lifecycle_consume_deferred_failure",
+                         lifecycle)
+        self.assertIn("m2-ui-lifecycle-injected preflight-after-unload",
+                      (ROOT / "src/stream/hcu_map_service.c").read_text())
+        self.assertIn('"source/scenario/scenario.c": ["-Oz"]', closure)
+        self.assertIn('"source/main/ps2_m2_ui_lifecycle_test.c": [', closure)
+        self.assertIn('"source/main/main.c", "source/scenario/scenario.c"', closure)
+        self.assertIn('"m2-ui-lifecycle": "HALO_PS2_LOCAL m2-ui-lifecycle-complete cycles=2"',
+                      (ROOT / "tools/test_hcu_boot.py").read_text())
+        generated, missing = emit(
+            ["hcu_map_service_lifecycle_trace"],
+            {"hcu_map_service_lifecycle_trace"})
+        self.assertFalse(missing)
+        self.assertRegex(generated,
+                         r"__attribute__\(\(weak\)\)\s+void hcu_map_service_lifecycle_trace\(")
+        generated, missing = emit(
+            ["hcu_map_service_lifecycle_fail_preflight_once",
+             "hcu_map_service_lifecycle_arm_deferred_failure_once"],
+            {"hcu_map_service_lifecycle_fail_preflight_once",
+             "hcu_map_service_lifecycle_arm_deferred_failure_once"})
+        self.assertFalse(missing)
+        self.assertEqual(generated.count("__attribute__((weak))"), 2)
+
     def test_manifest_replacement_entries_point_to_real_implementations(self):
         manifest = json.loads((ROOT / "submodules/halo-ce-universal/port/ps2/port.json").read_text())
         replacements = {row["path"]: row for row in manifest["replaced_xbox_files"]}
@@ -538,6 +594,27 @@ class HcuPs2BuildArtifactGate(unittest.TestCase):
         link_map = (ROOT / "build/hcu-ps2-closure/all/halo-local.map").read_text()
         self.assertIn("ps2_cache_mount_ctag", link_map)
         self.assertIn("ps2_ctag_open", link_map)
+
+    def test_streamed_ctag_adapter_boundaries_are_rooted_for_parent_link(self):
+        result = json.loads((ROOT /
+            "build/hcu-ps2-closure/all-no-bootstrap-memory/result.json").read_text())
+        roots = result["rooted_link"]["roots"]
+        for symbol in ("ps2_cache_mount_ctag_stream",
+                       "ps2_cache_set_ctag_visitor",
+                       "ps2_ctag_stream_validator_begin",
+                       "ps2_ctag_stream_validator_write",
+                       "ps2_ctag_stream_validator_finish"):
+            with self.subTest(symbol=symbol):
+                self.assertIn(symbol, roots)
+        link_map = (ROOT /
+            "build/hcu-ps2-closure/all-no-bootstrap-memory/halo-local.map").read_text()
+        self.assertIn("ps2_cache_mount_ctag_stream", link_map)
+        self.assertIn("ps2_cache_set_ctag_visitor", link_map)
+        for symbol in ("ps2_ctag_stream_validator_begin",
+                       "ps2_ctag_stream_validator_write",
+                       "ps2_ctag_stream_validator_finish"):
+            with self.subTest(symbol=symbol):
+                self.assertIn(symbol, link_map)
 
     def test_validator_readiness_is_a_rooted_startup_boundary(self):
         result = json.loads((ROOT / "build/hcu-ps2-closure/all/result.json").read_text())

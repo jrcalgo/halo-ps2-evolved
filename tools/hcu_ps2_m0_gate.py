@@ -59,8 +59,10 @@ def evaluate() -> dict:
     checks: list[str] = []
     errors: list[str] = []
     output = ROOT / "build/hcu-ps2-closure/m0-ownership-gate.json"
-    closure_path = ROOT / "build/hcu-ps2-closure/all/result.json"
-    rooted_path = ROOT / "build/hcu-ps2-closure/all/rooted.o"
+    # Review the exact CE profile linked into the combined parent image. The
+    # standalone/bootstrap closure has different conditional platform owners.
+    closure_path = ROOT / "build/hcu-ps2-closure/all-no-bootstrap-memory/result.json"
+    rooted_path = ROOT / "build/hcu-ps2-closure/all-no-bootstrap-memory/rooted.o"
     external_path = ROOT / "docs/hcu-source-backed-review/hcu-ps2-external-review.json"
     probe_path = ROOT / "build/hcu-parent-link-probe/result.json"
     budget_path = ROOT / "config/memory-budget.json"
