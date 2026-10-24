@@ -21,6 +21,7 @@ typedef enum {
     HCU_OWNER_GAME_STATE,        /* BACKING: CE game-state CPU backing */
     HCU_OWNER_OBJECT_POOL,       /* NESTED in GAME_STATE: object memory pool */
     HCU_OWNER_ACTOR_POOL,        /* NESTED in GAME_STATE: actor datum array */
+    HCU_OWNER_WIDGET_POOL,       /* NESTED in GAME_STATE: UI widget stack pool */
     HCU_OWNER_DYNAMIC_SIM,       /* BACKING: dynamic simulation arena */
     HCU_OWNER_TAGS,              /* BACKING: CE tag cache span */
     HCU_OWNER_BSP,               /* BACKING: current BSP / structure span */

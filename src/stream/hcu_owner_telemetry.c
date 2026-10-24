@@ -11,6 +11,7 @@ static const owner_static_t k_owners[HCU_OWNER_COUNT] = {
     [HCU_OWNER_GAME_STATE]     = {"game_state",        HCU_OWNER_KIND_BACKING, -1},
     [HCU_OWNER_OBJECT_POOL]    = {"object_pool",       HCU_OWNER_KIND_NESTED,  HCU_OWNER_GAME_STATE},
     [HCU_OWNER_ACTOR_POOL]     = {"actor_pool",        HCU_OWNER_KIND_NESTED,  HCU_OWNER_GAME_STATE},
+    [HCU_OWNER_WIDGET_POOL]    = {"widget_pool",       HCU_OWNER_KIND_NESTED,  HCU_OWNER_DYNAMIC_SIM},
     [HCU_OWNER_DYNAMIC_SIM]    = {"dynamic_simulation", HCU_OWNER_KIND_BACKING, -1},
     [HCU_OWNER_TAGS]           = {"tags",              HCU_OWNER_KIND_BACKING, -1},
     [HCU_OWNER_BSP]            = {"bsp",               HCU_OWNER_KIND_BACKING, -1},

@@ -77,31 +77,51 @@ static void check_object_pool(void)
 	/* the object pool is fed only by its memory pool: the datum array is not a
 	   source, and a bad owner is refused without touching game state */
 	CHECK(halo_ps2_owner_counters_bind_datum(HALO_PS2_OWNER_OBJECT_POOL, &c, 8u, 4u) == -1);
-	CHECK(halo_ps2_owner_counters_note_pool(HALO_PS2_OWNER_GAME_STATE, 1u, 1u, 1u, 1u, 1u) == -1);
-	CHECK(halo_ps2_owner_counters_note_pool(HALO_PS2_OWNER_ACTOR_POOL, 1u, 1u, 1u, 1u, 1u) == -1);
+	CHECK(halo_ps2_owner_counters_note_pool(HALO_PS2_OWNER_GAME_STATE, 1u, 1u, 1u, 1u, 1u, 1u) == -1);
+	CHECK(halo_ps2_owner_counters_note_pool(HALO_PS2_OWNER_ACTOR_POOL, 1u, 1u, 1u, 1u, 1u, 1u) == -1);
 	CHECK(halo_ps2_owner_counters_get(HALO_PS2_OWNER_ACTOR_POOL, &c) == -1);
 	CHECK(halo_ps2_owner_counters_get(HALO_PS2_OWNER_OBJECT_POOL, &c) == -1);
 
 	/* the pool's own counters (memory_pool.c) are copied as they are */
-	CHECK(halo_ps2_owner_counters_note_pool(HALO_PS2_OWNER_OBJECT_POOL, 1000000u, 400u, 800u, 3u, 2u) == 0);
+	CHECK(halo_ps2_owner_counters_note_pool(HALO_PS2_OWNER_OBJECT_POOL, 1000000u, 400u, 800u, 3u, 2u, 2u) == 0);
 	CHECK(halo_ps2_owner_counters_get(HALO_PS2_OWNER_OBJECT_POOL, &c) == 0);
 	CHECK(c.capacity == 1000000u && c.used == 400u && c.high_water == 800u);
-	CHECK(c.failures == 3u && c.resets == 2u);
+	CHECK(c.failures == 5u && c.resets == 2u);
 
 	/* a later value replaces the used bytes and keeps the pool's high water */
-	CHECK(halo_ps2_owner_counters_note_pool(HALO_PS2_OWNER_OBJECT_POOL, 1000000u, 0u, 800u, 3u, 2u) == 0);
+	CHECK(halo_ps2_owner_counters_note_pool(HALO_PS2_OWNER_OBJECT_POOL, 1000000u, 0u, 800u, 3u, 2u, 2u) == 0);
 	halo_ps2_owner_counters_get(HALO_PS2_OWNER_OBJECT_POOL, &c);
-	CHECK(c.used == 0u && c.high_water == 800u && c.failures == 3u);
+	CHECK(c.used == 0u && c.high_water == 800u && c.failures == 5u);
 
 	/* nested in game state: game state keeps the value it had */
 	halo_ps2_owner_counters_get(HALO_PS2_OWNER_GAME_STATE, &c);
 	CHECK(c.used == 40u && c.high_water == 100u);
 
 	/* values past UINT32_MAX saturate */
-	CHECK(halo_ps2_owner_counters_note_pool(HALO_PS2_OWNER_OBJECT_POOL, ~0UL, ~0UL, ~0UL, ~0UL, ~0UL) == 0);
+	CHECK(halo_ps2_owner_counters_note_pool(HALO_PS2_OWNER_OBJECT_POOL, ~0UL, ~0UL, ~0UL, ~0UL, ~0UL, ~0UL) == 0);
 	halo_ps2_owner_counters_get(HALO_PS2_OWNER_OBJECT_POOL, &c);
 	CHECK(c.capacity == UINT32_MAX && c.used == UINT32_MAX && c.high_water == UINT32_MAX);
 	CHECK(c.failures == UINT32_MAX && c.resets == UINT32_MAX);
+}
+
+static void check_widget_pool(void)
+{
+	halo_ps2_owner_counters c;
+
+	CHECK(halo_ps2_owner_counters_get(HALO_PS2_OWNER_WIDGET_POOL, &c) == -1);
+	halo_ps2_owner_counters_note_widget_pool(262144u, 1200u, 4096u);
+	CHECK(halo_ps2_owner_counters_get(HALO_PS2_OWNER_WIDGET_POOL, &c) == 0);
+	CHECK(c.capacity == 262144u && c.used == 1200u && c.high_water == 4096u);
+	CHECK(c.failures == 0u && c.resets == 0u);
+	halo_ps2_owner_counters_note_widget_pool_failure();
+	halo_ps2_owner_counters_note_widget_pool_failure();
+	halo_ps2_owner_counters_note_widget_pool(262144u, 900u, 4096u);
+	halo_ps2_owner_counters_get(HALO_PS2_OWNER_WIDGET_POOL, &c);
+	CHECK(c.capacity == 262144u && c.used == 900u && c.high_water == 4096u);
+	CHECK(c.failures == 2u && c.resets == 0u);
+	halo_ps2_owner_counters_note_widget_pool_reset();
+	halo_ps2_owner_counters_get(HALO_PS2_OWNER_WIDGET_POOL, &c);
+	CHECK(c.resets == 1u && c.high_water == c.used);
 }
 
 static void check_datum_pools(void)
@@ -220,6 +240,7 @@ int main(void)
 	check_cache_pull();
 	check_audio_requests();
 	check_saturation();
+	check_widget_pool();
 
 	if (failures)
 	{

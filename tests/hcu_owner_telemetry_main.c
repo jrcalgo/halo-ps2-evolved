@@ -39,6 +39,8 @@ int main(void) {
         }
     }
     assert(!hcu_owner_static_info(HCU_OWNER_COUNT, &parent, &kind, &name));
+    assert(hcu_owner_static_info(HCU_OWNER_WIDGET_POOL, &parent, &kind, &name));
+    assert(kind == HCU_OWNER_KIND_NESTED && parent == HCU_OWNER_DYNAMIC_SIM);
 
     hcu_owner_telemetry_init(&t);
 
@@ -59,6 +61,10 @@ int main(void) {
 
     assert(hcu_owner_telemetry_note_capacity(&t, HCU_OWNER_DYNAMIC_SIM, 300));
     assert(hcu_owner_telemetry_note_used(&t, HCU_OWNER_DYNAMIC_SIM, 120));
+    /* The widget pool is allocated from the dynamic-simulation arena; its
+       internal use is nested telemetry, not another backing owner. */
+    assert(hcu_owner_telemetry_note_capacity(&t, HCU_OWNER_WIDGET_POOL, 256));
+    assert(hcu_owner_telemetry_note_used(&t, HCU_OWNER_WIDGET_POOL, 200));
     assert(hcu_owner_telemetry_note_capacity(&t, HCU_OWNER_TAGS, 5000));
     assert(hcu_owner_telemetry_note_used(&t, HCU_OWNER_TAGS, 4000));
     assert(hcu_owner_telemetry_note_capacity(&t, HCU_OWNER_BSP, 2000));
@@ -86,6 +92,8 @@ int main(void) {
     assert(r.rows[HCU_OWNER_OBJECT_POOL].sample.used == 350);
     assert(r.rows[HCU_OWNER_OBJECT_POOL].sample.failures == 1);
     assert(r.rows[HCU_OWNER_ACTOR_POOL].sample.capacity == 200);
+    assert(r.rows[HCU_OWNER_WIDGET_POOL].parent == HCU_OWNER_DYNAMIC_SIM);
+    assert(r.rows[HCU_OWNER_WIDGET_POOL].sample.used == 200);
     assert(r.rows[HCU_OWNER_RENDER_TEXTURE].kind == HCU_OWNER_KIND_NESTED);
     assert(r.rows[HCU_OWNER_RENDER_TEXTURE].sample.resets == 2);
 
@@ -108,7 +116,7 @@ int main(void) {
 
     /* Expected literal values: game state 1000 + dyn 300 + tags 5000 + bsp 2000
      * + chunks 500 + streaming 1024 + scratch 64 + dma 1179648 + audio 0. Nested
-     * object pool 400, actor pool 200 and texture 300 are NOT added. */
+     * object pool 400, actor pool 200, widget pool 256 and texture 300 are NOT added. */
     assert(r.backing_capacity == 1000u + 300u + 5000u + 2000u + 500u + 1024u + 64u + 1179648u);
     /* Used sum: 650 + 120 + 4000 + 1800 + 100 + 512 + 64 + 1179648 (game-state
      * used is the last note, 650). */
