@@ -1,7 +1,6 @@
 #include "stream/hcu_render_snapshot.h"
 
 #include <math.h>
-#include <stdio.h>
 #include <string.h>
 
 _Static_assert(sizeof(float) == 4, "CE render snapshots require 32-bit real");
@@ -11,14 +10,10 @@ _Static_assert(sizeof(halo_ps2_snapshot_matrix4x3) == HCU_CE_MATRIX4X3_BYTES,
 static halo_ps2_render_snapshot *s_snapshots[2];
 static void *s_snapshot_storage;
 static size_t s_snapshot_storage_bytes;
-static uint32_t *s_dma_words;
-static size_t s_dma_storage_bytes;
 static int s_published_snapshot = -1;
 static int s_writing_snapshot = -1;
-static uint32_t s_dma_qwords;
 
 #define HCU_DMA_MAX_MATRICES 64u
-#define HCU_DMA_WORDS ((1u + HCU_DMA_MAX_MATRICES * 4u + 1u) * 4u)
 
 static size_t align16_size(size_t value)
 {
@@ -30,25 +25,17 @@ size_t hcu_render_snapshot_storage_required(void)
 	return align16_size(sizeof(halo_ps2_render_snapshot)) * 2u;
 }
 
-size_t hcu_render_snapshot_dma_storage_required(void)
-{
-	return HCU_DMA_WORDS * sizeof(uint32_t);
-}
-
-int hcu_render_snapshot_bind(void *frame_scratch, size_t frame_scratch_bytes,
-	void *dma_commands, size_t dma_commands_bytes)
+int hcu_render_snapshot_bind(void *frame_scratch, size_t frame_scratch_bytes)
 {
 	size_t bank_bytes = align16_size(sizeof(halo_ps2_render_snapshot));
-	if (!frame_scratch || !dma_commands ||
+	if (!frame_scratch ||
 		((uintptr_t)frame_scratch & 15u) != 0u ||
-		((uintptr_t)dma_commands & 15u) != 0u ||
-		frame_scratch_bytes < hcu_render_snapshot_storage_required() ||
-		dma_commands_bytes < hcu_render_snapshot_dma_storage_required())
+		frame_scratch_bytes < hcu_render_snapshot_storage_required())
 		return -1;
 
 	/* Binding is a boot-time operation. Refuse to invalidate pointers retained
 	 * by a renderer; callers must explicitly unbind at a frame/map boundary. */
-	if (s_snapshot_storage || s_dma_words)
+	if (s_snapshot_storage)
 		return -1;
 	s_snapshot_storage = frame_scratch;
 	s_snapshot_storage_bytes = frame_scratch_bytes;
@@ -57,11 +44,8 @@ int hcu_render_snapshot_bind(void *frame_scratch, size_t frame_scratch_bytes,
 		((uint8_t *)frame_scratch + bank_bytes);
 	memset(s_snapshots[0], 0, sizeof *s_snapshots[0]);
 	memset(s_snapshots[1], 0, sizeof *s_snapshots[1]);
-	s_dma_words = (uint32_t *)dma_commands;
-	s_dma_storage_bytes = dma_commands_bytes;
 	s_published_snapshot = -1;
 	s_writing_snapshot = -1;
-	s_dma_qwords = 0;
 	return 0;
 }
 
@@ -75,9 +59,6 @@ void hcu_render_snapshot_unbind(void)
 	s_snapshots[1] = NULL;
 	s_snapshot_storage = NULL;
 	s_snapshot_storage_bytes = 0;
-	s_dma_words = NULL;
-	s_dma_storage_bytes = 0;
-	s_dma_qwords = 0;
 }
 
 halo_ps2_render_snapshot *halo_ps2_render_snapshot_begin(void)
@@ -195,10 +176,6 @@ int hcu_render_snapshot_matrix_from_ce(const void *ce_matrix4x3,
 }
 
 /* VIF unpack of V4-32 words. Same encoding as engine/src/render/gs.h. */
-#define HCU_VIF_CODE(cmd, num, imm) \
-	((uint32_t)(cmd) << 24 | (uint32_t)((num) & 0xFFu) << 16 | \
-		(uint32_t)((imm) & 0xFFFFu))
-#define HCU_VIF_NOP 0x00u
 #define HCU_VIF_UNPACK_V4_32 0x6Cu
 
 static int append_matrix(uint32_t *cursor, const void *ce_matrix)
@@ -210,67 +187,57 @@ static int append_matrix(uint32_t *cursor, const void *ce_matrix)
 	return 0;
 }
 
-int hcu_render_snapshot_publish_dma(void)
+int hcu_render_snapshot_emit_chain(chain_t *chain)
 {
 	const halo_ps2_render_snapshot *snapshot = hcu_render_snapshot_latest();
 	uint32_t *payload;
 	unsigned packed = 0;
 	unsigned index;
-
-	s_dma_qwords = 0;
-	if (!s_dma_words || s_dma_storage_bytes <
-		hcu_render_snapshot_dma_storage_required())
+	chain_t before;
+	uint32_t qwords;
+	uint64_t vif;
+	if (!chain || !chain->base || !snapshot || chain->overflow)
 		return -1;
-	if (!snapshot || snapshot->first_person_node_count +
-		snapshot->object_count == 0) {
-		static int logged_empty;
-		if (!logged_empty) {
-			logged_empty = 1;
-			printf("HALO_PS2_LOCAL snapshot-dma qwords=0\n");
-		}
+	if (snapshot->first_person_node_count + snapshot->object_count == 0)
 		return 0;
-	}
 	/* The temporary packet currently contains one compact batch. Never emit a
 	 * plausible-looking prefix when a view needs more than this batch can hold;
 	 * the renderer must split large scenes into explicit batches. */
 	if ((unsigned)snapshot->first_person_node_count +
 		(unsigned)snapshot->object_count > HCU_DMA_MAX_MATRICES)
 		return -1;
-	payload = s_dma_words + 4;
+	qwords = ((unsigned)snapshot->first_person_node_count +
+		(unsigned)snapshot->object_count) * 4u;
+	/* chain_cnt creates the real DMA CNT tag and keeps the VIF command in the
+	 * tag's TTE field, matching bsp_render's live chain protocol. */
+	before = *chain;
+	/* TTE's low word is VIF0 and high word is VIF1. Leave VIF0 as
+	 * NOP, then put UNPACK in VIF1 so the first following word is matrix data. */
+	vif = (uint64_t)(HCU_VIF_UNPACK_V4_32 << 24 |
+		((qwords) & 0xFFu) << 16) << 32;
+	payload = (uint32_t *)chain_cnt(chain, qwords, vif);
+	if (!payload)
+		return -1;
 	for (index = 0; index < snapshot->first_person_node_count &&
 		packed < HCU_DMA_MAX_MATRICES; ++index, ++packed) {
-		if (append_matrix(payload, &snapshot->first_person_nodes[index]) != 0)
+		if (append_matrix(payload, &snapshot->first_person_nodes[index]) != 0) {
+			*chain = before;
 			return -1;
+		}
 		payload += 16;
 	}
 	for (index = 0; index < snapshot->object_count &&
 		packed < HCU_DMA_MAX_MATRICES; ++index, ++packed) {
-		if (append_matrix(payload, &snapshot->objects[index].world) != 0)
+		if (append_matrix(payload, &snapshot->objects[index].world) != 0) {
+			*chain = before;
 			return -1;
+		}
 		payload += 16;
 	}
-	s_dma_words[0] = HCU_VIF_CODE(HCU_VIF_NOP, 0, 0);
-	s_dma_words[1] = HCU_VIF_CODE(HCU_VIF_NOP, 0, 0);
-	s_dma_words[2] = HCU_VIF_CODE(HCU_VIF_NOP, 0, 0);
-	s_dma_words[3] = HCU_VIF_CODE(HCU_VIF_UNPACK_V4_32, packed * 4u, 0);
-	s_dma_qwords = 1u + packed * 4u;
-	{
-		static int logged_packet;
-		if (!logged_packet) {
-			logged_packet = 1;
-			printf("HALO_PS2_LOCAL snapshot-dma qwords=%u\n",
-				(unsigned)s_dma_qwords);
-		}
+	if (chain->overflow || packed * 4u != qwords) {
+		*chain = before;
+		chain->overflow = 0;
+		return -1;
 	}
-	return (int)s_dma_qwords;
-}
-
-uint32_t const *hcu_render_snapshot_dma_words(void)
-{
-	return s_dma_words;
-}
-
-uint32_t hcu_render_snapshot_dma_qwords(void)
-{
-	return s_dma_qwords;
+	return (int)(chain->qw - before.qw);
 }
