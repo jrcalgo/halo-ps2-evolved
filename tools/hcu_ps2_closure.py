@@ -31,6 +31,8 @@ MANIFEST_PATH = HCU / "port/ps2/port.json"
 # weakly. Root the actual providers for production runtime guests.
 PRODUCTION_BITMAP_ROOTS = (
     "halo_ps2_bitmap_requests_init",
+    "halo_ps2_bitmap_requests_begin",
+    "halo_ps2_bitmap_requests_set_view",
     "halo_ps2_bitmap_requests_end",
     "halo_ps2_bitmap_requests_register_consumer",
     "halo_ps2_bitmap_requests_clear_consumer",
