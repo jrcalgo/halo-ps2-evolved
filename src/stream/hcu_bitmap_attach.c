@@ -5,6 +5,13 @@
 #include "stream/hcu_bitmap_renderer.h"
 #include "stream/hcu_render_snapshot.h"
 
+static uint32_t s_frame_attachment_count;
+
+uint32_t hcu_bitmap_renderer_attachment_count(void)
+{
+	return s_frame_attachment_count;
+}
+
 /* The engine's hook table uses u32 and chain_t; these wrappers keep the exact engine signatures. */
 static int32_t attach_begin(void *user, u32 frame)
 {
@@ -39,6 +46,7 @@ int32_t hcu_bitmap_renderer_attach_frame(hcu_bitmap_renderer *r, hcu_bitmap_fram
 	hooks.user = r;
 	r->owner = owner;
 	bsp_render_set_frame_hooks(&hooks);
+	s_frame_attachment_count++;
 	return HCU_BITMAP_FRAME_OK;
 }
 
@@ -48,5 +56,7 @@ int32_t hcu_bitmap_renderer_detach_frame(hcu_bitmap_renderer *r)
 	if (r->frame_open || (r->owner && r->owner->gpu_pending)) return HCU_BITMAP_FRAME_E_BUSY;
 	bsp_render_set_frame_hooks(0);
 	r->owner = 0;
+	if (s_frame_attachment_count)
+		s_frame_attachment_count--;
 	return HCU_BITMAP_FRAME_OK;
 }

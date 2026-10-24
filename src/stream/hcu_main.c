@@ -11,6 +11,8 @@
 #include "stream/hcu_render_snapshot.h"
 #include "stream/hcu_storage_boot.h"
 #include "halo_ps2_cache.h"
+#include "halo_ps2_bitmap_frame.h"
+#include "stream/hcu_bitmap_renderer.h"
 
 #include <kernel.h>
 #include <dma.h>
@@ -44,11 +46,17 @@
 #define HALO_HCU_ASSET_ROOT "host:/"
 #endif
 
-/* The committed EE budget is 27,787,264 bytes (0x1a80000). The uncommitted
- * reserve begins where the committed bytes end and runs to 32 MiB. */
-#define HCU_COMMITTED_BYTES 27787264u
-#define HCU_RESERVE_BYTES 5767168u
-#define HCU_RESERVE_START HCU_COMMITTED_BYTES
+/* config/memory-budget.json version 3. Physical EE layout, derived from named
+ * constants: 1 MiB low kernel, then elf_static (2,359,296 bytes) holding the
+ * file-backed ELF sections, then the single boot backing (MEM_LAYOUT_V2_BYTES),
+ * then the uncommitted reserve up to the 0x01f80000 high kernel reservation.
+ * ELF NOBITS is charged to resident_gameplay, not to elf_static. */
+#define HCU_LOW_KERNEL_BYTES 0x00100000u
+#define HCU_ELF_STATIC_BYTES 2359296u
+#define HCU_FILE_BACKED_END (HCU_LOW_KERNEL_BYTES + HCU_ELF_STATIC_BYTES)
+#define HCU_RESERVE_START (HCU_FILE_BACKED_END + (unsigned)MEM_LAYOUT_V2_BYTES)
+#define HCU_RESERVE_END 0x01f80000u
+#define HCU_RESERVE_BYTES (HCU_RESERVE_END - HCU_RESERVE_START)
 /* Partition row bound before CE allocation. The default "bootstrap" keeps the
  * unqualified 2 MiB tag span and is logged as such; any other name must be a
  * row of hcu_memory_partition_select_v2() or boot fails closed. */
@@ -147,6 +155,19 @@ static int hcu_renderer_drained(void *ctx)
 		return 1;
 	return bsp_render_fence_observed(kick) != 0;
 }
+
+/* The explicit headless runtime guest exits before CE's renderer loop. A
+ * missing frame owner is safe there only while no bitmap frame or BSP kick
+ * has ever started; all other builds keep requiring the real frame owner. */
+#ifdef HALO_HCU_HEADLESS_RUNTIME_GUEST
+static int hcu_renderer_never_started(void *ctx)
+{
+	(void)ctx;
+	return bsp_render_kick_seq() == 0 &&
+		halo_ps2_bitmap_frame_is_active() == 0 &&
+		hcu_bitmap_renderer_attachment_count() == 0;
+}
+#endif
 
 static void hcu_report_owner_telemetry(const char *phase)
 {
@@ -382,6 +403,12 @@ static int hcu_register_selected_runtime(hcu_map_service *service,
 		runtime.stream_scratch_bytes = HCU_C2_STREAM_SCRATCH_BYTES;
 		runtime.maximum_tag_image_bytes = (uint32_t)s_partition.tag_cache_bytes;
 		runtime.renderer_drained = hcu_renderer_drained;
+#ifdef HALO_HCU_HEADLESS_RUNTIME_GUEST
+		runtime.headless_no_bitmap_consumers = 1;
+		runtime.renderer_never_started = hcu_renderer_never_started;
+		runtime.headless_candidate_admission = 1;
+		runtime.partition_row = HCU_C2_IMAGE_ROW;
+#endif
 		runtime.residency_entries = s_residency_entries;
 		runtime.residency_entry_capacity = HCU_PARTITION_RESIDENCY_SLOTS;
 		runtime.residency_arena = s_partition.residency_base;
@@ -437,6 +464,8 @@ static void hcu_bind_owner_telemetry(mem_layout_v2_t *layout,
 		hcu_sample_ce_owner, (void *)(intptr_t)HALO_PS2_OWNER_OBJECT_POOL);
 	hcu_owner_telemetry_bind_sampler(&s_owner_telemetry, HCU_OWNER_ACTOR_POOL,
 		hcu_sample_ce_owner, (void *)(intptr_t)HALO_PS2_OWNER_ACTOR_POOL);
+	hcu_owner_telemetry_bind_sampler(&s_owner_telemetry, HCU_OWNER_WIDGET_POOL,
+		hcu_sample_ce_owner, (void *)(intptr_t)HALO_PS2_OWNER_WIDGET_POOL);
 
 	s_owner_ctx[HCU_OWNER_DYNAMIC_SIM].arena = dynamic;
 	hcu_owner_telemetry_bind_sampler(&s_owner_telemetry, HCU_OWNER_DYNAMIC_SIM,
@@ -654,7 +683,7 @@ static int report_and_validate_regions(const mem_layout_v2_t *layout,
 		starts[i] = base;
 		ends[i] = base + region->cap;
 		if (starts[i] < boot_start || ends[i] > boot_end ||
-			ends[i] > 0x01a00000u)
+			ends[i] > HCU_RESERVE_START)
 			return -1;
 		for (j = 0; j < i; j++) {
 			if (starts[i] < ends[j] && starts[j] < ends[i])
@@ -728,9 +757,9 @@ static int report_kernel_stack(void)
 	if ((uintptr_t)status.stack_size > UINTPTR_MAX - stack_start)
 		return -1;
 	stack_end = stack_start + (uintptr_t)status.stack_size;
-	/* The v2 reserve is [26 MiB, 31.5 MiB); the remaining top 512 KiB
+	/* The reserve is [HCU_RESERVE_START, 0x01f80000); the top 512 KiB
 	 * plus low 1 MiB are the 1.5 MiB kernel/system reservation. */
-	if (stack_start < 0x01f80000u || stack_end > 0x02000000u)
+	if (stack_start < HCU_RESERVE_END || stack_end > 0x02000000u)
 		return -1;
 	printf("HALO_PS2_LOCAL kernel-stack base=0x%x size=%u end=0x%x\n",
 		(unsigned)stack_start, (unsigned)status.stack_size,
@@ -798,15 +827,15 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	/* EE RAM below 1 MiB and above 31.5 MiB belongs to system/kernel;
-	 * 26–31.5 MiB is the untouched v2 reserve. The full boot allocation,
+	 * [HCU_RESERVE_START, 0x01f80000) is the untouched reserve. The full boot allocation,
 	 * including allocator metadata between _end and the returned pointer,
 	 * must finish before that reserve. */
-	if (ee_physical_address(&_ftext) < 0x00100000u ||
-		ee_physical_address(&_fbss) > 0x00300000u ||
+	if (ee_physical_address(&_ftext) < HCU_LOW_KERNEL_BYTES ||
+		ee_physical_address(&_fbss) > HCU_FILE_BACKED_END ||
 		ee_physical_address(backing) < ee_physical_address(&_end) ||
-		ee_physical_address(backing) > 0x01a00000u ||
+		ee_physical_address(backing) > HCU_RESERVE_START ||
 		backing_bytes + MEM_LAYOUT_V2_GUARDED_SLACK >
-			0x01a00000u - ee_physical_address(backing))
+			HCU_RESERVE_START - ee_physical_address(backing))
 	{
 		printf("[err] ELF/boot backing exceeds EE fixed budget\n");
 		__real_free(backing);
@@ -1022,8 +1051,9 @@ int main(int argc, char **argv)
 	/* Legacy bootstrap map storage is released only after the renderer fence
 	 * has retired. Without this gate the unload path would free live GS/DMA
 	 * readers. */
-	if (!hcu_map_service_set_legacy_renderer_drained(&s_map_service,
-		hcu_renderer_drained, NULL)) {
+	if (!s_partition_selected &&
+		!hcu_map_service_set_legacy_renderer_drained(&s_map_service,
+			hcu_renderer_drained, NULL)) {
 		printf("[err] cannot bind renderer drain gate to HCU map service\n");
 		hcu_render_snapshot_unbind();
 		physical_memory_free();

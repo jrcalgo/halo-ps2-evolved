@@ -82,6 +82,9 @@ int32_t hcu_bitmap_renderer_submit_frame(hcu_bitmap_renderer *renderer, uint32_t
  * fence_context = the renderer. Detach refuses while a kick's leases are pending. */
 int32_t hcu_bitmap_renderer_attach_frame(hcu_bitmap_renderer *renderer, hcu_bitmap_frame_owner *owner);
 int32_t hcu_bitmap_renderer_detach_frame(hcu_bitmap_renderer *renderer);
+/* Number of active EE frame-hook attachments; used by explicit headless
+ * lifetime checks to fail closed if a bitmap consumer is attached. */
+uint32_t hcu_bitmap_renderer_attachment_count(void);
 
 #ifdef __cplusplus
 }

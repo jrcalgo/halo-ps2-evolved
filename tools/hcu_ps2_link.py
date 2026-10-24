@@ -404,6 +404,8 @@ def main() -> None:
                         help="local split-screen players for workload-only image (2 or CE maximum 4)")
     parser.add_argument("--m2-animation-trace", action="store_true",
                         help="link the opt-in CE animation trace diagnostic closure")
+    parser.add_argument("--production-runtime-guest", action="store_true",
+                        help="link the selected-map production guest closure")
     args = parser.parse_args()
     if args.no_bootstrap_memory:
         OUT = ROOT / "build/hcu-ps2-closure/all-no-bootstrap-memory"
@@ -425,6 +427,10 @@ def main() -> None:
         if not args.no_bootstrap_memory or args.m2_ui_lifecycle_test:
             parser.error("--m2-animation-trace requires --no-bootstrap-memory and is separate from lifecycle test")
         OUT = ROOT / "build/hcu-ps2-closure/all-no-bootstrap-memory-m2-animation-trace"
+    if args.production_runtime_guest:
+        if not args.no_bootstrap_memory or args.m2_ui_lifecycle_test:
+            parser.error("--production-runtime-guest requires --no-bootstrap-memory and is separate from diagnostics")
+        OUT = ROOT / "build/hcu-ps2-closure/all-no-bootstrap-memory-production-runtime-guest"
     build, prefix, env, _jobs = environment()
     compiler = prefix / "ee/bin/mips64r5900el-ps2-elf-gcc"
     nm = prefix / "ee/bin/mips64r5900el-ps2-elf-nm"

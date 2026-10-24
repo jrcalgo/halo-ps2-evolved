@@ -382,6 +382,12 @@ static int runtime_spans_disjoint(const hcu_map_profile_runtime *left,
 static int profile_readers_drained(const hcu_map_profile_runtime *rt)
 {
 	const hcu_bitmap_frame_owner *owner = rt->frame_owner;
+	if (!owner)
+		return rt->headless_no_bitmap_consumers &&
+			rt->renderer_never_started &&
+			rt->renderer_never_started(rt->renderer_start_context) != 0 &&
+			ps2_cache_bsp_readers_drained() && rt->renderer_drained &&
+			rt->renderer_drained(rt->renderer_context) != 0;
 	return owner && owner->bound && !owner->in_frame && !owner->gpu_pending &&
 		owner->dispatch && owner->dispatch->lease_count == 0 &&
 		ps2_cache_bsp_readers_drained() && rt->renderer_drained &&
@@ -640,6 +646,8 @@ static int profile_load(hcu_map_service *service, const char *map_name)
 	service->reload_pending = 0;
 	service->staged_map[0] = 0;
 	service->staged_entry = NULL;
+	printf("HALO_PS2_LOCAL map-mount result=1 active=1 map=%s source=profile-runtime\n",
+		entry->identity.map_name);
 #ifdef HALO_PS2_M2_ANIMATION_TRACE
 	ps2_animation_trace_map_epoch_advance();
 #endif
@@ -949,6 +957,31 @@ int hcu_map_service_preflight(const char *map_name)
 		return 0;
 	}
 #endif
+#ifdef HALO_HCU_HEADLESS_RUNTIME_GUEST
+	/* This opt-in guest admits only its exact selected partition runtime. It
+	 * bypasses the unqualified legacy-map whitelist, not the runtime's package,
+	 * metadata, catalog, span, residency, or compatibility preflight. */
+	if (service->runtime_registered &&
+		service->runtime.headless_candidate_admission) {
+		if (!service->runtime.partition_row ||
+			!service->runtime.partition_row[0] ||
+			strcmp(service->runtime_map_name, entry->identity.map_name) != 0 ||
+			service->runtime.maximum_tag_image_bytes !=
+				physical_memory_get_tag_cache_size()) {
+			printf("HALO_PS2_LOCAL map-preflight rejected reason=headless-candidate-capacity map=%s row=%s\n",
+				entry->identity.map_name,
+				service->runtime.partition_row ? service->runtime.partition_row : "unset");
+			return 0;
+		}
+		printf("HALO_PS2_LOCAL map-preflight candidate row=%s map=%s profile=%u package-bytes=%u tag-cap=%lu bsp-cap=%lu\n",
+			service->runtime.partition_row, entry->identity.map_name,
+			(unsigned)service->runtime.profile_id,
+			(unsigned)service->runtime.package_size,
+			physical_memory_get_tag_cache_size(),
+			physical_memory_get_structure_bsp_cache_size());
+		return profile_preflight(service, entry);
+	}
+#endif
 	if (service->preflight_ready && !service->runtime_registered)
 		return service->staged_entry == entry;
 	/* The full catalog is available for identity and extent checks, but no
@@ -1134,6 +1167,13 @@ int hcu_map_service_unregister_profile(hcu_map_service *service)
 static int runtime_registration_valid(const hcu_map_catalog_entry *entry,
 	const hcu_map_profile_runtime *runtime, hcu_asset_profile_view *candidate)
 {
+	if (!entry || !runtime) return 0;
+#ifdef HALO_HCU_HEADLESS_RUNTIME_GUEST
+	if (runtime->headless_candidate_admission &&
+		(!runtime->partition_row || !runtime->partition_row[0] ||
+		 runtime->maximum_tag_image_bytes != physical_memory_get_tag_cache_size()))
+		return 0;
+#endif
 	return runtime->package_read_at && runtime->compatibility &&
 		runtime->package_size && runtime->profile_id &&
 		runtime->metadata_bytes && runtime->metadata_size &&

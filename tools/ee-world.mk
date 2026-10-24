@@ -51,6 +51,8 @@ WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS ?= 2
 # Partition row (hcu_memory_partition_select_v2) whose generated production image
 # header is built in. Empty keeps the bootstrap partition.
 WORLD_HCU_PARTITION_PROFILE ?=
+WORLD_HCU_HEADLESS_RUNTIME_GUEST ?=0
+WORLD_HCU_PROFILE_PACKAGE_ROOT ?=build/m2-c2-r3-selected-packages/pkg
 ifeq ($(WORLD_HCU_GAMEPLAY),1)
 # Optional CE machine path; the regular measured viewer remains the default.
 WORLD_HCU_MEMORY_BRIDGE := 1
@@ -85,6 +87,9 @@ endif
 ifeq ($(WORLD_STREAM_DIAGNOSTIC),1)
 EE_OBJS += $(WORLD_OUTPUT)/hybrid/staging.o $(WORLD_OUTPUT)/hybrid/reader_ee.o $(WORLD_OUTPUT)/hybrid/viewer_diagnostic.o
 $(WORLD_OUTPUT)/main.o: EE_CFLAGS += -DHALO_STREAM_DIAGNOSTIC -Dbsp_render_build=hybrid_stream_build
+ifeq ($(WORLD_HCU_HEADLESS_RUNTIME_GUEST),1)
+$(WORLD_OUTPUT)/main.o: EE_CFLAGS += -DHALO_PS2_C2_PRODUCTION_RUNTIME_GUEST=1
+endif
 endif
 ifeq ($(WORLD_PLAY),1)
 EE_OBJS += $(WORLD_OUTPUT)/play_ee.o \
@@ -150,7 +155,8 @@ hcu-profile-force:
 # pins that row's package, metadata, source maps and datum table.
 $(WORLD_OUTPUT)/c2/%.h: tools/c2_profile_image_header.py
 	@mkdir -p $(@D)
-	python3 -I tools/c2_profile_image_header.py --row $* --output $@
+	python3 -I tools/c2_profile_image_header.py --row $* \
+		--package-root "$(WORLD_HCU_PROFILE_PACKAGE_ROOT)" --output $@
 
 $(WORLD_OUTPUT)/stream/hcu_main.o: src/stream/hcu_main.c hcu-profile-force \
 	$(if $(WORLD_HCU_PARTITION_PROFILE),$(WORLD_OUTPUT)/c2/$(WORLD_HCU_PARTITION_PROFILE).h)
@@ -161,6 +167,8 @@ $(WORLD_OUTPUT)/stream/hcu_main.o: src/stream/hcu_main.c hcu-profile-force \
 		-DHALO_HCU_TAG_CACHE_BYTES=$(WORLD_HCU_TAG_CACHE_BYTES) \
 		-DHALO_HCU_ASSET_ROOT=\"$(WORLD_HCU_ASSET_ROOT)\" \
 		$(if $(WORLD_HCU_PARTITION_PROFILE),-DHALO_HCU_PARTITION_PROFILE=\"$(WORLD_HCU_PARTITION_PROFILE)\" -DHALO_HCU_PROFILE_IMAGE_HEADER=\"$(WORLD_HCU_PARTITION_PROFILE).h\" -I$(WORLD_OUTPUT)/c2,) \
+		$(if $(filter 1,$(WORLD_HCU_HEADLESS_RUNTIME_GUEST)),-DHALO_HCU_HEADLESS_RUNTIME_GUEST=1,) \
+		$(if $(filter 1,$(WORLD_HCU_HEADLESS_RUNTIME_GUEST)),-DHALO_PS2_C2_PRODUCTION_RUNTIME_GUEST=1,) \
 		$(if $(filter 1,$(WORLD_HCU_RENDER_CLEAR_TEST)),-DHALO_PS2_M3_RENDER_CLEAR_TEST=1,) \
 		$(if $(filter 1,$(WORLD_HCU_STEP8_MP_CAPACITY_DIAGNOSTIC)),-DHALO_PS2_STEP8_MP_CAPACITY_DIAGNOSTIC=1,) \
 		$(if $(filter 2 4,$(WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS)),-DHALO_PS2_STEP8_MP_WORKLOAD_PLAYERS=$(WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS),) \
@@ -178,6 +186,7 @@ $(WORLD_OUTPUT)/stream/hcu_map_service.o: src/stream/hcu_map_service.c
 		-I$(HCU_ROOT)/port/ps2/include -I$(HCU_ROOT)/source \
 		-I$(HCU_ROOT)/port/include -fshort-wchar \
 		-I$(HCU_ROOT)/source/cseries -DHALO_PS2=1 \
+		$(if $(filter 1,$(WORLD_HCU_HEADLESS_RUNTIME_GUEST)),-DHALO_HCU_HEADLESS_RUNTIME_GUEST=1,) \
 		$(if $(filter 1,$(WORLD_HCU_M2_UI_LIFECYCLE_TEST)),-DHALO_PS2_M2_UI_LIFECYCLE_TEST=1,) \
 		$(if $(filter 1,$(WORLD_HCU_STEP8_MP_CAPACITY_DIAGNOSTIC)),-DHALO_PS2_STEP8_MP_CAPACITY_DIAGNOSTIC=1,) \
 		$(if $(filter 2 4,$(WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS)),-DHALO_PS2_STEP8_MP_WORKLOAD_PLAYERS=$(WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS),) \

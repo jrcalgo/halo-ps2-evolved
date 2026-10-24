@@ -51,6 +51,17 @@ typedef struct {
 	 * map's world or texture storage. NULL fails closed. */
 	int (*renderer_drained)(void *context);
 	void *renderer_context;
+	/* Explicit CPU-only guest probe mode. This is never used by the normal
+	 * runtime. It permits a NULL frame owner only when the caller proves that
+	 * no renderer consumer has started and the BSP lease table is idle. */
+	int headless_no_bitmap_consumers;
+	int (*renderer_never_started)(void *context);
+	void *renderer_start_context;
+	/* Only the explicit headless runtime guest may open the candidate
+	 * admission branch in the map service. The row is generated into the
+	 * runtime header and must already match HCU's selected partition. */
+	int headless_candidate_admission;
+	const char *partition_row;
 	/* Caller-owned CE/CBSP segment residency. Bound before every prepare, so a
 	 * registered runtime never reads whole chunks. The arena is whole 64 KiB
 	 * slots, 16-byte aligned, and disjoint from every other span. */
