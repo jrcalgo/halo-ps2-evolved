@@ -43,6 +43,8 @@ LINK_LOCK = ROOT / "build/.hcu-parent-link-probe.lock"
 REUSE_ROOT = ROOT / "build/m2-c2-gaps-reuse"  # output root for --cycles/--ticks runs
 C3_ROOT = ROOT / "build/c3/integrate"        # output root for --c3 rows (summary.json is never written)
 RESULT_ROOT = MATRIX                           # switched to C3_ROOT by --c3
+WORKLOAD_PLAYERS = {"none": 0, "4p4bot": 4}  # local players per --c3-workload
+OUTPUT_ROOT: Path | None = None                # --output-root DIR: every row writes to DIR/<row>/ instead
 RENDER_ROOT = ROOT / "build/c3/render-loop"   # output root for --c3 --render-views runs (v<N>/<row>)
 RENDER_PACKAGE_TREE = ROOT / "build/c3/render-tree"  # <tree>/pkg -> build/c3/render-packages (BSPS/TEXS/LMn chunks)
 FOREIGN_ROOT = ROOT / "build/m2-c2-foreign"   # output root for --successor runs
@@ -776,7 +778,7 @@ def run_group(command: list[str], *, log: Path, timeout: int, env: dict | None =
 
 def link_row(row: str, package_root: Path, out: Path, cycles: int = 1, ticks: int = 0,
              include_dir: Path | None = None, render_views: int = 0,
-             render_frames: int = 300) -> tuple[Path | None, str]:
+             render_frames: int = 300, workload_players: int = 0) -> tuple[Path | None, str]:
     """Link the row's runtime-guest ELF under out/link, holding the shared link lock.
 
     include_dir (the --successor headers) is added to C_INCLUDE_PATH for every compile."""
@@ -804,6 +806,13 @@ def link_row(row: str, package_root: Path, out: Path, cycles: int = 1, ticks: in
             f"#define HCU_C3_RENDER_VIEWS {render_views}\n"
             f"#define HCU_C3_RENDER_FRAMES {render_frames}\n")
         include_dirs.append(str(render_dir))
+    if workload_players:
+        # main.c includes <hcu_c3_workload.h> (C3:workload block): CE's player_spawn_count.
+        workload_dir = out / "workload-inc"
+        workload_dir.mkdir(parents=True, exist_ok=True)
+        (workload_dir / "hcu_c3_workload.h").write_text(
+            f"#define HCU_C3_WORKLOAD_LOCAL_PLAYERS {workload_players}\n")
+        include_dirs.append(str(workload_dir))
     if include_dir is not None:
         include_dirs.append(str(include_dir))
     if include_dirs:
@@ -909,8 +918,10 @@ def render_checks(lines: list[str], views: int, frames: int) -> dict:
 
 
 def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1, ticks: int = 0,
-            render_views: int = 0, render_frames: int = 300) -> dict:
-    if render_views:
+            render_views: int = 0, render_frames: int = 300, workload_players: int = 0) -> dict:
+    if OUTPUT_ROOT is not None:
+        out = OUTPUT_ROOT / row
+    elif render_views:
         out = RENDER_ROOT / f"v{render_views}" / row
     else:
         out = (RESULT_ROOT if cycles == 1 and not ticks else REUSE_ROOT) / row
@@ -931,7 +942,8 @@ def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1
             cwd=ROOT, capture_output=True, text=True)
         if header.returncode:
             raise RuntimeError(f"row header failed: {header.stderr.strip()}")
-        elf, why = link_row(row, package_root, out, cycles, ticks, None, render_views, render_frames)
+        elf, why = link_row(row, package_root, out, cycles, ticks, None, render_views, render_frames,
+                            workload_players=workload_players)
         if elf is None:
             raise RuntimeError(why)
         result["elf"] = str(elf.relative_to(ROOT))
@@ -1077,7 +1089,7 @@ def previously_passed(row: str) -> bool:
 
 
 def main(argv=None) -> int:
-    global RESULT_ROOT
+    global RESULT_ROOT, OUTPUT_ROOT
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--rows", help="comma-separated row names (default: every row with a selected package)")
     parser.add_argument("--jobs-link", type=int, default=1,
@@ -1097,6 +1109,12 @@ def main(argv=None) -> int:
                               "PCSX2 with framebuffer captures; results go to build/c3/render-loop/v<N>/<row>/"))
     parser.add_argument("--render-frames", type=int, default=300,
                         help="frames the render loop draws with --render-views (default %(default)s; must be a multiple of 30)")
+    parser.add_argument("--output-root", type=Path, metavar="DIR",
+                        help=("write each row's results to DIR/<row>/ instead of the default root (build/c3/integrate, "
+                              "build/c3/render-loop/v<N>, build/m2-c2-gaps-reuse, ...); default unchanged"))
+    parser.add_argument("--c3-workload", choices=("none", "4p4bot"), default="none",
+                        help=("with --c3: 4p4bot starts 4 local players (CE's player_spawn_count, the split-screen path) "
+                              "on the first map load; no bots are spawned because stock CE has no bot path"))
     parser.add_argument("--package-root", type=Path,
                         help=("override the selected package root (<root>/<row>/<row>.hcp + .json); with --render-views the "
                               "default is the C3 render package tree build/c3/render-tree/pkg"))
@@ -1110,6 +1128,8 @@ def main(argv=None) -> int:
     parser.add_argument("--successor-ticks", type=int, default=SUCCESSOR_TICKS,
                         help="in-map CE ticks run on the surviving map (default %(default)s)")
     args = parser.parse_args(argv)
+    if args.output_root is not None:
+        OUTPUT_ROOT = (ROOT / args.output_root if not args.output_root.is_absolute() else args.output_root).resolve()
     if args.successor:
         if not args.rows or "," in args.rows:
             parser.error("--successor needs exactly one --rows row")
@@ -1143,6 +1163,8 @@ def main(argv=None) -> int:
             parser.error("--render-views sets its own tick count (frames + 5); do not pass --cycles/--ticks/--skip-existing")
         if not args.package_root:
             args.package_root = prepare_render_tree()
+    if args.c3_workload != "none" and not args.c3:
+        parser.error("--c3-workload needs --c3")
     if args.package_root and not args.c3:
         parser.error("--package-root needs --c3")
     if args.c3:
@@ -1159,6 +1181,7 @@ def main(argv=None) -> int:
             print(f"{row}: skipped (previous pass)")
             continue
         result = run_row(row, args.package_root, cycles=args.cycles,
+                         workload_players=WORKLOAD_PLAYERS[args.c3_workload],
                          ticks=(args.render_frames + 5) if args.render_views else args.ticks,
                          render_views=args.render_views, render_frames=args.render_frames)
         summary.append(result)

@@ -23,6 +23,7 @@ SKIP = {
 	"halo_ps2_render_snapshot_begin", "halo_ps2_render_snapshot_commit",
 	# C3: weak writer hooks; the parent snapshot bank (src/stream/hcu_snapshot_bank.c) implements them.
 	"halo_ps2_frame_snapshot_begin", "halo_ps2_frame_snapshot_commit",
+	"halo_ps2_frame_snapshot_intern_object",
     # Implemented by the real PS2 memory provider. Keep undefined references
     # unresolved in every profile so the provider object must satisfy them.
     "ps2_step8_dynamic_sim_diagnostics",

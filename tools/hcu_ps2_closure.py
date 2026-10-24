@@ -59,6 +59,7 @@ PS2_SERVICES = {
     "display_scenario_help", "interrupt_result",
     "halo_ps2_render_snapshot_begin", "halo_ps2_render_snapshot_commit",
     "halo_ps2_frame_snapshot_begin", "halo_ps2_frame_snapshot_commit",
+    "halo_ps2_frame_snapshot_intern_object",
 }
 PS2_SERVICE_PREFIXES = (
     "cache_file_", "cache_files_", "texture_cache_", "sound_cache_", "_texture_cache_", "_sound_cache_",

@@ -286,6 +286,7 @@ const halo_ps2_frame_snapshot *hcu_snapshot_bank_begin_read(
 		return NULL;
 	s_state[s_published].readers++;
 	s_stats.read_pins_active++;
+	s_stats.read_pins_taken++;
 	reader->slot = s_published;
 	reader->snapshot = s_slots[s_published];
 	return reader->snapshot;
@@ -308,6 +309,11 @@ const halo_ps2_frame_snapshot *hcu_snapshot_bank_latest(void)
 	return s_published == BANK_NONE ? NULL : s_slots[s_published];
 }
 
+int hcu_snapshot_bank_published_slot(void)
+{
+	return s_published;
+}
+
 void hcu_snapshot_bank_get_stats(hcu_snapshot_bank_stats *out)
 {
 	if (out)
@@ -318,6 +324,12 @@ void hcu_snapshot_bank_get_stats(hcu_snapshot_bank_stats *out)
 halo_ps2_frame_snapshot *halo_ps2_frame_snapshot_begin(void)
 {
 	return hcu_snapshot_bank_begin_write();
+}
+
+int halo_ps2_frame_snapshot_intern_object(halo_ps2_frame_snapshot *snapshot,
+	halo_ps2_frame_object_id id, int *out_index)
+{
+	return hcu_snapshot_bank_intern_object(snapshot, id, out_index);
 }
 
 int halo_ps2_frame_snapshot_commit(halo_ps2_frame_snapshot *snapshot)

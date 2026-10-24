@@ -68,6 +68,7 @@ const halo_ps2_frame_snapshot *hcu_snapshot_bank_begin_read(
 	hcu_snapshot_reader *reader);
 void hcu_snapshot_bank_end_read(hcu_snapshot_reader *reader);
 const halo_ps2_frame_snapshot *hcu_snapshot_bank_latest(void);
+int hcu_snapshot_bank_published_slot(void);
 
 /* Counters for telemetry and tests. */
 typedef struct hcu_snapshot_bank_stats {
@@ -75,6 +76,7 @@ typedef struct hcu_snapshot_bank_stats {
 	uint32_t commit_rejects;
 	uint32_t write_refusals;
 	uint32_t read_pins_active;
+	uint32_t read_pins_taken;
 	uint32_t object_dedupe_hits;
 	uint32_t object_overflows;
 } hcu_snapshot_bank_stats;
