@@ -29,12 +29,67 @@ static uint8_t s_small_metadata_storage[4] __attribute__((aligned(16)));
 static uint8_t s_relocation_storage[4096] __attribute__((aligned(16)));
 static uint8_t s_stream_scratch[4096] __attribute__((aligned(16)));
 
+static uint8_t s_b_metadata_storage[256] __attribute__((aligned(16)));
+static uint8_t s_b_relocation_storage[4096] __attribute__((aligned(16)));
+static uint8_t s_b_stream_scratch[4096] __attribute__((aligned(16)));
+static hcu_asset_residency_entry s_b_residency_entries[4] __attribute__((aligned(16)));
+static uint8_t s_b_residency_arena[HCU_PROFILE_MOUNT_RESIDENCY_SEGMENT_BYTES]
+	__attribute__((aligned(16)));
+/* Stands for the published tag cache of the live owner: filled with its map's
+ * first letter when the scripted load publishes it, cleared when it unmounts. */
+static uint8_t s_live_tags[32] __attribute__((aligned(16)));
+/* Two whole 64 KiB residency slots, as the production arena is sized. */
+static hcu_asset_residency_entry s_residency_entries[4] __attribute__((aligned(16)));
+static uint8_t s_residency_arena[2u * HCU_PROFILE_MOUNT_RESIDENCY_SEGMENT_BYTES]
+	__attribute__((aligned(16)));
+
 static unsigned s_prepare_calls;
 static unsigned s_load_calls;
 static unsigned s_unload_calls;
 static unsigned s_unmount_calls;
 static int s_prepare_result = HCU_PROFILE_MOUNT_OK;
 static unsigned s_load_failures_remaining;
+static int s_bindings_valid = 1;
+static int s_renderer_drained = 1;
+static unsigned s_renderer_calls;
+static unsigned s_bind_calls;
+static unsigned s_unbound_prepares;
+static int s_bind_result = HCU_PROFILE_MOUNT_OK;
+static int s_legacy_drained = 1;
+/* Ordered record of the seam calls: "prepare:<map>", "publish:<map>",
+ * "load-fail:<map>", "dispose:<map>", "unpublish:<map>". */
+static char s_trace[16][48];
+static unsigned s_trace_count;
+/* CE's dispose callback runs while the old owner's tags are still published. */
+static void (*s_dispose_callback)(void);
+
+static void trace_event(const char *event, const char *map)
+{
+	assert(s_trace_count < 16u);
+	snprintf(s_trace[s_trace_count++], sizeof(s_trace[0]), "%s:%s", event,
+		map ? map : "-");
+}
+
+static void expect_trace(const char *const expected[], unsigned count)
+{
+	unsigned i;
+	assert(s_trace_count == count);
+	for (i = 0; i < count; ++i)
+		assert(strcmp(s_trace[i], expected[i]) == 0);
+}
+
+static int scripted_legacy_drained(void *context)
+{
+	(void)context;
+	return s_legacy_drained;
+}
+
+static int scripted_renderer_drained(void *context)
+{
+	(void)context;
+	++s_renderer_calls;
+	return s_renderer_drained;
+}
 
 /* Scripted profile mount. Only the seam is replaced; state transitions mirror
  * hcu_profile_mount.c: prepare publishes nothing, load publishes the backend,
@@ -42,6 +97,29 @@ static unsigned s_load_failures_remaining;
 void hcu_profile_mount_init(hcu_profile_mount *mount)
 {
 	if (mount) memset(mount, 0, sizeof(*mount));
+}
+
+/* Scripted residency bind: records the call and marks the mount bound, as the
+ * real bind does, so prepare can be checked for an unbound mount. */
+int hcu_profile_mount_bind_residency(hcu_profile_mount *mount,
+	hcu_asset_residency_entry *entries, uint32_t entry_capacity,
+	void *arena, size_t arena_bytes)
+{
+	++s_bind_calls;
+	if (!mount || !entries || !entry_capacity || !arena || !arena_bytes)
+		return HCU_PROFILE_MOUNT_E_ARGUMENT;
+	if (s_bind_result != HCU_PROFILE_MOUNT_OK) return s_bind_result;
+	mount->residency_entries = entries;
+	mount->residency_entry_capacity = entry_capacity;
+	mount->residency_arena = (uint8_t *)arena;
+	mount->residency_arena_bytes = arena_bytes;
+	mount->residency_bound = 1;
+	return HCU_PROFILE_MOUNT_OK;
+}
+
+int hcu_profile_mount_inputs_match(const hcu_profile_mount *mount)
+{
+	return s_bindings_valid && mount && mount->prepared && !mount->callbacks_active;
 }
 
 int hcu_profile_mount_prepare(hcu_profile_mount *mount,
@@ -61,14 +139,29 @@ int hcu_profile_mount_prepare(hcu_profile_mount *mount,
 	(void)stream_scratch_bytes;
 	++s_prepare_calls;
 	if (!mount || !profile || !catalog_entry) return HCU_PROFILE_MOUNT_E_ARGUMENT;
+	if (!mount->residency_bound) ++s_unbound_prepares;
 	if (s_prepare_result != HCU_PROFILE_MOUNT_OK) return s_prepare_result;
-	hcu_profile_mount_init(mount);
+	{
+		/* The bind is kept across the scripted reset, as the real prepare keeps it. */
+		int bound = mount->residency_bound;
+		hcu_asset_residency_entry *entries = mount->residency_entries;
+		uint32_t capacity = mount->residency_entry_capacity;
+		uint8_t *arena = mount->residency_arena;
+		size_t arena_bytes = mount->residency_arena_bytes;
+		hcu_profile_mount_init(mount);
+		mount->residency_bound = (uint8_t)bound;
+		mount->residency_entries = entries;
+		mount->residency_entry_capacity = capacity;
+		mount->residency_arena = arena;
+		mount->residency_arena_bytes = arena_bytes;
+	}
 	mount->profile = profile;
 	mount->profile_snapshot = *profile;
 	mount->catalog_entry = catalog_entry;
 	mount->source_identity_snapshot = catalog_entry->identity;
 	mount->expected_profile_id = expected_profile_id;
 	mount->prepared = 1;
+	trace_event("prepare", catalog_entry->identity.map_name);
 	return HCU_PROFILE_MOUNT_OK;
 }
 
@@ -78,10 +171,14 @@ int hcu_profile_mount_load(hcu_profile_mount *mount)
 	if (!mount || !mount->prepared || mount->active) return HCU_PROFILE_MOUNT_E_STATE;
 	if (s_load_failures_remaining) {
 		--s_load_failures_remaining;
+		trace_event("load-fail", mount->source_identity_snapshot.map_name);
 		return HCU_PROFILE_MOUNT_E_BACKEND;
 	}
 	mount->backend_mounted = 1;
 	mount->active = 1;
+	memset(s_live_tags, mount->source_identity_snapshot.map_name[0],
+		sizeof(s_live_tags));
+	trace_event("publish", mount->source_identity_snapshot.map_name);
 	return HCU_PROFILE_MOUNT_OK;
 }
 
@@ -90,7 +187,13 @@ int hcu_profile_mount_unload(hcu_profile_mount *mount)
 	++s_unload_calls;
 	if (!mount) return HCU_PROFILE_MOUNT_E_ARGUMENT;
 	if (mount->callbacks_active) return HCU_PROFILE_MOUNT_E_BUSY;
-	if (mount->backend_mounted) ++s_unmount_calls;
+	if (mount->backend_mounted) {
+		++s_unmount_calls;
+		trace_event("dispose", mount->source_identity_snapshot.map_name);
+		if (s_dispose_callback) s_dispose_callback();
+		memset(s_live_tags, 0, sizeof(s_live_tags));
+		trace_event("unpublish", mount->source_identity_snapshot.map_name);
+	}
 	memset(mount, 0, sizeof(*mount));
 	return HCU_PROFILE_MOUNT_OK;
 }
@@ -195,6 +298,13 @@ static uint8_t *read_file(const char *path, uint32_t *size)
 	return bytes;
 }
 
+static int reject_compatibility(void *context, const hcu_map_catalog_entry *entry,
+	const hcu_asset_profile_view *profile)
+{
+	(void)context; (void)entry; (void)profile;
+	return 0;
+}
+
 static hcu_map_profile_runtime make_runtime(const memory_image *package,
 	const uint8_t package_sha[32], const uint8_t *metadata, size_t metadata_size,
 	const uint8_t metadata_sha[32], void *metadata_storage,
@@ -220,6 +330,12 @@ static hcu_map_profile_runtime make_runtime(const memory_image *package,
 	runtime.stream_scratch_bytes = sizeof(s_stream_scratch);
 	runtime.maximum_tag_image_bytes = TEST_TAG_CACHE_BYTES;
 	runtime.frame_owner = owner;
+	runtime.renderer_drained = scripted_renderer_drained;
+	runtime.residency_entries = s_residency_entries;
+	runtime.residency_entry_capacity = sizeof(s_residency_entries) /
+		sizeof(s_residency_entries[0]);
+	runtime.residency_arena = s_residency_arena;
+	runtime.residency_arena_bytes = sizeof(s_residency_arena);
 	return runtime;
 }
 
@@ -238,6 +354,26 @@ static void expect_no_stage(const hcu_map_service *service)
 	assert(service->staged_map[0] == 0);
 }
 
+/* Stands for CE's dispose of map A: its tags must still read as A's. */
+static void dispose_reads_live_tags(void)
+{
+	assert(s_live_tags[0] == 'u');
+	assert(s_live_tags[sizeof(s_live_tags) - 1u] == 'u');
+}
+
+/* Boundary hook recorder: phase and cycle of every boundary, in call order. */
+static char s_boundary_phase[8][16];
+static unsigned s_boundary_cycle[8];
+static unsigned s_boundary_count;
+
+static void record_boundary(void *context, const char *phase, unsigned int cycle)
+{
+	assert(context == &s_boundary_count);
+	assert(s_boundary_count < 8u);
+	snprintf(s_boundary_phase[s_boundary_count], sizeof(s_boundary_phase[0]), "%s", phase);
+	s_boundary_cycle[s_boundary_count++] = cycle;
+}
+
 int main(int argc, char **argv)
 {
 	mem_layout_v2_t layout;
@@ -252,6 +388,8 @@ int main(int argc, char **argv)
 	hcu_bitmap_frame_owner owner;
 	hcu_bitmap_dispatch_context dispatch;
 	unsigned prepares_before;
+	/* Unbuffered, so the lines before an assertion abort still reach the log. */
+	setvbuf(stdout, NULL, _IONBF, 0);
 	if (argc != 8) {
 		fprintf(stderr, "usage: %s package.hcp package_sha256 meta_ok.hcm meta_ok_sha256 meta_big.hcm meta_big_sha256 asset_root\n",
 			argv[0]);
@@ -287,6 +425,40 @@ int main(int argc, char **argv)
 	assert(!hcu_map_service_register_runtime(&service, "ui", &runtime));
 	assert(!service.runtime_registered);
 
+	/* 1b. A runtime without residency, or with a ragged arena, fails closed at
+	 * registration: its mount would otherwise read whole chunks. */
+	runtime = make_runtime(&package, package_sha, meta_ok, meta_ok_size,
+		meta_ok_sha, s_metadata_storage, sizeof(s_metadata_storage), &owner);
+	runtime.residency_arena = NULL;
+	assert(!hcu_map_service_register_runtime(&service, "ui", &runtime));
+	runtime.residency_arena = s_residency_arena;
+	runtime.residency_arena_bytes = HCU_PROFILE_MOUNT_RESIDENCY_SEGMENT_BYTES + 8u;
+	assert(!hcu_map_service_register_runtime(&service, "ui", &runtime));
+	assert(!service.runtime_registered);
+	printf("PASS runtime without whole-slot residency arena is refused at registration\n");
+
+	/* 1d. A compatibility gate that rejects the profile refuses registration.
+	 * The service registers nothing, so no later preflight can reach the mount. */
+	runtime = make_runtime(&package, package_sha, meta_ok, meta_ok_size,
+		meta_ok_sha, s_metadata_storage, sizeof(s_metadata_storage), &owner);
+	runtime.compatibility = reject_compatibility;
+	assert(!hcu_map_service_register_runtime(&service, "ui", &runtime));
+	assert(!service.runtime_registered);
+	printf("PASS runtime rejected by the compatibility gate is not registered\n");
+
+	/* 1c. A failed residency bind stops the stage before prepare runs. */
+	runtime = make_runtime(&package, package_sha, meta_ok, meta_ok_size,
+		meta_ok_sha, s_metadata_storage, sizeof(s_metadata_storage), &owner);
+	assert(hcu_map_service_register_runtime(&service, "ui", &runtime));
+	prepares_before = s_prepare_calls;
+	s_bind_result = HCU_PROFILE_MOUNT_E_STATE;
+	assert(!hcu_map_service_preflight("ui"));
+	assert(s_bind_calls > 0 && s_prepare_calls == prepares_before);
+	expect_no_stage(&service);
+	s_bind_result = HCU_PROFILE_MOUNT_OK;
+	assert(hcu_map_service_unregister_runtime(&service));
+	printf("PASS failed residency bind stops the stage before mount preparation\n");
+
 	/* 2. Over-capacity: the metadata claims a range but its storage is too small.
 	 * Preflight rejects before any mount preparation and before teardown. */
 	runtime = make_runtime(&package, package_sha, meta_big, meta_big_size,
@@ -315,6 +487,13 @@ int main(int argc, char **argv)
 	/* 4. A valid successor passes preflight, then CE's loader publishes it. */
 	assert(hcu_map_service_preflight("ui") == 1);
 	assert(service.profile_candidate_ready);
+	package_bytes[package.size - 1u] ^= 1u;
+	assert(!hcu_map_service_preflight("ui"));
+	expect_no_stage(&service);
+	expect_live_owner(&service, 0);
+	package_bytes[package.size - 1u] ^= 1u;
+	assert(hcu_map_service_preflight("ui") == 1);
+	printf("PASS repeated preflight revalidates and discards a corrupted empty stage\n");
 	assert(map_loader(&service, "ui") == 1);
 	expect_live_owner(&service, 1);
 	assert(service.profile_mount.source_identity_snapshot.map_name[0] == 'u');
@@ -333,6 +512,11 @@ int main(int argc, char **argv)
 	assert(map_loader(&service, "ui") == 0);
 	expect_live_owner(&service, 1);
 	printf("PASS storage held while bitmap leases are outstanding\n");
+	assert(!hcu_map_service_shutdown(&service));
+	assert(service.initialized && service.runtime_registered);
+	expect_live_owner(&service, 1);
+	assert(s_unload_calls == 0 && s_unmount_calls == 0);
+	printf("PASS busy shutdown retains callbacks and initialized owner for retry\n");
 
 	/* 6. A preflight for a different map while live is refused without teardown. */
 	assert(!hcu_map_service_preflight("beavercreek"));
@@ -340,8 +524,31 @@ int main(int argc, char **argv)
 	assert(s_unload_calls == 0);
 	printf("PASS preflight failure preserves the live owner\n");
 
+	/* Corruption discovered before teardown must retain the old live owner.
+	 * Repeat after authorizing a reload to prove a stale authorization is cleared. */
+	dispatch.lease_count = 0;
+	assert(hcu_map_service_preflight("ui") == 1);
+	package_bytes[package.size - 1u] ^= 1u;
+	assert(!hcu_map_service_preflight("ui"));
+	expect_live_owner(&service, 1);
+	expect_no_stage(&service);
+	assert(s_unload_calls == 0);
+	package_bytes[package.size - 1u] ^= 1u;
+	meta_ok[meta_ok_size - 1u] ^= 1u;
+	assert(!hcu_map_service_preflight("ui"));
+	expect_live_owner(&service, 1);
+	expect_no_stage(&service);
+	meta_ok[meta_ok_size - 1u] ^= 1u;
+	s_bindings_valid = 0;
+	assert(!hcu_map_service_preflight("ui"));
+	expect_live_owner(&service, 1);
+	expect_no_stage(&service);
+	s_bindings_valid = 1;
+	printf("PASS corrupt package, metadata and bindings rejected before live teardown\n");
+
 	/* 7. Lease drained: same-map preflight reuses the owner, unload happens, and a
 	 * post-unload load failure yields an empty service that can retry. */
+	assert(hcu_map_service_set_boundary_hook(&service, record_boundary, &s_boundary_count));
 	dispatch.lease_count = 0;
 	assert(hcu_map_service_preflight("ui") == 1);
 	assert(service.reload_pending && service.runtime_registered);
@@ -363,6 +570,16 @@ int main(int argc, char **argv)
 	expect_live_owner(&service, 0);
 	assert(hcu_map_service_unregister_runtime(&service));
 	printf("PASS retry after empty state reloads the same runtime\n");
+
+	/* The hook saw release, empty state, load, then release, with the cycle
+	 * counting successful loads. */
+	assert(s_boundary_count == 4u);
+	assert(strcmp(s_boundary_phase[0], "map-released") == 0 && s_boundary_cycle[0] == 0u);
+	assert(strcmp(s_boundary_phase[1], "map-empty") == 0 && s_boundary_cycle[1] == 0u);
+	assert(strcmp(s_boundary_phase[2], "map-loaded") == 0 && s_boundary_cycle[2] == 1u);
+	assert(strcmp(s_boundary_phase[3], "map-released") == 0 && s_boundary_cycle[3] == 1u);
+	assert(hcu_map_service_set_boundary_hook(&service, NULL, NULL));
+	printf("PASS boundary hook orders release, empty, load and release across a failed reload\n");
 
 	/* 9. Legacy path: with no runtime registered, the profile mount is never
 	 * touched. The legacy source is absent from this asset root, so it fails. */
@@ -402,6 +619,150 @@ int main(int argc, char **argv)
 		printf("PASS failed gate preflight clears stale stage; loader refuses\n");
 	}
 
+	/* 11. Foreign replacement A (ui) -> B (beavercreek). A stays live under its
+	 * own runtime; B is a distinct runtime with disjoint storage. */
+	{
+		hcu_map_profile_runtime successor;
+		static const char *const ordered[] = {
+			"dispose:ui", "unpublish:ui", "prepare:beavercreek",
+			"load-fail:beavercreek", "prepare:beavercreek", "publish:beavercreek"
+		};
+		unsigned unloads_before;
+		runtime = make_runtime(&package, package_sha, meta_ok, meta_ok_size,
+			meta_ok_sha, s_metadata_storage, sizeof(s_metadata_storage), &owner);
+		assert(hcu_map_service_register_runtime(&service, "ui", &runtime));
+		successor = make_runtime(&package, package_sha, meta_ok, meta_ok_size,
+			meta_ok_sha, s_b_metadata_storage, sizeof(s_b_metadata_storage), &owner);
+		successor.relocation_storage = s_b_relocation_storage;
+		successor.relocation_storage_bytes = sizeof(s_b_relocation_storage);
+		successor.stream_scratch = s_b_stream_scratch;
+		successor.stream_scratch_bytes = sizeof(s_b_stream_scratch);
+		successor.residency_entries = s_b_residency_entries;
+		successor.residency_entry_capacity = sizeof(s_b_residency_entries) /
+			sizeof(s_b_residency_entries[0]);
+		successor.residency_arena = s_b_residency_arena;
+		successor.residency_arena_bytes = sizeof(s_b_residency_arena);
+		assert(!hcu_map_service_register_successor_runtime(&service, "ui", &successor));
+		assert(hcu_map_service_register_successor_runtime(&service, "beavercreek", &successor));
+		assert(!hcu_map_service_register_successor_runtime(&service, "beavercreek", &successor));
+		assert(hcu_map_service_preflight("ui") == 1);
+		assert(map_loader(&service, "ui") == 1);
+		expect_live_owner(&service, 1);
+		assert(s_live_tags[0] == 'u');
+		unloads_before = s_unload_calls;
+
+		/* A failed successor preparation leaves the live owner A untouched. */
+		s_trace_count = 0;
+		s_prepare_result = HCU_PROFILE_MOUNT_E_CAPACITY;
+		assert(!hcu_map_service_preflight("beavercreek"));
+		s_prepare_result = HCU_PROFILE_MOUNT_OK;
+		expect_live_owner(&service, 1);
+		expect_no_stage(&service);
+		assert(strcmp(service.profile_mount.source_identity_snapshot.map_name, "ui") == 0);
+		assert(s_live_tags[0] == 'u' && s_trace_count == 0);
+		printf("PASS successor preparation failure keeps live owner A untouched\n");
+
+		/* B validates while A stays live: its prepare publishes nothing. */
+		assert(hcu_map_service_preflight("beavercreek") == 1);
+		assert(service.successor_staged && service.reload_pending && service.preflight_ready);
+		expect_live_owner(&service, 1);
+		assert(s_live_tags[0] == 'u' && s_unload_calls == unloads_before);
+		assert(s_trace_count == 1 && strcmp(s_trace[0], "prepare:beavercreek") == 0);
+		printf("PASS successor B validates while live owner A stays untouched\n");
+
+		/* A busy renderer blocks the unload: A and the staged B are retained. */
+		s_renderer_drained = 0;
+		unloads_before = s_unload_calls;
+		map_unloader(&service);
+		assert(s_unload_calls == unloads_before);
+		expect_live_owner(&service, 1);
+		assert(service.successor_staged && service.reload_pending);
+		s_renderer_drained = 1;
+		printf("PASS unload blocked while renderer reports busy keeps A and staged B\n");
+
+		/* A missing renderer predicate fails closed as well. */
+		{
+			int (*saved)(void *) = service.runtime.renderer_drained;
+			service.runtime.renderer_drained = NULL;
+			unloads_before = s_unload_calls;
+			map_unloader(&service);
+			assert(s_unload_calls == unloads_before);
+			expect_live_owner(&service, 1);
+			service.runtime.renderer_drained = saved;
+		}
+		printf("PASS missing renderer predicate fails closed\n");
+
+		/* Drained: CE disposes A while its tags are readable, A is unpublished,
+		 * and B's staged successor is prepared and loaded. */
+		s_trace_count = 0;
+		s_dispose_callback = dispose_reads_live_tags;
+		unloads_before = s_unload_calls;
+		map_unloader(&service);
+		s_dispose_callback = NULL;
+		assert(s_unload_calls == unloads_before + 1);
+		expect_live_owner(&service, 0);
+		assert(service.reload_pending && service.successor_staged);
+		/* A failed load after A is released leaves a safe empty state, and the
+		 * successor stays registered as the runtime for a later retry. */
+		s_load_failures_remaining = 1;
+		assert(map_loader(&service, "beavercreek") == 0);
+		expect_live_owner(&service, 0);
+		expect_no_stage(&service);
+		assert(service.runtime_registered && !service.successor_registered);
+		assert(strcmp(service.runtime_map_name, "beavercreek") == 0);
+		assert(s_trace_count == 4);
+		assert(strcmp(s_trace[0], ordered[0]) == 0 && strcmp(s_trace[1], ordered[1]) == 0 &&
+			strcmp(s_trace[2], ordered[2]) == 0 && strcmp(s_trace[3], ordered[3]) == 0);
+		printf("PASS ordered dispose of A, unpublish, then failed B load leaves safe empty state\n");
+
+		/* The retry prepares and loads B from its runtime alone. */
+		assert(hcu_map_service_preflight("beavercreek") == 1);
+		assert(map_loader(&service, "beavercreek") == 1);
+		expect_live_owner(&service, 1);
+		expect_trace(ordered, sizeof(ordered) / sizeof(ordered[0]));
+		assert(s_live_tags[0] == 'b');
+		map_unloader(&service);
+		expect_live_owner(&service, 0);
+		assert(hcu_map_service_unregister_runtime(&service));
+		printf("PASS retry after failed load publishes successor B\n");
+	}
+
+	/* 5. Legacy production path: a busy renderer keeps a published owner, and
+	 * the successor load and shutdown are refused until the fence retires. The
+	 * owner is simulated by its flag only, so no CTAG unload is reached. */
+	assert(hcu_map_service_set_legacy_renderer_drained(&service,
+		scripted_legacy_drained, NULL));
+	assert(!hcu_map_service_set_legacy_renderer_drained(&service, NULL, NULL));
+
+	/* 5a. A legacy load while the previous mount is still active is refused by
+	 * the owner gate, which checks the mount only. The successful first load
+	 * after a preflight needs a real CE map with its matching source SHA, which
+	 * this fixture does not carry, so it is covered by the guest lifecycle run. */
+	assert(!service.mount.active);
+	s_legacy_drained = 0;
+	service.mount.active = 1;
+	assert(!map_loader(&service, "ui"));
+	map_unloader(&service);
+	assert(service.mount.active);
+	service.mount.active = 0;
+	printf("PASS legacy load while the previous mount is active is rejected\n");
+
+	s_legacy_drained = 0;
+	service.mount.active = 1;
+	map_unloader(&service);
+	assert(service.mount.active);
+	assert(!map_loader(&service, "ui"));
+	assert(!hcu_map_service_shutdown(&service));
+	assert(service.initialized);
+	service.mount.active = 0;
+	s_legacy_drained = 1;
+	printf("PASS legacy unload, load and shutdown blocked while renderer is busy\n");
+	map_unloader(&service);
+	assert(!service.mount.active);
+	printf("PASS legacy owner released after renderer drains\n");
+
+	assert(s_unbound_prepares == 0);
+	printf("PASS every profile prepare saw a residency-bound mount\n");
 	hcu_map_service_shutdown(&service);
 	free(package_bytes);
 	free(meta_ok);

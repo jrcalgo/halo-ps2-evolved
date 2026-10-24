@@ -48,6 +48,9 @@ WORLD_HCU_ANIMATION_TRACE_TEST ?= 0
 WORLD_HCU_M2_UI_LIFECYCLE_TEST ?= 0
 WORLD_HCU_STEP8_MP_CAPACITY_DIAGNOSTIC ?= 0
 WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS ?= 2
+# Partition row (hcu_memory_partition_select_v2) whose generated production image
+# header is built in. Empty keeps the bootstrap partition.
+WORLD_HCU_PARTITION_PROFILE ?=
 ifeq ($(WORLD_HCU_GAMEPLAY),1)
 # Optional CE machine path; the regular measured viewer remains the default.
 WORLD_HCU_MEMORY_BRIDGE := 1
@@ -63,7 +66,6 @@ EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_main.o \
 	$(WORLD_OUTPUT)/stream/hcu_map_service.o \
 	$(WORLD_OUTPUT)/stream/hcu_profile_mount.o \
 	$(WORLD_OUTPUT)/stream/hcu_profile_metadata.o \
-	$(WORLD_OUTPUT)/stream/ps2_ctag.o \
 	$(WORLD_OUTPUT)/stream/hcu_asset_profile.o \
 	$(WORLD_OUTPUT)/stream/hcu_bitmap_quad.o \
 	$(WORLD_OUTPUT)/stream/hcu_pose_asset.o \
@@ -71,6 +73,8 @@ EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_main.o \
 	$(WORLD_OUTPUT)/stream/hcu_bitmap_frame.o \
 	$(WORLD_OUTPUT)/stream/hcu_bitmap_renderer.o \
 	$(WORLD_OUTPUT)/stream/hcu_bitmap_attach.o \
+	$(WORLD_OUTPUT)/stream/hcu_owner_telemetry.o \
+	$(WORLD_OUTPUT)/stream/hcu_render_telemetry.o \
 	$(WORLD_OUTPUT)/stream/hcu_map_catalog.o \
 	$(WORLD_OUTPUT)/stream/hcu_filexio_irx.o \
 	$(WORLD_OUTPUT)/stream/ctag_ps2_backend.o
@@ -95,9 +99,10 @@ EE_LDFLAGS += -Wl,--wrap,flycam_update -Wl,--wrap,profiler_overlay -Wl,--wrap,fp
 endif
 WORLD_HCU_MEMORY_BRIDGE ?= 0
 ifeq ($(WORLD_HCU_MEMORY_BRIDGE),1)
-# Compile the shared parent-to-HCU arena binder for the combined-link probe or
-# future HCU play target. The stock viewer does not depend on HCU symbols.
-EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_memory_bind.o
+# Compile the parent-to-HCU arena binders for the combined-link probe or an
+# explicitly profiled HCU play target. The stock viewer does not depend on HCU.
+EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_memory_bind.o \
+	$(WORLD_OUTPUT)/stream/hcu_memory_profile.o
 endif
 
 $(WORLD_OUTPUT)/hybrid/%.o: src/stream/%.c
@@ -141,13 +146,21 @@ ifeq ($(WORLD_HCU_GAMEPLAY),1)
 .PHONY: hcu-profile-force
 hcu-profile-force:
 
-$(WORLD_OUTPUT)/stream/hcu_main.o: src/stream/hcu_main.c hcu-profile-force
+# C2.4: a selected partition row names its generated image header. The header
+# pins that row's package, metadata, source maps and datum table.
+$(WORLD_OUTPUT)/c2/%.h: tools/c2_profile_image_header.py
+	@mkdir -p $(@D)
+	python3 -I tools/c2_profile_image_header.py --row $* --output $@
+
+$(WORLD_OUTPUT)/stream/hcu_main.o: src/stream/hcu_main.c hcu-profile-force \
+	$(if $(WORLD_HCU_PARTITION_PROFILE),$(WORLD_OUTPUT)/c2/$(WORLD_HCU_PARTITION_PROFILE).h)
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
 		-I$(HCU_ROOT)/port/ps2/include -I$(HCU_ROOT)/source \
 		-I$(HCU_ROOT)/port/include -fshort-wchar -I$(HCU_ROOT)/source/cseries -DHALO_PS2=1 \
 		-DHALO_HCU_TAG_CACHE_BYTES=$(WORLD_HCU_TAG_CACHE_BYTES) \
 		-DHALO_HCU_ASSET_ROOT=\"$(WORLD_HCU_ASSET_ROOT)\" \
+		$(if $(WORLD_HCU_PARTITION_PROFILE),-DHALO_HCU_PARTITION_PROFILE=\"$(WORLD_HCU_PARTITION_PROFILE)\" -DHALO_HCU_PROFILE_IMAGE_HEADER=\"$(WORLD_HCU_PARTITION_PROFILE).h\" -I$(WORLD_OUTPUT)/c2,) \
 		$(if $(filter 1,$(WORLD_HCU_RENDER_CLEAR_TEST)),-DHALO_PS2_M3_RENDER_CLEAR_TEST=1,) \
 		$(if $(filter 1,$(WORLD_HCU_STEP8_MP_CAPACITY_DIAGNOSTIC)),-DHALO_PS2_STEP8_MP_CAPACITY_DIAGNOSTIC=1,) \
 		$(if $(filter 2 4,$(WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS)),-DHALO_PS2_STEP8_MP_WORKLOAD_PLAYERS=$(WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS),) \
@@ -228,6 +241,14 @@ $(WORLD_OUTPUT)/stream/hcu_bitmap_attach.o: src/stream/hcu_bitmap_attach.c src/s
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
 		-I$(HCU_ROOT)/port/ps2/include -c $< -o $@
 
+$(WORLD_OUTPUT)/stream/hcu_owner_telemetry.o: src/stream/hcu_owner_telemetry.c src/stream/hcu_owner_telemetry.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_render_telemetry.o: src/stream/hcu_render_telemetry.c src/stream/hcu_render_telemetry.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
 $(WORLD_OUTPUT)/stream/hcu_map_catalog.o: src/stream/hcu_map_catalog.c
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
@@ -261,6 +282,14 @@ $(WORLD_OUTPUT)/stream/hcu_render_snapshot.o: src/stream/hcu_render_snapshot.c
 endif
 
 $(WORLD_OUTPUT)/stream/hcu_memory_bind.o: src/stream/hcu_memory_bind.c
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
+		-I$(HCU_ROOT)/port/ps2/include -I$(HCU_ROOT)/source \
+		-fshort-wchar -I$(HCU_ROOT)/source/cseries -DHALO_PS2=1 \
+		-include $(HCU_ROOT)/port/ps2/include/halo_ps2_prefix.h \
+		-c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_memory_profile.o: src/stream/hcu_memory_profile.c
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
 		-I$(HCU_ROOT)/port/ps2/include -I$(HCU_ROOT)/source \

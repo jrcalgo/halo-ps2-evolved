@@ -6,6 +6,8 @@ profile mount seam is scripted by the C fixture."""
 from __future__ import annotations
 
 import hashlib
+import json
+import os
 import shutil
 import struct
 import subprocess
@@ -57,6 +59,7 @@ class MapServiceProfileLifecycleTest(unittest.TestCase):
             asset_root.mkdir()
             cmd = [
                 compiler, "-std=gnu11", "-D_EE", "-DHALO_FILE_USE_FILEXIO",
+                "-DHCU_M2_MP_HOST_ORACLE",  # host-only admission of ui, beavercreek and two more; never in the EE build
                 "-Wall", "-Wextra", "-Werror", "-Wno-int-to-pointer-cast",
                 "-no-pie",
                 "-I" + str(ROOT / "tests/hcu_ctag_mount_shim"),
@@ -86,17 +89,46 @@ class MapServiceProfileLifecycleTest(unittest.TestCase):
             ]
             built = subprocess.run(cmd, capture_output=True, text=True)
             self.assertEqual(built.returncode, 0, built.stdout + built.stderr)
-            run = subprocess.run([
+            run_command = [
                 str(exe),
                 str(package_path), hashlib.sha256(package).hexdigest(),
                 str(ok_path), hashlib.sha256(meta_ok).hexdigest(),
                 str(big_path), hashlib.sha256(meta_big).hexdigest(),
                 str(asset_root) + "/",
-            ], capture_output=True, text=True)
+            ]
+            run = subprocess.run(run_command, capture_output=True, text=True)
             self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
-            self.assertEqual(run.stdout.count("PASS "), 9, run.stdout)
+            self.assertEqual(run.stdout.count("PASS "), 26, run.stdout)
+            self.assertIn("corrupt package, metadata and bindings rejected before live teardown", run.stdout)
+            self.assertIn("repeated preflight revalidates and discards a corrupted empty stage", run.stdout)
             self.assertIn("reason=metadata", run.stdout)
             self.assertIn("map-service-profile-lifecycle passed", run.stdout)
+            retained = Path(os.environ.get("HCU_MAP_SERVICE_PROFILE_ARTIFACTS",
+                                           ROOT / "build/m2-c2-map-service-profile")).resolve()
+            shutil.copytree(tmp, retained, dirs_exist_ok=True)
+            def artifact(path):
+                return {"path": str(path.relative_to(ROOT)),
+                        "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+            sources = [Path(value) for value in cmd if value.endswith(".c")]
+            sources += [ROOT / "src/stream/hcu_asset_profile.h",
+                        ROOT / "src/stream/hcu_profile_mount.h",
+                        ROOT / "src/stream/hcu_map_service.h", Path(__file__)]
+            report = {
+                "format": "hcu-c2-map-service-profile-host-v1",
+                "evidence_level": "host execution", "result": "passed",
+                "scope": "real map-service control flow with scripted CE mount seam",
+                "limitation": "CE dispose, the renderer drain predicate and the mount seam are scripted; no GS/DMA fence, target run, or real CE simulation is exercised.",
+                "passing_checks": run.stdout.count("PASS "),
+                "compile_command": cmd, "run_command": run_command,
+                "compile_returncode": built.returncode, "returncode": run.returncode,
+                "inputs": [artifact(retained / name) for name in
+                           ("ui.hcp", "meta-ok.hcm", "meta-big.hcm")],
+                "executable": artifact(retained / exe.name),
+                "source_pins": {str(path.relative_to(ROOT)): artifact(path)["sha256"]
+                                for path in sources},
+                "stdout": run.stdout, "stderr": run.stderr,
+            }
+            (retained / "result.json").write_text(json.dumps(report, indent=2) + "\n")
 
 
 if __name__ == "__main__":
