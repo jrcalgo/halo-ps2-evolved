@@ -252,7 +252,169 @@ def owner_qualifies_fit(sample, expected_capacity=None):
             (expected_capacity is None or capacity == expected_capacity))
 
 
-def build(matrix_path, manifest_path, workload2_path, workload4_path, lifecycle_path):
+PARTITION_SELECTED = re.compile(r"HALO_PS2_LOCAL partition-selected name=(\S+) version=(\d+) tag=(\d+) bsp=(\d+) texture=(\d+) residency=(\d+) qualified=(\d)")
+LOADED = re.compile(r"HALO_PS2_LOCAL production-ce-map-loaded result=(\d) map=(\S+) .*?tag-bytes=(\d+) bsp-bytes=(\d+)")
+RELEASED = re.compile(r"HALO_PS2_LOCAL production-ce-map-released result=(\d) map=(\S+) mounted=(\d)")
+
+
+def rel(path):
+    path = Path(path)
+    try:
+        return str(path.resolve().relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
+def abspath(value):
+    path = Path(value)
+    return path if path.is_absolute() else ROOT / path
+
+
+def matrix_run(row_dir):
+    """Synthesize an extract() run record from one matrix row's retained guest manifest."""
+    guest = row_dir / "guest" / "manifest.json"
+    if not guest.is_file():
+        return None, None
+    data = json.loads(guest.read_text())
+    runs = data.get("runs") or []
+    if not runs:
+        return None, guest
+    run = {**{k: v for k, v in data.items() if k not in ("runs", "elfs")}, **runs[0]}
+    run["guest_completed"] = bool(run.get("markers_all_present")) and str(run.get("exit", "")).startswith("release-marker")
+    run["guest_terminal"] = "release-marker" if run["guest_completed"] else None
+    builds = sorted((row_dir / "link").glob("result-partition-*.json"))
+    if builds:
+        run["build_result"] = str(builds[0])
+    return run, guest
+
+
+def summarize_matrix_row(row_dir, profile=None):
+    """Read one build/m2-c2-matrix/<row> directory into a compact, provenance-bound fit record."""
+    result_path = row_dir / "result.json"
+    out = {"row": row_dir.name, "status": "unmeasured", "fit": None, "reasons": []}
+    if not result_path.is_file():
+        out["reasons"].append("result.json missing")
+        return out, None
+    result = json.loads(result_path.read_text())
+    run, guest_path = matrix_run(row_dir)
+    evidence = extract(run, guest_path) if run else None
+    prov = (evidence or {}).get("provenance") or {}
+    log = abspath(run["halo_lines_saved"]) if run and run.get("halo_lines_saved") else None
+    lines = log.read_text(errors="replace").splitlines() if log and log.is_file() else []
+    spans = loaded = released = None
+    for line in lines:
+        m = PARTITION_SELECTED.search(line)
+        if m and spans is None:
+            spans = dict(name=m.group(1), version=int(m.group(2)), tag=int(m.group(3)), bsp=int(m.group(4)),
+                         texture=int(m.group(5)), residency=int(m.group(6)), qualified=int(m.group(7)))
+        m = LOADED.search(line)
+        if m:
+            loaded = dict(result=int(m.group(1)), map=m.group(2), tag_bytes=int(m.group(3)), bsp_bytes=int(m.group(4)))
+        m = RELEASED.search(line)
+        if m:
+            released = dict(result=int(m.group(1)), map=m.group(2), mounted=int(m.group(3)))
+    owners = {}
+    failures = 0
+    for name, samples in ((evidence or {}).get("owners") or {}).items():
+        last = samples[-1]
+        owners[name] = {k: last[k] for k in ("bound", "capacity", "current", "peak", "failures", "resets")}
+        peak = max(x["peak"] for x in samples)
+        owners[name]["peak"] = peak
+        failures += sum(x["failures"] for x in samples)
+    caches = {n: {"peak": max(x["peak"] for x in v), "failures": sum(x["failures"] for x in v)}
+              for n, v in ((evidence or {}).get("cache_owners") or {}).items()}
+    arenas = {}
+    for name, samples in ((evidence or {}).get("arenas") or {}).items():
+        arenas[name] = {"capacity": samples[-1]["capacity"], "peak": max(x["peak"] for x in samples),
+                        "failures": sum(x["failures"] for x in samples)}
+        failures += arenas[name]["failures"]
+    failures += sum(v["failures"] for v in caches.values())
+    values = result.get("values") or {}
+    reserve, boot_end = values.get("reserve"), values.get("boot_end")
+    tag_peak = (owners.get("tags") or {}).get("peak")
+    bsp_peak = (owners.get("bsp") or {}).get("peak")
+    gs = owners.get("game_state") or {}
+    streaming_map = arenas.get("streaming_map_owner") or {}
+    def margin(cap, peak):
+        return cap - peak if cap is not None and peak is not None else None
+    margins = {"tag": margin((owners.get("tags") or {}).get("capacity"), tag_peak),
+               "bsp": margin((owners.get("bsp") or {}).get("capacity"), bsp_peak),
+               "game_state": margin(gs.get("capacity"), gs.get("peak")),
+               "residency_streaming_map_owner": margin(streaming_map.get("capacity"), streaming_map.get("peak")),
+               "boot_end_below_reserve": margin(reserve, boot_end)}
+    reasons = []
+    if not result.get("pass"):
+        reasons.append("result.json pass=false: " + "; ".join(result.get("reasons") or result.get("failing_checks") or []))
+    if evidence is None or not prov.get("elf_hash_valid"):
+        reasons.append("ELF sha256 absent or does not match the staged ELF")
+    if evidence is not None and not prov.get("build_identity_valid"):
+        reasons.append("ELF sha256 does not match the linked build result")
+    if evidence is not None and not evidence.get("complete"):
+        reasons.append("guest evidence incomplete: " + str(evidence.get("blocker")))
+    if spans is None or not spans["qualified"]:
+        reasons.append("partition-selected marker missing or unqualified")
+    if loaded is None or loaded["result"] != 1:
+        reasons.append("production-ce-map-loaded result=1 missing")
+    if released is None or released["result"] != 1 or released["mounted"] != 0:
+        reasons.append("production-ce-map-released result=1 mounted=0 missing")
+    if failures:
+        reasons.append(f"{failures} owner/arena/cache failure counts")
+    if spans and tag_peak is not None and tag_peak > spans["tag"]:
+        reasons.append("tag peak exceeds tag span")
+    if spans and bsp_peak is not None and bsp_peak > spans["bsp"]:
+        reasons.append("BSP peak exceeds BSP span")
+    if None in (reserve, boot_end) or boot_end >= reserve:
+        reasons.append("boot end not below reserve")
+    for key, value in margins.items():
+        if value is not None and value < 0:
+            reasons.append(f"negative margin: {key}")
+    if profile is not None:
+        if profile.get("hcp_package_sha256") != prov.get("profile_package_sha256"):
+            reasons.append("guest package sha256 differs from the selected package")
+        if not profile.get("hcp_package_sha256_matches_manifest"):
+            reasons.append("selected package sha256 does not match its package manifest")
+    out.update({"status": "measured", "fit": not reasons, "reasons": reasons,
+        "map": result.get("map"), "scenario_mode": prov.get("scenario_mode"),
+        "scope": "selected-profile production CE load and release only; no 4-player or bot gameplay workload ticks",
+        "checks": result.get("checks"), "failing_checks": result.get("failing_checks"),
+        "spans": spans, "loaded": loaded, "released": released,
+        "peaks": {"tag": tag_peak, "bsp": bsp_peak, "game_state": gs.get("peak"),
+                  "object_pool": (owners.get("object_pool") or {}).get("peak"),
+                  "residency_streaming_map_owner": streaming_map.get("peak"),
+                  "backing_high": (result.get("peaks") or {}).get("backing_high")},
+        "caps": {"tag": (owners.get("tags") or {}).get("capacity"), "bsp": (owners.get("bsp") or {}).get("capacity"),
+                 "game_state": gs.get("capacity"), "residency_streaming_map_owner": streaming_map.get("capacity")},
+        "margins": margins, "failure_counts_total": failures,
+        "reserve": reserve, "boot_end": boot_end, "owners": owners, "cache_owners": caches, "arenas": arenas,
+        "provenance": {"elf": prov.get("elf"), "elf_sha256": prov.get("elf_sha256"),
+            "staged_elf_sha256": prov.get("staged_elf_sha256"), "elf_hash_valid": prov.get("elf_hash_valid"),
+            "linked_hcu_elf_sha256": prov.get("linked_hcu_elf_sha256"), "build_identity_valid": prov.get("build_identity_valid"),
+            "package_sha256": prov.get("profile_package_sha256"),
+            "package_root": result.get("package_root"),
+            "result_json": rel(result_path), "result_json_sha256": sha(result_path),
+            "guest_manifest": rel(guest_path) if guest_path else None,
+            "emu_log": rel(abspath(run["log"])) if run else None,
+            "emu_log_sha256": sha(abspath(run["log"])) if run and abspath(run["log"]).is_file() else None,
+            "halo_log": rel(log) if log else None,
+            "halo_log_sha256": sha(log) if log and log.is_file() else None,
+            "elapsed_seconds": result.get("elapsed_seconds"), "exit": run.get("exit") if run else None}})
+    return out, evidence
+
+
+def load_matrix(matrix_dir, profiles_by_name):
+    """Return (summaries, evidence-by-row) for every row directory under matrix_dir."""
+    summaries, evidences = {}, {}
+    if not matrix_dir or not Path(matrix_dir).is_dir():
+        return summaries, evidences
+    for row_dir in sorted(p for p in Path(matrix_dir).iterdir() if p.is_dir()):
+        summary, evidence = summarize_matrix_row(row_dir, profiles_by_name.get(row_dir.name))
+        summaries[row_dir.name] = summary
+        if evidence is not None:
+            evidences[row_dir.name] = evidence
+    return summaries, evidences
+
+
+def build(matrix_path, manifest_path, workload2_path, workload4_path, lifecycle_path, matrix_dir=None):
     matrix = json.loads(matrix_path.read_text())
     partition_path = ROOT / "build/m2-c2-r2-budget/partition-table-profile-v2.json"
     partition_data = json.loads(partition_path.read_text()) if partition_path.is_file() else {"profiles": []}
@@ -294,6 +456,8 @@ def build(matrix_path, manifest_path, workload2_path, workload4_path, lifecycle_
         "hcp_package_sha256_matches_manifest":False,
         "resident_ce_bytes":None,"bsp_payload_bytes":None,
         "claims_bitmap_payload_capacity_floor_bytes":None,"ctag_relocation_staging_bytes":None})
+    matrix_summaries, matrix_evidence = load_matrix(matrix_dir, {p["name"]: p for p in profile_inputs})
+    selected_names = {p["name"] for p in matrix["profiles"]}
     # Only this explicitly asserted identity can populate a selected-profile
     # row. A generic 13-map diagnostic or local-player fixture does not name
     # the package/partition instance and stays supporting evidence.
@@ -305,14 +469,15 @@ def build(matrix_path, manifest_path, workload2_path, workload4_path, lifecycle_
         for owner in OWNER_NAMES:
             sample = None
             provenance = None
-            for evidence in parsed.values():
+            for evidence in list(parsed.values()) + ([matrix_evidence[name]] if name in matrix_evidence else []):
                 found = matched_owner(p, evidence, owner, (evidence.get("provenance") or {}).get("scenario"))
                 if found:
                     sample, provenance = found
                     break
             measurements[owner] = ({"status":"measured", **sample,
                                     "expected_static_capacity":known_caps.get(owner),
-                                    "qualifies_fit":owner_qualifies_fit(sample,known_caps.get(owner)), "provenance":provenance}
+                                    "qualifies_fit":owner_qualifies_fit(sample,known_caps.get(owner)),
+                                    "provenance":{k:v for k,v in provenance.items() if k not in ("map_file_sha256","observed_markers")}}
                 if sample else {"status":"unmeasured", "capacity":None,"current":None,"peak":None,"failures":None,"resets":None,
                     "expected_static_capacity":known_caps.get(owner),
                     "reason":"no complete guest run bound to this exact partition and HCP package hash", "evidence":None})
@@ -323,8 +488,12 @@ def build(matrix_path, manifest_path, workload2_path, workload4_path, lifecycle_
             "static_capacity_floor_bytes":{"ce_resident":p.get("resident_ce_bytes"),"bsp_payload":p.get("bsp_payload_bytes"),"claims_bitmap":p.get("claims_bitmap_payload_capacity_floor_bytes"),"relocation":p.get("ctag_relocation_staging_bytes")},
             "static_partition_terms_bytes":{"tag_cache":pr.get("tag_cache_bytes"),"structure_bsp":pr.get("structure_bsp_bytes"),"map_parent":pr.get("map_parent_bytes"),"render_texture":pr.get("render_texture_bytes"),"claims_scratch":pr.get("claims_scratch_bytes"),"resident_gameplay_cap":pr.get("resident_gameplay_cap_bytes"),"renderer_packet_workspace":pr.get("renderer_packet_workspace_bytes"),"renderer_reserved_texture":pr.get("renderer_reserved_texture_bytes"),"staging_slot":pr.get("staging_slot_bytes"),"simultaneous_staging":pr.get("simultaneous_staging_bytes")},
             "partition_terms_source":str(partition_path.relative_to(ROOT)) if partition_path.is_file() else None,
-            "owner_measurements":measurements,"profile_specific_guest_fit":"not_measured",
-            "missing_behavior":["profile-specific map registration and mount", "live 2-player and 4-player gameplay peaks", "owner reset/failure behavior", "renderer drain/UI lifecycle"]})
+            "owner_measurements":measurements,
+            "profile_specific_guest_fit":("measured_pass" if name in matrix_summaries and matrix_summaries[name]["fit"] else
+                "measured_fail" if name in matrix_summaries else "not_measured"),
+            "matrix_row":matrix_summaries.get(name),
+            "missing_behavior":(["live 4-player and 4-bot gameplay workload peaks (matrix run is load and release only)", "renderer drain with in-flight readers (C3.10/C3.11)"]
+                if name in matrix_summaries else ["profile-specific map registration and mount", "live 2-player and 4-player gameplay peaks", "owner reset/failure behavior", "renderer drain/UI lifecycle"])})
     diagnostics={}
     for scenario,evidence in parsed.items():
         prov=evidence.get("provenance") or {}
@@ -356,10 +525,92 @@ def build(matrix_path, manifest_path, workload2_path, workload4_path, lifecycle_
                 "log":item.get("log"),"log_sha256":item.get("log_sha256"),
                 "elf_sha256":item.get("elf_sha256"),"pins_valid":pins_valid,
                 "scope":item.get("scope"),"assertions":item.get("assertions")}
+    measured_pass = sorted(n for n in selected_names if n in matrix_summaries and matrix_summaries[n]["fit"])
+    measured_fail = sorted(n for n in selected_names if n in matrix_summaries and not matrix_summaries[n]["fit"])
+    unmeasured = sorted(n for n in selected_names if n not in matrix_summaries) + ["ui"]
+    extra = {n: v for n, v in matrix_summaries.items() if n not in selected_names}
     return {"format":"hcu-c2-profile-guarded-fit-v1","scope":{"session_profiles":len(matrix["profiles"]),"ui_row_included":True,
-      "guarded_owner_fit_claimed":False,"static_floors_are_not_runtime_fit":True,
-      "diagnostic_runs_are_not_profile_fits":True},
+      "guarded_owner_fit_claimed":bool(measured_pass),
+      "guarded_owner_fit_scope":"selected-profile production CE load and release in PCSX2; no 4-player or bot gameplay workload ticks",
+      "static_floors_are_not_runtime_fit":True,
+      "diagnostic_runs_are_not_profile_fits":True,
+      "matrix_dir":rel(matrix_dir) if matrix_dir else None,
+      "measured_pass_count":len(measured_pass),"measured_fail":measured_fail,
+      "unmeasured_rows":unmeasured,"extra_diagnostic_rows":sorted(extra)},
+      "extra_diagnostic_rows":extra,
       "diagnostic_observations":diagnostics,"run_evidence":parsed,"profiles":rows}
+
+
+def build_matrix_report(data):
+    """Flatten the fit table's matrix rows into the per-row matrix report."""
+    rows = []
+    def row_of(name, m, selected):
+        c = m.get("checks") or {}
+        return {"row": name, "selected_session_package": selected, "map": m.get("map"),
+            "booted": bool(c.get("partition_selected") and c.get("memory_ready") and c.get("profile_runtime")),
+            "map_loaded": bool(c.get("map_loaded")), "released": bool(c.get("map_released")),
+            "failures_zero": bool(c.get("failures_zero")) and m.get("failure_counts_total") == 0,
+            "below_reserve": bool(c.get("boot_end_below_reserve")),
+            "pass": bool(m.get("fit")), "reasons": m.get("reasons"),
+            "spans": m.get("spans"), "peaks": m.get("peaks"), "caps": m.get("caps"), "margins": m.get("margins"),
+            "failure_counts_total": m.get("failure_counts_total"), "reserve": m.get("reserve"), "boot_end": m.get("boot_end"),
+            "provenance": m.get("provenance")}
+    for prof in data["profiles"]:
+        if prof["profile"] == "ui":
+            rows.append({"row": "ui", "selected_session_package": False, "pass": None, "status": "unmeasured",
+                "reasons": ["no matrix row was run for the separate UI lifecycle package"]})
+        elif prof["matrix_row"]:
+            rows.append(row_of(prof["profile"], prof["matrix_row"], True))
+        else:
+            rows.append({"row": prof["profile"], "selected_session_package": True, "pass": None, "status": "unmeasured",
+                "reasons": ["no matrix result.json"]})
+    for name, m in sorted(data["extra_diagnostic_rows"].items()):
+        rows.append(row_of(name, m, False))
+    sel = [r for r in rows if r["selected_session_package"]]
+    sel_pass = [r for r in sel if r["pass"]]
+    failing = [r["row"] for r in rows if r["pass"] is False]
+    unmeasured = [r["row"] for r in rows if r["pass"] is None]
+    measured = [r for r in rows if r.get("peaks")]
+    def span(key, sub):
+        vals = [r[key][sub] for r in rows if r.get("pass") and r.get(key)]
+        return {"min": min(vals), "max": max(vals)} if vals else None
+    return {"format": "hcu-c2-profile-matrix-v1", "date": "2026-10-24",
+        "scope": "Selected-profile production loader in PCSX2 (interpreter): boot, guarded-partition registration, real CE scenario+BSP load, owner release. No 4-player or bot gameplay ticks and no integrated renderer readers.",
+        "selected_session_rows": len(sel), "selected_session_rows_passed": len(sel_pass),
+        "failing_rows": failing, "unmeasured_rows": unmeasured,
+        "margin_ranges_passing_rows": {k: span("margins", k) for k in ("tag", "bsp", "game_state", "residency_streaming_map_owner", "boot_end_below_reserve")},
+        "all_selected_session_rows_passed": len(sel) == len(sel_pass) and bool(sel),
+        "exit_met": not failing and not unmeasured and bool(sel) and len(sel) == len(sel_pass),
+        "rows": rows}
+
+
+def write_matrix_markdown(report, path):
+    f = lambda v: "n/a" if v is None else f"{v:,}"
+    out = ["# C2 profile boot and fit matrix (2026-10-24)", "",
+        "Generated by `tools/c2_profile_fit_table.py` from `build/m2-c2-matrix/*/result.json`, each row's guest manifest, ELF/package hashes and halo log. Machine-readable twin: `m2-c2-profile-matrix-2026-10-24.json`.", "",
+        f"Scope: {report['scope']}", "",
+        f"Result: {report['selected_session_rows_passed']} of {report['selected_session_rows']} selected session rows passed. Failing rows: {', '.join(report['failing_rows']) or 'none'}. Unmeasured rows: {', '.join(report['unmeasured_rows']) or 'none'}. C2 exit met: {str(report['exit_met']).lower()}.", "",
+        "Margins are cap minus peak in bytes (tag/BSP/game-state caps are the guest owner-telemetry caps; residency is the `streaming_map_owner` arena; reserve is the 0x1a40000 reserve start minus boot end).", "",
+        "| Row | Booted | Loaded | Released | Failures 0 | Below reserve | Tag peak | Tag margin | BSP peak | BSP margin | Game-state peak | GS margin | Residency peak | Residency margin | Reserve margin | Result |",
+        "|---|---|---|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|"]
+    yn = lambda v: "yes" if v else "no"
+    for r in report["rows"]:
+        if r.get("peaks") is None:
+            out.append(f"| {r['row']} | - | - | - | - | - | - | - | - | - | - | - | - | - | - | unmeasured |")
+            continue
+        p, m = r["peaks"], r["margins"]
+        res = "pass" if r["pass"] else "FAIL"
+        if not r["selected_session_package"]:
+            res += " (extra diagnostic)"
+        out.append(f"| {r['row']} | {yn(r['booted'])} | {yn(r['map_loaded'])} | {yn(r['released'])} | {yn(r['failures_zero'])} | {yn(r['below_reserve'])} | "
+            f"{f(p['tag'])} | {f(m['tag'])} | {f(p['bsp'])} | {f(m['bsp'])} | {f(p['game_state'])} | {f(m['game_state'])} | "
+            f"{f(p['residency_streaming_map_owner'])} | {f(m['residency_streaming_map_owner'])} | {f(m['boot_end_below_reserve'])} | {res} |")
+    out += ["", "## Failing and unmeasured rows", ""]
+    for r in report["rows"]:
+        if r["pass"] is not True:
+            out.append(f"- `{r['row']}`: " + " | ".join(r["reasons"] or []))
+    out += ["", "## Provenance", "", "Per-row ELF SHA-256, package SHA-256, result.json SHA-256 and log paths are in the JSON `rows[].provenance` and in `m2-c2-profile-guarded-fit-2026-10-24.json` under `profiles[].matrix_row.provenance`.", ""]
+    Path(path).write_text("\n".join(out))
 
 
 def main():
@@ -369,10 +620,18 @@ def main():
     ap.add_argument("--workload2",type=Path,default=ROOT/"build/m2-c2-resume-fit/guest/workload2p/manifest.json")
     ap.add_argument("--workload4",type=Path,default=ROOT/"build/m2-c2-resume-fit/guest/workload4p/manifest.json")
     ap.add_argument("--lifecycle",type=Path,default=ROOT/"build/m2-c2-resume-fit/guest/lifecycle/manifest.json")
+    ap.add_argument("--matrix-dir",type=Path,default=ROOT/"build/m2-c2-matrix")
     ap.add_argument("--output",type=Path,required=True)
+    ap.add_argument("--matrix-report",type=Path,help="write the per-row matrix report JSON here (a .md twin is written beside it)")
     a=ap.parse_args()
-    data=build(a.matrix,a.manifest,a.workload2,a.workload4,a.lifecycle)
+    data=build(a.matrix,a.manifest,a.workload2,a.workload4,a.lifecycle,a.matrix_dir)
     a.output.parent.mkdir(parents=True,exist_ok=True)
     a.output.write_text(json.dumps(data,indent=2,sort_keys=True)+"\n")
-    print(f"{len(data['profiles'])} profiles; guarded runtime fits measured: 0")
+    if a.matrix_report:
+        rep=build_matrix_report(data)
+        a.matrix_report.write_text(json.dumps(rep,indent=2,sort_keys=True)+"\n")
+        write_matrix_markdown(rep,a.matrix_report.with_suffix(".md"))
+    sc=data["scope"]
+    print(f"{len(data['profiles'])} profiles; guarded runtime fits measured pass: {sc['measured_pass_count']}; "
+          f"measured fail: {len(sc['measured_fail'])}; unmeasured: {len(sc['unmeasured_rows'])}; extra diagnostic rows: {len(sc['extra_diagnostic_rows'])}")
 if __name__=="__main__": main()

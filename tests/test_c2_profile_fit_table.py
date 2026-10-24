@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from tools.c2_profile_fit_table import extract, matched_owner, owner_qualifies_fit
+from tools.c2_profile_fit_table import extract, matched_owner, owner_qualifies_fit, summarize_matrix_row
 
 
 class ProfileFitMatchingTests(unittest.TestCase):
@@ -127,6 +127,71 @@ class ProfileFitMatchingTests(unittest.TestCase):
                                        "hcp_package_sha256_matches_manifest":True,"profile_id":7},
                                       result, "streaming", "capacity")
                 self.assertEqual(found is not None, expected)
+
+
+class MatrixRowTests(unittest.TestCase):
+    def make_row(self, root, tag_peak=90, tag_cap=100, failures=0, mutate_hash=False, loaded=True):
+        row = root / "map_a_session"
+        run_dir = row / "guest" / "runs" / "partition-selected"
+        run_dir.mkdir(parents=True)
+        (row / "link").mkdir()
+        elf = row / "link" / "guest.elf"
+        elf.write_bytes(b"pinned ELF")
+        digest = hashlib.sha256(b"pinned ELF").hexdigest()
+        lines = [
+            "HALO_PS2_LOCAL machine entry",
+            "HALO_PS2_LOCAL partition-selected name=map_a_session version=1 tag=%d bsp=50 texture=1 residency=64 qualified=1" % tag_cap,
+            "HALO_PS2_LOCAL profile-runtime row=map_a_session map=map_a profile=7",
+            "HALO_PS2_LOCAL owner-telemetry phase=map-released name=tags kind=backing parent=- bound=1 cap=%d used=0 high=%d failures=%d resets=1" % (tag_cap, tag_peak, failures),
+            "HALO_PS2_LOCAL owner-telemetry phase=map-released name=bsp kind=backing parent=- bound=1 cap=50 used=0 high=40 failures=0 resets=1",
+            "HALO_PS2_LOCAL cache-owner phase=map-released name=tags current=0 peak=%d publications=1 failures=0 unmounts=1 resets=1" % tag_peak,
+            "HALO_PS2_LOCAL arena name=streaming_map_owner base=0x1 cap=64 used=8 high=8 alloc_failures=0 resets=1",
+            "HALO_PS2_LOCAL render-storage-bound snapshot-cap=1",
+            "HALO_PS2_LOCAL map-mount result=1 active=1 map=map_a source=profile-runtime",
+        ]
+        if loaded:
+            lines += ["HALO_PS2_LOCAL production-ce-map-loaded result=1 map=map_a scenario=1 tag-table=1 tag-count=2 tag-bytes=%d bsp-bytes=40" % tag_peak,
+                      "HALO_PS2_LOCAL production-ce-map-released result=1 map=map_a mounted=0 tag-bytes=0 bsp-bytes=0"]
+        log = run_dir / "emu.txt"
+        log.write_text("\n".join(lines) + "\n")
+        (run_dir / "halo_ps2_local.txt").write_text("\n".join(lines) + "\n")
+        (row / "link" / "result-partition-map_a_session.json").write_text(json.dumps(
+            {"hcu_gameplay_machine": {"elf": {"sha256": digest}, "parent_object_sha256": {}}}))
+        (row / "guest" / "manifest.json").write_text(json.dumps({
+            "profile_name": "map_a_session", "partition_profile": "map_a_session",
+            "profile_package_sha256": "a" * 64, "scenario_mode": "production-ce-map-load-headless",
+            "markers_all_present": loaded,
+            "runs": [{"run": "partition-selected", "elf": str(elf), "elf_sha256": "0" * 64 if mutate_hash else digest,
+                      "exit": "release-marker; host-stopped-sigint--2", "elapsed_seconds": 2,
+                      "log": str(log), "halo_lines_saved": str(run_dir / "halo_ps2_local.txt")}]}))
+        (row / "result.json").write_text(json.dumps({"pass": True, "map": "map_a", "reasons": [], "checks": {},
+            "values": {"reserve": 1000, "boot_end": 900}, "peaks": {"backing_high": 5}, "package_root": "x"}))
+        return row
+
+    def profile(self):
+        return {"name": "map_a_session", "map": "map_a", "hcp_package_sha256": "a" * 64,
+                "hcp_package_sha256_matches_manifest": True, "profile_id": 7}
+
+    def test_clean_row_fits_with_margins(self):
+        with tempfile.TemporaryDirectory() as td:
+            out, _ = summarize_matrix_row(self.make_row(Path(td)), self.profile())
+        self.assertTrue(out["fit"], out["reasons"])
+        self.assertEqual(out["margins"]["tag"], 10)
+        self.assertEqual(out["margins"]["boot_end_below_reserve"], 100)
+
+    def test_failure_counter_hash_and_missing_load_each_fail_the_row(self):
+        for kwargs in ({"failures": 1}, {"mutate_hash": True}, {"loaded": False}, {"tag_peak": 101}):
+            with self.subTest(**kwargs), tempfile.TemporaryDirectory() as td:
+                out, _ = summarize_matrix_row(self.make_row(Path(td), **kwargs), self.profile())
+                self.assertFalse(out["fit"])
+                self.assertTrue(out["reasons"])
+
+    def test_package_hash_mismatch_fails_row(self):
+        with tempfile.TemporaryDirectory() as td:
+            profile = self.profile()
+            profile["hcp_package_sha256"] = "b" * 64
+            out, _ = summarize_matrix_row(self.make_row(Path(td)), profile)
+        self.assertFalse(out["fit"])
 
 
 if __name__ == "__main__":
