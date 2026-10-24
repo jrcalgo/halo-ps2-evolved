@@ -27,7 +27,7 @@
     },
     "c2_evidence_updater": {
       "path": "tools/update_hcu_c2_evidence.py",
-      "sha256": "17edcd9ac1c2f3dd54d6916d4dbdbe7fe32edd36921e5b7668609b7a2434335f"
+      "sha256": "ec2edbd611ad023700d20954399e5b5f4bb465d35e3e86ac6c0e4ef6a0648057"
     }
   },
   "dependency_identities": [
@@ -91312,7 +91312,7 @@
       "evidence_files": [
         {
           "path": "docs/reports/m2-c2-status-2026-10-23.json",
-          "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+          "sha256": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
           "role": "phase status report",
           "exists": true
         },
@@ -91364,13 +91364,76 @@
           "role": "report",
           "evidence_level": "host execution",
           "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+          "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+          "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-gaps-ui-2026-10-24.md",
+          "sha256": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-gaps-bots-2026-10-24.md",
+          "sha256": "8840e3af109f80770e3e17c169c2fbe1e3c5c520aa7bbc629eaf038d5ad01ef8",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
         }
       ],
       "evidence_level": "host execution",
       "execution_results": [
         {
+          "mode": "PCSX2 interpreter",
+          "result": "stale",
+          "scope": "Historical archived C1/HCP2 corpus, 26 complete selected session packages on 13 maps, UI, and recipe-level CE/BSP storage floors. These are distinct corpora and retain original evidence scope.",
+          "evidence_files": [
+            {
+              "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+              "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+              "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-gaps-ui-2026-10-24.md",
+              "sha256": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-gaps-bots-2026-10-24.md",
+              "sha256": "8840e3af109f80770e3e17c169c2fbe1e3c5c520aa7bbc629eaf038d5ad01ef8",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            }
+          ]
+        },
+        {
           "mode": "host execution",
-          "result": "partial",
+          "result": "stale",
           "scope": "Historical archived C1/HCP2 corpus, 26 complete selected session packages on 13 maps, UI, and recipe-level CE/BSP storage floors. These are distinct corpora and retain original evidence scope.",
           "evidence_files": [
             {
@@ -91426,12 +91489,12 @@
         }
       ],
       "fixture_input_hashes": {
-        "status": "complete",
+        "status": "partial",
         "executable_hashes": [],
         "fixture_hashes": [
           {
             "path": "docs/reports/m2-c2-status-2026-10-23.json",
-            "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+            "sha256": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
             "role": "phase status report"
           }
         ],
@@ -91484,6 +91547,34 @@
             "sha256": "1740456843ea4a5054667e379e2b8365d72fc412f2a1c308954251624c3bdb54",
             "role": "report",
             "evidence_level": "host execution",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+            "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+            "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-gaps-ui-2026-10-24.md",
+            "sha256": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-gaps-bots-2026-10-24.md",
+            "sha256": "8840e3af109f80770e3e17c169c2fbe1e3c5c520aa7bbc629eaf038d5ad01ef8",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
             "exists": true
           }
         ]
@@ -91640,18 +91731,27 @@
           "smallest_map_render_residual_profile": "sidewinder_marine_shotgun_4p4bot"
         }
       },
-      "result": "partial",
+      "result": "stale",
       "remaining_limitation": "Selected packages exist and later host residency runs pass their streaming/lease fixture, superseding the early packaging-only blocker. Full-union survival CE remains about25.6 MB and cannot be a live fallback. Current source-clean C1 rebuild, simultaneous renderer/index/staging live set and profile-specific gameplay owner peaks remain unqualified. Four-player/four-bot selection metadata does not establish spawned bots.",
       "source_report_hashes": {
-        "docs/reports/m2-c2-status-2026-10-23.json": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+        "docs/reports/m2-c2-status-2026-10-23.json": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
         "docs/reports/m2-c2-profile-memory-audit-2026-10-23.json": "3745930d29e2ea112790a42e6bc116acab076b94d9bfe29ed9f6bf366f20d01c",
         "docs/reports/m2-c2-ce-image-owner-audit-2026-10-23.json": "6abe6b861456f28e997d2cdd492f3ecda3b5375d8394a69850a768dbab9cbb67",
         "build/m2-c2-recipe-residency-2026-10-23/matrix.json": "eb98fa47511ff83a7923e619ae0fd93091bb7b8e86ef7d9055c8a375a41c20c3",
         "build/m2-c2-hcp2-primary/migration-report.json": "47d1cac72230e20195b3cbc72cac7a4257f1e17eefccae5da20df770279eaa8e",
         "docs/reports/m2-c2-session-map-capacity-2026-10-23.json": "c35fc183f80491e383b06faa1ac138bbde6a946877a31d6ca2e30cc3bd103c50",
         "docs/reports/m2-c2-session-map-capacity-2026-10-23.md": "a7e00cd7cba40f147b1792a909720f315833826242d8b4725ed1a4444542ba9a",
-        "docs/reports/m2-c2-r8-residency-2026-10-24.md": "1740456843ea4a5054667e379e2b8365d72fc412f2a1c308954251624c3bdb54"
-      }
+        "docs/reports/m2-c2-r8-residency-2026-10-24.md": "1740456843ea4a5054667e379e2b8365d72fc412f2a1c308954251624c3bdb54",
+        "docs/reports/m2-c2-profile-matrix-2026-10-24.json": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+        "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+        "docs/reports/m2-c2-gaps-ui-2026-10-24.md": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99",
+        "docs/reports/m2-c2-gaps-bots-2026-10-24.md": "8840e3af109f80770e3e17c169c2fbe1e3c5c520aa7bbc629eaf038d5ad01ef8"
+      },
+      "matrix_evidence": "Matrix (2026-10-24, updated): 26 of 26 selected session rows and the ui row pass load and release in PCSX2 with zero failures; bots_sidewinder (extra diagnostic) passes after a package rebuild. Measured guest fits now cover all 27 packages; source-clean C1 requalification, the simultaneous renderer/index/staging live set and spawned-bot workload peaks remain unestablished, so the result stays partial.",
+      "stale_dependencies": [
+        "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+        "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json"
+      ]
     },
     {
       "step": 8,
@@ -91663,7 +91763,7 @@
       "evidence_files": [
         {
           "path": "docs/reports/m2-c2-status-2026-10-23.json",
-          "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+          "sha256": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
           "role": "phase status report",
           "exists": true
         },
@@ -91701,10 +91801,59 @@
           "evidence_level": "source inspection",
           "role": "source",
           "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+          "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+          "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-gaps-ui-2026-10-24.md",
+          "sha256": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
         }
       ],
       "evidence_level": "host execution",
       "execution_results": [
+        {
+          "mode": "PCSX2 interpreter",
+          "result": "stale",
+          "scope": "Guarded partition planner/binder, selected-session table and generated exact package/header registration; a distinct bots_sidewinder candidate was added in the resumed work.",
+          "evidence_files": [
+            {
+              "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+              "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+              "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-gaps-ui-2026-10-24.md",
+              "sha256": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            }
+          ]
+        },
         {
           "mode": "host execution",
           "result": "stale",
@@ -91761,7 +91910,7 @@
         "fixture_hashes": [
           {
             "path": "docs/reports/m2-c2-status-2026-10-23.json",
-            "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+            "sha256": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
             "role": "phase status report"
           }
         ],
@@ -91801,6 +91950,27 @@
             "evidence_level": "source inspection",
             "role": "source",
             "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+            "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+            "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-gaps-ui-2026-10-24.md",
+            "sha256": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
           }
         ]
       },
@@ -91812,18 +91982,24 @@
         "fixture_claims_bytes": 834960
       },
       "result": "stale",
-      "remaining_limitation": "Static capacities, host fixtures and successful backend registration do not establish actual CE scenario/BSP loading or renderer/workload fit. Selected-map guest qualification is running separately; CE pointers must never be rebound while live.",
+      "remaining_limitation": "Selected-map guest qualification is now complete at load/release for 26 session rows plus ui. Renderer-side partition fit (render_chunks, render_texture), workload peaks and the integrated renderer remain unmeasured; CE pointers must never be rebound while live.",
       "source_report_hashes": {
-        "docs/reports/m2-c2-status-2026-10-23.json": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+        "docs/reports/m2-c2-status-2026-10-23.json": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
         "docs/reports/m2-c2-memory-partition-implementation-2026-10-23.json": "b802d6ca2f447f3d82b4d81f60e3b56af136f98640150d384241f454bdd45674",
         "build/mp-production-binder-capacity-1792807638276695796/manifest.json": "931cfa8548bee284bfffa7fe3ae02ab027e0cb491c53f9d08bc056c0d3aa463e",
         "src/stream/hcu_memory_profile.c": "ca8c5f01b47ee8a4757774d61bffdc8708d79b2a0da9c4fd2df4939d6c7694dd",
         "src/stream/hcu_memory_profile.h": "5dce4c6e598c5e922fdbbc083b7a32b3e9eda127f911c4d5aa07aa243145d4f6",
-        "src/stream/hcu_memory_bind.c": "e58097ae81288df6ec35fc1f44d207c6753cdfd3c6ad0860980e6f4c47bc2812"
+        "src/stream/hcu_memory_bind.c": "e58097ae81288df6ec35fc1f44d207c6753cdfd3c6ad0860980e6f4c47bc2812",
+        "docs/reports/m2-c2-profile-matrix-2026-10-24.json": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+        "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+        "docs/reports/m2-c2-gaps-ui-2026-10-24.md": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99"
       },
+      "matrix_evidence": "Matrix (2026-10-24, updated): 26 of 26 selected session rows and the ui row pass load and release in PCSX2 with zero failures; bots_sidewinder (extra diagnostic) passes after a package rebuild. All 27 rows register partition-selected qualified=1 with canaries and no live rebinding. render_chunks and render_texture are unbound in the headless guest, so renderer-side partition fit is unmeasured; the result stays partial.",
       "stale_dependencies": [
         "src/stream/hcu_memory_profile.c",
-        "src/stream/hcu_memory_profile.h"
+        "src/stream/hcu_memory_profile.h",
+        "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+        "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json"
       ]
     },
     {
@@ -91836,29 +92012,8 @@
       "evidence_files": [
         {
           "path": "docs/reports/m2-c2-status-2026-10-23.json",
-          "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+          "sha256": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
           "role": "phase status report",
-          "exists": true
-        },
-        {
-          "path": "config/memory-budget.json",
-          "sha256": "67ef6d6085de71c22e3998a355cb2f79a8123837b7b14e89593a0d497de21b74",
-          "evidence_level": "source inspection",
-          "role": "source",
-          "exists": true
-        },
-        {
-          "path": "src/stream/hcu_main.c",
-          "sha256": "f0f55e9edf87929e9ba8d9079a3a09723091aa69f4934112ee3fd813edb5b4f8",
-          "evidence_level": "source inspection",
-          "role": "source",
-          "exists": true
-        },
-        {
-          "path": "src/stream/hcu_memory_profile.c",
-          "sha256": "ca8c5f01b47ee8a4757774d61bffdc8708d79b2a0da9c4fd2df4939d6c7694dd",
-          "evidence_level": "source inspection",
-          "role": "source",
           "exists": true
         },
         {
@@ -91881,14 +92036,84 @@
           "evidence_level": "host execution",
           "role": "report",
           "exists": true
+        },
+        {
+          "path": "config/memory-budget.json",
+          "sha256": "352ba1a9ed0a4e962809d1efc332bb3530fa9564e8e179fc7981ee6ea9ad48af",
+          "evidence_level": "source inspection",
+          "role": "source",
+          "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+          "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+          "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-gaps-ui-2026-10-24.md",
+          "sha256": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-gaps-reuse-2026-10-24.md",
+          "sha256": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
         }
       ],
       "evidence_level": "host execution",
       "execution_results": [
         {
+          "mode": "PCSX2 interpreter",
+          "result": "stale",
+          "scope": "Budget-v3 accounting, 26 exact selected-profile ELF links and 26 PCSX2 load/release guest placements below the reserve. Workload high-water and final stack-bounds verification are not claimed.",
+          "evidence_files": [
+            {
+              "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+              "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+              "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-gaps-ui-2026-10-24.md",
+              "sha256": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-gaps-reuse-2026-10-24.md",
+              "sha256": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            }
+          ]
+        },
+        {
           "mode": "host execution",
           "result": "stale",
-          "scope": "Version-3 fixed-owner accounting and an exact selected-profile ELF link; actual combined guest placement and owner live-set qualification remain separate.",
+          "scope": "Budget-v3 accounting, 26 exact selected-profile ELF links and 26 PCSX2 load/release guest placements below the reserve. Workload high-water and final stack-bounds verification are not claimed.",
           "evidence_files": [
             {
               "path": "docs/reports/m2-c2-dma-owner-implementation-2026-10-23.json",
@@ -91916,25 +92141,11 @@
         {
           "mode": "source inspection",
           "result": "stale",
-          "scope": "Version-3 fixed-owner accounting and an exact selected-profile ELF link; actual combined guest placement and owner live-set qualification remain separate.",
+          "scope": "Budget-v3 accounting, 26 exact selected-profile ELF links and 26 PCSX2 load/release guest placements below the reserve. Workload high-water and final stack-bounds verification are not claimed.",
           "evidence_files": [
             {
               "path": "config/memory-budget.json",
-              "sha256": "67ef6d6085de71c22e3998a355cb2f79a8123837b7b14e89593a0d497de21b74",
-              "evidence_level": "source inspection",
-              "role": "source",
-              "exists": true
-            },
-            {
-              "path": "src/stream/hcu_main.c",
-              "sha256": "f0f55e9edf87929e9ba8d9079a3a09723091aa69f4934112ee3fd813edb5b4f8",
-              "evidence_level": "source inspection",
-              "role": "source",
-              "exists": true
-            },
-            {
-              "path": "src/stream/hcu_memory_profile.c",
-              "sha256": "ca8c5f01b47ee8a4757774d61bffdc8708d79b2a0da9c4fd2df4939d6c7694dd",
+              "sha256": "352ba1a9ed0a4e962809d1efc332bb3530fa9564e8e179fc7981ee6ea9ad48af",
               "evidence_level": "source inspection",
               "role": "source",
               "exists": true
@@ -91948,33 +92159,12 @@
         "fixture_hashes": [
           {
             "path": "docs/reports/m2-c2-status-2026-10-23.json",
-            "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+            "sha256": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
             "role": "phase status report"
           }
         ],
         "harness_hashes": [],
         "input_hashes": [
-          {
-            "path": "config/memory-budget.json",
-            "sha256": "67ef6d6085de71c22e3998a355cb2f79a8123837b7b14e89593a0d497de21b74",
-            "evidence_level": "source inspection",
-            "role": "source",
-            "exists": true
-          },
-          {
-            "path": "src/stream/hcu_main.c",
-            "sha256": "f0f55e9edf87929e9ba8d9079a3a09723091aa69f4934112ee3fd813edb5b4f8",
-            "evidence_level": "source inspection",
-            "role": "source",
-            "exists": true
-          },
-          {
-            "path": "src/stream/hcu_memory_profile.c",
-            "sha256": "ca8c5f01b47ee8a4757774d61bffdc8708d79b2a0da9c4fd2df4939d6c7694dd",
-            "evidence_level": "source inspection",
-            "role": "source",
-            "exists": true
-          },
           {
             "path": "docs/reports/m2-c2-dma-owner-implementation-2026-10-23.json",
             "sha256": "94269eedf4fab2cce33a772ac62e34068bea3f86c4ce3c8ad4319a1d450c0b73",
@@ -91995,6 +92185,41 @@
             "evidence_level": "host execution",
             "role": "report",
             "exists": true
+          },
+          {
+            "path": "config/memory-budget.json",
+            "sha256": "352ba1a9ed0a4e962809d1efc332bb3530fa9564e8e179fc7981ee6ea9ad48af",
+            "evidence_level": "source inspection",
+            "role": "source",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+            "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+            "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-gaps-ui-2026-10-24.md",
+            "sha256": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-gaps-reuse-2026-10-24.md",
+            "sha256": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
           }
         ]
       },
@@ -92008,23 +92233,28 @@
         "approved_reserve_transfer_bytes": 262144,
         "selected_elf_file_backed_bytes": 2250500,
         "selected_elf_static_margin_bytes": 108796,
-        "selected_elf_nobits_bytes": 1811648
+        "selected_elf_nobits_bytes": 1811648,
+        "matrix_rows_below_reserve": 26,
+        "matrix_min_reserve_margin_bytes": 395302,
+        "matrix_max_selected_elf_file_backed_bytes": 1963012
       },
       "result": "stale",
-      "remaining_limitation": "Selected link file-backed sections fit v3; this host section audit does not establish all runtime owners, workload high-water or final exact guest placement.",
+      "remaining_limitation": "Passed for the requirement as amended 2026-10-24: v3 limits, ELF/NOBITS accounting and 26 guest placements below the reserve are evidenced. Not claimed: workload high-water, physical stack-bound verification and any renderer-resident growth, which belong to C2.5/C2.6 and C3.",
       "source_report_hashes": {
-        "docs/reports/m2-c2-status-2026-10-23.json": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
-        "config/memory-budget.json": "67ef6d6085de71c22e3998a355cb2f79a8123837b7b14e89593a0d497de21b74",
-        "src/stream/hcu_main.c": "f0f55e9edf87929e9ba8d9079a3a09723091aa69f4934112ee3fd813edb5b4f8",
-        "src/stream/hcu_memory_profile.c": "ca8c5f01b47ee8a4757774d61bffdc8708d79b2a0da9c4fd2df4939d6c7694dd",
+        "docs/reports/m2-c2-status-2026-10-23.json": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
         "docs/reports/m2-c2-dma-owner-implementation-2026-10-23.json": "94269eedf4fab2cce33a772ac62e34068bea3f86c4ce3c8ad4319a1d450c0b73",
         "docs/reports/m2-c2-memory-partition-implementation-2026-10-23.json": "b802d6ca2f447f3d82b4d81f60e3b56af136f98640150d384241f454bdd45674",
-        "docs/reports/m2-c2-budget-v3-2026-10-24.json": "c78b5217b82528e9d666373820ac5e806e705e176c23eeabc116795947802816"
+        "docs/reports/m2-c2-budget-v3-2026-10-24.json": "c78b5217b82528e9d666373820ac5e806e705e176c23eeabc116795947802816",
+        "config/memory-budget.json": "352ba1a9ed0a4e962809d1efc332bb3530fa9564e8e179fc7981ee6ea9ad48af",
+        "docs/reports/m2-c2-profile-matrix-2026-10-24.json": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+        "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+        "docs/reports/m2-c2-gaps-ui-2026-10-24.md": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99",
+        "docs/reports/m2-c2-gaps-reuse-2026-10-24.md": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563"
       },
+      "matrix_evidence": "27 guest placements (26 session rows plus ui) are below the 0x1a40000 reserve; smallest margin 395,302 B (bloodgulch_marine_shotgun_4p4bot), ui 447,782 B. Multi-cycle tick-enabled ELFs stay below it (margin 221,742 to 232,622 B).",
       "stale_dependencies": [
-        "config/memory-budget.json",
-        "src/stream/hcu_main.c",
-        "src/stream/hcu_memory_profile.c"
+        "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+        "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json"
       ]
     },
     {
@@ -92037,7 +92267,7 @@
       "evidence_files": [
         {
           "path": "docs/reports/m2-c2-status-2026-10-23.json",
-          "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+          "sha256": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
           "role": "phase status report",
           "exists": true
         },
@@ -92138,10 +92368,59 @@
           "evidence_level": "source inspection",
           "role": "source",
           "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+          "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+          "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-gaps-ui-2026-10-24.md",
+          "sha256": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
         }
       ],
       "evidence_level": "host execution",
       "execution_results": [
+        {
+          "mode": "PCSX2 interpreter",
+          "result": "stale",
+          "scope": "All 27 HCP2 packages, file-backed C preflight, native UI CE tag/BSP streaming and bitmap upload/fence fixtures.",
+          "evidence_files": [
+            {
+              "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+              "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+              "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-gaps-ui-2026-10-24.md",
+              "sha256": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            }
+          ]
+        },
         {
           "mode": "host execution",
           "result": "stale",
@@ -92283,7 +92562,7 @@
         "fixture_hashes": [
           {
             "path": "docs/reports/m2-c2-status-2026-10-23.json",
-            "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+            "sha256": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
             "role": "phase status report"
           }
         ],
@@ -92386,6 +92665,27 @@
             "evidence_level": "source inspection",
             "role": "source",
             "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+            "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+            "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-gaps-ui-2026-10-24.md",
+            "sha256": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
           }
         ]
       },
@@ -92401,7 +92701,7 @@
       "result": "stale",
       "remaining_limitation": "HCP2 representation and host consumers pass. Final CE data still remains resident for the map; generic eviction, integrated renderer fencing, active roster admission and complete guest lifetime qualification remain open.",
       "source_report_hashes": {
-        "docs/reports/m2-c2-status-2026-10-23.json": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+        "docs/reports/m2-c2-status-2026-10-23.json": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
         "build/m2-c2-hcp2-primary/migration-report.json": "47d1cac72230e20195b3cbc72cac7a4257f1e17eefccae5da20df770279eaa8e",
         "build/m2-c2-hcp2-rebuild/migration-report.json": "47d1cac72230e20195b3cbc72cac7a4257f1e17eefccae5da20df770279eaa8e",
         "build/m2-c2-hcp2-native/result.json": "4d90b3166a8398fa9645078181369d6743ae6dc01505e31aa67936465abed1bb",
@@ -92415,13 +92715,19 @@
         "src/stream/hcu_profile_mount.c": "d6741fe60765bf25f186161c755583cf475f1d777a4f64d157491b1cf2fa8801",
         "tools/hcu_profile_chunks.py": "24112efedf580bbed1692236c5eafc124885ca5810105f8ec7a327f33a3d9594",
         "tools/hcu_profile_validate.py": "4e276b429db4805985bce51fdd655a21dfc4d9657264e0518d41f4b5ceed4a8c",
-        "tools/repack_hcu_profiles_hcp2.py": "daeb6892723916b680795017c12878c6ebdf696a93a580e19ddf7c86efead4f7"
+        "tools/repack_hcu_profiles_hcp2.py": "daeb6892723916b680795017c12878c6ebdf696a93a580e19ddf7c86efead4f7",
+        "docs/reports/m2-c2-profile-matrix-2026-10-24.json": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+        "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+        "docs/reports/m2-c2-gaps-ui-2026-10-24.md": "5b4e34fa0fa4118fc65287b8ab25a3666d0ca43e97d8137abcf610d4c5dd8e99"
       },
+      "matrix_evidence": "Matrix: 27 rows load HCP2 packages through the profile runtime in PCSX2 with zero failures (ui included, from a package with a one-field manifest size correction). No gameplay/DMA/GS readers run in the headless guest, so reader-lifetime retention is not demonstrated; result stays partial.",
       "stale_dependencies": [
         "src/stream/hcu_asset_profile.c",
         "src/stream/hcu_asset_profile.h",
         "src/stream/hcu_profile_mount.c",
-        "tools/repack_hcu_profiles_hcp2.py"
+        "tools/repack_hcu_profiles_hcp2.py",
+        "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+        "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json"
       ]
     },
     {
@@ -92434,7 +92740,7 @@
       "evidence_files": [
         {
           "path": "docs/reports/m2-c2-status-2026-10-23.json",
-          "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+          "sha256": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
           "role": "phase status report",
           "exists": true
         },
@@ -92472,10 +92778,59 @@
           "role": "report",
           "evidence_level": "source inspection",
           "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+          "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+          "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-gaps-reuse-2026-10-24.md",
+          "sha256": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
         }
       ],
       "evidence_level": "host execution",
       "execution_results": [
+        {
+          "mode": "PCSX2 interpreter",
+          "result": "stale",
+          "scope": "Source allocation verdicts and reusable allocator semantics, plus resumed path-state oracle and owner-counter corrections; runtime workload traces remain separate.",
+          "evidence_files": [
+            {
+              "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+              "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+              "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-gaps-reuse-2026-10-24.md",
+              "sha256": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            }
+          ]
+        },
         {
           "mode": "host execution",
           "result": "stale",
@@ -92532,7 +92887,7 @@
         "fixture_hashes": [
           {
             "path": "docs/reports/m2-c2-status-2026-10-23.json",
-            "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+            "sha256": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
             "role": "phase status report"
           }
         ],
@@ -92572,6 +92927,27 @@
             "role": "report",
             "evidence_level": "source inspection",
             "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+            "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+            "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-gaps-reuse-2026-10-24.md",
+            "sha256": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
           }
         ]
       },
@@ -92582,16 +92958,22 @@
       "result": "stale",
       "remaining_limitation": "The coworker source inventory reports zero undispositioned callsites, but that is a source classification result. Current exact long path/bot/wave/mode traces, EE allocation timing/fragmentation and endless survival reuse are still unqualified. The resumed path test was corrected to sample allocation while live and require reclamation after free.",
       "source_report_hashes": {
-        "docs/reports/m2-c2-status-2026-10-23.json": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+        "docs/reports/m2-c2-status-2026-10-23.json": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
         "docs/reports/m2-c2-5-postload-allocation-source-inventory-2026-10-23.json": "b0a142e368a27f2d0f285bb185dd118ff04ad4deefc344aedea9b11fcbe3d206",
         "docs/reports/m2-c2-5-postload-allocation-inventory-2026-10-23.md": "55397b5f8172113101e828274ac3606982ab77e4ae48ddf3b81e566657184768",
         "docs/reports/m2-c2-streaming-allocation-audit-2026-10-23.md": "24488a770c8530d1f2220d2a58e39d3ea80c270be4ccc6806691f3441c887d00",
         "submodules/halo-ce-universal/port/ps2/src/ps2_memory.c": "9c0478bc28c8cccc1241124b67a92dc9e1011b23334b7c2d4598bd6a0acdc120",
-        "docs/reports/m2-c2-r8-alloc-final-2026-10-24.md": "524ad19980a7bd6201a8d2be313cb6247df8cdc3e3a2764e1b5d482d5bcab447"
+        "docs/reports/m2-c2-r8-alloc-final-2026-10-24.md": "524ad19980a7bd6201a8d2be313cb6247df8cdc3e3a2764e1b5d482d5bcab447",
+        "docs/reports/m2-c2-profile-matrix-2026-10-24.json": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+        "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+        "docs/reports/m2-c2-gaps-reuse-2026-10-24.md": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563"
       },
+      "matrix_evidence": "Reuse runs (updated 2026-10-24): all 26 selected rows plus ui pass 2 cycles (3 on bloodgulch_mounted_gunner, longest_mounted_gunner, ratrace_marine_shotgun); 300-tick runs: longest 3 cycles, bloodgulch 3, sidewinder 2; owner and cache storage and backing used/high are identical across cycles 2..N, zero failures, resets +1 per cycle. Sidewinder 3 cycles hit the 600 s guest bound. Ticks are one local player without bots; path/bot/wave/mode traces and endless-survival reuse remain unqualified, so the result stays partial.",
       "stale_dependencies": [
         "docs/reports/m2-c2-5-postload-allocation-source-inventory-2026-10-23.json",
-        "submodules/halo-ce-universal/port/ps2/src/ps2_memory.c"
+        "submodules/halo-ce-universal/port/ps2/src/ps2_memory.c",
+        "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+        "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json"
       ]
     },
     {
@@ -92604,7 +92986,7 @@
       "evidence_files": [
         {
           "path": "docs/reports/m2-c2-status-2026-10-23.json",
-          "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+          "sha256": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
           "role": "phase status report",
           "exists": true
         },
@@ -92663,10 +93045,59 @@
           "role": "report",
           "evidence_level": "source inspection",
           "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+          "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+          "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-gaps-reuse-2026-10-24.md",
+          "sha256": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
         }
       ],
       "evidence_level": "host execution",
       "execution_results": [
+        {
+          "mode": "PCSX2 interpreter",
+          "result": "stale",
+          "scope": "Named parent owner registry and CE object/actor/widget counters, with nested widget pool correctly assigned to dynamic_simulation; fixed reservations are separate from actual payload counters.",
+          "evidence_files": [
+            {
+              "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+              "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+              "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-gaps-reuse-2026-10-24.md",
+              "sha256": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            }
+          ]
+        },
         {
           "mode": "host execution",
           "result": "stale",
@@ -92744,7 +93175,7 @@
         "fixture_hashes": [
           {
             "path": "docs/reports/m2-c2-status-2026-10-23.json",
-            "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+            "sha256": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
             "role": "phase status report"
           }
         ],
@@ -92805,6 +93236,27 @@
             "role": "report",
             "evidence_level": "source inspection",
             "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+            "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+            "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-gaps-reuse-2026-10-24.md",
+            "sha256": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
           }
         ]
       },
@@ -92812,7 +93264,7 @@
       "result": "stale",
       "remaining_limitation": "Object-pool realloc failure forwarding and widget failure/reset reporting are corrected in source and focused tests. Actual profile-specific guest peaks and sustained bot/survival workload counters are still required. The headless runtime cannot measure active renderer or audio playback residency.",
       "source_report_hashes": {
-        "docs/reports/m2-c2-status-2026-10-23.json": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+        "docs/reports/m2-c2-status-2026-10-23.json": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
         "docs/reports/m2-c2-actor-pool-telemetry-2026-10-23.md": "867213dbb77265f7911f17021a2acb29f494f572b176c554a2ae6ea8c938950e",
         "docs/reports/m2-c2-owner-telemetry-audit-2026-10-23.md": "4bf8c32e1d50dda27bbcf363ccb2ff0f49e6b1c8310b3ed8e6952e141b6ad66a",
         "build/m2-c2-current-focused-tests.xml": "8959e3b3d035b2bd6f863af5b7626f0299ecf5a04c5e7e5ea8fd56ad9a8859cd",
@@ -92820,10 +93272,16 @@
         "src/stream/staging.h": "bbff5e008a91d9c3c400d50948575cf23cd57b7e820a8824b10b5e133098f7b8",
         "submodules/halo-ps2/engine/src/core/mem.c": "b3200864ada17c213b80ae17bc6fe8d69c5d8609189b2d269e41ba04d723eab7",
         "submodules/halo-ce-universal/source/ai/actors.c": "ef4a6e152bba97dd81708b5bc9c1e375b461685a8b5b17cee47d639aeafeff46",
-        "docs/reports/m2-c2-r8-alloc-final-2026-10-24.md": "524ad19980a7bd6201a8d2be313cb6247df8cdc3e3a2764e1b5d482d5bcab447"
+        "docs/reports/m2-c2-r8-alloc-final-2026-10-24.md": "524ad19980a7bd6201a8d2be313cb6247df8cdc3e3a2764e1b5d482d5bcab447",
+        "docs/reports/m2-c2-profile-matrix-2026-10-24.json": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+        "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+        "docs/reports/m2-c2-gaps-reuse-2026-10-24.md": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563"
       },
+      "matrix_evidence": "Matrix retains high-water, failure and reset counters for 10 bound owners in each of 27 rows (zero failures) and per cycle in the multi-cycle runs. render_chunks, render_texture and widget_pool are unbound in the headless guest and unmeasured, so 'every named owner' is not met.",
       "stale_dependencies": [
-        "submodules/halo-ce-universal/source/ai/actors.c"
+        "submodules/halo-ce-universal/source/ai/actors.c",
+        "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+        "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json"
       ]
     },
     {
@@ -92836,7 +93294,7 @@
       "evidence_files": [
         {
           "path": "docs/reports/m2-c2-status-2026-10-23.json",
-          "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+          "sha256": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
           "role": "phase status report",
           "exists": true
         },
@@ -92895,10 +93353,45 @@
           "evidence_level": "source inspection",
           "role": "report",
           "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+          "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+          "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
         }
       ],
       "evidence_level": "host execution",
       "execution_results": [
+        {
+          "mode": "PCSX2 interpreter",
+          "result": "stale",
+          "scope": "Exact fixed chain layout, frame-scratch packet workspace, direct idle-chain matrix emission and target object compilation.",
+          "evidence_files": [
+            {
+              "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+              "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+              "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            }
+          ]
+        },
         {
           "mode": "host execution",
           "result": "stale",
@@ -92976,7 +93469,7 @@
         "fixture_hashes": [
           {
             "path": "docs/reports/m2-c2-status-2026-10-23.json",
-            "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+            "sha256": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
             "role": "phase status report"
           }
         ],
@@ -93037,6 +93530,20 @@
             "evidence_level": "source inspection",
             "role": "report",
             "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+            "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+            "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
           }
         ]
       },
@@ -93052,7 +93559,7 @@
       "result": "stale",
       "remaining_limitation": "The combined C3 drawing loop and snapshot-derived animated geometry are not integrated; no current guest in-flight chain/fence or full rendered workload execution proves this gate. User-approved amendment carries the actual integrated renderer proof into C3.10; that destination remains open and this deferral cannot pass a row.",
       "source_report_hashes": {
-        "docs/reports/m2-c2-status-2026-10-23.json": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+        "docs/reports/m2-c2-status-2026-10-23.json": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
         "docs/reports/m2-c2-dma-owner-implementation-2026-10-23.json": "94269eedf4fab2cce33a772ac62e34068bea3f86c4ce3c8ad4319a1d450c0b73",
         "build/m2-c2-current-focused-tests.xml": "8959e3b3d035b2bd6f863af5b7626f0299ecf5a04c5e7e5ea8fd56ad9a8859cd",
         "src/stream/hcu_render_snapshot.c": "6a23907536604e7f8b70cc7d52e9248f83c1e648721498c0498bb92d59cac50f",
@@ -93060,7 +93567,9 @@
         "src/stream/hcu_main.c": "f0f55e9edf87929e9ba8d9079a3a09723091aa69f4934112ee3fd813edb5b4f8",
         "submodules/halo-ps2/engine/src/render/storage.h": "543ba5857c32ee3a4d53afc62ae9b80102e602a81ca88358f3afa3a1be4f7e08",
         "submodules/halo-ps2/engine/src/render/bsp_render.c": "641e30a49f5c1e2d4376c834685aacbec446218841e35310275519df129494d4",
-        "docs/reports/m2-c2-scope-amendment-2026-10-24.json": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff"
+        "docs/reports/m2-c2-scope-amendment-2026-10-24.json": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff",
+        "docs/reports/m2-c2-profile-matrix-2026-10-24.json": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+        "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236"
       },
       "deferred_to": "C3.10",
       "deferred_acceptance_requirements": [
@@ -93072,10 +93581,15 @@
         "evidence_level": "source inspection",
         "role": "report"
       },
+      "c2_retained_scope_result": "passed",
+      "c2_retained_scope_basis": "Exact fixed ownership of all 1,179,648 DMA bytes (2 geometry + 2 upload chains, packet workspace 5,632 B, snapshot private DMA payload 0 B) in host layout evidence, plus the guest dma owner bound at the same cap in 26 of 26 session rows. The full row stays partial until C3.10.",
+      "matrix_evidence": "Matrix guests bind the dma owner at cap=1179648 and report renderer-dma-cap=1179648 (geometry-chain-qw=32768, upload-chain-qw=4096) in all 26 session rows. In-flight chain proof is carried to C3.10 and cannot pass the row.",
       "stale_dependencies": [
         "src/stream/hcu_main.c",
         "submodules/halo-ps2/engine/src/render/storage.h",
-        "submodules/halo-ps2/engine/src/render/bsp_render.c"
+        "submodules/halo-ps2/engine/src/render/bsp_render.c",
+        "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+        "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json"
       ]
     },
     {
@@ -93088,7 +93602,7 @@
       "evidence_files": [
         {
           "path": "docs/reports/m2-c2-status-2026-10-23.json",
-          "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+          "sha256": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
           "role": "phase status report",
           "exists": true
         },
@@ -93147,10 +93661,59 @@
           "evidence_level": "source inspection",
           "role": "report",
           "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+          "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+          "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
+        },
+        {
+          "path": "docs/reports/m2-c2-gaps-reuse-2026-10-24.md",
+          "sha256": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563",
+          "evidence_level": "PCSX2 interpreter",
+          "role": "report",
+          "exists": true
         }
       ],
       "evidence_level": "host execution",
       "execution_results": [
+        {
+          "mode": "PCSX2 interpreter",
+          "result": "stale",
+          "scope": "Real map-service control flow with scripted CE mount seam; separate native CE cache mount and corruption/retry fixture.",
+          "evidence_files": [
+            {
+              "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+              "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+              "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            },
+            {
+              "path": "docs/reports/m2-c2-gaps-reuse-2026-10-24.md",
+              "sha256": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563",
+              "evidence_level": "PCSX2 interpreter",
+              "role": "report",
+              "exists": true
+            }
+          ]
+        },
         {
           "mode": "host execution",
           "result": "stale",
@@ -93228,7 +93791,7 @@
         "fixture_hashes": [
           {
             "path": "docs/reports/m2-c2-status-2026-10-23.json",
-            "sha256": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+            "sha256": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
             "role": "phase status report"
           }
         ],
@@ -93289,6 +93852,27 @@
             "evidence_level": "source inspection",
             "role": "report",
             "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+            "sha256": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json",
+            "sha256": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
+          },
+          {
+            "path": "docs/reports/m2-c2-gaps-reuse-2026-10-24.md",
+            "sha256": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563",
+            "evidence_level": "PCSX2 interpreter",
+            "role": "report",
+            "exists": true
           }
         ]
       },
@@ -93299,7 +93883,7 @@
       "result": "stale",
       "remaining_limitation": "Same-map package/metadata/binding revalidation is fixed and passes 11 host cases. Foreign-profile replacement, actual CE disposal with renderer/DMA drain and combined guest retry remain unqualified. User-approved amendment carries the actual integrated renderer proof into C3.11; that destination remains open and this deferral cannot pass a row.",
       "source_report_hashes": {
-        "docs/reports/m2-c2-status-2026-10-23.json": "be97903e01b897917c9dae0284f16025de98c5d433bd52f173acfce1da29e89b",
+        "docs/reports/m2-c2-status-2026-10-23.json": "91cffa93773eaf24fb5a34eaabcbfaaee1aaacf9b71f17051388ec78ab51d88e",
         "build/m2-c2-map-service-profile/result.json": "21b69a1494a1c0608d3d6cec98f8b99801dd84c0be37d3e0c1d6e587ba316676",
         "build/m2-c2-profile-mount/result.json": "d3432ed34e522403b1cbb22f57c258b4ab497c9f519a5ba52fb52660c48ff905",
         "build/m2-c2-bitmap-frame-owner/result.json": "24d37885ee429201724ed059481309084f53f78453f4762dd25b967de56fff8d",
@@ -93307,7 +93891,10 @@
         "src/stream/hcu_map_service.c": "b59c2abc89070c5741a86c60bcdd4879f899e398b9220629264c6e9dab1bc54f",
         "src/stream/hcu_profile_mount.c": "d6741fe60765bf25f186161c755583cf475f1d777a4f64d157491b1cf2fa8801",
         "src/stream/hcu_bitmap_frame.c": "d0b13d2771032056fa7e8d2517497ae7e34fcb09c02467c0bf4b9cd1f401e619",
-        "docs/reports/m2-c2-scope-amendment-2026-10-24.json": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff"
+        "docs/reports/m2-c2-scope-amendment-2026-10-24.json": "b261cabee62e0395fcb4e09599332ebf2cdf703709ff5efc5983d633609b85ff",
+        "docs/reports/m2-c2-profile-matrix-2026-10-24.json": "8a3fad34539bf3ee045a774b3d1ab39b95784167e4058bb7f36de62a0e4edbb7",
+        "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json": "d050956355020f65b6b40dedca9be766801bed8ee23b82566cbaf43d037ac236",
+        "docs/reports/m2-c2-gaps-reuse-2026-10-24.md": "2b9ddd4597227ac1787ae32971186d359322c643a0b04c845e868fc74cfca563"
       },
       "deferred_to": "C3.11",
       "deferred_acceptance_requirements": [
@@ -93319,11 +93906,16 @@
         "evidence_level": "source inspection",
         "role": "report"
       },
+      "c2_retained_scope_result": "passed_same_map_reload_host_for_replacement_and_failure",
+      "c2_retained_scope_basis": "Same-map load/unload/reload through the actual loader in PCSX2 (3 rows, 2 to 3 cycles) plus 11 host map-service checks and native UI mount/corruption-retry cycles. No guest evidence for foreign-profile replacement or failed-preflight preserve/retry. The full row stays partial until C3.11.",
+      "matrix_evidence": "Matrix shows load then release with the renderer drained flag set and no readers. Multi-cycle runs (longest 3, bloodgulch 3, sidewinder 2) re-run preflight, CE disposal with old tags live, owner release and reload through the actual loader with identical storage and zero failures. Foreign-profile replacement, preflight-preserves-old-map and failure/retry have host evidence only; live-reader cases are carried to C3.11.",
       "stale_dependencies": [
         "build/m2-c2-map-service-profile/result.json",
         "build/m2-c2-map-service-profile/hcu-map-service-profile",
         "src/stream/hcu_map_service.c",
-        "src/stream/hcu_profile_mount.c"
+        "src/stream/hcu_profile_mount.c",
+        "docs/reports/m2-c2-profile-matrix-2026-10-24.json",
+        "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json"
       ]
     }
   ],
