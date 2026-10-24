@@ -1,0 +1,1175 @@
+{
+  "format": "retail-ce-scenario-bsp-reference-audit-v1",
+  "interpretation": "Offline retail source/tag/package identity audit only; no runtime load, capacity, CE globals, or rendering claim.",
+  "map_count": 24,
+  "maps": [
+    {
+      "map": "a10",
+      "map_sha256": "1ce33954aa12a2e0c21a07e20d0dc652b1b403e4ef1b98c067439a15545d9971",
+      "package_sha256": "23fb472b52a7b3c3883349e30b5faca5b856f3e1a0d587e800c54e958b0f61c7",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\a10\\a10a",
+          "scenario_reference_tag_id": "0xee380cbf",
+          "source_file_offset": 2048,
+          "source_file_size": 6230016,
+          "tag_index_path": "levels\\a10\\a10a",
+          "tag_index_tag_id": "0xee380cbf"
+        },
+        {
+          "cbix_section_tag": "B001",
+          "ordinal": 1,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\a10\\a10b",
+          "scenario_reference_tag_id": "0xee4e0cd5",
+          "source_file_offset": 6232064,
+          "source_file_size": 8255488,
+          "tag_index_path": "levels\\a10\\a10b",
+          "tag_index_tag_id": "0xee4e0cd5"
+        },
+        {
+          "cbix_section_tag": "B002",
+          "ordinal": 2,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\a10\\a10c",
+          "scenario_reference_tag_id": "0xee5b0ce2",
+          "source_file_offset": 14487552,
+          "source_file_size": 6057984,
+          "tag_index_path": "levels\\a10\\a10c",
+          "tag_index_tag_id": "0xee5b0ce2"
+        },
+        {
+          "cbix_section_tag": "B003",
+          "ordinal": 3,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\a10\\a10d",
+          "scenario_reference_tag_id": "0xee640ceb",
+          "source_file_offset": 20545536,
+          "source_file_size": 5472256,
+          "tag_index_path": "levels\\a10\\a10d",
+          "tag_index_tag_id": "0xee640ceb"
+        },
+        {
+          "cbix_section_tag": "B004",
+          "ordinal": 4,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\a10\\a10e",
+          "scenario_reference_tag_id": "0xee660ced",
+          "source_file_offset": 26017792,
+          "source_file_size": 7753728,
+          "tag_index_path": "levels\\a10\\a10e",
+          "tag_index_tag_id": "0xee660ced"
+        },
+        {
+          "cbix_section_tag": "B005",
+          "ordinal": 5,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\a10\\a10f",
+          "scenario_reference_tag_id": "0xee6a0cf1",
+          "source_file_offset": 33771520,
+          "source_file_size": 8531968,
+          "tag_index_path": "levels\\a10\\a10f",
+          "tag_index_tag_id": "0xee6a0cf1"
+        },
+        {
+          "cbix_section_tag": "B006",
+          "ordinal": 6,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\a10\\a10g",
+          "scenario_reference_tag_id": "0xee740cfb",
+          "source_file_offset": 42303488,
+          "source_file_size": 8568832,
+          "tag_index_path": "levels\\a10\\a10g",
+          "tag_index_tag_id": "0xee740cfb"
+        },
+        {
+          "cbix_section_tag": "B007",
+          "ordinal": 7,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\a10\\a10_space",
+          "scenario_reference_tag_id": "0xee760cfd",
+          "source_file_offset": 50872320,
+          "source_file_size": 1529856,
+          "tag_index_path": "levels\\a10\\a10_space",
+          "tag_index_tag_id": "0xee760cfd"
+        },
+        {
+          "cbix_section_tag": "B008",
+          "ordinal": 8,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\a10\\x10hangar",
+          "scenario_reference_tag_id": "0xee900d17",
+          "source_file_offset": 52402176,
+          "source_file_size": 2760704,
+          "tag_index_path": "levels\\a10\\x10hangar",
+          "tag_index_tag_id": "0xee900d17"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\a10\\a10",
+      "scenario_reference_count": 9,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "a30",
+      "map_sha256": "287959f34a7379a1dbec5fec15b4d94d17fe97ccd861f5c0c8fc80148b7ed293",
+      "package_sha256": "ce38764fbba687bb26d4f2eb8a6cf066e19e4b8b81521d6f70f23ce8d00f183d",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\a30\\a30_a",
+          "scenario_reference_tag_id": "0xed850c0f",
+          "source_file_offset": 2048,
+          "source_file_size": 6199296,
+          "tag_index_path": "levels\\a30\\a30_a",
+          "tag_index_tag_id": "0xed850c0f"
+        },
+        {
+          "cbix_section_tag": "B001",
+          "ordinal": 1,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\a30\\a30_b",
+          "scenario_reference_tag_id": "0xedf10c7b",
+          "source_file_offset": 6201344,
+          "source_file_size": 7174144,
+          "tag_index_path": "levels\\a30\\a30_b",
+          "tag_index_tag_id": "0xedf10c7b"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\a30\\a30",
+      "scenario_reference_count": 2,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "a50",
+      "map_sha256": "d7a3e80a86f2b0f23d855ce353aed3c0eb252145697797d87f25623dc470f38d",
+      "package_sha256": "9359e0eb09427b098d9773708352c77dbf426ebcec9d7b27400268d84221941a",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\a50\\a50_exterior",
+          "scenario_reference_tag_id": "0xee150c9e",
+          "source_file_offset": 2048,
+          "source_file_size": 3835904,
+          "tag_index_path": "levels\\a50\\a50_exterior",
+          "tag_index_tag_id": "0xee150c9e"
+        },
+        {
+          "cbix_section_tag": "B001",
+          "ordinal": 1,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\a50\\a50_muster",
+          "scenario_reference_tag_id": "0xee3e0cc7",
+          "source_file_offset": 3837952,
+          "source_file_size": 6983680,
+          "tag_index_path": "levels\\a50\\a50_muster",
+          "tag_index_tag_id": "0xee3e0cc7"
+        },
+        {
+          "cbix_section_tag": "B002",
+          "ordinal": 2,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\a50\\a50_hangar",
+          "scenario_reference_tag_id": "0xee600ce9",
+          "source_file_offset": 10821632,
+          "source_file_size": 7157760,
+          "tag_index_path": "levels\\a50\\a50_hangar",
+          "tag_index_tag_id": "0xee600ce9"
+        },
+        {
+          "cbix_section_tag": "B003",
+          "ordinal": 3,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\a50\\a50_control",
+          "scenario_reference_tag_id": "0xee630cec",
+          "source_file_offset": 17979392,
+          "source_file_size": 7159808,
+          "tag_index_path": "levels\\a50\\a50_control",
+          "tag_index_tag_id": "0xee630cec"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\a50\\a50",
+      "scenario_reference_count": 4,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "b30",
+      "map_sha256": "74020202d3930ee52c1ee96a7d8e3ee4020ce31a434b3f870d71df72b9c3e4dd",
+      "package_sha256": "4845c04e73ba5d84b412a0d77cc097b6e6933ca5cc16d8c842db66b855ce3926",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\b30\\b30a",
+          "scenario_reference_tag_id": "0xee0a0c94",
+          "source_file_offset": 2048,
+          "source_file_size": 6608896,
+          "tag_index_path": "levels\\b30\\b30a",
+          "tag_index_tag_id": "0xee0a0c94"
+        },
+        {
+          "cbix_section_tag": "B001",
+          "ordinal": 1,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\b30\\b30b",
+          "scenario_reference_tag_id": "0xee700cfa",
+          "source_file_offset": 6610944,
+          "source_file_size": 4022272,
+          "tag_index_path": "levels\\b30\\b30b",
+          "tag_index_tag_id": "0xee700cfa"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\b30\\b30",
+      "scenario_reference_count": 2,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "b40",
+      "map_sha256": "8c5e4aecbd0bc7e063feb7d0c6a3f6d8cff65bf1abec75286070ef9c85fd927b",
+      "package_sha256": "62a6d4b19479e498ba47cd4faf0071f4bd4f3b10837f2f404ca48ae4f15b4568",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\b40\\b40_a",
+          "scenario_reference_tag_id": "0xef100d99",
+          "source_file_offset": 2048,
+          "source_file_size": 5515264,
+          "tag_index_path": "levels\\b40\\b40_a",
+          "tag_index_tag_id": "0xef100d99"
+        },
+        {
+          "cbix_section_tag": "B001",
+          "ordinal": 1,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\b40\\b40_b",
+          "scenario_reference_tag_id": "0xef600de9",
+          "source_file_offset": 5517312,
+          "source_file_size": 5838848,
+          "tag_index_path": "levels\\b40\\b40_b",
+          "tag_index_tag_id": "0xef600de9"
+        },
+        {
+          "cbix_section_tag": "B002",
+          "ordinal": 2,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\b40\\b40_c",
+          "scenario_reference_tag_id": "0xef690df2",
+          "source_file_offset": 11356160,
+          "source_file_size": 3862528,
+          "tag_index_path": "levels\\b40\\b40_c",
+          "tag_index_tag_id": "0xef690df2"
+        },
+        {
+          "cbix_section_tag": "B003",
+          "ordinal": 3,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\b40\\b40_a1",
+          "scenario_reference_tag_id": "0xef870e10",
+          "source_file_offset": 15218688,
+          "source_file_size": 2209792,
+          "tag_index_path": "levels\\b40\\b40_a1",
+          "tag_index_tag_id": "0xef870e10"
+        },
+        {
+          "cbix_section_tag": "B004",
+          "ordinal": 4,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\b40\\b40_a2",
+          "scenario_reference_tag_id": "0xef9c0e25",
+          "source_file_offset": 17428480,
+          "source_file_size": 3956736,
+          "tag_index_path": "levels\\b40\\b40_a2",
+          "tag_index_tag_id": "0xef9c0e25"
+        },
+        {
+          "cbix_section_tag": "B005",
+          "ordinal": 5,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\b40\\b40_a3",
+          "scenario_reference_tag_id": "0xefa70e30",
+          "source_file_offset": 21385216,
+          "source_file_size": 1396736,
+          "tag_index_path": "levels\\b40\\b40_a3",
+          "tag_index_tag_id": "0xefa70e30"
+        },
+        {
+          "cbix_section_tag": "B006",
+          "ordinal": 6,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\b40\\b40_b1",
+          "scenario_reference_tag_id": "0xefa90e32",
+          "source_file_offset": 22781952,
+          "source_file_size": 1294336,
+          "tag_index_path": "levels\\b40\\b40_b1",
+          "tag_index_tag_id": "0xefa90e32"
+        },
+        {
+          "cbix_section_tag": "B007",
+          "ordinal": 7,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\b40\\b40_b2",
+          "scenario_reference_tag_id": "0xefaa0e33",
+          "source_file_offset": 24076288,
+          "source_file_size": 2551808,
+          "tag_index_path": "levels\\b40\\b40_b2",
+          "tag_index_tag_id": "0xefaa0e33"
+        },
+        {
+          "cbix_section_tag": "B008",
+          "ordinal": 8,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\b40\\b40_b3",
+          "scenario_reference_tag_id": "0xefab0e34",
+          "source_file_offset": 26628096,
+          "source_file_size": 3930112,
+          "tag_index_path": "levels\\b40\\b40_b3",
+          "tag_index_tag_id": "0xefab0e34"
+        },
+        {
+          "cbix_section_tag": "B009",
+          "ordinal": 9,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\b40\\b40_b4",
+          "scenario_reference_tag_id": "0xefaf0e38",
+          "source_file_offset": 30558208,
+          "source_file_size": 3074048,
+          "tag_index_path": "levels\\b40\\b40_b4",
+          "tag_index_tag_id": "0xefaf0e38"
+        },
+        {
+          "cbix_section_tag": "B010",
+          "ordinal": 10,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\b40\\b40_b5",
+          "scenario_reference_tag_id": "0xefb10e3a",
+          "source_file_offset": 33632256,
+          "source_file_size": 2992128,
+          "tag_index_path": "levels\\b40\\b40_b5",
+          "tag_index_tag_id": "0xefb10e3a"
+        },
+        {
+          "cbix_section_tag": "B011",
+          "ordinal": 11,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\b40\\b40_c1",
+          "scenario_reference_tag_id": "0xefb30e3c",
+          "source_file_offset": 36624384,
+          "source_file_size": 4048896,
+          "tag_index_path": "levels\\b40\\b40_c1",
+          "tag_index_tag_id": "0xefb30e3c"
+        },
+        {
+          "cbix_section_tag": "B012",
+          "ordinal": 12,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\b40\\b40_c2",
+          "scenario_reference_tag_id": "0xefb50e3e",
+          "source_file_offset": 40673280,
+          "source_file_size": 1288192,
+          "tag_index_path": "levels\\b40\\b40_c2",
+          "tag_index_tag_id": "0xefb50e3e"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\b40\\b40",
+      "scenario_reference_count": 13,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "beavercreek",
+      "map_sha256": "eaf90b2abc4fd295469eb2d640063618b0d14396f28e7d7f1758e834c061c50a",
+      "package_sha256": "4f95672c4233a63d30e94395010324076cb1454813facb54e48c065d7c776dfc",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\test\\beavercreek\\beavercreek",
+          "scenario_reference_tag_id": "0xe81b06a5",
+          "source_file_offset": 2048,
+          "source_file_size": 724992,
+          "tag_index_path": "levels\\test\\beavercreek\\beavercreek",
+          "tag_index_tag_id": "0xe81b06a5"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\test\\beavercreek\\beavercreek",
+      "scenario_reference_count": 1,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "bloodgulch",
+      "map_sha256": "9eb0374cbe4571af640ae0d2e0ebf6119543cdbbece44d49543b4748c4cf0dc1",
+      "package_sha256": "ded2bca19058f51d7feed6b40149f421f7b1c2c7704f0918a42bacc5601dd011",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\test\\bloodgulch\\bloodgulch",
+          "scenario_reference_tag_id": "0xe85a06e4",
+          "source_file_offset": 2048,
+          "source_file_size": 1296384,
+          "tag_index_path": "levels\\test\\bloodgulch\\bloodgulch",
+          "tag_index_tag_id": "0xe85a06e4"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\test\\bloodgulch\\bloodgulch",
+      "scenario_reference_count": 1,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "boardingaction",
+      "map_sha256": "34ddf961973b6aaf05f40f26bd9ad536ca97f8af503995611535ccf6ce911522",
+      "package_sha256": "2c12e7c0cf555698b837397666b1f343a6864fe16deeffb0b0d4a007e869acd0",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\test\\boardingaction\\boardingaction",
+          "scenario_reference_tag_id": "0xe81906a3",
+          "source_file_offset": 2048,
+          "source_file_size": 1343488,
+          "tag_index_path": "levels\\test\\boardingaction\\boardingaction",
+          "tag_index_tag_id": "0xe81906a3"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\test\\boardingaction\\boardingaction",
+      "scenario_reference_count": 1,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "c10",
+      "map_sha256": "423d50a4d7fb7b3c280d7e0806d67e136b2b6a51468ed0be6ee9415e5f129e7d",
+      "package_sha256": "7d4165b1f969c1d7a7c755b89c3a70e685f31bc81282e882215c7cc61776c596",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c10\\c10_exteriora",
+          "scenario_reference_tag_id": "0xee1d0ca6",
+          "source_file_offset": 2048,
+          "source_file_size": 5402624,
+          "tag_index_path": "levels\\c10\\c10_exteriora",
+          "tag_index_tag_id": "0xee1d0ca6"
+        },
+        {
+          "cbix_section_tag": "B001",
+          "ordinal": 1,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c10\\c10_interiora",
+          "scenario_reference_tag_id": "0xee600ce9",
+          "source_file_offset": 5404672,
+          "source_file_size": 4972544,
+          "tag_index_path": "levels\\c10\\c10_interiora",
+          "tag_index_tag_id": "0xee600ce9"
+        },
+        {
+          "cbix_section_tag": "B002",
+          "ordinal": 2,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c10\\c10_interiorb",
+          "scenario_reference_tag_id": "0xee850d0e",
+          "source_file_offset": 10377216,
+          "source_file_size": 5443584,
+          "tag_index_path": "levels\\c10\\c10_interiorb",
+          "tag_index_tag_id": "0xee850d0e"
+        },
+        {
+          "cbix_section_tag": "B003",
+          "ordinal": 3,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c10\\c10_interiorc",
+          "scenario_reference_tag_id": "0xee8f0d18",
+          "source_file_offset": 15820800,
+          "source_file_size": 4757504,
+          "tag_index_path": "levels\\c10\\c10_interiorc",
+          "tag_index_tag_id": "0xee8f0d18"
+        },
+        {
+          "cbix_section_tag": "B004",
+          "ordinal": 4,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c10\\c10_interiord",
+          "scenario_reference_tag_id": "0xee940d1d",
+          "source_file_offset": 20578304,
+          "source_file_size": 5988352,
+          "tag_index_path": "levels\\c10\\c10_interiord",
+          "tag_index_tag_id": "0xee940d1d"
+        },
+        {
+          "cbix_section_tag": "B005",
+          "ordinal": 5,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c10\\c10_exteriorb",
+          "scenario_reference_tag_id": "0xee960d1f",
+          "source_file_offset": 26566656,
+          "source_file_size": 4704256,
+          "tag_index_path": "levels\\c10\\c10_exteriorb",
+          "tag_index_tag_id": "0xee960d1f"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\c10\\c10",
+      "scenario_reference_count": 6,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "c20",
+      "map_sha256": "1c1c9a8ca882636a3e78cb1d14e25a09c4a11388f6381c5f74212d468b70e654",
+      "package_sha256": "fcb0d97e5b03fcb4921dc19ec22b269a1951813237ceb15f87717b28fd3ee6dc",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c20\\c20_1",
+          "scenario_reference_tag_id": "0xe85d06e6",
+          "source_file_offset": 2048,
+          "source_file_size": 7127040,
+          "tag_index_path": "levels\\c20\\c20_1",
+          "tag_index_tag_id": "0xe85d06e6"
+        },
+        {
+          "cbix_section_tag": "B001",
+          "ordinal": 1,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c20\\c20_2",
+          "scenario_reference_tag_id": "0xe8ab0734",
+          "source_file_offset": 7129088,
+          "source_file_size": 8574976,
+          "tag_index_path": "levels\\c20\\c20_2",
+          "tag_index_tag_id": "0xe8ab0734"
+        },
+        {
+          "cbix_section_tag": "B002",
+          "ordinal": 2,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c20\\c20_3",
+          "scenario_reference_tag_id": "0xe8b1073a",
+          "source_file_offset": 15704064,
+          "source_file_size": 9039872,
+          "tag_index_path": "levels\\c20\\c20_3",
+          "tag_index_tag_id": "0xe8b1073a"
+        },
+        {
+          "cbix_section_tag": "B003",
+          "ordinal": 3,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c20\\c20_4",
+          "scenario_reference_tag_id": "0xe8b5073e",
+          "source_file_offset": 24743936,
+          "source_file_size": 6864896,
+          "tag_index_path": "levels\\c20\\c20_4",
+          "tag_index_tag_id": "0xe8b5073e"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\c20\\c20",
+      "scenario_reference_count": 4,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "c40",
+      "map_sha256": "d7465f07a675a86785a329b9ab3d8a5a20b25b7ca7d05bafeb7ca87b02b20be9",
+      "package_sha256": "2f74e2381ba543bf1bb5d6e930a99cac0693f07d6623a83c98d9238b819f5a22",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c40\\c40_a",
+          "scenario_reference_tag_id": "0xed5a0be3",
+          "source_file_offset": 2048,
+          "source_file_size": 5515264,
+          "tag_index_path": "levels\\c40\\c40_a",
+          "tag_index_tag_id": "0xed5a0be3"
+        },
+        {
+          "cbix_section_tag": "B001",
+          "ordinal": 1,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c40\\c40_b",
+          "scenario_reference_tag_id": "0xedab0c34",
+          "source_file_offset": 5517312,
+          "source_file_size": 6318080,
+          "tag_index_path": "levels\\c40\\c40_b",
+          "tag_index_tag_id": "0xedab0c34"
+        },
+        {
+          "cbix_section_tag": "B002",
+          "ordinal": 2,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c40\\c40_c",
+          "scenario_reference_tag_id": "0xedb40c3d",
+          "source_file_offset": 11835392,
+          "source_file_size": 3862528,
+          "tag_index_path": "levels\\c40\\c40_c",
+          "tag_index_tag_id": "0xedb40c3d"
+        },
+        {
+          "cbix_section_tag": "B003",
+          "ordinal": 3,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c40\\c40_a1",
+          "scenario_reference_tag_id": "0xedd00c59",
+          "source_file_offset": 15697920,
+          "source_file_size": 2023424,
+          "tag_index_path": "levels\\c40\\c40_a1",
+          "tag_index_tag_id": "0xedd00c59"
+        },
+        {
+          "cbix_section_tag": "B004",
+          "ordinal": 4,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c40\\c40_a2",
+          "scenario_reference_tag_id": "0xede20c6b",
+          "source_file_offset": 17721344,
+          "source_file_size": 3618816,
+          "tag_index_path": "levels\\c40\\c40_a2",
+          "tag_index_tag_id": "0xede20c6b"
+        },
+        {
+          "cbix_section_tag": "B005",
+          "ordinal": 5,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c40\\c40_a3",
+          "scenario_reference_tag_id": "0xedec0c75",
+          "source_file_offset": 21340160,
+          "source_file_size": 1400832,
+          "tag_index_path": "levels\\c40\\c40_a3",
+          "tag_index_tag_id": "0xedec0c75"
+        },
+        {
+          "cbix_section_tag": "B006",
+          "ordinal": 6,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c40\\c40_b1",
+          "scenario_reference_tag_id": "0xedee0c77",
+          "source_file_offset": 22740992,
+          "source_file_size": 1413120,
+          "tag_index_path": "levels\\c40\\c40_b1",
+          "tag_index_tag_id": "0xedee0c77"
+        },
+        {
+          "cbix_section_tag": "B007",
+          "ordinal": 7,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c40\\c40_b2",
+          "scenario_reference_tag_id": "0xedf00c79",
+          "source_file_offset": 24154112,
+          "source_file_size": 2779136,
+          "tag_index_path": "levels\\c40\\c40_b2",
+          "tag_index_tag_id": "0xedf00c79"
+        },
+        {
+          "cbix_section_tag": "B008",
+          "ordinal": 8,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c40\\c40_b3",
+          "scenario_reference_tag_id": "0xedf20c7b",
+          "source_file_offset": 26933248,
+          "source_file_size": 3930112,
+          "tag_index_path": "levels\\c40\\c40_b3",
+          "tag_index_tag_id": "0xedf20c7b"
+        },
+        {
+          "cbix_section_tag": "B009",
+          "ordinal": 9,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c40\\c40_b4",
+          "scenario_reference_tag_id": "0xedf60c7f",
+          "source_file_offset": 30863360,
+          "source_file_size": 3074048,
+          "tag_index_path": "levels\\c40\\c40_b4",
+          "tag_index_tag_id": "0xedf60c7f"
+        },
+        {
+          "cbix_section_tag": "B010",
+          "ordinal": 10,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c40\\c40_b5",
+          "scenario_reference_tag_id": "0xedf80c81",
+          "source_file_offset": 33937408,
+          "source_file_size": 2992128,
+          "tag_index_path": "levels\\c40\\c40_b5",
+          "tag_index_tag_id": "0xedf80c81"
+        },
+        {
+          "cbix_section_tag": "B011",
+          "ordinal": 11,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c40\\c40_c1",
+          "scenario_reference_tag_id": "0xedfb0c84",
+          "source_file_offset": 36929536,
+          "source_file_size": 4048896,
+          "tag_index_path": "levels\\c40\\c40_c1",
+          "tag_index_tag_id": "0xedfb0c84"
+        },
+        {
+          "cbix_section_tag": "B012",
+          "ordinal": 12,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\c40\\c40_c2",
+          "scenario_reference_tag_id": "0xedfd0c86",
+          "source_file_offset": 40978432,
+          "source_file_size": 1404928,
+          "tag_index_path": "levels\\c40\\c40_c2",
+          "tag_index_tag_id": "0xedfd0c86"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\c40\\c40",
+      "scenario_reference_count": 13,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "carousel",
+      "map_sha256": "3e4be29a7952af0b3f19a7540e454fd0deece6d6078c256cde70a734beba55e1",
+      "package_sha256": "e24191ed1e660dfb3c9c9bcd88abcff61c366690f6d903f3b0622eb2c2e751b4",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\test\\carousel\\carousel",
+          "scenario_reference_tag_id": "0xe7fd0687",
+          "source_file_offset": 2048,
+          "source_file_size": 507904,
+          "tag_index_path": "levels\\test\\carousel\\carousel",
+          "tag_index_tag_id": "0xe7fd0687"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\test\\carousel\\carousel",
+      "scenario_reference_count": 1,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "chillout",
+      "map_sha256": "52bc3e23b9142cf479770d1d601fe08b13d78fe3eb05eca72d313b7ebbd21ffb",
+      "package_sha256": "727abc7401a530892f1136f082a6254544915e0d85f2a068f63d9530189b1bf0",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\test\\chillout\\chillout",
+          "scenario_reference_tag_id": "0xe7e5066f",
+          "source_file_offset": 2048,
+          "source_file_size": 567296,
+          "tag_index_path": "levels\\test\\chillout\\chillout",
+          "tag_index_tag_id": "0xe7e5066f"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\test\\chillout\\chillout",
+      "scenario_reference_count": 1,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "d20",
+      "map_sha256": "30d8fc02bcd209a7ce03174d8cf6cf771dd3621837d9a2d02111718dcc5e792c",
+      "package_sha256": "44f96afa5b9fa20efd5c2dcb0d1fca436953d436e8b40015c7dce6e759005fe1",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\d20\\d20_start",
+          "scenario_reference_tag_id": "0xebbc0a45",
+          "source_file_offset": 2048,
+          "source_file_size": 5408768,
+          "tag_index_path": "levels\\d20\\d20_start",
+          "tag_index_tag_id": "0xebbc0a45"
+        },
+        {
+          "cbix_section_tag": "B001",
+          "ordinal": 1,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\d20\\d20_exterior",
+          "scenario_reference_tag_id": "0xec020a8b",
+          "source_file_offset": 5410816,
+          "source_file_size": 5093376,
+          "tag_index_path": "levels\\d20\\d20_exterior",
+          "tag_index_tag_id": "0xec020a8b"
+        },
+        {
+          "cbix_section_tag": "B002",
+          "ordinal": 2,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\d20\\d20_muster",
+          "scenario_reference_tag_id": "0xec220aab",
+          "source_file_offset": 10504192,
+          "source_file_size": 8396800,
+          "tag_index_path": "levels\\d20\\d20_muster",
+          "tag_index_tag_id": "0xec220aab"
+        },
+        {
+          "cbix_section_tag": "B003",
+          "ordinal": 3,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\d20\\d20_hangar",
+          "scenario_reference_tag_id": "0xec290ab2",
+          "source_file_offset": 18900992,
+          "source_file_size": 8517632,
+          "tag_index_path": "levels\\d20\\d20_hangar",
+          "tag_index_tag_id": "0xec290ab2"
+        },
+        {
+          "cbix_section_tag": "B004",
+          "ordinal": 4,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\d20\\d20_control",
+          "scenario_reference_tag_id": "0xec2b0ab4",
+          "source_file_offset": 27418624,
+          "source_file_size": 3807232,
+          "tag_index_path": "levels\\d20\\d20_control",
+          "tag_index_tag_id": "0xec2b0ab4"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\d20\\d20",
+      "scenario_reference_count": 5,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "d40",
+      "map_sha256": "438452ef1896dd5bc2d3210b279f76e71b775f7eb2b7a8f8e29f4e5471d59a76",
+      "package_sha256": "180c6c3e775227e7e7eac6987afaad45c477f1ca8acf03be5d99a37b462d358c",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\d40\\d40a",
+          "scenario_reference_tag_id": "0xec7e0b06",
+          "source_file_offset": 2048,
+          "source_file_size": 4898816,
+          "tag_index_path": "levels\\d40\\d40a",
+          "tag_index_tag_id": "0xec7e0b06"
+        },
+        {
+          "cbix_section_tag": "B001",
+          "ordinal": 1,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\d40\\d40b",
+          "scenario_reference_tag_id": "0xecaa0b32",
+          "source_file_offset": 4900864,
+          "source_file_size": 7907328,
+          "tag_index_path": "levels\\d40\\d40b",
+          "tag_index_tag_id": "0xecaa0b32"
+        },
+        {
+          "cbix_section_tag": "B002",
+          "ordinal": 2,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\d40\\d40c",
+          "scenario_reference_tag_id": "0xecb70b3f",
+          "source_file_offset": 12808192,
+          "source_file_size": 7804928,
+          "tag_index_path": "levels\\d40\\d40c",
+          "tag_index_tag_id": "0xecb70b3f"
+        },
+        {
+          "cbix_section_tag": "B003",
+          "ordinal": 3,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\d40\\d40d",
+          "scenario_reference_tag_id": "0xecbe0b46",
+          "source_file_offset": 20613120,
+          "source_file_size": 5806080,
+          "tag_index_path": "levels\\d40\\d40d",
+          "tag_index_tag_id": "0xecbe0b46"
+        },
+        {
+          "cbix_section_tag": "B004",
+          "ordinal": 4,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\d40\\d40e",
+          "scenario_reference_tag_id": "0xecc30b4b",
+          "source_file_offset": 26419200,
+          "source_file_size": 7223296,
+          "tag_index_path": "levels\\d40\\d40e",
+          "tag_index_tag_id": "0xecc30b4b"
+        },
+        {
+          "cbix_section_tag": "B005",
+          "ordinal": 5,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\d40\\d40f",
+          "scenario_reference_tag_id": "0xecd60b5e",
+          "source_file_offset": 33642496,
+          "source_file_size": 6758400,
+          "tag_index_path": "levels\\d40\\d40f",
+          "tag_index_tag_id": "0xecd60b5e"
+        },
+        {
+          "cbix_section_tag": "B006",
+          "ordinal": 6,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\d40\\d40g",
+          "scenario_reference_tag_id": "0xece80b70",
+          "source_file_offset": 40400896,
+          "source_file_size": 3485696,
+          "tag_index_path": "levels\\d40\\d40g",
+          "tag_index_tag_id": "0xece80b70"
+        },
+        {
+          "cbix_section_tag": "B007",
+          "ordinal": 7,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\d40\\d40h",
+          "scenario_reference_tag_id": "0xeceb0b73",
+          "source_file_offset": 43886592,
+          "source_file_size": 7331840,
+          "tag_index_path": "levels\\d40\\d40h",
+          "tag_index_tag_id": "0xeceb0b73"
+        },
+        {
+          "cbix_section_tag": "B008",
+          "ordinal": 8,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\d40\\d40_terrain",
+          "scenario_reference_tag_id": "0xecf20b7a",
+          "source_file_offset": 51218432,
+          "source_file_size": 2469888,
+          "tag_index_path": "levels\\d40\\d40_terrain",
+          "tag_index_tag_id": "0xecf20b7a"
+        },
+        {
+          "cbix_section_tag": "B009",
+          "ordinal": 9,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\d40\\d40_space",
+          "scenario_reference_tag_id": "0xed190ba1",
+          "source_file_offset": 53688320,
+          "source_file_size": 8192,
+          "tag_index_path": "levels\\d40\\d40_space",
+          "tag_index_tag_id": "0xed190ba1"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\d40\\d40",
+      "scenario_reference_count": 10,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "damnation",
+      "map_sha256": "87bd92c1821ff20bed03c559d7be5ac43baeb44aa68342ffdbb5a8cd978f711c",
+      "package_sha256": "ca41445cc9560035910fbc8c2fc7130175b707b1df2e8e51734d208c4ee2076d",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\test\\damnation\\damnation",
+          "scenario_reference_tag_id": "0xe82206ac",
+          "source_file_offset": 2048,
+          "source_file_size": 1320960,
+          "tag_index_path": "levels\\test\\damnation\\damnation",
+          "tag_index_tag_id": "0xe82206ac"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\test\\damnation\\damnation",
+      "scenario_reference_count": 1,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "hangemhigh",
+      "map_sha256": "e3e4b25ed36178926f0df11f3cd82b07e2071f6aa0efaa77f0cfde8f8480981f",
+      "package_sha256": "1e2a4df7a5ba17d0742bd30484fcfe63db011e6c47a87ac0f2d06ac6f5cab58f",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\test\\hangemhigh\\hangemhigh",
+          "scenario_reference_tag_id": "0xe7e80672",
+          "source_file_offset": 2048,
+          "source_file_size": 589824,
+          "tag_index_path": "levels\\test\\hangemhigh\\hangemhigh",
+          "tag_index_tag_id": "0xe7e80672"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\test\\hangemhigh\\hangemhigh",
+      "scenario_reference_count": 1,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "longest",
+      "map_sha256": "e045b0843f4a167a516f050161a651610fafc94ccc8c5f2c5d5725d108d5d1b9",
+      "package_sha256": "6f9c19feb4df9e7ec49e797ce3eb6f7cfbdef3c89c6363b12aab2f05359f5a5b",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\test\\longest\\longest",
+          "scenario_reference_tag_id": "0xe7f3067d",
+          "source_file_offset": 2048,
+          "source_file_size": 374784,
+          "tag_index_path": "levels\\test\\longest\\longest",
+          "tag_index_tag_id": "0xe7f3067d"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\test\\longest\\longest",
+      "scenario_reference_count": 1,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "prisoner",
+      "map_sha256": "85ff2fdc117b7640bda85a490b30c662f2626bd6d0685e41832935422891c307",
+      "package_sha256": "3bb10f06c785da93fe0f7257be9f06519b7ccb6c155801a7a04a5e6d56352136",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\test\\prisoner\\prisoner",
+          "scenario_reference_tag_id": "0xe7df0669",
+          "source_file_offset": 2048,
+          "source_file_size": 884736,
+          "tag_index_path": "levels\\test\\prisoner\\prisoner",
+          "tag_index_tag_id": "0xe7df0669"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\test\\prisoner\\prisoner",
+      "scenario_reference_count": 1,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "putput",
+      "map_sha256": "efbe723188f34053d318105f20c7046f263171fbb937fbad45e3d00f8437f243",
+      "package_sha256": "6d66e4ecf9c51b3ae417d85356de9ff66c14bc9fc19dd4a2bd2a2954f6b4f3bd",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\test\\putput\\putput",
+          "scenario_reference_tag_id": "0xe7d90663",
+          "source_file_offset": 2048,
+          "source_file_size": 1638400,
+          "tag_index_path": "levels\\test\\putput\\putput",
+          "tag_index_tag_id": "0xe7d90663"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\test\\putput\\putput",
+      "scenario_reference_count": 1,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "ratrace",
+      "map_sha256": "577886f949f2648f04cf99e354fb04ca08d7b9199636c2f9fe1a161ccdaa4b1e",
+      "package_sha256": "a735d4a5bef86cc7277ae888a1ef9da25f28f0ab6e45dff010da53dc41e685da",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\test\\ratrace\\ratrace",
+          "scenario_reference_tag_id": "0xe7ef0679",
+          "source_file_offset": 2048,
+          "source_file_size": 544768,
+          "tag_index_path": "levels\\test\\ratrace\\ratrace",
+          "tag_index_tag_id": "0xe7ef0679"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\test\\ratrace\\ratrace",
+      "scenario_reference_count": 1,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "sidewinder",
+      "map_sha256": "995561a68c8c5b142f13f1967730ce8c08d4f0db9574db8e987d915f2b118dcc",
+      "package_sha256": "968ab65ea7ae6fbd15925ed28eb0f8eafc267c78f53150b59b4cc1dea2d017f5",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\test\\sidewinder\\sidewinder",
+          "scenario_reference_tag_id": "0xe82206ac",
+          "source_file_offset": 2048,
+          "source_file_size": 1984512,
+          "tag_index_path": "levels\\test\\sidewinder\\sidewinder",
+          "tag_index_tag_id": "0xe82206ac"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\test\\sidewinder\\sidewinder",
+      "scenario_reference_count": 1,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "ui",
+      "map_sha256": "8556b647b82742d07282fe4e6db0cf847b542c046484e91e71ec31fea5f5fd7e",
+      "package_sha256": "a83ded5049128dc0287b975af9c17f4224e467ad5e10ffa079468934e6241e90",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\ui\\ui",
+          "scenario_reference_tag_id": "0xe54c03d6",
+          "source_file_offset": 2048,
+          "source_file_size": 2048,
+          "tag_index_path": "levels\\ui\\ui",
+          "tag_index_tag_id": "0xe54c03d6"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\ui\\ui",
+      "scenario_reference_count": 1,
+      "scenario_tag_id": "0xe1740000"
+    },
+    {
+      "map": "wizard",
+      "map_sha256": "978539ff70085998485870a15d4ec81d3811442ac48f9265db668a396f6ff1eb",
+      "package_sha256": "00bf468d4d8c96e234ef21e5bfb59b410cac7c3e8c9f4f848ea20fbfacf01c57",
+      "references": [
+        {
+          "cbix_section_tag": "B000",
+          "ordinal": 0,
+          "scenario_reference_name_length_field": 0,
+          "scenario_reference_path": "levels\\test\\wizard\\wizard",
+          "scenario_reference_tag_id": "0xe803068d",
+          "source_file_offset": 2048,
+          "source_file_size": 552960,
+          "tag_index_path": "levels\\test\\wizard\\wizard",
+          "tag_index_tag_id": "0xe803068d"
+        }
+      ],
+      "scenario_order_matches_cbix_extent_order": true,
+      "scenario_path": "levels\\test\\wizard\\wizard",
+      "scenario_reference_count": 1,
+      "scenario_tag_id": "0xe1740000"
+    }
+  ],
+  "scenario_bsp_reference_count": 82,
+  "schema_elf_sha256": "2fba411b7244b20fdf31f0b1e540fc2b6f5598891f53a64f8b12f850a0cda0aa"
+}
