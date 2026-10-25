@@ -23,8 +23,19 @@ static int32_t attach_begin(void *user, u32 frame)
  * failure is returned as this emit's status and counted by bsp_render_emit_failures. */
 static int32_t attach_emit(void *user, u32 frame, chain_t *geometry, chain_t *upload, tc_t *cache)
 {
-	int snapshot_failed = geometry && hcu_render_snapshot_emit_chain(geometry) < 0;
-	int32_t status = hcu_bitmap_renderer_hook_emit(user, (uint32_t)frame, geometry, upload, cache);
+	int snapshot_failed = 0;
+	int32_t status;
+	/* C3:chain begin */
+	/* C3: the v1 double bank is never bound or published under HCU_C3_FRAME_SNAPSHOT (the v2 bank
+	 * replaces it in frame_scratch), so hcu_render_snapshot_latest() is NULL and the v1 matrix append
+	 * always fails, which every baseline frame reported as E_QUEUE (emit-status=-6). Under C3 the
+	 * object matrices reach the idle geometry chain through the object pass, so the v1 append is
+	 * skipped and no failure is counted for it. */
+#if !defined(HCU_C3_FRAME_SNAPSHOT)
+	snapshot_failed = geometry && hcu_render_snapshot_emit_chain(geometry) < 0;
+#endif
+	/* C3:chain end */
+	status = hcu_bitmap_renderer_hook_emit(user, (uint32_t)frame, geometry, upload, cache);
 	return snapshot_failed ? HCU_BITMAP_FRAME_E_QUEUE : status;
 }
 

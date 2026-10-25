@@ -29,8 +29,6 @@ int hcu_render_layout_compute(uint32_t view_count, int32_t screen_w, int32_t scr
 typedef struct {
 	uint32_t frames_begun;
 	uint32_t frames_submitted;
-	uint32_t cache_age_advances;     /* advanced once per frame, never per view */
-	uint32_t upload_budget_resets;   /* advanced once per frame, never per view */
 	uint32_t views_rendered;         /* sum of view counts over submitted frames */
 	uint32_t open;                   /* 1 between begin and end */
 	uint32_t open_views;
@@ -39,8 +37,9 @@ typedef struct {
 void hcu_render_frame_reset(hcu_render_frame_state *s);
 /* Starts a frame; fails (-1) if one is already open or the view count is invalid. */
 int hcu_render_frame_begin(hcu_render_frame_state *s, uint32_t view_count);
-/* Ends the open frame: one cache-age advance, one upload-budget reset, one submit.
- * Fails (-1) when no frame is open. */
+/* Ends the open frame and counts one submit. The cache-age advance and upload-budget reset are NOT counted
+ * here: the renderer counts them at its own frame start (bsp_render_frame_counters). Fails (-1) when no frame
+ * is open. */
 int hcu_render_frame_end(hcu_render_frame_state *s);
 
 #endif

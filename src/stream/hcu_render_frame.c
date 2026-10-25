@@ -59,8 +59,6 @@ int hcu_render_frame_end(hcu_render_frame_state *s)
 	if (!s || !s->open)
 		return -1;
 	s->open = 0u;
-	s->cache_age_advances++;
-	s->upload_budget_resets++;
 	s->frames_submitted++;
 	s->views_rendered += s->open_views;
 	s->open_views = 0u;

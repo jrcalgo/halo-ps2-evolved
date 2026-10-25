@@ -62,7 +62,6 @@ int main(void)
 		CHECK(hcu_render_frame_end(&s) == 0);
 	}
 	CHECK(s.frames_begun == 5 && s.frames_submitted == 5);
-	CHECK(s.cache_age_advances == 5 && s.upload_budget_resets == 5);
 	CHECK(s.views_rendered == 4 + 1 + 2 + 3 + 4);
 	CHECK(s.open == 0);
 
