@@ -28,6 +28,8 @@ static int request_valid(const hcu_sound_request *request)
 	if ((request->metadata_known & 0x10u) &&
 		(!float_finite(request->pitch) || !(request->pitch > 0.0f)))
 		return 0;
+	if (request->has_position && !(request->metadata_known & 0x02u))
+		return 0;
 	if ((request->metadata_known & 0x02u) && request->has_position) {
 		size_t i;
 		for (i = 0; i < 3; ++i)
@@ -37,6 +39,10 @@ static int request_valid(const hcu_sound_request *request)
 	return 1;
 }
 
+/* Always fills *out, so a caller that submits the record never sends stale
+ * stack bytes. An invalid capture is marked with event NONE, which the queue
+ * refuses and counts as rejected. An unknown owner clears the owner metadata
+ * bit so owner coverage never counts it. */
 int hcu_sound_request_capture_playback(hcu_sound_request *out,
 	uint16_t event, uint32_t permutation, uint32_t sound_index,
 	uint16_t owner_kind, uint32_t owner_datum, int has_position,
@@ -44,8 +50,6 @@ int hcu_sound_request_capture_playback(hcu_sound_request *out,
 	uint32_t game_time, uint8_t metadata_known)
 {
 	if (!out) return 0;
-	if (has_position && (!position || !(metadata_known & 0x02u)))
-		return 0;
 	memset(out, 0, sizeof(*out));
 	out->event = event;
 	out->permutation = permutation;
@@ -64,6 +68,13 @@ int hcu_sound_request_capture_playback(hcu_sound_request *out,
 	out->pitch = pitch;
 	out->game_time = game_time;
 	out->metadata_known = metadata_known;
+	if (owner_kind == HCU_SOUND_OWNER_NONE || owner_kind > HCU_SOUND_OWNER_CE_SOURCE) {
+		out->owner_kind = HCU_SOUND_OWNER_NONE;
+		out->owner_datum = UINT32_MAX;
+		out->metadata_known &= (uint8_t)~0x01u;
+	}
+	if (has_position && (!position || !(metadata_known & 0x02u)))
+		out->event = HCU_SOUND_EVENT_NONE; /* position claimed but not supplied */
 	return request_valid(out);
 }
 
@@ -110,6 +121,8 @@ static void coverage_one(hcu_sound_coverage *c, const hcu_sound_request *r,
 	if (r->event == HCU_SOUND_EVENT_PERMUTATION_REQUEST)
 		return;
 	c->playback++;
+	if (r->has_position)
+		c->spatial++;
 	if (r->metadata_known & 0x01u)
 		c->owner_known++;
 	if ((r->metadata_known & 0x02u) && r->has_position)
@@ -381,13 +394,13 @@ void hcu_sound_requests_print(const hcu_sound_request_queue *queue,
 		(unsigned)HCU_SOUND_REQUEST_CAPACITY);
 	printf("HALO_PS2_LOCAL sound-coverage phase=%s ev-perm=%u ev-impulse=%u "
 		"ev-loop-start=%u ev-loop-stop=%u ev-fade=%u ev-stop=%u playback=%u "
-		"owner=%u position=%u priority=%u gain=%u pitch=%u "
+		"owner=%u position=%u spatial=%u priority=%u gain=%u pitch=%u "
 		"prio-min=%u prio-max=%u drain-checksum=%08x record-checksum=%08x\n",
 		phase ? phase : "-",
 		(unsigned)c->kinds[1], (unsigned)c->kinds[2], (unsigned)c->kinds[3],
 		(unsigned)c->kinds[4], (unsigned)c->kinds[5], (unsigned)c->kinds[6],
 		(unsigned)c->playback, (unsigned)c->owner_known, (unsigned)c->position_known,
-		(unsigned)c->priority_known, (unsigned)c->gain_known, (unsigned)c->pitch_known,
+		(unsigned)c->spatial, (unsigned)c->priority_known, (unsigned)c->gain_known, (unsigned)c->pitch_known,
 		(unsigned)c->priority_min, (unsigned)c->priority_max,
 		(unsigned)c->checksum, (unsigned)(c->record_fold ^ c->out_fold ^ pending_fold));
 }

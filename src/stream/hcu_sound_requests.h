@@ -85,7 +85,8 @@ typedef struct {
 	uint32_t kinds[8];          /* drained records by hcu_sound_event_kind */
 	uint32_t playback;          /* drained playback records */
 	uint32_t owner_known;
-	uint32_t position_known;
+	uint32_t position_known;    /* has_position with the position bit */
+	uint32_t spatial;           /* playback records with has_position */
 	uint32_t priority_known;
 	uint32_t gain_known;
 	uint32_t pitch_known;
@@ -119,7 +120,10 @@ void hcu_sound_requests_reset(hcu_sound_request_queue *queue);
 int hcu_sound_requests_submit(hcu_sound_request_queue *queue,
 	const hcu_sound_request *request);
 /* Build a playback/fade/stop record from the CE bridge arguments. metadata_known
- * uses bits 0..5 for owner, position-state, priority, gain, pitch and time. */
+ * uses bits 0..5 for owner, position-state, priority, gain, pitch and time.
+ * Always fills *out. Returns 0 when the record is invalid; the caller must
+ * still submit it so the queue counts the rejection. An unknown owner kind is
+ * stored as NONE with the owner bit cleared. */
 int hcu_sound_request_capture_playback(hcu_sound_request *out,
 	uint16_t event, uint32_t permutation, uint32_t sound_index,
 	uint16_t owner_kind, uint32_t owner_datum, int has_position,

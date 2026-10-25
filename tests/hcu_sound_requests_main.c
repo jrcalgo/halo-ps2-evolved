@@ -309,6 +309,7 @@ static void test_field_coverage(void)
 	/* Permutation request: kinds only, no playback field coverage. */
 	r = perm_req(0x99u, 0x1u);
 	r.metadata_known = 0;
+	r.has_position = 0;
 	r.owner_datum = UINT32_MAX;
 	r.priority = UINT8_MAX;
 	r.gain = 0.0f;
@@ -368,6 +369,66 @@ static void test_field_coverage(void)
 	/* Drained records equal accepted records minus those dropped unsent. */
 	assert((cov.record_fold ^ cov.out_fold) == cov.checksum);
 	assert(cov.kinds[HCU_SOUND_EVENT_STOP] == 1u);
+}
+
+/* The CE bridge capture always fills the record. Invalid captures are marked
+ * and refused by the queue, and an unknown owner kind never counts as owned. */
+static void test_capture_contract(void)
+{
+	hcu_sound_request_queue q;
+	hcu_sound_request r;
+	hcu_sound_request out[4];
+	hcu_sound_request_counters c;
+	hcu_sound_coverage cov;
+	const float pos[3] = {4.0f, 5.0f, 6.0f};
+	const float bad[3] = {1.0f, NAN, 2.0f};
+	int ok;
+
+	hcu_sound_requests_init(&q);
+
+	/* Valid absolute-position impulse: every field lands and is accepted. */
+	ok = hcu_sound_request_capture_playback(&r, HCU_SOUND_EVENT_IMPULSE, 0x40u, 12u,
+		HCU_SOUND_OWNER_OBJECT, 0x77u, 1, pos, 9, 0.5f, 1.5f, 123u, 0x3fu);
+	assert(ok == 1);
+	assert(hcu_sound_requests_submit(&q, &r));
+
+	/* Position claimed but not supplied: marked NONE, refused, counted once. */
+	ok = hcu_sound_request_capture_playback(&r, HCU_SOUND_EVENT_IMPULSE, 0x41u, 13u,
+		HCU_SOUND_OWNER_OBJECT, 0x78u, 1, NULL, 9, 0.5f, 1.5f, 123u, 0x3fu);
+	assert(ok == 0 && r.event == HCU_SOUND_EVENT_NONE);
+	assert(!hcu_sound_requests_submit(&q, &r));
+
+	/* Non-finite position with the position bit: refused by validation. */
+	ok = hcu_sound_request_capture_playback(&r, HCU_SOUND_EVENT_FADE, 0x42u, 14u,
+		HCU_SOUND_OWNER_OBJECT, 0x79u, 1, bad, 9, 0.5f, 1.5f, 123u, 0x3fu);
+	assert(ok == 0);
+	assert(!hcu_sound_requests_submit(&q, &r));
+
+	/* Unknown owner kind: stored as NONE, owner bit cleared, still accepted. */
+	ok = hcu_sound_request_capture_playback(&r, HCU_SOUND_EVENT_STOP, 0x43u, 15u,
+		99u, 0x80u, 0, NULL, 3, 0.0f, 1.0f, 124u, 0x3eu);
+	assert(ok == 1);
+	assert(r.owner_kind == HCU_SOUND_OWNER_NONE && r.owner_datum == UINT32_MAX);
+	assert((r.metadata_known & 0x01u) == 0u);
+	assert(hcu_sound_requests_submit(&q, &r));
+
+	hcu_sound_requests_counters(&q, &c);
+	assert(c.submitted == 4 && c.accepted == 2 && c.rejected == 2 && c.pending == 2);
+
+	assert(hcu_sound_requests_drain(&q, out, 4) == 2);
+	hcu_sound_requests_coverage(&q, &cov);
+	assert(cov.playback == 2u && cov.spatial == 1u);
+	assert(cov.owner_known == 1u);      /* the unknown-owner stop is not counted */
+	assert(cov.position_known == 1u);
+	assert(cov.record_fold == cov.checksum && cov.out_fold == 0u);
+
+	/* A record with a position bit but no position flag is refused too. */
+	ok = hcu_sound_request_capture_playback(&r, HCU_SOUND_EVENT_IMPULSE, 0x44u, 16u,
+		HCU_SOUND_OWNER_OBJECT, 0x81u, 0, NULL, 9, 0.5f, 1.5f, 125u, 0x3fu);
+	assert(ok == 1);
+	r.has_position = 1u;
+	r.metadata_known &= (uint8_t)~0x02u;
+	assert(!hcu_sound_requests_submit(&q, &r));
 }
 
 static hcu_sound_request_queue queue;
@@ -500,6 +561,7 @@ int main(void)
 	test_power_of_two_wrap();
 	test_zero_copy_drain();
 	test_field_coverage();
+	test_capture_contract();
 
 	hcu_sound_requests_print(&queue, "fixture");
 	printf("PASS sound request recorder: bounded ring, ordered drain, validation, counters\n");
