@@ -146,6 +146,27 @@ int main(void)
 	if (!check(rejected_probe.calls == 1 && queue.last_consumer_status == -37 && queue.consumer_failure_count == 1 && queue.readers == 0, "consumer failure status and reader release are explicit")) return 1;
 	if (!check(halo_ps2_bitmap_requests_clear_consumer(&queue) == HALO_PS2_BITMAP_REQUEST_OK, "clear consumer after callback completion")) return 1;
 	if (!check(halo_ps2_bitmap_requests_end(&queue) == HALO_PS2_BITMAP_REQUEST_NO_ACTIVE_FRAME, "duplicate end rejected")) return 1;
+	if (!check(halo_ps2_bitmap_requests_begin(&queue, 79, 9003, 0, 0) == HALO_PS2_BITMAP_REQUEST_OK,
+		"begin font pixel-UV capture")) return 1;
+	memset(&params, 0, sizeof(params));
+	params.map[0] = &s_bitmaps[1];
+	params.map_scale[0].i = params.map_scale[0].j = 1.0f;
+	params.map_texture_scale[0].i = 0.01f;
+	params.map_texture_scale[0].j = 0.02f;
+	params.framebuffer_blend_function = 0;
+	for (i = 0; i < 4; i++) {
+		vertices[i].texture_coordinates.x = (real)(i * 25);
+		vertices[i].texture_coordinates.y = (real)(i * 10);
+	}
+	if (!check(halo_ps2_bitmap_request_capture(&queue, &params, vertices) == HALO_PS2_BITMAP_REQUEST_OK &&
+		queue.requests[0].vertices[2].u == 0.5f && queue.requests[0].vertices[2].v > 0.399f &&
+		queue.requests[0].vertices[2].v < 0.401f,
+		"font atlas pixel UVs use CE inverse-scale normalization")) return 1;
+	vertices[3].texture_coordinates.x = 101.0f;
+	if (!check(halo_ps2_bitmap_request_capture(&queue, &params, vertices) == HALO_PS2_BITMAP_REQUEST_UNSUPPORTED &&
+		queue.unsupported_reason_mask == HALO_PS2_BITMAP_UNSUPPORTED_UV_RANGE &&
+		queue.unsupported_reason_counts[6] == 1 && queue.first_unsupported_reason == HALO_PS2_BITMAP_UNSUPPORTED_UV_RANGE,
+		"out-of-range normalized UV stays fail-closed with bounded cause")) return 1;
 	puts("bitmap-requests-ok records=128 captured=128 queue_end_consumer=1 bounded=1 pointers_retained=0");
 	return 0;
 }

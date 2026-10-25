@@ -28,6 +28,7 @@ extern "C" {
 #define HCU_OBJECTS_MAX_DRAW 64u        /* draw entries per view */
 #define HCU_OBJECTS_MAX_PARITY 64u      /* parity records kept for the first frame only */
 #define HCU_FX_MAX_PER_VIEW 64u          /* C3.6(c): fx requests drawn per view (fixed cap, no heap) */
+#define HCU_OBJECTS_DRAWN_IDENTITY_MAX 256u /* distinct visible snapshot identities remembered per map */
 
 /* Object types carried in halo_ps2_frame_object.type. */
 #define HCU_OBJECTS_TYPE_BIPED 0
@@ -104,8 +105,34 @@ typedef struct {
 } hcu_render_effect_draw;
 
 typedef struct {
+	uint32_t object_index;
+	uint32_t generation;
+	uint16_t type;
+	uint16_t reserved;
+} hcu_render_drawn_identity;
+
+typedef struct {
+	hcu_render_drawn_identity entries[HCU_OBJECTS_DRAWN_IDENTITY_MAX];
+	uint32_t count;
+	uint32_t overflow;
+} hcu_render_drawn_identity_set;
+
+typedef struct {
 	uint32_t views_seen;
 	uint32_t objects_drawn;
+	uint32_t submitted_bipeds;       /* successful world-object geometry submissions */
+	uint32_t submitted_vehicles;
+	uint32_t submitted_weapons;
+	uint32_t attempted_bipeds;
+	uint32_t attempted_vehicles;
+	uint32_t attempted_weapons;
+	uint32_t refused_bipeds;
+	uint32_t refused_vehicles;
+	uint32_t refused_weapons;
+	uint32_t unique_bipeds;           /* distinct {object index, generation} submissions */
+	uint32_t unique_vehicles;
+	uint32_t unique_weapons;
+	uint32_t drawn_identity_overflow;
 	uint32_t triangles;
 	uint32_t skinned_nodes;
 	uint32_t model_hits;        /* resource resolved to a resident model slot */
@@ -134,6 +161,12 @@ typedef struct {
 	uint32_t fx_textured;                /* C3.6(c): fx quads drawn with a resident texture */
 	uint32_t fx_flat;                    /* C3.6(c): fx quads drawn flat-shaded (no resident texture) */
 } hcu_render_objects_counters;
+
+/* Record a draw only after obj_render_pass emits one or more geometry batches. Counts every successful
+ * submission; unique counts deduplicate source identities across split views and frames. */
+int hcu_render_objects_note_submission(hcu_render_objects_counters *counters,
+	hcu_render_drawn_identity_set *identities, uint16_t type, uint32_t object_index,
+	uint32_t generation);
 
 typedef struct {
 	const halo_ps2_frame_snapshot *snapshot;
@@ -307,7 +340,8 @@ const halo_ps2_frame_snapshot *hcu_render_objects_frame_begin(uint32_t frame, ui
 void hcu_render_objects_view_begin(uint32_t view);
 void hcu_render_objects_view_end(uint32_t view, hcu_render_objects_view_stats *out);
 void hcu_render_objects_frame_end(void);
-void hcu_render_objects_release(void);
+/* Returns 1 after releasing drained sources, 0 while a source pin lacks a proven fence. */
+int hcu_render_objects_release(void);
 void hcu_render_objects_totals(hcu_render_objects_counters *out);
 void hcu_render_objects_residency_stats(hcu_render_objects_residency *out);
 #endif

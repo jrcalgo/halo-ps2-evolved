@@ -161,6 +161,10 @@ typedef struct {
 	 * registered runtime when CE has released that owner. */
 	int successor_registered;
 	int successor_staged;
+	/* One-shot diagnostic handoff: a failed rendered-successor preflight may be
+	 * consumed by CE's later transaction without injecting the same fault twice. */
+	int successor_preflight_failure_latched;
+	char successor_preflight_failure_map[16];
 	hcu_map_profile_runtime successor;
 	char successor_map_name[16];
 	hcu_asset_profile_view successor_view;
@@ -237,6 +241,12 @@ int hcu_map_service_unregister_runtime(hcu_map_service *service);
  * releases the owner and a load of the successor begins. */
 int hcu_map_service_register_successor_runtime(hcu_map_service *service,
 	const char *map_name, const hcu_map_profile_runtime *runtime);
+/* Diagnostic-only C3/C2 successor workload: latch one already-observed failed
+ * successor preflight for CE's immediately following transaction. The next
+ * matching service preflight returns that same failure once; normal preflight
+ * validation runs again for all other calls. */
+int hcu_map_service_latch_successor_preflight_failure(hcu_map_service *service,
+	const char *map_name);
 /* Returns zero with the service and storage ownership intact while readers or
  * callbacks remain live. The caller must drain and retry before freeing backing. */
 int hcu_map_service_shutdown(hcu_map_service *service);

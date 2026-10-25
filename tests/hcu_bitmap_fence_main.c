@@ -30,9 +30,10 @@ static void sim_kick(int previous_observed)
 
 /* ---- stubs for the CE request queue and the dispatcher (only the owner's lease gate is under test) ---- */
 static int s_fail_dispatch;   /* when set, the dispatcher acquires one lease and then fails (E_DISPATCH) */
-void hcu_bitmap_dispatch_complete(hcu_bitmap_dispatch_context *c)
+hcu_bitmap_dispatch_status hcu_bitmap_dispatch_complete(hcu_bitmap_dispatch_context *c)
 {
 	c->lease_count = 0;
+	return HCU_BITMAP_DISPATCH_OK;
 }
 int hcu_bitmap_dispatch_reader(const halo_ps2_bitmap_request_reader *reader, void *context)
 {
@@ -205,6 +206,11 @@ int main(void)
 	CHECK(hcu_bitmap_renderer_hook_emit(&s_r, 8, &geom, &upl, &s_cache) == HCU_BITMAP_FRAME_OK);
 	CHECK(hcu_bitmap_renderer_emit_status(&s_r) == HCU_BITMAP_FRAME_OK);
 	CHECK(hcu_bitmap_renderer_emit_failures(&s_r) == 1);
+	/* I. the following CE frame starts clean after the whole faulted batch was discarded. */
+	s_r.frame_open = 0; /* previous frame's parent submit boundary */
+	CHECK(hcu_bitmap_renderer_begin_frame(&s_r, 9) == HCU_BITMAP_FRAME_OK);
+	CHECK(s_owner.frame_dropped == 1 && s_owner.last_drop_cause == 2u);
+	CHECK(!s_owner.in_frame && !s_owner.drain_pending && !s_owner.gpu_pending && !s_dispatch.lease_count);
 
 	printf("%s: %d failure(s), %d fence call(s)\n", failures ? "FAILED" : "PASSED", failures, s_fence_calls);
 	return failures ? 1 : 0;

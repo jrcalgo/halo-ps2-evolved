@@ -34,6 +34,17 @@ static chain_t s_upload, s_geometry;
 static hcu_bitmap_binding s_binding;
 static hcu_bitmap_dispatch_context s_context;
 static tc_t s_cache_before;
+static int s_bitmap_fence_complete;
+
+uint32_t bsp_render_kick_seq(void) { return 40u; }
+int32_t bsp_render_fence_observed(uint32_t kick_seq)
+{
+	return kick_seq == 41u && s_bitmap_fence_complete ? 1 : 0;
+}
+int32_t bsp_render_source_release(uint32_t kind, uint32_t kick_seq)
+{
+	return kind == 2u ? bsp_render_fence_observed(kick_seq) : -1;
+}
 
 static unsigned log2_exact(unsigned n)
 {
@@ -233,7 +244,11 @@ int main(int argc, char **argv)
 		(unsigned)s_upload.qw, (unsigned)s_geometry.qw, (unsigned)s_cache.hits,
 		(unsigned)s_cache.misses, (unsigned)s_queue.frame_index);
 	/* The host proof calls this only at the simulated paired-chain fence boundary. */
-	hcu_bitmap_dispatch_complete(&s_context);
+	if (hcu_bitmap_dispatch_complete(&s_context) != HCU_BITMAP_DISPATCH_E_BUSY ||
+		s_context.lease_count != 1 || !s_leases[0].active || !s_cache_readers[cache_key] ||
+		!s_slots[s_leases[0].slot].readers) return 8;
+	s_bitmap_fence_complete = 1;
+	if (hcu_bitmap_dispatch_complete(&s_context) != HCU_BITMAP_DISPATCH_OK) return 9;
 	if (s_context.lease_count || s_cache_readers[cache_key] || s_slots[s_leases[0].slot].readers) return 8;
 	return 0;
 }

@@ -70,13 +70,36 @@ def test_matrix_argv_flags_and_no_flock(tmp_path):
     assert argv[argv.index("--render-views") + 1] == "4"
     assert argv[argv.index("--texfence-cap-pages") + 1] == "48"
     assert argv[argv.index("--emu-mode") + 1] == "recompiler"
-    assert "--c3-workload" in argv and "4p4bot" in argv
+    assert argv[argv.index("--c3-local-players") + 1] == "4"
     assert "flock" not in " ".join(argv)
     succ = ci.matrix_argv(cases["c3-11-load-interpreter"], tmp_path, Path("/pkg"))
     assert succ[succ.index("--successor") + 1] == ci.SUCC
     assert succ[succ.index("--successor-fault") + 1] == "load"
     assert succ[succ.index("--render-views") + 1] == "2"
     assert "--texfence-cap-pages" not in succ
+    assert succ[succ.index("--c3-local-players") + 1] == "2"
+
+
+def test_c3_workload_selects_stock_slayer_before_ce_local_map_start():
+    ce = ROOT / "submodules/halo-ce-universal/source"
+    main = (ce / "main/main.c").read_text()
+    game = (ce / "game/game.c").read_text()
+    engine = (ce / "game/game_engine.c").read_text()
+    setup = main[main.index("void main_loop("):]
+    assert "#if defined(HALO_PS2_C3_FRAME_SNAPSHOT) && defined(HCU_C3_WORKLOAD_LOCAL_PLAYERS)" in setup
+    initialize = setup.index("game_initialize();")
+    select = setup.index("build_game_variant_slayer(&c3_variant);")
+    apply = setup.index("game_set_game_variant(&c3_variant);")
+    start = setup.index("main_setup_connection();")
+    status = setup.index("c3-workload-mode engine=slayer selected=1 game-engine-running=%d")
+    assert initialize < select < apply < start < status
+    assert "game_engine_initialize(&game_variant_global);" in game
+    assert "game_initial_pulse();" in main[main.rindex("static void main_new_map("):]
+    assert "result.game_engine_index = game_engine_slayer;" in engine
+    # Successor map attempts reuse game_variant_global; they don't reset it.
+    successor = main[main.index("static boolean hcu_c2_successor_attempt("):
+                     main.index("void main_loop(")]
+    assert "game_set_game_variant(NULL)" not in successor
 
 
 def test_resume_skips_only_completed_runs(tmp_path):

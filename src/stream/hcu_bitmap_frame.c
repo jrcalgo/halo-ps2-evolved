@@ -207,8 +207,8 @@ hcu_bitmap_frame_status hcu_bitmap_frame_owner_gpu_fence_complete(
 		if (observed == 0) return HCU_BITMAP_FRAME_E_BUSY;
 		if (observed < 0) return HCU_BITMAP_FRAME_E_FENCE;
 	}
-	hcu_bitmap_dispatch_complete(owner->dispatch);
-	if (owner->dispatch->lease_count) return HCU_BITMAP_FRAME_E_BUSY;
+	if (hcu_bitmap_dispatch_complete(owner->dispatch) != HCU_BITMAP_DISPATCH_OK ||
+		owner->dispatch->lease_count) return HCU_BITMAP_FRAME_E_BUSY;
 	owner->gpu_pending = 0;
 	return HCU_BITMAP_FRAME_OK;
 }

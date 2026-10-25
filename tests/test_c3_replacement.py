@@ -32,12 +32,19 @@ def quiesce_ok():
     return [P + "c3-render-quiesce result=1 readers=0 kick-seq=5 fence=1 frame-active=0 bitmap-attachments=0"]
 
 
+def boundary(phase, drained=False):
+    return (P + f"c3-replacement-boundary phase={phase} frame=30 map-generation=1 kick-seq=5 "
+            f"fence={1 if drained else 0} inflight={0 if drained else 1} "
+            f"service-readers={0 if drained else 1} world-bound=1 media-loaded=1 "
+            f"object-pin-live={0 if drained else 1} bitmap-leases={0 if drained else 4}")
+
+
 def replace_lines():
     """Mode 1 (foreign replacement) in the order the guest must print it."""
-    return ([ready(OLD), frame(30),
+    return ([ready(OLD), frame(30), boundary("before-preflight"),
              P + f"map-replacement phase=candidate-validated old={OLD} new={NEW} readers=1",
              P + f"map-replacement phase=quiesce-begin old={OLD} new={NEW} readers=1 callback=1"]
-            + quiesce_ok() +
+            + [boundary("after-drain", True)] + quiesce_ok() +
             [P + f"map-replacement phase=quiesce-end old={OLD} new={NEW} readers=0 drained=1",
              step("dispose", result=1, old=OLD, **{"old-mounted": 1}, new=NEW, **{"new-mounted": 0},
                   **{"tag-bytes": 1000, "bsp-bytes": 2000}),
@@ -49,17 +56,17 @@ def replace_lines():
 
 
 def preflight_lines():
-    return [ready(OLD), frame(30),
+    return [ready(OLD), frame(30), boundary("before-preflight"), boundary("after-preflight-rejected"),
             step("after-failed-preflight", result=0, old=OLD, **{"old-mounted": 1}, new=NEW, **{"new-mounted": 0}),
             frame(60), P + "c3-render-held views=4 frames=300",
             P + f"production-ce-successor-usable result=1 old={OLD} ticks=30 local-players=4"]
 
 
 def load_lines():
-    lines = [ready(OLD), frame(30),
+    lines = [ready(OLD), frame(30), boundary("before-preflight"),
              P + f"map-replacement phase=candidate-validated old={OLD} new={NEW} readers=1",
              P + f"map-replacement phase=quiesce-begin old={OLD} new={NEW} readers=1 callback=1"]
-    lines += quiesce_ok()
+    lines += [boundary("after-drain", True)] + quiesce_ok()
     lines += [P + f"map-replacement phase=quiesce-end old={OLD} new={NEW} readers=0 drained=1",
               step("dispose", result=1, old=OLD, **{"old-mounted": 1}, new=NEW, **{"new-mounted": 0},
                    **{"tag-bytes": 1000, "bsp-bytes": 2000}),

@@ -50,6 +50,7 @@ class HcuPs2Input(unittest.TestCase):
             exe = Path(temp) / "hcu-ps2-input"
             subprocess.run(
                 ["cc", "-std=c11", "-Wall", "-Wextra", "-Werror",
+                 "-DHALO_PS2_C3_FRAME_SNAPSHOT",
                  "-D__stdcall=", "-D__fastcall=", "-D__int64=long long",
                  "-I" + str(HCU / "port/include"),
                  "-I" + str(HCU / "port/ps2/include"),

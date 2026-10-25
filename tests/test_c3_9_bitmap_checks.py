@@ -12,7 +12,7 @@ P = matrix.PREFIX
 def tick(n, begin=1, views=4, requests=2, queue_end=None, end=None, in_frame=0, status=0, leases=0, drain=0):
     qe = begin if queue_end is None else queue_end
     en = begin if end is None else end
-    return (P + f"c3-bitmap tick={n} begin-calls={begin} begin={begin} set-view={begin * views} "
+    return (P + f"c3-bitmap tick={n} windows={views} begin-calls={begin} begin={begin} set-view={begin * views} "
             f"requests={requests * begin} queue-end={qe} end={en} end-failed-total=0 in-frame={in_frame} "
             f"drain-pending={drain} gpu-pending=0 leases={leases} last-status={status} bitmap-frames-dropped=0")
 
@@ -59,6 +59,14 @@ def test_set_view_must_match_view_count():
     lines = [GOOD_BOUND, tick(1, begin=1, views=2), release(requests=2, begins=1, queue_ends=1)]
     out = run(lines, views=4)
     assert not out["checks"]["bitmap_set_view_per_view"]
+
+
+def test_bootstrap_window_is_accounted_before_all_player_windows_are_ready():
+    lines = [GOOD_BOUND, tick(1, views=1), tick(2, views=4),
+             release(requests=4, begins=2, queue_ends=2)]
+    assert run(lines)["c3_9_qualified"]
+    lines[1] = lines[1].replace("set-view=1", "set-view=2")
+    assert not run(lines)["checks"]["bitmap_set_view_per_view"]
 
 
 def test_leaked_lease_on_release_fails():

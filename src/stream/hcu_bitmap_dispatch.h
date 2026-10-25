@@ -106,7 +106,9 @@ typedef struct {
  * reader can be released after return; source leases remain until GPU fence. */
 int hcu_bitmap_dispatch_reader(const halo_ps2_bitmap_request_reader *reader,
 	void *context);
-void hcu_bitmap_dispatch_complete(hcu_bitmap_dispatch_context *context);
+/* Releases only leases whose exact carrying kick is observed complete. Pending or
+ * unknown fences leave those leases, slots, and cache readers intact. */
+hcu_bitmap_dispatch_status hcu_bitmap_dispatch_complete(hcu_bitmap_dispatch_context *context);
 /* Call after tc_begin_frame and before any shared-cache acquisition while leases
  * remain outstanding; this makes the existing two-frame LRU honor GPU pins. */
 void hcu_bitmap_dispatch_touch_cache(tc_t *cache, const uint16_t *cache_readers,

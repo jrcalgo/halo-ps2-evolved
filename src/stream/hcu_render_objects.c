@@ -15,6 +15,38 @@ int hcu_render_objects_find_model(const hcu_render_objects_model *models, uint32
 	return -1;
 }
 
+int hcu_render_objects_note_submission(hcu_render_objects_counters *counters,
+	hcu_render_drawn_identity_set *identities, uint16_t type, uint32_t object_index,
+	uint32_t generation)
+{
+	uint32_t i;
+	uint32_t *submitted, *unique;
+	if (!counters || !identities) return HCU_RENDER_CONTENT_E_ARGUMENT;
+	switch (type) {
+	case HCU_OBJECTS_TYPE_BIPED: submitted = &counters->submitted_bipeds; unique = &counters->unique_bipeds; break;
+	case HCU_OBJECTS_TYPE_VEHICLE: submitted = &counters->submitted_vehicles; unique = &counters->unique_vehicles; break;
+	case HCU_OBJECTS_TYPE_WEAPON: submitted = &counters->submitted_weapons; unique = &counters->unique_weapons; break;
+	default: return HCU_RENDER_CONTENT_E_ARGUMENT;
+	}
+	(*submitted)++;
+	for (i = 0; i < identities->count; i++)
+		if (identities->entries[i].object_index == object_index &&
+			identities->entries[i].generation == generation && identities->entries[i].type == type)
+			return HCU_RENDER_CONTENT_OK;
+	if (identities->count >= HCU_OBJECTS_DRAWN_IDENTITY_MAX) {
+		identities->overflow++;
+		counters->drawn_identity_overflow++;
+		return HCU_RENDER_CONTENT_OK;
+	}
+	identities->entries[identities->count].object_index = object_index;
+	identities->entries[identities->count].generation = generation;
+	identities->entries[identities->count].type = type;
+	identities->entries[identities->count].reserved = 0u;
+	identities->count++;
+	(*unique)++;
+	return HCU_RENDER_CONTENT_OK;
+}
+
 uint32_t hcu_render_objects_residency_priority(uint16_t type)
 {
 	/* Keep player/AI bipeds and their weapons resident before optional traffic. */
@@ -380,14 +412,19 @@ int hcu_render_fx_build_quad(const hcu_render_effect_draw *e, const float right[
 		if (fabsf(n[2]) > 0.99f) { ref[0] = 0.0f; ref[1] = 1.0f; ref[2] = 0.0f; }
 		fx_cross(ref, n, a);
 		l = fx_len(a);
+		/* A malformed finite normal can still overflow its length calculation. Refuse it
+		 * instead of normalizing a zero/NaN tangent and emitting corrupt geometry. */
+		if (!(l > 1e-6f) || !isfinite(l)) return HCU_RENDER_CONTENT_E_ARGUMENT;
 		for (k = 0; k < 3; k++) a[k] /= l;
 		fx_cross(n, a, b);
 	} else {
 		for (k = 0; k < 3; k++) { a[k] = right[k]; b[k] = up[k]; }
 	}
 	for (c = 0; c < 4; c++)
-		for (k = 0; k < 3; k++)
+		for (k = 0; k < 3; k++) {
 			q->v[c][k] = e->position[k] + s * (sx[c] * a[k] + sy[c] * b[k]);
+			if (!isfinite(q->v[c][k])) return HCU_RENDER_CONTENT_E_ARGUMENT;
+		}
 	return 0;
 }
 
@@ -576,6 +613,7 @@ static uint32_t s_slot_count;
  * immutable snapshot, so the counts balance; refused slots still count so the drop cannot leave a residue. */
 static uint16_t s_slot_pins[HCU_OBJECTS_MAX_MODELS];
 static hcu_render_objects_counters s_totals;
+static hcu_render_drawn_identity_set s_drawn_identities;
 static hcu_render_objects_pin_t s_pin;
 
 static void slot_pins_apply(const halo_ps2_frame_snapshot *snap, int delta)
@@ -1138,7 +1176,15 @@ static void object_pass(void *user, render_ctx_t *rc)
 		model_info mi;
 		uint16_t perm[OBJ_MAX_REGIONS];
 		mat4 root;
-		if (!s->loaded) continue;
+		if (d->type == HCU_OBJECTS_TYPE_BIPED) s_view_counters.attempted_bipeds++;
+		else if (d->type == HCU_OBJECTS_TYPE_VEHICLE) s_view_counters.attempted_vehicles++;
+		else if (d->type == HCU_OBJECTS_TYPE_WEAPON) s_view_counters.attempted_weapons++;
+		if (!s->loaded) {
+			if (d->type == HCU_OBJECTS_TYPE_BIPED) s_view_counters.refused_bipeds++;
+			else if (d->type == HCU_OBJECTS_TYPE_VEHICLE) s_view_counters.refused_vehicles++;
+			else if (d->type == HCU_OBJECTS_TYPE_WEAPON) s_view_counters.refused_weapons++;
+			continue;
+		}
 		mi = model_get(&s->models, 0);
 		model_select_permutations(&s->models, &mi, NULL, perm);
 		root = mat_from_snapshot(&d->world);
@@ -1176,11 +1222,18 @@ static void object_pass(void *user, render_ctx_t *rc)
 		obj_render_pass(&s_objr, rc);
 		log_part_parity(s, &mi, perm, d->resource_id, d->type == HCU_OBJECTS_TYPE_VEHICLE ? HCU_RENDER_PARITY_VEHICLE
 			: d->type == HCU_OBJECTS_TYPE_WEAPON ? HCU_RENDER_PARITY_WEAPON : HCU_RENDER_PARITY_OBJECT);
-		if (s_objr.st_visible) {
+		if (s_objr.st_visible && s_objr.st_batches > 0u) {
 			s_view_drawn++;
 			s_view_counters.objects_drawn++;
+			if (d->type == HCU_OBJECTS_TYPE_BIPED || d->type == HCU_OBJECTS_TYPE_VEHICLE ||
+				d->type == HCU_OBJECTS_TYPE_WEAPON)
+				(void)hcu_render_objects_note_submission(&s_view_counters, &s_drawn_identities,
+					d->type, s_snapshot->objects[d->object_index].id.index, d->generation);
 			s_view_counters.triangles += s_objr.st_triangles;
 		} else {
+			if (d->type == HCU_OBJECTS_TYPE_BIPED) s_view_counters.refused_bipeds++;
+			else if (d->type == HCU_OBJECTS_TYPE_VEHICLE) s_view_counters.refused_vehicles++;
+			else if (d->type == HCU_OBJECTS_TYPE_WEAPON) s_view_counters.refused_weapons++;
 			s_view_counters.failures++;
 		}
 		s_view_triangles += s_objr.st_triangles;
@@ -1262,7 +1315,7 @@ static void object_pass(void *user, render_ctx_t *rc)
 		log_part_parity(s, &mi, perm, fp->resource_id, HCU_RENDER_PARITY_WEAPON);
 		s_view_triangles += s_objr.st_triangles;
 		s_view_skinned += fp->palette_count;
-		if (s_objr.st_visible) {
+		if (s_objr.st_visible && s_objr.st_batches > 0u) {
 			s_view_drawn++;
 			s_view_counters.objects_drawn++;
 			s_view_counters.first_person_draws++;
@@ -1289,6 +1342,9 @@ int hcu_render_objects_load(const hcu_asset_profile_view *view, arena_t *arena,
 	memset(s_slots, 0, sizeof s_slots);
 	memset(s_meta, 0, sizeof s_meta);
 	memset(&s_res, 0, sizeof s_res);
+	memset(&s_totals, 0, sizeof s_totals);
+	memset(&s_drawn_identities, 0, sizeof s_drawn_identities);
+	memset(&s_view_counters, 0, sizeof s_view_counters);
 	s_profile = view;
 	s_slot_count = count;
 	s_tex_total = count * HCU_OBJECTS_TEX_STRIDE;
@@ -1441,8 +1497,8 @@ const halo_ps2_frame_snapshot *hcu_render_objects_frame_begin(uint32_t frame, ui
 {
 	s_frame = frame;
 	memset(&s_view_counters, 0, sizeof s_view_counters);
-	if (s_pin.pinned && s_pending_seq && bsp_render_fence_observed(s_pending_seq) == 1) {
-		(void)bsp_render_source_release(BSP_SRC_OBJECT_PIN, s_pending_seq);
+	if (s_pin.pinned && s_pending_seq && bsp_render_fence_observed(s_pending_seq) == 1 &&
+		bsp_render_source_release(BSP_SRC_OBJECT_PIN, s_pending_seq) == 1) {
 		pin_drop();
 		s_pending_seq = 0;
 	}
@@ -1537,6 +1593,19 @@ void hcu_render_objects_view_end(uint32_t view, hcu_render_objects_view_stats *o
 		}
 	}
 	s_totals.objects_drawn += s_view_drawn;
+	s_totals.submitted_bipeds += s_view_counters.submitted_bipeds;
+	s_totals.submitted_vehicles += s_view_counters.submitted_vehicles;
+	s_totals.submitted_weapons += s_view_counters.submitted_weapons;
+	s_totals.attempted_bipeds += s_view_counters.attempted_bipeds;
+	s_totals.attempted_vehicles += s_view_counters.attempted_vehicles;
+	s_totals.attempted_weapons += s_view_counters.attempted_weapons;
+	s_totals.refused_bipeds += s_view_counters.refused_bipeds;
+	s_totals.refused_vehicles += s_view_counters.refused_vehicles;
+	s_totals.refused_weapons += s_view_counters.refused_weapons;
+	s_totals.unique_bipeds += s_view_counters.unique_bipeds;
+	s_totals.unique_vehicles += s_view_counters.unique_vehicles;
+	s_totals.unique_weapons += s_view_counters.unique_weapons;
+	s_totals.drawn_identity_overflow += s_view_counters.drawn_identity_overflow;
 	s_totals.triangles += s_view_triangles;
 	s_totals.skinned_nodes += s_view_skinned;
 	s_totals.failures += s_view_counters.failures;
@@ -1564,6 +1633,14 @@ void hcu_render_objects_view_end(uint32_t view, hcu_render_objects_view_stats *o
 	s_totals.deduped += s_view_counters.deduped;
 	s_view_counters.deduped = 0;
 	s_view_counters.failures = 0;
+	s_view_counters.submitted_bipeds = s_view_counters.submitted_vehicles = 0;
+	s_view_counters.submitted_weapons = 0;
+	s_view_counters.attempted_bipeds = s_view_counters.attempted_vehicles = 0;
+	s_view_counters.attempted_weapons = 0;
+	s_view_counters.refused_bipeds = s_view_counters.refused_vehicles = 0;
+	s_view_counters.refused_weapons = 0;
+	s_view_counters.unique_bipeds = s_view_counters.unique_vehicles = 0;
+	s_view_counters.unique_weapons = s_view_counters.drawn_identity_overflow = 0;
 	s_view_counters.model_hits = s_view_counters.model_misses = 0;
 	s_view_counters.texture_hits = s_view_counters.texture_misses = 0;
 	s_view_counters.first_person_draws = 0;
@@ -1580,16 +1657,19 @@ void hcu_render_objects_frame_end(void)
 	if (s_pin.pinned) s_pending_seq = bsp_render_kick_seq();
 }
 
-void hcu_render_objects_release(void)
+int hcu_render_objects_release(void)
 {
-	/* C3.10: the pin is released here whatever its fence says; the release event records whether it was fenced */
 	if (s_pin.pinned) {
-		(void)bsp_render_source_release(BSP_SRC_OBJECT_PIN, s_pending_seq);
+		/* A pin without an assigned kick may still be referenced by the chain being built.
+		 * Keep both the pin and its cache state until its exact kick is observed complete. */
+		if (!s_pending_seq || bsp_render_fence_observed(s_pending_seq) != 1) return 0;
+		if (bsp_render_source_release(BSP_SRC_OBJECT_PIN, s_pending_seq) != 1) return 0;
 		pin_drop();
 	}
 	s_pending_seq = 0;
 	s_snapshot = NULL;
 	s_pose_snapshot = NULL;
+	return 1;
 }
 
 void hcu_render_objects_totals(hcu_render_objects_counters *out)

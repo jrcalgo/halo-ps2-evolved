@@ -88,11 +88,12 @@ int32_t hcu_bitmap_dispatch_reader(const halo_ps2_bitmap_request_reader *reader,
 	if (!reader || !reader->held || !d) return -1;
 	s_dispatch_calls++; d->lease_count=1; return 0;
 }
-void hcu_bitmap_dispatch_complete(hcu_bitmap_dispatch_context *ctx)
+hcu_bitmap_dispatch_status hcu_bitmap_dispatch_complete(hcu_bitmap_dispatch_context *ctx)
 {
-	if (!ctx) return;
+	if (!ctx) return HCU_BITMAP_DISPATCH_E_ARGUMENT;
 	ctx->lease_count=0;
 	s_dispatch_complete_calls++;
+	return HCU_BITMAP_DISPATCH_OK;
 }
 
 int main(void)

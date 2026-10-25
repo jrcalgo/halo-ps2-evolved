@@ -6,9 +6,10 @@
 #include <string.h>
 #include <stdint.h>
 
-/* C3.10: weak links to the renderer's kick sequence and source-release event. Host builds do not link bsp_render,
- * so the references resolve to NULL and the lease kick/release bookkeeping is skipped. */
+/* C3.10: weak links keep non-renderer host builds linkable. A lease release fails closed
+ * when the exact BSP fence or release event is unavailable. */
 extern uint32_t bsp_render_kick_seq(void) __attribute__((weak));
+extern int32_t bsp_render_fence_observed(uint32_t kick_seq) __attribute__((weak));
 extern int32_t bsp_render_source_release(uint32_t kind, uint32_t kick_seq) __attribute__((weak));
 #define HCU_BITMAP_RELEASE_KIND_LEASE 2u   /* = BSP_SRC_BITMAP_LEASE in render/bsp_render.h */
 
@@ -283,18 +284,35 @@ int hcu_bitmap_dispatch_reader(const halo_ps2_bitmap_request_reader *reader,
 	return ctx->first_error;
 }
 
-void hcu_bitmap_dispatch_complete(hcu_bitmap_dispatch_context *ctx)
+hcu_bitmap_dispatch_status hcu_bitmap_dispatch_complete(hcu_bitmap_dispatch_context *ctx)
 {
-	uint32_t i;
-	if (!ctx || !ctx->leases || !ctx->slots) return;
+	uint32_t i, remaining = 0;
+	int blocked = 0;
+	if (!ctx || !ctx->leases || !ctx->slots || !ctx->cache_readers ||
+		ctx->lease_count > ctx->lease_capacity)
+		return HCU_BITMAP_DISPATCH_E_ARGUMENT;
 	for (i = 0; i < ctx->lease_count; i++) {
-		/* C3.10: the release event reads the fence of the kick that carried this lease's upload */
-		if (ctx->leases[i].active && bsp_render_source_release)
-			(void)bsp_render_source_release(HCU_BITMAP_RELEASE_KIND_LEASE, ctx->leases[i].kick_seq);
-		hcu_bitmap_dispatch_release(ctx->slots, ctx->slot_count, ctx->cache_readers,
-			ctx->cache_reader_count, &ctx->leases[i]);
+		hcu_bitmap_lease *lease = &ctx->leases[i];
+		if (lease->active && lease->cache_key < ctx->cache_reader_count &&
+			ctx->cache_readers[lease->cache_key] &&
+			(lease->slot == UINT16_MAX || (lease->slot < ctx->slot_count &&
+				ctx->slots[lease->slot].valid && ctx->slots[lease->slot].readers)) &&
+			lease->kick_seq && bsp_render_fence_observed &&
+			bsp_render_fence_observed(lease->kick_seq) == 1 && bsp_render_source_release &&
+			bsp_render_source_release(HCU_BITMAP_RELEASE_KIND_LEASE, lease->kick_seq) == 1) {
+			hcu_bitmap_dispatch_release(ctx->slots, ctx->slot_count, ctx->cache_readers,
+				ctx->cache_reader_count, lease);
+		}
+		if (lease->active) {
+			if (remaining != i) ctx->leases[remaining] = *lease;
+			remaining++;
+			blocked = 1;
+		}
 	}
-	ctx->lease_count = 0;
+	if (remaining < ctx->lease_count)
+		memset(ctx->leases + remaining, 0, (ctx->lease_count - remaining) * sizeof(*ctx->leases));
+	ctx->lease_count = remaining;
+	return blocked ? HCU_BITMAP_DISPATCH_E_BUSY : HCU_BITMAP_DISPATCH_OK;
 }
 
 void hcu_bitmap_dispatch_touch_cache(tc_t *cache, const uint16_t *cache_readers,

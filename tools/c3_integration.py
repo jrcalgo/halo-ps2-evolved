@@ -32,8 +32,6 @@ MATRIX_PATH = ROOT / "tools/c2_profile_boot_matrix.py"
 INTEGRATION_ROOT = ROOT / "build/c3/integration"
 ROW = "bloodgulch_mounted_gunner_4p4bot"
 SUCC = "beavercreek_mounted_gunner_4p4bot"
-WORKLOAD = "4p4bot"
-WORKLOAD_PLAYERS = 4
 FRAMES = 300
 CASE_TIMEOUT = 4 * 3600          # host seconds for one matrix subprocess (its own timeouts apply inside)
 STATE_NAME = "state.json"
@@ -71,7 +69,7 @@ def case_dir(root: Path, case: dict) -> Path:
 
 
 def matrix_argv(case: dict, out_dir: Path, package_root: Path) -> list[str]:
-    argv = [sys.executable, "-I", str(MATRIX_PATH), "--c3", "--c3-workload", WORKLOAD, "--rows", ROW,
+    argv = [sys.executable, "-I", str(MATRIX_PATH), "--c3", "--c3-local-players", str(case["views"]), "--rows", ROW,
             "--emu-mode", case["mode"], "--output-root", str(out_dir), "--package-root", str(package_root)]
     if case["kind"] == "render":
         argv += ["--render-views", str(case["views"]), "--render-frames", str(FRAMES)]
@@ -234,9 +232,20 @@ def score_lines(c2m, lines: list[str] | None, *, views: int, frames: int, cap_pa
     if lines is None:
         return {req: {"status": "not-run", "first_failing": "guest log missing", "error": None}
                 for req in REQUIREMENTS}
+    if successor:
+        # Replacement logs contain two map lifetimes with separate frame counts,
+        # bindings and releases. Per-map render proofs come from the render cases;
+        # applying their single-map totals to this combined log is invalid.
+        verdicts = {req: {"status": "n/a", "first_failing": "covered by render cases", "error": None}
+                    for req in REQUIREMENTS}
+        verdicts["C3.8"] = _verdict(c3_8_sound_checks, lines)
+        verdicts["C3.11"] = _verdict(c2m.rendered_successor_checks, lines, successor["old"], successor["new"],
+                                    successor["mode"], views, captures)
+        return verdicts
     held = [c.get("file") for c in captures if "c3-render-held" in str(c.get("marker", "")) and c.get("file")]
     verdicts = {
-        "C3.3": _verdict(c2m.c3_3_scene_checks, lines, views, WORKLOAD_PLAYERS),
+        "C3.3": (_verdict(c2m.c3_3_scene_checks, lines, views, views) if views > 1 else
+                 {"status": "n/a", "first_failing": "opposing-player scene is exercised by multiplayer cases", "error": None}),
         "C3.5": _verdict(c2m.c3_5_layout_checks, views, held),
         "C3.7": _verdict(c2m.c3_7_texfence_checks, lines, views, frames, cap_pages),
         "C3.8": _verdict(c3_8_sound_checks, lines),
@@ -298,7 +307,7 @@ def write_report(root: Path, stamp: str, scored: list[dict], state: dict) -> dic
         statuses = [e["requirements"][req]["status"] for e in scored]
         summary[req] = {s: statuses.count(s) for s in sorted(set(statuses))}
     passed = all(e["matrix_pass"] and e.get("evidence_valid", False) and all(
-        v["status"] == "pass" for k, v in e["requirements"].items()
+        v["status"] in ("pass", "n/a") for k, v in e["requirements"].items()
         if k != "C3.11" or e["kind"] == "successor") for e in scored)
     data = {"stamp": stamp, "root": str(root), "matrix_qualified": passed,
             "requirements": list(REQUIREMENTS), "summary": summary,

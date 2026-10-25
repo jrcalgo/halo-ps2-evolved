@@ -88,6 +88,8 @@ int32_t hcu_bitmap_renderer_begin_frame(hcu_bitmap_renderer *r, uint32_t frame_i
 		 * slot is reused; a pending or unobserved fence refuses the new frame.
 		 * Leases are released only through the owner's fence-complete path. */
 		if (r->owner) {
+			if (!r->owner->gpu_pending && r->dispatch->lease_count)
+				return HCU_BITMAP_FRAME_E_BUSY;
 			if (r->owner->gpu_pending &&
 				hcu_bitmap_frame_owner_gpu_fence_complete(r->owner, r->owner->frame_index) != HCU_BITMAP_FRAME_OK)
 				return HCU_BITMAP_FRAME_E_BUSY;

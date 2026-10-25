@@ -45,6 +45,23 @@ int main(void)
 	assert(XInputGetState(device, &state) == ERROR_SUCCESS);
 	assert(state.dwPacketNumber == 1);
 
+#ifdef HALO_PS2_C3_FRAME_SNAPSHOT
+	/* The C3 action overlay reaches CE through a normal XInput poll and never
+	 * mutates the stored physical pad sample. */
+	ps2_input_c3_workload_primary_trigger(0, 1, 7);
+	assert(XInputGetState(device, &state) == ERROR_SUCCESS);
+	assert(state.Gamepad.bAnalogButtons[7] == 0xFF);
+	ps2_input_c3_workload_primary_trigger(0, 0, 7);
+	assert(XInputGetState(device, &state) == ERROR_SUCCESS);
+	assert(state.Gamepad.bAnalogButtons[7] == analog[7]);
+	ps2_input_c3_workload_primary_trigger(0, 1, 9);
+	assert(XInputGetState(device, &state) == ERROR_SUCCESS);
+	assert(state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
+	ps2_input_c3_workload_primary_trigger(0, 0, 9);
+	assert(XInputGetState(device, &state) == ERROR_SUCCESS);
+	assert(!(state.Gamepad.wButtons & XINPUT_GAMEPAD_DPAD_DOWN));
+#endif
+
 	ps2_input_publish_dualshock(0, 1,
 		0x0010 | 0x0020 | 0x0008 | 0x0001 | 0x0002 | 0x0004,
 		255, 0, 128, 255, analog);

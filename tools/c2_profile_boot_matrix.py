@@ -924,9 +924,8 @@ def sha256_file(path: Path) -> str:
 def prepare_render_tree() -> Path:
     """Stage build/c3/render-tree/pkg from build/c3/render-packages.
 
-    The HCP is symlinked unchanged (its SHA-256 pin is still checked by the guest runner). The render-media
-    producer left memory.package_file_bytes at the pre-render-chunk size, so the staged manifest copy carries the
-    HCP's real size, as tools/repack_hcu_profiles_hcp2.py does for a re-enveloped package; nothing else changes."""
+    The HCP is linked or copied unchanged and the guest checks its SHA-256 pin.
+    The producer must declare its actual envelope size; staging never repairs a manifest."""
     source = ROOT / "build/c3/render-packages"
     pkg = RENDER_PACKAGE_TREE / "pkg"
     if pkg.is_symlink():
@@ -948,8 +947,7 @@ def prepare_render_tree() -> Path:
         data = json.loads(manifest.read_text(encoding="utf-8"))
         real = hcp.stat().st_size
         if data["memory"]["package_file_bytes"] != real:
-            data["memory"]["package_file_bytes_before_render_stage"] = data["memory"]["package_file_bytes"]
-            data["memory"]["package_file_bytes"] = real
+            raise RuntimeError(f"render manifest package size differs from {hcp}; regenerate it with hcu_render_media.py")
         (out / manifest.name).write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return pkg
 
@@ -992,6 +990,8 @@ def c3_7_texfence_checks(lines: list[str], views: int, frames: int, cap_pages: i
         "reuse_unfenced_zero": num(tf, "reuse-unfenced") == 0 and
             all(num(p, "reuse-unfenced") == 0 for p in periodic),
         "claims_published_nonzero": (num(tf, "claims-published") or 0) > 0,
+        "upload_sources_released": (num(tf, "source-released") or 0) > 0,
+        "rendered_views_match": ff.get("views") == str(views + (1 if views == 3 else 0)),
         # the completed fence may lag the newest kick by at most one (the kick still in flight)
         "fence_lag_at_most_one": (num(tf, "kick-seq") or 0) - (num(tf, "fence-seq") or 0) <= 1,
         "kicks_observed": (num(tf, "kick-seq") or 0) >= frames,
@@ -1000,6 +1000,7 @@ def c3_7_texfence_checks(lines: list[str], views: int, frames: int, cap_pages: i
     if cap_pages:
         checks["pressure_evictions_seen"] = (num(tf, "evictions") or 0) > 0
         checks["reuse_after_fence_seen"] = (num(tf, "reuse-after-fence") or 0) > 0
+        checks["reuse_blocked_while_in_flight"] = (num(tf, "reuse-blocked-by-fence") or 0) > 0
     qualified = all(checks.values())
     reasons = [f"c3-7 check failed: {k}" for k, v in checks.items() if not v]
     return {"checks": checks, "reasons": reasons, "qualified": qualified, "final": tf,
@@ -1118,6 +1119,12 @@ def c3_3_scene_checks(lines: list[str], views: int, workload_players: int) -> di
         "weapons_present": weapon is not None and weapon >= workload_players,
         "vehicles_present": vehicle is not None and vehicle >= 1,
         "drawn_objects_nonzero": (_int(drawn.get("drawn")) or 0) > 0,
+        # A snapshot count alone is not a submitted draw. These counters advance
+        # only after the object renderer emitted geometry for this source identity.
+        "player_bodies_submitted": (_int(drawn.get("unique-bipeds")) or 0) >= workload_players,
+        "weapons_submitted": (_int(drawn.get("unique-weapons")) or 0) >= workload_players,
+        "vehicles_submitted": (_int(drawn.get("unique-vehicles")) or 0) >= 1,
+        "draw_identity_set_complete": _int(drawn.get("drawn-identity-overflow")) == 0,
     }
     reasons = [f"scene check failed: {name}" for name, ok in checks.items() if not ok]
     return {
@@ -1159,7 +1166,11 @@ def c3_9_bitmap_checks(lines: list[str], views: int) -> dict:
         "bitmap_no_failure": not fails,
         # (a) each CE frame in the run calls begin, one set_view per view, queue end and end.
         "bitmap_frames_seen": total["begin"] > 0 and total["begin-calls"] == total["begin"],
-        "bitmap_set_view_per_view": total["set-view"] == views * total["begin"],
+        "bitmap_set_view_per_view": bool(ticks) and all(
+            1 <= (_int(t.get("windows")) or 0) <= views and
+            _int(t.get("set-view")) == (_int(t.get("windows")) or 0) * (_int(t.get("begin")) or 0)
+            for t in ticks if (_int(t.get("begin")) or 0) > 0) and
+            any(t.get("windows") == str(views) and (_int(t.get("requests")) or 0) > 0 for t in ticks),
         "bitmap_requests_registered": total["requests"] > 0,
         # (b) queue-end exactly once per frame, inside that frame's begin/end, never across ticks.
         "bitmap_queue_end_once_per_frame": total["queue-end"] == total["begin"] == total["end"],
@@ -1220,7 +1231,7 @@ def c3_10_dma_checks(lines: list[str], views: int, frames: int) -> dict:
         "chain_sizes_match_layout": chain_size == [524288, 524288, 65536, 65536],
         "chains_contiguous_in_owner": bool(owner) and contiguous and ob is not None and
                                       chain_base[0] == ob and chain_base[0] + owner_bytes == chain_base[3] + chain_size[3],
-        "frame_lines_complete": len(frame_lines) == frames,
+        "frame_lines_complete": [_int(f.get("frame")) for f in frame_lines] == list(range(1, frames + 1)),
         "views_match": final_frame.get("views") == str(views + (1 if views == 3 else 0)),
         "no_busy_emits": last.get("c0-busy-emits") == "0" and last.get("c1-busy-emits") == "0",
         "no_idle_violations": final_frame.get("idle-violations") == "0",
@@ -1228,6 +1239,16 @@ def c3_10_dma_checks(lines: list[str], views: int, frames: int) -> dict:
         "released_before_fence_zero": bool(frame_lines) and all(f.get("released-before-fence") == "0" for f in frame_lines),
         # each chain must have been released at least once (reuse) and every release event must carry a fence read
         "chain_release_observed": bool(frame_lines) and (_int(last.get("src-rel-chain", "0/0").split("/")[0]) or 0) > 0,
+        "both_geometry_chains_submitted": all((_int(last.get(f"c{i}-kicks")) or 0) > 0 for i in (0, 1)),
+        "both_geometry_chains_released": all(
+            (_int(last.get(f"geom-rel{i}", "0/0").split("/")[0]) or 0) > 0 for i in (0, 1)),
+        "both_upload_chains_submitted": all((_int(last.get(f"up{i}-kicks")) or 0) > 0 for i in (0, 1)),
+        "both_upload_chains_released": all((_int(last.get(f"up{i}-releases")) or 0) > 0 for i in (0, 1)),
+        "per_chain_releases_fenced": bool(frame_lines) and all(
+            f.get(f"up{i}-before") == "0" and f.get(f"geom-rel{i}", "").split("/")[-1] == "0"
+            for f in frame_lines for i in (0, 1)),
+        "object_pin_releases_observed": (_int(last.get("src-rel-pin", "0/0").split("/")[0]) or 0) > 0,
+        "bitmap_lease_releases_observed": (_int(last.get("src-rel-bitmap", "0/0").split("/")[0]) or 0) > 0,
         "overflow_zero_or_handled": final_frame.get("overflow") == "0" or refusals > 0,
         "emit_failures_zero": final_frame.get("emit-failures") == "0",
     }
@@ -1392,6 +1413,10 @@ def rendered_successor_checks(lines: list[str], old_map: str, new_map: str, mode
     validated = [(i, r) for i, r in boundaries if r.get("phase") == "candidate-validated"]
     drained = [(i, r) for i, r in boundaries if r.get("phase") == "quiesce-end"]
     quiesce = indexed("c3-render-quiesce ")
+    observations = indexed("c3-replacement-boundary ")
+    before = [(i, r) for i, r in observations if r.get("phase") == "before-preflight"]
+    rejected_observations = [(i, r) for i, r in observations if r.get("phase") == "after-preflight-rejected"]
+    after_drain = [(i, r) for i, r in observations if r.get("phase") == "after-drain"]
     steps = [(index, fields_of(line)) for index, line in enumerate(lines)
              if line.startswith(PREFIX + "production-ce-successor-step ")]
     usable = [index for index, line in enumerate(lines) if line.startswith(PREFIX + "production-ce-successor-usable result=1 ")]
@@ -1418,13 +1443,24 @@ def rendered_successor_checks(lines: list[str], old_map: str, new_map: str, mode
         "capture_order_map_a_then_map_b": len(captures) == 2 and
             str(captures[0].get("marker", "")).startswith("c3-render-held") and
             str(captures[1].get("marker", "")).startswith("production-ce-successor-usable"),
+        "preflight_started_with_live_submission": bool(before) and any(
+            r.get("inflight") == "1" and r.get("fence") == "0" and
+            (_int(r.get("kick-seq")) or 0) > 0 and (_int(r.get("map-generation")) or 0) > 0 and
+            (_int(r.get("service-readers")) or 0) > 0 and r.get("world-bound") == "1" and
+            r.get("media-loaded") == "1" and r.get("object-pin-live") == "1"
+            for _, r in before),
     }
     if mode == 2:
         checks["failed_preflight_preserves_renderer"] = (
             not begin and not validated and not drained and not quiesce and
-            bool(failed_preflight) and any(i > failed_preflight[0] for i in frames) and
+            bool(failed_preflight) and bool(rejected_observations) and
+            any(i > rejected_observations[0][0] for i in frames) and
             len(ready) == 1)
         checks["failed_preflight_no_quiesce_or_dispose"] = not begin and not dispose and not unload
+        checks["failed_preflight_preserves_source_identity"] = any(
+            bi < ri and all(b.get(k) == r.get(k) for k in
+                ("map-generation", "kick-seq", "service-readers", "world-bound", "media-loaded", "object-pin-live"))
+            for bi, b in before for ri, r in rejected_observations)
         return {"checks": checks,
                 "reasons": [f"rendered successor check failed: {name}" for name, passed in checks.items() if not passed],
                 "c3_11_qualified": False,
@@ -1432,6 +1468,12 @@ def rendered_successor_checks(lines: list[str], old_map: str, new_map: str, mode
     checks["readers_held_while_drawing"] = bool(begin) and any(
         r.get("old") == old_map and (_int(r.get("readers")) or 0) > 0 and any(f < bi for f in frames)
         for bi, r in begin)
+    checks["drain_releases_real_submission_sources"] = any(
+        bi < ai and b.get("map-generation") == a.get("map-generation") and
+        b.get("kick-seq") == a.get("kick-seq") and a.get("fence") == "1" and
+        a.get("inflight") == "0" and a.get("service-readers") == "0" and
+        a.get("object-pin-live") == "0" and a.get("bitmap-leases") == "0"
+        for bi, b in before for ai, a in after_drain)
     checks["candidate_before_quiesce"] = bool(begin) and all(
         any(vi < bi and v.get("new") == r.get("new") for vi, v in validated) for bi, r in begin)
     checks["drain_readers_zero_fence_observed"] = bool(begin) and bool(drained) and all(
@@ -1608,6 +1650,8 @@ def main(argv=None) -> int:
     parser.add_argument("--c3-workload", choices=("none", "4p4bot"), default="none",
                         help=("with --c3: 4p4bot starts 4 local players (CE's player_spawn_count, the split-screen path) "
                               "on the first map load; no bots are spawned because stock CE has no bot path"))
+    parser.add_argument("--c3-local-players", type=int, choices=(1, 2, 3, 4),
+                        help="explicit CE local player population for C3 render qualification")
     parser.add_argument("--package-root", type=Path,
                         help=("override the selected package root (<root>/<row>/<row>.hcp + .json); with --render-views the "
                               "default is the C3 render package tree build/c3/render-tree/pkg"))
@@ -1638,6 +1682,9 @@ def main(argv=None) -> int:
         parser.error("--render-frames must be a positive multiple of 30")
     if args.c3_workload != "none" and not args.c3:
         parser.error("--c3-workload needs --c3")
+    if args.c3_local_players is not None and (not args.c3 or args.c3_workload != "none"):
+        parser.error("--c3-local-players requires --c3 and cannot be combined with --c3-workload")
+    workload_players = args.c3_local_players or WORKLOAD_PLAYERS[args.c3_workload]
     if args.package_root and not args.c3:
         parser.error("--package-root needs --c3")
     if args.successor:
@@ -1658,7 +1705,7 @@ def main(argv=None) -> int:
             result = run_successor(args.rows, args.successor, args.successor_fault,
                                    args.successor_ticks, package_root_override=args.package_root,
                                    render_views=args.render_views, render_frames=args.render_frames,
-                                   workload_players=WORKLOAD_PLAYERS[args.c3_workload])
+                                   workload_players=workload_players)
         else:
             result = run_successor(args.rows, args.successor, args.successor_fault, args.successor_ticks)
         print(f"{args.rows} -> {args.successor} [{result['case']}]: {'PASS' if result['pass'] else 'FAIL'} "
@@ -1699,7 +1746,7 @@ def main(argv=None) -> int:
             print(f"{row}: skipped (previous pass)")
             continue
         result = run_row(row, args.package_root, cycles=args.cycles,
-                         workload_players=WORKLOAD_PLAYERS[args.c3_workload],
+                         workload_players=workload_players,
                          ticks=(args.render_frames + 5) if args.render_views else args.ticks,
                          render_views=args.render_views, render_frames=args.render_frames)
         summary.append(result)

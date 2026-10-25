@@ -1175,6 +1175,7 @@ typedef struct {
 static hcu_c3_render_state s_c3r;
 static qword_t s_c3_prime_packet[8] __attribute__((aligned(64)));
 static int s_c3_bitmap_detach_ok = 1;
+static int s_c3_render_producer_paused;
 
 static void hcu_c3_flush(void *base, size_t bytes)
 {
@@ -1508,20 +1509,29 @@ static int hcu_c3_bitmap_guard_check(void)
 int hcu_c3_bitmap_map_released(void)
 {
 	/* C3:bitmap begin */
-	uint32_t released_leases = s_c3_bitmap_dispatch.lease_count;
-	uint32_t released_readers = s_c3_bitmap_queue ? s_c3_bitmap_queue->readers : 0u;
+	uint32_t released_leases;
+	uint32_t released_readers;
+	uint32_t released_in_frame;
+	uint32_t requests_total = hcu_c3_bitmap_frame_owner.stat_requests;
+	uint32_t begins_total = hcu_c3_bitmap_frame_owner.stat_begins;
+	uint32_t queue_end_total = hcu_c3_bitmap_frame_owner.stat_queue_ends;
 	/* C3:bitmap end */
 	if (!s_c3_bitmap_bound && !hcu_c3_bitmap_frame_owner.bound &&
 		!s_c3_bitmap_renderer.bound) return 1;
 	if (!hcu_c3_bitmap_frame_detach()) return 0;
+	/* Detach verifies the completed drain and zero readers/leases. Observe those
+	 * live values before unbind clears the owner structure. */
+	released_leases = s_c3_bitmap_dispatch.lease_count;
+	released_readers = s_c3_bitmap_queue ? s_c3_bitmap_queue->readers : 0u;
+	released_in_frame = (uint32_t)hcu_c3_bitmap_frame_owner.in_frame;
 	if (hcu_c3_bitmap_frame_owner.bound &&
 		hcu_bitmap_frame_owner_unbind(&hcu_c3_bitmap_frame_owner) != HCU_BITMAP_FRAME_OK)
 		return 0;
 	/* C3:bitmap begin */
 	printf("HALO_PS2_LOCAL c3-bitmap map-released leases=%u readers=%u requests-total=%u begins-total=%u "
 		"queue-end-total=%u in-frame=%u\n", (unsigned)released_leases, (unsigned)released_readers,
-		(unsigned)hcu_c3_bitmap_frame_owner.stat_requests, (unsigned)hcu_c3_bitmap_frame_owner.stat_begins,
-		(unsigned)hcu_c3_bitmap_frame_owner.stat_queue_ends, (unsigned)hcu_c3_bitmap_frame_owner.in_frame);
+		(unsigned)requests_total, (unsigned)begins_total, (unsigned)queue_end_total,
+		(unsigned)released_in_frame);
 	memset(s_c3b_last, 0, sizeof(s_c3b_last));
 	/* C3:bitmap end */
 	memset(&s_c3_bitmap_renderer, 0, sizeof(s_c3_bitmap_renderer));
@@ -1532,6 +1542,14 @@ int hcu_c3_bitmap_map_released(void)
 	s_c3_bitmap_guard = NULL;
 	s_c3_bitmap_bound = 0;
 	return 1;
+}
+
+/* CE calls main_game_render after this hook. Keep the producer running only
+ * while this capture will consume its published batch in a real BSP frame. */
+int hcu_c3_render_can_publish(void)
+{
+	return s_c3r.active && !s_c3_render_producer_paused &&
+		s_c3r.frames < (uint32_t)HCU_C3_RENDER_FRAMES;
 }
 
 void hcu_c3_render_map_loaded(const char *map_name)
@@ -1550,6 +1568,7 @@ void hcu_c3_render_map_loaded(const char *map_name)
 	s_c3_render_quiescent = 0;
 	s_c3r.active = 0;
 	s_c3r.frames = 0;
+	s_c3_render_producer_paused = 0;
 	hcu_render_frame_reset(&s_c3r.state);
 	if (!s_partition_selected || !s_partition.render_texture_base ||
 		s_partition.render_texture_bytes < 4096u) {
@@ -1983,29 +2002,44 @@ static void hcu_c3_objects_frame_end(void)
 	}
 }
 
-static void hcu_c3_objects_final(void)
+static int hcu_c3_objects_final(void)
 {
 	hcu_render_objects_counters t;
-	if (s_c3o_released) return;
-	hcu_render_objects_release();
+	if (s_c3o_released) return 1;
+	if (!hcu_render_objects_release()) {
+		printf("HALO_PS2_LOCAL c3-objects-final result=blocked kick-seq=%u fence=%d\n",
+			(unsigned)bsp_render_kick_seq(),
+			(int)bsp_render_fence_observed(bsp_render_kick_seq()));
+		return 0;
+	}
 	s_c3o_released = 1;
 	hcu_render_objects_totals(&t);
 	printf("HALO_PS2_LOCAL c3-objects-final frames=%u drawn=%u triangles=%u skinned-nodes=%u model-hits=%u "
 		"model-misses=%u tex-hits=%u tex-misses=%u failures=%u deduped=%u pins=%u unpins=%u pin-refusals=%u "
-		"parity-dropped=%u model-bytes=%u texture-bytes=%u fp-drawn=%u fp-hits=%u fp-misses=%u\n", (unsigned)s_c3r.frames, (unsigned)t.objects_drawn,
+		"parity-dropped=%u model-bytes=%u texture-bytes=%u fp-drawn=%u fp-hits=%u fp-misses=%u "
+		"attempted-bipeds=%u attempted-vehicles=%u attempted-weapons=%u refused-bipeds=%u refused-vehicles=%u "
+		"refused-weapons=%u submitted-bipeds=%u submitted-vehicles=%u submitted-weapons=%u unique-bipeds=%u "
+		"unique-vehicles=%u unique-weapons=%u drawn-identity-overflow=%u\n", (unsigned)s_c3r.frames, (unsigned)t.objects_drawn,
 		(unsigned)t.triangles, (unsigned)t.skinned_nodes, (unsigned)t.model_hits, (unsigned)t.model_misses,
 		(unsigned)t.texture_hits, (unsigned)t.texture_misses, (unsigned)t.failures, (unsigned)t.deduped,
 		(unsigned)t.pins, (unsigned)t.unpins, (unsigned)t.pin_refusals, (unsigned)t.parity_dropped,
 		(unsigned)s_c3o_info.model_bytes, (unsigned)s_c3o_info.texture_bytes,
 		(unsigned)t.first_person_draws, (unsigned)t.first_person_model_hits,
-		(unsigned)t.first_person_model_misses);
+		(unsigned)t.first_person_model_misses, (unsigned)t.attempted_bipeds,
+		(unsigned)t.attempted_vehicles, (unsigned)t.attempted_weapons,
+		(unsigned)t.refused_bipeds, (unsigned)t.refused_vehicles,
+		(unsigned)t.refused_weapons, (unsigned)t.submitted_bipeds,
+		(unsigned)t.submitted_vehicles, (unsigned)t.submitted_weapons,
+		(unsigned)t.unique_bipeds, (unsigned)t.unique_vehicles, (unsigned)t.unique_weapons,
+		(unsigned)t.drawn_identity_overflow);
+	return 1;
 }
 #else
 #define hcu_c3_objects_frame_begin() ((void)0)
 #define hcu_c3_objects_view_begin(v) ((void)(v))
 #define hcu_c3_objects_view_end(v) ((void)(v))
 #define hcu_c3_objects_frame_end() ((void)0)
-#define hcu_c3_objects_final() ((void)0)
+#define hcu_c3_objects_final() (1)
 #endif
 /* C3:objects end */
 
@@ -2015,23 +2049,44 @@ static void hcu_c3_objects_final(void)
 static void hcu_c3_bitmap_print_tick(int tick)
 {
 	hcu_bitmap_frame_owner *o = &hcu_c3_bitmap_frame_owner;
+	halo_ps2_bitmap_request_queue *q = o->queue;
 	uint32_t cur[6];
 	uint32_t failed_delta;
+	union { float f; uint32_t u; } map_i, map_j, tex_i, tex_j;
+	map_i.f = map_j.f = tex_i.f = tex_j.f = 0.0f;
+	if (q) {
+		map_i.f = q->first_map_scale[0]; map_j.f = q->first_map_scale[1];
+		tex_i.f = q->first_texture_scale[0]; tex_j.f = q->first_texture_scale[1];
+	}
 	if (!o->bound) return;
 	cur[0] = o->stat_begin_calls; cur[1] = o->stat_begins; cur[2] = o->stat_set_views;
 	cur[3] = o->stat_queue_ends; cur[4] = o->stat_ends; cur[5] = o->stat_requests;
 	failed_delta = o->stat_end_failures;
-	printf("HALO_PS2_LOCAL c3-bitmap tick=%d begin-calls=%u begin=%u set-view=%u requests=%u queue-end=%u end=%u "
+	printf("HALO_PS2_LOCAL c3-bitmap tick=%d ce-frame=%u windows=%u begin-calls=%u begin=%u set-view=%u requests=%u queue-end=%u end=%u "
 		"end-failed-total=%u in-frame=%u drain-pending=%u gpu-pending=%u leases=%u last-status=%d "
-		"bitmap-frames-dropped=%u drop-cause=0x%x ce-status=%d ce-failures=%u\n",
-		tick,
+		"bitmap-frames-dropped=%u drop-cause=0x%x ce-status=%d ce-failures=%u "
+		"unsupported-reasons=0x%x unsupported-counts=%u,%u,%u,%u,%u,%u,%u first-unsupported=%u/%u flags=0x%x "
+		"first-map-scale=0x%08x,0x%08x first-texture-scale=0x%08x,0x%08x\n",
+		tick, (unsigned)o->frame_index, (unsigned)o->active_window_count,
 		(unsigned)(cur[0] - s_c3b_last[0]), (unsigned)(cur[1] - s_c3b_last[1]),
 		(unsigned)(cur[2] - s_c3b_last[2]), (unsigned)(cur[5] - s_c3b_last[5]),
 		(unsigned)(cur[3] - s_c3b_last[3]), (unsigned)(cur[4] - s_c3b_last[4]),
 		(unsigned)failed_delta, (unsigned)o->in_frame, (unsigned)o->drain_pending,
 		(unsigned)o->gpu_pending, (unsigned)(o->dispatch ? o->dispatch->lease_count : 0u),
 		(int)o->last_status, (unsigned)o->stat_drops, (unsigned)o->last_drop_cause,
-		(int)halo_ps2_bitmap_frame_last_status(), (unsigned)halo_ps2_bitmap_frame_failure_count());
+		(int)halo_ps2_bitmap_frame_last_status(), (unsigned)halo_ps2_bitmap_frame_failure_count(),
+		(unsigned)(q ? q->unsupported_reason_mask : 0u),
+		(unsigned)(q ? q->unsupported_reason_counts[0] : 0u),
+		(unsigned)(q ? q->unsupported_reason_counts[1] : 0u),
+		(unsigned)(q ? q->unsupported_reason_counts[2] : 0u),
+		(unsigned)(q ? q->unsupported_reason_counts[3] : 0u),
+		(unsigned)(q ? q->unsupported_reason_counts[4] : 0u),
+		(unsigned)(q ? q->unsupported_reason_counts[5] : 0u),
+		(unsigned)(q ? q->unsupported_reason_counts[6] : 0u),
+		(unsigned)(q ? q->first_unsupported_valid : 0u),
+		(unsigned)(q ? q->first_unsupported_reason : 0u),
+		(unsigned)(q ? q->first_unsupported_flags : 0u),
+		(unsigned)map_i.u, (unsigned)map_j.u, (unsigned)tex_i.u, (unsigned)tex_j.u);
 	memcpy(s_c3b_last, cur, sizeof(s_c3b_last));
 }
 /* C3:bitmap end */
@@ -2045,11 +2100,9 @@ static void hcu_c3_bitmap_print_tick(int tick)
  * this block only reads them. */
 #if defined(HCU_C3)
 static uint32_t s_c3d_owner_phys, s_c3d_owner_cap, s_c3d_storage_phys;
-static uint32_t s_c3d_chain_kicks[2], s_c3d_last_kick[2];
 static void hcu_c3_dma_note_owner(void *storage, const arena_t *owner)
 {
 	bsp_render_chain_probe p;
-	int i;
 	s_c3d_owner_phys = (uint32_t)((uintptr_t)owner->base & 0x0FFFFFFFu);
 	s_c3d_owner_cap = (uint32_t)owner->cap;
 	s_c3d_storage_phys = (uint32_t)((uintptr_t)storage & 0x0FFFFFFFu);
@@ -2061,7 +2114,6 @@ static void hcu_c3_dma_note_owner(void *storage, const arena_t *owner)
 		(unsigned)p.base[0], (unsigned)p.bytes[0], (unsigned)p.base[1], (unsigned)p.bytes[1],
 		(unsigned)p.base[2], (unsigned)p.bytes[2], (unsigned)p.base[3], (unsigned)p.bytes[3],
 		(unsigned)(p.bytes[0] + p.bytes[1] + p.bytes[2] + p.bytes[3]));
-	for (i = 0; i < 2; i++) s_c3d_last_kick[i] = 0;
 }
 static void hcu_c3_dma_frame(uint32_t frame)
 {
@@ -2069,7 +2121,7 @@ static void hcu_c3_dma_frame(uint32_t frame)
 	bsp_render_source_counters src;
 	uint32_t codes[17], rel_total = 0, before_total = 0, refusals = 0;
 	int i;
-	int32_t fence[2];
+	int32_t fence[2], upload_fence[2];
 #if defined(HCU_C3_OBJECTS)
 	hcu_render_objects_counters t;
 	hcu_render_objects_totals(&t);
@@ -2083,21 +2135,29 @@ static void hcu_c3_dma_frame(uint32_t frame)
 		before_total += src.before_fence[i];
 	}
 	for (i = 0; i < 2; i++) {
-		if (p.kick[i] != 0 && p.kick[i] != s_c3d_last_kick[i]) s_c3d_chain_kicks[i]++;
-		s_c3d_last_kick[i] = p.kick[i];
 		fence[i] = bsp_render_fence_observed(p.kick[i]);
+		upload_fence[i] = p.upload_kick[i] ? bsp_render_fence_observed(p.upload_kick[i]) : -1;
 	}
 	printf("HALO_PS2_LOCAL c3-dma frame=%u kick-seq=%u completed=%u inflight=%u "
 		"c0-kick=%u c0-fence=%d c0-kicks=%u c0-emits=%u c0-busy-emits=%u c0-used-qw=%u "
 		"c1-kick=%u c1-fence=%d c1-kicks=%u c1-emits=%u c1-busy-emits=%u c1-used-qw=%u "
+		"up0-kick=%u up0-fence=%d up0-kicks=%u up0-used-qw=%u up0-resets=%u up0-releases=%u up0-before=%u "
+		"up1-kick=%u up1-fence=%d up1-kicks=%u up1-used-qw=%u up1-resets=%u up1-releases=%u up1-before=%u "
+		"geom-rel0=%u/%u geom-rel1=%u/%u reset-refusals=%u "
 		"src-gen=%u src-released=%u released-before-fence=%u "
 		"src-rel-chain=%u/%u src-rel-pin=%u/%u src-rel-bitmap=%u/%u "
 		"overflow-refusals=%u emit-status=%d emit-codes-neg=%u,%u,%u,%u,%u,%u,%u,%u emit-codes-pos=%u,%u,%u,%u,%u,%u,%u,%u,%u\n",
 		(unsigned)frame, (unsigned)p.kick_seq, (unsigned)p.completed_seq, (unsigned)p.inflight,
-		(unsigned)p.kick[0], (int)fence[0], (unsigned)s_c3d_chain_kicks[0], (unsigned)p.emits[0],
+		(unsigned)p.kick[0], (int)fence[0], (unsigned)p.kicks[0], (unsigned)p.emits[0],
 		(unsigned)p.busy_emits[0], (unsigned)p.used_qw[0],
-		(unsigned)p.kick[1], (int)fence[1], (unsigned)s_c3d_chain_kicks[1], (unsigned)p.emits[1],
+		(unsigned)p.kick[1], (int)fence[1], (unsigned)p.kicks[1], (unsigned)p.emits[1],
 		(unsigned)p.busy_emits[1], (unsigned)p.used_qw[1],
+		(unsigned)p.upload_kick[0], (int)upload_fence[0], (unsigned)p.upload_kicks[0], (unsigned)p.upload_used_qw[0],
+		(unsigned)p.upload_resets[0], (unsigned)p.upload_releases[0], (unsigned)p.upload_before_fence[0],
+		(unsigned)p.upload_kick[1], (int)upload_fence[1], (unsigned)p.upload_kicks[1], (unsigned)p.upload_used_qw[1],
+		(unsigned)p.upload_resets[1], (unsigned)p.upload_releases[1], (unsigned)p.upload_before_fence[1],
+		(unsigned)p.geom_releases[0], (unsigned)p.geom_before_fence[0],
+		(unsigned)p.geom_releases[1], (unsigned)p.geom_before_fence[1], (unsigned)p.reset_refusals,
 		(unsigned)p.kick_seq, (unsigned)rel_total, (unsigned)before_total,
 		(unsigned)src.releases[BSP_SRC_CHAIN], (unsigned)src.before_fence[BSP_SRC_CHAIN],
 		(unsigned)src.releases[BSP_SRC_OBJECT_PIN], (unsigned)src.before_fence[BSP_SRC_OBJECT_PIN],
@@ -2114,6 +2174,85 @@ static void hcu_c3_dma_frame(uint32_t frame)
 #endif
 /* C3:dma end */
 
+static void hcu_c3_replacement_boundary(const char *phase)
+{
+	bsp_render_chain_probe probe;
+	uint32_t kick = bsp_render_kick_seq();
+	int fence = kick ? bsp_render_fence_observed(kick) : 1;
+	int geom0_fence, geom1_fence, upload0_fence, upload1_fence;
+	uint32_t pins = 0, unpins = 0;
+	bsp_render_chain_probe_get(&probe);
+	geom0_fence = probe.kick[0] ? bsp_render_fence_observed(probe.kick[0]) : -1;
+	geom1_fence = probe.kick[1] ? bsp_render_fence_observed(probe.kick[1]) : -1;
+	upload0_fence = probe.upload_kick[0] ? bsp_render_fence_observed(probe.upload_kick[0]) : -1;
+	upload1_fence = probe.upload_kick[1] ? bsp_render_fence_observed(probe.upload_kick[1]) : -1;
+#if defined(HCU_C3_OBJECTS)
+	hcu_render_objects_counters objects;
+	hcu_render_objects_totals(&objects);
+	pins = objects.pins;
+	unpins = objects.unpins;
+#endif
+	printf("HALO_PS2_LOCAL c3-replacement-boundary phase=%s frame=%u map-generation=%u kick-seq=%u "
+		"fence=%d inflight=%u geom0=%u/%d/%u geom1=%u/%d/%u upload0=%u/%d/%u upload1=%u/%d/%u "
+		"service-readers=%u world-bound=%d media-loaded=%d bitmap-frame=%d bitmap-gpu-pending=%d "
+		"bitmap-drain-pending=%d bitmap-leases=%u object-pins=%u object-unpins=%u object-pin-live=%d\n",
+		phase, (unsigned)s_c3r.frames,
+#if defined(HCU_C3_FRAME_SNAPSHOT)
+		(unsigned)s_c3v.stats.generation,
+#else
+		0u,
+#endif
+		(unsigned)kick, fence, (unsigned)probe.inflight,
+		(unsigned)probe.kick[0], geom0_fence, (unsigned)probe.used_qw[0],
+		(unsigned)probe.kick[1], geom1_fence, (unsigned)probe.used_qw[1],
+		(unsigned)probe.upload_kick[0], upload0_fence, (unsigned)probe.upload_used_qw[0],
+		(unsigned)probe.upload_kick[1], upload1_fence, (unsigned)probe.upload_used_qw[1],
+		(unsigned)hcu_map_service_reader_count(&s_map_service),
+		s_c3r.world.bound, s_c3r.media.loaded, hcu_c3_bitmap_frame_owner.in_frame,
+		hcu_c3_bitmap_frame_owner.gpu_pending, hcu_c3_bitmap_frame_owner.drain_pending,
+		(unsigned)s_c3_bitmap_dispatch.lease_count, (unsigned)pins, (unsigned)unpins,
+		pins > unpins);
+}
+
+#if defined(HCU_C2_SUCCESSOR_BUILT)
+static int s_c3_successor_preflight_attempted;
+
+static void hcu_c3_successor_preflight_at_final_submission(void)
+{
+	int result;
+	int expected = HALO_PS2_C2_SUCCESSOR_MODE != 2;
+#if HALO_PS2_C2_SUCCESSOR_MODE == 2
+	uint32_t trigger_frame = (uint32_t)HCU_C3_RENDER_FRAMES / 2u;
+	if (trigger_frame == 0u) trigger_frame = 1u;
+#else
+	uint32_t trigger_frame = (uint32_t)HCU_C3_RENDER_FRAMES;
+#endif
+	if (s_c3_successor_preflight_attempted || s_c3r.frames != trigger_frame) return;
+	s_c3_successor_preflight_attempted = 1;
+	hcu_c3_replacement_boundary("before-preflight");
+#if HALO_PS2_C2_SUCCESSOR_MODE == 2
+	hcu_c2_successor_fault_armed = 1;
+#endif
+	result = hcu_map_service_preflight(hcu_c2_successor_scenario_path);
+#if HALO_PS2_C2_SUCCESSOR_MODE == 2
+	hcu_c2_successor_fault_armed = 0;
+	if (!result && hcu_c2_successor_fault_count &&
+		!hcu_map_service_latch_successor_preflight_failure(&s_map_service,
+			hcu_c2_successor_map_name))
+		printf("HALO_PS2_FAIL c3-successor-preflight failure-result-not-latched map=%s\n",
+			hcu_c2_successor_map_name);
+#endif
+	hcu_c3_replacement_boundary(result ? "after-preflight-accepted" : "after-preflight-rejected");
+	printf("HALO_PS2_LOCAL c3-successor-preflight result=%d expected=%d mode=%d map=%s fault-count=%u\n",
+		result, expected, (int)HALO_PS2_C2_SUCCESSOR_MODE,
+		hcu_c2_successor_map_name, hcu_c2_successor_fault_count);
+	if (result != expected)
+		printf("HALO_PS2_FAIL c3-successor-preflight result=%d expected=%d\n", result, expected);
+}
+#else
+#define hcu_c3_successor_preflight_at_final_submission() ((void)0)
+#endif
+
 void hcu_c3_render_tick(int tick)
 {
 	hcu_render_layout layout;
@@ -2121,15 +2260,17 @@ void hcu_c3_render_tick(int tick)
 	camera_t cam;
 	unsigned v;
 	(void)tick;
-	/* C3:bitmap begin */
-	hcu_c3_bitmap_print_tick(tick);
-	/* C3:bitmap end */
 	/* C3:sound begin */
 #if defined(HCU_C3_FRAME_SNAPSHOT)
 	hcu_c3_sound_tick();
 #endif
 	/* C3:sound end */
-	if (!s_c3r.active || s_c3r.frames >= (uint32_t)HCU_C3_RENDER_FRAMES) return;
+	if (!s_c3r.active || s_c3r.frames >= (uint32_t)HCU_C3_RENDER_FRAMES) {
+		/* No parent frame means no newly consumed batch; preserve a zero-delta
+		 * tick record for the capture/pause boundary. */
+		hcu_c3_bitmap_print_tick(tick);
+		return;
+	}
 	if (hcu_render_layout_compute((uint32_t)HCU_C3_RENDER_VIEWS, VIDEO_WIDTH, VIDEO_HEIGHT, &layout) != 0 ||
 		hcu_render_frame_begin(&s_c3r.state, (uint32_t)HCU_C3_RENDER_VIEWS) != 0 ||
 		bsp_render_frame_begin(s_c3r.frames) != 0) {
@@ -2188,7 +2329,15 @@ void hcu_c3_render_tick(int tick)
 	/* C3:objects begin */
 	hcu_c3_objects_frame_end();
 	/* C3:objects end */
+	/* C3:bitmap begin */
+	/* Report after BSP emission has consumed the previously sealed CE batch. */
+	hcu_c3_bitmap_print_tick(tick);
+	/* C3:bitmap end */
 	s_c3r.frames++;
+	/* C3.11 opt-in preflight immediately follows the selected real kick so the
+	 * candidate is examined while its source leases are still held. Mode 2 uses
+	 * the midpoint to leave render frames after its rejected preflight. */
+	hcu_c3_successor_preflight_at_final_submission();
 	/* C3:dma begin */
 	hcu_c3_dma_frame(s_c3r.frames);
 	/* C3:dma end */
@@ -2203,7 +2352,10 @@ void hcu_c3_render_tick(int tick)
 		bsp_render_wait_gpu();
 		video_wait_gpu();
 		/* C3:objects begin */
-		hcu_c3_objects_final();
+		if (!hcu_c3_objects_final()) {
+			s_c3_render_quiescent = 0;
+			printf("HALO_PS2_FAIL c3-render final-object-release frame=%u\n", (unsigned)s_c3r.frames);
+		}
 		/* C3:objects end */
 		hcu_c3_print_frame("final");
 		/* C3:texfence begin */
@@ -2211,6 +2363,7 @@ void hcu_c3_render_tick(int tick)
 		/* C3:texfence end */
 		/* Hold the last presented frame on screen so the host can capture it. */
 		video_present(&s_c3r.video);
+		s_c3_render_producer_paused = 1;
 		printf("HALO_PS2_LOCAL c3-render-held views=%u frames=%u\n", (unsigned)HCU_C3_RENDER_VIEWS,
 			(unsigned)s_c3r.frames);
 		for (i = 0; i < (unsigned)HCU_C3_RENDER_HOLD_VSYNCS; ++i) graph_wait_vsync();
@@ -2229,11 +2382,23 @@ void hcu_c3_render_map_release(void)
 		 * parent frame hooks. Retire the DMA/fence boundary before detaching them. */
 		bsp_render_wait_gpu();
 		dma_wait_fast();
-		if (!hcu_renderer_drained(NULL) || !hcu_c3_bitmap_frame_detach()) {
+		if (!hcu_renderer_drained(NULL)) {
 			s_c3_bitmap_detach_ok = 0;
 			s_c3_render_quiescent = 0;
 			printf("HALO_PS2_LOCAL c3-render-teardown order=already-empty result=blocked readers=%u\n",
 				(unsigned)hcu_map_service_reader_count(&s_map_service));
+			return;
+		}
+		if (!hcu_c3_objects_final()) {
+			s_c3_bitmap_detach_ok = 0;
+			s_c3_render_quiescent = 0;
+			printf("HALO_PS2_LOCAL c3-render-teardown order=already-empty object-release=blocked\n");
+			return;
+		}
+		if (!hcu_c3_bitmap_frame_detach()) {
+			s_c3_bitmap_detach_ok = 0;
+			s_c3_render_quiescent = 0;
+			printf("HALO_PS2_LOCAL c3-render-teardown order=already-empty frame-detach=blocked\n");
 			return;
 		}
 		s_c3_bitmap_detach_ok = 1;
@@ -2257,6 +2422,16 @@ void hcu_c3_render_map_release(void)
 		return;
 	}
 	hcu_c3_prime_finish();   /* the hold's vsyncs consumed the last FINISH; clear_world waits for one */
+	/* Drop the snapshot/model source only after the combined VIF/GS drain and
+	 * before detaching bitmap ownership; a refused pin release leaves the old
+	 * renderer's frame hooks intact. */
+	if (!hcu_c3_objects_final()) {
+		s_c3_bitmap_detach_ok = 0;
+		s_c3_render_quiescent = 0;
+		printf("HALO_PS2_LOCAL c3-render-teardown order=object-release result=blocked readers=%u\n",
+			(unsigned)hcu_map_service_reader_count(&s_map_service));
+		return;
+	}
 	if (!hcu_c3_bitmap_frame_detach()) {
 		s_c3_bitmap_detach_ok = 0;
 		s_c3_render_quiescent = 0;
@@ -2265,9 +2440,6 @@ void hcu_c3_render_map_release(void)
 		return;
 	}
 	s_c3_bitmap_detach_ok = 1;
-	/* Object models/textures and their profile-residency pins are separate from
-	 * the BSP world reader. Release them only after the outstanding kick drains. */
-	hcu_c3_objects_final();
 	bsp_render_clear_world();
 	readers_before = hcu_map_service_reader_count(&s_map_service);
 	if (s_c3r.world.bound)
@@ -2292,12 +2464,14 @@ static int hcu_renderer_quiesce(void *ctx)
 	int ok;
 	(void)ctx;
 #ifdef HCU_C3_RENDER_BUILT
+	hcu_c3_replacement_boundary("before-drain");
 	hcu_c3_render_map_release();
 	ok = s_c3_render_quiescent &&
 		s_c3_bitmap_detach_ok &&
 		hcu_map_service_reader_count(&s_map_service) == 0 &&
 		hcu_renderer_drained(NULL) && !halo_ps2_bitmap_frame_is_active() &&
 		hcu_bitmap_renderer_attachment_count() == 0;
+	hcu_c3_replacement_boundary(ok ? "after-drain" : "after-drain-blocked");
 #elif defined(HALO_HCU_HEADLESS_RUNTIME_GUEST)
 	ok = hcu_renderer_never_started(NULL) &&
 		hcu_map_service_reader_count(&s_map_service) == 0;

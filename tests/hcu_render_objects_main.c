@@ -133,6 +133,27 @@ static int test_select(void)
 	return 0;
 }
 
+static int test_submitted_category_counters(void)
+{
+	hcu_render_objects_counters c;
+	hcu_render_drawn_identity_set ids;
+	memset(&c, 0, sizeof c);
+	memset(&ids, 0, sizeof ids);
+	/* Calls model the post-obj_render_pass success site: repeat view submissions count, but the
+	 * source identity remains unique across views/frames. Unknown types do not enter qualification. */
+	CHECK(hcu_render_objects_note_submission(&c, &ids, HCU_OBJECTS_TYPE_BIPED, 4u, 2u) == 0);
+	CHECK(hcu_render_objects_note_submission(&c, &ids, HCU_OBJECTS_TYPE_BIPED, 4u, 2u) == 0);
+	CHECK(hcu_render_objects_note_submission(&c, &ids, HCU_OBJECTS_TYPE_VEHICLE, 5u, 1u) == 0);
+	CHECK(hcu_render_objects_note_submission(&c, &ids, HCU_OBJECTS_TYPE_WEAPON, 6u, 3u) == 0);
+	CHECK(c.submitted_bipeds == 2u && c.submitted_vehicles == 1u && c.submitted_weapons == 1u);
+	CHECK(c.unique_bipeds == 1u && c.unique_vehicles == 1u && c.unique_weapons == 1u);
+	CHECK(ids.count == 3u && ids.overflow == 0u);
+	CHECK(hcu_render_objects_note_submission(&c, &ids, HCU_OBJECTS_TYPE_EFFECT, 7u, 1u) ==
+		HCU_RENDER_CONTENT_E_ARGUMENT);
+	CHECK(c.submitted_bipeds == 2u && c.submitted_vehicles == 1u && c.submitted_weapons == 1u);
+	return 0;
+}
+
 static int test_first_person_select(void)
 {
 	halo_ps2_frame_snapshot s;
@@ -490,6 +511,7 @@ int main(void)
 {
 	if (test_builder()) return 1;
 	if (test_select()) return 2;
+	if (test_submitted_category_counters()) return 9;
 	if (test_first_person_select()) return 3;
 	if (test_parity()) return 4;
 	if (test_residency_policy()) return 5;

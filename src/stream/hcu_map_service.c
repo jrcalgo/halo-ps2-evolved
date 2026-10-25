@@ -452,6 +452,28 @@ static int profile_owner_live(const hcu_map_service *service)
 	return service->profile_mount.active || service->profile_mount.backend_mounted;
 }
 
+int hcu_map_service_latch_successor_preflight_failure(hcu_map_service *service,
+	const char *map_name)
+{
+	const hcu_map_catalog_entry *entry;
+	if (!service || service != s_service || !service->initialized || !map_name ||
+		!(entry = hcu_map_catalog_find(map_name)) || !service->runtime_registered ||
+		!service->successor_registered || service->successor_staged ||
+		service->profile_candidate_ready || service->reload_pending ||
+		!profile_owner_live(service) ||
+		strcmp(service->successor_map_name, entry->identity.map_name) != 0 ||
+		strcmp(map_name, entry->identity.map_name) != 0)
+		return 0;
+	service->successor_preflight_failure_latched = 1;
+	memset(service->successor_preflight_failure_map, 0,
+		sizeof(service->successor_preflight_failure_map));
+	memcpy(service->successor_preflight_failure_map, entry->identity.map_name,
+		strlen(entry->identity.map_name) + 1);
+	printf("HALO_PS2_LOCAL profile-preflight failure-result-latched map=%s\n",
+		entry->identity.map_name);
+	return 1;
+}
+
 static void reader_table_clear(hcu_map_service *service)
 {
 	memset(service->readers, 0, sizeof(service->readers));
@@ -1226,6 +1248,20 @@ static int hcu_map_service_preflight_impl(const char *map_name)
 	if (!service || !service->initialized ||
 		!(entry = hcu_map_catalog_find(map_name)))
 		return 0;
+	/* C3/C2 rendered-successor diagnostic only: the exact candidate was already
+	 * fully checked and rejected once while the old renderer was live. Reuse
+	 * that result for CE's immediate transaction call, so fault injection and
+	 * package-gate telemetry each describe one real failed preflight. */
+	if (service->successor_preflight_failure_latched &&
+		strcmp(service->successor_preflight_failure_map,
+			entry->identity.map_name) == 0) {
+		service->successor_preflight_failure_latched = 0;
+		memset(service->successor_preflight_failure_map, 0,
+			sizeof(service->successor_preflight_failure_map));
+		printf("HALO_PS2_LOCAL profile-preflight cached-failure map=%s source=observed-rendered-rejection\n",
+			entry->identity.map_name);
+		return 0;
+	}
 	/* The profile gate precedes same-map reuse, staging, source open, and arena
 	 * marks. Its reader is caller-owned and re-read on every CE pre-unload check. */
 	if (service->profile_requested) {
@@ -1606,6 +1642,9 @@ int hcu_map_service_shutdown(hcu_map_service *service)
 	service->successor_registered = 0;
 	memset(&service->successor, 0, sizeof(service->successor));
 	memset(service->successor_map_name, 0, sizeof(service->successor_map_name));
+	service->successor_preflight_failure_latched = 0;
+	memset(service->successor_preflight_failure_map, 0,
+		sizeof(service->successor_preflight_failure_map));
 	discard_profile_candidate(service);
 	(void)hcu_map_service_unregister_profile(service);
 	ps2_cache_set_map_preflight(NULL, NULL);
