@@ -1,7 +1,6 @@
 #include "stream/hcu_snapshot_bank.h"
 
 #include <math.h>
-#include <stdio.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -93,14 +92,6 @@ halo_ps2_frame_snapshot *hcu_snapshot_bank_begin_write(void)
 {
 	unsigned i;
 	int slot = BANK_NONE;
-#if defined(HCU_C3_FRAME_SNAPSHOT)
-	static unsigned c3_bw_calls = 0u;
-	if (c3_bw_calls < 3u) {
-		c3_bw_calls++;
-		printf("HALO_PS2_LOCAL c3-bank-probe begin-write call=%u storage=%u writing=%d published=%d\n",
-			c3_bw_calls, (unsigned)(uintptr_t)s_storage, s_writing, s_published);
-	}
-#endif
 	if (!s_storage || s_writing != BANK_NONE)
 		return NULL;
 	for (i = 0; i < HCU_SNAPSHOT_BANK_SLOTS; ++i) {

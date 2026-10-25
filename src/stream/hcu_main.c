@@ -2575,6 +2575,8 @@ void hcu_c3_snapshot_tick(int tick)
 	s_c3s_ticks++;
 	if (s_c3s_ticks % 30u)
 		return;
+	reader.slot = -1;
+	reader.snapshot = NULL;
 	s = hcu_snapshot_bank_begin_read(&reader);
 	if (!s) {
 		hcu_snapshot_bank_get_stats(&st);
