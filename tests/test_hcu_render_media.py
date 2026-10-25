@@ -106,9 +106,12 @@ class RenderMediaTests(unittest.TestCase):
     def test_append_to_qualified_package(self):
         base_pkg = self.package(False)
         sha = _sha(base_pkg)
-        out, man = self.rm.append_to_package(base_pkg, {"format": "x"}, MAP, 0, expected_package_sha256=sha)
+        original = {"format": "x", "memory": {"package_file_bytes": len(base_pkg)}}
+        out, man = self.rm.append_to_package(base_pkg, original, MAP, 0, expected_package_sha256=sha)
         self.assertEqual(man["base_package_sha256"], sha)
         self.assertEqual(man["package_sha256"], _sha(out))
+        self.assertEqual(man["memory"]["package_file_bytes"], len(out))
+        self.assertEqual(original["memory"]["package_file_bytes"], len(base_pkg))
         parsed = validate.parse_package(out, expected_package_sha256=_sha(out), expected_profile_id=7)
         for key, blob in self.base.items():
             self.assertEqual(parsed["chunks"][key], blob)  # C2 chunks byte-identical

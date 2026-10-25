@@ -163,6 +163,9 @@ def append_to_package(package: bytes, manifest: dict, map_path: Path, bsp_index:
     new_manifest["render_media"] = render["manifest"]
     new_manifest["base_package_sha256"] = expected_package_sha256
     new_manifest["package_sha256"] = _sha(out)
+    # Appending sections changes the envelope size; consumers validate this
+    # field before selecting any memory partition. Preserve the input manifest.
+    new_manifest["memory"] = {**manifest.get("memory", {}), "package_file_bytes": len(out)}
     return out, new_manifest
 
 
