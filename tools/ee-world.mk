@@ -400,7 +400,12 @@ EE_CFLAGS += -DHCU_C3_OBJECTS=1 -DHCU_RENDER_OBJECTS_EE=1 -I$(HCU_C3_OBJECTS_GEN
 ifeq ($(HCU_C3_OBJECTS_SYNTHETIC),1)
 EE_CFLAGS += -DHCU_C3_OBJECTS_SYNTHETIC=1
 endif
-EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_render_objects.o
+EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_render_objects.o $(WORLD_OUTPUT)/stream/hcu_fx_bitmap.o
+$(WORLD_OUTPUT)/stream/hcu_fx_bitmap.o: src/stream/hcu_fx_bitmap.c src/stream/hcu_fx_bitmap.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) -D_EE $(EE_INCS) -I$(ENGINE)/src -Isrc \
+		-I$(PS2SDK)/ee/include -I$(PS2SDK)/common/include \
+		-I$(HCU_ROOT)/port/ps2/include -c $< -o $@
 $(WORLD_OUTPUT)/stream/hcu_render_objects.o: src/stream/hcu_render_objects.c src/stream/hcu_render_objects.h
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) -D_EE $(EE_INCS) -I$(ENGINE)/src -Isrc \
