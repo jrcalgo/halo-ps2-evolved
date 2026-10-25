@@ -82,7 +82,8 @@ EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_main.o \
 	$(WORLD_OUTPUT)/stream/hcu_render_telemetry.o \
 	$(WORLD_OUTPUT)/stream/hcu_map_catalog.o \
 	$(WORLD_OUTPUT)/stream/hcu_filexio_irx.o \
-	$(WORLD_OUTPUT)/stream/ctag_ps2_backend.o
+	$(WORLD_OUTPUT)/stream/ctag_ps2_backend.o \
+	$(WORLD_OUTPUT)/stream/hcu_c3_tz.o
 WORLD_FILEXIO := 1
 # C3 (opt-in HCU_C3=1): snapshot bank, sound-request recorder, render content and frame layout.
 ifeq ($(HCU_C3),1)
@@ -188,6 +189,10 @@ $(WORLD_OUTPUT)/stream/hcu_main.o: src/stream/hcu_main.c hcu-profile-force \
 		$(if $(filter 1,$(WORLD_HCU_ANIMATION_TRACE_TEST)),-DHALO_PS2_M2_ANIMATION_TRACE=1,) \
 		-include $(HCU_ROOT)/port/ps2/include/halo_ps2_prefix.h \
 		-c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_c3_tz.o: src/stream/hcu_c3_tz.c
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
 
 $(WORLD_OUTPUT)/stream/hcu_file_bridge.o: src/stream/hcu_file_bridge.c
 	@mkdir -p $(@D)
