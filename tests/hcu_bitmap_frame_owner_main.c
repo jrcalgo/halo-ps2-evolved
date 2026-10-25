@@ -188,7 +188,60 @@ int main(void)
 	if (s_dispatch_calls != 3 || dispatch.lease_count != 1 || !owner.gpu_pending || owner.drain_pending) return 24;
 	if (hcu_bitmap_frame_owner_gpu_fence_complete(&owner,13) != HCU_BITMAP_FRAME_OK ||
 		dispatch.lease_count || owner.gpu_pending) return 25;
+	/* Teardown discard. With nothing sealed it is a no-op. */
+	s_fence_observed = 1;
+	if (hcu_bitmap_frame_owner_discard_pending(&owner) != HCU_BITMAP_FRAME_OK ||
+		owner.stat_discarded_batches != 0) return 40;
+	if (hcu_bitmap_frame_begin_callback(&owner,14,1) != 0) return 41;
+	if (hcu_bitmap_frame_set_view_callback(&owner,0,0) != 0) return 41;
+	if (hcu_bitmap_frame_end_callback(&owner,14,0) != 0 || !owner.drain_pending || owner.gpu_pending ||
+		dispatch.lease_count) return 41;
+	/* Refuses while the renderer fence has not observed the last kick, and keeps the batch sealed. */
+	s_fence_observed = 0;
+	if (hcu_bitmap_frame_owner_discard_pending(&owner) != HCU_BITMAP_FRAME_E_FENCE ||
+		!owner.drain_pending || owner.stat_discarded_batches != 0) return 42;
+	/* Refuses inside a frame. */
+	s_fence_observed = 1;
+	owner.in_frame = 1;
+	if (hcu_bitmap_frame_owner_discard_pending(&owner) != HCU_BITMAP_FRAME_E_BUSY ||
+		!owner.drain_pending || owner.stat_discarded_batches != 0) return 43;
+	owner.in_frame = 0;
+	/* Refuses while the queue has an open reader. */
+	queue.readers = 1;
+	if (hcu_bitmap_frame_owner_discard_pending(&owner) != HCU_BITMAP_FRAME_E_BUSY ||
+		!owner.drain_pending || owner.stat_discarded_batches != 0) return 44;
+	queue.readers = 0;
+	/* Fence observed: the sealed batch is discarded without any draw. */
+	{
+		int draws_before = s_dispatch_calls;
+		if (hcu_bitmap_frame_owner_discard_pending(&owner) != HCU_BITMAP_FRAME_OK ||
+			owner.drain_pending || owner.gpu_pending || owner.stat_discarded_batches != 1 ||
+			owner.stat_discarded_leases != 0 || s_dispatch_calls != draws_before) return 45;
+	}
+	/* Leases still gpu-pending from an earlier dispatched frame are released with the discard. */
+	{
+		chain_t gc, uc;
+		memset(&gc,0,sizeof(gc)); memset(&uc,0,sizeof(uc));
+		if (hcu_bitmap_frame_begin_callback(&owner,15,1) != 0) return 46;
+		if (hcu_bitmap_frame_set_view_callback(&owner,0,0) != 0) return 46;
+		if (hcu_bitmap_frame_end_callback(&owner,15,0) != 0 || !owner.drain_pending) return 46;
+		dispatch.geometry_chain=&gc; dispatch.upload_chain=&uc;
+		if (hcu_bitmap_frame_owner_drain_pending(&owner) != HCU_BITMAP_FRAME_OK) return 46;
+		dispatch.geometry_chain=0; dispatch.upload_chain=0;
+	}
+	if (dispatch.lease_count != 1 || !owner.gpu_pending) return 46;
+	if (hcu_bitmap_frame_begin_callback(&owner,16,1) != 0) return 47;
+	if (hcu_bitmap_frame_set_view_callback(&owner,0,0) != 0) return 47;
+	if (hcu_bitmap_frame_end_callback(&owner,16,0) != 0 || !owner.drain_pending || !owner.gpu_pending) return 47;
+	{
+		int draws_before = s_dispatch_calls;
+		if (hcu_bitmap_frame_owner_discard_pending(&owner) != HCU_BITMAP_FRAME_OK ||
+			owner.drain_pending || owner.gpu_pending || dispatch.lease_count != 0 ||
+			owner.stat_discarded_batches != 2 || owner.stat_discarded_leases != 1 ||
+			s_dispatch_calls != draws_before) return 48;
+	}
+	/* After a discard the owner unbinds cleanly, and the fixed owner is zeroed. */
 	if (hcu_bitmap_frame_owner_unbind(&owner) != HCU_BITMAP_FRAME_OK) return 17;
-	puts("FRAME_OWNER_OK binds/views/dispatch/fence/unbind/drop-and-recover");
+	puts("FRAME_OWNER_OK binds/views/dispatch/fence/unbind/drop-and-recover/discard");
 	return 0;
 }

@@ -197,6 +197,29 @@ hcu_bitmap_frame_status hcu_bitmap_frame_owner_drain_pending(hcu_bitmap_frame_ow
 	return status;
 }
 
+hcu_bitmap_frame_status hcu_bitmap_frame_owner_discard_pending(hcu_bitmap_frame_owner *owner)
+{
+	uint32_t before;
+	if (!owner || !owner->bound || !owner->dispatch) return HCU_BITMAP_FRAME_E_ARGUMENT;
+	if (!owner->drain_pending) return HCU_BITMAP_FRAME_OK;
+	if (owner->in_frame || !owner->queue || owner->queue->open || owner->queue->readers)
+		return HCU_BITMAP_FRAME_E_BUSY;
+	/* Only an observed kick proves no GPU work still reads the leases' sources. */
+	if (!owner->fence_query || owner->fence_query(owner->fence_context, owner->frame_index) != 1)
+		return HCU_BITMAP_FRAME_E_FENCE;
+	before = owner->dispatch->lease_count;
+	if (hcu_bitmap_dispatch_complete(owner->dispatch) != HCU_BITMAP_DISPATCH_OK ||
+		owner->dispatch->lease_count != 0u)
+		return HCU_BITMAP_FRAME_E_BUSY;
+	owner->drain_pending = 0;
+	owner->gpu_pending = 0;
+	owner->frame_dropped = 0;
+	owner->stat_discarded_batches++;
+	owner->stat_discarded_leases += before;
+	owner->last_status = HCU_BITMAP_FRAME_OK;
+	return HCU_BITMAP_FRAME_OK;
+}
+
 hcu_bitmap_frame_status hcu_bitmap_frame_owner_gpu_fence_complete(
 	hcu_bitmap_frame_owner *owner, uint32_t frame_index)
 {

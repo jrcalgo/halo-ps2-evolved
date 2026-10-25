@@ -444,6 +444,9 @@ def main() -> None:
     if os.environ.get("HCU_C3") == "1":
         # C3 (opt-in) closure lives beside, never inside, the default closure directory.
         OUT = OUT.with_name(OUT.name + "-hcu-c3")
+        if os.environ.get("HCU_C3_TELEMETRY") == "1":
+            # Same directory name as hcu_ps2_closure.py and hcu_parent_link_probe.py.
+            OUT = OUT.with_name(OUT.name + "-telemetry")
     build, prefix, env, _jobs = environment()
     compiler = prefix / "ee/bin/mips64r5900el-ps2-elf-gcc"
     nm = prefix / "ee/bin/mips64r5900el-ps2-elf-nm"

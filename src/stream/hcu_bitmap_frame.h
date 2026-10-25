@@ -65,6 +65,9 @@ typedef struct {
 	                               4 full, 5 view-count mismatch */
 	uint32_t drop_causes_seen;
 	uint8_t frame_dropped;
+	/* Teardown discards of a sealed batch that was never dispatched, and the leases they released. */
+	uint32_t stat_discarded_batches;
+	uint32_t stat_discarded_leases;
 } hcu_bitmap_frame_owner;
 
 /* Initialize caller-owned state only while no frame callback can be running. */
@@ -86,6 +89,11 @@ hcu_bitmap_frame_status hcu_bitmap_frame_owner_unbind(hcu_bitmap_frame_owner *ow
 /* port: dispatch a batch sealed by CE while no emit window was bound. Call only inside the parent build's
  * emit window, after the chains are bound. No-op when nothing is pending. */
 hcu_bitmap_frame_status hcu_bitmap_frame_owner_drain_pending(hcu_bitmap_frame_owner *owner);
+/* Teardown only: discard a sealed batch that no emit window will ever dispatch (map release after the last
+ * frame). Refuses (E_BUSY/E_FENCE) unless the owner is bound and idle, the queue has no open readers, and the
+ * renderer fence has observed the last kick, so no GPU work still references the leases. Releases the batch's
+ * leases without drawing and counts the discard. No-op when nothing is pending. */
+hcu_bitmap_frame_status hcu_bitmap_frame_owner_discard_pending(hcu_bitmap_frame_owner *owner);
 /* Invoke only after the real parent paired-chain GPU FINISH/wait has completed
  * for this frame. This is the sole operation that releases dispatcher leases. */
 hcu_bitmap_frame_status hcu_bitmap_frame_owner_gpu_fence_complete(
