@@ -633,6 +633,86 @@ static int test_c3_6_unowned_fx_and_frame_identity(void)
 	return 0;
 }
 
+/* ---- shared texture pages: refcount and fence rules ----------------------------------------------- */
+static uint32_t s_fence_seen;
+static int tex_fence(uint32_t kick) { return kick <= s_fence_seen; }
+
+static void tex_id(uint8_t id[HCU_OBJECTS_TEX_PAGE_ID_BYTES], uint32_t n)
+{
+	uint32_t i;
+	for (i = 0; i < HCU_OBJECTS_TEX_PAGE_ID_BYTES; i++) id[i] = (uint8_t)(n * 37u + i * 11u + (n >> 3));
+	id[4] = (uint8_t)n; id[5] = (uint8_t)(n >> 8);
+}
+
+static int test_tex_pages(void)
+{
+	hcu_render_tex_pages t;
+	uint8_t a[HCU_OBJECTS_TEX_PAGE_ID_BYTES], b[HCU_OBJECTS_TEX_PAGE_ID_BYTES];
+	uint32_t ia, ib, off = 0, bytes = 0, n;
+	int is_new = 0;
+	tex_id(a, 1); tex_id(b, 2);
+	CHECK(hcu_render_tex_pages_init(&t) == 0);
+	CHECK(hcu_render_tex_pages_init(NULL) == -1);
+
+	/* two owners of page A, one of B: A is created once, then shared */
+	ia = hcu_render_tex_page_acquire(&t, a, 4096u, &is_new);
+	CHECK(ia != HCU_TEX_PAGE_NONE && is_new == 1 && t.new_pages == 1);
+	t.page[ia].pool_off = 0x1000u;
+	ia = hcu_render_tex_page_acquire(&t, a, 4096u, &is_new);       /* second owner */
+	CHECK(ia != HCU_TEX_PAGE_NONE && is_new == 0 && t.page[ia].refs == 2u && t.new_pages == 1);
+	ib = hcu_render_tex_page_acquire(&t, b, 512u, &is_new);
+	CHECK(ib != HCU_TEX_PAGE_NONE && is_new == 1 && t.live == 2u);
+	t.page[ib].pool_off = 0x2000u;
+	CHECK(hcu_render_tex_page_acquire(&t, a, 2048u, &is_new) == HCU_TEX_PAGE_NONE && t.conflicts == 1u);
+
+	/* eviction of one owner: refs drop to 1, the page stays live and is never reclaimed */
+	s_fence_seen = 100u;
+	CHECK(hcu_render_tex_page_release(&t, ia, 5u) == 0);
+	CHECK(t.page[ia].refs == 1u && t.page[ia].state == HCU_TEX_PAGE_LIVE);
+	CHECK(hcu_render_tex_page_reclaim_next(&t, tex_fence, &off, &bytes) == 0);
+
+	/* last owner releases at kick 7: retired, not reclaimable until kick 7 is observed complete */
+	CHECK(hcu_render_tex_page_release(&t, ia, 7u) == 0);
+	CHECK(t.page[ia].state == HCU_TEX_PAGE_RETIRED && t.page[ia].kick == 7u && t.retired == 1u);
+	s_fence_seen = 6u;
+	CHECK(hcu_render_tex_page_reclaim_next(&t, tex_fence, &off, &bytes) == 0);   /* fence still pending */
+	CHECK(t.page[ia].state == HCU_TEX_PAGE_RETIRED && t.reclaims == 0u);
+	s_fence_seen = 7u;
+	n = hcu_render_tex_page_reclaim_next(&t, tex_fence, &off, &bytes);
+	CHECK(n == 1 && off == 0x1000u && bytes == 4096u && t.reclaims == 1u && t.retired == 0u);
+	CHECK(hcu_render_tex_page_reclaim_next(&t, tex_fence, &off, &bytes) == 0);
+
+	/* a freed identity is a fresh page again; a released page with no kick reclaims at once */
+	ia = hcu_render_tex_page_acquire(&t, a, 4096u, &is_new);
+	CHECK(ia != HCU_TEX_PAGE_NONE && is_new == 1);
+	CHECK(hcu_render_tex_page_release(&t, ia, 0u) == 0);
+	CHECK(hcu_render_tex_page_reclaim_next(&t, tex_fence, &off, &bytes) == 1 && off == 0u);
+
+	/* revive: a retired page re-acquired before its fence is reclaimed keeps its pool region */
+	CHECK(hcu_render_tex_page_release(&t, ib, 9u) == 0);                       /* refs 1 -> 0: retired at kick 9 */
+	CHECK(t.page[ib].state == HCU_TEX_PAGE_RETIRED);
+	s_fence_seen = 8u;
+	CHECK(hcu_render_tex_page_reclaim_next(&t, tex_fence, &off, &bytes) == 0); /* kick 9 not complete */
+	ia = hcu_render_tex_page_acquire(&t, b, 512u, &is_new);
+	CHECK(ia == ib && is_new == 0 && t.page[ib].pool_off == 0x2000u);
+	CHECK(ia == ib && t.page[ib].state == HCU_TEX_PAGE_LIVE && t.page[ib].refs == 1u);
+	CHECK(hcu_render_tex_page_reclaim_next(&t, tex_fence, &off, &bytes) == 0);   /* live: never reclaimed */
+	CHECK(hcu_render_tex_page_release(&t, ib, 0u) == 0);
+	CHECK(hcu_render_tex_page_release(&t, ib, 0u) == -1);                       /* not live any more */
+	CHECK(hcu_render_tex_page_release(&t, HCU_OBJECTS_TEX_PAGE_MAX, 0u) == -1);
+
+	/* full table: 64 distinct live pages fill it; the 65th is refused, not evicting anything */
+	CHECK(hcu_render_tex_pages_init(&t) == 0);
+	for (n = 0; n < HCU_OBJECTS_TEX_PAGE_MAX; n++) {
+		tex_id(a, 100u + n);
+		CHECK(hcu_render_tex_page_acquire(&t, a, 64u, &is_new) != HCU_TEX_PAGE_NONE);
+	}
+	CHECK(t.live == HCU_OBJECTS_TEX_PAGE_MAX && t.probe_max <= HCU_OBJECTS_TEX_PAGE_MAX);
+	tex_id(a, 999u);
+	CHECK(hcu_render_tex_page_acquire(&t, a, 64u, &is_new) == HCU_TEX_PAGE_NONE && t.full_refusals == 1u);
+	return 0;
+}
+
 int main(void)
 {
 	if (test_builder()) return 1;
@@ -647,6 +727,7 @@ int main(void)
 	if (test_fx_quads()) return 8;
 	if (test_fx_corner_st()) return 9;
 	if (test_c3_6_unowned_fx_and_frame_identity()) return 11;
+	if (test_tex_pages()) return 12;
 	printf("hcu_render_objects tests passed\n");
 	return 0;
 }

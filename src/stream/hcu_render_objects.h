@@ -254,6 +254,47 @@ int hcu_render_objects_residency_rank_victim_ok(int loaded, uint32_t victim_rank
 	int fence_observed, uint32_t pins, uint32_t *evict_refused_pinned);
 int hcu_render_objects_pool_request_fits(uint32_t need, uint32_t capacity);
 
+/* C3.objects shared texture pages. A page is one OTEX texture payload (CLUT + mips) identified by a 32-byte
+ * content identity (tools/halo2ps2/objtex.py page_identity). The table is fixed-size and open-addressed on the
+ * first identity word. A page is LIVE while refs > 0. When its last reference is released it becomes RETIRED and
+ * records the latest kick seq; it may be reclaimed only when that kick's fence is observed (or no kick exists),
+ * which is the same fence rule as the pool's segments. A RETIRED page can be revived by a new acquire. */
+#define HCU_OBJECTS_TEX_PAGE_MAX 64u        /* power of two */
+#define HCU_OBJECTS_TEX_PAGE_ID_BYTES 32u
+typedef struct {
+	uint8_t id[HCU_OBJECTS_TEX_PAGE_ID_BYTES];
+	uint32_t bytes;
+	uint32_t pool_off;       /* owner's pool offset, set by the owner after a new acquire; returned on reclaim */
+	uint32_t refs;
+	uint32_t kick;           /* latest kick seq at the last release (0 = no kick) */
+	uint8_t state;           /* HCU_TEX_PAGE_* */
+} hcu_render_tex_page;
+
+typedef struct {
+	hcu_render_tex_page page[HCU_OBJECTS_TEX_PAGE_MAX];
+	uint32_t live, retired;
+	uint32_t acquires, new_pages, releases, reclaims, conflicts, full_refusals;
+	uint32_t probe_max;
+} hcu_render_tex_pages;
+
+#define HCU_TEX_PAGE_FREE 0u
+#define HCU_TEX_PAGE_LIVE 1u
+#define HCU_TEX_PAGE_RETIRED 2u
+#define HCU_TEX_PAGE_TOMB 3u
+#define HCU_TEX_PAGE_NONE 0xFFFFFFFFu
+/* Returns 0, or -1 for a NULL argument. */
+int hcu_render_tex_pages_init(hcu_render_tex_pages *t);
+/* Acquire one reference. Returns the page index (refs incremented, *is_new = 1 when the page was just created so
+ * the owner must set pool_off), or HCU_TEX_PAGE_NONE: table full, or the identity exists with another size. */
+uint32_t hcu_render_tex_page_acquire(hcu_render_tex_pages *t, const uint8_t id[HCU_OBJECTS_TEX_PAGE_ID_BYTES],
+	uint32_t bytes, int *is_new);
+/* Release one reference at `kick` (the latest kick seq, 0 if none). Returns 0, or -1 when not live. */
+int hcu_render_tex_page_release(hcu_render_tex_pages *t, uint32_t index, uint32_t kick);
+/* Reclaim one retired page whose refs are 0 and whose kick is observed complete (fence_observed(kick) == 1, or
+ * kick == 0). Writes its pool_off and returns 1; returns 0 when none is ready. Scans at most the table once. */
+int hcu_render_tex_page_reclaim_next(hcu_render_tex_pages *t, int (*fence_observed)(uint32_t kick),
+	uint32_t *pool_off, uint32_t *bytes);
+
 /* ---- pin / unpin ----------------------------------------------------------------------------------
  * pin takes a read pin on the latest published bank slot. unpin releases it; call it only after the
  * frame's kick has completed. Returns NULL when nothing is published (the frame draws no objects). */

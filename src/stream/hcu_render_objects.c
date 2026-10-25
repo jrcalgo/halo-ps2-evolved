@@ -86,6 +86,104 @@ int hcu_render_objects_pool_request_fits(uint32_t need, uint32_t capacity)
 	return need != 0 && need <= capacity;
 }
 
+/* ---- shared texture pages (C3.objects) -------------------------------------------------------------
+ * Fixed table, open addressing with linear probes bounded by the table size. Retired and reclaimed slots stay
+ * in the probe chain (RETIRED stays findable; TOMB keeps a removed slot from ending a chain early). */
+int hcu_render_tex_pages_init(hcu_render_tex_pages *t)
+{
+	if (!t) return -1;
+	memset(t, 0, sizeof *t);
+	return 0;
+}
+
+static uint32_t tex_page_hash(const uint8_t id[HCU_OBJECTS_TEX_PAGE_ID_BYTES])
+{
+	return (uint32_t)id[0] | ((uint32_t)id[1] << 8) | ((uint32_t)id[2] << 16) | ((uint32_t)id[3] << 24);
+}
+
+uint32_t hcu_render_tex_page_acquire(hcu_render_tex_pages *t, const uint8_t id[HCU_OBJECTS_TEX_PAGE_ID_BYTES],
+	uint32_t bytes, int *is_new)
+{
+	uint32_t k, start, insert = HCU_TEX_PAGE_NONE;
+	if (is_new) *is_new = 0;
+	if (!t || !id || bytes == 0u) return HCU_TEX_PAGE_NONE;
+	t->acquires++;
+	start = tex_page_hash(id) & (HCU_OBJECTS_TEX_PAGE_MAX - 1u);
+	for (k = 0; k < HCU_OBJECTS_TEX_PAGE_MAX; k++) {
+		uint32_t i = (start + k) & (HCU_OBJECTS_TEX_PAGE_MAX - 1u);
+		hcu_render_tex_page *p = &t->page[i];
+		if (k + 1u > t->probe_max) t->probe_max = k + 1u;
+		if (p->state == HCU_TEX_PAGE_FREE) {
+			if (insert == HCU_TEX_PAGE_NONE) insert = i;
+			break;
+		}
+		if (p->state == HCU_TEX_PAGE_TOMB) {
+			if (insert == HCU_TEX_PAGE_NONE) insert = i;
+			continue;
+		}
+		if (memcmp(p->id, id, HCU_OBJECTS_TEX_PAGE_ID_BYTES) != 0) continue;
+		if (p->bytes != bytes) { t->conflicts++; return HCU_TEX_PAGE_NONE; }
+		if (p->state == HCU_TEX_PAGE_RETIRED) {
+			p->state = HCU_TEX_PAGE_LIVE;
+			t->retired--;
+			t->live++;
+		}
+		p->refs++;
+		return i;
+	}
+	if (insert == HCU_TEX_PAGE_NONE) { t->full_refusals++; return HCU_TEX_PAGE_NONE; }
+	{
+		hcu_render_tex_page *p = &t->page[insert];
+		memcpy(p->id, id, HCU_OBJECTS_TEX_PAGE_ID_BYTES);
+		p->bytes = bytes;
+		p->pool_off = 0;
+		p->refs = 1;
+		p->kick = 0;
+		p->state = HCU_TEX_PAGE_LIVE;
+		t->live++;
+		t->new_pages++;
+		if (is_new) *is_new = 1;
+	}
+	return insert;
+}
+
+int hcu_render_tex_page_release(hcu_render_tex_pages *t, uint32_t index, uint32_t kick)
+{
+	hcu_render_tex_page *p;
+	if (!t || index >= HCU_OBJECTS_TEX_PAGE_MAX) return -1;
+	p = &t->page[index];
+	if (p->state != HCU_TEX_PAGE_LIVE || p->refs == 0u) return -1;
+	t->releases++;
+	p->refs--;
+	if (p->refs == 0u) {
+		/* The kick is the latest one: any chain that could read the page was built before or at this kick. */
+		p->kick = kick;
+		p->state = HCU_TEX_PAGE_RETIRED;
+		t->live--;
+		t->retired++;
+	}
+	return 0;
+}
+
+int hcu_render_tex_page_reclaim_next(hcu_render_tex_pages *t, int (*fence_observed)(uint32_t kick),
+	uint32_t *pool_off, uint32_t *bytes)
+{
+	uint32_t i;
+	if (!t || !fence_observed || !pool_off || !bytes) return 0;
+	for (i = 0; i < HCU_OBJECTS_TEX_PAGE_MAX; i++) {
+		hcu_render_tex_page *p = &t->page[i];
+		if (p->state != HCU_TEX_PAGE_RETIRED || p->refs != 0u) continue;
+		if (p->kick != 0u && fence_observed(p->kick) != 1) continue;
+		*pool_off = p->pool_off;
+		*bytes = p->bytes;
+		p->state = HCU_TEX_PAGE_TOMB;
+		t->retired--;
+		t->reclaims++;
+		return 1;
+	}
+	return 0;
+}
+
 int hcu_render_objects_select(const halo_ps2_frame_snapshot *snap, uint32_t view,
 	const hcu_render_objects_model *models, uint32_t model_count,
 	hcu_render_object_draw *out, uint32_t capacity, uint32_t *count,
