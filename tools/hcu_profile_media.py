@@ -45,7 +45,7 @@ def _source_hash_file(path: Path) -> str:
 
 
 def build_media(sources: dict, tags: list, *, conversion_cache=None, input_hashes=None,
-                covered_out: dict | None = None) -> dict:
+                covered_out: dict | None = None, object_profile=None) -> dict:
     """Convert only `tags` entries shaped as source_key/group/path/source_datum.
 
     Unknown required groups fail closed: they need a real serialized format and
@@ -95,10 +95,11 @@ def build_media(sources: dict, tags: list, *, conversion_cache=None, input_hashe
             raise ValueError(f"no qualified media serializer/consumer for required group {group!r}")
         if source_key not in source_hashes: source_hashes[source_key] = _source_hash(m)
         source_sha = source_hashes[source_key]
-        cache_key=(source_sha,group,datum)
+        # object_profile None keeps the historical cache key and output; a profile is keyed by its name.
+        cache_key=(source_sha,group,datum) if object_profile is None else (source_sha,group,datum,object_profile)
         if cache_key not in conversions:
             if group == "mode":
-                result = modelconv.convert_map(m, [datum])
+                result = modelconv.convert_map(m, [datum], object_profile=object_profile)
                 data_by_kind = {"MODL": result.modl, "OTEX": result.otex}
                 bitmap_ids=tuple(t.source_id for t in result.otex_result.textures)
             else:

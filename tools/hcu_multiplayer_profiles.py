@@ -250,7 +250,7 @@ def _ctag_decode(ctag_bytes):
 
 def build_one(spec, maps_dir:Path, manifest:dict, producers:dict, *, report_failures=False, cache=None,
               source_inputs=None, runtime_layout_probe=None, presentation=None,
-              consumer_exclusions=None, render_bsp=None) -> tuple[bytes|None,dict,dict]:
+              consumer_exclusions=None, render_bsp=None, object_profile=None) -> tuple[bytes|None,dict,dict]:
     bsp_inputs=prepare_profile_bsp_roots(spec,maps_dir,manifest,cache)
     sources=_source_set(spec,maps_dir,cache)
     scenario=spec['scenario']
@@ -306,7 +306,8 @@ def build_one(spec, maps_dir:Path, manifest:dict, producers:dict, *, report_fail
             bsp_selected=bsp_selected,
             ctag_image=(_ctag_decode(result['ctag']).image if consumer_exclusions else None),
             schema=(manifest if consumer_exclusions else None),
-            tag_index_remaps=(result['tag_index_remaps'] if consumer_exclusions else None))
+            tag_index_remaps=(result['tag_index_remaps'] if consumer_exclusions else None),
+            object_profile=object_profile)
         append_cbsp_chunks(media,bsp_assets)
         presentation_provenance=append_presentation_chunks(media,presentation,spec,
             result['source_occurrence_remaps']) if presentation is not None else None
@@ -387,6 +388,11 @@ def build_one(spec, maps_dir:Path, manifest:dict, producers:dict, *, report_fail
         'reproducibility':{'sha256':sha_bytes(package)}}
     if render is not None:
         profile_manifest['render_media']=render['manifest']
+    if object_profile is not None:
+        # Opt-in lower-detail object packing (C3); recorded so the package's provenance names it.
+        profile_manifest['object_profile']={'name':object_profile.name,'max_tex':object_profile.max_tex,
+            'max_levels':object_profile.max_levels,
+            'classes':{c:{'slots':list(l.slots),'cluster_fraction':l.cluster_fraction} for c,l in object_profile.classes}}
     profile_manifest['memory'].update({
         'package_file_bytes':len(package),
         'independently_addressable_media_bytes':media['memory']['independently_addressable_converted_bytes'],
@@ -415,6 +421,8 @@ def main(argv=None):
     ap.add_argument('--render-media',action='store_true',
         help='opt-in: append BSPS/TEXS/LMn render chunks for the selected BSP index (C3)')
     ap.add_argument('--render-bsp',type=int,default=0,help='structure BSP index for --render-media')
+    ap.add_argument('--c3-object-profile',action='store_true',
+        help='opt-in C3 lower-detail object packing (modelconv.C3_OBJECT_PROFILE): one clustered LOD, 64 px textures')
     ap.add_argument('--consumer-exclusions',type=Path,default=None,
         help='pinned exclusion rows; bitmap media with only excluded live consumers is omitted and recorded')
     args=ap.parse_args(argv)
@@ -506,6 +514,10 @@ def main(argv=None):
     producers={str(path.relative_to(ROOT)):sha_file(path) for path in sorted(producer_paths)}
     args.output.mkdir(parents=True,exist_ok=True)
     failed=False
+    object_profile=None
+    if args.c3_object_profile:
+        from halo2ps2 import modelconv as _modelconv  # noqa: E402
+        object_profile=_modelconv.C3_OBJECT_PROFILE
     for spec in selected:
         stem=spec['name']
         # A failed rebuild must never leave a package from an earlier invocation.
@@ -518,7 +530,8 @@ def main(argv=None):
             report_failures=args.report_failures,cache=cache,source_inputs=source_inputs,
             runtime_layout_probe=runtime_layout_evidence,presentation=cache.presentation,
             consumer_exclusions=consumer_exclusions,
-            render_bsp=(args.render_bsp if args.render_media else None))
+            render_bsp=(args.render_bsp if args.render_media else None),
+            object_profile=object_profile)
         if args.session_selection and package is not None:
             catalog_rows=[r for r in roster.get('variants',[]) if
                 (r.get('disposition')=='combat' and r.get('recipe')) or
@@ -537,7 +550,8 @@ def main(argv=None):
                 report_failures=args.report_failures,cache=BuildCache(),source_inputs=source_inputs,
                 runtime_layout_probe=runtime_layout_evidence,presentation=cache.presentation,
                 consumer_exclusions=consumer_exclusions,
-                render_bsp=(args.render_bsp if args.render_media else None))
+                render_bsp=(args.render_bsp if args.render_media else None),
+                object_profile=object_profile)
             if (package2,manifest2,artifacts2)!=(package,profile_manifest,artifacts):
                 raise ValueError(f'{stem}: independent rebuild differs')
             profile_manifest.setdefault('reproducibility',{})['independent_rebuild_equal']=True

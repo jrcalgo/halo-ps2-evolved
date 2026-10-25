@@ -74,7 +74,7 @@ def test_role_field_must_equal_audit_role():
 
 
 def _fake_build_media(monkeypatch, covered_keys=()):
-    def fake(sources, tags, *, conversion_cache=None, input_hashes=None, covered_out=None):
+    def fake(sources, tags, *, conversion_cache=None, input_hashes=None, covered_out=None, object_profile=None):
         if covered_out is not None:
             covered_out.update({key: True for key in covered_keys})
         return {"chunks": [], "bindings": [], "memory": {}, "decisions": []}

@@ -34,7 +34,7 @@ HCP_HEADER = struct.Struct("<4s7I")
 HCP_RECORD = struct.Struct("<8I32s32s")
 OBJ_ALIGN = 64
 BATCH_RECORD_BYTES = 40
-POOL_BYTES_DEFAULT = 1547648  # the C3 objects residency pool (src/stream/hcu_render_objects.c, budget v4)
+POOL_BYTES_DEFAULT = 2071936  # the C3 objects residency pool (budget v5, user-approved 2026-10-25)
 LOD_NAMES = ("lod0_super_high", "lod1", "lod2", "lod3", "lod4_super_low")
 
 # The Slayer workload of the 4-player Blood Gulch row (bipeds, every weapon with its first-person model, the

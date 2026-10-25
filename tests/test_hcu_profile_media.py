@@ -19,7 +19,7 @@ class FakeMap:
 def test_build_media_is_order_independent_and_deduplicates(monkeypatch):
     monkeypatch.setattr(media, "_verify_consumer", lambda group: {"path": "verified", "function": group,
                                                                      "source_sha256": "consumer-hash"})
-    monkeypatch.setattr(media.modelconv, "convert_map", lambda m, ids:
+    monkeypatch.setattr(media.modelconv, "convert_map", lambda m, ids, object_profile=None:
                         SimpleNamespace(modl=b"same-modl", otex=b"same-otex",
                                         otex_result=SimpleNamespace(textures=[])))
     rows = [dict(source_key="m", source_datum=1, group="mode", path="one"),
@@ -63,7 +63,7 @@ def test_nonmedia_closure_tags_are_ignored():
 def test_model_covered_bitmap_binds_existing_otex(monkeypatch):
     monkeypatch.setattr(media, "_verify_consumer", lambda group: {"path": "verified", "function": group,
                                                                      "source_sha256": "consumer-hash"})
-    monkeypatch.setattr(media.modelconv, "convert_map", lambda m, ids:
+    monkeypatch.setattr(media.modelconv, "convert_map", lambda m, ids, object_profile=None:
                         SimpleNamespace(modl=b"m", otex=b"o",
                                         otex_result=SimpleNamespace(textures=[SimpleNamespace(source_id=8)])))
     rows = [dict(source_key="m", source_datum=1, group="mode", path="model"),
@@ -83,7 +83,7 @@ def test_unknown_sound_identity_is_rejected():
 def test_identical_cross_profile_inputs_convert_once(monkeypatch):
     calls=[]
     monkeypatch.setattr(media,'_verify_consumer',lambda _g:{'path':'qualified','function':'open','source_sha256':'pin'})
-    monkeypatch.setattr(media.modelconv,'convert_map',lambda m,ids:(calls.append(tuple(ids)) or
+    monkeypatch.setattr(media.modelconv,'convert_map',lambda m,ids,object_profile=None:(calls.append(tuple(ids)) or
         SimpleNamespace(modl=b'model',otex=b'texture',otex_result=SimpleNamespace(textures=[]))))
     cache={}; tags=[dict(source_key='m',source_datum=1,group='mode',path='model')]
     one=media.build_media({'m':FakeMap()},tags,conversion_cache=cache,input_hashes={'m':'a'*64})
