@@ -11,7 +11,9 @@ uses flock). Completed cases are recorded in <root>/state.json and skipped on re
 completed run's guest log and captures, so a rerun with --score-only or --stamp re-scores without PCSX2.
 
 Usage:
-  python3 -I tools/c3_integration.py [--jobs N] [--stamp STAMP] [--dry-run] [--score-only]
+  python3 -I tools/c3_integration.py [--jobs N] [--stamp STAMP] [--package-dir DIR] [--dry-run] [--score-only]
+The selected package defaults to the c3-ps2-object-v2 Blood Gulch dir (DEFAULT_PACKAGE_DIR); the matrix reads it
+through <stamp>/package-tree/pkg, and every HCP sha256 pin and manifest size check still runs.
 Output: build/c3/integration/<stamp>/<case>/ plus report.md and report.json under build/c3/integration/<stamp>/.
 """
 from __future__ import annotations
@@ -21,6 +23,7 @@ import importlib.util
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -32,6 +35,11 @@ MATRIX_PATH = ROOT / "tools/c2_profile_boot_matrix.py"
 INTEGRATION_ROOT = ROOT / "build/c3/integration"
 ROW = "bloodgulch_mounted_gunner_4p4bot"
 SUCC = "beavercreek_mounted_gunner_4p4bot"
+# The selected C3 package: a flat dir holding <row>.hcp and <row>.json (c3-ps2-object-v2 profile).
+DEFAULT_PACKAGE_DIR = ROOT / "build/c3/c3-6e/packages/bloodgulch-c3v2-2026-10-25"
+# The successor package has no v2 build yet; it is taken from the render package source unchanged.
+SUCC_PACKAGE_DIR = ROOT / "build/c3/render-packages" / SUCC
+PACKAGE_TREE_NAME = "package-tree"  # <stamp>/package-tree/pkg/<row>/ is what the matrix reads as --package-root
 FRAMES = 300
 CASE_TIMEOUT = 4 * 3600          # host seconds for one matrix subprocess (its own timeouts apply inside)
 STATE_NAME = "state.json"
@@ -62,6 +70,32 @@ def load_matrix():
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
+
+
+def stage_package_tree(package_dir: Path, successor_dir: Path, tree: Path) -> Path:
+    """Stage <tree>/pkg/<row>/ for the matrix --package-root: the selected row from package_dir, the successor from successor_dir.
+
+    Files are hard-linked (copied when linking fails), never edited. The manifest's package_file_bytes must equal the
+    HCP size; the matrix header tool still checks the HCP sha256 against the manifest pin. Returns <tree>/pkg."""
+    pkg = tree / "pkg"
+    for source_dir, row in ((package_dir, ROW), (successor_dir, SUCC)):
+        hcp, manifest = source_dir / f"{row}.hcp", source_dir / f"{row}.json"
+        if not (hcp.is_file() and manifest.is_file()):
+            raise RuntimeError(f"missing {row}.hcp or {row}.json under {source_dir}")
+        data = json.loads(manifest.read_text(encoding="utf-8"))
+        if data["memory"]["package_file_bytes"] != hcp.stat().st_size:
+            raise RuntimeError(f"manifest package_file_bytes differs from {hcp}; the package is not consistent")
+        out = pkg / row
+        out.mkdir(parents=True, exist_ok=True)
+        for source in (hcp, manifest):
+            link = out / source.name
+            if link.exists() or link.is_symlink():
+                link.unlink()
+            try:
+                os.link(source, link)
+            except OSError:
+                shutil.copy2(source, link)
+    return pkg
 
 
 def case_dir(root: Path, case: dict) -> Path:
@@ -499,9 +533,15 @@ def main(argv=None) -> int:
     parser.add_argument("--score-only", action="store_true", help="do not run anything; score existing runs")
     parser.add_argument("--retry-failed", action="store_true", help="rerun completed cases whose matrix result failed")
     parser.add_argument("--cases", nargs="+", help="run only these case names; the report still shows the full matrix")
+    parser.add_argument("--package-dir", type=Path, metavar="DIR",
+                        help=("flat dir holding the selected <row>.hcp and <row>.json (default: the c3-ps2-object-v2 "
+                              "Blood Gulch package, %s)" % DEFAULT_PACKAGE_DIR.relative_to(ROOT).as_posix()))
     args = parser.parse_args(argv)
     if args.jobs < 1:
         parser.error("--jobs must be at least 1")
+    package_dir = args.package_dir or DEFAULT_PACKAGE_DIR
+    if not package_dir.is_absolute():
+        package_dir = ROOT / package_dir
     c2m = load_matrix()
     cases = build_cases()
     selected = cases
@@ -512,9 +552,10 @@ def main(argv=None) -> int:
         selected = [c for c in cases if c["name"] in args.cases]
     stamp = args.stamp or time.strftime("%Y%m%dT%H%M%S")
     root = INTEGRATION_ROOT / stamp
+    package_root = root / PACKAGE_TREE_NAME / "pkg"
     if args.dry_run:
         for case in selected:
-            print(" ".join(matrix_argv(case, case_dir(root, case), ROOT / "build/c3/render-tree/pkg")))
+            print(" ".join(matrix_argv(case, case_dir(root, case), package_root)))
         return 0
     root.mkdir(parents=True, exist_ok=True)
     state_path = root / STATE_NAME
@@ -523,7 +564,9 @@ def main(argv=None) -> int:
         todo = pending_cases(c2m, root, selected, state, retry_failed=args.retry_failed)
         print(f"stamp {stamp}: {len(selected) - len(todo)} done, {len(todo)} to run, jobs {args.jobs}", flush=True)
         if todo:
-            package_root = c2m.prepare_render_tree()  # once here, so concurrent matrix runs do not race on it
+            # once here, so concurrent matrix runs do not race on it; the matrix checks each HCP sha256 pin itself
+            package_root = stage_package_tree(package_dir, SUCC_PACKAGE_DIR, root / PACKAGE_TREE_NAME)
+            print(f"package root: {package_root} ({package_dir})", flush=True)
             with ThreadPoolExecutor(max_workers=args.jobs) as pool:
                 futures = {pool.submit(run_case, c2m, case, root, package_root): case for case in todo}
                 for future in as_completed(futures):

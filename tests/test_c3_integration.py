@@ -398,3 +398,85 @@ def test_c3_6_world_materials_hash_is_required_nonzero():
     assert zero["world_materials_hash_nonzero"] is False
     missing = [l for l in c36_lines() if "c3-world " not in l]
     assert ci.c3_6_content_checks(missing, 2)["checks"]["world_materials_hash_nonzero"] is False
+
+
+def test_default_package_is_the_c3_object_v2_bloodgulch_package():
+    assert ci.DEFAULT_PACKAGE_DIR == ROOT / "build/c3/c3-6e/packages/bloodgulch-c3v2-2026-10-25"
+    assert ci.ROW == "bloodgulch_mounted_gunner_4p4bot"
+    assert ci.SUCC_PACKAGE_DIR == ROOT / "build/c3/render-packages" / ci.SUCC
+    # the matrix never reads the legacy selected tree or the old render tree for C3 cases
+    assert "m2-c2-r3-selected-packages" not in str(ci.DEFAULT_PACKAGE_DIR)
+    assert "render-tree" not in str(ci.DEFAULT_PACKAGE_DIR)
+
+
+def test_default_v2_manifest_pin_matches_the_package_file_when_built():
+    import hashlib
+    hcp = ci.DEFAULT_PACKAGE_DIR / f"{ci.ROW}.hcp"
+    manifest_path = ci.DEFAULT_PACKAGE_DIR / f"{ci.ROW}.json"
+    if not (hcp.is_file() and manifest_path.is_file()):
+        import pytest
+        pytest.skip("v2 package not built in this checkout")
+    manifest = json.loads(manifest_path.read_text())
+    assert manifest["memory"]["package_file_bytes"] == hcp.stat().st_size
+    assert hashlib.sha256(hcp.read_bytes()).hexdigest() == manifest["package_sha256"]
+
+
+def test_stage_package_tree_links_selected_and_successor_rows(tmp_path):
+    src, succ_src = tmp_path / "v2", tmp_path / "succ"
+    for directory, row in ((src, ci.ROW), (succ_src, ci.SUCC)):
+        directory.mkdir()
+        (directory / f"{row}.hcp").write_bytes(b"x" * 64)
+        (directory / f"{row}.json").write_text(json.dumps({"memory": {"package_file_bytes": 64}}))
+    pkg = ci.stage_package_tree(src, succ_src, tmp_path / "tree")
+    assert pkg == tmp_path / "tree" / "pkg"
+    for row in (ci.ROW, ci.SUCC):
+        assert (pkg / row / f"{row}.hcp").read_bytes() == b"x" * 64
+        assert json.loads((pkg / row / f"{row}.json").read_text())["memory"]["package_file_bytes"] == 64
+    # restaging replaces the links rather than failing
+    ci.stage_package_tree(src, succ_src, tmp_path / "tree")
+
+
+def test_stage_package_tree_refuses_inconsistent_manifest(tmp_path):
+    import pytest
+    src = tmp_path / "v2"
+    src.mkdir()
+    (src / f"{ci.ROW}.hcp").write_bytes(b"x" * 64)
+    (src / f"{ci.ROW}.json").write_text(json.dumps({"memory": {"package_file_bytes": 63}}))
+    with pytest.raises(RuntimeError, match="package_file_bytes"):
+        ci.stage_package_tree(src, src, tmp_path / "tree")
+    with pytest.raises(RuntimeError, match="missing"):
+        ci.stage_package_tree(tmp_path / "absent", src, tmp_path / "tree2")
+
+
+class _Staged(Exception):
+    pass
+
+
+def test_package_dir_option_reaches_the_matrix_root(tmp_path, monkeypatch, capsys):
+    seen = {}
+
+    def fake_stage(package_dir, successor_dir, tree):
+        seen["args"] = (package_dir, successor_dir, tree)
+        raise _Staged()
+
+    monkeypatch.setattr(ci, "INTEGRATION_ROOT", tmp_path / "integration")
+    monkeypatch.setattr(ci, "stage_package_tree", fake_stage)
+    other = tmp_path / "other-v2"
+    import pytest
+    with pytest.raises(_Staged):
+        ci.main(["--stamp", "t1", "--package-dir", str(other)])
+    assert seen["args"] == (other, ci.SUCC_PACKAGE_DIR, tmp_path / "integration" / "t1" / "package-tree")
+    with pytest.raises(_Staged):
+        ci.main(["--stamp", "t2"])
+    assert seen["args"][0] == ci.DEFAULT_PACKAGE_DIR
+
+
+def test_dry_run_commands_use_the_staged_v2_package_root(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(ci, "INTEGRATION_ROOT", tmp_path / "integration")
+    assert ci.main(["--dry-run", "--stamp", "dry", "--cases", "render-v4-recompiler"]) == 0
+    line = capsys.readouterr().out.strip().splitlines()[-1]
+    argv = line.split()
+    root = argv[argv.index("--package-root") + 1]
+    assert root == str(tmp_path / "integration" / "dry" / "package-tree" / "pkg")
+    assert "render-tree" not in line and "m2-c2-r3-selected" not in line
+    assert "--c3-local-players" in argv and "--render-views" in argv
