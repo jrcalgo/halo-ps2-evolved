@@ -507,6 +507,18 @@ static int test_fx_quads(void)
 	return 0;
 }
 
+/* C3.6(c): textured quad ST per corner, normalized, in the order of hcu_render_fx_quad.v. */
+static int test_fx_corner_st(void)
+{
+	float st[2];
+	hcu_render_fx_corner_st(0, st); CHECK(st[0] == 0.0f && st[1] == 1.0f);   /* (-,-) bottom-left */
+	hcu_render_fx_corner_st(1, st); CHECK(st[0] == 1.0f && st[1] == 1.0f);   /* (+,-) bottom-right */
+	hcu_render_fx_corner_st(2, st); CHECK(st[0] == 1.0f && st[1] == 0.0f);   /* (+,+) top-right */
+	hcu_render_fx_corner_st(3, st); CHECK(st[0] == 0.0f && st[1] == 0.0f);   /* (-,+) top-left */
+	hcu_render_fx_corner_st(6, st); CHECK(st[0] == 1.0f && st[1] == 0.0f);   /* corners wrap mod 4 */
+	return 0;
+}
+
 int main(void)
 {
 	if (test_builder()) return 1;
@@ -518,6 +530,7 @@ int main(void)
 	if (test_pin()) return 6;
 	if (test_c3_6()) return 7;
 	if (test_fx_quads()) return 8;
+	if (test_fx_corner_st()) return 9;
 	printf("hcu_render_objects tests passed\n");
 	return 0;
 }

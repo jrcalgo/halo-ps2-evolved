@@ -299,7 +299,8 @@ def c36_lines(views=2, world_hash="1a2b3c4d", object_hash="9f8e7d6c", fx=1, pose
              f"HALO_PS2_LOCAL c3-parity kind=world map=bloodgulch materials=40 lightmapped=20 hash={world_hash}",
              f"HALO_PS2_LOCAL c3-parity kind=object frame=0 records=12 dropped=0 object=4 hash={object_hash}"]
     lines += [f"HALO_PS2_LOCAL c3-fp frame=30 view={v} fp-weapon-draws=1 fp-hands-draws=1" for v in range(views)]
-    lines.append(f"HALO_PS2_LOCAL c3-fx frame=30 view=0 fx-drawn={fx} fx-textured=0 fx-flat={fx} fx-no-binding={fx}")
+    lines.append(f"HALO_PS2_LOCAL c3-fx frame=30 view=0 fx-drawn={fx} fx-textured={fx} fx-flat=0 fx-no-binding=0 "
+                 "fx-budget-deferred=0 fx-cache-full=0")
     return lines
 
 
@@ -320,9 +321,23 @@ def test_c3_6_content_fails_each_missing_requirement():
     for name, lines in cases.items():
         checks = ci.c3_6_content_checks(lines, 2)["checks"]
         assert checks[name] is False, name
-        assert all(v for k, v in checks.items() if k != name), name
+        # fx=0 also removes every counted fx reason, so the textured-or-reason check fails with it.
+        coupled = {name, "fx_textured_positive"} if name == "fx_drawn_positive" else {name}
+        assert all(v for k, v in checks.items() if k not in coupled), name
     no_world = [l for l in c36_lines() if "kind=world" not in l]
     assert ci.c3_6_content_checks(no_world, 2)["checks"]["world_parity_present"] is False
+
+
+def test_c3_6_fx_textured_is_strict():
+    base = c36_lines(fx=1)
+    assert ci.c3_6_content_checks(base, 2)["checks"]["fx_textured_positive"] is True
+    flat = [l.replace("fx-textured=1", "fx-textured=0 fx-flat=1") if "c3-fx" in l else l for l in base]
+    assert ci.c3_6_content_checks(flat, 2)["checks"]["fx_textured_positive"] is False
+    # a counted reason with no textured quad is diagnostic only and must not pass
+    for reason in ("fx-no-binding=2", "fx-budget-deferred=2", "fx-cache-full=2"):
+        counted = [l.replace("fx-textured=1", "fx-textured=0 " + reason) if "c3-fx" in l else l for l in flat]
+        assert ci.c3_6_content_checks(counted, 2)["checks"]["fx_textured_positive"] is False, reason
+    assert ci.c3_6_content_checks(c36_lines(fx=0), 2)["checks"]["fx_textured_positive"] is False
 
 
 def test_c3_6_content_requires_fp_draws_in_every_active_view():

@@ -574,6 +574,13 @@ int hcu_render_synthetic_object_add(halo_ps2_frame_snapshot *s, uint32_t view,
 }
 
 /* ==== EE adapter ================================================================================= */
+void hcu_render_fx_corner_st(unsigned corner, float st[2])
+{
+	static const float uv[4][2] = { { 0.0f, 1.0f }, { 1.0f, 1.0f }, { 1.0f, 0.0f }, { 0.0f, 0.0f } };
+	st[0] = uv[corner & 3u][0];
+	st[1] = uv[corner & 3u][1];
+}
+
 #ifdef HCU_RENDER_OBJECTS_EE
 #include "core/mat.h"
 #include "platform/video.h"
@@ -583,6 +590,7 @@ int hcu_render_synthetic_object_add(halo_ps2_frame_snapshot *s, uint32_t view,
 #include "render/gs.h"
 #include "render/obj_render.h"
 #include "stream/sha256.h"
+#include "stream/hcu_fx_bitmap.h"
 #include "world/model.h"
 #include "world/tex.h"
 #include <math.h>
@@ -1064,10 +1072,67 @@ static void log_part_parity(const obj_slot *s, const model_info *mi, const uint1
 static hcu_render_fx_quad s_fxq[HCU_FX_MAX_PER_VIEW];
 static uint32_t s_fxn[HCU_FX_MAX_PER_VIEW];        /* clipped vertices of an admitted quad (0 = not admitted) */
 
+static hcu_render_fx_quad s_fxq[HCU_FX_MAX_PER_VIEW];
+static uint32_t s_fxn[HCU_FX_MAX_PER_VIEW];        /* clipped vertices of an admitted quad (0 = not admitted) */
+
+/* C3.6(c) textured fx inputs, set once by the parent: bindings, the profile their chunks come from, and the
+ * staging buffer one BITM chunk is read into. The bytes are copied into the renderer's ring by the call. */
+static const hcu_bitmap_binding *s_fx_bind;
+static uint32_t s_fx_bind_count;
+static const hcu_asset_profile_view *s_fx_profile;
+static void *s_fx_staging;
+static uint32_t s_fx_staging_bytes;
+
+void hcu_render_objects_set_fx_bindings(const hcu_bitmap_binding *bindings, uint32_t count,
+	const hcu_asset_profile_view *profile, void *staging, uint32_t staging_bytes)
+{
+	s_fx_bind = bindings; s_fx_bind_count = count; s_fx_profile = profile;
+	s_fx_staging = staging; s_fx_staging_bytes = staging_bytes;
+}
+
+/* Per-view scratch (fixed, no heap): admitted quad indices and their bindings, the buckets, and per bucket
+ * the TEX0 and whether its texture is resident. */
+static uint32_t s_fx_cidx[HCU_FX_MAX_PER_VIEW];
+static uint32_t s_fx_cbind[HCU_FX_MAX_PER_VIEW];
+static uint16_t s_fx_order[HCU_FX_MAX_PER_VIEW];
+static hcu_fx_bucket s_fx_bucket[HCU_FX_BUCKET_CAP];
+static uint64_t s_fx_tex0[HCU_FX_BUCKET_CAP];
+static uint8_t s_fx_bucket_ok[HCU_FX_BUCKET_CAP];
+static uint8_t s_fx_textured[HCU_FX_MAX_PER_VIEW];
+
+/* Reads one binding's BITM image. The bytes point into the staging buffer and are valid until the next call.
+ * Same checks as hcu_bitmap_dispatch_request: identity, chunk digest, format, power-of-two size, mip 0. */
+static int fx_source(const hcu_bitmap_binding *b, bsp_fx_tex_src *out)
+{
+	hcu_asset_chunk_view cv;
+	tex_section section;
+	tex_info image;
+	tex_mip_view mip;
+	if (!s_fx_profile || !s_fx_staging || !b || b->image_index != 0u) return -1;
+	if (hcu_asset_profile_lookup(s_fx_profile, HCU_ASSET_CHUNK_MEDIA, b->chunk_id, &cv) != HCU_ASSET_PROFILE_OK ||
+		cv.size > s_fx_staging_bytes || memcmp(cv.sha256, b->expected_chunk_sha256, 32)) return -1;
+	if (hcu_asset_profile_read_chunk(s_fx_profile, HCU_ASSET_CHUNK_MEDIA, b->chunk_id,
+		s_fx_staging, s_fx_staging_bytes) != HCU_ASSET_PROFILE_OK) return -1;
+	if (tex_open(&section, (const uint8_t *)s_fx_staging, cv.size) != TEX_OK ||
+		b->image_index >= section.texture_count) return -1;
+	image = tex_get(&section, b->image_index);
+	if (image.source_id != b->expected_source_datum) return -1;
+	if ((image.psm != GS_PSMT8 && image.psm != GS_PSMT4) || !image.width || !image.height ||
+		image.width > 256u || image.height > 256u) return -1;
+	if (!tex_mip(&section, &image, 0, &mip)) return -1;
+	out->clut = tex_clut(&section, &image);
+	if (!out->clut) return -1;
+	out->pixels = mip.pixels; out->pixel_bytes = mip.bytes;
+	out->clut_bytes = (uint32_t)image.clut_entries * 4u;
+	out->w = image.width; out->h = image.height; out->psm = image.psm;
+	return 0;
+}
+
 /* Clips the quad's two triangles and returns the fan vertex count. When `out` is non-NULL the fans are packed
- * there (12 words per vertex) and `out` is not advanced; the caller advances it by 12 * the returned count. */
+ * there (12 words per vertex) and `out` is not advanced; the caller advances it by 12 * the returned count.
+ * `textured` sets the ST of each corner (hcu_render_fx_corner_st); flat quads carry zero ST. */
 static uint32_t fx_quad_clip(const render_ctx_t *rc, const hcu_render_fx_quad *q, const uint8_t rgba[4],
-	const clip_gs *g, uint32_t *out)
+	const clip_gs *g, int textured, uint32_t *out)
 {
 	static const int tri[2][3] = { { 0, 1, 2 }, { 0, 2, 3 } };
 	uint32_t total = 0;
@@ -1078,6 +1143,7 @@ static uint32_t fx_quad_clip(const render_ctx_t *rc, const hcu_render_fx_quad *q
 		for (k = 0; k < 3; k++) {
 			clip_project(rc->clip, q->v[tri[t][k]], &in[k]);
 			for (j = 0; j < CLIP_ATTRS; j++) in[k].a[j] = 0.0f;
+			if (textured) hcu_render_fx_corner_st((unsigned)tri[t][k], &in[k].a[0]);
 			in[k].a[4] = rgba[0]; in[k].a[5] = rgba[1]; in[k].a[6] = rgba[2]; in[k].a[7] = rgba[3];
 		}
 		cnt = clip_polygon(in, rc->cam->near_z, poly);
@@ -1094,13 +1160,28 @@ static uint32_t fx_quad_clip(const render_ctx_t *rc, const hcu_render_fx_quad *q
 	return total;
 }
 
+/* Textured bucket state: TEX0 (the bucket's texture), TEX1 (bilinear, fixed LOD), CLAMP. Five qwords. */
+static void fx_tex_state(chain_t *c, uint64_t tex0, u64 pending)
+{
+	u32 *w = chain_cnt(c, FX_STATE_QW, pending);
+	u64 *q;
+	if (!w) return;
+	w[0] = VIF_CODE(VIF_NOP, 0, 0); w[1] = VIF_CODE(VIF_NOP, 0, 0);
+	w[2] = VIF_CODE(VIF_FLUSHA, 0, 0); w[3] = VIF_CODE(VIF_DIRECT, 0, 1 + 3);
+	q = (u64 *)(w + 4);
+	q[0] = GIF_TAG(3, 1, 0, 0, GIFX_FLG_PACKED, 1); q[1] = GIF_REGS_AD;
+	q[2] = tex0;                                    q[3] = GS_A_TEX0_1;
+	q[4] = GS_TEX1(1, 0, 1, 1, 0, 0, 0);            q[5] = GS_A_TEX1_1;
+	q[6] = GS_CLAMP(1, 1, 0, 0, 0, 0);              q[7] = GS_A_CLAMP_1;
+}
+
 static void fx_pass(render_ctx_t *rc)
 {
 	const halo_ps2_snapshot_camera *cam;
 	float right[3], up[3];
 	clip_gs g;
 	chain_t *c = rc->chain;
-	uint32_t i, admitted = 0, verts = 0;
+	uint32_t i, admitted = 0, verts = 0, n = 0, nbk, b, k, flat_verts = 0;
 	uint32_t *pw;
 	u64 *q;
 	u32 *w;
@@ -1120,7 +1201,7 @@ static void fx_pass(render_ctx_t *rc)
 			s_view_counters.effects_refused++;
 			continue;
 		}
-		nv = fx_quad_clip(rc, &s_fxq[i], rgba, &g, NULL);
+		nv = fx_quad_clip(rc, &s_fxq[i], rgba, &g, 0, NULL);
 		if (!nv) continue;                                /* behind the near plane or off the guard band */
 		if (!chain_has_space(c, FX_STATE_QW + FX_PACKET_HDR_QW + 3u * (verts + nv))) {
 			s_view_counters.fx_skipped_space++;
@@ -1132,7 +1213,45 @@ static void fx_pass(render_ctx_t *rc)
 	}
 	if (!admitted) return;
 
-	/* state: alpha blend (src alpha), depth test GEQUAL, depth write off */
+	/* C3.6(c): resolve each admitted quad's binding (decal: resource_id = bitmap tag, permutation = element),
+	 * bucket by binding, and make each bucket's texture resident. A bucket whose texture is refused is drawn flat. */
+	for (i = 0; i < s_fx_count; i++) {
+		if (!s_fxn[i]) continue;
+		s_fx_textured[i] = 0;
+		s_fx_cidx[n] = i;
+		s_fx_cbind[n] = HCU_FX_BITMAP_NONE;
+		if (rc->opt->textures) hcu_fx_bitmap_resolve(s_fx_bind, s_fx_bind_count, s_fx[i].resource_id,
+			s_fx[i].permutation, &s_fx_cbind[n]);
+		n++;
+	}
+	nbk = hcu_fx_bucket_quads(s_fx_cbind, n, s_fx_order, s_fx_bucket, HCU_FX_BUCKET_CAP);
+	if (nbk > HCU_FX_BUCKET_CAP) nbk = 0;                 /* -1 (bad arguments) draws every quad flat */
+	for (b = 0; b < nbk; b++) {
+		hcu_fx_bucket *bk = &s_fx_bucket[b];
+		bsp_fx_tex_src src;
+		uint64_t tex0 = 0;
+		int st;
+		s_fx_bucket_ok[b] = 0;
+		if (!rc->opt->textures) break;
+		if (bk->binding == HCU_FX_BITMAP_NONE) { s_view_counters.fx_no_binding += bk->count; continue; }
+		if (fx_source(&s_fx_bind[bk->binding], &src) != 0) { s_view_counters.fx_no_binding += bk->count; continue; }
+		st = bsp_render_fx_texture(s_fx_bind[bk->binding].cache_key, &src, &tex0);
+		if (st == BSP_FX_TEX_OK) {
+			s_fx_bucket_ok[b] = 1;
+			s_fx_tex0[b] = tex0;
+			for (k = 0; k < bk->count; k++) s_fx_textured[s_fx_cidx[s_fx_order[bk->first + k]]] = 1;
+		} else if (st == BSP_FX_TEX_BUDGET) {
+			s_view_counters.fx_budget_deferred += bk->count;
+		} else if (st == BSP_FX_TEX_CACHE_FULL) {
+			s_view_counters.fx_cache_full += bk->count;
+		} else if (st == BSP_FX_TEX_NO_SOURCE) {
+			s_view_counters.fx_no_binding += bk->count;
+		} else {
+			s_view_counters.failures += bk->count;     /* outside the frame: a renderer ordering fault */
+		}
+	}
+
+	/* global state: alpha blend (src alpha), depth test GEQUAL, depth write off */
 	w = chain_cnt(c, FX_STATE_QW, rb_take_pending());
 	if (!w) { s_view_counters.fx_skipped_space += admitted; return; }
 	w[0] = VIF_CODE(VIF_NOP, 0, 0); w[1] = VIF_CODE(VIF_NOP, 0, 0);
@@ -1143,27 +1262,52 @@ static void fx_pass(render_ctx_t *rc)
 	q[4] = GS_TEST(0, 6, 0x40, 0, 0, 0, 1, 2);      q[5] = GS_A_TEST_1;
 	q[6] = GS_ZBUF(*rb_zbuf_page_ptr(), GS_PSMZ24, 1); q[7] = GS_A_ZBUF_1;
 
-	/* geometry: one packet of every admitted quad's triangles, flat-shaded (no effect texture source yet) */
-	w = chain_cnt(c, FX_PACKET_HDR_QW + 3u * verts, 0);
-	if (!w) { s_view_counters.fx_skipped_space += admitted; return; }
+	/* one texture state and one packet per textured bucket: the packet holds only that bucket's quads */
+	for (b = 0; b < nbk; b++) {
+		hcu_fx_bucket *bk = &s_fx_bucket[b];
+		uint32_t bverts = 0;
+		if (!s_fx_bucket_ok[b]) continue;
+		for (k = 0; k < bk->count; k++) bverts += s_fxn[s_fx_cidx[s_fx_order[bk->first + k]]];
+		fx_tex_state(c, s_fx_tex0[b], 0);
+		w = chain_cnt(c, FX_PACKET_HDR_QW + 3u * bverts, 0);
+		if (!w) { s_view_counters.fx_skipped_space += bk->count; continue; }
+		w[0] = VIF_CODE(VIF_NOP, 0, 0); w[1] = VIF_CODE(VIF_NOP, 0, 0);
+		w[2] = VIF_CODE(VIF_FLUSHA, 0, 0); w[3] = VIF_CODE(VIF_DIRECT, 0, 1 + 3 * bverts);
+		q = (u64 *)(w + 4);
+		q[0] = GIF_TAG(bverts, 1, 1, GS_PRIM(GSX_PRIM_TRIANGLE, 1, 1, rc->opt->fog, 1, 0, 0, 0, 0), GIFX_FLG_PACKED, 3);
+		q[1] = 0x412;
+		pw = (uint32_t *)(q + 2);
+		for (k = 0; k < bk->count; k++) {
+			uint32_t qi = s_fx_cidx[s_fx_order[bk->first + k]];
+			uint8_t rgba[4];
+			hcu_render_fx_flat_colour(s_fx[qi].kind, rgba);
+			pw += 12 * fx_quad_clip(rc, &s_fxq[qi], rgba, &g, 1, pw);
+			s_view_counters.fx_drawn++;
+			s_view_counters.fx_textured++;
+		}
+	}
+
+	/* flat quads (no binding, a refused texture, or no textured mode): one packet, as before */
+	for (i = 0; i < s_fx_count; i++) if (s_fxn[i] && !s_fx_textured[i]) flat_verts += s_fxn[i];
+	if (!flat_verts) return;
+	w = chain_cnt(c, FX_PACKET_HDR_QW + 3u * flat_verts, 0);
+	if (!w) {
+		for (i = 0; i < s_fx_count; i++) if (s_fxn[i] && !s_fx_textured[i]) s_view_counters.fx_skipped_space++;
+		return;
+	}
 	w[0] = VIF_CODE(VIF_NOP, 0, 0); w[1] = VIF_CODE(VIF_NOP, 0, 0);
-	w[2] = VIF_CODE(VIF_FLUSHA, 0, 0); w[3] = VIF_CODE(VIF_DIRECT, 0, 1 + 3 * verts);
+	w[2] = VIF_CODE(VIF_FLUSHA, 0, 0); w[3] = VIF_CODE(VIF_DIRECT, 0, 1 + 3 * flat_verts);
 	q = (u64 *)(w + 4);
-	q[0] = GIF_TAG(verts, 1, 1, GS_PRIM(GSX_PRIM_TRIANGLE, 1, 0, rc->opt->fog, 1, 0, 0, 0, 0), GIFX_FLG_PACKED, 3);
+	q[0] = GIF_TAG(flat_verts, 1, 1, GS_PRIM(GSX_PRIM_TRIANGLE, 1, 0, rc->opt->fog, 1, 0, 0, 0, 0), GIFX_FLG_PACKED, 3);
 	q[1] = 0x412;
 	pw = (uint32_t *)(q + 2);
 	for (i = 0; i < s_fx_count; i++) {
 		uint8_t rgba[4];
-		uint32_t nv;
-		if (!s_fxn[i]) continue;
+		if (!s_fxn[i] || s_fx_textured[i]) continue;
 		hcu_render_fx_flat_colour(s_fx[i].kind, rgba);
-		nv = fx_quad_clip(rc, &s_fxq[i], rgba, &g, pw);
-		pw += 12 * nv;
+		pw += 12 * fx_quad_clip(rc, &s_fxq[i], rgba, &g, 0, pw);
 		s_view_counters.fx_drawn++;
 		s_view_counters.fx_flat++;
-		/* No bitmap binding exists for an fx request: resource_id is the CE effect, particle, contrail or
-		 * decal definition index, and the parent package carries no table from those to bitmap tags. */
-		s_view_counters.fx_no_binding++;
 	}
 }
 
@@ -1577,6 +1721,8 @@ void hcu_render_objects_view_end(uint32_t view, hcu_render_objects_view_stats *o
 		out->fx_textured = s_view_counters.fx_textured;
 		out->fx_flat = s_view_counters.fx_flat;
 		out->fx_no_binding = s_view_counters.fx_no_binding;
+		out->fx_budget_deferred = s_view_counters.fx_budget_deferred;
+		out->fx_cache_full = s_view_counters.fx_cache_full;
 		out->first_person_weapon_resource_id = 0u;
 		out->first_person_hands_resource_id = 0u;
 		out->first_person_weapon_resource_slot = HALO_PS2_FRAME_NONE_U16;
@@ -1631,8 +1777,11 @@ void hcu_render_objects_view_end(uint32_t view, hcu_render_objects_view_stats *o
 	s_totals.fx_textured += s_view_counters.fx_textured;
 	s_totals.fx_flat += s_view_counters.fx_flat;
 	s_totals.fx_no_binding += s_view_counters.fx_no_binding;
+	s_totals.fx_budget_deferred += s_view_counters.fx_budget_deferred;
+	s_totals.fx_cache_full += s_view_counters.fx_cache_full;
 	s_view_counters.fx_drawn = s_view_counters.fx_skipped_space = 0;
 	s_view_counters.fx_textured = s_view_counters.fx_flat = s_view_counters.fx_no_binding = 0;
+	s_view_counters.fx_budget_deferred = s_view_counters.fx_cache_full = 0;
 	s_view_counters.parts_logged = 0;
 	s_view_counters.first_person_weapon_draws = s_view_counters.first_person_hands_draws = 0;
 	s_totals.deduped += s_view_counters.deduped;

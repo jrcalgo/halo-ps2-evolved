@@ -1397,6 +1397,14 @@ int hcu_c3_bitmap_map_bind(void)
 	s_c3_bitmap_dispatch.slot_stride = staging_bytes;
 	s_c3_bitmap_dispatch.staging_buffer = staging;
 	s_c3_bitmap_dispatch.staging_buffer_bytes = staging_bytes;
+	/* C3:fx begin */
+#if defined(HCU_C3_OBJECTS)
+	void hcu_render_objects_set_fx_bindings(const hcu_bitmap_binding *bindings, uint32_t count,
+		const hcu_asset_profile_view *profile, void *staging, uint32_t staging_bytes);
+	hcu_render_objects_set_fx_bindings(s_c3_bitmap_metadata.bitmap_bindings, s_c3_bitmap_metadata.bitmap_count,
+		&s_map_service.profile_view, staging, staging_bytes);
+#endif
+	/* C3:fx end */
 	s_c3_bitmap_dispatch.leases = (hcu_bitmap_lease *)leases;
 	s_c3_bitmap_dispatch.lease_capacity = HCU_C3_BITMAP_SLOT_COUNT;
 	{
@@ -1968,9 +1976,10 @@ static void hcu_c3_objects_view_end(uint32_t view)
 			(unsigned)st.parts_logged, (unsigned)st.effects_selected, (unsigned)st.effects_refused);
 	if (s_c3r.frames == 0u || (s_c3r.frames % 30u) == 0u)
 		printf("HALO_PS2_LOCAL c3-fx frame=%u view=%u fx-drawn=%u fx-skipped-space=%u fx-textured=%u fx-flat=%u "
-			"fx-no-binding=%u effects-selected=%u effects-refused=%u\n",
+			"fx-no-binding=%u fx-budget-deferred=%u fx-cache-full=%u effects-selected=%u effects-refused=%u\n",
 			(unsigned)s_c3r.frames, (unsigned)view, (unsigned)st.fx_drawn, (unsigned)st.fx_skipped_space,
 			(unsigned)st.fx_textured, (unsigned)st.fx_flat, (unsigned)st.fx_no_binding,
+			(unsigned)st.fx_budget_deferred, (unsigned)st.fx_cache_full,
 			(unsigned)st.effects_selected, (unsigned)st.effects_refused);
 	/* C3:content end */
 }

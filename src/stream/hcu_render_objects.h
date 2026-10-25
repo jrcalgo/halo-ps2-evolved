@@ -160,7 +160,9 @@ typedef struct {
 	uint32_t fx_skipped_space;           /* C3.6(c): fx quads refused by chain_has_space and skipped */
 	uint32_t fx_textured;                /* C3.6(c): fx quads drawn with a resident texture */
 	uint32_t fx_flat;                    /* C3.6(c): fx quads drawn flat-shaded (no resident texture) */
-	uint32_t fx_no_binding;              /* C3.6(c): flat because no bitmap binding exists for resource_id */
+	uint32_t fx_no_binding;              /* C3.6(c): flat: no bitmap binding, or no usable source for it */
+	uint32_t fx_budget_deferred;         /* C3.6(c): flat: texture refused by the frame upload budget or ring */
+	uint32_t fx_cache_full;              /* C3.6(c): flat: texture window cannot hold the bitmap */
 } hcu_render_objects_counters;
 
 /* Record a draw only after obj_render_pass emits one or more geometry batches. Counts every successful
@@ -222,6 +224,9 @@ int hcu_render_fx_build_quad(const hcu_render_effect_draw *e, const float right[
 	hcu_render_fx_quad *q);
 /* Flat colour per kind as RGBA, with alpha on the GS scale (0x80 = opaque). Returns 0, or E_ARGUMENT. */
 int hcu_render_fx_flat_colour(uint16_t kind, uint8_t rgba[4]);
+/* C3.6(c) textured quad ST for corner c (v[c] order of hcu_render_fx_quad), normalized (PRIM FST = 0).
+ * Corner 0 (-,-) is bottom-left, so the texture's top row is at the top edge. Corners wrap mod 4. */
+void hcu_render_fx_corner_st(unsigned corner, float st[2]);
 
 /* C3.6: pose-track every interned object of the pinned snapshot once per frame. */
 int hcu_render_objects_track_poses(const halo_ps2_frame_snapshot *snap, hcu_render_pose_tracker *t,
@@ -280,6 +285,7 @@ int hcu_render_synthetic_object_add(halo_ps2_frame_snapshot *s, uint32_t view,
 #ifdef HCU_RENDER_OBJECTS_EE
 #include "core/mem.h"
 #include "stream/hcu_asset_profile.h"
+#include "stream/hcu_bitmap_dispatch.h"
 
 /* One generated entry (tools/hcu_c3_objects_table.py): a MODL chunk and its OTEX chunk, both MEDIA
  * chunks of the mounted profile, with the expected logical SHA-256 of each. texture_chunk 0 = flat. */
@@ -318,6 +324,7 @@ typedef struct {
 	uint32_t first_person_weapon_draws, first_person_hands_draws;
 	uint32_t parts_logged, effects_selected, effects_refused;
 	uint32_t fx_drawn, fx_skipped_space, fx_textured, fx_flat, fx_no_binding;
+	uint32_t fx_budget_deferred, fx_cache_full;
 	uint32_t first_person_map_generation;
 	uint16_t first_person_weapon_resource_slot, first_person_hands_resource_slot;
 	uint32_t first_person_weapon_resource_id, first_person_hands_resource_id;
@@ -328,6 +335,11 @@ typedef struct {
  * Entries whose chunks do not match the table are refused. Resets all previous object state. */
 int hcu_render_objects_load(const hcu_asset_profile_view *view, arena_t *arena,
 	const hcu_render_objects_table_entry *table, uint32_t count, hcu_render_objects_load_info *info);
+/* C3.6(c): the bitmap bindings that resolve decal fx (resource_id = bitmap tag, permutation = element), the profile
+ * their chunks are read from, and the staging buffer one chunk is read into (not retained after each call). Set
+ * once after the bitmap profile is prepared; without it every decal is counted fx-no-binding. */
+void hcu_render_objects_set_fx_bindings(const hcu_bitmap_binding *bindings, uint32_t count,
+	const hcu_asset_profile_view *profile, void *staging, uint32_t staging_bytes);
 /* Installs the object pass after the BSP pass (bsp_render_set_object_pass). Call once per map,
  * after the models are loaded and before the first view. */
 int hcu_render_objects_install(void);

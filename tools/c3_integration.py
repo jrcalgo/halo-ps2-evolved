@@ -307,6 +307,9 @@ def c3_6_content_checks(lines: list[str], views: int) -> dict:
             f.get("view") == str(view) and (_int(f.get("fp-hands-draws")) or 0) > 0 for f in fp)
             for view in range(views)),
         "fx_drawn_positive": any((_int(f.get("fx-drawn"), 0) or 0) > 0 for f in effects),
+        # C3.6(c) textured fx is required: at least one effect quad drawn with a resident texture. Counted
+        # reasons (fx-no-binding, fx-budget-deferred, fx-cache-full) are diagnostics and never pass the check.
+        "fx_textured_positive": any((_int(f.get("fx-textured"), 0) or 0) > 0 for f in effects),
         "world_parity_present": bool(world) and (_int(world[-1].get("materials"), 0) or 0) > 0,
         "world_parity_hash_nonzero": bool(world) and _hash_nonzero(world[-1].get("hash")),
         "object_parity_present": bool(objects),
