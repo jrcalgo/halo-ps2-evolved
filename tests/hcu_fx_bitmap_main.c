@@ -80,10 +80,38 @@ static void test_bucket(void)
 	}
 }
 
+static void test_kind_tally(void)
+{
+	hcu_bitmap_binding table[1];
+	/* kinds: 1 effect, 2 particle, 3 contrail, 4 decal, 0 and 5 are ignored */
+	uint16_t kinds[6] = { 1, 1, 2, 4, 5, 0 };
+	uint32_t tags[6] = { 10, HCU_FX_BITMAP_NONE, 10, 30, 10, 10 };
+	uint32_t elements[6] = { 0, 0, 0, 0, 0, 0 };
+	uint32_t counts[HCU_FX_KIND_COUNT][3];
+	uint32_t tallied;
+
+	table[0] = make_binding(10, 0, 0);
+	tallied = hcu_fx_kind_tally(kinds, tags, elements, 6, table, 1, counts);
+	CHECK(tallied == 4);
+	/* effect: one bound (tag 10), one unbound (no tag) */
+	CHECK(counts[0][0] == 2 && counts[0][1] == 1 && counts[0][2] == 1);
+	/* particle: bound */
+	CHECK(counts[1][0] == 1 && counts[1][1] == 1 && counts[1][2] == 0);
+	/* contrail: none */
+	CHECK(counts[2][0] == 0 && counts[2][1] == 0 && counts[2][2] == 0);
+	/* decal: tag 30 has no binding row, so unbound */
+	CHECK(counts[3][0] == 1 && counts[3][1] == 0 && counts[3][2] == 1);
+	/* bad arguments tally nothing */
+	CHECK(hcu_fx_kind_tally(NULL, tags, elements, 6, table, 1, counts) == 0);
+	CHECK(counts[0][0] == 0 && counts[3][2] == 0);
+	CHECK(hcu_fx_kind_tally(kinds, tags, elements, 0, NULL, 0, counts) == 0);
+}
+
 int main(void)
 {
 	test_resolve();
 	test_bucket();
+	test_kind_tally();
 	if (failures) {
 		printf("hcu_fx_bitmap_main: %d failure(s)\n", failures);
 		return 1;

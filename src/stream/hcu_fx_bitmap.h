@@ -33,4 +33,14 @@ int hcu_fx_bitmap_resolve(const hcu_bitmap_binding *bindings, uint32_t binding_c
 int hcu_fx_bucket_quads(const uint32_t *quad_binding, uint32_t quad_count,
 	uint16_t *order, hcu_fx_bucket *buckets, uint32_t bucket_capacity);
 
+/* Telemetry: per-kind tally of snapshot fx requests. kind_index is 0 effect, 1 particle,
+ * 2 contrail, 3 decal; other kinds are ignored. For each kind counts[k][0] is the total,
+ * counts[k][1] the requests whose bitmap resolves to a binding row, and counts[k][2] the
+ * rest (drawn flat). Fixed storage, no heap, O(requests * bindings) worst case, only
+ * called on the periodic telemetry frame. Returns the number of requests tallied. */
+#define HCU_FX_KIND_COUNT 4u
+uint32_t hcu_fx_kind_tally(const uint16_t *kinds, const uint32_t *tags, const uint32_t *elements,
+	uint32_t request_count, const hcu_bitmap_binding *bindings, uint32_t binding_count,
+	uint32_t counts[HCU_FX_KIND_COUNT][3]);
+
 #endif /* HALO_STREAM_HCU_FX_BITMAP_H */

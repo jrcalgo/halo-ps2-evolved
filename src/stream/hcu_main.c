@@ -1930,6 +1930,7 @@ static void hcu_c3_views_end(unsigned view_count)
  * snapshot bank slot until the frame's kick has completed. Without HCU_C3_OBJECTS every hook is a no-op. */
 #if defined(HCU_C3_OBJECTS)
 #include "stream/hcu_render_objects.h"
+#include "stream/hcu_fx_bitmap.h"
 #include <hcu_c3_objects_table.h>
 #if defined(HCU_C3_OBJECTS_SYNTHETIC)
 #define HCU_C3_OBJECTS_SOURCE "synthetic"
@@ -1938,6 +1939,33 @@ static void hcu_c3_views_end(unsigned view_count)
 #endif
 static int s_c3o_loaded, s_c3o_installed, s_c3o_released;
 static hcu_render_objects_load_info s_c3o_info;
+
+/* C3.6(c) evidence: per-kind fx request tally, bound (bitmap resolves) vs unbound (drawn flat). */
+static uint16_t s_c3_fxk_kind[HALO_PS2_FRAME_MAX_FX_REQUESTS];
+static uint32_t s_c3_fxk_tag[HALO_PS2_FRAME_MAX_FX_REQUESTS];
+static uint32_t s_c3_fxk_element[HALO_PS2_FRAME_MAX_FX_REQUESTS];
+
+static void hcu_c3_fx_kind_telemetry(const halo_ps2_frame_snapshot *snap, uint32_t frame)
+{
+	static const char *const kind_names[HCU_FX_KIND_COUNT] = { "effect", "particle", "contrail", "decal" };
+	uint32_t counts[HCU_FX_KIND_COUNT][3];
+	uint32_t i, k, n;
+
+	if (!snap || (frame != 0u && (frame % 30u) != 0u)) return;
+	n = snap->fx_request_count;
+	if (n > HALO_PS2_FRAME_MAX_FX_REQUESTS) n = HALO_PS2_FRAME_MAX_FX_REQUESTS;
+	for (i = 0; i < n; i++) {
+		s_c3_fxk_kind[i] = snap->fx_requests[i].kind;
+		s_c3_fxk_tag[i] = (uint32_t)snap->fx_requests[i].resource_id;
+		s_c3_fxk_element[i] = (uint32_t)snap->fx_requests[i].permutation;
+	}
+	hcu_fx_kind_tally(s_c3_fxk_kind, s_c3_fxk_tag, s_c3_fxk_element, n,
+		s_c3_bitmap_metadata.bitmap_bindings, s_c3_bitmap_metadata.bitmap_count, counts);
+	for (k = 0; k < HCU_FX_KIND_COUNT; k++)
+		printf("HALO_PS2_LOCAL c3-fx-kind frame=%u kind=%s requests=%u bound=%u unbound=%u dropped=%u\n",
+			(unsigned)frame, kind_names[k], (unsigned)counts[k][0], (unsigned)counts[k][1],
+			(unsigned)counts[k][2], (unsigned)snap->fx_dropped);
+}
 
 static void hcu_c3_objects_frame_begin(void)
 {
@@ -1979,7 +2007,11 @@ static void hcu_c3_objects_frame_begin(void)
 	if (s_c3r.frames == 0u) hcu_render_objects_set_sky_entry(HCU_C3_OBJECTS_SKY_INDEX);
 #endif
 	/* C3:objects-sky end */
-	(void)hcu_render_objects_frame_begin(s_c3r.frames, views, cams);
+	{
+		const halo_ps2_frame_snapshot *fx_snap =
+			hcu_render_objects_frame_begin(s_c3r.frames, views, cams);
+		hcu_c3_fx_kind_telemetry(fx_snap, s_c3r.frames);
+	}
 	if (s_c3o_loaded && !s_c3o_installed) {
 		hcu_render_objects_install();
 		s_c3o_installed = 1;
