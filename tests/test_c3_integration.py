@@ -401,9 +401,9 @@ def test_c3_6_world_materials_hash_is_required_nonzero():
 
 
 def test_default_package_is_the_c3_object_v2_bloodgulch_package():
-    assert ci.DEFAULT_PACKAGE_DIR == ROOT / "build/c3/c3-6e/packages/bloodgulch-c3v2-2026-10-25"
+    assert ci.DEFAULT_PACKAGE_DIR == ROOT / "build/c3/c3-6e/packages/bloodgulch-c3v2r-2026-10-25"
     assert ci.ROW == "bloodgulch_mounted_gunner_4p4bot"
-    assert ci.SUCC_PACKAGE_DIR == ROOT / "build/c3/c3-6e/packages/beavercreek-c3v2-2026-10-25"
+    assert ci.SUCC_PACKAGE_DIR == ROOT / "build/c3/c3-6e/packages/beavercreek-c3v2r-2026-10-25"
     # the matrix never reads the legacy selected tree or the old render tree for C3 cases
     assert "m2-c2-r3-selected-packages" not in str(ci.DEFAULT_PACKAGE_DIR)
     assert "render-tree" not in str(ci.DEFAULT_PACKAGE_DIR)
@@ -419,6 +419,26 @@ def test_default_v2_manifest_pin_matches_the_package_file_when_built():
     manifest = json.loads(manifest_path.read_text())
     assert manifest["memory"]["package_file_bytes"] == hcp.stat().st_size
     assert hashlib.sha256(hcp.read_bytes()).hexdigest() == manifest["package_sha256"]
+
+
+def test_c3_10_scoring_receives_the_run_captures():
+    # score_lines must hand the run's captures to c3_10_dma_checks; without them captures_present is always False.
+    import inspect
+    src = inspect.getsource(ci.score_lines)
+    assert '"C3.10": _verdict(c2m.c3_10_dma_checks, lines, views, frames, captures=captures)' in src
+
+
+def test_default_packages_carry_the_render_chunks_the_c3_pack_needs():
+    # hcu_render_media_pack_plan needs BSPS, TEXS and LMn; a package without them fails c3-render pack-overflow.
+    for row, pkg_dir in ((ci.ROW, ci.DEFAULT_PACKAGE_DIR), (ci.SUCC, ci.SUCC_PACKAGE_DIR)):
+        manifest_path = pkg_dir / f"{row}.json"
+        if not manifest_path.is_file():
+            import pytest
+            pytest.skip("render v2 package not built in this checkout")
+        manifest = json.loads(manifest_path.read_text())
+        kinds = {c["kind"] for c in manifest["render_media"]["chunks"]}
+        assert kinds == {4, 5, 6}
+        assert manifest["profile"].get("name") and manifest["object_profile"]["name"] == "c3-ps2-object-v2"
 
 
 def test_stage_package_tree_links_selected_and_successor_rows(tmp_path):
