@@ -890,6 +890,17 @@ static void hcu_c3_sound_request_sink(void *context, const void *sound,
 	request.metadata_known = 0;
 	(void)hcu_sound_requests_submit(&s_c3_sound_queue, &request);
 }
+/* C3:sound begin */
+#if defined(HCU_C3_FRAME_SNAPSHOT)
+/* Drains the request ring once per CE tick, so gameplay never fills it. The
+ * drainer only counts records until SPU2 playback is qualified. */
+static void hcu_c3_sound_tick(void)
+{
+	(void)hcu_sound_requests_drain_each(&s_c3_sound_queue, NULL, NULL,
+		HCU_SOUND_REQUEST_CAPACITY);
+}
+#endif
+/* C3:sound end */
 static void hcu_c3_sound_playback_sink(void *context, const void *sound,
 	unsigned event, unsigned sound_definition, int owner_kind, unsigned owner_datum, int has_position,
 	float x, float y, float z, int priority, float gain, float pitch,
@@ -940,11 +951,8 @@ static void hcu_map_boundary_report(void *context, const char *phase,
 #if defined(HCU_C3_FRAME_SNAPSHOT)
 	/* Drain once per boundary. The audio side is not qualified, so drained
 	 * records are only counted, never played. */
-	{
-		hcu_sound_request drained[HCU_SOUND_REQUEST_CAPACITY];
-		(void)hcu_sound_requests_drain(&s_c3_sound_queue, drained,
-			HCU_SOUND_REQUEST_CAPACITY);
-	}
+	(void)hcu_sound_requests_drain_each(&s_c3_sound_queue, NULL, NULL,
+		HCU_SOUND_REQUEST_CAPACITY);
 	hcu_sound_requests_print(&s_c3_sound_queue, phase);
 	printf("HALO_PS2_LOCAL renderer-readers phase=%s outstanding=%u refused=%u\n",
 		phase, (unsigned)hcu_map_service_reader_count(&s_map_service),
@@ -1915,6 +1923,11 @@ void hcu_c3_render_tick(int tick)
 	camera_t cam;
 	unsigned v;
 	(void)tick;
+	/* C3:sound begin */
+#if defined(HCU_C3_FRAME_SNAPSHOT)
+	hcu_c3_sound_tick();
+#endif
+	/* C3:sound end */
 	if (!s_c3r.active || s_c3r.frames >= (uint32_t)HCU_C3_RENDER_FRAMES) return;
 	if (hcu_render_layout_compute((uint32_t)HCU_C3_RENDER_VIEWS, VIDEO_WIDTH, VIDEO_HEIGHT, &layout) != 0 ||
 		hcu_render_frame_begin(&s_c3r.state, (uint32_t)HCU_C3_RENDER_VIEWS) != 0 ||

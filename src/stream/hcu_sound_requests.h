@@ -16,6 +16,7 @@ extern "C" {
  * SPU2 playback is not implemented here. Every drained request is a record of
  * what CE asked for, and the adapter always reports spu2_playback_qualified=0. */
 
+/* Must stay a power of two: indices wrap with & (CAPACITY - 1). */
 #define HCU_SOUND_REQUEST_CAPACITY 64u
 
 typedef enum {
@@ -51,7 +52,8 @@ typedef struct {
 	uint8_t flags;              /* bit 0 block, bit 1 load, bit 2 reference */
 	uint8_t accepted;           /* cache seam result; not playback success */
 	uint8_t metadata_known;     /* bit 0 owner, 1 position, 2 priority, 3 gain, 4 pitch, 5 time */
-	uint8_t reserved[3];
+	uint8_t repeat;             /* PERMUTATION_REQUEST: submits merged here, 1..255 */
+	uint8_t reserved[2];
 	float gain;                 /* playback gain, 1.0 nominal */
 	float pitch;                /* playback pitch multiplier, 1.0 nominal */
 	uint32_t game_time;         /* CE game time in ticks at submit */
@@ -66,6 +68,8 @@ typedef struct {
 	uint32_t pending;           /* currently stored */
 	uint32_t dropped_while_full;
 	uint32_t resets;
+	uint32_t coalesced;         /* PERMUTATION_REQUEST merged into a pending record */
+	uint32_t evicted;           /* stored record removed to admit a playback event */
 } hcu_sound_request_counters;
 
 typedef struct {
@@ -81,8 +85,12 @@ typedef struct {
 void hcu_sound_requests_init(hcu_sound_request_queue *queue);
 /* Drops any pending records and counts a reset. Counters are kept. */
 void hcu_sound_requests_reset(hcu_sound_request_queue *queue);
-/* Validates the record and appends it. Returns 1 when accepted. A full ring
- * rejects the new record (oldest records are never discarded) and counts it. */
+/* Validates the record and appends it. Returns 1 when accepted or merged. A
+ * PERMUTATION_REQUEST with the same permutation and flags as a pending record
+ * in the last few slots merges into it. When full, a playback event evicts the
+ * oldest PERMUTATION_REQUEST, else a lower-priority IMPULSE/FADE. A stop with a
+ * matching LOOPING_START pending is never refused while any victim exists.
+ * Everything else is rejected and counted. Eviction keeps arrival order. */
 int hcu_sound_requests_submit(hcu_sound_request_queue *queue,
 	const hcu_sound_request *request);
 /* Build a playback/fade/stop record from the CE bridge arguments. metadata_known
@@ -92,6 +100,11 @@ int hcu_sound_request_capture_playback(hcu_sound_request *out,
 	uint16_t owner_kind, uint32_t owner_datum, int has_position,
 	const float position[3], uint8_t priority, float gain, float pitch,
 	uint32_t game_time, uint8_t metadata_known);
+/* Calls fn on up to max records in place, oldest first (fn may be NULL to
+ * discard). fn must not submit to the same queue. Returns the number drained. */
+typedef void (*hcu_sound_request_fn)(void *context, const hcu_sound_request *request);
+size_t hcu_sound_requests_drain_each(hcu_sound_request_queue *queue,
+	hcu_sound_request_fn fn, void *context, size_t max);
 /* Copies up to max records, oldest first, into out. Returns the number
  * copied. Drained records leave the ring. */
 size_t hcu_sound_requests_drain(hcu_sound_request_queue *queue,

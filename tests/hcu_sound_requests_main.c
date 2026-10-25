@@ -29,6 +29,256 @@ static hcu_sound_request make(uint16_t event, uint32_t permutation)
 	return r;
 }
 
+typedef struct {
+	uint32_t n;
+	uint32_t sequence[128];
+	uint32_t sound[128];
+	uint16_t event[128];
+} collect_t;
+
+static void collect_one(void *context, const hcu_sound_request *r)
+{
+	collect_t *c = (collect_t *)context;
+	c->sequence[c->n] = r->sequence;
+	c->sound[c->n] = r->sound_index;
+	c->event[c->n] = r->event;
+	c->n++;
+}
+
+static void count_one(void *context, const hcu_sound_request *r)
+{
+	(void)r;
+	(*(uint32_t *)context)++;
+}
+
+static hcu_sound_request perm_req(uint32_t permutation, uint8_t flags)
+{
+	hcu_sound_request r = make(HCU_SOUND_EVENT_PERMUTATION_REQUEST, permutation);
+	r.flags = flags;
+	return r;
+}
+
+static hcu_sound_request play_req(uint16_t event, uint8_t priority,
+	uint32_t sound, uint32_t owner)
+{
+	hcu_sound_request r = make(event, 1u);
+	r.priority = priority;
+	r.sound_index = sound;
+	r.owner_datum = owner;
+	return r;
+}
+
+/* 600 mixed requests in 15 ticks of 40, drained at the end of each tick. */
+static void test_tick_drain_burst(void)
+{
+	static hcu_sound_request_queue q;
+	hcu_sound_request_counters c;
+	uint32_t t, i, drained = 0, seen = 0;
+	hcu_sound_requests_init(&q);
+	for (t = 0; t < 15; ++t) {
+		for (i = 0; i < 40; ++i) {
+			uint32_t k = t * 40u + i;
+			hcu_sound_request r;
+			switch (k % 5u) {
+			case 0: r = perm_req(k % 9u, 0x1); break;
+			case 1: r = play_req(HCU_SOUND_EVENT_IMPULSE, (uint8_t)(k % 8u), k, 1u); break;
+			case 2: r = play_req(HCU_SOUND_EVENT_LOOPING_START, 3, k % 4u, 2u); break;
+			case 3: r = play_req(HCU_SOUND_EVENT_LOOPING_STOP, 3, k % 4u, 2u); break;
+			default: r = play_req(HCU_SOUND_EVENT_FADE, (uint8_t)(k % 8u), k, 3u); break;
+			}
+			assert(hcu_sound_requests_submit(&q, &r));
+		}
+		drained += (uint32_t)hcu_sound_requests_drain_each(&q, count_one, &seen, 64u);
+	}
+	hcu_sound_requests_counters(&q, &c);
+	assert(c.submitted == 600 && c.rejected == 0 && c.evicted == 0);
+	assert(c.accepted + c.coalesced == 600);
+	assert(c.drained == c.accepted && c.pending == 0 && q.count == 0);
+	assert(c.high_water <= 40);
+	assert(drained == c.accepted && seen == drained);
+	printf("PASS 600 mixed requests drained per tick: rejected=0 coalesced=%u\n",
+		(unsigned)c.coalesced);
+}
+
+static void test_coalescing(void)
+{
+	static hcu_sound_request_queue q;
+	hcu_sound_request_counters c;
+	hcu_sound_request r;
+	collect_t got;
+	uint32_t i;
+	hcu_sound_requests_init(&q);
+	r = perm_req(0x42u, 0x1);
+	for (i = 0; i < 3; ++i)
+		assert(hcu_sound_requests_submit(&q, &r));
+	r = perm_req(0x42u, 0x2); /* different flags: separate record */
+	assert(hcu_sound_requests_submit(&q, &r));
+	hcu_sound_requests_counters(&q, &c);
+	assert(c.coalesced == 2 && c.accepted == 2 && c.submitted == 4 && q.count == 2);
+	got.n = 0;
+	assert(hcu_sound_requests_drain_each(&q, collect_one, &got, 8u) == 2);
+	assert(got.event[0] == HCU_SOUND_EVENT_PERMUTATION_REQUEST);
+	assert(q.counters.pending == 0);
+
+	/* Saturation: one record repeats 255 times, then a new record starts. */
+	hcu_sound_requests_init(&q);
+	r = perm_req(0x77u, 0x1);
+	for (i = 0; i < 300; ++i)
+		assert(hcu_sound_requests_submit(&q, &r));
+	hcu_sound_requests_counters(&q, &c);
+	assert(c.accepted == 2 && c.coalesced == 298 && q.count == 2);
+	{
+		hcu_sound_request first;
+		assert(hcu_sound_requests_drain(&q, &first, 1u) == 1u);
+		assert(first.repeat == 255u);
+	}
+
+	/* Only the last 8 slots are searched: a match 9 records back is not merged. */
+	hcu_sound_requests_init(&q);
+	r = perm_req(0x99u, 0x1);
+	assert(hcu_sound_requests_submit(&q, &r));
+	for (i = 0; i < 8; ++i) {
+		hcu_sound_request p = play_req(HCU_SOUND_EVENT_IMPULSE, 1, i, 9u);
+		assert(hcu_sound_requests_submit(&q, &p));
+	}
+	assert(hcu_sound_requests_submit(&q, &r));
+	hcu_sound_requests_counters(&q, &c);
+	assert(c.coalesced == 0 && c.accepted == 10);
+	printf("PASS permutation coalescing: merges, flags, window and repeat cap\n");
+}
+
+static void test_eviction_order(void)
+{
+	static hcu_sound_request_queue q;
+	hcu_sound_request_counters c;
+	hcu_sound_request r;
+	collect_t got;
+	uint32_t i;
+	hcu_sound_requests_init(&q);
+	for (i = 0; i < 32; ++i) {
+		r = perm_req(100u + i, 0);
+		assert(hcu_sound_requests_submit(&q, &r));
+	}
+	for (i = 0; i < 32; ++i) {
+		r = play_req(HCU_SOUND_EVENT_IMPULSE, 2, i, 5u);
+		assert(hcu_sound_requests_submit(&q, &r));
+	}
+	assert(q.count == HCU_SOUND_REQUEST_CAPACITY);
+	/* Full ring: each high-priority impulse evicts the oldest cache request. */
+	for (i = 0; i < 32; ++i) {
+		r = play_req(HCU_SOUND_EVENT_IMPULSE, 5, 900u + i, 6u);
+		assert(hcu_sound_requests_submit(&q, &r));
+	}
+	hcu_sound_requests_counters(&q, &c);
+	assert(c.evicted == 32 && c.rejected == 0);
+	/* No cache requests left: a strictly lower priority impulse is evicted next. */
+	r = play_req(HCU_SOUND_EVENT_IMPULSE, 5, 950u, 6u);
+	assert(hcu_sound_requests_submit(&q, &r));
+	/* Equal priority is not evicted, so this one is rejected. */
+	r = play_req(HCU_SOUND_EVENT_IMPULSE, 2, 951u, 6u);
+	assert(!hcu_sound_requests_submit(&q, &r));
+	hcu_sound_requests_counters(&q, &c);
+	assert(c.evicted == 33 && c.rejected == 1 && q.count == HCU_SOUND_REQUEST_CAPACITY);
+	got.n = 0;
+	assert(hcu_sound_requests_drain_each(&q, collect_one, &got, 64u) == 64);
+	for (i = 1; i < got.n; ++i)
+		assert(got.sequence[i] > got.sequence[i - 1]);
+	assert(got.sound[0] == 1u && got.sound[got.n - 1] == 950u);
+	printf("PASS eviction order: cache requests first, strictly lower priority next\n");
+}
+
+static void test_stop_after_start(void)
+{
+	static hcu_sound_request_queue q;
+	hcu_sound_request_counters c;
+	hcu_sound_request r;
+	collect_t got;
+	uint32_t i;
+	hcu_sound_requests_init(&q);
+	r = play_req(HCU_SOUND_EVENT_LOOPING_START, 4, 3u, 0x55u);
+	assert(hcu_sound_requests_submit(&q, &r));
+	for (i = 0; i < 63; ++i) {
+		r = play_req(HCU_SOUND_EVENT_IMPULSE, 1, i, 0x66u);
+		assert(hcu_sound_requests_submit(&q, &r));
+	}
+	/* Ring is full. The matching STOP is kept by evicting an impulse. */
+	r = play_req(HCU_SOUND_EVENT_STOP, 0, 3u, 0x55u);
+	assert(hcu_sound_requests_submit(&q, &r));
+	/* Ring of a START plus stops for another loop: a matching stop still gets in. */
+	hcu_sound_requests_reset(&q);
+	r = play_req(HCU_SOUND_EVENT_LOOPING_START, 4, 3u, 0x55u);
+	assert(hcu_sound_requests_submit(&q, &r));
+	for (i = 0; i < 63; ++i) {
+		r = play_req(HCU_SOUND_EVENT_LOOPING_STOP, 0, 8u, 0x77u);
+		assert(hcu_sound_requests_submit(&q, &r));
+	}
+	r = play_req(HCU_SOUND_EVENT_LOOPING_STOP, 0, 3u, 0x55u);
+	assert(hcu_sound_requests_submit(&q, &r));
+	hcu_sound_requests_counters(&q, &c);
+	assert(c.rejected == 0);
+	got.n = 0;
+	assert(hcu_sound_requests_drain_each(&q, collect_one, &got, 64u) == 64);
+	{
+		int start_kept = 0, stop_kept = 0;
+		for (i = 0; i < got.n; ++i) {
+			if (got.event[i] == HCU_SOUND_EVENT_LOOPING_START) start_kept = 1;
+			if (got.event[i] == HCU_SOUND_EVENT_LOOPING_STOP &&
+				got.sound[i] == 3u) stop_kept = 1;
+		}
+		assert(start_kept && stop_kept);
+	}
+	printf("PASS STOP-after-START: matching stop is never refused while the ring is full\n");
+}
+
+static void test_power_of_two_wrap(void)
+{
+	static hcu_sound_request_queue q;
+	static uint32_t last_sound;
+	uint32_t next = 0, want = 0, t;
+	collect_t got;
+	hcu_sound_requests_init(&q);
+	for (t = 0; t < 400; ++t) {
+		uint32_t n = 1u + (t * 37u) % 61u, j;
+		for (j = 0; j < n; ++j) {
+			hcu_sound_request r = play_req(HCU_SOUND_EVENT_IMPULSE, 1, next++, 1u);
+			assert(hcu_sound_requests_submit(&q, &r));
+		}
+		got.n = 0;
+		assert(hcu_sound_requests_drain_each(&q, collect_one, &got, 64u) == n);
+		for (j = 0; j < n; ++j) {
+			assert(got.sound[j] == want);
+			want++;
+		}
+	}
+	last_sound = want;
+	assert(q.count == 0 && q.head < HCU_SOUND_REQUEST_CAPACITY);
+	assert(last_sound == next);
+	printf("PASS power-of-two wrap: %u records across %u wraps\n",
+		(unsigned)next, (unsigned)(next / HCU_SOUND_REQUEST_CAPACITY));
+}
+
+static void test_zero_copy_drain(void)
+{
+	static hcu_sound_request_queue q;
+	collect_t got;
+	hcu_sound_request out[4];
+	uint32_t i;
+	hcu_sound_requests_init(&q);
+	for (i = 0; i < 10; ++i) {
+		hcu_sound_request r = play_req(HCU_SOUND_EVENT_FADE, 1, i, 1u);
+		assert(hcu_sound_requests_submit(&q, &r));
+	}
+	got.n = 0;
+	assert(hcu_sound_requests_drain_each(&q, collect_one, &got, 6u) == 6);
+	for (i = 0; i < 6; ++i)
+		assert(got.sound[i] == i && got.sequence[i] == got.sequence[0] + i);
+	/* Legacy copy drain still returns the rest in order. */
+	assert(hcu_sound_requests_drain(&q, out, 4u) == 4);
+	assert(out[0].sound_index == 6u && out[3].sound_index == 9u);
+	assert(q.count == 0);
+	printf("PASS zero-copy drain: in-place callback order matches the legacy drain\n");
+}
+
 static hcu_sound_request_queue queue;
 
 int main(void)
@@ -151,6 +401,13 @@ int main(void)
 	assert(queue.count == 0);
 	hcu_sound_requests_counters(&queue, &c);
 	assert(c.resets == 1 && c.pending == 0 && c.accepted == HCU_SOUND_REQUEST_CAPACITY + 6);
+
+	test_tick_drain_burst();
+	test_coalescing();
+	test_eviction_order();
+	test_stop_after_start();
+	test_power_of_two_wrap();
+	test_zero_copy_drain();
 
 	hcu_sound_requests_print(&queue, "fixture");
 	printf("PASS sound request recorder: bounded ring, ordered drain, validation, counters\n");

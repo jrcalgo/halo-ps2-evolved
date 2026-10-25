@@ -24,6 +24,8 @@ class HcuSoundRequestsTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("PASS sound request recorder", result.stdout)
         self.assertIn("spu2-playback=not-qualified", result.stdout)
+        self.assertIn("coalesced=", result.stdout)
+        self.assertIn("evicted=", result.stdout)
 
     def test_cache_and_playback_events_are_distinct_and_metadata_is_explicit(self):
         main = (ROOT / "src/stream/hcu_main.c").read_text()
