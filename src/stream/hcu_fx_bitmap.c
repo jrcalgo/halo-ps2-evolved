@@ -63,9 +63,11 @@ uint32_t hcu_fx_kind_tally(const uint16_t *kinds, const uint32_t *tags, const ui
 	for (k = 0; k < HCU_FX_KIND_COUNT; k++) counts[k][0] = counts[k][1] = counts[k][2] = 0;
 	if (!kinds || !tags || !elements) return 0;
 	for (i = 0; i < request_count; i++) {
-		/* Snapshot kinds 1..4 (EFFECT, PARTICLE_SYSTEM, CONTRAIL, DECAL) map to 0..3. */
-		if (kinds[i] < 1u || kinds[i] > HCU_FX_KIND_COUNT) continue;
-		k = (uint32_t)kinds[i] - 1u;
+		/* Snapshot ABI kinds: 1 EFFECT, 2 PARTICLE_SYSTEM (also live particles), 3 CONTRAIL,
+		 * 5 DECAL (4 is LIGHT, unpublished) map to 0..3. */
+		if (kinds[i] == 5u) k = 3u;
+		else if (kinds[i] >= 1u && kinds[i] <= 3u) k = (uint32_t)kinds[i] - 1u;
+		else continue;
 		counts[k][0]++;
 		if (hcu_fx_bitmap_resolve(bindings, binding_count, tags[i], elements[i], &binding))
 			counts[k][1]++;

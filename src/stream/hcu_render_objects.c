@@ -401,7 +401,7 @@ int hcu_render_effects_select(const halo_ps2_frame_snapshot *snap, uint32_t view
 	hcu_render_objects_counters *counters)
 {
 	const halo_ps2_frame_view *v;
-	uint32_t e, emitted = 0;
+	uint32_t e, emitted = 0, budget;
 	if (!snap || !out || !count) return HCU_RENDER_CONTENT_E_ARGUMENT;
 	*count = 0;
 	if (snap->version != HALO_PS2_FRAME_SNAPSHOT_VERSION || view >= snap->view_count ||
@@ -410,6 +410,16 @@ int hcu_render_effects_select(const halo_ps2_frame_snapshot *snap, uint32_t view
 	if (capacity > HCU_FX_MAX_PER_VIEW) capacity = HCU_FX_MAX_PER_VIEW;   /* fixed per-view cap */
 	v = &snap->views[view];
 	if (!(v->flags & HALO_PS2_FRAME_VIEW_ACTIVE)) return 0;
+	/* Viewport-share budget: the full view draws up to the cap; a half view a half; quarter views (3-4 active)
+	 * a quarter each. Keeps the chain's fx packets inside the per-view geometry budget. */
+	{
+		uint32_t active = 0, vi;
+		for (vi = 0; vi < snap->view_count && vi < HALO_PS2_FRAME_MAX_VIEWS; vi++)
+			if (snap->views[vi].flags & HALO_PS2_FRAME_VIEW_ACTIVE) active++;
+		budget = active <= 1u ? HCU_FX_MAX_PER_VIEW : active == 2u ? HCU_FX_MAX_PER_VIEW / 2u
+			: HCU_FX_MAX_PER_VIEW / 4u;
+		if (budget > capacity) budget = capacity;
+	}
 	for (e = 0; e < snap->fx_request_count; e++) {
 		const halo_ps2_frame_fx_request *fx = &snap->fx_requests[e];
 		uint32_t ref, owned = 0;
@@ -426,6 +436,11 @@ int hcu_render_effects_select(const halo_ps2_frame_snapshot *snap, uint32_t view
 		if (!isfinite(fx->position[0]) || !isfinite(fx->position[1]) || !isfinite(fx->position[2]) ||
 			fx->kind == 0u || fx->kind > HALO_PS2_FRAME_FX_DECAL) {
 			if (counters) counters->effects_refused++;
+			continue;
+		}
+		if (emitted >= budget) {
+			/* Per-view fx draw budget (viewport share): excess requests are deferred, not refused. */
+			if (counters) counters->fx_budget_deferred++;
 			continue;
 		}
 		if (emitted >= capacity) {

@@ -83,8 +83,8 @@ static void test_bucket(void)
 static void test_kind_tally(void)
 {
 	hcu_bitmap_binding table[1];
-	/* kinds: 1 effect, 2 particle, 3 contrail, 4 decal, 0 and 5 are ignored */
-	uint16_t kinds[6] = { 1, 1, 2, 4, 5, 0 };
+	/* ABI kinds: 1 effect, 2 particle, 3 contrail, 5 decal; 4 (light) and 0 are ignored */
+	uint16_t kinds[6] = { 1, 1, 2, 5, 4, 0 };
 	uint32_t tags[6] = { 10, HCU_FX_BITMAP_NONE, 10, 30, 10, 10 };
 	uint32_t elements[6] = { 0, 0, 0, 0, 0, 0 };
 	uint32_t counts[HCU_FX_KIND_COUNT][3];

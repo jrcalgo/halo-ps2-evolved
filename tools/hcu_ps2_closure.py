@@ -564,7 +564,8 @@ def main() -> None:
                 # These per-function sections otherwise have no strong caller
                 # inside the CE closure and are discarded by --gc-sections.
                 roots.extend(("halo_ps2_bitmap_frame_last_status",
-                              "halo_ps2_bitmap_frame_failure_count"))
+                              "halo_ps2_bitmap_frame_failure_count",
+                              "halo_ps2_c3_fx_stream_drops"))
             rooted_link = subprocess.run(
                 [str(linker), "-r", "--gc-sections", *[arg for name in roots for arg in ("-u", name)],
                  f"@{response}", "-o", str(rooted)],

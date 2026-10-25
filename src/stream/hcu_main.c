@@ -1945,6 +1945,8 @@ static uint16_t s_c3_fxk_kind[HALO_PS2_FRAME_MAX_FX_REQUESTS];
 static uint32_t s_c3_fxk_tag[HALO_PS2_FRAME_MAX_FX_REQUESTS];
 static uint32_t s_c3_fxk_element[HALO_PS2_FRAME_MAX_FX_REQUESTS];
 
+void halo_ps2_c3_fx_stream_drops(uint32_t out[5]); /* CE ps2_render.c */
+#if HCU_C3_TELEMETRY_ENABLED
 static void hcu_c3_fx_kind_telemetry(const halo_ps2_frame_snapshot *snap, uint32_t frame)
 {
 	static const char *const kind_names[HCU_FX_KIND_COUNT] = { "effect", "particle", "contrail", "decal" };
@@ -1962,10 +1964,18 @@ static void hcu_c3_fx_kind_telemetry(const halo_ps2_frame_snapshot *snap, uint32
 	hcu_fx_kind_tally(s_c3_fxk_kind, s_c3_fxk_tag, s_c3_fxk_element, n,
 		s_c3_bitmap_metadata.bitmap_bindings, s_c3_bitmap_metadata.bitmap_count, counts);
 	for (k = 0; k < HCU_FX_KIND_COUNT; k++)
-		printf("HALO_PS2_LOCAL c3-fx-kind frame=%u kind=%s requests=%u bound=%u unbound=%u dropped=%u\n",
+		HCU_C3_TELEM_PRINTF("HALO_PS2_LOCAL c3-fx-kind frame=%u kind=%s requests=%u bound=%u unbound=%u dropped=%u\n",
 			(unsigned)frame, kind_names[k], (unsigned)counts[k][0], (unsigned)counts[k][1],
 			(unsigned)counts[k][2], (unsigned)snap->fx_dropped);
+	{
+		uint32_t drops[5];
+		halo_ps2_c3_fx_stream_drops(drops);
+		HCU_C3_TELEM_PRINTF("HALO_PS2_LOCAL c3-fx-deferred frame=%u psystem=%u particle=%u contrail=%u effect=%u decal=%u total=%u\n",
+			(unsigned)frame, (unsigned)drops[0], (unsigned)drops[1], (unsigned)drops[2],
+			(unsigned)drops[3], (unsigned)drops[4], (unsigned)snap->fx_dropped);
+	}
 }
+#endif
 
 static void hcu_c3_objects_frame_begin(void)
 {
