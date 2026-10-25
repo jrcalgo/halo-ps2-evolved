@@ -76,7 +76,7 @@ static int rejection_preserves_state(const hcu_bitmap_binding *binding,
 		&s_cache, &s_journal, s_cache_readers, TC_MAX_KEYS, s_slots, 4,
 		s_source_storage, sizeof(s_source_storage), sizeof(s_staging), s_staging, sizeof(s_staging),
 		&s_upload, &s_geometry, s_context.texture_page_base_words,
-		s_context.clut_base_words, 640, 448, &lease) != expected)
+		s_context.clut_base_words, 640, 448, (hcu_bitmap_rect){ 0, 0, 640, 448 }, &lease) != expected)
 		return 0;
 	return !lease.active && !memcmp(&s_cache, &s_cache_before, sizeof(s_cache)) &&
 		s_upload.qw == upload_before.qw && s_upload.overflow == upload_before.overflow &&

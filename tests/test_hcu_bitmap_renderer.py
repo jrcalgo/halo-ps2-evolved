@@ -59,7 +59,8 @@ def test_renderer_fence_skip_then_kick_host(tmp_path):
     cmd = [compiler, "-std=gnu89", "-Wall", "-Wextra", "-Werror",
            "-I", str(ROOT / "src"), "-I", str(ENGINE), "-I", str(ROOT / "submodules/halo-ce-universal/port/ps2/include"),
            str(ROOT / "tests/hcu_bitmap_fence_main.c"), str(ROOT / "src/stream/hcu_bitmap_renderer.c"),
-           str(ROOT / "src/stream/hcu_bitmap_frame.c"), str(ROOT / "src/stream/sha256.c"),
+           str(ROOT / "src/stream/hcu_bitmap_frame.c"), str(ROOT / "src/stream/hcu_render_frame.c"),
+           str(ROOT / "src/stream/sha256.c"),
            str(ENGINE / "render/chain.c"), str(ENGINE / "render/texcache.c"), "-o", str(exe)]
     built = subprocess.run(cmd, capture_output=True, text=True)
     assert built.returncode == 0, built.stdout + built.stderr
@@ -108,7 +109,8 @@ def test_renderer_fence_failure_host(tmp_path):
     cmd = [compiler, "-std=gnu89", "-Wall", "-Wextra", "-Werror",
            "-I", str(ROOT / "src"), "-I", str(ENGINE), "-I", str(ROOT / "submodules/halo-ce-universal/port/ps2/include"),
            str(ROOT / "tests/hcu_bitmap_fence_main.c"), str(ROOT / "src/stream/hcu_bitmap_renderer.c"),
-           str(ROOT / "src/stream/hcu_bitmap_frame.c"), str(ROOT / "src/stream/sha256.c"),
+           str(ROOT / "src/stream/hcu_bitmap_frame.c"), str(ROOT / "src/stream/hcu_render_frame.c"),
+           str(ROOT / "src/stream/sha256.c"),
            str(ENGINE / "render/chain.c"), str(ENGINE / "render/texcache.c"), "-o", str(exe)]
     built = subprocess.run(cmd, capture_output=True, text=True)
     assert built.returncode == 0, built.stdout + built.stderr

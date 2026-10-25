@@ -3,6 +3,7 @@
 #include <string.h>
 #include "halo_ps2_bitmap_frame.h"
 #include "halo_ps2_bitmap_requests.h"
+#include "stream/hcu_render_frame.h"
 #include "stream/sha256.h"
 
 #define HCU_BITMAP_FRAME_MAX_BINDINGS 4096u
@@ -241,6 +242,8 @@ int32_t hcu_bitmap_frame_begin_callback(void *context, uint32_t frame_index,
 	owner->frame_index = frame_index;
 	owner->frame_dropped = 0;
 	owner->active_window_count = active_window_count;
+	/* The view table is rebuilt per frame by set_view; a batch drained later reads only this frame's table. */
+	owner->dispatch->view_count = 0;
 	owner->view_call_count = 0;
 	owner->last_window_index = 0;
 	owner->has_last_window = 0;
@@ -262,6 +265,21 @@ int32_t hcu_bitmap_frame_set_view_callback(void *context, uint16_t window_index,
 		window_index >= HALO_PS2_BITMAP_FRAME_MAX_WINDOWS ||
 		(owner->has_last_window && window_index <= owner->last_window_index) ||
 		local_player_index < 0) return HCU_BITMAP_FRAME_E_VIEW;
+	/* Same layout the parent renders: ordinal k of the active windows owns layout rect k. */
+	{
+		hcu_render_layout layout;
+		hcu_bitmap_dispatch_context *d = owner->dispatch;
+		uint32_t ordinal = owner->view_call_count;
+		if (hcu_render_layout_compute(owner->active_window_count, d->screen_w, d->screen_h, &layout) != 0 ||
+			ordinal >= layout.view_count)
+			return HCU_BITMAP_FRAME_E_VIEW;
+		d->views[ordinal].window_index = (int32_t)window_index;
+		d->views[ordinal].rect.x = layout.views[ordinal].x;
+		d->views[ordinal].rect.y = layout.views[ordinal].y;
+		d->views[ordinal].rect.w = layout.views[ordinal].w;
+		d->views[ordinal].rect.h = layout.views[ordinal].h;
+		d->view_count = ordinal + 1u;
+	}
 	if (halo_ps2_bitmap_requests_set_view(owner->queue, (int16_t)window_index,
 		local_player_index) != HALO_PS2_BITMAP_REQUEST_OK) return HCU_BITMAP_FRAME_E_QUEUE;
 	owner->view_call_count++;

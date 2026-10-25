@@ -110,6 +110,7 @@ int main(void)
 	binding.expected_profile_id=19;
 	dispatch.profile=&profile; dispatch.bindings=&binding; dispatch.binding_count=1;
 	dispatch.expected_generation=7;
+	dispatch.screen_w=640; dispatch.screen_h=480;
 	if (hcu_bitmap_frame_owner_init(&owner) != HCU_BITMAP_FRAME_OK) return 1;
 	/* A pre-existing unrelated renderer consumer must survive a busy register. */
 	s_frame_consumer.context=&profile; s_frame_registered=1;

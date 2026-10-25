@@ -95,7 +95,7 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 	chain_t *upload_chain, chain_t *geometry_chain,
 	uint32_t texture_page_base_words, uint32_t clut_base_words,
 	uint16_t screen_w, uint16_t screen_h,
-	hcu_bitmap_lease *lease)
+	hcu_bitmap_rect target, hcu_bitmap_lease *lease)
 {
 	uint32_t i, slot_index = 0, read_bytes;
 	hcu_asset_chunk_view chunk_view;
@@ -112,13 +112,15 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 	tc_result acquired;
 	chain_t upload_before, geometry_before;
 	hcu_bitmap_quad_state_t state;
-	hcu_bitmap_vertex_t vertices[4];
+	hcu_bitmap_vertex_t vertices[4], placed[4];
 	hcu_bitmap_blend_t blend;
 	int upload_source;
 
 	if (!request || !bindings || !profile || !cache || !journal || !cache_readers || !slots ||
 		!binding_count || !slot_count || !source_storage || !slot_stride || !staging_buffer || !upload_chain ||
 		!geometry_chain || !lease || lease->active || !screen_w || !screen_h ||
+		target.x < 0 || target.y < 0 || target.w <= 0 || target.h <= 0 ||
+		target.x + target.w > screen_w || target.y + target.h > screen_h ||
 		slot_count > UINT16_MAX || cache_reader_count < cache->max_keys ||
 		cache_reader_count > TC_MAX_KEYS || !source_storage_bytes ||
 		!slot_stride || slot_stride > staging_buffer_bytes ||
@@ -240,7 +242,6 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 	state.tex0 = GS_TEX0(tbp, tbw, image.psm, (uint32_t)log2_exact(image.width),
 		(uint32_t)log2_exact(image.height), 1, 0, cbp, GS_PSMCT32, 0, 0, 1);
 	state.screen_w = screen_w; state.screen_h = screen_h;
-	state.clip_w = screen_w; state.clip_h = screen_h;
 	state.z = 0xFFFFFFu; state.blend = blend; state.texture_layers = 1;
 	state.point_sampled = request->point_sampled;
 	for (i = 0; i < 4; i++) {
@@ -248,6 +249,9 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 		vertices[i].u = request->vertices[i].u; vertices[i].v = request->vertices[i].v;
 		vertices[i].argb = request->vertices[i].color;
 	}
+	/* CE vertices are viewport-relative: offset into this view and clip to it. */
+	if (hcu_bitmap_quad_place(&state, &target, vertices, placed) != 0) goto rollback;
+	memcpy(vertices, placed, sizeof(vertices));
 	if (request->has_meter & HALO_PS2_BITMAP_METER_PRESENT) {
 		if (meter_emit(geometry_chain, &section, binding->image_index,
 			&state, vertices, request) != HCU_BITMAP_QUAD_OK)
@@ -310,7 +314,13 @@ int hcu_bitmap_dispatch_reader(const halo_ps2_bitmap_request_reader *reader,
 	for (i = 0; i < reader->count; i++) {
 		hcu_bitmap_lease *lease = &ctx->leases[ctx->lease_count];
 		hcu_bitmap_dispatch_status status;
+		hcu_bitmap_rect target;
 		memset(lease, 0, sizeof(*lease));
+		if (hcu_bitmap_view_resolve(ctx->views, ctx->view_count, reader->requests[i].view_index,
+			ctx->screen_w, ctx->screen_h, &target) != 0) {
+			if (ctx->first_error == HCU_BITMAP_DISPATCH_OK) ctx->first_error = HCU_BITMAP_DISPATCH_E_VIEW;
+			continue;
+		}
 		status = hcu_bitmap_dispatch_request(&reader->requests[i], ctx->bindings,
 			ctx->binding_count, ctx->profile, ctx->expected_generation,
 			ctx->cache, ctx->journal, ctx->cache_readers, ctx->cache_reader_count,
@@ -319,7 +329,7 @@ int hcu_bitmap_dispatch_reader(const halo_ps2_bitmap_request_reader *reader,
 			ctx->staging_buffer, ctx->staging_buffer_bytes,
 			ctx->upload_chain, ctx->geometry_chain,
 			ctx->texture_page_base_words, ctx->clut_base_words,
-			ctx->screen_w, ctx->screen_h, lease);
+			ctx->screen_w, ctx->screen_h, target, lease);
 		if (status == HCU_BITMAP_DISPATCH_OK) {
 			if (reader->requests[i].has_meter & HALO_PS2_BITMAP_METER_PRESENT) ctx->meter_quads++;
 			/* C3.10: dispatch runs inside the parent emit window, so the upload rides the next kick */

@@ -21,7 +21,8 @@ def test_frame_owner_lifecycle(tmp_path):
     for include in includes:
         cmd += ["-I", str(include)]
     sources = [ROOT / "tests/hcu_bitmap_frame_owner_main.c",
-               ROOT / "src/stream/hcu_bitmap_frame.c", ROOT / "src/stream/sha256.c"]
+               ROOT / "src/stream/hcu_bitmap_frame.c", ROOT / "src/stream/hcu_render_frame.c",
+               ROOT / "src/stream/sha256.c"]
     hud_provider = HCU / "source/interface/interface.c"
     hud_text = hud_provider.read_text()
     marker = "halo_ps2_real_producer_descriptor_instance = {"

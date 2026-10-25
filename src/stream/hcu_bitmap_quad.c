@@ -32,6 +32,39 @@ static void put_vertex(uint64_t *q,const hcu_bitmap_vertex_t *v,const hcu_bitmap
 	q[5]=s->z&0xFFFFFFu;
 }
 
+int hcu_bitmap_view_resolve(const hcu_bitmap_view *views, uint32_t view_count,
+	int32_t window_index, int32_t screen_w, int32_t screen_h, hcu_bitmap_rect *out)
+{
+	uint32_t i;
+	if (!out || screen_w <= 0 || screen_h <= 0 || view_count > HCU_BITMAP_MAX_VIEWS) return -1;
+	if (view_count == 0u) {
+		out->x = 0; out->y = 0; out->w = screen_w; out->h = screen_h;
+		return 0;
+	}
+	if (!views) return -1;
+	for (i = 0; i < view_count; i++)
+		if (views[i].window_index == window_index) { *out = views[i].rect; return 0; }
+	return -1;
+}
+
+int hcu_bitmap_quad_place(hcu_bitmap_quad_state_t *s, const hcu_bitmap_rect *r,
+	const hcu_bitmap_vertex_t in[4], hcu_bitmap_vertex_t out[4])
+{
+	unsigned i;
+	if (!s || !r || !in || !out || !s->screen_w || !s->screen_h) return -1;
+	if (r->x < 0 || r->y < 0 || r->w <= 0 || r->h <= 0) return -1;
+	if ((int64_t)r->x + r->w > s->screen_w || (int64_t)r->y + r->h > s->screen_h) return -1;
+	if (r->x > 4095 || r->y > 4095 || r->w > 4095 || r->h > 4095) return -1;
+	s->clip_x = (uint16_t)r->x; s->clip_y = (uint16_t)r->y;
+	s->clip_w = (uint16_t)r->w; s->clip_h = (uint16_t)r->h;
+	for (i = 0; i < 4; i++) {
+		out[i] = in[i];
+		out[i].x = in[i].x + (float)r->x;
+		out[i].y = in[i].y + (float)r->y;
+	}
+	return 0;
+}
+
 hcu_bitmap_quad_status hcu_bitmap_quad_emit(chain_t *c,const tex_section *textures,uint32_t image_index,
 	const hcu_bitmap_quad_state_t *s,const hcu_bitmap_vertex_t vertices[4])
 {

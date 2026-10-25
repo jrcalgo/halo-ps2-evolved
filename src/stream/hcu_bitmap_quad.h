@@ -47,6 +47,33 @@ typedef enum {
 	HCU_BITMAP_QUAD_TEX = -3
 } hcu_bitmap_quad_status;
 
+/* Per-view placement. CE captures HUD vertices relative to the viewport origin of
+ * the window that drew them (hud_draw.c subtracts viewport_bounds.x0/y0). The
+ * parent frame owner records one entry per CE window, in set-view order, with the
+ * rectangle that hcu_render_layout_compute assigns to that ordinal. */
+#define HCU_BITMAP_MAX_VIEWS 4u
+
+typedef struct {
+	int32_t x, y, w, h;
+} hcu_bitmap_rect;
+
+typedef struct {
+	int32_t window_index;   /* CE window index (may have gaps) */
+	hcu_bitmap_rect rect;   /* screen rectangle of this view */
+} hcu_bitmap_view;
+
+/* view_count 0 selects the full screen (single-view producers). Otherwise the
+ * window must be present in views[0..view_count). Returns 0, or -1 when no
+ * entry matches or the screen is unusable. */
+int hcu_bitmap_view_resolve(const hcu_bitmap_view *views, uint32_t view_count,
+	int32_t window_index, int32_t screen_w, int32_t screen_h, hcu_bitmap_rect *out);
+
+/* Offsets CE viewport-relative vertices into `rect` and sets the quad's scissor
+ * (state->clip_*) to exactly `rect`. Returns 0, or -1 when `rect` is empty or
+ * leaves the screen. Pure arithmetic: no heap, O(1) per quad. */
+int hcu_bitmap_quad_place(hcu_bitmap_quad_state_t *state, const hcu_bitmap_rect *rect,
+	const hcu_bitmap_vertex_t in[4], hcu_bitmap_vertex_t out[4]);
+
 /* Emits one bounded GIF packet containing two textured triangles. The input
  * tex_section must already be validated by tex_open; `image_index` selects one
  * PS2 TEXS image, not a CE bitmap sequence. No VRAM allocation/upload lifetime

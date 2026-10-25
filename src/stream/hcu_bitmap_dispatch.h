@@ -49,7 +49,8 @@ typedef enum {
 	HCU_BITMAP_DISPATCH_E_FORMAT = -4,
 	HCU_BITMAP_DISPATCH_E_CAPACITY = -5,
 	HCU_BITMAP_DISPATCH_E_BUSY = -6,
-	HCU_BITMAP_DISPATCH_E_UNSUPPORTED = -7
+	HCU_BITMAP_DISPATCH_E_UNSUPPORTED = -7,
+	HCU_BITMAP_DISPATCH_E_VIEW = -8
 } hcu_bitmap_dispatch_status;
 
 /* Every backing store is caller-owned. `source_storage` packs only the pixel and
@@ -71,7 +72,7 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 	chain_t *upload_chain, chain_t *geometry_chain,
 	uint32_t texture_page_base_words, uint32_t clut_base_words,
 	uint16_t screen_w, uint16_t screen_h,
-	hcu_bitmap_lease *lease);
+	hcu_bitmap_rect target, hcu_bitmap_lease *lease);
 void hcu_bitmap_dispatch_release(hcu_bitmap_source_slot *slots,
 	uint32_t slot_count, uint16_t *cache_readers, uint32_t cache_reader_count,
 	hcu_bitmap_lease *lease);
@@ -97,6 +98,10 @@ typedef struct {
 	uint32_t texture_page_base_words;
 	uint32_t clut_base_words;
 	uint16_t screen_w, screen_h;
+	/* Per-frame view table written by the frame owner (CE window index -> screen rect).
+	 * view_count 0 means full-screen placement for single-view producers. */
+	hcu_bitmap_view views[HCU_BITMAP_MAX_VIEWS];
+	uint32_t view_count;
 	hcu_bitmap_lease *leases;
 	uint32_t lease_capacity, lease_count;
 	hcu_bitmap_dispatch_status first_error;
