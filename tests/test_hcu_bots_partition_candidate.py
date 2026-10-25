@@ -31,10 +31,10 @@ def test_bots_sidewinder_candidate_provenance_and_static_accounting():
     assert row["tag_cache_bytes"] + row["tag_bsp_guard_bytes"] + \
         row["structure_bsp_bytes"] + row["render_texture_bytes"] + \
         row["residency_guard_bytes"] + \
-        row["residency_bytes"] == row["map_render_total_bytes"] == 10 * 1024 * 1024
+        row["residency_bytes"] == row["map_render_total_bytes"] == 10 * 1024 * 1024 + 512 * 1024
     assert row["map_render_contiguous_span_bytes"] == \
-        row["map_render_total_bytes"] + row["map_render_guard_bytes"] == 10 * 1024 * 1024 + 16
-    assert "outside the 10 MiB combined payload capacity" in row["map_render_guard_location"]
+        row["map_render_total_bytes"] + row["map_render_guard_bytes"] == 10 * 1024 * 1024 + 512 * 1024 + 16
+    assert "outside the 10.5 MiB combined payload capacity" in row["map_render_guard_location"]
     assert "standard guarded slack" in row["terminal_layout_guard_location"]
     assert row["claims_scratch_bytes"] == ((row["tag_cache_bytes"] + row["structure_bsp_bytes"] + 31) // 32) * 4
     assert row["resident_gameplay_static_need_bytes"] == row["game_state_bytes"] + row["claims_scratch_bytes"]

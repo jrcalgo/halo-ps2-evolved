@@ -52,7 +52,7 @@ static void report_and_check_real_regions(void)
 	assert(texture_base == (uintptr_t)layout.guards[2] + MEM_LAYOUT_V2_GUARD_BYTES);
 	assert((uintptr_t)bsp->base % 16u == 0 && texture_base % 16u == 0);
 	assert(texture_base - bsp_end == MEM_LAYOUT_V2_GUARD_BYTES);
-	assert(bsp->cap == 6291456u && texture->cap == 4194304u);
+	assert(bsp->cap == 6291456u && texture->cap == 4718592u);
 	/* Aligned candidate spans could fit in the raw combined extent, but the
 	 * map span crosses the current_bsp post-guard and borrows texture bytes.
 	 * Production guarded arenas must not be treated as one span without an
@@ -116,7 +116,7 @@ static void check_candidate_guards(const candidate_guarded_layout *candidate,
 static void build_candidate_guarded_layout(candidate_guarded_layout *candidate)
 {
 	static const size_t region_bytes[MEM_LAYOUT_V2_REGION_COUNT] = {
-		6815744u, 6291456u, 4194304u, 2621440u, 1179648u,
+		6815744u, 6291456u, 4718592u, 2621440u, 1179648u,
 		1572864u, 524288u, 524288u, 393216u
 	};
 	static const char *region_names[MEM_LAYOUT_V2_REGION_COUNT] = {

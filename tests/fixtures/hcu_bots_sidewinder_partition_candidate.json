@@ -52,13 +52,13 @@
     "tag_cache_alignment": 16,
     "structure_bsp_bytes": 1993744,
     "structure_bsp_alignment": 16,
-    "render_texture_bytes": 2858528,
+    "render_texture_bytes": 3382816,
     "residency_bytes": 1048576,
     "residency_segment_bytes": 65536,
     "residency_slots": 16,
     "tag_bsp_guard_bytes": 16,
     "map_render_guard_bytes": 16,
-    "map_render_total_bytes": 10485760,
+    "map_render_total_bytes": 11010048,
     "claims_scratch_bytes": 822328,
     "game_state_bytes": 3428352,
     "resident_gameplay_static_need_bytes": 4250680,
@@ -73,16 +73,16 @@
     "resident_gameplay_last_retained_elf_effective_static_margin_bytes": 753416,
     "resident_gameplay_last_retained_elf_effective_margin_status": "provisional accounting for the retained diagnostic ELF; recompute from the selected guest ELF",
     "residency_guard_bytes": 16,
-    "map_render_contiguous_span_bytes": 10485776,
-    "map_render_guard_location": "moved existing layout guard between map and render payload capacities; outside the 10 MiB combined payload capacity",
+    "map_render_contiguous_span_bytes": 11010064,
+    "map_render_guard_location": "moved existing layout guard between map and render payload capacities; outside the 10.5 MiB combined payload capacity",
     "terminal_layout_guard_bytes": 16,
-    "terminal_layout_guard_location": "existing mem_layout_v2 guarded-layout canary after the texture parent; charged to standard guarded slack, outside the 10 MiB candidate payload formula",
+    "terminal_layout_guard_location": "existing mem_layout_v2 guarded-layout canary after the texture parent; charged to standard guarded slack, outside the 10.5 MiB candidate payload formula",
     "guard_accounting": "Inside payload: tag/BSP guard + residency guard; outside payload: moved map/render guard (+16 B contiguous span); terminal canary remains in original guarded-layout slack."
   },
   "accounting": {
     "tag_cache_bytes": "align16(resident_recipe_bytes)",
     "structure_bsp_bytes": "align16(bsp_payload_bytes)",
-    "render_texture_bytes": "10 MiB - tag_cache - 16-byte tag/BSP guard - structure_bsp - 16-slot residency arena - 16-byte residency guard",
+    "render_texture_bytes": "10.5 MiB - tag_cache - 16-byte tag/BSP guard - structure_bsp - 16-slot residency arena - 16-byte residency guard",
     "claims_scratch_bytes": "ceil((tag_cache + structure_bsp) / 32) * 4",
     "resident_gameplay_static_need_bytes": "3,428,352-byte game state + claims_scratch_bytes",
     "limitations": [
@@ -90,9 +90,9 @@
       "The package's 14,712,332 bytes of media remain independently addressable on disk and are not counted as simultaneously resident.",
       "Renderer workspace, texture-page working set, relocations staging overlap, and target high-water are not qualified by this row.",
       "The 2,565,064-byte nominal margin is before ELF NOBITS. Applying NOBITS from the exact last-retained diagnostic ELF leaves 5,004,096 bytes capacity and a provisional 753,416-byte margin for this static need; recalculate with the selected guest ELF before any fit claim.",
-      "The 10 MiB row formula includes the tag/BSP and residency guards once each. The moved map/render guard is outside the payload capacities and makes that contiguous span 10 MiB + 16 B; the existing terminal layout canary is accounted by the standard guarded-layout slack."
+      "The 10.5 MiB row formula includes the tag/BSP and residency guards once each. The moved map/render guard is outside the payload capacities and makes that contiguous span 10.5 MiB + 16 B; the existing terminal layout canary is accounted by the standard guarded-layout slack."
     ],
-    "guarded_partition_formula": "tag_cache + tag/BSP guard + structure_bsp + render_texture + residency guard + residency arena = 10 MiB payload; the moved map/render boundary guard is a further 16 bytes outside payload capacities."
+    "guarded_partition_formula": "tag_cache + tag/BSP guard + structure_bsp + render_texture + residency guard + residency arena = 10.5 MiB payload; the moved map/render boundary guard is a further 16 bytes outside payload capacities."
   },
   "last_retained_elf_accounting": {
     "artifact_manifest": "build/m2-c2-resume-budget-v3/artifact-manifest.json",

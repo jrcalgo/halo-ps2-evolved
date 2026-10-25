@@ -284,7 +284,7 @@ def linked_physical_evidence(physical, elf, probe_path=None):
     machine = probe["hcu_gameplay_machine"]
     placement = machine["physical_placement"]
     expected = {"resident_gameplay": 6_815_744 - placement["nobits"]["bytes"],
-                "current_bsp": 6_291_456, "texture_cache": 4_194_304,
+                "current_bsp": 6_291_456, "texture_cache": 4_718_592,
                 "dynamic_simulation": 2_621_440, "dma_commands": 1_179_648,
                 "streaming": 1_572_864, "checkpoint": 524_288,
                 "audio": 524_288, "frame_scratch": 393_216}

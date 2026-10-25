@@ -43,7 +43,10 @@ RENDER_TELEMETRY_H = ROOT / "src/stream/hcu_render_telemetry.h"
 PACKAGES = ROOT / "docs/reports/m2-c2-r3-selected-packages-2026-10-23.json"
 MEMORY_PROFILE_C = ROOT / "src/stream/hcu_memory_profile.c"
 
-MAP_RENDER_BYTES = 6291456 + 4194304  # current_bsp + texture_cache backing (10 MiB)
+# current_bsp + texture_cache backing. Budget v5 grows texture_cache by 524288 (4718592); the 2026-10-23
+# capacity report was measured on the v4 10 MiB basis, so its residuals are shifted by the difference.
+MAP_RENDER_BYTES = 6291456 + 4718592  # 11,010,048 (budget v5)
+CAPACITY_REPORT_MAP_RENDER_BYTES = 6291456 + 4194304  # 10 MiB, basis of the 2026-10-23 capacity report
 GUARD = 16
 # Residency span: 16 whole 64 KiB slots carved after the render span, behind one guard
 # (hcu_memory_profile_plan_v1 and the r5 partition-runtime lane).
@@ -57,7 +60,7 @@ COMMITTED = _BUDGET_CONFIG["committed_bytes"]
 RESERVE = _BUDGET_CONFIG["reserve_bytes"]
 LOW_KERNEL_BYTES = 0x00100000
 HIGH_KERNEL_START = 0x01f80000
-BOOT_BACKING_BYTES = 24117248  # MEM_LAYOUT_V2_BYTES, submodules/halo-ps2/engine/src/core/mem.h
+BOOT_BACKING_BYTES = 24641536  # MEM_LAYOUT_V2_BYTES (budget v5), submodules/halo-ps2/engine/src/core/mem.h
 MAX_PROFILE_VERSION = 2
 RESIDENT_CAP = next(r["bytes"] for r in _BUDGET_CONFIG["regions"] if r["name"] == "resident_gameplay")
 
@@ -141,7 +144,7 @@ def ui_profile(memory):
         "ctag_relocation_staging_bytes": row["relocation_table_staging_bytes"],
         "full_union_resident_ce_bytes": row["resident_ce_bytes"],
         "render_owner_residual_after_ce_bsp_alignment_and_guard_bytes":
-            MAP_RENDER_BYTES - (align16(row["resident_ce_bytes"]) + GUARD + align16(row["bsp_payload_bytes"])),
+            CAPACITY_REPORT_MAP_RENDER_BYTES - (align16(row["resident_ce_bytes"]) + GUARD + align16(row["bsp_payload_bytes"])),
         "source": "docs/reports/m2-c2-profile-memory-audit-2026-10-23.json",
     }
 
@@ -181,7 +184,8 @@ def build_rows(capacity, terms, ui):
             "render_texture_bytes": render,
             "residency_bytes": RESIDENCY_BYTES,
             "residency_guard_bytes": GUARD,
-            "render_residual_matches_capacity_report": render + GUARD + RESIDENCY_BYTES == residual_check,
+            "render_residual_matches_capacity_report":
+                render + GUARD + RESIDENCY_BYTES == residual_check + (MAP_RENDER_BYTES - CAPACITY_REPORT_MAP_RENDER_BYTES),
             "map_render_backing_bytes": MAP_RENDER_BYTES,
             "claims_scratch_bytes": claims,
             "resident_gameplay_need_bytes": resident_need,

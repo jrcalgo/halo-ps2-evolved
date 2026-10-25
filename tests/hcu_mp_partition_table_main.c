@@ -19,7 +19,7 @@ int physical_memory_bind_malloc_arena(void *p, unsigned long n) { (void)p; (void
 int physical_memory_bind_tag_validation_scratch(void *p, unsigned long n) { (void)p; (void)n; return 0; }
 void physical_memory_free(void) {}
 
-#define MAP_RENDER_BACKING ((size_t)6291456u + (size_t)4194304u)
+#define MAP_RENDER_BACKING ((size_t)6291456u + (size_t)4718592u)
 #define OUTER_GUARD ((size_t)16u)
 /* Whole 64 KiB residency slots: 16 slots, the map service's minimum measured fit. */
 #define RESIDENCY_BYTES ((size_t)16u * (size_t)65536u)

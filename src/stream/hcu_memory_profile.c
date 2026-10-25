@@ -276,34 +276,34 @@ int hcu_memory_partition_guards_intact(const mem_layout_v2_t *layout,
  * The candidate's 10 MiB span is a partition plan, not a measured fit claim;
  * see tests/fixtures/hcu_bots_sidewinder_partition_candidate.json. */
 static const hcu_memory_partition_entry_t hcu_partition_table_v2[] = {
-	{ "beavercreek_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6838928, 730208, 1868016, 1048576 } }, /* marine_shotgun */
-	{ "beavercreek_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4619936, 730208, 4087008, 1048576 } }, /* mounted_gunner */
-	{ "bloodgulch_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 7014976, 1303104, 1119072, 1048576 } }, /* marine_shotgun */
-	{ "bloodgulch_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4795984, 1303104, 3338064, 1048576 } }, /* mounted_gunner */
-	{ "boardingaction_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6892096, 1354160, 1190896, 1048576 } }, /* marine_shotgun */
-	{ "boardingaction_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4673104, 1354160, 3409888, 1048576 } }, /* mounted_gunner */
-	{ "carousel_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6811648, 515248, 2110256, 1048576 } }, /* marine_shotgun */
-	{ "carousel_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4592656, 515248, 4329248, 1048576 } }, /* mounted_gunner */
-	{ "chillout_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6786560, 573424, 2077168, 1048576 } }, /* marine_shotgun */
-	{ "chillout_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4567568, 573424, 4296160, 1048576 } }, /* mounted_gunner */
-	{ "damnation_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6881632, 1326816, 1228704, 1048576 } }, /* marine_shotgun */
-	{ "damnation_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4662640, 1326816, 3447696, 1048576 } }, /* mounted_gunner */
-	{ "hangemhigh_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6778944, 595856, 2062352, 1048576 } }, /* marine_shotgun */
-	{ "hangemhigh_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4559952, 595856, 4281344, 1048576 } }, /* mounted_gunner */
-	{ "longest_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6797024, 377392, 2262736, 1048576 } }, /* marine_shotgun */
-	{ "longest_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4578032, 377392, 4481728, 1048576 } }, /* mounted_gunner */
-	{ "prisoner_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6774176, 888336, 1774640, 1048576 } }, /* marine_shotgun */
-	{ "prisoner_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4555184, 888336, 3993632, 1048576 } }, /* mounted_gunner */
-	{ "putput_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6782240, 1643056, 1011856, 1048576 } }, /* marine_shotgun */
-	{ "putput_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4563248, 1643056, 3230848, 1048576 } }, /* mounted_gunner */
-	{ "ratrace_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6804448, 550816, 2081888, 1048576 } }, /* marine_shotgun */
-	{ "ratrace_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4585472, 550816, 4300864, 1048576 } }, /* mounted_gunner */
-	{ "sidewinder_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6913936, 1993744, 529472, 1048576 } }, /* marine_shotgun */
-	{ "sidewinder_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4694944, 1993744, 2748464, 1048576 } }, /* mounted_gunner */
-	{ "bots_sidewinder", { HCU_MEMORY_PROFILE_VERSION_1, 4584880, 1993744, 2858528, 1048576 } }, /* static package-derived candidate; not measured fit */
-	{ "wizard_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6792912, 556944, 2087296, 1048576 } }, /* marine_shotgun */
-	{ "wizard_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4573920, 556944, 4306288, 1048576 } }, /* mounted_gunner */
-	{ "ui", { HCU_MEMORY_PROFILE_VERSION_1, 789152, 2288, 8645712, 1048576 } }, /* ui */
+	{ "beavercreek_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6838928, 730208, 2392304, 1048576 } }, /* marine_shotgun */
+	{ "beavercreek_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4619936, 730208, 4611296, 1048576 } }, /* mounted_gunner */
+	{ "bloodgulch_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 7014976, 1303104, 1643360, 1048576 } }, /* marine_shotgun */
+	{ "bloodgulch_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4795984, 1303104, 3862352, 1048576 } }, /* mounted_gunner */
+	{ "boardingaction_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6892096, 1354160, 1715184, 1048576 } }, /* marine_shotgun */
+	{ "boardingaction_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4673104, 1354160, 3934176, 1048576 } }, /* mounted_gunner */
+	{ "carousel_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6811648, 515248, 2634544, 1048576 } }, /* marine_shotgun */
+	{ "carousel_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4592656, 515248, 4853536, 1048576 } }, /* mounted_gunner */
+	{ "chillout_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6786560, 573424, 2601456, 1048576 } }, /* marine_shotgun */
+	{ "chillout_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4567568, 573424, 4820448, 1048576 } }, /* mounted_gunner */
+	{ "damnation_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6881632, 1326816, 1752992, 1048576 } }, /* marine_shotgun */
+	{ "damnation_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4662640, 1326816, 3971984, 1048576 } }, /* mounted_gunner */
+	{ "hangemhigh_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6778944, 595856, 2586640, 1048576 } }, /* marine_shotgun */
+	{ "hangemhigh_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4559952, 595856, 4805632, 1048576 } }, /* mounted_gunner */
+	{ "longest_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6797024, 377392, 2787024, 1048576 } }, /* marine_shotgun */
+	{ "longest_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4578032, 377392, 5006016, 1048576 } }, /* mounted_gunner */
+	{ "prisoner_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6774176, 888336, 2298928, 1048576 } }, /* marine_shotgun */
+	{ "prisoner_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4555184, 888336, 4517920, 1048576 } }, /* mounted_gunner */
+	{ "putput_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6782240, 1643056, 1536144, 1048576 } }, /* marine_shotgun */
+	{ "putput_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4563248, 1643056, 3755136, 1048576 } }, /* mounted_gunner */
+	{ "ratrace_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6804448, 550816, 2606176, 1048576 } }, /* marine_shotgun */
+	{ "ratrace_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4585472, 550816, 4825152, 1048576 } }, /* mounted_gunner */
+	{ "sidewinder_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6913936, 1993744, 1053760, 1048576 } }, /* marine_shotgun */
+	{ "sidewinder_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4694944, 1993744, 3272752, 1048576 } }, /* mounted_gunner */
+	{ "bots_sidewinder", { HCU_MEMORY_PROFILE_VERSION_1, 4584880, 1993744, 3382816, 1048576 } }, /* static package-derived candidate; not measured fit */
+	{ "wizard_marine_shotgun_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 6792912, 556944, 2611584, 1048576 } }, /* marine_shotgun */
+	{ "wizard_mounted_gunner_4p4bot", { HCU_MEMORY_PROFILE_VERSION_1, 4573920, 556944, 4830576, 1048576 } }, /* mounted_gunner */
+	{ "ui", { HCU_MEMORY_PROFILE_VERSION_1, 789152, 2288, 9170000, 1048576 } }, /* ui */
 };
 
 const hcu_memory_profile_t *hcu_memory_partition_select_v2(const char *name)
