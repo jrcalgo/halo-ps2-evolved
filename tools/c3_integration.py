@@ -114,12 +114,15 @@ def save_state(path: Path, state: dict) -> None:
     os.replace(tmp, path)
 
 
-def pending_cases(c2m, root: Path, cases: list[dict], state: dict) -> list[dict]:
+def pending_cases(c2m, root: Path, cases: list[dict], state: dict, *, retry_failed: bool = False) -> list[dict]:
     """A case is skipped only when state.json marks it done AND its result.json exists and is not still 'running'."""
     todo = []
     for case in cases:
         entry = state["cases"].get(case["name"], {})
-        if entry.get("status") == "done" and run_is_complete(result_path(c2m, root, case)):
+        path = result_path(c2m, root, case)
+        result = read_json(path) or {}
+        if (entry.get("status") == "done" and run_is_complete(path) and
+                (not retry_failed or result.get("pass") is True)):
             continue
         todo.append(case)
     return todo
@@ -186,7 +189,7 @@ def c3_8_sound_checks(lines: list[str], frames_periodic: int | None = None) -> d
     checks = {
         "sound_lines_present": bool(sound),
         "sound_line_per_periodic_frame": frames_periodic > 0 and len(sound) >= frames_periodic,
-        "sound_rejected_zero": last.get("rejected") == "0",
+        "sound_rejected_zero": bool(sound) and all(s.get("rejected") == "0" for s in sound),
         "sound_drained_positive": (_int(last.get("drained"), 0) or 0) > 0,
         "spu2_playback_not_qualified": bool(sound) and all(s.get("spu2-playback") == "not-qualified" for s in sound),
     }
@@ -205,18 +208,16 @@ def snapshot_exit_checks(lines: list[str], views: int, captures: list[dict], emu
     final = frames[-1] if frames else {}
     ready = [kv(l) for l in lines if "c3-render-ready " in l]
     poses = [kv(l) for l in lines if "c3-pose " in l]
-    bitmap = [kv(l) for l in lines if "c3-bitmap tick=" in l]
     seqs = [_int(s.get("seq")) for s in snaps]
     last_snap = snaps[-1] if snaps else {}
-    dropped = _int(bitmap[-1].get("bitmap-frames-dropped"), 0) if bitmap else 0
     checks = {
         "snap_seq_present": bool(snaps),
         "snap_seq_advances_per_periodic_frame": bool(periodic) and len(snaps) >= len(periodic) and
             all(a is not None and b is not None and b > a for a, b in zip(seqs, seqs[1:])),
         "snap_active_views_match": last_snap.get("active-views") == str(views),
         "snap_biped_positive": (_int(last_snap.get("biped"), 0) or 0) > 0,
-        "emit_failures_zero_or_bitmap_drops_counted":
-            _int(final.get("emit-failures"), 0) == 0 or (dropped or 0) > 0,
+        # A bitmap drop cannot explain an unrelated object/chain emission failure.
+        "emit_failures_zero": _int(final.get("emit-failures")) == 0,
         "captures_present": bool(captures),
         "captures_scene_not_sky_only": bool(captures) and all(capture_ok(c) for c in captures),
         "tex_hits_positive": (_int(final.get("tex-hits"), 0) or 0) > 0,
@@ -259,8 +260,17 @@ def score_case(c2m, root: Path, case: dict) -> dict:
              "cap_pages": case["cap_pages"], "fault": case["fault"], "result_json": str(res_file),
              "matrix_pass": result.get("pass") is True, "reasons": result.get("reasons", [])[:3]}
     log = res_file.parent / GUEST_LOG
-    lines = log.read_text(errors="replace").splitlines() if log.is_file() else None
-    captures = result.get("captures", []) or []
+    # Revalidate saved evidence when scoring. A failed relink may leave an older
+    # log next to result.json; its presence never establishes a current launch.
+    run, provenance_error = c2m.validate_guest_provenance(
+        res_file.parent, (_int(result.get("started_unix"), 0) or 0) * 1_000_000_000,
+        case["mode"], expected_captures=2)
+    if run is not None and run.get("launch_id") != result.get("guest_launch_id"):
+        run, provenance_error = None, "result does not identify this guest launch"
+    entry["evidence_valid"] = run is not None
+    entry["evidence_error"] = provenance_error or None
+    lines = log.read_text(errors="replace").splitlines() if run is not None and log.is_file() else None
+    captures = run.get("captures", []) if run is not None else []
     successor = None
     if case["kind"] == "successor":
         successor = {"old": result.get("map"), "new": result.get("successor_map"), "mode": c2m.SUCCESSOR_CASES[case["fault"]][0]}
@@ -268,7 +278,7 @@ def score_case(c2m, root: Path, case: dict) -> dict:
     entry["captures"] = [c.get("file") for c in captures if c.get("file")]
     entry["requirements"] = score_lines(
         c2m, lines, views=case["views"], frames=FRAMES, cap_pages=case["cap_pages"], captures=captures,
-        successor=successor, emu_mode_verified=bool(result.get("emu_mode_verified")))
+        successor=successor, emu_mode_verified=bool(run and run.get("pcsx2_config", {}).get("emu_mode_verified")))
     return entry
 
 
@@ -287,7 +297,11 @@ def write_report(root: Path, stamp: str, scored: list[dict], state: dict) -> dic
     for req in REQUIREMENTS:
         statuses = [e["requirements"][req]["status"] for e in scored]
         summary[req] = {s: statuses.count(s) for s in sorted(set(statuses))}
-    data = {"stamp": stamp, "root": str(root), "requirements": list(REQUIREMENTS), "summary": summary,
+    passed = all(e["matrix_pass"] and e.get("evidence_valid", False) and all(
+        v["status"] == "pass" for k, v in e["requirements"].items()
+        if k != "C3.11" or e["kind"] == "successor") for e in scored)
+    data = {"stamp": stamp, "root": str(root), "matrix_qualified": passed,
+            "requirements": list(REQUIREMENTS), "summary": summary,
             "runs": scored, "state": state}
     (root / "report.json").write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
     names = [e["case"] for e in scored]
@@ -315,23 +329,31 @@ def main(argv=None) -> int:
     parser.add_argument("--stamp", help="output stamp; pass an existing one to resume (default: now)")
     parser.add_argument("--dry-run", action="store_true", help="print the 12 matrix commands and exit")
     parser.add_argument("--score-only", action="store_true", help="do not run anything; score existing runs")
+    parser.add_argument("--retry-failed", action="store_true", help="rerun completed cases whose matrix result failed")
+    parser.add_argument("--cases", nargs="+", help="run only these case names; the report still shows the full matrix")
     args = parser.parse_args(argv)
     if args.jobs < 1:
         parser.error("--jobs must be at least 1")
     c2m = load_matrix()
     cases = build_cases()
+    selected = cases
+    if args.cases:
+        unknown = sorted(set(args.cases) - {c["name"] for c in cases})
+        if unknown:
+            parser.error("unknown cases: " + ", ".join(unknown))
+        selected = [c for c in cases if c["name"] in args.cases]
     stamp = args.stamp or time.strftime("%Y%m%dT%H%M%S")
     root = INTEGRATION_ROOT / stamp
     if args.dry_run:
-        for case in cases:
+        for case in selected:
             print(" ".join(matrix_argv(case, case_dir(root, case), ROOT / "build/c3/render-tree/pkg")))
         return 0
     root.mkdir(parents=True, exist_ok=True)
     state_path = root / STATE_NAME
     state = load_state(state_path)
     if not args.score_only:
-        todo = pending_cases(c2m, root, cases, state)
-        print(f"stamp {stamp}: {len(cases) - len(todo)} done, {len(todo)} to run, jobs {args.jobs}", flush=True)
+        todo = pending_cases(c2m, root, selected, state, retry_failed=args.retry_failed)
+        print(f"stamp {stamp}: {len(selected) - len(todo)} done, {len(todo)} to run, jobs {args.jobs}", flush=True)
         if todo:
             package_root = c2m.prepare_render_tree()  # once here, so concurrent matrix runs do not race on it
             with ThreadPoolExecutor(max_workers=args.jobs) as pool:
@@ -348,9 +370,7 @@ def main(argv=None) -> int:
     scored = [score_case(c2m, root, case) for case in cases]
     data = write_report(root, stamp, scored, state)
     print(f"report: {root / 'report.md'}", flush=True)
-    passed = all(v["status"] == "pass" for e in scored for k, v in e["requirements"].items() if k != "C3.11" or
-                 e["kind"] == "successor")
-    return 0 if passed else 1
+    return 0 if data["matrix_qualified"] else 1
 
 
 if __name__ == "__main__":

@@ -97,6 +97,17 @@ def test_resume_skips_only_completed_runs(tmp_path):
     assert cases[2]["name"] in todo              # done in state but result still 'running': rerun
 
 
+def test_retry_failed_preserves_successful_independent_cases(tmp_path):
+    cases = ci.build_cases()[:2]
+    state = {"cases": {c["name"]: {"status": "done"} for c in cases}}
+    for case, passed in zip(cases, (True, False)):
+        path = ci.result_path(c2m, tmp_path, case)
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps({"pass": passed}))
+    assert ci.pending_cases(c2m, tmp_path, cases, state) == []
+    assert ci.pending_cases(c2m, tmp_path, cases, state, retry_failed=True) == cases[1:]
+
+
 def test_state_round_trip_and_bad_state_is_empty(tmp_path):
     path = tmp_path / ci.STATE_NAME
     assert ci.load_state(path) == {"cases": {}}
@@ -128,6 +139,8 @@ def test_sound_check_fails_when_nothing_drained_or_rejected():
     checks = ci.c3_8_sound_checks(lines, frames_periodic=1)["checks"]
     assert checks["sound_rejected_zero"] is False
     assert checks["sound_drained_positive"] is False
+    # Replacement may reset a queue; a clean final map cannot erase earlier loss.
+    assert not ci.c3_8_sound_checks([sound_line(rejected=2), sound_line()])["checks"]["sound_rejected_zero"]
 
 
 def test_snapshot_exit_passes_on_good_run():
@@ -151,13 +164,28 @@ def test_snapshot_black_capture_and_no_textures_fail():
     assert checks["animated_pose_changes_positive"] is False
 
 
-def test_emit_failures_allowed_only_when_bitmap_drops_counted():
+def test_bitmap_drop_does_not_excuse_geometry_emit_failures():
     no_drop = ci.snapshot_exit_checks(exit_lines(emit=3, dropped=0), 2, [GOOD_CAPTURE], True,
                                       c2m.capture_has_scene_variation)["checks"]
     counted = ci.snapshot_exit_checks(exit_lines(emit=3, dropped=2), 2, [GOOD_CAPTURE], True,
                                       c2m.capture_has_scene_variation)["checks"]
-    assert no_drop["emit_failures_zero_or_bitmap_drops_counted"] is False
-    assert counted["emit_failures_zero_or_bitmap_drops_counted"] is True
+    assert no_drop["emit_failures_zero"] is False
+    assert counted["emit_failures_zero"] is False
+
+
+def test_scoring_rejects_a_previous_guest_after_failed_relink(tmp_path):
+    case = ci.build_cases()[0]
+    result = ci.result_path(c2m, tmp_path, case)
+    result.parent.mkdir(parents=True)
+    result.write_text(json.dumps({"pass": False, "started_unix": 10,
+                                  "reasons": ["link failed"]}))
+    log = result.parent / ci.GUEST_LOG
+    log.parent.mkdir(parents=True)
+    log.write_text("\n".join(exit_lines()))
+    scored = ci.score_case(c2m, tmp_path, case)
+    assert not scored["evidence_valid"]
+    assert scored["evidence_error"]
+    assert all(v["status"] == "not-run" for v in scored["requirements"].values())
 
 
 def test_missing_log_is_not_run_not_a_crash():
