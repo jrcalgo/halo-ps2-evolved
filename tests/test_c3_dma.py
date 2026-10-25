@@ -9,8 +9,8 @@ c2m = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(c2m)
 
 OWNER = ("HALO_PS2_LOCAL c3-dma-owner owner-base=0x1000000 owner-cap=1179648 owner-used=1179648 "
-         "storage-base=0x1000000 storage-bytes=1179648 chains=4 geom0=0x1000000/524288 geom1=0x1080000/524288 "
-         "up0=0x1100000/65536 up1=0x1110000/65536 sum=1179648")
+         "storage-base=0x1000000 storage-bytes=1179648 chains=4 geom0=0x1000000/557056 geom1=0x1088000/557056 "
+         "up0=0x1110000/32768 up1=0x1118000/32768 sum=1179648")
 
 
 CAPS = [{"marker": "c3-render-held", "file": "held.png", "nonblack_fraction": 0.5},
@@ -61,7 +61,7 @@ def test_owner_size_must_be_fixed():
 
 def test_chain_layout_must_be_contiguous():
     lines = good_lines()
-    lines[0] = lines[0].replace("geom1=0x1080000", "geom1=0x1090000")
+    lines[0] = lines[0].replace("geom1=0x1088000", "geom1=0x1090000")
     assert not c2m.c3_10_dma_checks(lines, 1, 3, CAPS)["checks"]["chains_contiguous_in_owner"]
 
 

@@ -1371,7 +1371,7 @@ def c3_10_dma_checks(lines: list[str], views: int, frames: int, captures: list |
         # the storage is the first and only allocation in dma_commands: used == cap, storage at the owner base
         "owner_used_is_fixed": _int(o.get("owner-used")) == owner_bytes,
         "storage_is_owner_base": _int(o.get("storage-base"), 16) == ob and _int(o.get("storage-bytes")) == owner_bytes,
-        "chain_sizes_match_layout": chain_size == [524288, 524288, 65536, 65536],
+        "chain_sizes_match_layout": chain_size == [557056, 557056, 32768, 32768],
         "chains_contiguous_in_owner": bool(owner) and contiguous and ob is not None and
                                       chain_base[0] == ob and chain_base[0] + owner_bytes == chain_base[3] + chain_size[3],
         "frame_lines_complete": [_int(f.get("frame")) for f in frame_lines] == list(range(1, frames + 1)),

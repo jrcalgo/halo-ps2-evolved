@@ -493,6 +493,31 @@ int hcu_render_fx_camera_basis(const halo_ps2_snapshot_camera *cam, float right[
 	return 0;
 }
 
+int hcu_render_first_person_world(const halo_ps2_snapshot_camera *cam, const halo_ps2_snapshot_matrix4x3 *local,
+	halo_ps2_snapshot_matrix4x3 *world)
+{
+	float left[3], ax[3][3], origin[3];
+	unsigned a, c;
+	if (!cam || !local || !world) return HCU_RENDER_CONTENT_E_ARGUMENT;
+	if (!fx_finite3(cam->forward) || !fx_finite3(cam->up) || !fx_finite3(cam->position) ||
+		!fx_finite3(local->forward) || !fx_finite3(local->left) || !fx_finite3(local->up) ||
+		!fx_finite3(local->position) || !isfinite(local->scale)) return HCU_RENDER_CONTENT_E_ARGUMENT;
+	/* CE's left: up x forward (matrix4x3_rotation_from_vectors). The camera axes are F, L, U. */
+	fx_cross(cam->up, cam->forward, left);
+	for (c = 0; c < 3; c++) { ax[0][c] = cam->forward[c]; ax[1][c] = left[c]; ax[2][c] = cam->up[c]; origin[c] = cam->position[c]; }
+	for (a = 0; a < 3; a++) {
+		const float *basis = a == 0 ? local->forward : a == 1 ? local->left : local->up;
+		float *out = a == 0 ? world->forward : a == 1 ? world->left : world->up;
+		for (c = 0; c < 3; c++)
+			out[c] = basis[0] * ax[0][c] + basis[1] * ax[1][c] + basis[2] * ax[2][c];
+	}
+	for (c = 0; c < 3; c++)
+		world->position[c] = origin[c] + local->position[0] * ax[0][c] + local->position[1] * ax[1][c] +
+			local->position[2] * ax[2][c];
+	world->scale = local->scale;
+	return 0;
+}
+
 int hcu_render_fx_build_quad(const hcu_render_effect_draw *e, const float right[3], const float up[3],
 	hcu_render_fx_quad *q)
 {
@@ -1134,6 +1159,8 @@ static mat4 mat_from_snapshot(const halo_ps2_snapshot_matrix4x3 *w)
 
 /* ---- pose: the CE-published palette (or the placement for unskinned objects); no ANIM sampling ---- */
 static const halo_ps2_frame_snapshot *s_pose_snapshot;
+/* The view camera of the first-person pass (camera-local palettes map through it). */
+static const halo_ps2_snapshot_camera *s_fp_cam;
 
 static int pose_fn(void *user, const object_t *ob, object_nodes_t *out)
 {
@@ -1149,7 +1176,13 @@ static int pose_fn(void *user, const object_t *ob, object_nodes_t *out)
 	if (d->palette_count) {
 		if (d->palette_count < n || !s_pose_snapshot) return 0;
 		for (i = 0; i < n; i++) {
-			out->skin[i] = mat_from_snapshot(&s_pose_snapshot->palette[d->palette_first + i]);
+			const halo_ps2_snapshot_matrix4x3 *src = &s_pose_snapshot->palette[d->palette_first + i];
+			if (d->flags & HCU_OBJECTS_FLAG_CAMERA_LOCAL) {
+				halo_ps2_snapshot_matrix4x3 w;
+				if (!s_fp_cam || hcu_render_first_person_world(s_fp_cam, src, &w) != 0) return 0;
+				src = &w;
+			}
+			out->skin[i] = mat_from_snapshot(src);
 			out->world[i] = out->skin[i];
 		}
 		s_view_skinned += n;
@@ -1543,6 +1576,7 @@ static void object_pass(void *user, render_ctx_t *rc)
 		model_info mi;
 		uint16_t perm[OBJ_MAX_REGIONS];
 		mat4 root;
+		halo_ps2_snapshot_matrix4x3 root_world;
 		if (fp->model_slot >= s_slot_count ||
 			fp->palette_count == 0u || !s_snapshot ||
 			(uint32_t)fp->palette_first + fp->palette_count > s_snapshot->palette_count) {
@@ -1559,11 +1593,17 @@ static void object_pass(void *user, render_ctx_t *rc)
 		memset(&pose, 0, sizeof pose);
 		pose.slot = fp->model_slot;
 		pose.type = HCU_OBJECTS_TYPE_WEAPON;
-		pose.flags = HCU_OBJECTS_FLAG_SKINNED;
+		pose.flags = HCU_OBJECTS_FLAG_SKINNED | HCU_OBJECTS_FLAG_CAMERA_LOCAL;
 		pose.resource_id = fp->resource_id;
 		pose.palette_first = fp->palette_first;
 		pose.palette_count = fp->palette_count;
-		root = mat_from_snapshot(&s_snapshot->palette[fp->palette_first]);
+		if (s_cur_view >= s_snapshot->view_count ||
+			hcu_render_first_person_world(&s_snapshot->views[s_cur_view].camera,
+				&s_snapshot->palette[fp->palette_first], &root_world) != 0) {
+			s_view_counters.failures++;
+			continue;
+		}
+		root = mat_from_snapshot(&root_world);
 		mi = model_get(&s->models, 0);
 		model_select_permutations(&s->models, &mi, NULL, perm);
 		memset(perm + (mi.region_count < OBJ_MAX_REGIONS ? mi.region_count : OBJ_MAX_REGIONS),
@@ -1603,7 +1643,9 @@ static void object_pass(void *user, render_ctx_t *rc)
 		s_objr.sky_model = -1;
 		s_objr.pose = pose_fn;
 		s_objr.pose_user = &pose;
+		s_fp_cam = &s_snapshot->views[s_cur_view].camera;
 		obj_render_pass(&s_objr, rc);
+		s_fp_cam = NULL;
 		log_part_parity(s, &mi, perm, fp->resource_id, HCU_RENDER_PARITY_WEAPON);
 		s_view_triangles += s_objr.st_triangles;
 		s_view_skinned += fp->palette_count;

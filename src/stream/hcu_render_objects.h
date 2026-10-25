@@ -38,6 +38,8 @@ extern "C" {
 
 /* Object flags. Bit 0 means the object is skinned: its palette is used, one matrix per model node. */
 #define HCU_OBJECTS_FLAG_SKINNED 0x0001u
+/* The palette is camera-local (first person): pose_fn maps it through the view camera (hcu_render_first_person_world). */
+#define HCU_OBJECTS_FLAG_CAMERA_LOCAL 0x0002u
 
 /* Resident model table. resource_id is the MEDIA chunk id of the MODL chunk (the snapshot resource
  * identity); source_datum keeps the CE tag datum for the parity log. */
@@ -220,6 +222,13 @@ typedef struct {
 
 /* Unit right and up of the snapshot camera. Returns 0, or E_ARGUMENT when forward or up is degenerate. */
 int hcu_render_fx_camera_basis(const halo_ps2_snapshot_camera *cam, float right[3], float up[3]);
+/* C3.5/C3.6 first-person transform (pure, host-tested). CE publishes the arms and gun palette in the camera frame
+ * (render_interpolation_first_person keeps inverse(camera) * node). A camera-local matrix maps a point x to
+ * O + x.x*F + x.y*L + x.z*U, where O is the camera position, F its forward, U its up and L = U x F (CE's left).
+ * `world` gets the scale and the rotated basis, with the position mapped the same way. Returns 0, or E_ARGUMENT
+ * for a non-finite camera or matrix. */
+int hcu_render_first_person_world(const halo_ps2_snapshot_camera *cam, const halo_ps2_snapshot_matrix4x3 *local,
+	halo_ps2_snapshot_matrix4x3 *world);
 /* Builds one quad. Returns 0, or E_ARGUMENT for a non-finite or non-positive scale or a kind with no quad
  * (HALO_PS2_FRAME_FX_LIGHT). A decal with a zero or non-finite forward falls back to a billboard. */
 int hcu_render_fx_build_quad(const hcu_render_effect_draw *e, const float right[3], const float up[3],

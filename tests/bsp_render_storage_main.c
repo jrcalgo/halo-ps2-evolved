@@ -14,10 +14,10 @@ int main(void)
 	assert(bsp_render_chain_storage_layout(&storage, s_dma,
 		BSP_RENDER_DMA_STORAGE_BYTES, 0, 0) == 0);
 	assert((uintptr_t)storage.geometry[0] == base);
-	assert((uintptr_t)storage.geometry[1] == base + 32768u * 16u);
-	assert((uintptr_t)storage.upload[0] == base + 2u * 32768u * 16u);
-	assert((uintptr_t)storage.upload[1] == base + (2u * 32768u + 4096u) * 16u);
-	assert((uintptr_t)storage.upload[1] + 4096u * 16u ==
+	assert((uintptr_t)storage.geometry[1] == base + 34816u * 16u);
+	assert((uintptr_t)storage.upload[0] == base + 2u * 34816u * 16u);
+	assert((uintptr_t)storage.upload[1] == base + (2u * 34816u + 2048u) * 16u);
+	assert((uintptr_t)storage.upload[1] + 2048u * 16u ==
 		base + BSP_RENDER_DMA_STORAGE_BYTES);
 	assert(bsp_render_chain_storage_layout(&storage, s_dma + 1,
 		BSP_RENDER_DMA_STORAGE_BYTES, 0, 0) == -1);
@@ -33,16 +33,16 @@ int main(void)
 		(void *)(UINTPTR_MAX - 63u), BSP_RENDER_DMA_STORAGE_BYTES, 0, 0) == -1);
 
 	/* Chain sizes and the four exact spans: two 32768-qw geometry and two 4096-qw upload chains. */
-	assert(BSP_RENDER_GEOMETRY_CHAIN_QW == 32768u);
-	assert(BSP_RENDER_UPLOAD_CHAIN_QW == 4096u);
-	assert(2u * BSP_RENDER_GEOMETRY_CHAIN_QW * 16u == 1048576u);
-	assert(2u * BSP_RENDER_UPLOAD_CHAIN_QW * 16u == 131072u);
+	assert(BSP_RENDER_GEOMETRY_CHAIN_QW == 34816u);
+	assert(BSP_RENDER_UPLOAD_CHAIN_QW == 2048u);
+	assert(2u * BSP_RENDER_GEOMETRY_CHAIN_QW * 16u == 1114112u);
+	assert(2u * BSP_RENDER_UPLOAD_CHAIN_QW * 16u == 65536u);
 	assert(BSP_RENDER_DMA_STORAGE_BYTES == 1179648u);
 	assert(bsp_render_chain_storage_layout(&storage, s_dma,
 		BSP_RENDER_DMA_STORAGE_BYTES, 0, 0) == 0);
-	assert((uintptr_t)storage.geometry[1] - (uintptr_t)storage.geometry[0] == 32768u * 16u);
-	assert((uintptr_t)storage.upload[0] - (uintptr_t)storage.geometry[1] == 32768u * 16u);
-	assert((uintptr_t)storage.upload[1] - (uintptr_t)storage.upload[0] == 4096u * 16u);
+	assert((uintptr_t)storage.geometry[1] - (uintptr_t)storage.geometry[0] == 34816u * 16u);
+	assert((uintptr_t)storage.upload[0] - (uintptr_t)storage.geometry[1] == 34816u * 16u);
+	assert((uintptr_t)storage.upload[1] - (uintptr_t)storage.upload[0] == 2048u * 16u);
 
 	/* Frame-scratch packet workspace: init/environment/font packets have owners in [0,5632). */
 	assert(BSP_RENDER_WORKSPACE_BYTES == 5632u);

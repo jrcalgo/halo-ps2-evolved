@@ -713,6 +713,65 @@ static int test_tex_pages(void)
 	return 0;
 }
 
+/* C3.5/C3.6 first-person transform: a camera-local palette (CE's inverse(camera) * node) maps through the view
+ * camera to world. The identity camera leaves the palette unchanged; a yawed camera (forward +y, up +z, left -x)
+ * puts the gun 0.15 m forward and 0.05 m to the camera's left at the eye, with its basis rotated the same way. */
+static int test_first_person_world(void)
+{
+	halo_ps2_snapshot_camera yawed = {
+		.position = { 105.0f, -162.0f, 0.6f }, .forward = { 0.0f, 1.0f, 0.0f }, .up = { 0.0f, 0.0f, 1.0f },
+		.vertical_field_of_view = 1.0f, .z_near = 0.1f, .z_far = 100.0f,
+	};
+	halo_ps2_snapshot_matrix4x3 local, world, ident_world;
+	unsigned k;
+
+	memset(&local, 0, sizeof local);
+	local.scale = 1.0f;
+	local.forward[0] = 1.0f; local.left[1] = 1.0f; local.up[2] = 1.0f;
+	local.position[0] = 0.15f; local.position[1] = -0.05f; local.position[2] = -0.03f;
+
+	CHECK(hcu_render_first_person_world(&yawed, &local, &world) == 0);
+	CHECK(fabsf(world.position[0] - 105.05f) < 1e-4f);     /* -0.05 along left (-x) */
+	CHECK(fabsf(world.position[1] - -161.85f) < 1e-4f);    /* 0.15 along forward (+y) */
+	CHECK(fabsf(world.position[2] - 0.57f) < 1e-4f);       /* -0.03 along up */
+	CHECK(fabsf(world.forward[1] - 1.0f) < 1e-6f && fabsf(world.forward[0]) < 1e-6f);
+	CHECK(fabsf(world.left[0] + 1.0f) < 1e-6f && fabsf(world.up[2] - 1.0f) < 1e-6f);
+	CHECK(world.scale == 1.0f);
+
+	/* the origin of the camera frame is the eye itself */
+	memset(&local, 0, sizeof local);
+	local.scale = 2.0f; local.forward[0] = 1.0f; local.left[1] = 1.0f; local.up[2] = 1.0f;
+	CHECK(hcu_render_first_person_world(&yawed, &local, &world) == 0);
+	CHECK(fabsf(world.position[0] - 105.0f) < 1e-6f && fabsf(world.position[1] + 162.0f) < 1e-6f);
+	CHECK(world.scale == 2.0f);
+
+	/* the identity camera maps the camera-local palette onto itself (left = up x forward = +y) */
+	{
+		halo_ps2_snapshot_matrix4x3 p;
+		memset(&p, 0, sizeof p);
+		p.scale = 1.0f; p.forward[0] = 1.0f; p.left[1] = 1.0f; p.up[2] = 1.0f;
+		p.position[0] = 0.3f; p.position[1] = 0.2f; p.position[2] = 0.1f;
+		CHECK(hcu_render_first_person_world(&kcam, &p, &ident_world) == 0);
+		for (k = 0; k < 3; k++) {
+			CHECK(fabsf(ident_world.position[k] - p.position[k]) < 1e-6f);
+			CHECK(fabsf(ident_world.forward[k] - p.forward[k]) < 1e-6f);
+			CHECK(fabsf(ident_world.left[k] - p.left[k]) < 1e-6f);
+			CHECK(fabsf(ident_world.up[k] - p.up[k]) < 1e-6f);
+		}
+	}
+
+	/* a non-finite camera or palette is refused, never mapped */
+	{
+		halo_ps2_snapshot_camera bad = yawed;
+		bad.up[0] = 1.0f / 0.0f * 0.0f;
+		CHECK(hcu_render_first_person_world(&bad, &local, &world) == HCU_RENDER_CONTENT_E_ARGUMENT);
+		CHECK(hcu_render_first_person_world(NULL, &local, &world) == HCU_RENDER_CONTENT_E_ARGUMENT);
+		local.position[1] = 0.0f / 0.0f;
+		CHECK(hcu_render_first_person_world(&yawed, &local, &world) == HCU_RENDER_CONTENT_E_ARGUMENT);
+	}
+	return 0;
+}
+
 int main(void)
 {
 	if (test_builder()) return 1;
@@ -728,6 +787,7 @@ int main(void)
 	if (test_fx_corner_st()) return 9;
 	if (test_c3_6_unowned_fx_and_frame_identity()) return 11;
 	if (test_tex_pages()) return 12;
+	if (test_first_person_world()) return 13;
 	printf("hcu_render_objects tests passed\n");
 	return 0;
 }
