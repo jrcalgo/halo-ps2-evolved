@@ -166,16 +166,56 @@ int main(void)
         # before the native #else body; inspect the native source tail rather
         # than treating preprocessor alternatives as nested C blocks.
         main_loop = main_source[main_loop_start:]
+        # main_loop also holds the C2/C3 production tick loop, which has its
+        # own player_control_update() call earlier in the text (its input is
+        # sampled by hcu_c3_workload_prepare_actions(); see the C3 test
+        # below). The frame order of CE's own loop is the last
+        # input_frame_begin() onward.
         self.assertLess(main_loop.index("game_initialize()"),
                         main_loop.index("input_frame_begin()"))
-        self.assertLess(main_loop.index("input_frame_begin()"),
-                        main_loop.index("input_update()"))
-        self.assertLess(main_loop.index("input_update()"),
-                        main_loop.index("input_abstraction_update()"))
-        self.assertLess(main_loop.index("input_abstraction_update()"),
-                        main_loop.index("player_control_update("))
-        self.assertLess(main_loop.index("player_control_update("),
-                        main_loop.index("game_time_update("))
+        native = main_loop[main_loop.rindex("input_frame_begin()"):]
+        self.assertLess(native.index("input_frame_begin()"),
+                        native.index("input_update()"))
+        self.assertLess(native.index("input_update()"),
+                        native.index("input_abstraction_update()"))
+        self.assertLess(native.index("input_abstraction_update()"),
+                        native.index("player_control_update("))
+        self.assertLess(native.index("player_control_update("),
+                        native.index("game_time_update("))
+
+    def test_c3_workload_input_is_sampled_before_player_control_each_tick(self):
+        main_source = (HCU / "source/main/main.c").read_text()
+        prepare = self.extract_function(
+            main_source, "static void hcu_c3_workload_prepare_actions(")
+        # The injected trigger must be published before the frame's pad poll
+        # (XInputGetState runs inside input_frame_begin) and the abstraction
+        # must run after the poll, all before player_control_update().
+        self.assertLess(prepare.index("ps2_input_c3_workload_primary_trigger("),
+                        prepare.index("input_frame_begin()"))
+        self.assertLess(prepare.index("input_frame_begin()"),
+                        prepare.index("input_update()"))
+        self.assertLess(prepare.index("input_update()"),
+                        prepare.index("input_abstraction_update()"))
+        # Fire from tick 0, two ticks on and two off for the whole run.
+        self.assertIn("fire = tick >= 0 && (tick % 4) < 2;", prepare)
+        loop_start = main_source.index("hcu_c3_workload_prepare_actions(tick);")
+        loop = main_source[loop_start:loop_start + 600]
+        order = ["hcu_c3_workload_prepare_actions(tick)",
+                 "player_control_update(", "hcu_c3_workload_finish_actions()",
+                 "game_time_update("]
+        positions = [loop.index(item) for item in order]
+        self.assertEqual(positions, sorted(positions))
+
+    def test_c3_workload_reports_how_far_the_trigger_gets(self):
+        weapons = (HCU / "source/items/weapons.c").read_text()
+        main_source = (HCU / "source/main/main.c").read_text()
+        update = weapons[weapons.index("boolean weapon_update("):]
+        self.assertLess(update.index("triggers_down[0]= FALSE;"),
+                        update.index("++c3_weapon_trigger_down_ticks"))
+        fire = self.extract_function(weapons, "static void weapon_trigger_fire(")
+        self.assertIn("++c3_weapon_shots_fired", fire)
+        self.assertIn("c3-workload-fire tick=%d trigger-flag-ticks=%lu "
+                      "trigger-down-ticks=%lu shots=%lu", main_source)
 
     def test_ce_frame_boundary_polls_four_tick_indexed_pads_before_snapshot(self):
         source = (HCU / "source/input/input_xbox.c").read_text()
