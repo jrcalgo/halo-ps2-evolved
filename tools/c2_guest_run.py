@@ -200,6 +200,7 @@ def halo_lines(log_text):
     lines = []
     for raw in log_text.splitlines():
         if ("HALO_PS2_LOCAL" not in raw and "HALO_PS2_FAIL" not in raw and
+                "R5900 Exception:" not in raw and
                 "[err]" not in raw and "Address Error" not in raw):
             continue
         lines.append(LOG_PREFIX.sub("", raw, count=1).strip())
@@ -312,7 +313,7 @@ def stage(which, source_override=None, out_dir=OUT):
 def _is_guest_fault(line: str) -> bool:
     return ("HALO_PS2_FAIL" in line or "[err]" in line or "Address Error" in line or
             "HALO_PS2_LOCAL halt" in line or "branch delay!!" in line or
-            "EXCEPTION halt" in line)
+            "EXCEPTION halt" in line or "R5900 Exception:" in line)
 
 
 def _post_entry_faults(lines: list[str]) -> list[str]:

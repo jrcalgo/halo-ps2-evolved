@@ -71,6 +71,13 @@ def test_diagnostic_terminal_markers_and_errors(tmp_path):
     assert c2_guest_run._run_terminal("workload2p", log) is None
     log.write_text("HALO_PS2_LOCAL machine entry\n[err] cache map load failed\n")
     assert c2_guest_run._run_terminal("lifecycle", log) == "guest-error"
+
+
+def test_paused_r5900_exception_terminates_the_owned_run(tmp_path):
+    log = tmp_path / "emu.txt"
+    log.write_text("[ 1.0] HALO_PS2_LOCAL machine entry\n"
+                   "[ 127.8] ReportErrorAsync: R5900 Exception: Jump to unaligned address (PC: 0xcacacaca)\n")
+    assert c2_guest_run._run_terminal("partition-selected", log) == "guest-error"
     log.write_text("Address Error, addr=0x1ff [store]\nHALO_PS2_LOCAL machine entry\n")
     assert c2_guest_run._run_terminal("lifecycle", log) is None
     log.write_text("HALO_PS2_LOCAL machine entry\nHALO_PS2_LOCAL halt reason=0x1\n")

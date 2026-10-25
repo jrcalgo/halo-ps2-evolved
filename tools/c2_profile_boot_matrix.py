@@ -589,6 +589,14 @@ def parse_successor_log(lines: list[str], row: str, map_name: str, succ_row: str
     # retry's single stage (nothing was mounted, so CE never calls the unloader and no second
     # revalidation runs); failed preflight: no successful stage at all.
     want_stages, want_mounts = {1: (2, 1), 2: (0, 0), 3: (2, 2)}[mode]
+    # The rendered workload also validates once immediately after the real
+    # final kick, before CE enters its transaction. Keep the ordinary CE
+    # revalidations and account only an explicitly observed successful probe.
+    rendered_preflights = _count(lines, "c3-successor-preflight ", result="1", expected="1", mode=str(mode))
+    require("rendered_preflight_once", rendered_preflights <= 1,
+            f"rendered preflight repeated {rendered_preflights} times")
+    if mode in (1, 3):
+        want_stages += rendered_preflights
     require("successor_stages_and_mount", stages == want_stages and mounts == want_mounts,
             f"successor stages {stages} (want {want_stages}), successor mounts {mounts} (want {want_mounts})")
     values.update({"successor_stage_passes": stages, "successor_mounts": mounts})
