@@ -1,0 +1,229 @@
+{
+  "schema": "m2-c1-ui-non2d-consumer-audit-v1",
+  "status": "partial",
+  "runtime_admitted": false,
+  "scope": "the nine non-2D image conversion failures in the pinned UI diagnostic; CE bitmap tags/references remain source metadata",
+  "catalog": {
+    "path": "build/m2-c1-profiles-ui/bitmap-stage-ui-2026-10-23/catalog.json",
+    "sha256": "cc359817b971b0bbd50171d6236e937ff6e6c4753fd65472e77b6aa3022dc0f3",
+    "ctag_sha256": "85798861269d2ad7d2feb634235a2782d9c2acf94fb73bb3cfcdbd91bc2258fe",
+    "diagnostic_sha256": "74274bac6989113d8e5a02e626e4957ed3e432b9aa8b813989619e814b11e8f5",
+    "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+    "source_maps": {
+      "ui": {
+        "path": "build/retail-maps/decompressed/ui.map",
+        "sha256": "8556b647b82742d07282fe4e6db0cf847b542c046484e91e71ec31fea5f5fd7e"
+      }
+    }
+  },
+  "source_pins": {
+    "plans/7.hcu-remake-m2-m4.md": "b6e5bcb7d67f8331ffbc2477e2c13f657be206a411b3c9835512344dd1854572",
+    "submodules/halo-ps2/docs/11-model-section.md": "29bae01392fa6ccea9664b7d463a7e4ac0207f711c71ed680a604b4775d8a1f4",
+    "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_models.c": "c6acf980bc94e82389c5301f50332f4521233be9cd377dbefac591ffe489063b",
+    "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox.c": "ce3a6214d606193f3a1bc923b872a7ca1254a12c8d8a29bef7381f18d22bf288",
+    "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_environment.c": "7430227318a17da0f86ab24e81c90d24640d86bb7bf45801f09250861d850976",
+    "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_active_camouflage.c": "e0f63f9b891cc1c3851ba9228a992f003760296f0859af193b59beaed6511b99",
+    "submodules/halo-ce-universal/source/game/game_globals.h": "061846798e72484c082c79fe10bc2d2a142a229a98bb0765160c0fc34b2542f3",
+    "submodules/halo-ce-universal/source/cutscene/cinematics.c": "c48a70ae1d81373a4283b43f275206c5d2fbd3752198733d902322d847f97170",
+    "docs/reports/m2-c1-media-coverage-2026-10-23.json": "ca622f0fc42877fea8a71361699dc3b701f2789a941b22958f96dada895f6130",
+    "build/m2-c1-profiles-ui/bitmap-stage-ui-2026-10-23/catalog.json": "cc359817b971b0bbd50171d6236e937ff6e6c4753fd65472e77b6aa3022dc0f3"
+  },
+  "policy": "C1 #4 requires proven live consumers. No plan waiver authorizes treating cube faces/slices as visual parity. The only explicit fuel-rod reflection omission policy does not apply to these records; exclusions below are gated by current PS2 consumer absence and retain CE metadata.",
+  "rows": [
+    {
+      "path": "characters\\cyborg\\bitmaps\\cyborg reflection armor",
+      "datum": 3799515396,
+      "image_index": 0,
+      "image_type": "cube",
+      "owners": [
+        {
+          "field": "reflection_cube_map",
+          "group": "soso",
+          "path": "characters\\cyborg\\fp\\shaders\\armor hands",
+          "tag_id": 3799449859
+        }
+      ],
+      "classification": "ce_model_reflection_cube",
+      "payload_disposition": "exclude_from_current_ps2_visual_profile_under_explicit_feature_gate",
+      "feature_gate": "ps2_model_reflection_cube_consumer_absent",
+      "consumer_evidence": "CE Xbox model shader reads reflection_cube_map; PS2 OTEX binds only soso.base_map and documents reflection maps dropped.",
+      "replacement_if_enabled": "Implement cube-face decoding plus a real sphere/environment-map render pass; six 2D face chunks alone do not qualify visual parity."
+    },
+    {
+      "path": "rasterizer\\active camouflage distortion",
+      "datum": 3796173009,
+      "image_index": 0,
+      "image_type": "cube",
+      "owners": [
+        {
+          "field": "active_camouflage_distortion",
+          "group": "matg",
+          "path": "globals\\globals",
+          "tag_id": 3784245275
+        }
+      ],
+      "classification": "ce_rasterizer_helper_payload",
+      "payload_disposition": "exclude_from_current_ps2_visual_profile_under_explicit_feature_gate",
+      "feature_gate": "xbox_rasterizer_helper_consumers_not_present_in_ps2_model_pipeline",
+      "consumer_evidence": "CE fields are consumed by Xbox rasterizer shader/effect paths; PS2 model OTEX has no consumer for matg helper textures.",
+      "replacement_if_enabled": "Provide a PS2 implementation of the corresponding shader/effect path and its native volume/cube sampling before admitting payload."
+    },
+    {
+      "path": "rasterizer\\default 3d",
+      "datum": 3796369620,
+      "image_index": 0,
+      "image_type": "3d",
+      "owners": [
+        {
+          "field": "default_textures",
+          "group": "matg",
+          "path": "globals\\globals",
+          "tag_id": 3784245275
+        }
+      ],
+      "classification": "ce_xbox_default_texture",
+      "payload_disposition": "exclude_from_current_ps2_visual_profile_under_explicit_feature_gate",
+      "feature_gate": "xbox_default_hardware_texture_lookup_not_in_ps2_profile",
+      "consumer_evidence": "Xbox rasterizer default-hardware-format lookup reads default_textures[type]; PS2 OTEX uses base_map only. Cinematics uses default_textures[0] (2D default), not these 3D/cube records.",
+      "replacement_if_enabled": "Add a PS2 caller-specific fallback consumer and native 3D/cube sampling; keep CE tag references and source metadata in the profile."
+    },
+    {
+      "path": "rasterizer\\default cube map",
+      "datum": 3796435157,
+      "image_index": 0,
+      "image_type": "cube",
+      "owners": [
+        {
+          "field": "default_textures",
+          "group": "matg",
+          "path": "globals\\globals",
+          "tag_id": 3784245275
+        }
+      ],
+      "classification": "ce_xbox_default_texture",
+      "payload_disposition": "exclude_from_current_ps2_visual_profile_under_explicit_feature_gate",
+      "feature_gate": "xbox_default_hardware_texture_lookup_not_in_ps2_profile",
+      "consumer_evidence": "Xbox rasterizer default-hardware-format lookup reads default_textures[type]; PS2 OTEX uses base_map only. Cinematics uses default_textures[0] (2D default), not these 3D/cube records.",
+      "replacement_if_enabled": "Add a PS2 caller-specific fallback consumer and native 3D/cube sampling; keep CE tag references and source metadata in the profile."
+    },
+    {
+      "path": "rasterizer\\distance attenuation",
+      "datum": 3795845324,
+      "image_index": 0,
+      "image_type": "3d",
+      "owners": [
+        {
+          "field": "distance_attenuation",
+          "group": "matg",
+          "path": "globals\\globals",
+          "tag_id": 3784245275
+        }
+      ],
+      "classification": "ce_rasterizer_helper_payload",
+      "payload_disposition": "exclude_from_current_ps2_visual_profile_under_explicit_feature_gate",
+      "feature_gate": "xbox_rasterizer_helper_consumers_not_present_in_ps2_model_pipeline",
+      "consumer_evidence": "CE fields are consumed by Xbox rasterizer shader/effect paths; PS2 model OTEX has no consumer for matg helper textures.",
+      "replacement_if_enabled": "Provide a PS2 implementation of the corresponding shader/effect path and its native volume/cube sampling before admitting payload."
+    },
+    {
+      "path": "rasterizer\\vector normalization",
+      "datum": 3795910861,
+      "image_index": 0,
+      "image_type": "cube",
+      "owners": [
+        {
+          "field": "vector_normalization",
+          "group": "matg",
+          "path": "globals\\globals",
+          "tag_id": 3784245275
+        }
+      ],
+      "classification": "ce_rasterizer_helper_payload",
+      "payload_disposition": "exclude_from_current_ps2_visual_profile_under_explicit_feature_gate",
+      "feature_gate": "xbox_rasterizer_helper_consumers_not_present_in_ps2_model_pipeline",
+      "consumer_evidence": "CE fields are consumed by Xbox rasterizer shader/effect paths; PS2 model OTEX has no consumer for matg helper textures.",
+      "replacement_if_enabled": "Provide a PS2 implementation of the corresponding shader/effect path and its native volume/cube sampling before admitting payload."
+    },
+    {
+      "path": "scenery\\halo\\bitmaps\\cubemap halo",
+      "datum": 3783786516,
+      "image_index": 0,
+      "image_type": "cube",
+      "owners": [
+        {
+          "field": "reflection_cube_map",
+          "group": "soso",
+          "path": "scenery\\halo\\shaders\\halo outer ring",
+          "tag_id": 3783852053
+        },
+        {
+          "field": "reflection_cube_map",
+          "group": "soso",
+          "path": "scenery\\halo\\shaders\\halo inner ring",
+          "tag_id": 3783589905
+        }
+      ],
+      "classification": "ce_model_reflection_cube",
+      "payload_disposition": "exclude_from_current_ps2_visual_profile_under_explicit_feature_gate",
+      "feature_gate": "ps2_model_reflection_cube_consumer_absent",
+      "consumer_evidence": "CE Xbox model shader reads reflection_cube_map; PS2 OTEX binds only soso.base_map and documents reflection maps dropped.",
+      "replacement_if_enabled": "Implement cube-face decoding plus a real sphere/environment-map render pass; six 2D face chunks alone do not qualify visual parity."
+    },
+    {
+      "path": "weapons\\assault rifle\\fp\\bitmaps\\diffuse gunmetal",
+      "datum": 3785228330,
+      "image_index": 0,
+      "image_type": "cube",
+      "owners": [
+        {
+          "field": "reflection_cube_map",
+          "group": "soso",
+          "path": "weapons\\frag grenade\\shaders\\frag plastic",
+          "tag_id": 3785293867
+        },
+        {
+          "field": "reflection_cube_map",
+          "group": "soso",
+          "path": "weapons\\frag grenade\\shaders\\frag metal",
+          "tag_id": 3785031719
+        },
+        {
+          "field": "reflection_cube_map",
+          "group": "soso",
+          "path": "characters\\cyborg\\fp\\shaders\\rubber hands",
+          "tag_id": 3799253248
+        }
+      ],
+      "classification": "ce_model_reflection_cube",
+      "payload_disposition": "exclude_from_current_ps2_visual_profile_under_explicit_feature_gate",
+      "feature_gate": "ps2_model_reflection_cube_consumer_absent",
+      "consumer_evidence": "CE Xbox model shader reads reflection_cube_map; PS2 OTEX binds only soso.base_map and documents reflection maps dropped.",
+      "replacement_if_enabled": "Implement cube-face decoding plus a real sphere/environment-map render pass; six 2D face chunks alone do not qualify visual parity."
+    },
+    {
+      "path": "weapons\\plasma rifle\\bitmaps\\cubemap plasma rifle",
+      "datum": 3793092770,
+      "image_index": 0,
+      "image_type": "cube",
+      "owners": [
+        {
+          "field": "reflection_cube_map",
+          "group": "soso",
+          "path": "weapons\\plasma grenade\\shaders\\pg button",
+          "tag_id": 3793158307
+        },
+        {
+          "field": "reflection_cube_map",
+          "group": "soso",
+          "path": "weapons\\plasma grenade\\shaders\\pg body",
+          "tag_id": 3792961696
+        }
+      ],
+      "classification": "ce_model_reflection_cube",
+      "payload_disposition": "exclude_from_current_ps2_visual_profile_under_explicit_feature_gate",
+      "feature_gate": "ps2_model_reflection_cube_consumer_absent",
+      "consumer_evidence": "CE Xbox model shader reads reflection_cube_map; PS2 OTEX binds only soso.base_map and documents reflection maps dropped.",
+      "replacement_if_enabled": "Implement cube-face decoding plus a real sphere/environment-map render pass; six 2D face chunks alone do not qualify visual parity."
+    }
+  ]
+}

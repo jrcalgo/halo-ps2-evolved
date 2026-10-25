@@ -86,10 +86,6 @@ def test_combined_verdict_uses_pixels_and_state(tmp_path):
             for y in range(y0, y0 + h):
                 for x in range(x0, x0 + w):
                     px[x, y] = (120, 200, 80) if (x + y) % 3 else (30, 30, 30)
-        if views == 3:
-            for y in range(224, 448):
-                for x in range(256, 512):
-                    px[x, y] = (16, 16, 24)
         # The capture is the 1280x1024 root with the game in the top-left 640x480 area.
         root = Image.new("RGB", (1280, 1024), (0, 0, 0))
         root.paste(img.resize((640, 480), Image.NEAREST), (0, 0))
@@ -111,10 +107,12 @@ def test_score_lines_wires_c35_to_the_combined_checker():
 
 
 def test_layout_rectangles_match_the_parent_layout_code():
-    # hcu_render_layout_compute on 512x448: halves are 256 x 224; the 3-view clear is the bottom-right quadrant.
+    # hcu_render_layout_compute on 512x448: halves are 256 x 224; 3 views are top half plus bottom quarters.
     frame_h = (ROOT / "src/stream/hcu_render_frame.c").read_text()
     assert "half_w = screen_w / 2;" in frame_h and "half_h = screen_h / 2;" in frame_h
-    assert VIEWPORTS[3][1] == (256, 0, 256, 224)
+    assert VIEWPORTS[3][0] == (0, 0, 512, 224)
+    assert VIEWPORTS[3][1] == (0, 224, 256, 224)
+    assert VIEWPORTS[3][2] == (256, 224, 256, 224)
     assert VIEWPORTS[4][3] == (256, 224, 256, 224)
     assert c2m.C3_5_CLEAR_RGB == (16, 16, 24)
 

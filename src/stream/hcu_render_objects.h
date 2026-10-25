@@ -340,6 +340,14 @@ int hcu_render_synthetic_object_add(halo_ps2_frame_snapshot *s, uint32_t view,
 	uint32_t object_index, const hcu_render_synthetic_object *o);
 
 /* ---- EE adapter (HCU_RENDER_OBJECTS_EE only) ------------------------------------------------------ */
+/* First-person detail per view (c3-ps2-object-v3 far level). A view whose rectangle is at most a quarter of the
+ * screen draws the far level (engine slots 2..4); larger views draw LOD0. */
+#define HCU_OBJECTS_FP_LOD_NEAR 0u
+#define HCU_OBJECTS_FP_LOD_FAR 2u
+uint32_t hcu_render_objects_fp_lod(int32_t view_w, int32_t view_h, int32_t screen_w, int32_t screen_h);
+/* As view_begin, with the view's rectangle: picks the first-person level for this view. */
+void hcu_render_objects_view_begin_rect(uint32_t view, int32_t view_w, int32_t view_h,
+	int32_t screen_w, int32_t screen_h);
 #ifdef HCU_RENDER_OBJECTS_EE
 #include "core/mem.h"
 #include "stream/hcu_asset_profile.h"
@@ -380,6 +388,7 @@ typedef struct {
 	uint32_t first_person_draws, first_person_model_hits, first_person_model_misses;
 	uint32_t first_person_stale_resources;
 	uint32_t first_person_weapon_draws, first_person_hands_draws;
+	uint32_t first_person_lod;           /* stored first-person level drawn this view: HCU_OBJECTS_FP_LOD_* */
 	uint32_t parts_logged, effects_selected, effects_refused;
 	uint32_t fx_drawn, fx_skipped_space, fx_textured, fx_flat, fx_no_binding;
 	uint32_t fx_budget_deferred, fx_cache_full;

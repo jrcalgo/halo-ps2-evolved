@@ -1013,7 +1013,7 @@ def c3_7_texfence_checks(lines: list[str], views: int, frames: int, cap_pages: i
             all(num(p, "reuse-unfenced") == 0 for p in periodic),
         "claims_published_nonzero": (num(tf, "claims-published") or 0) > 0,
         "upload_sources_released": (num(tf, "source-released") or 0) > 0,
-        "rendered_views_match": ff.get("views") == str(views + (1 if views == 3 else 0)),
+        "rendered_views_match": ff.get("views") == str(views),
         # the completed fence may lag the newest kick by at most one (the kick still in flight)
         "fence_lag_at_most_one": (num(tf, "kick-seq") or 0) - (num(tf, "fence-seq") or 0) <= 1,
         "kicks_observed": (num(tf, "kick-seq") or 0) >= frames,
@@ -1043,8 +1043,7 @@ def render_checks(lines: list[str], views: int, frames: int) -> dict:
         "render_ready": len(ready) == 1,
         "render_no_failure": not fails,
         "render_final_frames": ff.get("frame") == str(frames) and ff.get("frames") == str(frames),
-        # a 3-view frame also submits the unused-quadrant clear as a fourth renderer view
-        "render_views": ff.get("views") == str(views + (1 if views == 3 else 0)),
+        "render_views": ff.get("views") == str(views),
         "render_overflow_zero": ff.get("overflow") == "0",
         "render_idle_violations_zero": ff.get("idle-violations") == "0" and ff.get("emit-failures") == "0",
         "render_held": len(held) == 1,
@@ -1083,7 +1082,7 @@ def c3_5_game_size(captures: list[dict]) -> tuple[int, int] | None:
 
 def c3_5_layout_checks(views: int, capture_files: list[str], game_size: tuple[int, int] | None = None) -> dict:
     """C3.5 layout evidence from the newest framebuffer capture: each view rectangle is non-black and carries
-    scene pixels, the unused 3-view quadrant is uniformly cleared, and no clear colour bleeds into a view.
+    scene pixels, and no clear colour bleeds into a view (3 views: top half plus bottom quarters, nothing cleared).
 
     Rectangles are defined in the 512x448 layout space (hcu_render_layout_compute, halo-ps2 video.h). The game
     occupies the top-left of the capture at `game_size` (the window size when known, else PCSX2_DEFAULT_GAME_SIZE),
@@ -1112,10 +1111,10 @@ def c3_5_layout_checks(views: int, capture_files: list[str], game_size: tuple[in
     rects = {
         1: [(0, 0, 512, 448)],
         2: [(0, 0, 512, 224), (0, 224, 512, 224)],
-        3: [(0, 0, 256, 224), (256, 0, 256, 224), (0, 224, 256, 224)],
+        3: [(0, 0, 512, 224), (0, 224, 256, 224), (256, 224, 256, 224)],
         4: [(0, 0, 256, 224), (256, 0, 256, 224), (0, 224, 256, 224), (256, 224, 256, 224)],
     }[views]
-    clear_rect = (256, 224, 256, 224) if views == 3 else None
+    clear_rect = None  # the 3-view layout has no unused quadrant; every pixel belongs to a view
 
     def to_capture(x, y):
         return (min(sw - 1, int(gx + x * fx)), min(sh - 1, int(gy + y * fy)))
@@ -1375,7 +1374,7 @@ def c3_10_dma_checks(lines: list[str], views: int, frames: int, captures: list |
         "chains_contiguous_in_owner": bool(owner) and contiguous and ob is not None and
                                       chain_base[0] == ob and chain_base[0] + owner_bytes == chain_base[3] + chain_size[3],
         "frame_lines_complete": [_int(f.get("frame")) for f in frame_lines] == list(range(1, frames + 1)),
-        "views_match": final_frame.get("views") == str(views + (1 if views == 3 else 0)),
+        "views_match": final_frame.get("views") == str(views),
         "no_busy_emits": last.get("c0-busy-emits") == "0" and last.get("c1-busy-emits") == "0",
         "no_idle_violations": final_frame.get("idle-violations") == "0",
         # every frame's kick is one submission: kick-seq equals the frame index (one bsp_render_kick per frame)

@@ -423,6 +423,8 @@ def main(argv=None):
     ap.add_argument('--render-bsp',type=int,default=0,help='structure BSP index for --render-media')
     ap.add_argument('--c3-object-profile',action='store_true',
         help='opt-in C3 lower-detail object packing (modelconv.C3_OBJECT_PROFILE): one clustered LOD, 64 px textures')
+    ap.add_argument('--c3-object-profile-v3',action='store_true',
+        help='opt-in C3 v3 object packing (modelconv.C3_OBJECT_PROFILE_V3): v2 plus a clustered far first-person level')
     ap.add_argument('--consumer-exclusions',type=Path,default=None,
         help='pinned exclusion rows; bitmap media with only excluded live consumers is omitted and recorded')
     args=ap.parse_args(argv)
@@ -515,9 +517,14 @@ def main(argv=None):
     args.output.mkdir(parents=True,exist_ok=True)
     failed=False
     object_profile=None
+    if args.c3_object_profile and args.c3_object_profile_v3:
+        raise ValueError('choose one of --c3-object-profile and --c3-object-profile-v3')
     if args.c3_object_profile:
         from halo2ps2 import modelconv as _modelconv  # noqa: E402
         object_profile=_modelconv.C3_OBJECT_PROFILE
+    if args.c3_object_profile_v3:
+        from halo2ps2 import modelconv as _modelconv  # noqa: E402
+        object_profile=_modelconv.C3_OBJECT_PROFILE_V3
     for spec in selected:
         stem=spec['name']
         # A failed rebuild must never leave a package from an earlier invocation.

@@ -25,14 +25,16 @@ int hcu_render_layout_compute(uint32_t view_count, int32_t screen_w, int32_t scr
 		out->views[1] = (hcu_render_rect){ 0, half_h, screen_w, rest_h };
 		break;
 	case 3:
+		/* Player 1 takes the full-width top half; players 2 and 3 take the bottom quarters. */
+		out->views[0] = (hcu_render_rect){ 0, 0, screen_w, half_h };
+		out->views[1] = (hcu_render_rect){ 0, half_h, half_w, rest_h };
+		out->views[2] = (hcu_render_rect){ half_w, half_h, rest_w, rest_h };
+		break;
 	case 4:
 		out->views[0] = (hcu_render_rect){ 0, 0, half_w, half_h };
 		out->views[1] = (hcu_render_rect){ half_w, 0, rest_w, half_h };
 		out->views[2] = (hcu_render_rect){ 0, half_h, half_w, rest_h };
-		if (view_count == 4u)
-			out->views[3] = (hcu_render_rect){ half_w, half_h, rest_w, rest_h };
-		else
-			out->clear = (hcu_render_rect){ half_w, half_h, rest_w, rest_h };
+		out->views[3] = (hcu_render_rect){ half_w, half_h, rest_w, rest_h };
 		break;
 	}
 	return 0;

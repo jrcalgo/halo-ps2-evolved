@@ -147,20 +147,19 @@ int main(void)
 	CHECK(layout.views[0].x == 0 && layout.views[0].y == 0 && layout.views[0].w == 640 && layout.views[0].h == 240);
 	CHECK(layout.views[1].x == 0 && layout.views[1].y == 240 && layout.views[1].h == 240);
 
-	/* 3-view cleared quadrant: the unused bottom-right quadrant is never a target. */
+	/* 3-view layout: player 1 is the full-width top half, players 2 and 3 are the bottom quarters; no clear. */
 	hcu_render_layout_compute(3, SCREEN_W, SCREEN_H, &layout);
-	CHECK(layout.clear.x == 320 && layout.clear.y == 240 && layout.clear.w == 320 && layout.clear.h == 240);
+	CHECK(layout.clear.w == 0 && layout.views[0].w == SCREEN_W && layout.views[0].h == 240);
 	for (uint32_t k = 0; k < 3; k++) {
 		views[k].window_index = gap_windows[k];
 		views[k].rect.x = layout.views[k].x; views[k].rect.y = layout.views[k].y;
 		views[k].rect.w = layout.views[k].w; views[k].rect.h = layout.views[k].h;
-		CHECK(!rects_overlap(views[k].rect, (hcu_bitmap_rect){ layout.clear.x, layout.clear.y, layout.clear.w, layout.clear.h }));
 	}
 	/* A request addressed to a window with no table entry fails closed (no quad, no target). */
 	CHECK(hcu_bitmap_view_resolve(views, 3, 1, SCREEN_W, SCREEN_H, &r) == -1);
 	CHECK(hcu_bitmap_view_resolve(views, 3, 5, SCREEN_W, SCREEN_H, &r) == -1); /* window 5 is the 4th, not in a 3-view table */
-	/* Window 3 is the third active window, ordinal 2: bottom-left quadrant. */
-	CHECK(hcu_bitmap_view_resolve(views, 3, 3, SCREEN_W, SCREEN_H, &r) == 0 && rect_eq(r, 0, 240, 320, 240));
+	/* Window 3 is the third active window, ordinal 2: bottom-right quarter. */
+	CHECK(hcu_bitmap_view_resolve(views, 3, 3, SCREEN_W, SCREEN_H, &r) == 0 && rect_eq(r, 320, 240, 320, 240));
 
 	/* Zero views is full-screen placement for single-view producers. */
 	CHECK(hcu_bitmap_view_resolve(NULL, 0, 0, SCREEN_W, SCREEN_H, &r) == 0);

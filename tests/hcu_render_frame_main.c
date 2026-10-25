@@ -32,9 +32,9 @@ int main(void)
 		same(l.views[1], 0, 224, 640, 224) && l.clear.w == 0);
 
 	CHECK(hcu_render_layout_compute(3, 641, 449, &l) == 0);
-	CHECK(l.view_count == 3 && same(l.views[0], 0, 0, 320, 224) &&
-		same(l.views[1], 320, 0, 321, 224) && same(l.views[2], 0, 224, 320, 225) &&
-		same(l.clear, 320, 224, 321, 225));
+	CHECK(l.view_count == 3 && same(l.views[0], 0, 0, 641, 224) &&
+		same(l.views[1], 0, 224, 320, 225) && same(l.views[2], 320, 224, 321, 225) &&
+		l.clear.w == 0);
 
 	CHECK(hcu_render_layout_compute(4, 640, 448, &l) == 0);
 	CHECK(l.view_count == 4 && same(l.views[3], 320, 224, 320, 224) && l.clear.w == 0);
@@ -46,8 +46,6 @@ int main(void)
 		CHECK(hcu_render_layout_compute(n, 640, 448, &l) == 0);
 		for (i = 0; i < n; ++i)
 			covered += l.views[i].w * l.views[i].h;
-		if (n == 3)
-			covered += l.clear.w * l.clear.h;
 		CHECK(covered == 640 * 448);
 	}
 

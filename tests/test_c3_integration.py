@@ -433,10 +433,10 @@ def test_c3_6_world_materials_hash_is_required_nonzero():
     assert ci.c3_6_content_checks(missing, 2)["checks"]["world_materials_hash_nonzero"] is False
 
 
-def test_default_package_is_the_c3_object_v2_bloodgulch_package():
-    assert ci.DEFAULT_PACKAGE_DIR == ROOT / "build/c3/c3-6e/packages/bloodgulch-c3v2r-2026-10-25"
+def test_default_package_is_the_c3_object_v3_bloodgulch_package():
+    assert ci.DEFAULT_PACKAGE_DIR == ROOT / "build/c3/c3-fplod/packages/bloodgulch-c3v3-2026-10-25"
     assert ci.ROW == "bloodgulch_mounted_gunner_4p4bot"
-    assert ci.SUCC_PACKAGE_DIR == ROOT / "build/c3/c3-6e/packages/beavercreek-c3v2r-2026-10-25"
+    assert ci.SUCC_PACKAGE_DIR == ROOT / "build/c3/c3-fplod/packages/beavercreek-c3v3-2026-10-25"
     # the matrix never reads the legacy selected tree or the old render tree for C3 cases
     assert "m2-c2-r3-selected-packages" not in str(ci.DEFAULT_PACKAGE_DIR)
     assert "render-tree" not in str(ci.DEFAULT_PACKAGE_DIR)
@@ -471,7 +471,7 @@ def test_default_packages_carry_the_render_chunks_the_c3_pack_needs():
         manifest = json.loads(manifest_path.read_text())
         kinds = {c["kind"] for c in manifest["render_media"]["chunks"]}
         assert kinds == {4, 5, 6}
-        assert manifest["profile"].get("name") and manifest["object_profile"]["name"] == "c3-ps2-object-v2"
+        assert manifest["profile"].get("name") and manifest["object_profile"]["name"] == "c3-ps2-object-v3"
 
 
 def test_stage_package_tree_links_selected_and_successor_rows(tmp_path):

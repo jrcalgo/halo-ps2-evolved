@@ -63,9 +63,9 @@ def _inputs():
     ui_package = Path(os.environ.get("HCU_C1_UI_PACKAGE", c1_profiles / "ui.hcp"))
     ui_manifest = Path(os.environ.get("HCU_C1_UI_MANIFEST", c1_profiles / "ui.json"))
     survival_diagnostic = Path(os.environ.get("HCU_C1_SURVIVAL_DIAGNOSTIC",
-        ROOT / "build/m2-c2-residual-packages/survival-diag-2026-10-25/survival-beavercreek.failure.json"))
+        ROOT / "build/c3/c3-fplod/audit/survival-diag-2026-10-25-r2/survival-beavercreek.failure.json"))
     survival_ctag = Path(os.environ.get("HCU_C1_SURVIVAL_CTAG",
-        ROOT / "build/m2-c2-residual-packages/survival-diag-2026-10-25/survival-beavercreek.unadmitted.ctag"))
+        ROOT / "build/c3/c3-fplod/audit/survival-diag-2026-10-25-r2/survival-beavercreek.unadmitted.ctag"))
     assert ui_package.is_file() and ui_manifest.is_file()
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
     ui_ctag = ARTIFACTS / "ui.ctag"

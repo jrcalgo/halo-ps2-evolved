@@ -167,3 +167,17 @@ class TwoLevelPickTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_c3_object_profile_v3_adds_far_first_person_level():
+    """v3 = v2 plus a clustered far fp level (engine slots 2..4); v2 keeps its own table and name."""
+    import sys
+    sys.path.insert(0, str(ROOT / "submodules/halo-ps2/tools"))
+    from halo2ps2 import modelconv as mc
+    v2, v3 = mc.C3_OBJECT_PROFILE, mc.C3_OBJECT_PROFILE_V3
+    assert v2.name == "c3-ps2-object-v2" and v3.name == "c3-ps2-object-v3"
+    fp2, fp3 = dict(v2.classes)["fp"], dict(v3.classes)["fp"]
+    assert fp2.slots == (0, 0, 0, 0, 0) and fp2.far_cluster_fraction == 0.0
+    assert fp3.slots == (0, 0, 2, 2, 2) and fp3.far_from == 2 and fp3.far_cluster_fraction == 0.20
+    for name in ("biped", "vehicle", "weapon", "sky", "other"):
+        assert dict(v2.classes)[name] == dict(v3.classes)[name]

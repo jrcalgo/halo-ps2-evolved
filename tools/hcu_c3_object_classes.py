@@ -148,12 +148,13 @@ def main(argv=None) -> int:
     ap.add_argument("--search", action="store_true", help="run the search over every candidate plan (slow)")
     ap.add_argument("--table", action="store_true", help="print the table of modelconv.C3_OBJECT_PROFILE")
     ap.add_argument("--json", type=Path, help="write the search result here")
+    ap.add_argument("--v3", action="store_true", help="with --table: print modelconv.C3_OBJECT_PROFILE_V3 instead")
     args = ap.parse_args(argv)
     manifest = json.loads(MANIFEST.read_text())
     models = model_list(manifest)
     maps = load_maps(manifest)
     if args.table or not args.search:
-        rows = class_table(mc.C3_OBJECT_PROFILE, models, maps)
+        rows = class_table(mc.C3_OBJECT_PROFILE_V3 if args.v3 else mc.C3_OBJECT_PROFILE, models, maps)
         total = sum(r["bytes"] for r in rows)
         print(f"{'class':8} {'slots':>16} {'cluster':>8} {'models':>6} {'packets':>9} {'textures':>9} {'bytes':>9} {'near tris':>10}")
         for r in rows:

@@ -717,6 +717,16 @@ void hcu_render_fx_corner_st(unsigned corner, float st[2])
 	st[1] = uv[corner & 3u][1];
 }
 
+uint32_t hcu_render_objects_fp_lod(int32_t view_w, int32_t view_h, int32_t screen_w, int32_t screen_h)
+{
+	/* A view at most a quarter of the frame (area test in 64-bit, so no overflow) draws the far level. */
+	int64_t view_area, screen_area;
+	if (view_w <= 0 || view_h <= 0 || screen_w <= 0 || screen_h <= 0) return HCU_OBJECTS_FP_LOD_NEAR;
+	view_area = (int64_t)view_w * (int64_t)view_h;
+	screen_area = (int64_t)screen_w * (int64_t)screen_h;
+	return view_area * 4 <= screen_area ? HCU_OBJECTS_FP_LOD_FAR : HCU_OBJECTS_FP_LOD_NEAR;
+}
+
 #ifdef HCU_RENDER_OBJECTS_EE
 #include "core/mat.h"
 #include "platform/video.h"
@@ -724,6 +734,7 @@ void hcu_render_fx_corner_st(unsigned corner, float st[2])
 #include "render/chain.h"
 #include "render/clip.h"
 #include "render/gs.h"
+#include "render/lodctl.h"
 #include "render/obj_render.h"
 #include "stream/sha256.h"
 #include "stream/hcu_fx_bitmap.h"
@@ -1161,6 +1172,10 @@ static mat4 mat_from_snapshot(const halo_ps2_snapshot_matrix4x3 *w)
 static const halo_ps2_frame_snapshot *s_pose_snapshot;
 /* The view camera of the first-person pass (camera-local palettes map through it). */
 static const halo_ps2_snapshot_camera *s_fp_cam;
+/* First-person detail of the view being drawn. The FP pass is one object, so its LOD is the engine's bias on
+ * the object's pick: level 0 adds no bias (LOD0 slots 0..1), level 4 adds 2 (far slots 2..4). */
+static uint32_t s_view_fp_lod = HCU_OBJECTS_FP_LOD_NEAR;
+static lodctl_t s_fp_lodctl;
 
 static int pose_fn(void *user, const object_t *ob, object_nodes_t *out)
 {
@@ -1643,6 +1658,8 @@ static void object_pass(void *user, render_ctx_t *rc)
 		s_objr.sky_model = -1;
 		s_objr.pose = pose_fn;
 		s_objr.pose_user = &pose;
+		s_fp_lodctl.level = (s_view_fp_lod == HCU_OBJECTS_FP_LOD_FAR) ? 4 : 0;
+		s_objr.lod = &s_fp_lodctl;
 		s_fp_cam = &s_snapshot->views[s_cur_view].camera;
 		obj_render_pass(&s_objr, rc);
 		s_fp_cam = NULL;
@@ -1901,12 +1918,20 @@ const halo_ps2_frame_snapshot *hcu_render_objects_frame_begin(uint32_t frame, ui
 	return s_snapshot;
 }
 
+void hcu_render_objects_view_begin_rect(uint32_t view, int32_t view_w, int32_t view_h,
+	int32_t screen_w, int32_t screen_h)
+{
+	hcu_render_objects_view_begin(view);
+	s_view_fp_lod = hcu_render_objects_fp_lod(view_w, view_h, screen_w, screen_h);
+}
+
 void hcu_render_objects_view_begin(uint32_t view)
 {
 	uint32_t n = 0;
 	uint32_t fp_n = 0;
 	int st;
 	s_draw_count = 0;
+	s_view_fp_lod = HCU_OBJECTS_FP_LOD_NEAR;
 	s_fp_draw_count = 0;
 	s_cur_view = view;
 	s_view_triangles = 0;
@@ -1953,6 +1978,7 @@ void hcu_render_objects_view_end(uint32_t view, hcu_render_objects_view_stats *o
 		out->first_person_stale_resources = s_view_counters.first_person_stale_resources;
 		out->first_person_weapon_draws = s_view_counters.first_person_weapon_draws;
 		out->first_person_hands_draws = s_view_counters.first_person_hands_draws;
+		out->first_person_lod = s_view_fp_lod;
 		out->parts_logged = s_view_counters.parts_logged;
 		out->effects_selected = s_view_counters.effects_selected;
 		out->effects_refused = s_view_counters.effects_refused;

@@ -772,6 +772,26 @@ static int test_first_person_world(void)
 	return 0;
 }
 
+/* Per-view first-person level: a view of at most a quarter of the frame draws the far level, larger views LOD0. */
+static int test_fp_lod_per_view(void)
+{
+	/* 1 view: full screen; 2 views: halves; 3 views: top half and bottom quarters; 4 views: quarters. */
+	CHECK(hcu_render_objects_fp_lod(640, 480, 640, 480) == HCU_OBJECTS_FP_LOD_NEAR);
+	CHECK(hcu_render_objects_fp_lod(640, 240, 640, 480) == HCU_OBJECTS_FP_LOD_NEAR);   /* half */
+	CHECK(hcu_render_objects_fp_lod(640, 240, 640, 480) == HCU_OBJECTS_FP_LOD_NEAR);   /* top half of 3 views */
+	CHECK(hcu_render_objects_fp_lod(320, 240, 640, 480) == HCU_OBJECTS_FP_LOD_FAR);    /* exactly a quarter */
+	CHECK(hcu_render_objects_fp_lod(320, 239, 640, 480) == HCU_OBJECTS_FP_LOD_FAR);    /* smaller */
+	CHECK(hcu_render_objects_fp_lod(321, 240, 640, 480) == HCU_OBJECTS_FP_LOD_NEAR);   /* just over a quarter */
+	/* degenerate or non-positive rectangles keep LOD0 */
+	CHECK(hcu_render_objects_fp_lod(0, 240, 640, 480) == HCU_OBJECTS_FP_LOD_NEAR);
+	CHECK(hcu_render_objects_fp_lod(320, 240, 0, 480) == HCU_OBJECTS_FP_LOD_NEAR);
+	CHECK(hcu_render_objects_fp_lod(-320, 240, 640, 480) == HCU_OBJECTS_FP_LOD_NEAR);
+	/* no 32-bit overflow on large rectangles */
+	CHECK(hcu_render_objects_fp_lod(65536, 65536, 65536, 65536) == HCU_OBJECTS_FP_LOD_NEAR);
+	CHECK(hcu_render_objects_fp_lod(16384, 16384, 65536, 65536) == HCU_OBJECTS_FP_LOD_FAR);
+	return 0;
+}
+
 int main(void)
 {
 	if (test_builder()) return 1;
@@ -788,6 +808,7 @@ int main(void)
 	if (test_c3_6_unowned_fx_and_frame_identity()) return 11;
 	if (test_tex_pages()) return 12;
 	if (test_first_person_world()) return 13;
+	if (test_fp_lod_per_view()) return 14;
 	printf("hcu_render_objects tests passed\n");
 	return 0;
 }

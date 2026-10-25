@@ -2018,9 +2018,9 @@ static void hcu_c3_objects_frame_begin(void)
 	}
 }
 
-static void hcu_c3_objects_view_begin(uint32_t view)
+static void hcu_c3_objects_view_begin(uint32_t view, int32_t view_w, int32_t view_h)
 {
-	hcu_render_objects_view_begin(view);
+	hcu_render_objects_view_begin_rect(view, view_w, view_h, VIDEO_WIDTH, VIDEO_HEIGHT);
 }
 
 static void hcu_c3_objects_view_end(uint32_t view)
@@ -2045,10 +2045,11 @@ static void hcu_c3_objects_view_end(uint32_t view)
 	/* C3:content begin */
 	if (s_c3r.frames == 0u || (s_c3r.frames % 30u) == 0u)
 		printf("HALO_PS2_LOCAL c3-fp frame=%u view=%u fp-weapon-draws=%u fp-hands-draws=%u fp-drawn=%u "
-			"parts=%u effects-selected=%u effects-refused=%u\n",
+			"parts=%u effects-selected=%u effects-refused=%u fp-lod=%u\n",
 			(unsigned)s_c3r.frames, (unsigned)view, (unsigned)st.first_person_weapon_draws,
 			(unsigned)st.first_person_hands_draws, (unsigned)st.first_person_draws,
-			(unsigned)st.parts_logged, (unsigned)st.effects_selected, (unsigned)st.effects_refused);
+			(unsigned)st.parts_logged, (unsigned)st.effects_selected, (unsigned)st.effects_refused,
+			(unsigned)st.first_person_lod);
 	if (s_c3r.frames == 0u || (s_c3r.frames % 30u) == 0u)
 		printf("HALO_PS2_LOCAL c3-fx frame=%u view=%u fx-drawn=%u fx-skipped-space=%u fx-textured=%u fx-flat=%u "
 			"fx-no-binding=%u fx-budget-deferred=%u fx-cache-full=%u effects-selected=%u effects-refused=%u\n",
@@ -2140,7 +2141,7 @@ static int hcu_c3_objects_final(void)
 }
 #else
 #define hcu_c3_objects_frame_begin() ((void)0)
-#define hcu_c3_objects_view_begin(v) ((void)(v))
+#define hcu_c3_objects_view_begin(v, w, h) ((void)(v), (void)(w), (void)(h))
 #define hcu_c3_objects_view_end(v) ((void)(v))
 #define hcu_c3_objects_frame_end() ((void)0)
 #define hcu_c3_objects_final() (1)
@@ -2402,7 +2403,7 @@ void hcu_c3_render_tick(int tick)
 		if (!overlay) continue;  /* skipped: no usable snapshot camera for an active view (counted, not drawn) */
 		/* C3:views end */
 		/* C3:objects begin */
-		hcu_c3_objects_view_begin(v);
+		hcu_c3_objects_view_begin(v, vp.w, vp.h);
 		/* C3:objects end */
 		/* C3:views begin */
 		if (bsp_render_view(&cam, overlay, &vp) != 0) {
