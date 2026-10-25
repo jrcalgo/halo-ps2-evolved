@@ -368,17 +368,40 @@ def _run_terminal(which: str, log_path: Path) -> str | None:
     return None
 
 
+def _wait_group_gone(pgid: int, timeout: float) -> bool:
+    """True once no process remains in the group (children of the launcher can outlive it)."""
+    deadline = time.monotonic() + timeout
+    while True:
+        try:
+            os.killpg(pgid, 0)
+        except ProcessLookupError:
+            return True
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(0.1)
+
+
 def _stop_owned_process(process: subprocess.Popen, grace: float = 5.0) -> str:
+    # The log is hashed after this returns, so every writer in the group must be gone.
     if process.poll() is not None:
-        return f"host-exited-{process.returncode}"
-    os.killpg(process.pid, signal.SIGINT)
-    try:
-        process.wait(timeout=grace)
-        return f"host-stopped-sigint-{process.returncode}"
-    except subprocess.TimeoutExpired:
-        os.killpg(process.pid, signal.SIGKILL)
-        process.wait()
-        return f"host-stopped-sigkill-{process.returncode}"
+        status = f"host-exited-{process.returncode}"
+    else:
+        os.killpg(process.pid, signal.SIGINT)
+        try:
+            process.wait(timeout=grace)
+            status = f"host-stopped-sigint-{process.returncode}"
+        except subprocess.TimeoutExpired:
+            os.killpg(process.pid, signal.SIGKILL)
+            process.wait()
+            return f"host-stopped-sigkill-{process.returncode}"
+    if not _wait_group_gone(process.pid, grace):
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        _wait_group_gone(process.pid, grace)
+        status += "; group-sigkill"
+    return status
 
 
 def production_guest_qualification(lines: list[str]) -> dict:
