@@ -16,13 +16,13 @@ SCENE = (120, 200, 80)
 
 
 def frame(views, clear_quadrant=True):
-    img = Image.new("RGB", (640, 448), (0, 0, 0))
+    img = Image.new("RGB", (512, 448), (0, 0, 0))
     px = img.load()
     rects = {
-        1: [(0, 0, 640, 448)],
-        2: [(0, 0, 640, 224), (0, 224, 640, 224)],
-        3: [(0, 0, 320, 224), (320, 0, 320, 224), (0, 224, 320, 224)],
-        4: [(0, 0, 320, 224), (320, 0, 320, 224), (0, 224, 320, 224), (320, 224, 320, 224)],
+        1: [(0, 0, 512, 448)],
+        2: [(0, 0, 512, 224), (0, 224, 512, 224)],
+        3: [(0, 0, 256, 224), (256, 0, 256, 224), (0, 224, 256, 224)],
+        4: [(0, 0, 256, 224), (256, 0, 256, 224), (0, 224, 256, 224), (256, 224, 256, 224)],
     }[views]
     for x0, y0, w, h in rects:
         for y in range(y0, y0 + h):
@@ -30,7 +30,7 @@ def frame(views, clear_quadrant=True):
                 px[x, y] = SCENE if (x + y) % 3 else (30, 30, 30)
     if views == 3:
         for y in range(224, 448):
-            for x in range(320, 640):
+            for x in range(256, 512):
                 px[x, y] = CLEAR if clear_quadrant else SCENE
     return img
 

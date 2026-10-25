@@ -180,7 +180,8 @@ def c3_8_sound_checks(lines: list[str], frames_periodic: int | None = None) -> d
     Every sound-requests line must say spu2-playback=not-qualified, because SPU2 playback is not qualified.
     The sound-coverage lines (one per sound-requests line) carry the field-preservation counters. The final
     coverage line must show nonzero playback events with owner, position, priority, gain and pitch covered,
-    and its drain checksum must equal its record checksum on every line.
+    full per-field coverage (owner, priority and pitch on every playback record, position on every spatial
+    record, gain on every non-stop record), and its drain checksum must equal its record checksum on every line.
     """
     sound = [kv(l) for l in lines if "sound-requests phase=" in l]
     coverage = [kv(l) for l in lines if "sound-coverage phase=" in l]
@@ -203,12 +204,21 @@ def c3_8_sound_checks(lines: list[str], frames_periodic: int | None = None) -> d
         "playback_priority_covered": (_int(cov.get("priority"), 0) or 0) > 0,
         "playback_gain_covered": (_int(cov.get("gain"), 0) or 0) > 0,
         "playback_pitch_covered": (_int(cov.get("pitch"), 0) or 0) > 0,
+        # Full coverage, not one record: every playback record carries owner, priority and pitch;
+        # position is present exactly for the spatial records; gain is absent only on STOP events,
+        # which CE reports without a gain.
+        "playback_owner_full": playback > 0 and _int(cov.get("owner"), -1) == playback,
+        "playback_priority_full": playback > 0 and _int(cov.get("priority"), -1) == playback,
+        "playback_pitch_full": playback > 0 and _int(cov.get("pitch"), -1) == playback,
+        "playback_position_matches_spatial": _int(cov.get("position"), -1) == _int(cov.get("spatial"), -2),
+        "playback_gain_full": playback > 0 and _int(cov.get("gain"), -1) ==
+            playback - (_int(cov.get("ev-stop"), 0) or 0) - (_int(cov.get("ev-loop-stop"), 0) or 0),
         "drain_checksum_equals_record": bool(coverage) and all(
             c.get("drain-checksum") is not None and c.get("drain-checksum") == c.get("record-checksum")
             for c in coverage),
     }
     return {"checks": checks, "sound_lines": len(sound), "periodic_frames": frames_periodic,
-            "coverage": {k: cov.get(k) for k in ("playback", "owner", "position", "priority", "gain", "pitch",
+            "coverage": {k: cov.get(k) for k in ("playback", "owner", "position", "spatial", "priority", "gain", "pitch",
                                                   "prio-min", "prio-max", "drain-checksum", "record-checksum")},
             "reasons": [f"c3.8 sound check failed: {k}" for k, v in checks.items() if not v]}
 
@@ -276,6 +286,51 @@ def content_checks(lines: list[str], views: int) -> dict:
     return {"checks": checks}
 
 
+# C3.5 expected viewports in VIDEO_WIDTH x VIDEO_HEIGHT (512x448) buffer pixels, the rectangles of
+# hcu_render_layout_compute (src/stream/hcu_render_frame.c). The unused 3-view quadrant is not a view.
+C3_5_VIEWPORTS = {
+    1: [(0, 0, 512, 448)],
+    2: [(0, 0, 512, 224), (0, 224, 512, 224)],
+    3: [(0, 0, 256, 224), (256, 0, 256, 224), (0, 224, 256, 224)],
+    4: [(0, 0, 256, 224), (256, 0, 256, 224), (0, 224, 256, 224), (256, 224, 256, 224)],
+}
+
+
+def c3_5_view_checks(lines: list[str], views: int) -> dict:
+    """C3.5 per-view state from the guest's last `c3-views` line of each view (printed at frame 0 and every
+    30 frames): the view is active, its camera came from the snapshot, its viewport is the layout rectangle,
+    its HUD is drawn, and its first-person state is the CE state (palette nodes published, FP draws counted
+    by the object pass). A missing line fails the check; nothing is inferred from the layout alone."""
+    rows = [kv(l) for l in lines if "c3-views frame=" in l]
+    last = {}
+    for row in rows:
+        v = _int(row.get("view"))
+        if v is not None:
+            last[v] = row
+    expected = C3_5_VIEWPORTS.get(views, [])
+    checks = {"views_state_present": bool(rows) and all(v in last for v in range(views))}
+    for v in range(views):
+        row = last.get(v, {})
+        want = "%d,%d,%d,%d" % expected[v] if v < len(expected) else None
+        checks[f"view{v}_active"] = row.get("active") == "1"
+        checks[f"view{v}_camera_snapshot"] = row.get("camera") == "snapshot"
+        checks[f"view{v}_viewport_layout"] = want is not None and row.get("viewport") == want
+        checks[f"view{v}_hud_drawn"] = (_int(row.get("hud")) or 0) >= 3
+        checks[f"view{v}_fp_nodes_published"] = (_int(row.get("fp-nodes")) or 0) > 0
+        checks[f"view{v}_fp_drawn"] = (_int(row.get("fp-drawn")) or 0) > 0
+    return {"checks": checks, "reasons": [f"c3.5 view check failed: {k}" for k, ok in checks.items() if not ok]}
+
+
+def c3_5_checks(c2m, lines: list[str], views: int, held: list) -> dict:
+    """C3.5 verdict input: the pixel layout checks (c2_profile_boot_matrix.c3_5_layout_checks) plus the
+    per-view state from the guest log. Both must pass."""
+    layout = c2m.c3_5_layout_checks(views, held)
+    state = c3_5_view_checks(lines, views)
+    checks = {**layout.get("checks", {}), **state["checks"]}
+    reasons = list(layout.get("reasons", [])) + state["reasons"]
+    return {"checks": checks, "reasons": reasons}
+
+
 def _hash_nonzero(value) -> bool:
     try:
         return int(str(value), 16) != 0
@@ -294,6 +349,9 @@ def c3_6_content_checks(lines: list[str], views: int) -> dict:
     fp = [kv(l) for l in lines if "c3-fp " in l]
     effects = [kv(l) for l in lines if "c3-fx " in l]
     parity = [kv(l) for l in lines if "c3-parity " in l]
+    sky = [kv(l) for l in lines if "c3-sky " in l]
+    world_stats = [kv(l) for l in lines if "c3-world " in l]
+    frame_parity = [p for p in parity if p.get("kind") == "frame"]
     world = [p for p in parity if p.get("kind") == "world"]
     objects = [p for p in parity if p.get("kind") == "object"]
     checks = {
@@ -312,8 +370,15 @@ def c3_6_content_checks(lines: list[str], views: int) -> dict:
         "fx_textured_positive": any((_int(f.get("fx-textured"), 0) or 0) > 0 for f in effects),
         "world_parity_present": bool(world) and (_int(world[-1].get("materials"), 0) or 0) > 0,
         "world_parity_hash_nonzero": bool(world) and _hash_nonzero(world[-1].get("hash")),
+        # C3.6b: the per-frame world material identity (bsp_render fold of the drawn shader ids) is nonzero.
+        "world_materials_hash_nonzero": bool(world_stats) and _hash_nonzero(world_stats[-1].get("materials-hash")),
         "object_parity_present": bool(objects),
         "object_parity_hash_nonzero": bool(objects) and _hash_nonzero(objects[-1].get("hash")),
+        # Sky: the scenario sky model drawn per view by the sky pass (a counted draw, never a configured flag).
+        "sky_model_drawn_positive": any((_int(s.get("sky-drawn"), 0) or 0) > 0 for s in sky),
+        # Per-frame identity: the last frame line counts drawn items and carries a nonzero identity hash.
+        "frame_identity_present": bool(frame_parity) and (_int(frame_parity[-1].get("records"), 0) or 0) > 0,
+        "frame_identity_hash_nonzero": bool(frame_parity) and _hash_nonzero(frame_parity[-1].get("hash")),
     }
     return {"checks": checks, "reasons": [f"c3.6 content check failed: {k}" for k, v in checks.items() if not v]}
 
@@ -339,7 +404,7 @@ def score_lines(c2m, lines: list[str] | None, *, views: int, frames: int, cap_pa
         "C3.1": _verdict(snapshot_payload_checks, lines),
         "C3.3": (_verdict(c2m.c3_3_scene_checks, lines, views, views) if views > 1 else
                  {"status": "n/a", "first_failing": "opposing-player scene is exercised by multiplayer cases", "error": None}),
-        "C3.5": _verdict(c2m.c3_5_layout_checks, views, held),
+        "C3.5": _verdict(c3_5_checks, c2m, lines, views, held),
         "C3.6": _verdict(c3_6_content_checks, lines, views),
         "C3.7": _verdict(c2m.c3_7_texfence_checks, lines, views, frames, cap_pages),
         "C3.8": _verdict(c3_8_sound_checks, lines),

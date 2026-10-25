@@ -1685,8 +1685,13 @@ static void hcu_c3_print_frame(const char *kind)
 		(unsigned)rs->tex_deferred, (unsigned)rs->untextured_batches,
 		(unsigned)rs->clusters_visible, (unsigned)rs->clusters_total, (unsigned)rs->pages_free,
 		(unsigned)s_c3r.state.frames_begun, (unsigned)s_c3r.state.frames_submitted,
-		(unsigned)s_c3r.state.cache_age_advances, (unsigned)s_c3r.state.upload_budget_resets,
+		(unsigned)fc.cache_age_advances, (unsigned)fc.upload_budget_resets,   /* C3:chain: renderer's real frame-start counts */
 		(unsigned)s_c3r.state.views_rendered);
+	/* C3:content begin */
+	/* materials-drawn: passes of the BSP material loop this frame, all views (open_frame resets it per frame). */
+	printf("HALO_PS2_LOCAL c3-world kind=%s frame=%u materials-drawn=%u materials-hash=%08x\n", kind, (unsigned)s_c3r.frames,
+		(unsigned)rs->materials_drawn, (unsigned)rs->materials_hash);
+	/* C3:content end */
 }
 
 /* C3:views begin */
@@ -1936,6 +1941,11 @@ static void hcu_c3_objects_frame_begin(void)
 		}
 	}
 #endif
+	/* C3:objects-sky begin */
+#if defined(HCU_C3_OBJECTS_SKY_INDEX)
+	if (s_c3r.frames == 0u) hcu_render_objects_set_sky_entry(HCU_C3_OBJECTS_SKY_INDEX);
+#endif
+	/* C3:objects-sky end */
 	(void)hcu_render_objects_frame_begin(s_c3r.frames, views, cams);
 	if (s_c3o_loaded && !s_c3o_installed) {
 		hcu_render_objects_install();
@@ -1981,6 +1991,9 @@ static void hcu_c3_objects_view_end(uint32_t view)
 			(unsigned)st.fx_textured, (unsigned)st.fx_flat, (unsigned)st.fx_no_binding,
 			(unsigned)st.fx_budget_deferred, (unsigned)st.fx_cache_full,
 			(unsigned)st.effects_selected, (unsigned)st.effects_refused);
+	if (s_c3r.frames == 0u || (s_c3r.frames % 30u) == 0u)
+		printf("HALO_PS2_LOCAL c3-sky frame=%u view=%u sky-drawn=%u sky-misses=%u\n",
+			(unsigned)s_c3r.frames, (unsigned)view, (unsigned)st.sky_drawn, (unsigned)st.sky_misses);
 	/* C3:content end */
 }
 
@@ -1996,6 +2009,15 @@ static void hcu_c3_objects_frame_end(void)
 				(unsigned)ps.per_kind[HCU_RENDER_PARITY_OBJECT], (unsigned)ps.per_kind[HCU_RENDER_PARITY_VEHICLE],
 				(unsigned)ps.per_kind[HCU_RENDER_PARITY_WEAPON], (unsigned)ps.per_kind[HCU_RENDER_PARITY_EFFECT],
 				(unsigned)ps.materials_known, (unsigned)ps.hash);
+	}
+	if (s_c3r.frames == 0u || (s_c3r.frames % 30u) == 0u) {
+		hcu_render_parity_frame pf;
+		if (hcu_render_objects_frame_parity(&pf) == 0)
+			printf("HALO_PS2_LOCAL c3-parity kind=frame frame=%u records=%u object=%u vehicle=%u weapon=%u sky=%u "
+				"hash=%08x\n", (unsigned)s_c3r.frames, (unsigned)pf.records,
+				(unsigned)pf.per_kind[HCU_RENDER_PARITY_OBJECT], (unsigned)pf.per_kind[HCU_RENDER_PARITY_VEHICLE],
+				(unsigned)pf.per_kind[HCU_RENDER_PARITY_WEAPON], (unsigned)pf.per_kind[HCU_RENDER_PARITY_SKY],
+				(unsigned)pf.hash);
 	}
 	if (s_c3r.frames == 0u || (s_c3r.frames % 30u) == 0u) {
 		hcu_render_objects_counters t;
@@ -2083,7 +2105,7 @@ static void hcu_c3_bitmap_print_tick(int tick)
 		"end-failed-total=%u in-frame=%u drain-pending=%u gpu-pending=%u leases=%u last-status=%d "
 		"bitmap-frames-dropped=%u drop-cause=0x%x ce-status=%d ce-failures=%u "
 		"unsupported-reasons=0x%x unsupported-counts=%u,%u,%u,%u,%u,%u,%u first-unsupported=%u/%u flags=0x%x "
-		"first-map-scale=0x%08x,0x%08x first-texture-scale=0x%08x,0x%08x\n",
+		"first-map-scale=0x%08x,0x%08x first-texture-scale=0x%08x,0x%08x meter-quads=%u\n",
 		tick, (unsigned)o->frame_index, (unsigned)o->active_window_count,
 		(unsigned)(cur[0] - s_c3b_last[0]), (unsigned)(cur[1] - s_c3b_last[1]),
 		(unsigned)(cur[2] - s_c3b_last[2]), (unsigned)(cur[5] - s_c3b_last[5]),
@@ -2103,7 +2125,8 @@ static void hcu_c3_bitmap_print_tick(int tick)
 		(unsigned)(q ? q->first_unsupported_valid : 0u),
 		(unsigned)(q ? q->first_unsupported_reason : 0u),
 		(unsigned)(q ? q->first_unsupported_flags : 0u),
-		(unsigned)map_i.u, (unsigned)map_j.u, (unsigned)tex_i.u, (unsigned)tex_j.u);
+		(unsigned)map_i.u, (unsigned)map_j.u, (unsigned)tex_i.u, (unsigned)tex_j.u,
+		(unsigned)(o->dispatch ? o->dispatch->meter_quads : 0u));
 	memcpy(s_c3b_last, cur, sizeof(s_c3b_last));
 }
 /* C3:bitmap end */
@@ -2163,7 +2186,8 @@ static void hcu_c3_dma_frame(uint32_t frame)
 		"geom-rel0=%u/%u geom-rel1=%u/%u reset-refusals=%u "
 		"src-gen=%u src-released=%u released-before-fence=%u "
 		"src-rel-chain=%u/%u src-rel-pin=%u/%u src-rel-bitmap=%u/%u "
-		"overflow-refusals=%u emit-status=%d emit-codes-neg=%u,%u,%u,%u,%u,%u,%u,%u emit-codes-pos=%u,%u,%u,%u,%u,%u,%u,%u,%u\n",
+		"overflow-refusals=%u emit-status=%d emit-codes-neg=%u,%u,%u,%u,%u,%u,%u,%u emit-codes-pos=%u,%u,%u,%u,%u,%u,%u,%u,%u "
+		"chain-overflow=%u,%u,%u,%u chain-refused=%u,%u,%u,%u\n",
 		(unsigned)frame, (unsigned)p.kick_seq, (unsigned)p.completed_seq, (unsigned)p.inflight,
 		(unsigned)p.kick[0], (int)fence[0], (unsigned)p.kicks[0], (unsigned)p.emits[0],
 		(unsigned)p.busy_emits[0], (unsigned)p.used_qw[0],
@@ -2183,7 +2207,9 @@ static void hcu_c3_dma_frame(uint32_t frame)
 		(unsigned)codes[0], (unsigned)codes[1], (unsigned)codes[2], (unsigned)codes[3],
 		(unsigned)codes[4], (unsigned)codes[5], (unsigned)codes[6], (unsigned)codes[7],
 		(unsigned)codes[9], (unsigned)codes[10], (unsigned)codes[11], (unsigned)codes[12],
-		(unsigned)codes[13], (unsigned)codes[14], (unsigned)codes[15], (unsigned)codes[16], (unsigned)codes[8]);
+		(unsigned)codes[13], (unsigned)codes[14], (unsigned)codes[15], (unsigned)codes[16], (unsigned)codes[8],
+		(unsigned)p.overflow[0], (unsigned)p.overflow[1], (unsigned)p.overflow[2], (unsigned)p.overflow[3],
+		(unsigned)p.refused[0], (unsigned)p.refused[1], (unsigned)p.refused[2], (unsigned)p.refused[3]);
 }
 #else
 #define hcu_c3_dma_note_owner(s, o) ((void)(s), (void)(o))

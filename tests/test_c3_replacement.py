@@ -28,6 +28,14 @@ def step(name, **fields):
     return P + f"production-ce-successor-step step={name} {body}"
 
 
+def begin():
+    return P + f"production-ce-successor-begin mode=1 old={OLD} new={NEW} old-tag-bytes=1000 old-bsp-bytes=2000 ticks=30"
+
+
+def released():
+    return P + "m2-cycle-boundary phase=map-released cycle=1"
+
+
 def quiesce_ok():
     return [P + "c3-render-quiesce result=1 readers=0 kick-seq=5 fence=1 frame-active=0 bitmap-attachments=0"]
 
@@ -41,13 +49,14 @@ def boundary(phase, drained=False):
 
 def replace_lines():
     """Mode 1 (foreign replacement) in the order the guest must print it."""
-    return ([ready(OLD), frame(30), boundary("before-preflight"),
+    return ([begin(), ready(OLD), frame(30), boundary("before-preflight"),
              P + f"map-replacement phase=candidate-validated old={OLD} new={NEW} readers=1",
              P + f"map-replacement phase=quiesce-begin old={OLD} new={NEW} readers=1 callback=1"]
             + [boundary("after-drain", True)] + quiesce_ok() +
             [P + f"map-replacement phase=quiesce-end old={OLD} new={NEW} readers=0 drained=1",
              step("dispose", result=1, old=OLD, **{"old-mounted": 1}, new=NEW, **{"new-mounted": 0},
                   **{"tag-bytes": 1000, "bsp-bytes": 2000}),
+             released(),
              step("unload", result=1, old=OLD, **{"old-mounted": 0}, new=NEW, **{"new-mounted": 0},
                   **{"tag-bytes": 0, "bsp-bytes": 0}),
              step("load", result=1, old=OLD, **{"old-mounted": 0}, new=NEW, **{"new-mounted": 1}),
@@ -56,24 +65,28 @@ def replace_lines():
 
 
 def preflight_lines():
-    return [ready(OLD), frame(30), boundary("before-preflight"), boundary("after-preflight-rejected"),
-            step("after-failed-preflight", result=0, old=OLD, **{"old-mounted": 1}, new=NEW, **{"new-mounted": 0}),
+    return [begin(), ready(OLD), frame(30), boundary("before-preflight"), boundary("after-preflight-rejected"),
+            step("after-failed-preflight", result=1, old=OLD, **{"old-mounted": 1}, new=NEW, **{"new-mounted": 0},
+                 **{"tag-bytes": 1000, "bsp-bytes": 2000}),
             frame(60), P + "c3-render-held views=4 frames=300",
             P + f"production-ce-successor-usable result=1 old={OLD} ticks=30 local-players=4"]
 
 
 def load_lines():
-    lines = [ready(OLD), frame(30), boundary("before-preflight"),
+    lines = [begin(), ready(OLD), frame(30), boundary("before-preflight"),
              P + f"map-replacement phase=candidate-validated old={OLD} new={NEW} readers=1",
              P + f"map-replacement phase=quiesce-begin old={OLD} new={NEW} readers=1 callback=1"]
     lines += [boundary("after-drain", True)] + quiesce_ok()
     lines += [P + f"map-replacement phase=quiesce-end old={OLD} new={NEW} readers=0 drained=1",
               step("dispose", result=1, old=OLD, **{"old-mounted": 1}, new=NEW, **{"new-mounted": 0},
                    **{"tag-bytes": 1000, "bsp-bytes": 2000}),
+              released(),
               step("unload", result=1, old=OLD, **{"old-mounted": 0}, new=NEW, **{"new-mounted": 0},
                    **{"tag-bytes": 0, "bsp-bytes": 0}),
               step("load", result=0, old=OLD, **{"old-mounted": 0}, new=NEW, **{"new-mounted": 0}),
-              step("after-failed-load", result=0, old=OLD, **{"old-mounted": 0}, new=NEW, **{"new-mounted": 0}),
+              step("after-failed-load", result=1, old=OLD, **{"old-mounted": 0}, new=NEW, **{"new-mounted": 0},
+                   **{"tag-bytes": 0, "bsp-bytes": 0}),
+              P + f"production-ce-successor-retry old={OLD} new={NEW}",
               step("load", result=1, old=OLD, **{"old-mounted": 0}, new=NEW, **{"new-mounted": 1}),
               ready(NEW), frame(30), frame(300),
               P + f"production-ce-successor-usable result=1 old={OLD} ticks=30 local-players=4 new={NEW}"]
@@ -172,3 +185,56 @@ def test_guest_fault_lines_report_the_real_cause(tmp_path):
     log.write_text("HALO_PS2_LOCAL machine entry\n[err] ELF/boot backing exceeds EE fixed budget\nok line\n")
     assert matrix.guest_fault_lines(log) == ["[err] ELF/boot backing exceeds EE fixed budget"]
     assert matrix.guest_fault_lines(tmp_path / "missing.txt") == []
+
+
+def test_preflight_failure_must_leave_owner_bytes_and_old_map_usable():
+    base = preflight_lines()
+    # owner bytes changed by the rejected candidate
+    lines = [l.replace("tag-bytes=1000", "tag-bytes=0") if "step=after-failed-preflight" in l else l for l in base]
+    assert "failed_preflight_owner_unchanged" in failing(check(lines, mode=2))
+    # the old map is never reported usable after the rejection
+    lines = [l for l in base if "production-ce-successor-usable" not in l]
+    assert "failed_preflight_old_map_usable" in failing(check(lines, mode=2))
+    # a rejected candidate that still reports the new map as mounted
+    lines = [l.replace("new-mounted=0", "new-mounted=1") if "step=after-failed-preflight" in l else l for l in base]
+    assert "failed_preflight_owner_unchanged" in failing(check(lines, mode=2))
+
+
+def test_owner_release_must_follow_dispose_and_zero_the_bytes():
+    base = replace_lines()
+    # the parent never reports map-released between dispose and unload
+    lines = [l for l in base if "phase=map-released" not in l]
+    assert "parent_release_between_dispose_and_unload" in failing(check(lines))
+    # the unload step still holds tag bytes: the unpublish did not happen
+    lines = [l.replace("step=unload result=1 old=bloodgulch old-mounted=0 new=beavercreek new-mounted=0 "
+                       "tag-bytes=0 bsp-bytes=0",
+                       "step=unload result=1 old=bloodgulch old-mounted=0 new=beavercreek new-mounted=0 "
+                       "tag-bytes=1000 bsp-bytes=2000") for l in base]
+    assert "old_owner_unpublished_zero_bytes" in failing(check(lines))
+    # the owner release is reported before CE dispose instead of after it
+    lines = list(base)
+    r = next(i for i, l in enumerate(lines) if "phase=map-released" in l)
+    d = next(i for i, l in enumerate(lines) if "step=dispose" in l)
+    lines[r], lines[d] = lines[d], lines[r]
+    assert "parent_release_between_dispose_and_unload" in failing(check(lines))
+
+
+def test_late_failure_must_reach_empty_state_then_retry_without_rendering():
+    base = load_lines()
+    assert failing(check(base, mode=3)) == set()
+    # the failed load leaves bytes behind instead of an empty state
+    lines = [l.replace("step=after-failed-load result=1 old=bloodgulch old-mounted=0 new=beavercreek "
+                       "new-mounted=0 tag-bytes=0 bsp-bytes=0",
+                       "step=after-failed-load result=1 old=bloodgulch old-mounted=0 new=beavercreek "
+                       "new-mounted=0 tag-bytes=1000 bsp-bytes=2000") for l in base]
+    assert "late_failure_empty_state" in failing(check(lines, mode=3))
+    # no retry marker: the successful load is not a retry
+    lines = [l for l in base if "production-ce-successor-retry" not in l]
+    assert "late_failure_retry_marker_then_load" in failing(check(lines, mode=3))
+    # a frame published while the state is empty
+    idx = next(i for i, l in enumerate(base) if "production-ce-successor-retry" in l)
+    lines = base[:idx] + [frame(31)] + base[idx:]
+    assert "late_failure_no_render_while_empty" in failing(check(lines, mode=3))
+    # the new map is drawn from a ready line emitted before the retry load
+    lines = base[:idx] + [ready(NEW)] + base[idx:]
+    assert "late_failure_no_render_while_empty" in failing(check(lines, mode=3))

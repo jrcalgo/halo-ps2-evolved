@@ -826,8 +826,22 @@ def link_row(row: str, package_root: Path, out: Path, cycles: int = 1, ticks: in
         include_dirs.append(str(workload_dir))
     if include_dir is not None:
         include_dirs.append(str(include_dir))
+    # C3.6b begin: the objects table is generated per row from its own scenario map (sky reference) and the
+    # EE build reads it through HCU_C3_OBJECTS_GEN (tools/ee-world.mk), so a row never links another map's table.
+    if os.environ.get("HCU_C3_OBJECTS") == "1":
+        objects_dir = out / "objects-gen"
+        objects_dir.mkdir(parents=True, exist_ok=True)
+        generated = subprocess.run(
+            [sys.executable, "-I", str(ROOT / "tools/hcu_c3_objects_table.py"), "--package-json",
+             str(package_root / row / f"{row}.json"), "--sky-from-scenario",
+             "--output", str(objects_dir / "hcu_c3_objects_table.h")],
+            cwd=ROOT, capture_output=True, text=True)
+        if generated.returncode:
+            return None, f"objects table generation failed: {generated.stderr.strip()[-400:]}"
+        env = dict(os.environ, HCU_C3_OBJECTS_GEN=str(objects_dir))
     if include_dirs:
-        env = dict(os.environ, C_INCLUDE_PATH=":".join(include_dirs))
+        env = dict(env or os.environ, C_INCLUDE_PATH=":".join(include_dirs))
+    # C3.6b end
     with LINK_LOCK.open("w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         rc, timed_out = run_group(command, log=out / "link.log", timeout=LINK_TIMEOUT, env=env)
@@ -1052,7 +1066,8 @@ C3_5_CLEAR_RGB = (16, 16, 24)  # the unused-quadrant clear colour of hcu_c3_rend
 def c3_5_layout_checks(views: int, capture_files: list[str]) -> dict:
     """C3.5 layout evidence from the newest framebuffer capture: each view rectangle is non-black and carries
     scene pixels, the unused 3-view quadrant is uniformly cleared, and no clear colour bleeds into a view.
-    Rectangles follow hcu_render_layout_compute (640x448 buffer, scaled to the capture's size)."""
+    Rectangles follow hcu_render_layout_compute on VIDEO_WIDTH x VIDEO_HEIGHT (512x448, halo-ps2 video.h),
+    scaled to the capture's size; the halves are exact (256 x 224) so no rounding applies."""
     out = {"views": views, "checks": {}, "reasons": [], "regions": {}}
     try:
         from PIL import Image
@@ -1067,14 +1082,14 @@ def c3_5_layout_checks(views: int, capture_files: list[str]) -> dict:
     img = Image.open(capture_files[-1]).convert("RGB")
     sw, sh = img.size
     px = img.load()
-    fx, fy = sw / 640.0, sh / 448.0
+    fx, fy = sw / 512.0, sh / 448.0
     rects = {
-        1: [(0, 0, 640, 448)],
-        2: [(0, 0, 640, 224), (0, 224, 640, 224)],
-        3: [(0, 0, 320, 224), (320, 0, 320, 224), (0, 224, 320, 224)],
-        4: [(0, 0, 320, 224), (320, 0, 320, 224), (0, 224, 320, 224), (320, 224, 320, 224)],
+        1: [(0, 0, 512, 448)],
+        2: [(0, 0, 512, 224), (0, 224, 512, 224)],
+        3: [(0, 0, 256, 224), (256, 0, 256, 224), (0, 224, 256, 224)],
+        4: [(0, 0, 256, 224), (256, 0, 256, 224), (0, 224, 256, 224), (256, 224, 256, 224)],
     }[views]
-    clear_rect = (320, 224, 320, 224) if views == 3 else None
+    clear_rect = (256, 224, 256, 224) if views == 3 else None
 
     def sample(rect, inset=4, step=6):
         x0, y0, w, h = rect
@@ -1112,6 +1127,8 @@ def c3_3_scene_checks(lines: list[str], views: int, workload_players: int) -> di
     Snapshot types: biped, weapon, vehicle. Stock CE multiplayer has no AI, so in a multi-player scene the
     enemies are the opposing players (user decision 2026-10-24); AI bots remain C5 work. Enemies are present
     when there are at least two players and every player's biped is in the published snapshot.
+    Submitted counts use the unique identity sets (hcu_render_objects note_submission), never the per-view
+    submitted counters, so a repeated draw of one player or one inflated identity cannot prove the scene.
     """
     snaps = [line for line in lines if "c3-snapshot " in line and " biped=" in line]
     final = [line for line in lines if "c3-objects-final " in line]
@@ -1129,7 +1146,10 @@ def c3_3_scene_checks(lines: list[str], views: int, workload_players: int) -> di
         "drawn_objects_nonzero": (_int(drawn.get("drawn")) or 0) > 0,
         # A snapshot count alone is not a submitted draw. These counters advance
         # only after the object renderer emitted geometry for this source identity.
-        "player_bodies_submitted": (_int(drawn.get("unique-bipeds")) or 0) >= workload_players,
+        # unique-bipeds counts distinct {datum index, datum identifier} identities over the whole map
+        # lifetime. Stable identities give exactly one identity per player. Any extra identity is
+        # mutable-generation inflation or unexplained churn (the old 146-biped run), so it fails closed.
+        "player_bodies_submitted": _int(drawn.get("unique-bipeds")) == workload_players,
         "weapons_submitted": (_int(drawn.get("unique-weapons")) or 0) >= workload_players,
         "vehicles_submitted": (_int(drawn.get("unique-vehicles")) or 0) >= 1,
         "draw_identity_set_complete": _int(drawn.get("drawn-identity-overflow")) == 0,
@@ -1144,6 +1164,47 @@ def c3_3_scene_checks(lines: list[str], views: int, workload_players: int) -> di
         "enemies": {"kind": "opposing-players", "ai_bots": "C5"},
         "reasons": reasons,
         "c3_3_qualified": all(checks.values()),
+    }
+
+
+def c3_2_contract_checks(lines: list[str], views: int) -> dict:
+    """C3.2 parent-consumer evidence from existing telemetry only.
+
+    The parent may only read CE-published snapshot data. The guest log shows this through:
+      - `HALO c3-views ... camera=snapshot|fixed`: every view's camera must come from the published bank
+        (camera=fixed is parent-authored view state and fails the contract);
+      - `c3-snapshot ... seq= active-views=`: CE publishes sequences that advance, with every view active;
+      - `c3-objects ... source=`: object geometry must come from the bank, never the synthetic test producer.
+    These counters cannot prove the absence of a parent call to CE simulation; the static audit in
+    tests/test_c3_2_parent_boundary.py covers that. The check fails honestly on the current regression
+    (fixed cameras, no snapshot publication) and needs no new telemetry.
+    """
+    view_rows = [fields_of(l) for l in lines if re.search(r"\bc3-views frame=", l)]
+    snap_rows = [fields_of(l) for l in lines if re.search(r"\bc3-snapshot frame=", l) and " seq=" in l]
+    object_rows = [fields_of(l) for l in lines if re.search(r"\bc3-objects frame=", l)]
+    cameras = [row.get("camera") for row in view_rows if _int(row.get("view")) is not None and _int(row.get("view")) < views]
+    snapshot_views = sum(1 for c in cameras if c == "snapshot")
+    fixed_views = sum(1 for c in cameras if c == "fixed")
+    seqs = [_int(row.get("seq")) for row in snap_rows]
+    seq_advancing = bool(seqs) and all(s is not None for s in seqs) and all(b > a for a, b in zip(seqs, seqs[1:])) \
+        and seqs[-1] > seqs[0]
+    last_active = _int(snap_rows[-1].get("active-views")) if snap_rows else None
+    checks = {
+        "views_reported_per_view": all(any(_int(r.get("view")) == v for r in view_rows) for v in range(views)),
+        "camera_from_snapshot_all_views": bool(cameras) and fixed_views == 0 and snapshot_views == len(cameras),
+        "snapshot_sequence_advances": seq_advancing,
+        "snapshot_active_views_match": last_active == views,
+        "object_source_bank_only": bool(object_rows) and all(r.get("source") == "bank" for r in object_rows),
+    }
+    reasons = [f"c3.2 contract check failed: {name}" for name, ok in checks.items() if not ok]
+    return {
+        "views": views,
+        "camera_rows": {"snapshot": snapshot_views, "fixed": fixed_views},
+        "snapshot_sequences": {"first": seqs[0] if seqs else None, "last": seqs[-1] if seqs else None,
+                               "rows": len(seqs)},
+        "checks": checks,
+        "reasons": reasons,
+        "c3_2_qualified": all(checks.values()),
     }
 
 
@@ -1169,11 +1230,17 @@ def c3_9_bitmap_checks(lines: list[str], views: int) -> dict:
     total = {k: sum(_int(t.get(k)) or 0 for t in ticks)
              for k in ("begin-calls", "begin", "set-view", "requests", "queue-end", "end")}
     rel = released[-1] if released else {}
+    # Accepted frames are begun CE frames whose sealed batch was not dropped. Drops are cumulative,
+    # so the last tick line carries the run total.
+    dropped_total = _int(ticks[-1].get("bitmap-frames-dropped")) if ticks else None
+    accepted = total["begin"] - (dropped_total or 0)
     checks = {
         "bitmap_registered": len(bound) == 1,
         "bitmap_no_failure": not fails,
         # (a) each CE frame in the run calls begin, one set_view per view, queue end and end.
         "bitmap_frames_seen": total["begin"] > 0 and total["begin-calls"] == total["begin"],
+        # A run whose every frame was dropped (or never began) is not bitmap evidence.
+        "bitmap_accepted_frames_nonzero": accepted > 0,
         "bitmap_set_view_per_view": bool(ticks) and all(
             1 <= (_int(t.get("windows")) or 0) <= views and
             _int(t.get("set-view")) == (_int(t.get("windows")) or 0) * (_int(t.get("begin")) or 0)
@@ -1205,11 +1272,25 @@ def c3_9_bitmap_checks(lines: list[str], views: int) -> dict:
     }
 
 
-def c3_10_dma_checks(lines: list[str], views: int, frames: int) -> dict:
+def _overflow_handled(final_frame: dict, last: dict) -> bool:
+    """No overflow, or every overflowed build was counted per chain and refused (chain-refused > 0), and the last
+    completed kick is the one before the newest kick or later (the FINISH of the overflowed frame was observed)."""
+    overflow = _int(final_frame.get("overflow")) or 0
+    if overflow == 0:
+        return True
+    ovf = [_int(x) or 0 for x in last.get("chain-overflow", "0,0,0,0").split(",")]
+    ref = [_int(x) or 0 for x in last.get("chain-refused", "0,0,0,0").split(",")]
+    kick = _int(last.get("kick-seq")) or 0
+    done = _int(last.get("completed")) or 0
+    return overflow <= sum(ovf) and sum(ref) > 0 and done >= kick - 1
+
+
+def c3_10_dma_checks(lines: list[str], views: int, frames: int, captures: list | None = None) -> dict:
     """C3.10 DMA evidence from the guest log: the owner/chain layout at bind (c3-dma-owner), one c3-dma line per
     frame (per-chain kicks, emits, busy-emits, fence observations, pinned/released source generations,
     released-before-fence, overflow refusals, emit status histogram) and the c3-frame overflow counter.
-    Captures and the renderer's own counters are checked elsewhere; this only evaluates the lines."""
+    Captures are required here too: the run must hold at least two captures with a held render capture, and the
+    per-view checks (kick per frame, view count) are evaluated per frame line."""
     owner = [fields_of(l) for l in lines if "c3-dma-owner " in l]
     frame_lines = [fields_of(l) for l in lines if "HALO_PS2_LOCAL c3-dma frame=" in l]
     cframe = [fields_of(l) for l in lines if "c3-frame kind=" in l]
@@ -1243,7 +1324,14 @@ def c3_10_dma_checks(lines: list[str], views: int, frames: int) -> dict:
         "views_match": final_frame.get("views") == str(views + (1 if views == 3 else 0)),
         "no_busy_emits": last.get("c0-busy-emits") == "0" and last.get("c1-busy-emits") == "0",
         "no_idle_violations": final_frame.get("idle-violations") == "0",
-        "fence_observed": any(f.get("c0-fence") == "1" or f.get("c1-fence") == "1" for f in frame_lines),
+        # every frame's kick is one submission: kick-seq equals the frame index (one bsp_render_kick per frame)
+        "one_kick_per_frame": bool(frame_lines) and all(
+            _int(f.get("kick-seq")) == _int(f.get("frame")) for f in frame_lines),
+        # real fence observations on both geometry chains and both upload chains (observed, not assumed)
+        "fence_observed_geometry": all(
+            any(f.get(f"c{i}-fence") == "1" for f in frame_lines) for i in (0, 1)),
+        "fence_observed_upload": all(
+            any(f.get(f"up{i}-fence") == "1" for f in frame_lines) for i in (0, 1)),
         "released_before_fence_zero": bool(frame_lines) and all(f.get("released-before-fence") == "0" for f in frame_lines),
         # each chain must have been released at least once (reuse) and every release event must carry a fence read
         "chain_release_observed": bool(frame_lines) and (_int(last.get("src-rel-chain", "0/0").split("/")[0]) or 0) > 0,
@@ -1257,12 +1345,18 @@ def c3_10_dma_checks(lines: list[str], views: int, frames: int) -> dict:
             for f in frame_lines for i in (0, 1)),
         "object_pin_releases_observed": (_int(last.get("src-rel-pin", "0/0").split("/")[0]) or 0) > 0,
         "bitmap_lease_releases_observed": (_int(last.get("src-rel-bitmap", "0/0").split("/")[0]) or 0) > 0,
-        "overflow_zero_or_handled": final_frame.get("overflow") == "0" or refusals > 0,
+        # overflow is either absent or counted per chain at the refusal point, and the frame still fenced
+        "overflow_counted_and_fenced": _overflow_handled(final_frame, last),
+        # captures: the run must hold its two captures, one of them the held render capture
+        "captures_present": bool(captures) and len(captures) >= 2 and any(
+            "c3-render-held" in c.get("marker", "") for c in captures),
         "emit_failures_zero": final_frame.get("emit-failures") == "0",
     }
     reasons = [f"c3.10 dma check failed: {k}" for k, v in checks.items() if not v]
     return {
         "checks": checks,
+        "views": views,
+        "frames": frames,
         "owner": o,
         "last_frame": last,
         "reasons": reasons,
@@ -1348,12 +1442,17 @@ def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1
             c39 = c3_9_bitmap_checks(lines, render_views)
             result["c3_9"] = c39
             # C3.10 DMA ownership, idle chains, source release and overflow (per-frame c3-dma lines).
-            c310 = c3_10_dma_checks(lines, render_views, render_frames)
+            c310 = c3_10_dma_checks(lines, render_views, render_frames, guest_run.get("captures", []))
             result["c3_10"] = c310
             result["failing_checks"] = result["failing_checks"] + [k for k, v in c310["checks"].items() if not v]
             result["reasons"].extend(c310["reasons"])
             result["failing_checks"] = result["failing_checks"] + [k for k, v in c39["checks"].items() if not v]
             result["reasons"].extend(c39["reasons"])
+            # C3.2 parent contract: cameras, snapshot sequence and object source come from the CE bank only.
+            c32 = c3_2_contract_checks(lines, render_views)
+            result["c3_2"] = c32
+            result["failing_checks"] = result["failing_checks"] + [k for k, v in c32["checks"].items() if not v]
+            result["reasons"].extend(c32["reasons"])
             # A held capture must show the game, not a black frame (C3 capture reliability).
             held = [c for c in result["captures"] if "c3-render-held" in c.get("marker", "")]
             held_fraction = held[0].get("nonblack_fraction") if held else None
@@ -1428,6 +1527,15 @@ def rendered_successor_checks(lines: list[str], old_map: str, new_map: str, mode
     steps = [(index, fields_of(line)) for index, line in enumerate(lines)
              if line.startswith(PREFIX + "production-ce-successor-step ")]
     usable = [index for index, line in enumerate(lines) if line.startswith(PREFIX + "production-ce-successor-usable result=1 ")]
+    usable_rows = [(index, fields_of(line)) for index, line in enumerate(lines)
+                   if line.startswith(PREFIX + "production-ce-successor-usable result=1 ")]
+    begin_lines = [fields_of(line) for line in lines if line.startswith(PREFIX + "production-ce-successor-begin ")]
+    begin_fields = begin_lines[0] if begin_lines else {}
+    # The parent's map-released boundary (hcu_profile_mount unload through the map service) is the owner release.
+    released = [index for index, line in enumerate(lines)
+                if line.startswith(PREFIX + "m2-cycle-boundary ") and fields_of(line).get("phase") == "map-released"]
+    retry_markers = [index for index, line in enumerate(lines)
+                     if line.startswith(PREFIX + "production-ce-successor-retry ")]
     failed_preflight = [i for i, r in steps if r.get("step") == "after-failed-preflight"]
     failed_load = [i for i, r in steps if r.get("step") == "after-failed-load"]
     dispose = [(i, r) for i, r in steps if r.get("step") == "dispose"]
@@ -1465,6 +1573,16 @@ def rendered_successor_checks(lines: list[str], old_map: str, new_map: str, mode
             any(i > rejected_observations[0][0] for i in frames) and
             len(ready) == 1)
         checks["failed_preflight_no_quiesce_or_dispose"] = not begin and not dispose and not unload
+        # The rejected successor leaves the old owner's tag/BSP bytes and mount exactly as begin reported them.
+        checks["failed_preflight_owner_unchanged"] = bool(rejected_observations) and bool(begin_fields) and any(
+            si > rejected_observations[0][0] and r.get("result") == "1" and r.get("old-mounted") == "1" and
+            r.get("new-mounted") == "0" and r.get("tag-bytes") == begin_fields.get("old-tag-bytes") and
+            r.get("bsp-bytes") == begin_fields.get("old-bsp-bytes")
+            for si, r in steps if r.get("step") == "after-failed-preflight")
+        # After the rejection the old map is still usable and rendering: a usable marker for it follows.
+        checks["failed_preflight_old_map_usable"] = bool(rejected_observations) and any(
+            ui > rejected_observations[0][0] and r.get("old") == old_map and r.get("new") is None
+            for ui, r in usable_rows) and any(i > rejected_observations[0][0] for i in frames)
         checks["failed_preflight_preserves_source_identity"] = any(
             bi < ri and all(b.get(k) == r.get(k) for k in
                 ("map-generation", "kick-seq", "service-readers", "world-bound", "media-loaded", "object-pin-live"))
@@ -1498,9 +1616,31 @@ def rendered_successor_checks(lines: list[str], old_map: str, new_map: str, mode
         any(li > ui and l.get("result") == "1" and l.get("new-mounted") == "1" for li, l in loads) and
         any(ui > di for di, _ in dispose)
         for ui, u in unload)
+    # The old owner is released by the parent (map-released) after CE dispose and before the successor load, and the
+    # unload step proves zero tag/BSP bytes remain: a blocked unpublish (profile-unload blocked) fails here.
+    checks["old_owner_unpublished_zero_bytes"] = any(
+        u.get("result") == "1" and u.get("old-mounted") == "0" and u.get("tag-bytes") == "0" and
+        u.get("bsp-bytes") == "0" for _, u in unload)
+    checks["parent_release_between_dispose_and_unload"] = any(
+        di < ri < ui for di, _ in dispose for ri in released for ui, u in unload if u.get("result") == "1")
     if mode == 3:
         checks["late_failure_empty_then_retry"] = bool(failed_load) and any(
             li > failed_load[0] for li, l in loads if l.get("result") == "1") and bool(new_ready)
+        # The failed load leaves CE with no map and zero owner bytes; the retry marker follows it.
+        checks["late_failure_empty_state"] = any(
+            r.get("result") == "1" and r.get("old-mounted") == "0" and r.get("new-mounted") == "0" and
+            r.get("tag-bytes") == "0" and r.get("bsp-bytes") == "0"
+            for i, r in steps if r.get("step") == "after-failed-load")
+        retry_windows = [(fi, li) for fi in failed_load for li, l in loads
+                         if li > fi and l.get("result") == "1"]
+        first_retry = min(retry_windows, key=lambda w: w[1]) if retry_windows else None
+        checks["late_failure_retry_marker_then_load"] = first_retry is not None and any(
+            first_retry[0] < ri < first_retry[1] for ri in retry_markers)
+        # Nothing is published, drawn or usable between the failed load and the successful retry.
+        checks["late_failure_no_render_while_empty"] = first_retry is not None and not any(
+            first_retry[0] < i < first_retry[1] for i, _ in ready) and not any(
+            first_retry[0] < i < first_retry[1] for i in frames) and not any(
+            first_retry[0] < i < first_retry[1] for i in usable)
     checks["successor_frames_render"] = bool(new_ready) and any(i > new_ready[-1] for i in frames) and bool(usable)
     return {"checks": checks,
             "reasons": [f"rendered successor check failed: {name}" for name, passed in checks.items() if not passed],

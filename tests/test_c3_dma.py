@@ -13,8 +13,13 @@ OWNER = ("HALO_PS2_LOCAL c3-dma-owner owner-base=0x1000000 owner-cap=1179648 own
          "up0=0x1100000/65536 up1=0x1110000/65536 sum=1179648")
 
 
+CAPS = [{"marker": "c3-render-held", "file": "held.png", "nonblack_fraction": 0.5},
+        {"marker": "c3-frame kind=periodic", "file": "periodic.png", "nonblack_fraction": 0.5}]
+
+
 def frame_line(n, **over):
-    f = dict(kick="%d" % n, fence="1", busy="0", released_before="0", refusals="0")
+    f = dict(kick="%d" % n, fence="1", busy="0", released_before="0", refusals="0",
+             ovf="0,0,0,0", ref="0,0,0,0", completed=None)
     f.update(over)
     rb = f["released_before"]
     return ("HALO_PS2_LOCAL c3-dma frame=%d kick-seq=%d completed=%d inflight=1 "
@@ -24,9 +29,11 @@ def frame_line(n, **over):
             "geom-rel0=1/0 geom-rel1=1/0 "
             "src-gen=%d src-released=%d released-before-fence=%s "
             "src-rel-chain=%d/0 src-rel-pin=%d/%s src-rel-bitmap=1/0 "
-            "overflow-refusals=%s emit-status=0 emit-codes-neg=0,0,0,0,0,0,0,0 emit-codes-pos=0,0,0,0,0,0,0,0,0"
-            % (n, n, n - 1, f["kick"], f["fence"], n, f["busy"],
-               n, n, rb, n, n, rb, f["refusals"]))
+            "up0-fence=1 up1-fence=1 "
+            "overflow-refusals=%s emit-status=0 emit-codes-neg=0,0,0,0,0,0,0,0 emit-codes-pos=0,0,0,0,0,0,0,0,0 "
+            "chain-overflow=%s chain-refused=%s"
+            % (n, n, (n - 1) if f["completed"] is None else f["completed"], f["kick"], f["fence"], n, f["busy"],
+               n, n, rb, n, n, rb, f["refusals"], f["ovf"], f["ref"]))
 
 
 def frame_c3(views, frames, overflow="0", idle="0", emit="0"):
@@ -42,61 +49,83 @@ def good_lines(views=1, frames=3, **kw):
 
 
 def test_good_run_qualifies():
-    r = c2m.c3_10_dma_checks(good_lines(views=2, frames=3), 2, 3)
+    r = c2m.c3_10_dma_checks(good_lines(views=2, frames=3), 2, 3, CAPS)
     assert r["c3_10_qualified"], r["reasons"]
 
 
 def test_owner_size_must_be_fixed():
     lines = good_lines()
     lines[0] = lines[0].replace("owner-cap=1179648", "owner-cap=1179647")
-    assert not c2m.c3_10_dma_checks(lines, 1, 3)["checks"]["owner_cap_is_fixed"]
+    assert not c2m.c3_10_dma_checks(lines, 1, 3, CAPS)["checks"]["owner_cap_is_fixed"]
 
 
 def test_chain_layout_must_be_contiguous():
     lines = good_lines()
     lines[0] = lines[0].replace("geom1=0x1080000", "geom1=0x1090000")
-    assert not c2m.c3_10_dma_checks(lines, 1, 3)["checks"]["chains_contiguous_in_owner"]
+    assert not c2m.c3_10_dma_checks(lines, 1, 3, CAPS)["checks"]["chains_contiguous_in_owner"]
 
 
 def test_busy_emit_fails():
     lines = good_lines(frames=3)
     lines[3] = frame_line(3, busy="1")
-    assert not c2m.c3_10_dma_checks(lines, 1, 3)["checks"]["no_busy_emits"]
+    assert not c2m.c3_10_dma_checks(lines, 1, 3, CAPS)["checks"]["no_busy_emits"]
 
 
 def test_released_before_fence_fails():
     lines = good_lines(frames=3)
     lines[2] = frame_line(2, released_before="1")
-    assert not c2m.c3_10_dma_checks(lines, 1, 3)["checks"]["released_before_fence_zero"]
+    assert not c2m.c3_10_dma_checks(lines, 1, 3, CAPS)["checks"]["released_before_fence_zero"]
 
 
 def test_emit_failure_blocks_qualification():
-    r = c2m.c3_10_dma_checks(good_lines(emit="3"), 1, 3)
+    r = c2m.c3_10_dma_checks(good_lines(emit="3"), 1, 3, CAPS)
     assert not r["checks"]["emit_failures_zero"] and not r["c3_10_qualified"]
 
 
-def test_overflow_needs_handling():
+def test_overflow_needs_refusal_count_and_fence():
+    # overflow with no per-chain refusal counted is not handled
     lines = good_lines(overflow="1")
-    assert not c2m.c3_10_dma_checks(lines, 1, 3)["checks"]["overflow_zero_or_handled"]
+    assert not c2m.c3_10_dma_checks(lines, 1, 3, CAPS)["checks"]["overflow_counted_and_fenced"]
+    # counted refusal and the previous kick observed: handled
+    lines = good_lines(overflow="1")
+    lines[-2] = frame_line(3, ovf="0,1,0,0", ref="0,5,0,0")
+    assert c2m.c3_10_dma_checks(lines, 1, 3, CAPS)["checks"]["overflow_counted_and_fenced"]
+    # the object refusal counter alone does not count as a renderer overflow refusal
     lines = good_lines(overflow="1")
     lines[-2] = frame_line(3, refusals="2")
-    assert c2m.c3_10_dma_checks(lines, 1, 3)["checks"]["overflow_zero_or_handled"]
+    assert not c2m.c3_10_dma_checks(lines, 1, 3, CAPS)["checks"]["overflow_counted_and_fenced"]
+    # a wedge (newest kick not observed behind an overflowed frame) is not handled
+    lines = good_lines(overflow="1")
+    lines[-2] = frame_line(3, ovf="0,1,0,0", ref="0,5,0,0", completed=0)
+    assert not c2m.c3_10_dma_checks(lines, 1, 3, CAPS)["checks"]["overflow_counted_and_fenced"]
+
+
+def test_one_kick_per_frame_required():
+    lines = good_lines(frames=3)
+    lines[2] = frame_line(2).replace("kick-seq=2", "kick-seq=1")
+    assert not c2m.c3_10_dma_checks(lines, 1, 3, CAPS)["checks"]["one_kick_per_frame"]
+
+
+def test_captures_required():
+    assert not c2m.c3_10_dma_checks(good_lines(), 1, 3)["checks"]["captures_present"]
+    assert not c2m.c3_10_dma_checks(good_lines(), 1, 3, CAPS[:1])["checks"]["captures_present"]
+    assert c2m.c3_10_dma_checks(good_lines(), 1, 3, CAPS)["checks"]["captures_present"]
 
 
 def test_frame_count_must_match():
-    assert not c2m.c3_10_dma_checks(good_lines(frames=2), 1, 3)["checks"]["frame_lines_complete"]
+    assert not c2m.c3_10_dma_checks(good_lines(frames=2), 1, 3, CAPS)["checks"]["frame_lines_complete"]
 
 
 def test_unused_chains_or_absent_source_leases_cannot_qualify():
     for evidence in ("c1-kicks=1", "up1-kicks=1", "up1-releases=1", "src-rel-bitmap=1/0"):
         lines = [line.replace(evidence, evidence.replace("=1", "=0")) for line in good_lines()]
-        assert not c2m.c3_10_dma_checks(lines, 1, 3)["c3_10_qualified"], evidence
+        assert not c2m.c3_10_dma_checks(lines, 1, 3, CAPS)["c3_10_qualified"], evidence
 
 
 def test_duplicate_frame_does_not_replace_a_missing_frame():
     lines = good_lines()
     lines[2] = lines[1]
-    assert not c2m.c3_10_dma_checks(lines, 1, 3)["checks"]["frame_lines_complete"]
+    assert not c2m.c3_10_dma_checks(lines, 1, 3, CAPS)["checks"]["frame_lines_complete"]
 
 
 def test_source_contract_in_hcu_main():
@@ -161,7 +190,7 @@ def test_bitmap_lease_release_event_in_dispatch():
 def test_owner_used_and_storage_checks_present():
     lines = good_lines()
     lines[0] = lines[0].replace("owner-used=1179648", "owner-used=1179647")
-    r = c2m.c3_10_dma_checks(lines, 1, 3)
+    r = c2m.c3_10_dma_checks(lines, 1, 3, CAPS)
     assert not r["checks"]["owner_used_is_fixed"] and not r["c3_10_qualified"]
 
 
@@ -171,3 +200,18 @@ def test_renderer_probe_exports():
     assert "bsp_render_source_release" in hdr and "bsp_render_source_get" in hdr
     obj = (ROOT / "submodules/halo-ps2/engine/src/render/obj_render.h").read_text()
     assert "obj_render_space_refusals" in obj
+
+
+def test_overflow_tail_and_refusal_counters_in_source():
+    bsp = (ROOT / "submodules/halo-ps2/engine/src/render/bsp_render.c").read_text()
+    # builds emit only up to the tail; close_frame restores the physical cap before FINISH and END
+    assert "CHAIN_QW - BSP_RENDER_GEOMETRY_TAIL_QW" in bsp and "UPLOAD_QW - BSP_RENDER_UPLOAD_TAIL_QW" in bsp
+    close = bsp[bsp.index("static void close_frame(void)"):]
+    close = close[:close.index("chain_end(&s_upload[s_build], 0);")]
+    assert close.index("c->cap_qw = CHAIN_QW;") < close.index("chain_cnt(c, 1 + 2")
+    # the before-fence counters are incremented where a release is refused, not left at zero
+    open_frame = bsp[bsp.index("static void open_frame("):]
+    assert "s_geom_before_fence[s_build]++" in open_frame and "s_upload_before_fence[s_build]++" in open_frame
+    assert "o->refused[i] = s_geom_stat[i].refused;" in bsp
+    chain = (ROOT / "submodules/halo-ps2/engine/src/render/chain.c").read_text()
+    assert chain.count("c->refused++") == 2
