@@ -95,6 +95,47 @@ static int src_lightmap(void *user, unsigned page, tex_image_t *out)
 	return 0;
 }
 
+/* C3:pack */
+int hcu_render_media_measure(const hcu_asset_profile_view *view, uint32_t bsp_index,
+	size_t *bsps_bytes, size_t *tex_bytes)
+{
+	hcu_asset_chunk_view b, t, l;
+	if (!view || !bsps_bytes || !tex_bytes) return HCU_RENDER_MEDIA_E_ARGUMENT;
+	if (hcu_asset_profile_lookup(view, HCU_ASSET_CHUNK_BSPS, bsp_index, &b) != 0 ||
+		hcu_asset_profile_lookup(view, HCU_ASSET_CHUNK_TEXS, bsp_index, &t) != 0)
+		return HCU_RENDER_MEDIA_E_ABSENT;
+	*bsps_bytes = b.size;
+	*tex_bytes = align_up(t.size);
+	if (hcu_asset_profile_lookup(view, HCU_ASSET_CHUNK_LIGHTMAP, bsp_index, &l) == 0) {
+		if (l.size > (size_t)-1 - *tex_bytes) return HCU_RENDER_MEDIA_E_SPAN;
+		*tex_bytes += l.size;
+	}
+	return HCU_RENDER_MEDIA_OK;
+}
+
+/* C3:pack */
+int hcu_render_media_pack_plan(size_t owner_bytes, size_t bsps_bytes, size_t tex_bytes,
+	hcu_render_media_pack *out)
+{
+	size_t tex_off, arena_off, end;
+	if (!out) return HCU_RENDER_MEDIA_E_ARGUMENT;
+	memset(out, 0, sizeof *out);
+	if (bsps_bytes > owner_bytes) return HCU_RENDER_MEDIA_E_SPAN;
+	tex_off = align_up(bsps_bytes);
+	if (tex_off < bsps_bytes || tex_off > owner_bytes || tex_bytes > owner_bytes - tex_off)
+		return HCU_RENDER_MEDIA_E_SPAN;
+	end = tex_off + tex_bytes;
+	arena_off = align_up(end);
+	if (arena_off < end || arena_off > owner_bytes) return HCU_RENDER_MEDIA_E_SPAN;
+	out->bsps_off = 0;
+	out->bsps_bytes = bsps_bytes;
+	out->tex_off = tex_off;
+	out->tex_bytes = tex_bytes;
+	out->arena_off = arena_off;
+	out->arena_bytes = owner_bytes - arena_off;
+	return HCU_RENDER_MEDIA_OK;
+}
+
 int hcu_render_media_load(hcu_render_media *m, const hcu_asset_profile_view *view,
 	uint32_t bsp_index, hcu_render_media_span bsps, hcu_render_media_span tex,
 	hcu_render_media_flush_fn flush)

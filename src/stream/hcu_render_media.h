@@ -53,6 +53,22 @@ typedef void (*hcu_render_media_flush_fn)(void *base, size_t bytes);
 int hcu_render_media_load(hcu_render_media *m, const hcu_asset_profile_view *view,
 	uint32_t bsp_index, hcu_render_media_span bsps, hcu_render_media_span tex,
 	hcu_render_media_flush_fn flush);
+/* C3:pack: sizes from the chunk directory only (no reads). bsps_bytes = BSPS size;
+ * tex_bytes = TEXS padded to 64 + LMn (LMn is 0 when absent). */
+int hcu_render_media_measure(const hcu_asset_profile_view *view, uint32_t bsp_index,
+	size_t *bsps_bytes, size_t *tex_bytes);
+
+/* C3:pack: tight layout inside one owner. BSPS at 0, TEX at align64(bsps_bytes),
+ * the level arena at align64(tex_off + tex_bytes) with the rest of the owner.
+ * Returns E_SPAN when the spans do not fit. */
+typedef struct {
+	size_t bsps_off, bsps_bytes;
+	size_t tex_off, tex_bytes;
+	size_t arena_off, arena_bytes;
+} hcu_render_media_pack;
+int hcu_render_media_pack_plan(size_t owner_bytes, size_t bsps_bytes, size_t tex_bytes,
+	hcu_render_media_pack *out);
+
 /* Forget the media. Call after the renderer and map-service reader have released it. */
 void hcu_render_media_clear(hcu_render_media *m);
 

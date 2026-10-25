@@ -65,6 +65,12 @@ int main(int argc, char **argv)
 
 	/* real load */
 	CHECK(hcu_asset_profile_preflight(pkg, pn, 7, &v) == 0);
+	/* C3:pack: measure reports the directory sizes without reading */
+	{ size_t mb = 0, mt = 0;
+	  CHECK(hcu_render_media_measure(&v, 5, &mb, &mt) == HCU_RENDER_MEDIA_E_ABSENT);
+	  CHECK(hcu_render_media_measure(&v, 0, &mb, &mt) == 0);
+	  CHECK(mb == bn && mt == ((tn + 63u) & ~(size_t)63u) + ln);
+	  CHECK(hcu_render_media_measure(NULL, 0, &mb, &mt) == HCU_RENDER_MEDIA_E_ARGUMENT); }
 	/* index with no chunks */
 	CHECK(hcu_render_media_load(&m, &v, 5, bs, ts, NULL) == HCU_RENDER_MEDIA_E_ABSENT);
 	/* too small span: nothing is left behind */
@@ -107,6 +113,32 @@ int main(int argc, char **argv)
 
 	hcu_render_media_clear(&m);
 	CHECK(!m.loaded && hcu_render_world_profile_bsps(NULL, &pb, &pbn) == HCU_RENDER_WORLD_E_NO_PRODUCER);
+
+	/* C3:pack: the exact measured spans load; the packed layout is 64-aligned and tight */
+	{ size_t mb = 0, mt = 0; hcu_render_media_pack pk;
+	  hcu_render_media_span eb, et;
+	  CHECK(hcu_render_media_measure(&v, 0, &mb, &mt) == 0);
+	  CHECK(hcu_render_media_pack_plan(3338048u, mb, mt, &pk) == 0);
+	  CHECK(pk.bsps_off == 0 && pk.tex_off == ((mb + 63u) & ~(size_t)63u));
+	  CHECK(pk.arena_off == ((pk.tex_off + mt + 63u) & ~(size_t)63u) && pk.arena_off + pk.arena_bytes == 3338048u);
+	  eb.base = s_bsp_span; eb.bytes = mb;
+	  et.base = s_tex_span; et.bytes = mt;
+	  CHECK(hcu_render_media_load(&m, &v, 0, eb, et, NULL) == 0);
+	  CHECK(m.bsps == s_bsp_span && m.texs == s_tex_span && m.lm + ln <= s_tex_span + mt);
+	  hcu_render_media_clear(&m); }
+
+	/* C3:pack: Blood Gulch and Beaver Creek numbers, and fail-closed overflow */
+	{ hcu_render_media_pack pk;
+	  CHECK(hcu_render_media_pack_plan(3338048u, 611856u, 406016u + 33120u, &pk) == 0);
+	  CHECK(pk.tex_off == 611904u && pk.arena_off == 1051072u && pk.arena_bytes == 2286976u);
+	  CHECK(hcu_render_media_pack_plan(3338048u, 334560u, 389760u + 16288u, &pk) == 0);
+	  CHECK(pk.tex_off == 334592u && pk.arena_off == 740672u && pk.arena_bytes == 2597376u);
+	  CHECK(hcu_render_media_pack_plan(1000000u, 611856u, 439136u, &pk) == HCU_RENDER_MEDIA_E_SPAN);
+	  CHECK(hcu_render_media_pack_plan(1000000u, 1000001u, 0u, &pk) == HCU_RENDER_MEDIA_E_SPAN);
+	  CHECK(hcu_render_media_pack_plan(1051040u, 611856u, 439136u, &pk) == HCU_RENDER_MEDIA_E_SPAN);
+	  CHECK(hcu_render_media_pack_plan(1051072u, 611856u, 439136u - 1u, &pk) == 0 && pk.arena_bytes == 0);
+	  CHECK(hcu_render_media_pack_plan((size_t)-1, (size_t)-1 / 2, (size_t)-1 / 2, &pk) == HCU_RENDER_MEDIA_E_SPAN);
+	  CHECK(hcu_render_media_pack_plan(10u, 1u, 1u, NULL) == HCU_RENDER_MEDIA_E_ARGUMENT); }
 
 	/* corruption after preflight must be caught by the logical hash */
 	{ hcu_asset_chunk_view e; uint8_t *image = pkg;

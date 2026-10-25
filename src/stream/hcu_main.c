@@ -1497,7 +1497,11 @@ int hcu_c3_bitmap_map_released(void)
 void hcu_c3_render_map_loaded(const char *map_name)
 {
 	uint8_t *base;
-	size_t bytes, quarter;
+	size_t bytes;
+	/* C3:pack begin */
+	size_t bsps_need, tex_need;
+	hcu_render_media_pack pack;
+	/* C3:pack end */
 	hcu_render_media_span bsps, tex;
 	hcu_render_world_span owner;
 	int rc, world_touched = 0;
@@ -1512,20 +1516,28 @@ void hcu_c3_render_map_loaded(const char *map_name)
 		printf("HALO_PS2_FAIL c3-render partition render_texture owner unavailable\n");
 		return;
 	}
-	/* render_texture, bound as the partition table defines it: the first quarter holds BSPS, the second
-	 * TEXS + lightmaps, the remaining half is the renderer's level arena (visibility, bindings, cache). */
-	/* The owner is 16-byte aligned; the renderer media spans need 64. The pad is charged to the owner. */
+	/* C3:pack begin */
+	/* render_texture: BSPS at base, TEXS+LMn packed at align64(BSPS end), the level arena at
+	 * align64(TEXS+LMn end) with the rest of the owner. Sizes come from the chunk directory
+	 * before any read. The owner is 16-byte aligned; the spans need 64. */
 	base = (uint8_t *)(((uintptr_t)s_partition.render_texture_base + 63u) & ~(uintptr_t)63u);
 	bytes = s_partition.render_texture_bytes - (size_t)(base - (uint8_t *)s_partition.render_texture_base);
-	quarter = (bytes / 4u) & ~(size_t)63u;
-	bsps.base = base;            bsps.bytes = quarter;
-	tex.base = base + quarter;   tex.bytes = quarter;
+	if (hcu_render_media_measure(&s_map_service.profile_view, 0, &bsps_need, &tex_need) != HCU_RENDER_MEDIA_OK ||
+		hcu_render_media_pack_plan(bytes, bsps_need, tex_need, &pack) != HCU_RENDER_MEDIA_OK ||
+		pack.arena_bytes == 0) {
+		printf("HALO_PS2_FAIL c3-render pack-overflow bsps=%u tex=%u owner=%u\n",
+			(unsigned)bsps_need, (unsigned)tex_need, (unsigned)bytes);
+		return;
+	}
+	bsps.base = base + pack.bsps_off;  bsps.bytes = pack.bsps_bytes;
+	tex.base = base + pack.tex_off;    tex.bytes = pack.tex_bytes;
 	rc = hcu_render_media_load(&s_c3r.media, &s_map_service.profile_view, 0, bsps, tex, hcu_c3_flush);
 	if (rc != HCU_RENDER_MEDIA_OK) {
 		printf("HALO_PS2_FAIL c3-render media-load rc=%d map=%s\n", rc, map_name);
 		return;
 	}
-	arena_init(&s_c3r.level, "c3_render_level", base + 2u * quarter, bytes - 2u * quarter);
+	arena_init(&s_c3r.level, "c3_render_level", base + pack.arena_off, pack.arena_bytes);
+	/* C3:pack end */
 	hcu_c3_gs_init();
 	if (!s_c3r.gs_ready) goto fail;
 	/* Validate exact HCM keys and reserve the cache namespace before publishing
@@ -1558,12 +1570,14 @@ void hcu_c3_render_map_loaded(const char *map_name)
 	s_c3r.active = 1;
 	printf("HALO_PS2_LOCAL c3-render-ready map=%s views=%u frames=%u bsps=%u texs=%u lm=%u texture-count=%u "
 		"render-texture-base=0x%x render-texture-bytes=%u media-bsps-used=%u media-tex-used=%u level-arena-used=%u level-arena-cap=%u "
+		"pack-bsps-off=%u pack-tex-off=%u pack-arena-off=%u "
 		"camera-source=fixed-spawn bank-views=%u world-reader-count=%u\n",
 		map_name, (unsigned)HCU_C3_RENDER_VIEWS, (unsigned)HCU_C3_RENDER_FRAMES,
 		(unsigned)s_c3r.media.bsps_bytes, (unsigned)s_c3r.media.texs_bytes, (unsigned)s_c3r.media.lm_bytes,
 		(unsigned)s_c3r.media.source.texture_count, (unsigned)ee_physical_address(base), (unsigned)bytes,
 		(unsigned)s_c3r.media.bsps_span_used, (unsigned)s_c3r.media.tex_span_used,
-		(unsigned)s_c3r.level.used, (unsigned)s_c3r.level.cap, (unsigned)s_c3r.bank_views,
+		(unsigned)s_c3r.level.used, (unsigned)s_c3r.level.cap,
+		(unsigned)pack.bsps_off, (unsigned)pack.tex_off, (unsigned)pack.arena_off, (unsigned)s_c3r.bank_views,
 		(unsigned)hcu_map_service_reader_count(&s_map_service));
 	return;
 fail:
