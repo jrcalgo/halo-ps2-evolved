@@ -237,6 +237,16 @@ def test_verdict_names_first_failing_field():
     assert ok["status"] == "pass"
 
 
+def test_selected_first_person_nodes_do_not_prove_submitted_content():
+    lines = ["HALO_PS2_LOCAL c3-objects fp-drawn=100",
+             "HALO_PS2_LOCAL c3-pose effects-selected=100"]
+    assert not any(ci.content_checks(lines, 4)["checks"].values())
+    lines = [f"HALO_PS2_LOCAL c3-fp view={v} fp-weapon-draws=1 fp-hands-draws=1" for v in range(4)]
+    lines.append("HALO_PS2_LOCAL c3-fx fx-drawn=1")
+    assert all(ci.content_checks(lines, 4)["checks"].values())
+    assert not ci.content_checks(lines[1:], 4)["checks"]["hands_geometry_in_each_view"]
+
+
 def test_successor_verdict_uses_rendered_successor_checks_with_mode(tmp_path):
     calls = {}
 

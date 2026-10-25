@@ -36,7 +36,7 @@ FRAMES = 300
 CASE_TIMEOUT = 4 * 3600          # host seconds for one matrix subprocess (its own timeouts apply inside)
 STATE_NAME = "state.json"
 GUEST_LOG = Path("guest/runs/partition-selected/halo_ps2_local.txt")
-REQUIREMENTS = ("C3.3", "C3.5", "C3.7", "C3.8", "C3.9", "C3.10", "C3.11", "SNAP")
+REQUIREMENTS = ("C3.1", "C3.3", "C3.5", "C3.6", "C3.7", "C3.8", "C3.9", "C3.10", "C3.11", "SNAP")
 FIELD = re.compile(r"(?:^|\s)([A-Za-z][A-Za-z0-9_-]*)=([^\s]+)")
 
 
@@ -226,6 +226,38 @@ def snapshot_exit_checks(lines: list[str], views: int, captures: list[dict], emu
     return {"checks": checks, "reasons": [f"snapshot/exit check failed: {k}" for k, v in checks.items() if not v]}
 
 
+def snapshot_payload_checks(lines: list[str]) -> dict:
+    """Runtime payload observations supplement the source/host snapshot layout tests."""
+    snapshots = [kv(l) for l in lines if "c3-snapshot " in l and " seq=" in l]
+    checks = {
+        "snapshot_payload_observed": bool(snapshots),
+        "generation_and_resources_present": bool(snapshots) and all(
+            (_int(s.get("map-gen")) or 0) > 0 and (_int(s.get("palette")) or 0) > 0 and
+            (_int(s.get("resources")) or 0) > 0 for s in snapshots),
+        "bounded_fx_payload": bool(snapshots) and all(
+            0 <= (_int(s.get("effects"), -1)) + (_int(s.get("decals"), -1)) <= 64 and
+            s.get("fx-dropped") == "0" for s in snapshots),
+        "attachments_observed": any((_int(s.get("attachments")) or 0) > 0 for s in snapshots),
+    }
+    return {"checks": checks}
+
+
+def content_checks(lines: list[str], views: int) -> dict:
+    """Count real submitted first-person geometry and effect packets, never selection alone."""
+    fp = [kv(l) for l in lines if "c3-fp " in l]
+    effects = [kv(l) for l in lines if "c3-fx " in l]
+    checks = {
+        "weapon_geometry_in_each_view": all(any(
+            f.get("view") == str(view) and (_int(f.get("fp-weapon-draws")) or 0) > 0 for f in fp)
+            for view in range(views)),
+        "hands_geometry_in_each_view": all(any(
+            f.get("view") == str(view) and (_int(f.get("fp-hands-draws")) or 0) > 0 for f in fp)
+            for view in range(views)),
+        "representative_effect_geometry": any((_int(f.get("fx-drawn")) or 0) > 0 for f in effects),
+    }
+    return {"checks": checks}
+
+
 def score_lines(c2m, lines: list[str] | None, *, views: int, frames: int, cap_pages: int, captures: list[dict],
                 successor: dict | None, emu_mode_verified: bool) -> dict:
     """Every requirement verdict for one run. successor is {'old', 'new', 'mode'} for C3.11 runs, else None."""
@@ -244,9 +276,11 @@ def score_lines(c2m, lines: list[str] | None, *, views: int, frames: int, cap_pa
         return verdicts
     held = [c.get("file") for c in captures if "c3-render-held" in str(c.get("marker", "")) and c.get("file")]
     verdicts = {
+        "C3.1": _verdict(snapshot_payload_checks, lines),
         "C3.3": (_verdict(c2m.c3_3_scene_checks, lines, views, views) if views > 1 else
                  {"status": "n/a", "first_failing": "opposing-player scene is exercised by multiplayer cases", "error": None}),
         "C3.5": _verdict(c2m.c3_5_layout_checks, views, held),
+        "C3.6": _verdict(content_checks, lines, views),
         "C3.7": _verdict(c2m.c3_7_texfence_checks, lines, views, frames, cap_pages),
         "C3.8": _verdict(c3_8_sound_checks, lines),
         "C3.9": _verdict(c2m.c3_9_bitmap_checks, lines, views),

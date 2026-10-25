@@ -4,6 +4,7 @@
 #include "stream/hcu_bitmap_dispatch.h"
 
 static int32_t s_fence_result;
+static int32_t s_source_release_result = 1;
 static uint32_t s_fence_calls, s_release_calls;
 
 int32_t bsp_render_fence_observed(uint32_t kick_seq)
@@ -15,7 +16,8 @@ int32_t bsp_render_fence_observed(uint32_t kick_seq)
 int32_t bsp_render_source_release(uint32_t kind, uint32_t kick_seq)
 {
 	s_release_calls++;
-	return kind == 2u ? bsp_render_fence_observed(kick_seq) : -1;
+	if (kind != 2u || bsp_render_fence_observed(kick_seq) != 1) return -1;
+	return s_source_release_result;
 }
 
 int main(void)
@@ -52,9 +54,14 @@ int main(void)
 	if (hcu_bitmap_dispatch_complete(&ctx) != HCU_BITMAP_DISPATCH_E_BUSY ||
 		ctx.lease_count != 1 || !leases[0].active || readers[0] != 1 || s_release_calls != 0) return 2;
 	s_fence_result = 1;
-	if (hcu_bitmap_dispatch_complete(&ctx) != HCU_BITMAP_DISPATCH_OK ||
-		ctx.lease_count != 0 || leases[0].active || slots[0].valid || readers[0] || s_release_calls != 1)
+	s_source_release_result = 0;
+	if (hcu_bitmap_dispatch_complete(&ctx) != HCU_BITMAP_DISPATCH_E_BUSY ||
+		ctx.lease_count != 1 || !leases[0].active || !slots[0].valid || readers[0] != 1 || s_release_calls != 1)
 		return 3;
+	s_source_release_result = 1;
+	if (hcu_bitmap_dispatch_complete(&ctx) != HCU_BITMAP_DISPATCH_OK ||
+		ctx.lease_count != 0 || leases[0].active || slots[0].valid || readers[0] || s_release_calls != 2)
+		return 4;
 	printf("bitmap-dispatch-fence-ok fences=%u releases=%u\n", s_fence_calls, s_release_calls);
 	return 0;
 }
