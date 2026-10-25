@@ -69,6 +69,18 @@ typedef struct {
 hcu_render_content_status hcu_render_parity_summarize(const hcu_render_parity_log *log,
 	hcu_render_parity_summary *out);
 
+/* Per-frame identity accumulator (C3.6 parity). Every drawn source item is folded in at its draw point, in
+ * draw order, with the same FNV-1a words as the summary: O(1) per item, no storage. Reset at frame begin. */
+typedef struct {
+	uint32_t records;
+	uint32_t per_kind[HCU_RENDER_PARITY_EFFECT + 1];
+	uint32_t hash;
+} hcu_render_parity_frame;
+
+void hcu_render_parity_frame_reset(hcu_render_parity_frame *f);
+hcu_render_content_status hcu_render_parity_frame_add(hcu_render_parity_frame *f,
+	const hcu_render_parity_record *record);
+
 /* ---- texture claims ------------------------------------------------------
  * A claim moves FREE -> SOURCE_HELD -> UPLOAD_QUEUED -> PUBLISHED. Source bytes
  * stay held until upload completion (RELEASED). A claim may be published only

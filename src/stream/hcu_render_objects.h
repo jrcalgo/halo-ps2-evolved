@@ -163,6 +163,8 @@ typedef struct {
 	uint32_t fx_no_binding;              /* C3.6(c): flat: no bitmap binding, or no usable source for it */
 	uint32_t fx_budget_deferred;         /* C3.6(c): flat: texture refused by the frame upload budget or ring */
 	uint32_t fx_cache_full;              /* C3.6(c): flat: texture window cannot hold the bitmap */
+	uint32_t sky_drawn;                  /* C3.6: sky model passes drawn (loaded model, per view) */
+	uint32_t sky_misses;                 /* C3.6: sky model configured but not resident this view */
 } hcu_render_objects_counters;
 
 /* Record a draw only after obj_render_pass emits one or more geometry batches. Counts every successful
@@ -244,6 +246,12 @@ int hcu_render_objects_residency_may_evict(int loaded, int referenced_this_frame
  * refusal of an otherwise-evictable entry increments *evict_refused_pinned. Returns 1 when evictable. */
 int hcu_render_objects_residency_victim_ok(int loaded, int referenced_this_frame, int fence_observed,
 	uint32_t pins, uint32_t *evict_refused_pinned);
+/* C3.objects residency priority: a requested entry may displace a loaded entry of strictly lower importance
+ * (larger rank) when the pool has no room. Entries this frame does not reference rank HCU_OBJECTS_RANK_UNUSED,
+ * so they are displaced first. The fence and pin rules are the same as hcu_render_objects_residency_victim_ok. */
+#define HCU_OBJECTS_RANK_UNUSED 4u
+int hcu_render_objects_residency_rank_victim_ok(int loaded, uint32_t victim_rank, uint32_t requester_rank,
+	int fence_observed, uint32_t pins, uint32_t *evict_refused_pinned);
 int hcu_render_objects_pool_request_fits(uint32_t need, uint32_t capacity);
 
 /* ---- pin / unpin ----------------------------------------------------------------------------------
@@ -325,6 +333,7 @@ typedef struct {
 	uint32_t parts_logged, effects_selected, effects_refused;
 	uint32_t fx_drawn, fx_skipped_space, fx_textured, fx_flat, fx_no_binding;
 	uint32_t fx_budget_deferred, fx_cache_full;
+	uint32_t sky_drawn, sky_misses;
 	uint32_t first_person_map_generation;
 	uint16_t first_person_weapon_resource_slot, first_person_hands_resource_slot;
 	uint32_t first_person_weapon_resource_id, first_person_hands_resource_id;
@@ -340,6 +349,14 @@ int hcu_render_objects_load(const hcu_asset_profile_view *view, arena_t *arena,
  * once after the bitmap profile is prepared; without it every decal is counted fx-no-binding. */
 void hcu_render_objects_set_fx_bindings(const hcu_bitmap_binding *bindings, uint32_t count,
 	const hcu_asset_profile_view *profile, void *staging, uint32_t staging_bytes);
+/* C3.6: table index of the scenario sky model (generated as HCU_C3_OBJECTS_SKY_INDEX). The entry stays
+ * resident and pinned once loaded and is drawn as the sky pass before each view's BSP. HCU_RENDER_OBJECTS_SKY_NONE
+ * or an out-of-range index draws no sky. */
+#define HCU_RENDER_OBJECTS_SKY_NONE 0xFFFFFFFFu
+void hcu_render_objects_set_sky_entry(uint32_t table_index);
+/* C3.6: per-frame identity accumulator of this frame's drawn objects, vehicles, weapons, first-person models and
+ * the sky (kind, definition or resource, material -1). Filled at the draw point; valid after frame end. */
+int hcu_render_objects_frame_parity(hcu_render_parity_frame *out);
 /* Installs the object pass after the BSP pass (bsp_render_set_object_pass). Call once per map,
  * after the models are loaded and before the first view. */
 int hcu_render_objects_install(void);

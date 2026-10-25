@@ -72,6 +72,15 @@ int hcu_render_objects_residency_victim_ok(int loaded, int referenced_this_frame
 	return 0;
 }
 
+int hcu_render_objects_residency_rank_victim_ok(int loaded, uint32_t victim_rank, uint32_t requester_rank,
+	int fence_observed, uint32_t pins, uint32_t *evict_refused_pinned)
+{
+	if (!loaded || fence_observed != 1 || victim_rank <= requester_rank) return 0;
+	if (pins == 0u) return 1;
+	if (evict_refused_pinned) (*evict_refused_pinned)++;
+	return 0;
+}
+
 int hcu_render_objects_pool_request_fits(uint32_t need, uint32_t capacity)
 {
 	return need != 0 && need <= capacity;
@@ -307,7 +316,11 @@ int hcu_render_effects_select(const halo_ps2_frame_snapshot *snap, uint32_t view
 		const halo_ps2_frame_fx_request *fx = &snap->fx_requests[e];
 		uint32_t ref, owned = 0;
 		if (!(fx->view_mask & (1u << view))) continue;
-		if (fx->owner_object != HALO_PS2_FRAME_NONE_U16) {
+		/* C3.6(c): an unowned request (world decals, owner NONE) is drawn by every view its mask names. An
+		 * owned request must belong to an object this view references. Gating NONE owners out dropped every decal. */
+		if (fx->owner_object == HALO_PS2_FRAME_NONE_U16) {
+			owned = 1;
+		} else {
 			for (ref = v->view_ref_first; ref < v->view_ref_first + v->view_ref_count && ref < snap->view_ref_count; ref++)
 				if (snap->view_refs[ref] == fx->owner_object) { owned = 1; break; }
 		}
@@ -620,6 +633,7 @@ static uint32_t s_slot_count;
  * as residency_frame does). Applied +1 when a pin is taken and -1 when it is dropped, against the same
  * immutable snapshot, so the counts balance; refused slots still count so the drop cannot leave a residue. */
 static uint16_t s_slot_pins[HCU_OBJECTS_MAX_MODELS];
+static uint8_t s_slot_rank[HCU_OBJECTS_MAX_MODELS];   /* C3.objects: this frame's residency rank (HCU_OBJECTS_RANK_UNUSED = not referenced) */
 static hcu_render_objects_counters s_totals;
 static hcu_render_drawn_identity_set s_drawn_identities;
 static hcu_render_objects_pin_t s_pin;
@@ -672,6 +686,9 @@ static uint32_t s_view_triangles, s_view_skinned, s_view_drawn;
 static const halo_ps2_frame_snapshot *s_snapshot;
 static hcu_render_pose_tracker s_poses;
 static uint32_t s_cur_view;
+/* C3.6 sky: table index of the sky model entry (HCU_RENDER_OBJECTS_SKY_NONE = no sky) and its residency pin. */
+static uint32_t s_sky_index = HCU_RENDER_OBJECTS_SKY_NONE;
+static uint8_t s_sky_pinned;
 
 static int read_verified(const hcu_asset_profile_view *view, uint32_t id, uint32_t size,
 	uint8_t *dst, const uint8_t want[32])
@@ -864,7 +881,7 @@ static void entry_evict(uint32_t i)
 
 /* Makes entry i resident for this frame: loads it when the pool has room, otherwise evicts the least recently
  * used entries that this frame does not reference, and only while the fence is clear. */
-static void entry_request(const hcu_asset_profile_view *view, uint32_t i, uint32_t frame)
+static void entry_request(const hcu_asset_profile_view *view, uint32_t i, uint32_t frame, uint32_t rank)
 {
 	obj_slot *s = &s_slots[i];
 	uint32_t need;
@@ -885,11 +902,21 @@ static void entry_request(const hcu_asset_profile_view *view, uint32_t i, uint32
 		if (safe < 0) safe = pool_fence_safe();
 		if (!safe) { s_res.fence_blocked++; break; }
 		{
+			/* Evict only when the victims can make room: free bytes plus every eligible victim must cover the request,
+			 * so a request that cannot fit never costs a resident entry a reload. */
+			uint32_t v, reclaim = s_res.pool_bytes - s_res.pool_used, dummy = 0;
+			for (v = 0; v < s_slot_count; v++)
+				if (hcu_render_objects_residency_rank_victim_ok(s_slots[v].loaded, s_slot_rank[v], rank, safe,
+					s_slot_pins[v], &dummy)) reclaim += s_slots[v].pool_size;
+			if (reclaim < need) { s_res.pool_refusals++; break; }
+		}
+		{
 			uint32_t v, best = OBJ_NONE;
 			for (v = 0; v < s_slot_count; v++)
-				if (hcu_render_objects_residency_victim_ok(s_slots[v].loaded,
-					s_slots[v].last_used > frame, safe, s_slot_pins[v], &s_res.evict_refused_pinned) &&
-					(best == OBJ_NONE || s_slots[v].last_used < s_slots[best].last_used)) best = v;
+				if (hcu_render_objects_residency_rank_victim_ok(s_slots[v].loaded, s_slot_rank[v], rank, safe,
+					s_slot_pins[v], &s_res.evict_refused_pinned) &&
+					(best == OBJ_NONE || s_slot_rank[v] > s_slot_rank[best] ||
+					 (s_slot_rank[v] == s_slot_rank[best] && s_slots[v].last_used < s_slots[best].last_used))) best = v;
 			if (best == OBJ_NONE) { s_res.pool_refusals++; break; }
 			entry_evict(best);
 		}
@@ -941,13 +968,16 @@ static void residency_frame(const halo_ps2_frame_snapshot *snap, uint32_t frame)
 				}
 		}
 	}
+	/* Ranks before any eviction: an entry is displaced only by a strictly more important request. */
+	for (i = 0; i < s_slot_count; i++)
+		s_slot_rank[i] = need[i] ? priority[i] : HCU_OBJECTS_RANK_UNUSED;
 	/* Mark what this frame uses before any eviction, so a referenced entry is never the victim. */
 	for (i = 0; i < s_slot_count; i++)
 		if (need[i] && s_slots[i].loaded) s_slots[i].last_used = frame + 1u;
 	/* Resolve shared resources at their most important visible type, then admit by that priority. */
 	for (p = 0; p <= 3u; p++)
 		for (i = 0; i < s_slot_count; i++)
-			if (need[i] && priority[i] == p) entry_request(s_profile, i, frame);
+			if (need[i] && priority[i] == p) entry_request(s_profile, i, frame, p);
 }
 
 /* ---- texture binding (same mapping as hcu_render_media.c, global texture index) ---------------- */
@@ -1061,6 +1091,20 @@ static void log_part_parity(const obj_slot *s, const model_info *mi, const uint1
 	}
 }
 
+/* C3.6 per-frame identity: one fold per drawn item, at its draw point. Frame-scoped (reset in frame begin). */
+static hcu_render_parity_frame s_frame_parity;
+static void frame_identity_add(uint32_t kind, int32_t surface_id, uint32_t resource_id)
+{
+	hcu_render_parity_record rec;
+	rec.frame = s_frame;
+	rec.view = s_cur_view;
+	rec.kind = kind;
+	rec.surface_id = surface_id;
+	rec.material_id = -1;
+	rec.resource_id = resource_id;
+	(void)hcu_render_parity_frame_add(&s_frame_parity, &rec);
+}
+
 /* ---- C3.6(c) effect and decal quads (EE) ----------------------------------------------------------
  * Every admitted quad of a view goes into one GIF packet (PRIM triangle, alpha blend, depth test GEQUAL,
  * no depth write). The packet is preceded by one A+D state chunk. Quads are clipped on the EE with the
@@ -1068,9 +1112,6 @@ static void log_part_parity(const obj_slot *s, const model_info *mi, const uint1
  * byte is written: a quad that does not fit the chain is counted in fx_skipped_space and skipped. */
 #define FX_STATE_QW 5u        /* VIF header + GIF tag (AD) + three A+D pairs */
 #define FX_PACKET_HDR_QW 2u   /* VIF header + GIF tag */
-
-static hcu_render_fx_quad s_fxq[HCU_FX_MAX_PER_VIEW];
-static uint32_t s_fxn[HCU_FX_MAX_PER_VIEW];        /* clipped vertices of an admitted quad (0 = not admitted) */
 
 static hcu_render_fx_quad s_fxq[HCU_FX_MAX_PER_VIEW];
 static uint32_t s_fxn[HCU_FX_MAX_PER_VIEW];        /* clipped vertices of an admitted quad (0 = not admitted) */
@@ -1372,6 +1413,9 @@ static void object_pass(void *user, render_ctx_t *rc)
 		if (s_objr.st_visible && s_objr.st_batches > 0u) {
 			s_view_drawn++;
 			s_view_counters.objects_drawn++;
+			frame_identity_add(d->type == HCU_OBJECTS_TYPE_VEHICLE ? HCU_RENDER_PARITY_VEHICLE
+				: d->type == HCU_OBJECTS_TYPE_WEAPON ? HCU_RENDER_PARITY_WEAPON : HCU_RENDER_PARITY_OBJECT,
+				(int32_t)d->definition_index, d->resource_id);
 			if (d->type == HCU_OBJECTS_TYPE_BIPED || d->type == HCU_OBJECTS_TYPE_VEHICLE ||
 				d->type == HCU_OBJECTS_TYPE_WEAPON)
 				(void)hcu_render_objects_note_submission(&s_view_counters, &s_drawn_identities,
@@ -1466,6 +1510,7 @@ static void object_pass(void *user, render_ctx_t *rc)
 			s_view_drawn++;
 			s_view_counters.objects_drawn++;
 			s_view_counters.first_person_draws++;
+			frame_identity_add(HCU_RENDER_PARITY_WEAPON, -1, fp->resource_id);
 			if (fp->kind == HCU_OBJECTS_FP_WEAPON) s_view_counters.first_person_weapon_draws++;
 			else if (fp->kind == HCU_OBJECTS_FP_HANDS) s_view_counters.first_person_hands_draws++;
 			s_view_counters.triangles += s_objr.st_triangles;
@@ -1534,6 +1579,46 @@ void hcu_render_objects_residency_stats(hcu_render_objects_residency *out)
 	if (out) *out = s_res;
 }
 
+/* C3.6 sky: the scenario sky model, drawn by halo-ps2's obj_render_sky (camera-centred, Z test always, no Z write)
+ * before each view's BSP. The sky entry is not a snapshot object, so frame begin requests it on its own. */
+void hcu_render_objects_set_sky_entry(uint32_t table_index)
+{
+	s_sky_index = table_index < HCU_OBJECTS_MAX_MODELS ? table_index : HCU_RENDER_OBJECTS_SKY_NONE;
+}
+
+static void sky_pass(void *user, render_ctx_t *rc)
+{
+	obj_slot *s;
+	model_info mi;
+	uint16_t perm[OBJ_MAX_REGIONS];
+	unsigned region;
+	(void)user;
+	if (s_sky_index >= s_slot_count) return;
+	s = &s_slots[s_sky_index];
+	if (!s->loaded) { s_view_counters.sky_misses++; return; }
+	s_objr.world.models = &s->models;
+	s_objr.world.scen = NULL;
+	s_objr.world.anims = NULL;
+	s_objr.textures = &s->src;
+	s_objr.sky_model = 0;
+	obj_render_sky(&s_objr, rc);
+	s_view_counters.sky_drawn++;
+	/* parity: per-part identities of the sky's LOD-0 permutations, logged at frame 0 like the other models */
+	mi = model_get(&s->models, 0);
+	model_select_permutations(&s->models, &mi, NULL, perm);
+	for (region = 0; region < mi.region_count && region < OBJ_MAX_REGIONS; region++)
+		if (perm[region] >= mi.permutation_count) perm[region] = 0;
+	log_part_parity(s, &mi, perm, s->entry->source_datum & 0xFFFFu, HCU_RENDER_PARITY_SKY);
+	frame_identity_add(HCU_RENDER_PARITY_SKY, -1, s->entry->source_datum & 0xFFFFu);
+}
+
+int hcu_render_objects_frame_parity(hcu_render_parity_frame *out)
+{
+	if (!out) return HCU_RENDER_CONTENT_E_ARGUMENT;
+	*out = s_frame_parity;
+	return HCU_RENDER_CONTENT_OK;
+}
+
 int hcu_render_objects_install(void)
 {
 	memset(&s_src_total, 0, sizeof s_src_total);
@@ -1544,6 +1629,7 @@ int hcu_render_objects_install(void)
 	 * same keys and its bytes never change. */
 	bsp_render_cache_limit(0);
 	bsp_render_set_object_pass(object_pass, NULL, &s_src_total);
+	bsp_render_set_sky_pass(sky_pass, NULL);
 	s_installed = 1;
 	return 0;
 }
@@ -1555,8 +1641,9 @@ static int find_entry(const char *path)
 	uint32_t i;
 	for (i = 0; i < s_slot_count; i++)
 		if (!s_slots[i].refused && s_slots[i].entry->path && strcmp(s_slots[i].entry->path, path) == 0) {
-			/* The synthetic set references the entry through the same residency path as a snapshot does. */
-			entry_request(s_profile, i, s_frame);
+			/* The synthetic set references the entry through the same residency path as a snapshot does. It runs
+			 * before this frame's residency ranks are set, so it may displace only entries that are not needed. */
+			entry_request(s_profile, i, s_frame, HCU_OBJECTS_RANK_UNUSED - 1u);
 			return s_slots[i].loaded ? (int)i : -1;
 		}
 	return -1;
@@ -1658,6 +1745,14 @@ const halo_ps2_frame_snapshot *hcu_render_objects_frame_begin(uint32_t frame, ui
 	}
 	s_snapshot = s_pin.pinned ? s_pin.snapshot : NULL;
 	residency_frame(s_snapshot, frame);
+	hcu_render_parity_frame_reset(&s_frame_parity);
+	if (s_sky_index < s_slot_count && !s_slots[s_sky_index].refused) {
+		entry_request(s_profile, s_sky_index, frame, 0u);   /* the sky is requested with the top rank (it is pinned once loaded) */
+		if (s_slots[s_sky_index].loaded && !s_sky_pinned) {
+			s_slot_pins[s_sky_index]++;        /* the sky is never an eviction victim once resident */
+			s_sky_pinned = 1;
+		}
+	}
 	s_pose_snapshot = s_snapshot;
 	if (s_snapshot) hcu_render_objects_track_poses(s_snapshot, &s_poses, &s_totals);
 	return s_snapshot;
@@ -1707,6 +1802,8 @@ void hcu_render_objects_view_end(uint32_t view, hcu_render_objects_view_stats *o
 		out->texture_hits = s_view_counters.texture_hits;
 		out->texture_misses = s_view_counters.texture_misses;
 		out->parity_records = s_parity.records ? s_parity.count : 0;
+		out->sky_drawn = s_view_counters.sky_drawn;
+		out->sky_misses = s_view_counters.sky_misses;
 		out->first_person_draws = s_view_counters.first_person_draws;
 		out->first_person_model_hits = s_view_counters.first_person_model_hits;
 		out->first_person_model_misses = s_view_counters.first_person_model_misses;

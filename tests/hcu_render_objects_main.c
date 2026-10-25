@@ -133,6 +133,57 @@ static int test_select(void)
 	return 0;
 }
 
+/* Four views share one biped and one weapon. The bank keeps one object record and one palette range, every
+ * view references both, and the unique identity set counts each source identity once across the views. */
+static int test_four_view_dedup(void)
+{
+	halo_ps2_frame_snapshot s;
+	halo_ps2_snapshot_matrix4x3 pal[3];
+	hcu_render_objects_model models[HCU_OBJECTS_MAX_MODELS];
+	hcu_render_object_draw draw[HCU_OBJECTS_MAX_DRAW];
+	hcu_render_objects_counters c;
+	hcu_render_drawn_identity_set ids;
+	hcu_render_synthetic_object o;
+	uint32_t n = 0, v;
+	int i;
+	for (i = 0; i < 3; i++) pal[i] = mat_at((float)i, 0.0f, 0.0f);
+	CHECK(hcu_render_synthetic_begin(&s, 7u, 42u, 4u) == 0);
+	for (v = 0; v < 4u; v++) {
+		/* Views are appended in order; each view references the shared table. */
+		CHECK(hcu_render_synthetic_view(&s, v, &kcam) == 0);
+		memset(&o, 0, sizeof o);
+		o.resource_id = 100; o.definition_index = 5; o.type = HCU_OBJECTS_TYPE_BIPED;
+		o.flags = HCU_OBJECTS_FLAG_SKINNED; o.palette_count = 3; o.world = mat_at(1, 2, 3); o.palette = pal;
+		CHECK(hcu_render_synthetic_object_add(&s, v, 0, &o) == 0);   /* first view creates, others dedupe */
+		memset(&o, 0, sizeof o);
+		o.resource_id = 200; o.definition_index = 9; o.type = HCU_OBJECTS_TYPE_WEAPON; o.world = mat_at(4, 5, 6);
+		CHECK(hcu_render_synthetic_object_add(&s, v, 1, &o) == 0);
+	}
+
+	CHECK(s.view_count == 4 && s.object_count == 2);       /* one record per source identity */
+	CHECK(s.palette_count == 3);                            /* the shared palette is stored once */
+	CHECK(s.view_ref_count == 8);                           /* 4 views x 2 shared objects */
+	for (v = 0; v < 4u; v++)
+		CHECK(s.views[v].view_ref_count == 2 && s.views[v].view_ref_first == 2u * v);
+	models_table(models);
+	memset(&c, 0, sizeof c);
+	memset(&ids, 0, sizeof ids);
+	for (v = 0; v < 4u; v++) {
+		CHECK(hcu_render_objects_select(&s, v, models, 2, draw, HCU_OBJECTS_MAX_DRAW, &n, &c) == 0);
+		CHECK(n == 2 && draw[0].object_index == 0 && draw[1].object_index == 1);
+		CHECK(draw[0].palette_first == 0 && draw[0].palette_count == 3);
+		CHECK(hcu_render_objects_note_submission(&c, &ids, HCU_OBJECTS_TYPE_BIPED,
+			draw[0].object_index, draw[0].generation) == 0);
+		CHECK(hcu_render_objects_note_submission(&c, &ids, HCU_OBJECTS_TYPE_WEAPON,
+			draw[1].object_index, draw[1].generation) == 0);
+	}
+	CHECK(c.views_seen == 4 && c.failures == 0 && c.deduped == 0);  /* deduped counts repeats inside one view only */
+	CHECK(c.submitted_bipeds == 4u && c.submitted_weapons == 4u);   /* per-view submissions */
+	CHECK(c.unique_bipeds == 1u && c.unique_weapons == 1u);         /* identities across the 4 views */
+	CHECK(ids.count == 2u && ids.overflow == 0u);
+	return 0;
+}
+
 static int test_submitted_category_counters(void)
 {
 	hcu_render_objects_counters c;
@@ -250,6 +301,19 @@ static int test_residency_policy(void)
 		CHECK(hcu_render_objects_residency_victim_ok(1, 0, 0, 1u, &refused) == 0 && refused == 2);
 		CHECK(hcu_render_objects_residency_victim_ok(1, 1, 1, 1u, &refused) == 0 && refused == 2);
 		CHECK(hcu_render_objects_residency_victim_ok(0, 0, 1, 1u, &refused) == 0 && refused == 2);
+	}
+	/* C3.objects priority displacement: only a strictly less important (larger rank) loaded entry is a victim. */
+	{
+		uint32_t refused = 0;
+		CHECK(HCU_OBJECTS_RANK_UNUSED > 3u);
+		CHECK(hcu_render_objects_residency_rank_victim_ok(1, HCU_OBJECTS_RANK_UNUSED, 0u, 1, 0u, &refused) == 1);
+		CHECK(hcu_render_objects_residency_rank_victim_ok(1, 2u, 1u, 1, 0u, &refused) == 1);   /* effect displaced by vehicle */
+		CHECK(hcu_render_objects_residency_rank_victim_ok(1, 1u, 1u, 1, 0u, &refused) == 0);   /* equal rank keeps its entry */
+		CHECK(hcu_render_objects_residency_rank_victim_ok(1, 0u, 1u, 1, 0u, &refused) == 0);   /* biped never displaced by vehicle */
+		CHECK(refused == 0);
+		CHECK(hcu_render_objects_residency_rank_victim_ok(1, 2u, 1u, 1, 1u, &refused) == 0 && refused == 1);  /* pinned */
+		CHECK(hcu_render_objects_residency_rank_victim_ok(1, 2u, 1u, 0, 0u, &refused) == 0 && refused == 1);  /* fence */
+		CHECK(hcu_render_objects_residency_rank_victim_ok(0, 2u, 1u, 1, 0u, &refused) == 0 && refused == 1);  /* not loaded */
 	}
 	/* An individually oversized model is a real pool refusal, not an eviction attempt. */
 	CHECK(hcu_render_objects_pool_request_fits(1024, 2048));
@@ -519,11 +583,62 @@ static int test_fx_corner_st(void)
 	return 0;
 }
 
+/* C3.6 review fixes: world decals (owner NONE) are drawn by every view their mask names, owned effects still need a
+ * view reference; the per-frame identity accumulator agrees with the summary hash over the same records. */
+static int test_c3_6_unowned_fx_and_frame_identity(void)
+{
+	halo_ps2_frame_snapshot s;
+	halo_ps2_snapshot_matrix4x3 pal[3];
+	hcu_render_effect_draw out[HCU_FX_MAX_PER_VIEW];
+	hcu_render_objects_counters c;
+	hcu_render_parity_frame pf;
+	hcu_render_parity_record store[4], rec;
+	hcu_render_parity_log log;
+	hcu_render_parity_summary sum;
+	uint32_t count = 0, i;
+	CHECK(build_two_views(&s, pal) == 0);
+	s.fx_request_count = 3;
+	s.fx_requests[0].kind = HALO_PS2_FRAME_FX_DECAL; s.fx_requests[0].owner_object = HALO_PS2_FRAME_NONE_U16;
+	s.fx_requests[0].view_mask = 0x1; s.fx_requests[0].position[0] = 1.0f;
+	s.fx_requests[1].kind = HALO_PS2_FRAME_FX_DECAL; s.fx_requests[1].owner_object = HALO_PS2_FRAME_NONE_U16;
+	s.fx_requests[1].view_mask = 0x2; s.fx_requests[1].position[0] = 2.0f;
+	s.fx_requests[2].kind = HALO_PS2_FRAME_FX_PARTICLE_SYSTEM; s.fx_requests[2].owner_object = 0;
+	s.fx_requests[2].view_mask = 0x1; s.fx_requests[2].position[0] = 3.0f;
+	memset(&c, 0, sizeof c);
+	CHECK(hcu_render_effects_select(&s, 0, out, HCU_FX_MAX_PER_VIEW, &count, &c) == 0);
+	CHECK(count == 2 && c.effects_selected == 2 && c.effects_refused == 0);   /* unowned decal + owned effect */
+	CHECK(out[0].kind == HALO_PS2_FRAME_FX_DECAL && out[0].position[0] == 1.0f);
+	CHECK(out[1].position[0] == 3.0f);
+	CHECK(hcu_render_effects_select(&s, 1, out, HCU_FX_MAX_PER_VIEW, &count, &c) == 0);
+	CHECK(count == 1 && out[0].position[0] == 2.0f);                           /* view 1 sees only its decal */
+
+	/* per-frame accumulator: same words as the summary, so the hashes agree record for record */
+	hcu_render_parity_frame_reset(&pf);
+	CHECK(pf.records == 0 && pf.hash == 2166136261u);
+	CHECK(hcu_render_parity_log_init(&log, store, 4) == 0);
+	for (i = 0; i < 3; i++) {
+		memset(&rec, 0, sizeof rec);
+		rec.kind = i == 1 ? HCU_RENDER_PARITY_SKY : HCU_RENDER_PARITY_OBJECT;
+		rec.surface_id = (int32_t)(5 + i); rec.material_id = -1; rec.resource_id = 100u + i;
+		CHECK(hcu_render_parity_frame_add(&pf, &rec) == HCU_RENDER_CONTENT_OK);
+		CHECK(hcu_render_parity_log_append(&log, &rec) == HCU_RENDER_CONTENT_OK);
+	}
+	CHECK(pf.records == 3 && pf.per_kind[HCU_RENDER_PARITY_OBJECT] == 2 && pf.per_kind[HCU_RENDER_PARITY_SKY] == 1);
+	CHECK(hcu_render_parity_summarize(&log, &sum) == HCU_RENDER_CONTENT_OK);
+	CHECK(sum.hash == pf.hash && sum.records == pf.records);
+	memset(&rec, 0, sizeof rec);
+	rec.kind = 0;
+	CHECK(hcu_render_parity_frame_add(&pf, &rec) == HCU_RENDER_CONTENT_E_ARGUMENT);   /* invalid kind refused */
+	CHECK(pf.records == 3);
+	return 0;
+}
+
 int main(void)
 {
 	if (test_builder()) return 1;
 	if (test_select()) return 2;
 	if (test_submitted_category_counters()) return 9;
+	if (test_four_view_dedup()) return 10;
 	if (test_first_person_select()) return 3;
 	if (test_parity()) return 4;
 	if (test_residency_policy()) return 5;
@@ -531,6 +646,7 @@ int main(void)
 	if (test_c3_6()) return 7;
 	if (test_fx_quads()) return 8;
 	if (test_fx_corner_st()) return 9;
+	if (test_c3_6_unowned_fx_and_frame_identity()) return 11;
 	printf("hcu_render_objects tests passed\n");
 	return 0;
 }

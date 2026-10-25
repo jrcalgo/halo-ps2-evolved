@@ -110,3 +110,28 @@ hcu_render_content_status hcu_render_parity_summarize(const hcu_render_parity_lo
 	out->hash = h;
 	return HCU_RENDER_CONTENT_OK;
 }
+
+#define HCU_PARITY_FNV_BASIS 2166136261u
+
+void hcu_render_parity_frame_reset(hcu_render_parity_frame *f)
+{
+	if (!f) return;
+	memset(f, 0, sizeof *f);
+	f->hash = HCU_PARITY_FNV_BASIS;
+}
+
+hcu_render_content_status hcu_render_parity_frame_add(hcu_render_parity_frame *f,
+	const hcu_render_parity_record *r)
+{
+	uint32_t w[4], b;
+	if (!f || !r || r->kind == 0u || r->kind > HCU_RENDER_PARITY_EFFECT) return HCU_RENDER_CONTENT_E_ARGUMENT;
+	w[0] = r->kind; w[1] = (uint32_t)r->surface_id; w[2] = (uint32_t)r->material_id; w[3] = r->resource_id;
+	for (uint32_t k = 0; k < 4u; k++)
+		for (b = 0; b < 4u; b++) {
+			f->hash ^= (w[k] >> (8u * b)) & 0xFFu;
+			f->hash *= 16777619u;
+		}
+	f->per_kind[r->kind]++;
+	f->records++;
+	return HCU_RENDER_CONTENT_OK;
+}
