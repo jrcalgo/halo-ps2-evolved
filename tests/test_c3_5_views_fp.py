@@ -183,3 +183,78 @@ def test_config_default_for_viewmodel_is_on_only_in_the_c3_snapshot_build():
 def test_config_edit_is_guarded_and_documented():
     source = (ROOT / "submodules/halo-ce-universal/port/ps2/src/ps2_config.c").read_text()
     assert re.search(r"#if defined\(HALO_PS2_C3_FRAME_SNAPSHOT\)\s*\n[^#]*display\.viewmodel_visible", source)
+
+
+# --- C3.5 no-clear-bleed: spatial metric (largest contiguous clear run), not a scattered fraction ---
+
+REAL_V7_CAPTURE = ROOT / "build/c3/integration/c3-v7-r1/render-v3-recompiler/bloodgulch_mounted_gunner_4p4bot/captures/capture-02-c3-render-held.png"
+LAYOUT3 = [(0, 0, 512, 224), (0, 224, 256, 224), (256, 224, 256, 224)]
+
+
+def _frame3(paint_view=None, dark_blobs=False, block=None):
+    """1280x1024 root, game in the top-left 640x480, 3-view layout. Scene pixels everywhere in the views;
+    optional dark navy blobs (~8% of each view, scattered) or a flat clear block over a view."""
+    from PIL import Image, ImageDraw
+    img = Image.new("RGB", (512, 448), (0, 0, 0))
+    d = ImageDraw.Draw(img)
+    for x0, y0, w, h in LAYOUT3:
+        d.rectangle([x0, y0, x0 + w - 1, y0 + h - 1], fill=(120, 200, 80))
+    if dark_blobs:
+        # Dark navy ellipses in a grid: each view gets ~8% of its area as near-clear pixels, in small shapes.
+        for x0, y0, w, h in LAYOUT3:
+            for gy in range(y0 + 12, y0 + h - 12, 40):
+                for gx in range(x0 + 12, x0 + w - 12, 40):
+                    d.ellipse([gx, gy, gx + 14, gy + 10], fill=(16, 16, 24))
+    if block is not None:
+        view, frac = block
+        x0, y0, w, h = LAYOUT3[view]
+        bh = int(h * frac)  # a flat strip covering `frac` of the view height across its full width
+        d.rectangle([x0, y0 + h - bh, x0 + w - 1, y0 + h - 1], fill=(16, 16, 24))
+    if paint_view is not None:
+        x0, y0, w, h = LAYOUT3[paint_view]
+        d.rectangle([x0, y0, x0 + w - 1, y0 + h - 1], fill=(16, 16, 24))
+    root = Image.new("RGB", (1280, 1024), (0, 0, 0))
+    root.paste(img.resize((640, 480), Image.NEAREST), (0, 0))
+    return root
+
+
+def _layout(tmp_path, img, views=3):
+    p = tmp_path / "f.png"
+    img.save(p)
+    return c2m.c3_5_layout_checks(views, [str(p)])
+
+
+def test_scattered_dark_armour_passes(tmp_path):
+    # ~8% of each view is near-clear in small separated shapes: the old scattered fraction would fail these.
+    r = _layout(tmp_path, _frame3(dark_blobs=True))
+    for i in range(3):
+        assert r["checks"][f"layout_view{i}_no_clear_bleed"] is True, r["regions"]
+    assert all(r["checks"].values()), r["reasons"]
+
+
+def test_flat_clear_view_fails(tmp_path):
+    r = _layout(tmp_path, _frame3(paint_view=1))
+    assert r["checks"]["layout_view1_no_clear_bleed"] is False
+    assert r["regions"]["view1"]["clear_run"] >= 0.9
+    assert r["checks"]["layout_view0_no_clear_bleed"] is True
+
+
+def test_large_clear_block_fails(tmp_path):
+    # A flat clear block covering 30% of view 2 (a full-width strip) is a genuinely unpainted region.
+    r = _layout(tmp_path, _frame3(block=(2, 0.30)))
+    assert r["checks"]["layout_view2_no_clear_bleed"] is False
+    assert r["regions"]["view2"]["clear_run"] >= 0.25
+
+
+def test_real_v7_capture_passes_no_clear_bleed():
+    if not REAL_V7_CAPTURE.is_file():
+        pytest.skip("c3-v7-r1 capture not present")
+    r = c2m.c3_5_layout_checks(3, [str(REAL_V7_CAPTURE)])
+    for i in range(3):
+        assert r["checks"][f"layout_view{i}_no_clear_bleed"] is True, r["regions"]
+        assert r["checks"][f"layout_view{i}_nonblack"] is True
+    assert r["regions"]["view2"]["clear_run"] < c2m.C3_5_CLEAR_RUN_MAX
+
+
+def test_clear_run_threshold_is_between_real_and_block():
+    assert 0.02 < c2m.C3_5_CLEAR_RUN_MAX < 0.25

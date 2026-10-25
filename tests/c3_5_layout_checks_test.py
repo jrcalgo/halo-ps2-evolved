@@ -24,7 +24,7 @@ REAL_CAPTURE = os.path.join(ROOT, "build", "c3", "integration", "c3-pkg-r1", "re
 RECTS = {
     1: [(0, 0, 512, 448)],
     2: [(0, 0, 512, 224), (0, 224, 512, 224)],
-    3: [(0, 0, 256, 224), (256, 0, 256, 224), (0, 224, 256, 224)],
+    3: [(0, 0, 512, 224), (0, 224, 256, 224), (256, 224, 256, 224)],  # hcu_render_layout_compute, 3 views
     4: [(0, 0, 256, 224), (256, 0, 256, 224), (0, 224, 256, 224), (256, 224, 256, 224)],
 }
 
@@ -41,6 +41,7 @@ def layout_image(views, clear_quadrant=True, black=()):
             for x in range(x0, x0 + w):
                 px[x, y] = SCENE if (x + y) % 3 else (30, 30, 30)
     if views == 3 and clear_quadrant:
+        # Bleed case: the bottom-right quarter is a flat clear block (a genuinely unpainted view).
         for y in range(224, 448):
             for x in range(256, 512):
                 px[x, y] = CLEAR
@@ -73,15 +74,15 @@ def main():
         expect(all(r["checks"].values()), f"clean {views}-view should pass: {r['reasons']}")
         expect(r["game_rect"]["source"] == "pcsx2-default", "default game rect source")
 
-    r = run_layout(3, layout_image(3))
-    expect(all(r["checks"].values()), f"clean 3-view should pass: {r['reasons']}")
     r = run_layout(3, layout_image(3, clear_quadrant=False))
-    expect(r["checks"].get("layout_unused_quadrant_cleared") is False, "3-view uncleared quadrant not caught")
+    expect(all(r["checks"].values()), f"clean 3-view should pass: {r['reasons']}")
+    r = run_layout(3, layout_image(3))
+    expect(r["checks"].get("layout_view2_no_clear_bleed") is False, "3-view flat clear view not caught")
 
     # One black view must fail that view's nonblack check and no other view's.
     for views in (2, 3, 4):
         for k in range(views):
-            r = run_layout(views, layout_image(views, black=(k,)))
+            r = run_layout(views, layout_image(views, clear_quadrant=False, black=(k,)))
             expect(r["checks"].get(f"layout_view{k}_nonblack") is False,
                    f"{views}-view with view{k} black passed view{k}_nonblack")
             others = [v for v in range(views) if v != k]

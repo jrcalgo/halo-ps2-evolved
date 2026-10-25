@@ -1061,6 +1061,11 @@ def render_checks(lines: list[str], views: int, frames: int) -> dict:
 
 C3_5_CLEAR_RGB = (16, 16, 24)  # the unused-quadrant clear colour of hcu_c3_render_tick
 C3_5_LAYOUT_SIZE = (512, 448)  # VIDEO_WIDTH x VIDEO_HEIGHT, the space the layout rectangles are written in
+# No-bleed limit: the largest 4-connected run of clear-coloured sample points in a view, as a fraction of its
+# samples. Scattered clear-like pixels (dark first-person armour, near-black shading) form only small runs; the
+# real 3-view capture measures 1.1% at worst (17 of 1512 samples, view 2). A genuinely unpainted region is one
+# solid block, so a flat clear block of a quarter or more of a view measures >= 25% and fails.
+C3_5_CLEAR_RUN_MAX = 0.10
 # PCSX2's default GS display (640x480). tools/c2_guest_run.py does not set the window size and the guest does not
 # log its output size, so this is the fallback when neither is known. Real captures match it (game pixels fill
 # exactly 0..639 x 0..479 of the 1280x1024 root); the captured window size, when one exists, takes precedence.
@@ -1131,6 +1136,29 @@ def c3_5_layout_checks(views: int, capture_files: list[str], game_size: tuple[in
     def is_black(c):
         return max(c) <= 6
 
+    def largest_clear_run(rect, inset=4, step=6):
+        """Size of the largest 4-connected run of clear-coloured sample points inside rect (same grid as sample)."""
+        x0, y0, w, h = rect
+        xs = list(range(x0 + inset, x0 + w - inset, step))
+        ys = list(range(y0 + inset, y0 + h - inset, step))
+        grid = [[is_clear(px[to_capture(x, y)]) for x in xs] for y in ys]
+        seen, best = set(), 0
+        for r in range(len(ys)):
+            for c in range(len(xs)):
+                if not grid[r][c] or (r, c) in seen:
+                    continue
+                seen.add((r, c))
+                stack, size = [(r, c)], 0
+                while stack:
+                    a, b = stack.pop()
+                    size += 1
+                    for na, nb in ((a + 1, b), (a - 1, b), (a, b + 1), (a, b - 1)):
+                        if 0 <= na < len(ys) and 0 <= nb < len(xs) and grid[na][nb] and (na, nb) not in seen:
+                            seen.add((na, nb))
+                            stack.append((na, nb))
+                best = max(best, size)
+        return best, len(xs) * len(ys)
+
     checks = {
         "layout_capture_size_known": sw >= 320 and sh >= 224,
         "layout_game_rect_in_capture": gw > 0 and gh > 0 and gx + gw <= sw and gy + gh <= sh,
@@ -1139,11 +1167,14 @@ def c3_5_layout_checks(views: int, capture_files: list[str], game_size: tuple[in
         pts = list(sample(r))
         nonblack = sum(1 for c in pts if not is_black(c)) / max(1, len(pts))
         clear_frac = sum(1 for c in pts if is_clear(c)) / max(1, len(pts))
+        run, total = largest_clear_run(r)
+        clear_run = run / max(1, total)
         out["regions"][f"view{i}"] = {"rect": r, "capture_rect": (*to_capture(r[0], r[1]), round(r[2] * fx),
                                                                    round(r[3] * fy)),
-                                      "nonblack": round(nonblack, 3), "clear": round(clear_frac, 3)}
+                                      "nonblack": round(nonblack, 3), "clear": round(clear_frac, 3),
+                                      "clear_run": round(clear_run, 3)}
         checks[f"layout_view{i}_nonblack"] = nonblack >= 0.05
-        checks[f"layout_view{i}_no_clear_bleed"] = clear_frac < 0.05
+        checks[f"layout_view{i}_no_clear_bleed"] = clear_run < C3_5_CLEAR_RUN_MAX
     if clear_rect:
         pts = list(sample(clear_rect, inset=2, step=3))
         uniform = sum(1 for c in pts if is_clear(c)) / max(1, len(pts))
