@@ -53,8 +53,8 @@ def test_report_includes_governing_source_and_output_pins():
 
 def test_survival_scan_covers_all_non2d_roles_from_exact_ctag():
     result = audit_survival(
-        ROOT / "build/m2-c2-residual-packages/survival-diag/survival-beavercreek.failure.json",
-        ROOT / "build/m2-c2-residual-packages/survival-diag/survival-beavercreek.unadmitted.ctag",
+        ROOT / "build/m2-c2-residual-packages/survival-diag-2026-10-25/survival-beavercreek.failure.json",
+        ROOT / "build/m2-c2-residual-packages/survival-diag-2026-10-25/survival-beavercreek.unadmitted.ctag",
         ROOT / "build/hcu-ps2-closure/all-no-bootstrap-memory/halo-local.elf",
     )
     assert result["status"] == "partial"
@@ -83,7 +83,7 @@ def test_bsp_owned_water_reflection_has_source_backed_role():
 
 
 def test_survival_source_map_hash_change_invalidates_scan(tmp_path):
-    diagnostic = json.loads((ROOT / "build/m2-c2-residual-packages/survival-diag/survival-beavercreek.failure.json").read_text())
+    diagnostic = json.loads((ROOT / "build/m2-c2-residual-packages/survival-diag-2026-10-25/survival-beavercreek.failure.json").read_text())
     first_key = sorted(diagnostic["source_maps"])[0]
     original = ROOT / diagnostic["source_maps"][first_key]["path"]
     changed = tmp_path / "changed.map"
@@ -93,5 +93,5 @@ def test_survival_source_map_hash_change_invalidates_scan(tmp_path):
     diag_path.write_text(json.dumps(diagnostic))
     with pytest.raises(ValueError, match="source-map pin mismatch"):
         audit_survival(diag_path,
-            ROOT / "build/m2-c2-residual-packages/survival-diag/survival-beavercreek.unadmitted.ctag",
+            ROOT / "build/m2-c2-residual-packages/survival-diag-2026-10-25/survival-beavercreek.unadmitted.ctag",
             ROOT / "build/hcu-ps2-closure/all-no-bootstrap-memory/halo-local.elf")
