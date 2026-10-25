@@ -37,8 +37,8 @@ ROW = "bloodgulch_mounted_gunner_4p4bot"
 SUCC = "beavercreek_mounted_gunner_4p4bot"
 # The selected C3 package: a flat dir holding <row>.hcp and <row>.json (c3-ps2-object-v2 profile).
 DEFAULT_PACKAGE_DIR = ROOT / "build/c3/c3-6e/packages/bloodgulch-c3v2-2026-10-25"
-# The successor package has no v2 build yet; it is taken from the render package source unchanged.
-SUCC_PACKAGE_DIR = ROOT / "build/c3/render-packages" / SUCC
+# The C3.11 successor package: the same flat layout, built with the c3-ps2-object-v2 profile.
+SUCC_PACKAGE_DIR = ROOT / "build/c3/c3-6e/packages/beavercreek-c3v2-2026-10-25"
 PACKAGE_TREE_NAME = "package-tree"  # <stamp>/package-tree/pkg/<row>/ is what the matrix reads as --package-root
 FRAMES = 300
 CASE_TIMEOUT = 4 * 3600          # host seconds for one matrix subprocess (its own timeouts apply inside)

@@ -403,7 +403,7 @@ def test_c3_6_world_materials_hash_is_required_nonzero():
 def test_default_package_is_the_c3_object_v2_bloodgulch_package():
     assert ci.DEFAULT_PACKAGE_DIR == ROOT / "build/c3/c3-6e/packages/bloodgulch-c3v2-2026-10-25"
     assert ci.ROW == "bloodgulch_mounted_gunner_4p4bot"
-    assert ci.SUCC_PACKAGE_DIR == ROOT / "build/c3/render-packages" / ci.SUCC
+    assert ci.SUCC_PACKAGE_DIR == ROOT / "build/c3/c3-6e/packages/beavercreek-c3v2-2026-10-25"
     # the matrix never reads the legacy selected tree or the old render tree for C3 cases
     assert "m2-c2-r3-selected-packages" not in str(ci.DEFAULT_PACKAGE_DIR)
     assert "render-tree" not in str(ci.DEFAULT_PACKAGE_DIR)
