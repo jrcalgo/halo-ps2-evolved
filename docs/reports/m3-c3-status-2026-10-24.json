@@ -1,0 +1,302 @@
+{
+  "schema": "haloce.m3-c3-status.v1",
+  "as_of": "2026-10-24",
+  "overall_status": "open",
+  "qualification_policy": "Only completed evidence on the exact current source/package/ELF/emulator tuple can qualify a target row. The b542851 four-view guest failed during first-frame execution and contributes no target pass.",
+  "source_identity": {
+    "parent_commit": "b54285143f777b90f230e5736afea6a32f65d129",
+    "halo_ce_universal_commit": "811c4516a356af7047b8ee26401c9ce946f4e7c6",
+    "halo_ps2_commit": "1abc0a0ddcf0f64b0bbbb5247e16336ee49e4a2f",
+    "source_sha256": {
+      "submodules/halo-ce-universal/port/ps2/src/ps2_render.c": "d479d3fc4863a6c9bc0954ce1aaae67dcd11dd8824ac2f6ac564bfb3e53bbe88",
+      "submodules/halo-ce-universal/port/ps2/src/ps2_input.c": "eefe70f2b1572736b8f620afede781773c860a25b66d06ddb3d064b9a6e7ffc5",
+      "submodules/halo-ce-universal/source/main/main.c": "2b1d73790c126f3bba6ecbaa308c5d473526a1bcc2ee099a38019fa6b4fe6684"
+    },
+    "source_fix_commits": [
+      "8323dce",
+      "3bbd6a3",
+      "e88af1f",
+      "b4d1aaf",
+      "b542851"
+    ]
+  },
+  "budget": {
+    "version": 4,
+    "elf_static_cap_bytes": 2490368,
+    "reserve_bytes": 5373952
+  },
+  "target_evidence": {
+    "status": "failed_stale_baseline_for_current_source",
+    "run_directory": "build/c3/codex-resume/r2/bloodgulch_mounted_gunner_4p4bot",
+    "result_file": "build/c3/codex-resume/r2/bloodgulch_mounted_gunner_4p4bot/result.json",
+    "result_sha256": "c7a3e8ada977dd6e2935c5d392b982c8603ee54b70272456552d45678cc9d48f",
+    "actual_ce_log": "build/c3/codex-resume/r2/bloodgulch_mounted_gunner_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
+    "actual_ce_log_sha256": "cf1bef3bcc92110859acfab6aefba7e79eb6ac611e67b2a218002235d00764d0",
+    "elf": "build/c3/codex-resume/r2/bloodgulch_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-bloodgulch_mounted_gunner_4p4bot-headless-runtime-guest.elf",
+    "elf_sha256": "9814dabc9064c9302dd63f3f378931e9b1fc47a602f2ef1ffa10bbfdd8656e13",
+    "mode": "recompiler",
+    "render_views": 4,
+    "frames": 300,
+    "map": "bloodgulch",
+    "scenario": "bloodgulch_mounted_gunner_4p4bot",
+    "snapshot": {
+      "active_views": 4,
+      "biped": 4,
+      "weapon": 16,
+      "vehicle": 8,
+      "objects": 76,
+      "effects": 0,
+      "decals": 0,
+      "sequence": 300
+    },
+    "sound": {
+      "submitted": 308,
+      "accepted": 77,
+      "rejected": 0,
+      "coalesced": 231,
+      "spu2_playback": "not-qualified"
+    },
+    "bitmap": {
+      "all_300_frames_dropped": true,
+      "final_begin_calls": 304,
+      "final_begin": 304,
+      "final_end": 304,
+      "final_queue_end": 304,
+      "requests": 18164,
+      "set_view_calls": 1213,
+      "qualified": false
+    },
+    "first_person": {
+      "weapon_draws": 0,
+      "hands_draws": 0,
+      "resource_hits": 0,
+      "resource_misses": 0
+    },
+    "dma": {
+      "owner_bytes": 1179648,
+      "emit_failures": 300,
+      "qualified": false
+    },
+    "c3_3_qualified": false,
+    "c3_7_qualified": false,
+    "c3_9_qualified": false,
+    "c3_10_qualified": false,
+    "overall_pass": false,
+    "captures": [
+      {
+        "path": "build/c3/codex-resume/r2/bloodgulch_mounted_gunner_4p4bot/captures/capture-01-c3-render-held.png",
+        "sha256": "b77d9bab0d9bfc8e37fe54ef41eca17ce023fc5142b80d1d5f406789eb59aff5"
+      },
+      {
+        "path": "build/c3/codex-resume/r2/bloodgulch_mounted_gunner_4p4bot/captures/capture-02-c3-frame-kind-periodic-frame-150.png",
+        "sha256": "b77d9bab0d9bfc8e37fe54ef41eca17ce023fc5142b80d1d5f406789eb59aff5"
+      }
+    ],
+    "limitations": [
+      "Built before commits 3bbd6a3, e88af1f, and b4d1aaf; it cannot validate those changes.",
+      "No interpreter result or 1-3 view coverage.",
+      "Capture hashes match; visual metric evidence is not independent visual review or all-map coverage.",
+      "No current-source retry result yet; active integration run is pending.",
+      "C3.3 and C3.7 old checker qualification flags are rejected; see explicit reasons above.",
+      "Current-source b542851 retry is pending and is not evidence until complete."
+    ],
+    "c3_3_checker_claim_rejected_reason": "Checker predicate is contradicted by baseline mutable-generation identity telemetry: unique-bipeds=146, unique-vehicles=106, drawn-identity-overflow=3660.",
+    "c3_7_checker_claim_rejected_reason": "Counter diagnostics alone do not satisfy C3.7: all native bitmap batches dropped; per-owner source retention through actual queued upload/fence is unqualified.",
+    "built_parent_commit": "b4d1aafafbd649b29e8ea1d0ac2ee2ad7692a525",
+    "source_identity_note": "This baseline predates 3bbd6a3, e88af1f, b4d1aaf and b542851; current source identity is recorded separately."
+  },
+  "pending_run": {
+    "directory": "build/c3/integration/codex-c3-r2",
+    "source_commit": "b54285143f777b90f230e5736afea6a32f65d129",
+    "status": "completed_failed_guest_exception",
+    "last_completed_attempt": "Earlier attempt on b4d1aaf failed link before guest: GNU89 undefined isfinite; fixed in b542851.",
+    "counted_as_qualification": false,
+    "halo_ce_universal_commit": "811c4516a356af7047b8ee26401c9ce946f4e7c6",
+    "halo_ps2_commit": "1abc0a0ddcf0f64b0bbbb5247e16336ee49e4a2f",
+    "link": {
+      "undefined_symbols": 0,
+      "elf_file_bytes": 2183940,
+      "elf_static_cap_bytes": 2490368
+    },
+    "startup_observation": "selected stock Slayer variant; map preflight underway",
+    "failure_result_path": "build/c3/integration/codex-c3-r2/render-v4-recompiler/bloodgulch_mounted_gunner_4p4bot/result.json",
+    "failure_result_sha256": "3a1561174c09599b88782926465a34be236dbbbade30574823e77e4fb56cbcd4"
+  },
+  "host_evidence": [
+    {
+      "scope": "focused current C3 host suite",
+      "result": "135 passed in 9.08 seconds; run outside sandbox so ILP32 and ASAN cases executed",
+      "command": "python3 -m pytest -q (19 focused test files listed in parent task message)",
+      "artifact": "build/c3/codex-resume/host-checks-final.txt",
+      "artifact_sha256": "4be37c8166aec1e6fd73d54c297abce0ba0773946158ba6978af5aa6e5968a87",
+      "qualification": "host_only",
+      "test_files": [
+        "tests/test_c3_snapshot_publish.py",
+        "tests/test_hcu_bitmap_requests.py",
+        "tests/test_hcu_bitmap_frame_owner.py",
+        "tests/test_hcu_bitmap_frame.py",
+        "tests/test_hcu_bitmap_dispatch_fence.py",
+        "tests/test_hcu_bitmap_quad.py",
+        "tests/test_hcu_render_objects.py",
+        "tests/test_hcu_render_views.py",
+        "tests/test_hcu_render_frame_invariance.py",
+        "tests/test_hcu_map_service_profile.py",
+        "tests/test_hcu_sound_requests.py",
+        "tests/test_c3_integration.py",
+        "tests/test_c3_scene_qualification.py",
+        "tests/test_c3_replacement.py",
+        "tests/test_c3_9_bitmap_checks.py",
+        "tests/test_c3_dma.py",
+        "tests/test_hcu_render_media.py",
+        "tests/test_c2_profile_boot_matrix.py",
+        "tests/test_c3_7_texfence.py"
+      ]
+    },
+    {
+      "scope": "closure",
+      "commit": "8323dce",
+      "result": "both real CE telemetry providers retained in closure; host closure regression passed",
+      "qualification": "host_only"
+    },
+    {
+      "scope": "snapshot identity and per-view first-person context",
+      "commit": "3bbd6a3",
+      "result": "focused snapshot tests passed; mutable render marker excluded from identity",
+      "qualification": "host_only"
+    },
+    {
+      "scope": "texture fence",
+      "commit": "e88af1f",
+      "result": "focused checks passed",
+      "qualification": "host_only"
+    },
+    {
+      "scope": "stock Slayer workload setup, map lifetimes, font UV",
+      "commit": "b4d1aaf",
+      "result": "focused source/order and direct EE object checks passed",
+      "qualification": "host_only_or_compile_only"
+    },
+    {
+      "scope": "GNU89 finite fix",
+      "commit": "b542851",
+      "result": "link failure fix committed; current four-view retry is running",
+      "qualification": "not_target_evidence_until_run_completes"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "C3.1",
+      "name": "Versioned pointer-free snapshot: four views/cameras/HUD/first-person, shared generation-safe object identity, transforms/palettes, resources, attachments, effects/decals",
+      "status": "partial_baseline_identity_unproven",
+      "evidence": "Baseline published seq=300 with four active views and object classes, but mutable identity telemetry (146 unique bipeds, 106 unique vehicles, 3,660 identity overflows) invalidates generation-safe identity; effects/decals were zero.",
+      "remaining": "Publish and consume a complete generation-safe pointer-free snapshot; prove stable identity and bounded effects/decals."
+    },
+    {
+      "id": "C3.2",
+      "name": "CE owns simulation, animation, first-person, HUD, and effect decisions; parent consumes immutable data only",
+      "status": "source_host_only_target_unqualified",
+      "evidence": "CE producer/parent consumer architecture has source and focused host evidence, but no current-source target result establishes the full contract.",
+      "remaining": "Run current-source target workload and show CE-owned state evolves once while parent consumes immutable output only."
+    },
+    {
+      "id": "C3.3",
+      "name": "Snapshot-bank fit, deduplication, explicit readers, no overwrite/eviction while active; required players/enemies/weapons/vehicles",
+      "status": "not_qualified_checker_false_positive",
+      "evidence": "Old checker reported opposing players and object counts, but mutable identity values caused 146 unique bipeds, 106 unique vehicles, and identity overflow 3,660. Required generation-safe shared identities and reader protocol are not proven; checker result is rejected.",
+      "remaining": "Prove snapshot banks/readers/dedup/identity and required live scene classes without overflow."
+    },
+    {
+      "id": "C3.4",
+      "name": "Fixed renderer owners/chains/workspaces; one begin/end and one age/upload-budget advance per frame across 1\u20134 views",
+      "status": "partial_baseline_failed_render",
+      "evidence": "Baseline reported 300 begins/submissions and 1,200 views, but frame budget resets/state fields and 300 emit failures do not prove the complete one-frame renderer contract; current-source matrix pending.",
+      "remaining": "Demonstrate exact fixed owner bindings and one begin/end/budget advance per frame for each 1\u20134-view workload."
+    },
+    {
+      "id": "C3.5",
+      "name": "Full-screen/split-screen layouts; each view uses its CE player camera, HUD, and first-person state",
+      "status": "failed_baseline_pending_retest",
+      "evidence": "Baseline had four views, but first-person weapon/hands draws and resource hits/misses were zero; per-player camera/HUD/layout semantics are not fully proven.",
+      "remaining": "Verify each layout and each CE player camera/HUD/first-person state in target captures/counters."
+    },
+    {
+      "id": "C3.6",
+      "name": "BSP/materials, textures/lightmaps, sky, animated objects/vehicles/weapons/HUD/effects and source parity",
+      "status": "not_qualified",
+      "evidence": "Some world/object rendering was observed, but effects/decals were zero and full content plus source surface/material parity is not demonstrated.",
+      "remaining": "Exercise the complete content/effects path and compare preserved source surface/material identities."
+    },
+    {
+      "id": "C3.7",
+      "name": "Texture claims publish after successful queueing; retain source bytes through upload and fence cache reuse against actual chains/GS",
+      "status": "partial_diagnostics_unqualified",
+      "evidence": "46 claims and fence counters were recorded, but bitmap batches were dropped and per-owner source lifetime through actual uploads is not qualified; current matrix pressure is unrun.",
+      "remaining": "Bind running-frame queue lifecycle and demonstrate successful queued uploads retaining source until actual chain/GS completion."
+    },
+    {
+      "id": "C3.8",
+      "name": "Bounded CE sound-request adapter/recorder/drainer preserving event, owner, position, priority, playback parameters; no SPU2 qualification claim",
+      "status": "queue_only_scoped_evidence",
+      "evidence": "Baseline queue reports zero rejects (77 accepted, 231 coalesced), but required adapter fields are unmeasured and SPU2 playback is not qualified.",
+      "remaining": "Measure all adapter fields and recorder/drainer behavior; keep SPU2 playback unqualified until actual playback evidence."
+    },
+    {
+      "id": "C3.9",
+      "name": "Bind native bitmap registration and queue-end to running CE frame",
+      "status": "failed_baseline",
+      "evidence": "All 300 bitmap frames dropped; per-view, frame-open, dropped-batch, and release-total checks failed.",
+      "remaining": "Repair frame binding and establish native bitmap registration, per-view requests, queue-end, draw, lease release, and matrix coverage."
+    },
+    {
+      "id": "C3.10",
+      "name": "Combined-renderer proof for fixed four chains, idle-chain geometry, pinned sources through VIF/GS completion, safe reuse/overflow, 1\u20134 views",
+      "status": "failed_baseline",
+      "evidence": "Fixed 1,179,648-byte owner was present, but emit-failures=300; complete in-flight chain/source/fence proof is absent.",
+      "remaining": "Fresh current-source run with actual geometry and upload payloads through all required chains, pinned sources, real fences, and safe reuse/overflow."
+    },
+    {
+      "id": "C3.11",
+      "name": "Renderer-aware profile replacement with validate-first, drain, old tags live, safe empty-state retry, both emulator modes",
+      "status": "not_qualified",
+      "evidence": "No current-source successor guest result establishes the lifecycle with active renderer readers on the exact tuple.",
+      "remaining": "Run successful replacement, preflight preservation, and late-failure retry under both emulator modes with renderer readers in flight."
+    }
+  ],
+  "project_gates": {
+    "step_7": "open",
+    "step_8": "open",
+    "actual_bots": "C5",
+    "current_integration_complete": false
+  },
+  "latest_target_run": {
+    "status": "failed_guest_exception",
+    "run_directory": "build/c3/integration/codex-c3-r2/render-v4-recompiler/bloodgulch_mounted_gunner_4p4bot",
+    "result": "build/c3/integration/codex-c3-r2/render-v4-recompiler/bloodgulch_mounted_gunner_4p4bot/result.json",
+    "result_sha256": "3a1561174c09599b88782926465a34be236dbbbade30574823e77e4fb56cbcd4",
+    "actual_ce_log": "build/c3/integration/codex-c3-r2/render-v4-recompiler/bloodgulch_mounted_gunner_4p4bot/guest/runs/partition-selected/halo_ps2_local.txt",
+    "actual_ce_log_sha256": "e1bedddf8ffd0839e5cbe877677bf491ad5ded0847129f8d9564957e780c4eaa",
+    "emulator_log": "build/c3/integration/codex-c3-r2/render-v4-recompiler/bloodgulch_mounted_gunner_4p4bot/guest/runs/partition-selected/emu.txt",
+    "emulator_log_sha256": "81ccc946b3a0b59d157d11bb5bf39041f0ba6f62d786200154b6966bce654bae",
+    "elf": "build/c3/integration/codex-c3-r2/render-v4-recompiler/bloodgulch_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-bloodgulch_mounted_gunner_4p4bot-headless-runtime-guest.elf",
+    "elf_sha256": "0fd83527d3a80f532865a07c570cde79e20388edba8ed7ded303b88f72fcbd32",
+    "map": "build/c3/integration/codex-c3-r2/render-v4-recompiler/bloodgulch_mounted_gunner_4p4bot/link/hcu-gameplay-machine-partition-bloodgulch_mounted_gunner_4p4bot-headless-runtime-guest.map",
+    "map_sha256": "bc1ef4590f65c8028614330fe679908fb2e85cdc160a623b6c68bec924f515e9",
+    "source_commit": "b54285143f777b90f230e5736afea6a32f65d129",
+    "halo_ce_universal_commit": "811c4516a356af7047b8ee26401c9ce946f4e7c6",
+    "halo_ps2_commit": "1abc0a0ddcf0f64b0bbbb5247e16336ee49e4a2f",
+    "emu_mode": "recompiler",
+    "frames_requested": 300,
+    "tick_budget": 305,
+    "elapsed_seconds": 258.1,
+    "captured_frames": 0,
+    "failure": "R5900 Exception: Jump to unaligned address (PC: 0xcacacaca) at emulator time 127.8897 seconds, shortly after first rendered frame; runner detected exception and result says expected 2 captures, found 0.",
+    "guest_observations": [
+      "stock Slayer selected; game-engine-running=1; map-loaded=1",
+      "one connected controller and C3 action pulse workload armed",
+      "first frame reported four views, state-begun=1, state-submitted=1, emit-failures=1",
+      "no target qualification"
+    ],
+    "diagnosis": "0xcacacaca matches CE debug_malloc(clear=FALSE) fill pattern at source/cseries/debug_memory.c:517, suggesting an indirect call through an uninitialized allocated field. Exact callsite is not established; crash could be later tick/action/game update or early in next main_game_render.",
+    "counted_as_qualification": false
+  }
+}
