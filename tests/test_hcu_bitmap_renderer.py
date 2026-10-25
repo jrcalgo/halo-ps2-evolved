@@ -1,4 +1,5 @@
 """Host test for the parent-renderer adapter, plus the DMA budget invariant of bsp_render.c."""
+import json
 import re
 import shutil
 from pathlib import Path
@@ -18,9 +19,14 @@ def test_renderer_dma_budget_unchanged():
     upload_qw = int(re.search(r"#define BSP_RENDER_UPLOAD_CHAIN_QW\s+(\d+)", storage).group(1))
     assert re.search(r"#define CHAIN_QW\s+BSP_RENDER_GEOMETRY_CHAIN_QW", text)
     assert re.search(r"#define UPLOAD_QW\s+BSP_RENDER_UPLOAD_CHAIN_QW", text)
-    assert (chain_qw, upload_qw) == (32768, 4096)
-    # Two geometry chains and two upload chains, 16-byte quadwords.
-    assert 2 * chain_qw * 16 + 2 * upload_qw * 16 == 1179648
+    # Reshaped by submodule commit bc9044d: geometry 34816 qw, upload 2048 qw (same total as before).
+    assert (chain_qw, upload_qw) == (34816, 2048)
+    # Two geometry chains and two upload chains, 16-byte quadwords, must fill the dma_commands owner exactly.
+    total = 2 * chain_qw * 16 + 2 * upload_qw * 16
+    budget = json.loads((ROOT / "config/memory-budget.json").read_text())
+    owner = next(r["bytes"] for r in budget["regions"] if r["name"] == "dma_commands")
+    assert owner == 1179648
+    assert total == owner
     assert text.count("alloc_uncached((size_t)CHAIN_QW * 16)") == 1
     assert text.count("alloc_uncached((size_t)UPLOAD_QW * 16)") == 1
 
@@ -73,23 +79,29 @@ def test_bsp_fence_model_wired_in_bsp_render():
     text = BSP.read_text()
     assert '#include "render/bsp_fence_seq.h"' in text
     assert "bsp_fence_seq_query(s_completed_kick_seq, s_kick_seq, kick_seq, s_vif_seen, s_gs_seen)" in text
-    assert "if (s_hooks.submit) {" in text
+    # The submit hook is a single-line call in bsp_render_kick (bsp_render.c:1320 at C3.10).
+    assert "if (s_hooks.submit) s_hooks.submit(s_hooks.user, s_build_frame, s_kick_seq);" in text
 
 
 def test_renderer_kick_retires_previous_before_clear():
-    # With hooks set, bsp_render_kick polls and retires the previous kick before GS_CSR is cleared, so a FINISH
-    # that was not yet recorded is observed instead of erased. The late retire before the observation reset stays.
+    # bsp_render_kick polls and retires the previous kick before GS_CSR is cleared, with or without hooks (C3.10,
+    # bsp_render.c:1288-1291), so a FINISH that was not yet recorded is observed instead of erased. The late retire
+    # before the observation reset stays (bsp_render.c:1308-1311).
     text = BSP.read_text()
     kick = text[text.index("void bsp_render_kick(video_t *v)"):]
     kick = kick[:kick.index("\n}\n") + 3]
-    early = kick.index("if (s_hooks.submit) {")
+    early = kick.index("bsp_render_poll();")
     clear = kick.index("*GS_CSR = 2;")
     assert early < clear
     assert kick[early:clear].count("bsp_render_poll();") == 1
     assert "s_completed_kick_seq = bsp_fence_seq_retire(s_completed_kick_seq, s_kick_seq, s_vif_seen, s_gs_seen);" in kick[early:clear]
+    # The early retire is not gated on the hook table.
+    assert "s_hooks" not in kick[early:clear]
     late = kick.index("s_vif_seen = s_gs_seen = 0;")
     assert clear < late
-    assert kick.count("if (s_hooks.submit) {") == 2
+    assert kick[clear:late].count("bsp_render_poll();") == 1
+    assert "s_completed_kick_seq = bsp_fence_seq_retire(s_completed_kick_seq, s_kick_seq, s_vif_seen, s_gs_seen);" in kick[clear:late]
+    assert kick.count("if (s_hooks.submit) s_hooks.submit(") == 1
 
 
 def test_renderer_emit_failure_recorded_in_bsp():
