@@ -91,14 +91,14 @@ static void test_bind_and_version(void)
 	s = hcu_snapshot_bank_begin_write();
 	assert(s);
 	assert(s->version == HALO_PS2_FRAME_SNAPSHOT_VERSION);
-	assert(s->version == 4u);
+	assert(s->version == 5u);
 	/* Wrong version must not publish. */
 	s->version = 1u;
 	assert(hcu_snapshot_bank_commit(s) == -1);
 	assert(hcu_snapshot_bank_latest() == NULL);
 	/* The rejected commit released the write slot. */
 	s = hcu_snapshot_bank_begin_write();
-	assert(s && s->version == 4u);
+	assert(s && s->version == 5u);
 	hcu_snapshot_bank_set_map_generation(41u);
 	assert(hcu_snapshot_bank_commit(s) == 0);
 	assert(hcu_snapshot_bank_latest()->map_generation == 41u);
@@ -156,7 +156,7 @@ static void test_dedupe(void)
 
 static void test_refusal_when_all_free_slots_are_pinned(void)
 {
-	hcu_snapshot_reader r1, r2;
+	hcu_snapshot_reader r1 = { 0, NULL }, r2 = { 0, NULL };
 	halo_ps2_frame_snapshot const *a, *b;
 	halo_ps2_frame_snapshot *w;
 	hcu_snapshot_bank_stats stats;
@@ -200,6 +200,43 @@ static void test_refusal_when_all_free_slots_are_pinned(void)
 		stats.write_refusals);
 }
 
+/* A reader that holds a pin cannot be re-armed (that would leak its count and make the bank unreusable),
+ * and no number of later publications may rewrite the pinned bank while the pin is held. */
+static void test_reader_overwrite_refusal(void)
+{
+	hcu_snapshot_reader r = { 0, NULL };
+	halo_ps2_frame_snapshot const *a;
+	halo_ps2_frame_snapshot *w;
+	hcu_snapshot_bank_stats stats;
+	uint32_t sequence_a;
+	unsigned k;
+
+	assert(hcu_snapshot_bank_unbind() == 0);
+	assert(hcu_snapshot_bank_bind(s_storage, hcu_snapshot_bank_storage_required()) == 0);
+	a = publish_shared(2u, 1u);
+	sequence_a = a->sequence;
+	assert(hcu_snapshot_bank_begin_read(&r) == a);
+	assert(r.snapshot == a);
+	assert(hcu_snapshot_bank_begin_read(&r) == NULL);   /* active reader cannot re-pin */
+	assert(r.snapshot == a);                             /* and keeps its original pin */
+	for (k = 0; k < 10u; ++k) {
+		w = hcu_snapshot_bank_begin_write();
+		assert(w != NULL);
+		assert((const void *)w != (const void *)a);
+		add_object(w, 40u + k);
+		assert(hcu_snapshot_bank_commit(w) == 0);
+		assert(a->sequence == sequence_a && a->object_count == 2u);
+	}
+	hcu_snapshot_bank_get_stats(&stats);
+	assert(stats.read_pins_active == 1u);
+	hcu_snapshot_bank_end_read(&r);
+	assert(r.snapshot == NULL);
+	hcu_snapshot_bank_get_stats(&stats);
+	assert(stats.read_pins_active == 0u);
+	assert(hcu_snapshot_bank_unbind() == 0);
+	printf("reader overwrite: ok (re-pin refused, pinned bank intact over 10 publications, pins balanced)\n");
+}
+
 static void test_four_view_capacity(void)
 {
 	halo_ps2_frame_snapshot const *s;
@@ -236,7 +273,56 @@ static void test_four_view_capacity(void)
 	assert(s->view_ref_count == 1024u);
 	assert(s->palette_count == HALO_PS2_FRAME_MAX_PALETTE);
 	assert(hcu_snapshot_bank_unbind() == 0);
-	printf("four views: ok (256 shared objects, 1024 refs, 640 palette matrices)\n");
+	printf("four views: ok (256 shared objects, 1024 refs, full palette)\n");
+}
+
+static void test_identity_and_palette_capacity(void)
+{
+	halo_ps2_frame_snapshot *s;
+	hcu_snapshot_bank_stats stats;
+	uint32_t overflows_before, rejects_before;
+	unsigned i;
+	int slot = -1;
+
+	assert(hcu_snapshot_bank_unbind() == 0);
+	assert(hcu_snapshot_bank_bind(s_storage, hcu_snapshot_bank_storage_required()) == 0);
+	hcu_snapshot_bank_get_stats(&stats);
+	overflows_before = stats.object_overflows;
+	rejects_before = stats.commit_rejects;
+
+	/* A full object table refuses further identities (recycled identifiers
+	 * count as new identities, see test_dedupe); the publisher then marks
+	 * the count over the cap, and commit refuses the whole frame. */
+	s = hcu_snapshot_bank_begin_write();
+	assert(s);
+	for (i = 0; i < HALO_PS2_FRAME_MAX_OBJECTS; ++i)
+		assert(hcu_snapshot_bank_intern_object(s, oid(i, 1u), &slot) == 0);
+	assert(hcu_snapshot_bank_intern_object(s, oid(HALO_PS2_FRAME_MAX_OBJECTS, 1u), &slot) == -1);
+	hcu_snapshot_bank_get_stats(&stats);
+	assert(stats.object_overflows == overflows_before + 1u);
+	s->object_count = HALO_PS2_FRAME_MAX_OBJECTS + 1u;
+	assert(hcu_snapshot_bank_commit(s) == -1);
+	hcu_snapshot_bank_get_stats(&stats);
+	assert(stats.commit_rejects == rejects_before + 1u);
+
+	/* A palette one past the cap, from a first-person overflow, is refused. */
+	s = hcu_snapshot_bank_begin_write();
+	assert(s);
+	s->view_count = 0u;
+	s->palette_count = HALO_PS2_FRAME_MAX_PALETTE + 1u;
+	assert(hcu_snapshot_bank_commit(s) == -1);
+
+	/* The full cap is accepted: a 1024-matrix palette commits. */
+	s = hcu_snapshot_bank_begin_write();
+	assert(s);
+	for (i = 0; i < HALO_PS2_FRAME_MAX_PALETTE; ++i)
+		set_identity(&s->palette[i]);
+	s->palette_count = HALO_PS2_FRAME_MAX_PALETTE;
+	assert(hcu_snapshot_bank_commit(s) == 0);
+	assert(hcu_snapshot_bank_latest()->palette_count == HALO_PS2_FRAME_MAX_PALETTE);
+
+	assert(hcu_snapshot_bank_unbind() == 0);
+	printf("capacity: ok (256 identities with datum identifiers, overflow refused and counted, 1024 palette commits)\n");
 }
 
 static void test_bounds(void)
@@ -425,7 +511,7 @@ static void test_fits_frame_scratch(void)
 	size_t bank = hcu_snapshot_bank_storage_required();
 	size_t frame_scratch = 393216u;
 	/* Pinned C2 owner: the v1 double bank must not be bound alongside. */
-	printf("bytes: v4 bank=%zu (3 slots, frame_scratch owner=%zu, share=%.1f%%)\n",
+	printf("bytes: v5 bank=%zu (3 slots, frame_scratch owner=%zu, share=%.1f%%)\n",
 		bank, frame_scratch, 100.0 * (double)bank / (double)frame_scratch);
 	assert(bank < frame_scratch);
 }
@@ -436,8 +522,10 @@ int main(void)
 	test_publish_sequence_and_generation();
 	test_dedupe();
 	test_refusal_when_all_free_slots_are_pinned();
+	test_reader_overwrite_refusal();
 	test_four_view_capacity();
 	test_bounds();
+	test_identity_and_palette_capacity();
 	test_fits_frame_scratch();
 	printf("hcu_snapshot_bank tests passed\n");
 	return 0;

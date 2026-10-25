@@ -18,7 +18,7 @@ def test_snapshot_bank_host_contract():
 		result = subprocess.run([str(executable)], check=True,
 			capture_output=True, text=True)
 	for needle in ("version: ok", "sequence: ok", "dedupe: ok", "refusal:",
-		"four views: ok", "bounds: ok", "bytes: v4 bank=",
+		"four views: ok", "bounds: ok", "reader overwrite: ok", "bytes: v5 bank=",
 		"hcu_snapshot_bank tests passed"):
 		assert needle in result.stdout, needle
 

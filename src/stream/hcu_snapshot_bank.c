@@ -1,6 +1,7 @@
 #include "stream/hcu_snapshot_bank.h"
 
 #include <math.h>
+#include <stdio.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -92,6 +93,14 @@ halo_ps2_frame_snapshot *hcu_snapshot_bank_begin_write(void)
 {
 	unsigned i;
 	int slot = BANK_NONE;
+#if defined(HCU_C3_FRAME_SNAPSHOT)
+	static unsigned c3_bw_calls = 0u;
+	if (c3_bw_calls < 3u) {
+		c3_bw_calls++;
+		printf("HALO_PS2_LOCAL c3-bank-probe begin-write call=%u storage=%u writing=%d published=%d\n",
+			c3_bw_calls, (unsigned)(uintptr_t)s_storage, s_writing, s_published);
+	}
+#endif
 	if (!s_storage || s_writing != BANK_NONE)
 		return NULL;
 	for (i = 0; i < HCU_SNAPSHOT_BANK_SLOTS; ++i) {
@@ -275,8 +284,10 @@ int hcu_snapshot_bank_commit(halo_ps2_frame_snapshot *snapshot)
 {
 	if (snapshot && s_writing != BANK_NONE && snapshot == s_slots[s_writing])
 		snapshot->map_generation = s_map_generation;
+	/* Publication never replaces a bank that still has readers. begin_write
+	 * already excludes such slots; this is the same refusal at publish time. */
 	if (!snapshot || s_writing == BANK_NONE || snapshot != s_slots[s_writing] ||
-		!validate_snapshot(snapshot)) {
+		s_state[s_writing].readers != 0u || !validate_snapshot(snapshot)) {
 		s_stats.commit_rejects++;
 		if (s_writing != BANK_NONE && snapshot == s_slots[s_writing])
 			s_writing = BANK_NONE;
@@ -297,6 +308,10 @@ const halo_ps2_frame_snapshot *hcu_snapshot_bank_begin_read(
 	hcu_snapshot_reader *reader)
 {
 	if (!reader)
+		return NULL;
+	/* A reader that still holds a pin keeps it. Re-begin would overwrite the
+	 * slot record and leak the pin count, so the slot could never be reused. */
+	if (reader->snapshot != NULL)
 		return NULL;
 	reader->slot = BANK_NONE;
 	reader->snapshot = NULL;

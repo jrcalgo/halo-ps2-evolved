@@ -1,4 +1,4 @@
-/* Triple-bank store for halo_ps2_frame_snapshot (wire version 2).
+/* Triple-bank store for halo_ps2_frame_snapshot (wire version 5).
  *
  * Contract for the frame lane (renderer) and the CE publisher:
  *
@@ -21,7 +21,10 @@
  *   Reader (frame lane):
  *     begin_read(&reader)  pins the latest published slot. Returns the snapshot
  *                          or NULL when nothing is published. Each successful
- *                          begin_read must be paired with end_read.
+ *                          begin_read must be paired with end_read. A reader
+ *                          must be zero-initialised or ended before use; a
+ *                          begin_read on a reader that still holds a pin is
+ *                          refused (NULL) and leaves that pin intact.
  *     end_read(&reader)    releases the pin. A slot with a pin is never reused
  *                          or overwritten, even after newer publications.
  *     latest()             unpinned view of the newest published snapshot. A
