@@ -51,6 +51,20 @@ typedef struct {
 	uint8_t frame_abort;
 	uint8_t drain_pending;   /* port: a sealed CE batch waits for the parent emit window */
 	int32_t last_status;
+	/* C3.9 counters, monotonic. Written only from the CE frame callbacks. */
+	uint32_t stat_begin_calls;
+	uint32_t stat_begins;
+	uint32_t stat_set_views;
+	uint32_t stat_queue_ends;
+	uint32_t stat_ends;
+	uint32_t stat_end_failures;
+	uint32_t stat_requests;
+	/* Fail-closed batch drops: a frame whose sealed batch faults emits nothing and never blocks the CE frame. */
+	uint32_t stat_drops;
+	uint32_t last_drop_cause;   /* bit 0 abort, 1 unsupported, 2 missing texture, 3 invalid identity,
+	                               4 full, 5 view-count mismatch */
+	uint32_t drop_causes_seen;
+	uint8_t frame_dropped;
 } hcu_bitmap_frame_owner;
 
 /* Initialize caller-owned state only while no frame callback can be running. */

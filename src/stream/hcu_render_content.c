@@ -1,6 +1,7 @@
 #include "stream/hcu_render_content.h"
 
 #include <stddef.h>
+#include <string.h>
 
 hcu_render_content_status hcu_render_parity_log_init(hcu_render_parity_log *log,
 	hcu_render_parity_record *storage, uint32_t capacity)
@@ -82,4 +83,30 @@ int hcu_render_content_reuse_allowed(hcu_render_content_fence_fn fence,
 	if (readers != 0) return 0;
 	observed = fence(context, frame_index);
 	return observed == 1;
+}
+
+hcu_render_content_status hcu_render_parity_summarize(const hcu_render_parity_log *log,
+	hcu_render_parity_summary *out)
+{
+	uint32_t i, h = 2166136261u;
+	if (!log || !out || (!log->records && log->count)) return HCU_RENDER_CONTENT_E_ARGUMENT;
+	memset(out, 0, sizeof *out);
+	out->dropped = log->dropped;
+	for (i = 0; i < log->count; i++) {
+		const hcu_render_parity_record *r = &log->records[i];
+		const uint32_t words[4] = { r->kind, (uint32_t)r->surface_id,
+			(uint32_t)r->material_id, r->resource_id };
+		uint32_t w, b;
+		if (r->kind > HCU_RENDER_PARITY_EFFECT) return HCU_RENDER_CONTENT_E_ARGUMENT;
+		out->per_kind[r->kind]++;
+		if (r->material_id >= 0) out->materials_known++;
+		for (w = 0; w < 4u; w++)
+			for (b = 0; b < 4u; b++) {
+				h ^= (words[w] >> (8u * b)) & 0xFFu;
+				h *= 16777619u;
+			}
+		out->records++;
+	}
+	out->hash = h;
+	return HCU_RENDER_CONTENT_OK;
 }

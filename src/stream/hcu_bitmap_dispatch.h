@@ -38,6 +38,7 @@ typedef struct {
 	uint16_t cache_key;
 	uint16_t reserved;
 	uint32_t generation;
+	uint32_t kick_seq;   /* C3.10: the parent kick that carries this lease's upload (0 = not bound to a kick) */
 } hcu_bitmap_lease;
 
 typedef enum {
@@ -55,14 +56,14 @@ typedef enum {
  * CLUT bytes referenced by successful uploads, up to its total byte capacity;
  * `slot_stride` bounds the one serialized TEXS chunk read through staging. This
  * keeps the per-frame source retention bounded by the texcache upload budget.
- * `cache_backup` is transaction scratch for the existing shared tc_t. Keep a
- * lease until both upload and draw DMA have fenced. */
+ * `journal` is the bounded per-request undo journal for the shared tc_t (no whole-table copy).
+ * Keep a lease until both upload and draw DMA have fenced. */
 hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 	const halo_ps2_bitmap_request *request,
 	const hcu_bitmap_binding *bindings, uint32_t binding_count,
 	const hcu_asset_profile_view *profile,
 	uint32_t expected_generation,
-	tc_t *cache, tc_t *cache_backup,
+	tc_t *cache, tc_journal_t *journal,
 	uint16_t *cache_readers, uint32_t cache_reader_count,
 	hcu_bitmap_source_slot *slots, uint32_t slot_count,
 	void *source_storage, uint32_t source_storage_bytes, uint32_t slot_stride,
@@ -81,7 +82,7 @@ typedef struct {
 	const hcu_asset_profile_view *profile;
 	uint32_t expected_generation;
 	tc_t *cache;
-	tc_t *cache_backup;
+	tc_journal_t *journal;
 	uint16_t *cache_readers;
 	uint32_t cache_reader_count;
 	hcu_bitmap_source_slot *slots;

@@ -6,8 +6,6 @@
 #include <stdio.h>
 #include <string.h>
 
-/* Reference display aspect (camera_init's default); the horizontal field of view is the camera's. */
-#define VIEWS_REFERENCE_ASPECT (4.0f / 3.0f)
 #define VIEWS_FOV_MIN 0.1f
 #define VIEWS_FOV_MAX 2.8f
 #define VIEWS_NEAR_DEFAULT 0.05f
@@ -29,10 +27,13 @@ static float clampf(float v, float lo, float hi)
 }
 
 int hcu_views_camera_from_snapshot(const float pos[3], const float forward[3], const float up[3],
-	float vertical_fov, float z_near, float z_far, hcu_view_camera *out)
+	float vertical_fov, float view_aspect, float z_near, float z_far, hcu_view_camera *out)
 {
 	float len2, up_len2, len, fx, fy, fz, unit_z;
 	float near_z, far_z;
+
+	if (!finite_f(view_aspect) || view_aspect < 0.05f || view_aspect > 20.0f)
+		return 0;
 
 	if (!out || !pos || !forward || !up)
 		return 0;
@@ -61,8 +62,14 @@ int hcu_views_camera_from_snapshot(const float pos[3], const float forward[3], c
 	memcpy(out->pos, pos, sizeof out->pos);
 	out->yaw = atan2f(fy, fx);
 	out->pitch = asinf(unit_z);
-	/* tan(vfov/2) = tan(hfov/2) / aspect, so hfov = 2 atan(tan(vfov/2) * aspect). */
-	out->hfov = 2.0f * atanf(tanf(vertical_fov * 0.5f) * VIEWS_REFERENCE_ASPECT);
+	/* CE split screen keeps one vertical angle for every window and derives the horizontal extent from the
+	 * window's own viewport pixels (submodules/halo-ce-universal/source/render/render_cameras.c:719-766 frustum
+	 * with x scaled by viewport h/w; :1160-1171 projection scales). So tan(vfov/2) is kept and
+	 * hfov = 2 atan(tan(vfov/2) * w/h) with the view's own w/h. The vertical angle is the one CE computes in
+	 * submodules/halo-ce-universal/source/main/main.c:1184-1187 (2 atan(0.75 * 0.85 * tan(fov/2)), with
+	 * render_fov_vertical's display.fov override off by default). CE applies no per-split FOV narrowing:
+	 * compute_window_bounds (main.c:1382) changes only the viewport rectangle. */
+	out->hfov = 2.0f * atanf(tanf(vertical_fov * 0.5f) * view_aspect);
 	out->near_z = near_z;
 	out->far_z = far_z;
 	return 1;

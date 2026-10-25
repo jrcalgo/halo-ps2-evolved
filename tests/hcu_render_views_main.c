@@ -34,7 +34,7 @@ int main(void)
 	unsigned n;
 
 	/* Camera from a valid snapshot view: yaw from forward, fov converted to horizontal, near/far kept. */
-	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, fov_deg, 0.5f, 900.0f, &cam) == 1);
+	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, fov_deg, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 1);
 	CHECK(near(cam.yaw, 1.5707963f, 1e-5f));
 	CHECK(near(cam.pitch, 0.0f, 1e-6f));
 	CHECK(near(cam.pos[0], 65.0f, 1e-6f) && near(cam.pos[1], -95.0f, 1e-6f) && near(cam.pos[2], 9.0f, 1e-6f));
@@ -42,6 +42,15 @@ int main(void)
 	CHECK(near(cam.hfov, h_expected, 1e-5f));
 	CHECK(near(cam.near_z, 0.5f, 1e-6f) && near(cam.far_z, 900.0f, 1e-3f));
 
+	/* Split view (640x224): vertical fov is kept, hfov follows the view aspect. */
+	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, fov_deg, 640.0f / 224.0f, 0.5f, 900.0f, &cam) == 1);
+	CHECK(near(tanf(cam.hfov * 0.5f) / (640.0f / 224.0f), tanf(fov_deg * 0.5f), 1e-5f));
+	/* CE projection (halo-ce-universal source/render/render_cameras.c:793-802 clipped bounds, :1165-1171 full
+	 * bounds): vertical_field_of_view is the input; tan(h/2) = tan(v/2) * viewport_w / viewport_h. */
+	CHECK(near(tanf(cam.hfov * 0.5f), tanf(fov_deg * 0.5f) * (640.0f / 224.0f), 1e-4f));
+	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, fov_deg, 0.0f, 0.5f, 900.0f, &cam) == 0);
+
+	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, fov_deg, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 1);
 	/* The converted camera projects the same vertical extent the snapshot asked for: the camera_t
 	 * clip matrix at aspect 4/3 (camera_init) gives tan(vfov/2) = tan(hfov/2) / aspect. */
 	camera_init(&c);
@@ -54,28 +63,28 @@ int main(void)
 	/* Pitch: straight down with an unnormalised forward; up is off-axis so the frame is valid. */
 	{
 		const float side_up[3] = { 1.0f, 0.0f, 0.0f };
-		CHECK(hcu_views_camera_from_snapshot(pos, tilt_fwd, side_up, fov_deg, 0.0f, 0.0f, &cam) == 1);
+		CHECK(hcu_views_camera_from_snapshot(pos, tilt_fwd, side_up, fov_deg, 4.0f / 3.0f, 0.0f, 0.0f, &cam) == 1);
 		CHECK(near(cam.pitch, -1.5707963f, 1e-5f));
 	}
 	/* An invalid up (parallel to forward) is refused whatever the rest is. */
-	CHECK(hcu_views_camera_from_snapshot(pos, tilt_fwd, tilt_fwd, fov_deg, 0.5f, 900.0f, &cam) == 0);
+	CHECK(hcu_views_camera_from_snapshot(pos, tilt_fwd, tilt_fwd, fov_deg, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 0);
 
 	/* Refusals: NaN or zero forward, zero up, non-finite position, field of view in degrees. */
-	CHECK(hcu_views_camera_from_snapshot(pos, nan_fwd, up, fov_deg, 0.5f, 900.0f, &cam) == 0);
-	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, zero, fov_deg, 0.5f, 900.0f, &cam) == 0);
-	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, 60.0f, 0.5f, 900.0f, &cam) == 0);
-	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, 0.0f, 0.5f, 900.0f, &cam) == 0);
+	CHECK(hcu_views_camera_from_snapshot(pos, nan_fwd, up, fov_deg, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 0);
+	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, zero, fov_deg, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 0);
+	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, 60.0f, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 0);
+	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, 0.0f, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 0);
 	{
 		const float bad[3] = { NAN, 0.0f, 0.0f };
 		hcu_view_camera keep = cam;
-		CHECK(hcu_views_camera_from_snapshot(bad, yaw_fwd, up, fov_deg, 0.5f, 900.0f, &cam) == 0);
+		CHECK(hcu_views_camera_from_snapshot(bad, yaw_fwd, up, fov_deg, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 0);
 		CHECK(memcmp(&keep, &cam, sizeof cam) == 0);
 	}
-	CHECK(hcu_views_camera_from_snapshot(NULL, yaw_fwd, up, fov_deg, 0.5f, 900.0f, &cam) == 0);
-	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, fov_deg, 0.5f, 900.0f, NULL) == 0);
+	CHECK(hcu_views_camera_from_snapshot(NULL, yaw_fwd, up, fov_deg, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 0);
+	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, fov_deg, 4.0f / 3.0f, 0.5f, 900.0f, NULL) == 0);
 
 	/* Bad near/far fall back to the camera defaults rather than refusing the view. */
-	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, fov_deg, -1.0f, 0.0f, &cam) == 1);
+	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, fov_deg, 4.0f / 3.0f, -1.0f, 0.0f, &cam) == 1);
 	CHECK(near(cam.near_z, 0.05f, 1e-6f) && near(cam.far_z, 2000.0f, 1e-3f));
 
 	/* Convention round trip: the camera_t basis built from yaw/pitch must give back the snapshot forward
@@ -85,12 +94,55 @@ int main(void)
 		float r[3], u[3], f[3], len;
 		camera_t rc;
 		camera_init(&rc);
-		CHECK(hcu_views_camera_from_snapshot(pos, tilt, up, fov_deg, 0.5f, 900.0f, &cam) == 1);
+		CHECK(hcu_views_camera_from_snapshot(pos, tilt, up, fov_deg, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 1);
 		rc.yaw = cam.yaw; rc.pitch = cam.pitch;
 		camera_basis(&rc, r, u, f);
 		len = sqrtf(tilt[0] * tilt[0] + tilt[1] * tilt[1] + tilt[2] * tilt[2]);
 		CHECK(near(f[0], tilt[0] / len, 1e-5f) && near(f[1], tilt[1] / len, 1e-5f) && near(f[2], tilt[2] / len, 1e-5f));
 		CHECK(near(cam.pitch, asinf(tilt[2] / len), 1e-5f));
+	}
+
+	/* CE split-screen projection (source/main/main.c:1184-1187 vertical angle, render_cameras.c:719-766 and
+	 * :1160-1171 viewport aspect). The observer's CE vertical angle for a 70 degree field of view is
+	 * 2 atan(0.75 * 0.85 * tan(35 deg)); every window keeps it, and hfov = 2 atan(tan(vfov/2) * w/h) for the
+	 * window's own pixels. Expected values below are computed from that formula directly. */
+	{
+		const float fov70 = 70.0f * 3.14159265f / 180.0f;
+		const float ce_vfov = 2.0f * atanf(0.75f * 0.85f * tanf(fov70 * 0.5f));
+		static const struct { const char *name; float w, h; } views[] = {
+			{ "1 view full 640x448", 640.0f, 448.0f },
+			{ "2 views top 640x224", 640.0f, 224.0f },
+			{ "2 views bottom 640x224", 640.0f, 224.0f },
+			{ "3 views q0 320x224", 320.0f, 224.0f },
+			{ "3 views q1 321x224", 321.0f, 224.0f },
+			{ "3 views q2 320x225", 320.0f, 225.0f },
+			{ "4 views q0 320x224", 320.0f, 224.0f },
+			{ "4 views q3 320x225", 320.0f, 225.0f },
+			{ "CE 3 players top span 640x224", 640.0f, 224.0f },
+			{ "CE 3 players bottom-left 320x224", 320.0f, 224.0f },
+		};
+		size_t i;
+		for (i = 0; i < sizeof views / sizeof views[0]; ++i) {
+			const float aspect = views[i].w / views[i].h;
+			const float expect_h = 2.0f * atanf(tanf(ce_vfov * 0.5f) * aspect);
+			CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, ce_vfov, aspect, 0.5f, 900.0f, &cam) == 1);
+			if (!near(cam.hfov, expect_h, 1e-5f)) {
+				fprintf(stderr, "  view %s: hfov %f expected %f\n", views[i].name, cam.hfov, expect_h);
+				failures++;
+			}
+			/* The vertical extent is CE's: tan(hfov/2) / aspect == tan(vfov/2). */
+			CHECK(near(tanf(cam.hfov * 0.5f) / aspect, tanf(ce_vfov * 0.5f), 1e-5f));
+		}
+		/* Full screen 640x448 (aspect 1.4286) has hfov 2 atan(tan(vfov/2) * 10/7). */
+		CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, ce_vfov, 640.0f / 448.0f, 0.5f, 900.0f, &cam) == 1);
+		CHECK(near(cam.hfov, 2.0f * atanf(tanf(ce_vfov * 0.5f) * (640.0f / 448.0f)), 1e-5f));
+		/* Quadrant views are narrower in pixels than the top span, so their hfov is smaller. */
+		CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, ce_vfov, 320.0f / 224.0f, 0.5f, 900.0f, &cam) == 1);
+		{
+			const float quad_h = cam.hfov;
+			CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, ce_vfov, 640.0f / 224.0f, 0.5f, 900.0f, &cam) == 1);
+			CHECK(cam.hfov > quad_h);
+		}
 	}
 
 	/* Generation gate: the first accepted generation sticks, another one is refused and counted. */

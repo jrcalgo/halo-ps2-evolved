@@ -42,19 +42,45 @@ static int producer_descriptor_has(uint32_t capabilities)
 		(d->capabilities & capabilities) == capabilities;
 }
 
+/* Fault bits for the sealed batch of the current frame (0 = batch is clean). */
+static uint32_t batch_fault(const hcu_bitmap_frame_owner *owner)
+{
+	const halo_ps2_bitmap_request_queue *q = owner->queue;
+	uint32_t fault = 0;
+	if (owner->frame_abort) fault |= 1u;
+	if (q->unsupported_count) fault |= 2u;
+	if (q->missing_texture_count) fault |= 4u;
+	if (q->invalid_identity_count) fault |= 8u;
+	if (q->full_count) fault |= 16u;
+	if (owner->view_call_count != owner->active_window_count) fault |= 32u;
+	return fault;
+}
+
+/* Drop only this frame's batch: nothing is emitted, nothing stays pending, and the
+ * drop is counted. The next frame starts from a clean batch state. */
+static void drop_batch(hcu_bitmap_frame_owner *owner, uint32_t fault)
+{
+	owner->stat_drops++;
+	owner->last_drop_cause = fault;
+	owner->drop_causes_seen |= fault;
+	owner->frame_dropped = 1;
+	owner->drain_pending = 0;
+}
+
 /* Capture is all-or-nothing at frame granularity. If the bounded CE seam saw
  * an unsupported or malformed call, don't dispatch only the surviving subset. */
 static int32_t frame_dispatch_reader(
 	halo_ps2_bitmap_request_reader const *reader, void *context)
 {
 	hcu_bitmap_frame_owner *owner = (hcu_bitmap_frame_owner *)context;
-	halo_ps2_bitmap_request_queue *queue;
+	uint32_t fault;
 	if (!reader || !reader->held || !owner || !owner->queue || !owner->dispatch)
 		return HCU_BITMAP_FRAME_E_ARGUMENT;
-	queue = owner->queue;
-	if (owner->frame_abort || queue->unsupported_count || queue->missing_texture_count ||
-		queue->invalid_identity_count || queue->full_count)
-		return HCU_BITMAP_FRAME_E_QUEUE;
+	fault = batch_fault(owner);
+	if (fault) {
+		drop_batch(owner, fault);
+		return HCU_BITMAP_FRAME_OK;
+	}
 	/* port: CE seals the batch outside the parent build; hold it until the emit window binds the chains. */
 	if (!owner->dispatch->geometry_chain || !owner->dispatch->upload_chain) {
 		owner->drain_pending = 1;
@@ -191,6 +217,7 @@ int32_t hcu_bitmap_frame_begin_callback(void *context, uint32_t frame_index,
 	uint16_t active_window_count)
 {
 	hcu_bitmap_frame_owner *owner = (hcu_bitmap_frame_owner *)context;
+	if (owner) owner->stat_begin_calls++;
 	if (!owner || !owner->bound || !owner->queue || !owner->dispatch ||
 		owner->profile != owner->dispatch->profile || owner->bindings != owner->dispatch->bindings ||
 		owner->binding_count != owner->dispatch->binding_count ||
@@ -207,7 +234,9 @@ int32_t hcu_bitmap_frame_begin_callback(void *context, uint32_t frame_index,
 		return HCU_BITMAP_FRAME_E_VIEW;
 	if (halo_ps2_bitmap_requests_begin(owner->queue, frame_index, owner->generation, 0, 0) !=
 		HALO_PS2_BITMAP_REQUEST_OK) return HCU_BITMAP_FRAME_E_QUEUE;
+	owner->stat_begins++;
 	owner->frame_index = frame_index;
+	owner->frame_dropped = 0;
 	owner->active_window_count = active_window_count;
 	owner->view_call_count = 0;
 	owner->last_window_index = 0;
@@ -233,6 +262,7 @@ int32_t hcu_bitmap_frame_set_view_callback(void *context, uint16_t window_index,
 	if (halo_ps2_bitmap_requests_set_view(owner->queue, (int16_t)window_index,
 		local_player_index) != HALO_PS2_BITMAP_REQUEST_OK) return HCU_BITMAP_FRAME_E_QUEUE;
 	owner->view_call_count++;
+	owner->stat_set_views++;
 	owner->last_window_index = window_index;
 	owner->has_last_window = 1;
 	return HCU_BITMAP_FRAME_OK;
@@ -245,24 +275,28 @@ int32_t hcu_bitmap_frame_end_callback(void *context, uint32_t frame_index,
 	int32_t status = prior_status;
 	if (!owner || !owner->in_frame || !owner->queue || owner->frame_index != frame_index)
 		return HCU_BITMAP_FRAME_E_BUSY;
+	owner->stat_ends++;
+	owner->stat_requests += owner->queue->count;
 	owner->frame_abort = status != 0 ||
 		owner->view_call_count != owner->active_window_count;
-	if (owner->view_call_count != owner->active_window_count && status == 0)
-		status = HCU_BITMAP_FRAME_E_VIEW;
 	{
 		halo_ps2_bitmap_request_status queue_status =
 			halo_ps2_bitmap_requests_end(owner->queue);
+		owner->stat_queue_ends++;
 		if (queue_status != HALO_PS2_BITMAP_REQUEST_OK && status == 0)
 			status = owner->queue->last_consumer_status != 0
 				? owner->queue->last_consumer_status : HCU_BITMAP_FRAME_E_QUEUE;
 	}
-	if ((owner->queue->unsupported_count || owner->queue->missing_texture_count ||
-		owner->queue->invalid_identity_count || owner->queue->full_count) && status == 0)
-		status = HCU_BITMAP_FRAME_E_QUEUE;
+	/* A faulted batch is dropped whole and counted. The CE frame is not failed for it. */
+	if (batch_fault(owner) && !owner->frame_dropped) drop_batch(owner, batch_fault(owner));
 	owner->in_frame = 0;
 	owner->gpu_pending = owner->dispatch && owner->dispatch->lease_count != 0;
 	owner->last_status = status;
-	if (status != 0) return status;
+	if (status != 0) {
+		owner->stat_end_failures++;
+		return status;
+	}
+	if (owner->frame_dropped) return HCU_BITMAP_FRAME_OK;
 	status = owner->dispatch ? owner->dispatch->first_error : HCU_BITMAP_FRAME_E_NOT_READY;
 	owner->last_status = status;
 	return status;

@@ -78,3 +78,51 @@ def test_bank_host_contract_with_intern_and_pins():
         ], cwd=root, check=True, capture_output=True, text=True)
         result = subprocess.run([str(executable)], check=True, capture_output=True, text=True)
     assert "hcu_snapshot_bank tests passed" in result.stdout
+
+
+def test_publisher_fills_bounded_fx_requests_with_counted_drops():
+    root = Path(__file__).resolve().parents[1]
+    source = (root / "submodules/halo-ce-universal/port/ps2/src/ps2_render.c").read_text()
+    body = source[source.index("static void ps2_c3_publish_fx_requests("):]
+    body = body[:body.index("\n}\n") + 3]
+    # Effect and decal records come from read-only iterators defined in CE's own
+    # effects sources, so the publisher never mirrors CE datum layouts.
+    for needle in ("halo_ps2_fx_particle_systems_each", "halo_ps2_fx_contrails_each",
+                   "halo_ps2_fx_effects_each", "halo_ps2_fx_decals_each",
+                   "HALO_PS2_FRAME_FX_EFFECT", "HALO_PS2_FRAME_FX_PARTICLE_SYSTEM",
+                   "HALO_PS2_FRAME_FX_CONTRAIL", "HALO_PS2_FRAME_FX_DECAL"):
+        assert needle in body, needle
+    assert "_mirror" not in source and "struct ps2_c3_decal" not in source
+    effects_dir = root / "submodules/halo-ce-universal/source/effects"
+    owners = {
+        "effects.c": ("halo_ps2_fx_effects_each", "effect_data", "effect_location_data"),
+        "particle_systems.c": ("halo_ps2_fx_particle_systems_each", "particle_systems"),
+        "contrails.c": ("halo_ps2_fx_contrails_each", "contrail_data"),
+        "decals.c": ("halo_ps2_fx_decals_each", "global_decal_data", "game_time_get"),
+    }
+    for name, needles in owners.items():
+        text = (effects_dir / name).read_text(encoding="latin-1")
+        guarded = text[text.index("#if defined(HALO_PS2_C3_FRAME_SNAPSHOT)"):]
+        for needle in needles:
+            assert needle in guarded, (name, needle)
+    header = (root / "submodules/halo-ce-universal/port/ps2/include/halo_ps2_fx_iter.h").read_text()
+    assert "#if defined(HALO_PS2_C3_FRAME_SNAPSHOT)" in header
+    # Pointer-free records: source identity is index plus datum identifier.
+    visitor = source[source.index("static int ps2_c3_fx_visit("):]
+    visitor = visitor[:visitor.index("\n}\n") + 3]
+    assert "source_generation" in visitor and "source_index" in visitor
+    fx_add = source[source.index("static void ps2_c3_fx_add("):]
+    fx_add = fx_add[:fx_add.index("\n}\n") + 3]
+    assert "fx_dropped++" in fx_add
+    assert "HALO_PS2_FRAME_MAX_FX_REQUESTS" in fx_add
+    # Publication order: requests are published after the views, before commit.
+    publish = source[source.index("static void ps2_c3_publish_frame_snapshot("):]
+    assert publish.index("ps2_c3_publish_fx_requests(snapshot") < publish.index(
+        "halo_ps2_frame_snapshot_commit(snapshot)")
+
+
+def test_c3_snapshot_line_reports_fx_counters():
+    root = Path(__file__).resolve().parents[1]
+    source = (root / "src/stream/hcu_main.c").read_text()
+    assert "effects=%u decals=%u fx-dropped=%u" in source
+    assert "fx_dropped = s->fx_dropped;" in source

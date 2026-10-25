@@ -21,7 +21,7 @@ static int s_fence_observed;
 static int32_t fake_fence_query(void *context, uint32_t frame_index)
 {
 	(void)context;
-	return (frame_index == 10 && s_fence_observed) ? 1 : 0;
+	return ((frame_index == 10 || frame_index == 12) && s_fence_observed) ? 1 : 0;
 }
 
 halo_ps2_bitmap_request_status halo_ps2_bitmap_requests_register_consumer(
@@ -150,10 +150,27 @@ int main(void)
 	binding.chunk_id--;
 	if (hcu_bitmap_frame_begin_callback(&owner,11,1) != 0) return 13;
 	if (hcu_bitmap_frame_set_view_callback(&owner,0,0) != 0) return 14;
+	/* A faulted batch drops only its frame: the CE end succeeds, nothing emits, nothing stays pending. */
 	queue.full_count=1;
-	if (hcu_bitmap_frame_end_callback(&owner,11,0) != HCU_BITMAP_FRAME_E_QUEUE) return 15;
-	if (s_dispatch_calls != 1 || owner.gpu_pending) return 16;
+	if (hcu_bitmap_frame_end_callback(&owner,11,0) != HCU_BITMAP_FRAME_OK) return 15;
+	if (owner.stat_drops != 1 || owner.last_drop_cause != 16u || owner.drain_pending ||
+		owner.gpu_pending || owner.in_frame) return 16;
+	if (s_dispatch_calls != 1 || dispatch.lease_count) return 16;
+	/* Recovery: the next frame starts clean; its batch emits once the chains bind and the fence completes. */
+	if (hcu_bitmap_frame_begin_callback(&owner,12,1) != 0) return 20;
+	if (hcu_bitmap_frame_set_view_callback(&owner,0,0) != 0) return 21;
+	if (hcu_bitmap_frame_end_callback(&owner,12,0) != 0 || owner.stat_drops != 1 || !owner.drain_pending) return 22;
+	{
+		chain_t gc, uc;
+		memset(&gc,0,sizeof(gc)); memset(&uc,0,sizeof(uc));
+		dispatch.geometry_chain=&gc; dispatch.upload_chain=&uc;
+		if (hcu_bitmap_frame_owner_drain_pending(&owner) != HCU_BITMAP_FRAME_OK) return 23;
+		dispatch.geometry_chain=0; dispatch.upload_chain=0;
+	}
+	if (s_dispatch_calls != 2 || dispatch.lease_count != 1 || !owner.gpu_pending || owner.drain_pending) return 24;
+	if (hcu_bitmap_frame_owner_gpu_fence_complete(&owner,12) != HCU_BITMAP_FRAME_OK ||
+		dispatch.lease_count || owner.gpu_pending) return 25;
 	if (hcu_bitmap_frame_owner_unbind(&owner) != HCU_BITMAP_FRAME_OK) return 17;
-	puts("FRAME_OWNER_OK binds/views/dispatch/fence/unbind/fail-closed");
+	puts("FRAME_OWNER_OK binds/views/dispatch/fence/unbind/drop-and-recover");
 	return 0;
 }

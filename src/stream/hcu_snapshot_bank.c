@@ -190,8 +190,8 @@ static int validate_snapshot(const halo_ps2_frame_snapshot *s)
 		s->palette_count > HALO_PS2_FRAME_MAX_PALETTE ||
 		s->resource_count > HALO_PS2_FRAME_MAX_RESOURCES ||
 		s->attachment_count > HALO_PS2_FRAME_MAX_ATTACHMENTS ||
-		s->effect_count > HALO_PS2_FRAME_MAX_EFFECTS ||
-		s->decal_count > HALO_PS2_FRAME_MAX_DECALS)
+		s->fx_request_count > HALO_PS2_FRAME_MAX_FX_REQUESTS ||
+		s->effect_count + s->decal_count != s->fx_request_count)
 		return 0;
 	if (!isfinite(s->time_delta_since_tick_sec) ||
 		s->time_delta_since_tick_sec < 0.0f)
@@ -249,25 +249,23 @@ static int validate_snapshot(const halo_ps2_frame_snapshot *s)
 			a->child_object >= s->object_count)
 			return 0;
 	}
-	for (i = 0; i < s->effect_count; ++i) {
-		const halo_ps2_frame_effect *e = &s->effects[i];
-		if (e->owner_object != HALO_PS2_FRAME_NONE_U16 &&
-			e->owner_object >= s->object_count)
+	for (i = 0; i < s->fx_request_count; ++i) {
+		const halo_ps2_frame_fx_request *r = &s->fx_requests[i];
+		unsigned kind_ok = r->kind == HALO_PS2_FRAME_FX_EFFECT ||
+			r->kind == HALO_PS2_FRAME_FX_PARTICLE_SYSTEM ||
+			r->kind == HALO_PS2_FRAME_FX_CONTRAIL ||
+			r->kind == HALO_PS2_FRAME_FX_LIGHT ||
+			r->kind == HALO_PS2_FRAME_FX_DECAL;
+		if (!kind_ok)
 			return 0;
-		if (!finite3(e->position) || !finite3(e->parameters))
+		if (r->owner_object != HALO_PS2_FRAME_NONE_U16 &&
+			r->owner_object >= s->object_count)
 			return 0;
-	}
-	for (i = 0; i < s->decal_count; ++i) {
-		const halo_ps2_frame_decal *d = &s->decals[i];
-		if (d->owner_object != HALO_PS2_FRAME_NONE_U16 &&
-			d->owner_object >= s->object_count)
+		if ((r->view_mask >> HALO_PS2_FRAME_MAX_VIEWS) != 0u)
 			return 0;
-		if (d->resource_slot != HALO_PS2_FRAME_NONE_U16 &&
-			d->resource_slot >= s->resource_count)
-			return 0;
-		if (!finite3(d->position) || !finite3(d->normal) ||
-			!isfinite(d->size) || d->size < 0.0f ||
-			!isfinite(d->lifetime_sec) || d->lifetime_sec < 0.0f)
+		if (!finite3(r->position) || !finite3(r->forward) ||
+			!isfinite(r->scale) || r->scale < 0.0f ||
+			!isfinite(r->age_sec) || r->age_sec < 0.0f)
 			return 0;
 	}
 	return 1;

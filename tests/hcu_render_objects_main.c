@@ -1,4 +1,5 @@
 /* Host tests for the C3.objects pure core: synthetic builder, selection, pin/unpin, parity. */
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
@@ -218,6 +219,17 @@ static int test_residency_policy(void)
 	CHECK(!hcu_render_objects_residency_may_evict(1, 1, 1));
 	CHECK(!hcu_render_objects_residency_may_evict(0, 0, 1));
 	CHECK(hcu_render_objects_residency_may_evict(1, 0, 1));
+	/* C3.3 pin check: a pinned entry that would otherwise be evictable is refused and counted. */
+	{
+		uint32_t refused = 0;
+		CHECK(hcu_render_objects_residency_victim_ok(1, 0, 1, 0u, &refused) == 1 && refused == 0);
+		CHECK(hcu_render_objects_residency_victim_ok(1, 0, 1, 1u, &refused) == 0 && refused == 1);
+		CHECK(hcu_render_objects_residency_victim_ok(1, 0, 1, 2u, &refused) == 0 && refused == 2);
+		/* Pins do not change the fence or reference rules, and do not count those refusals. */
+		CHECK(hcu_render_objects_residency_victim_ok(1, 0, 0, 1u, &refused) == 0 && refused == 2);
+		CHECK(hcu_render_objects_residency_victim_ok(1, 1, 1, 1u, &refused) == 0 && refused == 2);
+		CHECK(hcu_render_objects_residency_victim_ok(0, 0, 1, 1u, &refused) == 0 && refused == 2);
+	}
 	/* An individually oversized model is a real pool refusal, not an eviction attempt. */
 	CHECK(hcu_render_objects_pool_request_fits(1024, 2048));
 	CHECK(!hcu_render_objects_pool_request_fits(2049, 2048));
@@ -268,6 +280,212 @@ static int test_pin(void)
 	return 0;
 }
 
+/* C3.6: pose hash, pose tracking, effect requests and the parity summary identity. */
+static int test_c3_6(void)
+{
+	halo_ps2_frame_snapshot s;
+	halo_ps2_snapshot_matrix4x3 pal[3];
+	hcu_render_synthetic_object o;
+	hcu_render_objects_counters c;
+	hcu_render_effect_draw fx[4];
+	hcu_render_pose_tracker tr;
+	hcu_render_parity_record recs[3];
+	hcu_render_parity_log log;
+	hcu_render_parity_summary sum, sum2;
+	uint32_t h0, h1, count = 0;
+	int i;
+
+	for (i = 0; i < 3; i++) pal[i] = mat_at((float)i, 1.0f, 0.0f);
+	CHECK(hcu_render_synthetic_begin(&s, 7u, 3u, 1u) == 0);
+	CHECK(hcu_render_synthetic_view(&s, 0, &kcam) == 0);
+	memset(&o, 0, sizeof o);
+	o.resource_id = 100; o.definition_index = 5; o.type = HCU_OBJECTS_TYPE_VEHICLE;
+	o.flags = HCU_OBJECTS_FLAG_SKINNED; o.palette_count = 3; o.palette = pal; o.world = mat_at(0, 0, 0);
+	CHECK(hcu_render_synthetic_object_add(&s, 0, 0, &o) == 0);
+
+	/* pose hash: deterministic, sensitive to one matrix, zero for an empty palette */
+	h0 = hcu_render_objects_pose_hash(pal, 3, 0, 3);
+	CHECK(h0 != 0u && h0 == hcu_render_objects_pose_hash(pal, 3, 0, 3));
+	CHECK(hcu_render_objects_pose_hash(pal, 3, 0, 0) == 0u);
+	CHECK(hcu_render_objects_pose_hash(pal, 3, 2, 2) == 0u);   /* range past the palette: refused */
+	pal[2].position[1] += 0.25f;
+	h1 = hcu_render_objects_pose_hash(pal, 3, 0, 3);
+	CHECK(h1 != h0);
+
+	/* pose tracker: first sight is silent, a changed palette counts as a change, equal counts as static */
+	memset(&tr, 0, sizeof tr);
+	memset(&c, 0, sizeof c);
+	CHECK(hcu_render_pose_track(&tr, 0, 1u, h0, &c) == 0);
+	CHECK(hcu_render_pose_track(&tr, 0, 1u, h1, &c) == 1);
+	CHECK(hcu_render_pose_track(&tr, 0, 1u, h1, &c) == 0);
+	CHECK(c.pose_changes == 1 && c.pose_static == 1);
+	CHECK(hcu_render_pose_track(&tr, 0, 2u, h0, &c) == 0);   /* new generation: not a change */
+	CHECK(hcu_render_pose_track(&tr, HCU_OBJECTS_POSE_TRACK, 1u, h0, &c) == HCU_RENDER_CONTENT_E_ARGUMENT);
+	CHECK(hcu_render_objects_track_poses(&s, &tr, &c) == 0);
+	CHECK(c.pose_changes == 1);                              /* generation 1 object 0 now has h1 -> h0 change */
+
+	/* effects (v4 fx table): owner in view 0 and visible to view 0 is selected; a request whose view_mask
+	 * excludes view 0, an owner outside the view, or a NaN position is not */
+	s.fx_request_count = 3;
+	s.fx_requests[0].kind = HALO_PS2_FRAME_FX_PARTICLE_SYSTEM; s.fx_requests[0].owner_object = 0;
+	s.fx_requests[0].view_mask = 0x1; s.fx_requests[0].permutation = 4; s.fx_requests[0].scale = 2.0f;
+	s.fx_requests[0].position[0] = 1.0f; s.fx_requests[0].position[1] = 2.0f; s.fx_requests[0].position[2] = 3.0f;
+	s.fx_requests[1].kind = HALO_PS2_FRAME_FX_DECAL; s.fx_requests[1].owner_object = 0;
+	s.fx_requests[1].view_mask = 0x2; s.fx_requests[1].position[0] = 1.0f;
+	s.fx_requests[2].kind = HALO_PS2_FRAME_FX_DECAL; s.fx_requests[2].owner_object = 0;
+	s.fx_requests[2].view_mask = 0x1; s.fx_requests[2].position[0] = 0.0f / 0.0f;
+	memset(&c, 0, sizeof c);
+	CHECK(hcu_render_effects_select(&s, 0, fx, 4, &count, &c) == 0);
+	CHECK(count == 1 && fx[0].kind == HALO_PS2_FRAME_FX_PARTICLE_SYSTEM && fx[0].permutation == 4);
+	CHECK(fx[0].owner_object == 0 && fx[0].scale == 2.0f);
+	CHECK(c.effects_selected == 1 && c.effects_refused == 1);
+	CHECK(hcu_render_effects_select(&s, 0, fx, 0, &count, &c) == 0 && count == 0);
+	CHECK(c.effects_refused == 3);   /* NaN again + no room: refusals are counted, never silent */
+
+	/* parity summary: per-kind counts, known materials, and a hash that moves with the identity */
+	memset(recs, 0, sizeof recs);
+	recs[0].kind = HCU_RENDER_PARITY_OBJECT; recs[0].surface_id = 4; recs[0].material_id = 11; recs[0].resource_id = 100;
+	recs[1].kind = HCU_RENDER_PARITY_WEAPON; recs[1].surface_id = 1; recs[1].material_id = -1; recs[1].resource_id = 200;
+	recs[2].kind = HCU_RENDER_PARITY_OBJECT; recs[2].surface_id = 4; recs[2].material_id = 12; recs[2].resource_id = 100;
+	CHECK(hcu_render_parity_log_init(&log, recs, 3) == HCU_RENDER_CONTENT_OK);
+	log.count = 3;
+	CHECK(hcu_render_parity_summarize(&log, &sum) == HCU_RENDER_CONTENT_OK);
+	CHECK(sum.records == 3 && sum.per_kind[HCU_RENDER_PARITY_OBJECT] == 2 && sum.per_kind[HCU_RENDER_PARITY_WEAPON] == 1);
+	CHECK(sum.materials_known == 2 && sum.dropped == 0);
+	recs[2].material_id = 13;
+	CHECK(hcu_render_parity_summarize(&log, &sum2) == HCU_RENDER_CONTENT_OK);
+	CHECK(sum2.hash != sum.hash);
+	recs[2].material_id = 12;
+	CHECK(hcu_render_parity_summarize(&log, &sum2) == HCU_RENDER_CONTENT_OK);
+	CHECK(sum2.hash == sum.hash);
+	return 0;
+}
+
+static float dist3(const float a[3], const float b[3])
+{
+	float d[3] = { a[0] - b[0], a[1] - b[1], a[2] - b[2] };
+	return sqrtf(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+}
+
+/* C3.6(c): quad generation (billboard and decal orientation, flat colours), the view-mask filter and the
+ * per-view cap. The EE clip and packet path is checked by the EE syntax build, not here. */
+static int test_fx_quads(void)
+{
+	halo_ps2_frame_snapshot s;
+	hcu_render_synthetic_object o;
+	hcu_render_effect_draw e;
+	hcu_render_effect_draw out[HCU_FX_MAX_PER_VIEW];
+	hcu_render_objects_counters c;
+	hcu_render_fx_quad q;
+	halo_ps2_snapshot_camera cam_bad;
+	float right[3], up[3], centre[3] = { 5.0f, 1.0f, 2.0f };
+	uint8_t rgba_a[4], rgba_b[4];
+	uint32_t count = 0, k, i;
+
+	/* camera basis from kcam (forward +x, up +z): right = -y, up = +z */
+	CHECK(hcu_render_fx_camera_basis(&kcam, right, up) == 0);
+	CHECK(fabsf(right[0]) < 1e-6f && fabsf(right[1] + 1.0f) < 1e-6f && fabsf(right[2]) < 1e-6f);
+	CHECK(fabsf(up[0]) < 1e-6f && fabsf(up[1]) < 1e-6f && fabsf(up[2] - 1.0f) < 1e-6f);
+	cam_bad = kcam;
+	cam_bad.forward[0] = 0.0f; cam_bad.forward[2] = 1.0f;   /* forward parallel to up */
+	CHECK(hcu_render_fx_camera_basis(&cam_bad, right, up) == HCU_RENDER_CONTENT_E_ARGUMENT);
+
+	/* billboard: every corner lies in the plane through the centre perpendicular to the forward axis, and
+	 * sits at scale * sqrt(2) from the centre; v[0] is (-right, -up) and v[2] is (+right, +up) */
+	memset(&e, 0, sizeof e);
+	e.kind = HALO_PS2_FRAME_FX_EFFECT; e.position[0] = 5.0f; e.position[1] = 1.0f; e.position[2] = 2.0f;
+	e.scale = 0.5f;
+	CHECK(hcu_render_fx_build_quad(&e, right, up, &q) == 0);
+	for (k = 0; k < 4; k++) {
+		CHECK(fabsf(q.v[k][0] - 5.0f) < 1e-5f);                       /* dot(forward, corner - centre) = 0 */
+		CHECK(fabsf(dist3(q.v[k], centre) - 0.5f * sqrtf(2.0f)) < 1e-5f);
+	}
+	CHECK(fabsf(q.v[0][1] - 1.5f) < 1e-5f && fabsf(q.v[0][2] - 1.5f) < 1e-5f);   /* -right -up */
+	CHECK(fabsf(q.v[2][1] - 0.5f) < 1e-5f && fabsf(q.v[2][2] - 2.5f) < 1e-5f);   /* +right +up */
+	CHECK(q.kind == HALO_PS2_FRAME_FX_EFFECT);
+
+	/* the billboard follows the camera: a camera rolled 90 degrees about its forward axis turns the corners */
+	{
+		float r2[3], u2[3];
+		halo_ps2_snapshot_camera rolled = kcam;
+		rolled.up[0] = 0.0f; rolled.up[1] = 1.0f; rolled.up[2] = 0.0f;   /* up = +y: right = +z */
+		CHECK(hcu_render_fx_camera_basis(&rolled, r2, u2) == 0);
+		CHECK(fabsf(r2[2] - 1.0f) < 1e-6f && fabsf(u2[1] - 1.0f) < 1e-6f);
+		CHECK(hcu_render_fx_build_quad(&e, r2, u2, &q) == 0);
+		CHECK(fabsf(q.v[2][2] - 2.5f) < 1e-5f && fabsf(q.v[2][1] - 1.0f - 0.5f) < 1e-5f);
+	}
+
+	/* decal: the normal is forward. A +z normal keeps every corner at the decal's height; a -z normal
+	 * (almost-vertical, so the fallback tangent is used) does too; a +x normal keeps the corners at its x */
+	memset(&e, 0, sizeof e);
+	e.kind = HALO_PS2_FRAME_FX_DECAL; e.position[0] = 1.0f; e.position[1] = 2.0f; e.position[2] = 3.0f;
+	e.scale = 1.0f; e.forward[2] = 1.0f;
+	CHECK(hcu_render_fx_build_quad(&e, right, up, &q) == 0);
+	for (k = 0; k < 4; k++) {
+		CHECK(fabsf(q.v[k][2] - 3.0f) < 1e-5f);
+		CHECK(fabsf(dist3(q.v[k], e.position) - sqrtf(2.0f)) < 1e-5f);
+	}
+	e.forward[2] = -2.0f;
+	CHECK(hcu_render_fx_build_quad(&e, right, up, &q) == 0);
+	for (k = 0; k < 4; k++) CHECK(fabsf(q.v[k][2] - 3.0f) < 1e-5f);
+	e.forward[0] = 1.0f; e.forward[2] = 0.0f;
+	CHECK(hcu_render_fx_build_quad(&e, right, up, &q) == 0);
+	for (k = 0; k < 4; k++) CHECK(fabsf(q.v[k][0] - 1.0f) < 1e-5f);
+	/* zero forward: a decal falls back to a billboard facing the camera (all corners at x = centre x) */
+	e.forward[0] = 0.0f;
+	CHECK(hcu_render_fx_build_quad(&e, right, up, &q) == 0);
+	for (k = 0; k < 4; k++) CHECK(fabsf(q.v[k][0] - 1.0f) < 1e-5f);
+
+	/* refusals: LIGHT has no quad; scale must be finite and positive */
+	e.kind = HALO_PS2_FRAME_FX_LIGHT; e.scale = 1.0f;
+	CHECK(hcu_render_fx_build_quad(&e, right, up, &q) == HCU_RENDER_CONTENT_E_ARGUMENT);
+	e.kind = HALO_PS2_FRAME_FX_EFFECT; e.scale = 0.0f;
+	CHECK(hcu_render_fx_build_quad(&e, right, up, &q) == HCU_RENDER_CONTENT_E_ARGUMENT);
+	e.scale = 0.0f / 0.0f;
+	CHECK(hcu_render_fx_build_quad(&e, right, up, &q) == HCU_RENDER_CONTENT_E_ARGUMENT);
+
+	/* flat colour per kind: the four drawn kinds differ, LIGHT is refused */
+	CHECK(hcu_render_fx_flat_colour(HALO_PS2_FRAME_FX_EFFECT, rgba_a) == 0);
+	CHECK(hcu_render_fx_flat_colour(HALO_PS2_FRAME_FX_PARTICLE_SYSTEM, rgba_b) == 0);
+	CHECK(memcmp(rgba_a, rgba_b, 4) != 0);
+	CHECK(hcu_render_fx_flat_colour(HALO_PS2_FRAME_FX_CONTRAIL, rgba_a) == 0);
+	CHECK(hcu_render_fx_flat_colour(HALO_PS2_FRAME_FX_DECAL, rgba_b) == 0);
+	CHECK(memcmp(rgba_a, rgba_b, 4) != 0);
+	CHECK(hcu_render_fx_flat_colour(HALO_PS2_FRAME_FX_LIGHT, rgba_a) == HCU_RENDER_CONTENT_E_ARGUMENT);
+
+	/* view mask and cap: 64 requests owned by object 0 (in both views), even ones visible to view 0 only,
+	 * odd ones to view 1 only */
+	CHECK(hcu_render_synthetic_begin(&s, 11u, 0u, 2u) == 0);
+	CHECK(hcu_render_synthetic_view(&s, 0, &kcam) == 0);
+	memset(&o, 0, sizeof o);
+	o.resource_id = 100; o.definition_index = 5; o.type = HCU_OBJECTS_TYPE_BIPED; o.world = mat_at(0, 0, 0);
+	CHECK(hcu_render_synthetic_object_add(&s, 0, 0, &o) == 0);
+	CHECK(hcu_render_synthetic_view(&s, 1, &kcam) == 0);
+	CHECK(hcu_render_synthetic_object_add(&s, 1, 0, &o) == 0);
+	s.fx_request_count = HALO_PS2_FRAME_MAX_FX_REQUESTS;
+	for (i = 0; i < s.fx_request_count; i++) {
+		s.fx_requests[i].kind = HALO_PS2_FRAME_FX_PARTICLE_SYSTEM;
+		s.fx_requests[i].owner_object = 0;
+		s.fx_requests[i].view_mask = (i & 1u) ? 0x2u : 0x1u;
+		s.fx_requests[i].scale = 1.0f;
+		s.fx_requests[i].position[0] = (float)i;
+	}
+	memset(&c, 0, sizeof c);
+	CHECK(hcu_render_effects_select(&s, 0, out, HCU_FX_MAX_PER_VIEW, &count, &c) == 0);
+	CHECK(count == 32 && c.effects_selected == 32 && c.effects_refused == 0);
+	for (i = 0; i < count; i++) CHECK((out[i].position[0] - (float)(2 * i)) == 0.0f);   /* even ones only */
+	CHECK(hcu_render_effects_select(&s, 1, out, HCU_FX_MAX_PER_VIEW, &count, &c) == 0);
+	CHECK(count == 32 && out[0].position[0] == 1.0f);
+	/* all visible to view 0: the fixed cap holds even when the caller offers more room */
+	for (i = 0; i < s.fx_request_count; i++) s.fx_requests[i].view_mask = 0x1u;
+	memset(&c, 0, sizeof c);
+	CHECK(hcu_render_effects_select(&s, 0, out, 1000u, &count, &c) == 0);
+	CHECK(count == HCU_FX_MAX_PER_VIEW && c.effects_selected == HCU_FX_MAX_PER_VIEW && c.effects_refused == 0);
+	CHECK(hcu_render_effects_select(&s, 0, out, 10u, &count, &c) == 0);
+	CHECK(count == 10 && c.effects_refused == HALO_PS2_FRAME_MAX_FX_REQUESTS - 10u);
+	return 0;
+}
+
 int main(void)
 {
 	if (test_builder()) return 1;
@@ -276,6 +494,8 @@ int main(void)
 	if (test_parity()) return 4;
 	if (test_residency_policy()) return 5;
 	if (test_pin()) return 6;
+	if (test_c3_6()) return 7;
+	if (test_fx_quads()) return 8;
 	printf("hcu_render_objects tests passed\n");
 	return 0;
 }

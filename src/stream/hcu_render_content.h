@@ -55,6 +55,20 @@ hcu_render_content_status hcu_render_parity_log_init(hcu_render_parity_log *log,
 hcu_render_content_status hcu_render_parity_log_append(hcu_render_parity_log *log,
 	const hcu_render_parity_record *record);
 
+/* Parity summary: per-kind record counts and an FNV-1a identity hash over
+ * (kind, surface, material, resource) in log order. The hash is what a capture
+ * line prints so two runs (or a CE-side log) can be compared record for record. */
+typedef struct {
+	uint32_t records;
+	uint32_t dropped;
+	uint32_t per_kind[HCU_RENDER_PARITY_EFFECT + 1];
+	uint32_t materials_known;   /* records with material_id >= 0 */
+	uint32_t hash;
+} hcu_render_parity_summary;
+
+hcu_render_content_status hcu_render_parity_summarize(const hcu_render_parity_log *log,
+	hcu_render_parity_summary *out);
+
 /* ---- texture claims ------------------------------------------------------
  * A claim moves FREE -> SOURCE_HELD -> UPLOAD_QUEUED -> PUBLISHED. Source bytes
  * stay held until upload completion (RELEASED). A claim may be published only

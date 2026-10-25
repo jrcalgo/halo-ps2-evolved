@@ -94,7 +94,8 @@ def test_renderer_kick_retires_previous_before_clear():
 def test_renderer_emit_failure_recorded_in_bsp():
     text = BSP.read_text()
     assert "s_emit_status = s_hooks.emit(s_hooks.user, frame, c, &s_upload[s_build], &s_tc);" in text
-    assert "if (s_emit_status) s_emit_failures++;" in text
+    # The DMA lane restructured the counting into a block; the same count must still follow the emit call.
+    assert re.search(r"if \(s_emit_status\) \{\s*s_emit_failures\+\+;", text)
     assert text.count("s_hooks.emit(") == 1
 
 

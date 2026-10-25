@@ -1,0 +1,357 @@
+#!/usr/bin/env python3
+"""C3 integration harness: run the 12-case C3 evidence matrix once and score every requirement from those runs.
+
+Cases (all on bloodgulch_mounted_gunner_4p4bot with --c3-workload 4p4bot and HCU_C3_OBJECTS=1):
+  render-v1/2/3/4 on the recompiler, render-v4 on the interpreter, render-v4 recompiler with
+  --texfence-cap-pages 48, and C3.11 successor runs (beavercreek_mounted_gunner_4p4bot, --render-views 2,
+  fault none/preflight/load) in both emulator modes.
+
+Each case is one tools/c2_profile_boot_matrix.py subprocess (it takes the link lock itself; this harness never
+uses flock). Completed cases are recorded in <root>/state.json and skipped on rerun. Scoring reads every
+completed run's guest log and captures, so a rerun with --score-only or --stamp re-scores without PCSX2.
+
+Usage:
+  python3 -I tools/c3_integration.py [--jobs N] [--stamp STAMP] [--dry-run] [--score-only]
+Output: build/c3/integration/<stamp>/<case>/ plus report.md and report.json under build/c3/integration/<stamp>/.
+"""
+from __future__ import annotations
+
+import argparse
+import importlib.util
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+MATRIX_PATH = ROOT / "tools/c2_profile_boot_matrix.py"
+INTEGRATION_ROOT = ROOT / "build/c3/integration"
+ROW = "bloodgulch_mounted_gunner_4p4bot"
+SUCC = "beavercreek_mounted_gunner_4p4bot"
+WORKLOAD = "4p4bot"
+WORKLOAD_PLAYERS = 4
+FRAMES = 300
+CASE_TIMEOUT = 4 * 3600          # host seconds for one matrix subprocess (its own timeouts apply inside)
+STATE_NAME = "state.json"
+GUEST_LOG = Path("guest/runs/partition-selected/halo_ps2_local.txt")
+REQUIREMENTS = ("C3.3", "C3.5", "C3.7", "C3.8", "C3.9", "C3.10", "C3.11", "SNAP")
+FIELD = re.compile(r"(?:^|\s)([A-Za-z][A-Za-z0-9_-]*)=([^\s]+)")
+
+
+def build_cases() -> list[dict]:
+    cases = []
+    for views in (1, 2, 3, 4):
+        cases.append({"name": f"render-v{views}-recompiler", "kind": "render", "views": views,
+                      "mode": "recompiler", "cap_pages": 0, "fault": None})
+    cases.append({"name": "render-v4-interpreter", "kind": "render", "views": 4,
+                  "mode": "interpreter", "cap_pages": 0, "fault": None})
+    cases.append({"name": "render-v4-recompiler-cap48", "kind": "render", "views": 4,
+                  "mode": "recompiler", "cap_pages": 48, "fault": None})
+    for mode in ("recompiler", "interpreter"):
+        for fault in ("none", "preflight", "load"):
+            cases.append({"name": f"c3-11-{fault}-{mode}", "kind": "successor", "views": 2,
+                          "mode": mode, "cap_pages": 0, "fault": fault})
+    return cases
+
+
+def load_matrix():
+    """Import tools/c2_profile_boot_matrix.py by path (the harness runs with -I, so the script dir is not on sys.path)."""
+    spec = importlib.util.spec_from_file_location("c2m_integration", MATRIX_PATH)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def case_dir(root: Path, case: dict) -> Path:
+    return root / case["name"]
+
+
+def matrix_argv(case: dict, out_dir: Path, package_root: Path) -> list[str]:
+    argv = [sys.executable, "-I", str(MATRIX_PATH), "--c3", "--c3-workload", WORKLOAD, "--rows", ROW,
+            "--emu-mode", case["mode"], "--output-root", str(out_dir), "--package-root", str(package_root)]
+    if case["kind"] == "render":
+        argv += ["--render-views", str(case["views"]), "--render-frames", str(FRAMES)]
+    else:
+        argv += ["--successor", SUCC, "--successor-fault", case["fault"], "--render-views", str(case["views"]),
+                 "--render-frames", str(FRAMES)]
+    if case["cap_pages"]:
+        argv += ["--texfence-cap-pages", str(case["cap_pages"])]
+    return argv
+
+
+def result_path(c2m, root: Path, case: dict) -> Path:
+    """Where the matrix writes this case's result.json (render: <case>/<row>, successor: <case>/<row>/<succ-label>)."""
+    base = case_dir(root, case) / ROW
+    if case["kind"] == "successor":
+        base = base / f"{SUCC}-{c2m.SUCCESSOR_CASES[case['fault']][1]}"
+    return base / "result.json"
+
+
+def read_json(path: Path) -> dict | None:
+    try:
+        return json.loads(path.read_text())
+    except (OSError, ValueError):
+        return None
+
+
+def run_is_complete(path: Path) -> bool:
+    data = read_json(path)
+    return bool(data) and data.get("state") != "running"
+
+
+def load_state(path: Path) -> dict:
+    data = read_json(path)
+    return data if isinstance(data, dict) and isinstance(data.get("cases"), dict) else {"cases": {}}
+
+
+def save_state(path: Path, state: dict) -> None:
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n")
+    os.replace(tmp, path)
+
+
+def pending_cases(c2m, root: Path, cases: list[dict], state: dict) -> list[dict]:
+    """A case is skipped only when state.json marks it done AND its result.json exists and is not still 'running'."""
+    todo = []
+    for case in cases:
+        entry = state["cases"].get(case["name"], {})
+        if entry.get("status") == "done" and run_is_complete(result_path(c2m, root, case)):
+            continue
+        todo.append(case)
+    return todo
+
+
+def run_case(c2m, case: dict, root: Path, package_root: Path) -> dict:
+    out = case_dir(root, case)
+    out.mkdir(parents=True, exist_ok=True)
+    env = {**os.environ, "HCU_C3_OBJECTS": "1"}
+    try:
+        with (out / "matrix.log").open("w") as log:
+            proc = subprocess.run(matrix_argv(case, out, package_root), cwd=ROOT, env=env, stdout=log,
+                                  stderr=subprocess.STDOUT, timeout=CASE_TIMEOUT)
+            rc: int | str = proc.returncode
+    except subprocess.TimeoutExpired:
+        rc = "timeout"
+    except OSError as error:
+        rc = f"exception: {error}"
+    done = run_is_complete(result_path(c2m, root, case))
+    return {"status": "done" if done else "error", "returncode": rc,
+            "result": str(result_path(c2m, root, case).relative_to(ROOT))}
+
+
+# ---------------------------------------------------------------- scoring
+
+def kv(line: str) -> dict[str, str]:
+    return dict(FIELD.findall(line))
+
+
+def _int(value, default: int | None = None) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _verdict(fn, *args, **kwargs) -> dict:
+    """Run one existing checker and reduce its checks dict to pass/fail with the first failing field."""
+    try:
+        out = fn(*args, **kwargs)
+    except Exception as error:  # a checker mid-edit by another lane must not stop the matrix scoring
+        return {"status": "checker error", "first_failing": None, "error": f"{type(error).__name__}: {error}"}
+    checks = out.get("checks") or {}
+    failing = [name for name, ok in checks.items() if not ok]
+    if not checks:
+        reasons = out.get("reasons") or ["no checks returned"]
+        return {"status": "fail", "first_failing": reasons[0], "error": None}
+    if failing:
+        return {"status": "fail", "first_failing": failing[0], "error": None}
+    return {"status": "pass", "first_failing": None, "error": None}
+
+
+def c3_8_sound_checks(lines: list[str], frames_periodic: int | None = None) -> dict:
+    """C3.8 sound-request adapter evidence from the guest log.
+
+    'rejected' is read as the queue's rejected counter on the final sound-requests line (no request refused).
+    Every sound-requests line must say spu2-playback=not-qualified, because SPU2 playback is not qualified.
+    """
+    sound = [kv(l) for l in lines if "sound-requests phase=" in l]
+    periodic = [l for l in lines if "c3-frame kind=periodic " in l]
+    if frames_periodic is None:
+        frames_periodic = len(periodic)
+    last = sound[-1] if sound else {}
+    checks = {
+        "sound_lines_present": bool(sound),
+        "sound_line_per_periodic_frame": frames_periodic > 0 and len(sound) >= frames_periodic,
+        "sound_rejected_zero": last.get("rejected") == "0",
+        "sound_drained_positive": (_int(last.get("drained"), 0) or 0) > 0,
+        "spu2_playback_not_qualified": bool(sound) and all(s.get("spu2-playback") == "not-qualified" for s in sound),
+    }
+    return {"checks": checks, "sound_lines": len(sound), "periodic_frames": frames_periodic,
+            "reasons": [f"c3.8 sound check failed: {k}" for k, v in checks.items() if not v]}
+
+
+def snapshot_exit_checks(lines: list[str], views: int, captures: list[dict], emu_mode_verified: bool,
+                         capture_ok) -> dict:
+    """Snapshot, renderer and exit evidence for one run: snapshot seq advancing per periodic frame, the active view
+    count, biped presence, emit failures (zero or counted as bitmap drops), non-black/non-sky captures, textured and
+    lightmapped counters, and animated objects (c3-pose changes)."""
+    snaps = [kv(l) for l in lines if "c3-snapshot " in l and " seq=" in l]
+    periodic = [l for l in lines if "c3-frame kind=periodic " in l]
+    frames = [kv(l) for l in lines if "c3-frame " in l]
+    final = frames[-1] if frames else {}
+    ready = [kv(l) for l in lines if "c3-render-ready " in l]
+    poses = [kv(l) for l in lines if "c3-pose " in l]
+    bitmap = [kv(l) for l in lines if "c3-bitmap tick=" in l]
+    seqs = [_int(s.get("seq")) for s in snaps]
+    last_snap = snaps[-1] if snaps else {}
+    dropped = _int(bitmap[-1].get("bitmap-frames-dropped"), 0) if bitmap else 0
+    checks = {
+        "snap_seq_present": bool(snaps),
+        "snap_seq_advances_per_periodic_frame": bool(periodic) and len(snaps) >= len(periodic) and
+            all(a is not None and b is not None and b > a for a, b in zip(seqs, seqs[1:])),
+        "snap_active_views_match": last_snap.get("active-views") == str(views),
+        "snap_biped_positive": (_int(last_snap.get("biped"), 0) or 0) > 0,
+        "emit_failures_zero_or_bitmap_drops_counted":
+            _int(final.get("emit-failures"), 0) == 0 or (dropped or 0) > 0,
+        "captures_present": bool(captures),
+        "captures_scene_not_sky_only": bool(captures) and all(capture_ok(c) for c in captures),
+        "tex_hits_positive": (_int(final.get("tex-hits"), 0) or 0) > 0,
+        "lightmaps_present": bool(ready) and (_int(ready[-1].get("lm"), 0) or 0) > 0,
+        "animated_pose_changes_positive": any((_int(p.get("pose-changes"), 0) or 0) > 0 for p in poses),
+        "emu_mode_verified": bool(emu_mode_verified),
+    }
+    return {"checks": checks, "reasons": [f"snapshot/exit check failed: {k}" for k, v in checks.items() if not v]}
+
+
+def score_lines(c2m, lines: list[str] | None, *, views: int, frames: int, cap_pages: int, captures: list[dict],
+                successor: dict | None, emu_mode_verified: bool) -> dict:
+    """Every requirement verdict for one run. successor is {'old', 'new', 'mode'} for C3.11 runs, else None."""
+    if lines is None:
+        return {req: {"status": "not-run", "first_failing": "guest log missing", "error": None}
+                for req in REQUIREMENTS}
+    held = [c.get("file") for c in captures if "c3-render-held" in str(c.get("marker", "")) and c.get("file")]
+    verdicts = {
+        "C3.3": _verdict(c2m.c3_3_scene_checks, lines, views, WORKLOAD_PLAYERS),
+        "C3.5": _verdict(c2m.c3_5_layout_checks, views, held),
+        "C3.7": _verdict(c2m.c3_7_texfence_checks, lines, views, frames, cap_pages),
+        "C3.8": _verdict(c3_8_sound_checks, lines),
+        "C3.9": _verdict(c2m.c3_9_bitmap_checks, lines, views),
+        "C3.10": _verdict(c2m.c3_10_dma_checks, lines, views, frames),
+        "SNAP": _verdict(snapshot_exit_checks, lines, views, captures, emu_mode_verified,
+                         c2m.capture_has_scene_variation),
+    }
+    if successor:
+        verdicts["C3.11"] = _verdict(c2m.rendered_successor_checks, lines, successor["old"], successor["new"],
+                                     successor["mode"], views, captures)
+    else:
+        verdicts["C3.11"] = {"status": "n/a", "first_failing": None, "error": None}
+    return verdicts
+
+
+def score_case(c2m, root: Path, case: dict) -> dict:
+    res_file = result_path(c2m, root, case)
+    result = read_json(res_file) or {}
+    entry = {"case": case["name"], "kind": case["kind"], "views": case["views"], "mode": case["mode"],
+             "cap_pages": case["cap_pages"], "fault": case["fault"], "result_json": str(res_file),
+             "matrix_pass": result.get("pass") is True, "reasons": result.get("reasons", [])[:3]}
+    log = res_file.parent / GUEST_LOG
+    lines = log.read_text(errors="replace").splitlines() if log.is_file() else None
+    captures = result.get("captures", []) or []
+    successor = None
+    if case["kind"] == "successor":
+        successor = {"old": result.get("map"), "new": result.get("successor_map"), "mode": c2m.SUCCESSOR_CASES[case["fault"]][0]}
+    entry["guest_log"] = str(log) if lines is not None else None
+    entry["captures"] = [c.get("file") for c in captures if c.get("file")]
+    entry["requirements"] = score_lines(
+        c2m, lines, views=case["views"], frames=FRAMES, cap_pages=case["cap_pages"], captures=captures,
+        successor=successor, emu_mode_verified=bool(result.get("emu_mode_verified")))
+    return entry
+
+
+def requirement_cell(verdict: dict) -> str:
+    if verdict["status"] == "pass":
+        return "PASS"
+    if verdict["status"] == "checker error":
+        return f"checker error ({verdict.get('error')})"
+    if verdict["status"] in ("n/a", "not-run"):
+        return verdict["status"]
+    return f"FAIL: {verdict.get('first_failing')}"
+
+
+def write_report(root: Path, stamp: str, scored: list[dict], state: dict) -> dict:
+    summary = {}
+    for req in REQUIREMENTS:
+        statuses = [e["requirements"][req]["status"] for e in scored]
+        summary[req] = {s: statuses.count(s) for s in sorted(set(statuses))}
+    data = {"stamp": stamp, "root": str(root), "requirements": list(REQUIREMENTS), "summary": summary,
+            "runs": scored, "state": state}
+    (root / "report.json").write_text(json.dumps(data, indent=2, sort_keys=True) + "\n")
+    names = [e["case"] for e in scored]
+    lines = [f"# C3 integration report {stamp}", "",
+             "Cell = verdict and first failing field. Matrix pass is the matrix's own result.json verdict.", "",
+             "| requirement | " + " | ".join(names) + " |",
+             "|---|" + "---|" * len(names),
+             "| matrix pass | " + " | ".join("yes" if e["matrix_pass"] else "no" for e in scored) + " |"]
+    for req in REQUIREMENTS:
+        cells = [requirement_cell(e["requirements"][req]).replace("|", "/") for e in scored]
+        lines.append(f"| {req} | " + " | ".join(cells) + " |")
+    lines += ["", "## Evidence", ""]
+    for e in scored:
+        lines.append(f"- {e['case']}: result {e['result_json']}")
+        lines.append(f"  - guest log: {e['guest_log'] or 'missing'}")
+        for cap in e["captures"]:
+            lines.append(f"  - capture: {cap}")
+    (root / "report.md").write_text("\n".join(lines) + "\n")
+    return data
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("--jobs", type=int, default=3, help="matrix subprocesses in flight (default %(default)s)")
+    parser.add_argument("--stamp", help="output stamp; pass an existing one to resume (default: now)")
+    parser.add_argument("--dry-run", action="store_true", help="print the 12 matrix commands and exit")
+    parser.add_argument("--score-only", action="store_true", help="do not run anything; score existing runs")
+    args = parser.parse_args(argv)
+    if args.jobs < 1:
+        parser.error("--jobs must be at least 1")
+    c2m = load_matrix()
+    cases = build_cases()
+    stamp = args.stamp or time.strftime("%Y%m%dT%H%M%S")
+    root = INTEGRATION_ROOT / stamp
+    if args.dry_run:
+        for case in cases:
+            print(" ".join(matrix_argv(case, case_dir(root, case), ROOT / "build/c3/render-tree/pkg")))
+        return 0
+    root.mkdir(parents=True, exist_ok=True)
+    state_path = root / STATE_NAME
+    state = load_state(state_path)
+    if not args.score_only:
+        todo = pending_cases(c2m, root, cases, state)
+        print(f"stamp {stamp}: {len(cases) - len(todo)} done, {len(todo)} to run, jobs {args.jobs}", flush=True)
+        if todo:
+            package_root = c2m.prepare_render_tree()  # once here, so concurrent matrix runs do not race on it
+            with ThreadPoolExecutor(max_workers=args.jobs) as pool:
+                futures = {pool.submit(run_case, c2m, case, root, package_root): case for case in todo}
+                for future in as_completed(futures):
+                    case = futures[future]
+                    try:
+                        entry = future.result()
+                    except Exception as error:
+                        entry = {"status": "error", "returncode": f"exception: {error}", "result": None}
+                    state["cases"][case["name"]] = entry
+                    save_state(state_path, state)
+                    print(f"{case['name']}: {entry['status']} rc={entry['returncode']}", flush=True)
+    scored = [score_case(c2m, root, case) for case in cases]
+    data = write_report(root, stamp, scored, state)
+    print(f"report: {root / 'report.md'}", flush=True)
+    passed = all(v["status"] == "pass" for e in scored for k, v in e["requirements"].items() if k != "C3.11" or
+                 e["kind"] == "successor")
+    return 0 if passed else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

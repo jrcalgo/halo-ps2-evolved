@@ -46,6 +46,7 @@ C3_ROOT = ROOT / "build/c3/integrate"        # output root for --c3 rows (summar
 RESULT_ROOT = MATRIX                           # switched to C3_ROOT by --c3
 WORKLOAD_PLAYERS = {"none": 0, "4p4bot": 4}  # local players per --c3-workload
 OUTPUT_ROOT: Path | None = None                # --output-root DIR: every row writes to DIR/<row>/ instead
+TEXFENCE_CAP_PAGES = 0                         # --texfence-cap-pages N: debug cap on texture cache pages (C3.7), 0 = off
 RENDER_ROOT = ROOT / "build/c3/render-loop"   # output root for --c3 --render-views runs (v<N>/<row>)
 RENDER_PACKAGE_TREE = ROOT / "build/c3/render-tree"  # <tree>/pkg -> build/c3/render-packages (BSPS/TEXS/LMn chunks)
 FOREIGN_ROOT = ROOT / "build/m2-c2-foreign"   # output root for --successor runs
@@ -805,7 +806,8 @@ def link_row(row: str, package_root: Path, out: Path, cycles: int = 1, ticks: in
         render_dir.mkdir(parents=True, exist_ok=True)
         (render_dir / "hcu_c3_render.h").write_text(
             f"#define HCU_C3_RENDER_VIEWS {render_views}\n"
-            f"#define HCU_C3_RENDER_FRAMES {render_frames}\n")
+            f"#define HCU_C3_RENDER_FRAMES {render_frames}\n"
+            f"#define HCU_C3_TEXFENCE_CAP_PAGES {TEXFENCE_CAP_PAGES}\n")
         include_dirs.append(str(render_dir))
     if workload_players:
         # main.c includes <hcu_c3_workload.h> (C3:workload block): CE's player_spawn_count.
@@ -952,6 +954,58 @@ def prepare_render_tree() -> Path:
     return pkg
 
 
+def texfence_lines(lines: list[str], kind: str | None = None) -> list[dict]:
+    """Parsed c3-texfence lines (periodic and final), in guest order."""
+    out = []
+    for line in lines:
+        if "c3-texfence " not in line:
+            continue
+        f = fields_of(line)
+        if kind is None or f.get("kind") == kind:
+            out.append(f)
+    return out
+
+
+def c3_7_texfence_checks(lines: list[str], views: int, frames: int, cap_pages: int = 0) -> dict:
+    """C3.7 texture fence evidence from the guest log.
+
+    Rules: (a) claims published only after their upload is queued; (b) source bytes released only after the
+    fence is observed; (c) slot reuse fenced against the last kick of the slot. Counters are recorded in the
+    texture cache at the real event points; the final c3-texfence line holds the totals. Under cap_pages (debug pressure)
+    the run must also show real reuse after a fence. Nothing qualifies without a final line and a
+    rendered-frame final line with the requested view count.
+    """
+    periodic = texfence_lines(lines, "periodic")
+    final = texfence_lines(lines, "final")
+    frame_final = [l for l in lines if "c3-frame kind=final " in l]
+    ff = fields_of(frame_final[-1]) if frame_final else {}
+    tf = final[-1] if final else {}
+    def num(f: dict, k: str) -> int | None:
+        return _int(f.get(k))
+    checks = {
+        "texfence_final_present": bool(final) and len(periodic) >= 1,
+        "texfence_frames_match": tf.get("frame") == str(frames) and ff.get("frame") == str(frames),
+        "claims_published_before_queue_zero": num(tf, "claims-published-before-queue") == 0 and
+            all(num(p, "claims-published-before-queue") == 0 for p in periodic),
+        "source_released_before_fence_zero": num(tf, "source-released-before-fence") == 0 and
+            all(num(p, "source-released-before-fence") == 0 for p in periodic),
+        "reuse_unfenced_zero": num(tf, "reuse-unfenced") == 0 and
+            all(num(p, "reuse-unfenced") == 0 for p in periodic),
+        "claims_published_nonzero": (num(tf, "claims-published") or 0) > 0,
+        # the completed fence may lag the newest kick by at most one (the kick still in flight)
+        "fence_lag_at_most_one": (num(tf, "kick-seq") or 0) - (num(tf, "fence-seq") or 0) <= 1,
+        "kicks_observed": (num(tf, "kick-seq") or 0) >= frames,
+        "cap_pages_recorded": tf.get("cap-pages") == str(cap_pages),
+    }
+    if cap_pages:
+        checks["pressure_evictions_seen"] = (num(tf, "evictions") or 0) > 0
+        checks["reuse_after_fence_seen"] = (num(tf, "reuse-after-fence") or 0) > 0
+    qualified = all(checks.values())
+    reasons = [f"c3-7 check failed: {k}" for k, v in checks.items() if not v]
+    return {"checks": checks, "reasons": reasons, "qualified": qualified, "final": tf,
+            "periodic_lines": len(periodic), "views": views}
+
+
 def render_checks(lines: list[str], views: int, frames: int) -> dict:
     """C3 render-loop evidence from the guest log: ready, final counters, teardown order, no render failure."""
     out = {"checks": {}, "reasons": []}
@@ -983,12 +1037,208 @@ def render_checks(lines: list[str], views: int, frames: int) -> dict:
     return out
 
 
+C3_5_CLEAR_RGB = (16, 16, 24)  # the unused-quadrant clear colour of hcu_c3_render_tick
+
+
+def c3_5_layout_checks(views: int, capture_files: list[str]) -> dict:
+    """C3.5 layout evidence from the newest framebuffer capture: each view rectangle is non-black and carries
+    scene pixels, the unused 3-view quadrant is uniformly cleared, and no clear colour bleeds into a view.
+    Rectangles follow hcu_render_layout_compute (640x448 buffer, scaled to the capture's size)."""
+    out = {"views": views, "checks": {}, "reasons": [], "regions": {}}
+    try:
+        from PIL import Image
+    except ImportError:
+        out["checks"] = {"layout_pil_available": False}
+        out["reasons"] = ["layout check needs PIL"]
+        return out
+    if not capture_files:
+        out["checks"] = {"layout_capture_present": False}
+        out["reasons"] = ["no framebuffer capture for layout check"]
+        return out
+    img = Image.open(capture_files[-1]).convert("RGB")
+    sw, sh = img.size
+    px = img.load()
+    fx, fy = sw / 640.0, sh / 448.0
+    rects = {
+        1: [(0, 0, 640, 448)],
+        2: [(0, 0, 640, 224), (0, 224, 640, 224)],
+        3: [(0, 0, 320, 224), (320, 0, 320, 224), (0, 224, 320, 224)],
+        4: [(0, 0, 320, 224), (320, 0, 320, 224), (0, 224, 320, 224), (320, 224, 320, 224)],
+    }[views]
+    clear_rect = (320, 224, 320, 224) if views == 3 else None
+
+    def sample(rect, inset=4, step=6):
+        x0, y0, w, h = rect
+        for y in range(y0 + inset, y0 + h - inset, step):
+            for x in range(x0 + inset, x0 + w - inset, step):
+                yield px[min(sw - 1, int(x * fx)), min(sh - 1, int(y * fy))]
+
+    def is_clear(c):
+        return all(abs(c[i] - C3_5_CLEAR_RGB[i]) <= 3 for i in range(3))
+
+    def is_black(c):
+        return max(c) <= 6
+
+    checks = {"layout_capture_size_known": sw >= 320 and sh >= 224}
+    for i, r in enumerate(rects):
+        pts = list(sample(r))
+        nonblack = sum(1 for c in pts if not is_black(c)) / max(1, len(pts))
+        clear_frac = sum(1 for c in pts if is_clear(c)) / max(1, len(pts))
+        out["regions"][f"view{i}"] = {"rect": r, "nonblack": round(nonblack, 3), "clear": round(clear_frac, 3)}
+        checks[f"layout_view{i}_nonblack"] = nonblack >= 0.05
+        checks[f"layout_view{i}_no_clear_bleed"] = clear_frac < 0.05
+    if clear_rect:
+        pts = list(sample(clear_rect, inset=2, step=3))
+        uniform = sum(1 for c in pts if is_clear(c)) / max(1, len(pts))
+        out["regions"]["clear"] = {"rect": clear_rect, "uniform": round(uniform, 4)}
+        checks["layout_unused_quadrant_cleared"] = uniform >= 0.99
+    out["checks"] = checks
+    out["reasons"] = [f"layout check failed: {k}" for k, v in checks.items() if not v]
+    return out
+
+
+def c3_3_scene_checks(lines: list[str], views: int, workload_players: int) -> dict:
+    """C3.3 workload presence: per-scene expected counts against snapshot counts and drawn objects.
+
+    Snapshot types: biped, weapon, vehicle. Stock CE multiplayer has no AI, so in a multi-player scene the
+    enemies are the opposing players (user decision 2026-10-24); AI bots remain C5 work. Enemies are present
+    when there are at least two players and every player's biped is in the published snapshot.
+    """
+    snaps = [line for line in lines if "c3-snapshot " in line and " biped=" in line]
+    final = [line for line in lines if "c3-objects-final " in line]
+    snap = fields_of(snaps[-1]) if snaps else {}
+    drawn = fields_of(final[-1]) if final else {}
+    biped, weapon, vehicle = _int(snap.get("biped")), _int(snap.get("weapon")), _int(snap.get("vehicle"))
+    active = _int(snap.get("active-views"))
+    players_present = biped is not None and biped >= workload_players and active == views
+    checks = {
+        "snapshot_present": bool(snaps),
+        "players_present": players_present,
+        "enemies_present": players_present and workload_players >= 2,
+        "weapons_present": weapon is not None and weapon >= workload_players,
+        "vehicles_present": vehicle is not None and vehicle >= 1,
+        "drawn_objects_nonzero": (_int(drawn.get("drawn")) or 0) > 0,
+    }
+    reasons = [f"scene check failed: {name}" for name, ok in checks.items() if not ok]
+    return {
+        "expected": {"players": workload_players, "enemies": "opposing-players",
+                     "enemy_count": max(workload_players - 1, 0), "views": views},
+        "snapshot": {"biped": biped, "weapon": weapon, "vehicle": vehicle, "active_views": active},
+        "drawn_objects": _int(drawn.get("drawn")),
+        "checks": checks,
+        "enemies": {"kind": "opposing-players", "ai_bots": "C5"},
+        "reasons": reasons,
+        "c3_3_qualified": all(checks.values()),
+    }
+
+
 def capture_has_scene_variation(capture: dict) -> bool:
     """Reject clear-color/HUD-only evidence; this does not replace visual review."""
     return (not capture.get("error") and
             (capture.get("nonblack_fraction") or 0) >= 0.01 and
             (capture.get("scene_color_buckets") or 0) >= 16 and
             (capture.get("scene_nonflat_fraction") or 0) >= 0.005)
+
+
+def c3_9_bitmap_checks(lines: list[str], views: int) -> dict:
+    """C3.9 bitmap evidence: registration, per-frame begin/set_view/requests/end, queue-end
+    inside each CE frame, and release with no leases. Counters come from the parent frame
+    owner (src/stream/hcu_bitmap_frame.c) printed as c3-bitmap lines.
+
+    Upload/draw proof is the held-frame capture review, which this checker does not replace.
+    """
+    ticks = [fields_of(l) for l in lines if "c3-bitmap tick=" in l]
+    bound = [l for l in lines if "c3-bitmap-bound " in l]
+    released = [fields_of(l) for l in lines if "c3-bitmap map-released " in l]
+    fails = [l for l in lines if "HALO_PS2_FAIL c3-bitmap" in l]
+    total = {k: sum(_int(t.get(k)) or 0 for t in ticks)
+             for k in ("begin-calls", "begin", "set-view", "requests", "queue-end", "end")}
+    rel = released[-1] if released else {}
+    checks = {
+        "bitmap_registered": len(bound) == 1,
+        "bitmap_no_failure": not fails,
+        # (a) each CE frame in the run calls begin, one set_view per view, queue end and end.
+        "bitmap_frames_seen": total["begin"] > 0 and total["begin-calls"] == total["begin"],
+        "bitmap_set_view_per_view": total["set-view"] == views * total["begin"],
+        "bitmap_requests_registered": total["requests"] > 0,
+        # (b) queue-end exactly once per frame, inside that frame's begin/end, never across ticks.
+        "bitmap_queue_end_once_per_frame": total["queue-end"] == total["begin"] == total["end"],
+        "bitmap_no_frame_open_at_tick": bool(ticks) and all(
+            t.get("in-frame") == "0" and t.get("drain-pending") == "0" for t in ticks),
+        "bitmap_end_status_ok": bool(ticks) and all(t.get("last-status") == "0" for t in ticks),
+        # Dropped batches are fail-closed and counted; any drop means the bitmap evidence is incomplete.
+        "bitmap_no_dropped_batches": bool(ticks) and ticks[-1].get("bitmap-frames-dropped") == "0",
+        # (d) release with no leaked leases or readers; totals match the per-tick counters.
+        "bitmap_released_no_leases": len(released) == 1 and rel.get("leases") == "0"
+            and rel.get("readers") == "0" and rel.get("in-frame") == "0",
+        "bitmap_release_totals_match": bool(released) and rel.get("requests-total") == str(total["requests"])
+            and rel.get("begins-total") == str(total["begin"])
+            and rel.get("queue-end-total") == str(total["queue-end"]),
+    }
+    return {
+        "checks": checks,
+        "totals": total,
+        "release": rel,
+        "reasons": [f"c3.9 bitmap check failed: {k}" for k, v in checks.items() if not v],
+        "c3_9_qualified": all(checks.values()),
+        "remaining_requirement": "Upload/draw of HUD bitmaps must be confirmed by reviewing the held captures; "
+                                 "both emulator modes and all 1-4 view runs are required.",
+    }
+
+
+def c3_10_dma_checks(lines: list[str], views: int, frames: int) -> dict:
+    """C3.10 DMA evidence from the guest log: the owner/chain layout at bind (c3-dma-owner), one c3-dma line per
+    frame (per-chain kicks, emits, busy-emits, fence observations, pinned/released source generations,
+    released-before-fence, overflow refusals, emit status histogram) and the c3-frame overflow counter.
+    Captures and the renderer's own counters are checked elsewhere; this only evaluates the lines."""
+    owner = [fields_of(l) for l in lines if "c3-dma-owner " in l]
+    frame_lines = [fields_of(l) for l in lines if "HALO_PS2_LOCAL c3-dma frame=" in l]
+    cframe = [fields_of(l) for l in lines if "c3-frame kind=" in l]
+    o = owner[-1] if owner else {}
+    last = frame_lines[-1] if frame_lines else {}
+    final_frame = cframe[-1] if cframe else {}
+    owner_bytes = 1179648
+    ob = _int(o.get("owner-base"), 16) if o else None
+    g0 = o.get("geom0", "0x0/0").split("/") if o else ["0", "0"]
+    g1 = o.get("geom1", "0x0/0").split("/") if o else ["0", "0"]
+    u0 = o.get("up0", "0x0/0").split("/") if o else ["0", "0"]
+    u1 = o.get("up1", "0x0/0").split("/") if o else ["0", "0"]
+    chain_pairs = [g0, g1, u0, u1]
+    chain_base = [_int(c[0], 16) or 0 for c in chain_pairs]
+    chain_size = [_int(c[1]) or 0 for c in chain_pairs]
+    contiguous = (chain_base[0] + chain_size[0] == chain_base[1] and
+                  chain_base[1] + chain_size[1] == chain_base[2] and
+                  chain_base[2] + chain_size[2] == chain_base[3])
+    refusals = _int(last.get("overflow-refusals")) or 0
+    checks = {
+        "owner_line_present": bool(owner),
+        "owner_cap_is_fixed": _int(o.get("owner-cap")) == owner_bytes and _int(o.get("storage-bytes")) == owner_bytes,
+        "owner_sum_is_fixed": _int(o.get("sum")) == owner_bytes,
+        # the storage is the first and only allocation in dma_commands: used == cap, storage at the owner base
+        "owner_used_is_fixed": _int(o.get("owner-used")) == owner_bytes,
+        "storage_is_owner_base": _int(o.get("storage-base"), 16) == ob and _int(o.get("storage-bytes")) == owner_bytes,
+        "chain_sizes_match_layout": chain_size == [524288, 524288, 65536, 65536],
+        "chains_contiguous_in_owner": bool(owner) and contiguous and ob is not None and
+                                      chain_base[0] == ob and chain_base[0] + owner_bytes == chain_base[3] + chain_size[3],
+        "frame_lines_complete": len(frame_lines) == frames,
+        "views_match": final_frame.get("views") == str(views + (1 if views == 3 else 0)),
+        "no_busy_emits": last.get("c0-busy-emits") == "0" and last.get("c1-busy-emits") == "0",
+        "no_idle_violations": final_frame.get("idle-violations") == "0",
+        "fence_observed": any(f.get("c0-fence") == "1" or f.get("c1-fence") == "1" for f in frame_lines),
+        "released_before_fence_zero": bool(frame_lines) and all(f.get("released-before-fence") == "0" for f in frame_lines),
+        # each chain must have been released at least once (reuse) and every release event must carry a fence read
+        "chain_release_observed": bool(frame_lines) and (_int(last.get("src-rel-chain", "0/0").split("/")[0]) or 0) > 0,
+        "overflow_zero_or_handled": final_frame.get("overflow") == "0" or refusals > 0,
+        "emit_failures_zero": final_frame.get("emit-failures") == "0",
+    }
+    reasons = [f"c3.10 dma check failed: {k}" for k, v in checks.items() if not v]
+    return {
+        "checks": checks,
+        "owner": o,
+        "last_frame": last,
+        "reasons": reasons,
+        "c3_10_qualified": all(checks.values()),
+    }
 
 
 def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1, ticks: int = 0,
@@ -1048,10 +1298,33 @@ def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1
         if render_views:
             rc = render_checks(lines, render_views, render_frames)
             result["render"] = {"views": render_views, "frames": render_frames, **rc}
+            c37 = c3_7_texfence_checks(lines, render_views, render_frames, TEXFENCE_CAP_PAGES)
+            result["c3_7"] = c37
+            result["c3_7_qualified"] = c37["qualified"]
             result["failing_checks"] = parsed["failing_checks"] + [k for k, v in rc["checks"].items() if not v]
             parsed = {**parsed, "failing_checks": result["failing_checks"]}
             result["reasons"].extend(rc["reasons"])
+            if workload_players:
+                # C3.3 presence: scene qualification is separate from the render pass verdict.
+                result["c3_3"] = c3_3_scene_checks(lines, render_views, workload_players)
+                result["c3_3_qualified"] = result["c3_3"]["c3_3_qualified"]
             result["captures"] = guest_run.get("captures", [])
+            # C3.5 layout: geometry of the split views and the unused 3-view quadrant (pixel checks).
+            layout = c3_5_layout_checks(render_views, [c.get("file", "") for c in result["captures"]
+                                                        if "c3-render-held" in c.get("marker", "")])
+            result["layout"] = layout
+            result["failing_checks"] = result["failing_checks"] + [k for k, v in layout["checks"].items() if not v]
+            result["reasons"].extend(layout["reasons"])
+            # C3.9 bitmap registration, per-frame queue ends and release (counters, not pixels).
+            c39 = c3_9_bitmap_checks(lines, render_views)
+            result["c3_9"] = c39
+            # C3.10 DMA ownership, idle chains, source release and overflow (per-frame c3-dma lines).
+            c310 = c3_10_dma_checks(lines, render_views, render_frames)
+            result["c3_10"] = c310
+            result["failing_checks"] = result["failing_checks"] + [k for k, v in c310["checks"].items() if not v]
+            result["reasons"].extend(c310["reasons"])
+            result["failing_checks"] = result["failing_checks"] + [k for k, v in c39["checks"].items() if not v]
+            result["reasons"].extend(c39["reasons"])
             # A held capture must show the game, not a black frame (C3 capture reliability).
             held = [c for c in result["captures"] if "c3-render-held" in c.get("marker", "")]
             held_fraction = held[0].get("nonblack_fraction") if held else None
@@ -1327,6 +1600,8 @@ def main(argv=None) -> int:
                               "PCSX2 with framebuffer captures; results go to build/c3/render-loop/v<N>/<row>/"))
     parser.add_argument("--render-frames", type=int, default=300,
                         help="frames the render loop draws with --render-views (default %(default)s; must be a multiple of 30)")
+    parser.add_argument("--texfence-cap-pages", type=int, default=0, metavar="N",
+                        help="C3.7 debug: cap the texture cache at N pages to force slot reuse (default 0 = off)")
     parser.add_argument("--output-root", type=Path, metavar="DIR",
                         help=("write each row's results to DIR/<row>/ instead of the default root (build/c3/integrate, "
                               "build/c3/render-loop/v<N>, build/m2-c2-gaps-reuse, ...); default unchanged"))
@@ -1353,6 +1628,10 @@ def main(argv=None) -> int:
     EMU_MODE = args.emu_mode
     if args.output_root is not None:
         OUTPUT_ROOT = (ROOT / args.output_root if not args.output_root.is_absolute() else args.output_root).resolve()
+    global TEXFENCE_CAP_PAGES
+    if args.texfence_cap_pages < 0 or args.texfence_cap_pages > 4096:
+        parser.error("--texfence-cap-pages must be 0..4096")
+    TEXFENCE_CAP_PAGES = args.texfence_cap_pages
     if args.render_views and not args.c3:
         parser.error("--render-views needs --c3")
     if args.render_views and (args.render_frames < 30 or args.render_frames % 30):

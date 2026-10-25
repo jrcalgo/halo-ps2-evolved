@@ -6,6 +6,12 @@
 #include <string.h>
 #include <stdint.h>
 
+/* C3.10: weak links to the renderer's kick sequence and source-release event. Host builds do not link bsp_render,
+ * so the references resolve to NULL and the lease kick/release bookkeeping is skipped. */
+extern uint32_t bsp_render_kick_seq(void) __attribute__((weak));
+extern int32_t bsp_render_source_release(uint32_t kind, uint32_t kick_seq) __attribute__((weak));
+#define HCU_BITMAP_RELEASE_KIND_LEASE 2u   /* = BSP_SRC_BITMAP_LEASE in render/bsp_render.h */
+
 #define HCU_BITMAP_PAGE_WORDS 2048u
 
 static int log2_exact(uint32_t n)
@@ -40,7 +46,7 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 	const hcu_bitmap_binding *bindings, uint32_t binding_count,
 	const hcu_asset_profile_view *profile,
 	uint32_t expected_generation,
-	tc_t *cache, tc_t *cache_backup,
+	tc_t *cache, tc_journal_t *journal,
 	uint16_t *cache_readers, uint32_t cache_reader_count,
 	hcu_bitmap_source_slot *slots, uint32_t slot_count,
 	void *source_storage, uint32_t source_storage_bytes, uint32_t slot_stride,
@@ -69,7 +75,7 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 	hcu_bitmap_blend_t blend;
 	int upload_source;
 
-	if (!request || !bindings || !profile || !cache || !cache_backup || !cache_readers || !slots ||
+	if (!request || !bindings || !profile || !cache || !journal || !cache_readers || !slots ||
 		!binding_count || !slot_count || !source_storage || !slot_stride || !staging_buffer || !upload_chain ||
 		!geometry_chain || !lease || lease->active || !screen_w || !screen_h ||
 		slot_count > UINT16_MAX || cache_reader_count < cache->max_keys ||
@@ -135,14 +141,15 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 		return HCU_BITMAP_DISPATCH_E_ARGUMENT;
 
 	/* Protect each outstanding source/GPU lease from tc's LRU eviction policy. */
-	memcpy(cache_backup, cache, sizeof(*cache));
-	hcu_bitmap_dispatch_touch_cache(cache, cache_readers, cache_reader_count);
+	/* C3.7/bounded transaction: the journal records only what this request mutates (no whole-table copy).
+	 * The reader-batch touch of leased entries runs once per batch before the first request. */
+	tc_journal_begin(cache, journal);
 	upload_before = *upload_chain;
 	geometry_before = *geometry_chain;
-	acquired = tc_acquire(cache, binding->cache_key, pages,
+	acquired = tc_acquire_j(cache, journal, binding->cache_key, pages,
 		upload_source ? mip.bytes + clut_bytes : 0u, &entry);
 	if (acquired != TC_HIT && acquired != TC_UPLOAD) {
-		memcpy(cache, cache_backup, sizeof(*cache));
+		tc_journal_rollback(cache, journal);
 		return HCU_BITMAP_DISPATCH_E_CAPACITY;
 	}
 	tbw = (image.width + 63u) / 64u;
@@ -178,10 +185,15 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 			slot->storage_offset = offset;
 			slot->storage_bytes = retained_bytes;
 		}
-		if (gs_upload_pair(upload_chain, mip.pixels, mip.bytes, tbp, tbw, image.psm,
-			image.width, image.height, clut, clut_bytes, cbp, clut_w, clut_h))
-			goto rollback;
-		tc_commit_claim(cache, binding->cache_key);
+		{
+			uint32_t qwords_before = chain_qwords(upload_chain);
+			if (gs_upload_pair(upload_chain, mip.pixels, mip.bytes, tbp, tbw, image.psm,
+				image.width, image.height, clut, clut_bytes, cbp, clut_w, clut_h))
+				goto rollback;
+			/* C3.7: counted publish; queued is observed as the upload chain growing */
+			if (!tc_publish_claim_j(cache, journal, binding->cache_key, chain_qwords(upload_chain) > qwords_before))
+				goto rollback;
+		}
 	}
 	memset(&state, 0, sizeof(state));
 	state.tex0 = GS_TEX0(tbp, tbw, image.psm, (uint32_t)log2_exact(image.width),
@@ -210,12 +222,13 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 	for (i = 0; i < slot_count; i++)
 		if (slots[i].valid && !slots[i].readers && slots[i].cache_key < cache->max_keys &&
 			!cache->map[slots[i].cache_key]) memset(&slots[i], 0, sizeof(slots[i]));
+	tc_journal_commit(journal);
 	return HCU_BITMAP_DISPATCH_OK;
 
 rollback:
 	*upload_chain = upload_before;
 	*geometry_chain = geometry_before;
-	memcpy(cache, cache_backup, sizeof(*cache));
+	tc_journal_rollback(cache, journal);
 	if (upload_source && slot) memset(slot, 0, sizeof(*slot));
 	return HCU_BITMAP_DISPATCH_E_CAPACITY;
 }
@@ -246,21 +259,26 @@ int hcu_bitmap_dispatch_reader(const halo_ps2_bitmap_request_reader *reader,
 		reader->generation != ctx->expected_generation)
 		return HCU_BITMAP_DISPATCH_E_ARGUMENT;
 	ctx->first_error = HCU_BITMAP_DISPATCH_OK;
+	/* leased entries stay protected for the whole batch; the touch is idempotent within the frame */
+	hcu_bitmap_dispatch_touch_cache(ctx->cache, ctx->cache_readers, ctx->cache_reader_count);
 	for (i = 0; i < reader->count; i++) {
 		hcu_bitmap_lease *lease = &ctx->leases[ctx->lease_count];
 		hcu_bitmap_dispatch_status status;
 		memset(lease, 0, sizeof(*lease));
 		status = hcu_bitmap_dispatch_request(&reader->requests[i], ctx->bindings,
 			ctx->binding_count, ctx->profile, ctx->expected_generation,
-			ctx->cache, ctx->cache_backup, ctx->cache_readers, ctx->cache_reader_count,
+			ctx->cache, ctx->journal, ctx->cache_readers, ctx->cache_reader_count,
 			ctx->slots, ctx->slot_count,
 			ctx->source_storage, ctx->source_storage_bytes, ctx->slot_stride,
 			ctx->staging_buffer, ctx->staging_buffer_bytes,
 			ctx->upload_chain, ctx->geometry_chain,
 			ctx->texture_page_base_words, ctx->clut_base_words,
 			ctx->screen_w, ctx->screen_h, lease);
-		if (status == HCU_BITMAP_DISPATCH_OK) ctx->lease_count++;
-		else if (ctx->first_error == HCU_BITMAP_DISPATCH_OK) ctx->first_error = status;
+		if (status == HCU_BITMAP_DISPATCH_OK) {
+			/* C3.10: dispatch runs inside the parent emit window, so the upload rides the next kick */
+			lease->kick_seq = bsp_render_kick_seq ? bsp_render_kick_seq() + 1u : 0u;
+			ctx->lease_count++;
+		} else if (ctx->first_error == HCU_BITMAP_DISPATCH_OK) ctx->first_error = status;
 	}
 	return ctx->first_error;
 }
@@ -269,9 +287,13 @@ void hcu_bitmap_dispatch_complete(hcu_bitmap_dispatch_context *ctx)
 {
 	uint32_t i;
 	if (!ctx || !ctx->leases || !ctx->slots) return;
-	for (i = 0; i < ctx->lease_count; i++)
+	for (i = 0; i < ctx->lease_count; i++) {
+		/* C3.10: the release event reads the fence of the kick that carried this lease's upload */
+		if (ctx->leases[i].active && bsp_render_source_release)
+			(void)bsp_render_source_release(HCU_BITMAP_RELEASE_KIND_LEASE, ctx->leases[i].kick_seq);
 		hcu_bitmap_dispatch_release(ctx->slots, ctx->slot_count, ctx->cache_readers,
 			ctx->cache_reader_count, &ctx->leases[i]);
+	}
 	ctx->lease_count = 0;
 }
 

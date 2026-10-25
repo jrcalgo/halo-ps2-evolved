@@ -45,6 +45,10 @@
 #include <stdint.h>
 
 #define HCU_SNAPSHOT_BANK_SLOTS 3u
+/* Compile-time layout (C3.3): each bank is 16-byte aligned; the owner is frame_scratch, 393,216 B. */
+#define HCU_C3_FRAME_SCRATCH_BYTES 393216u
+#define HCU_SNAPSHOT_BANK_STRIDE ((sizeof(halo_ps2_frame_snapshot) + 15u) & ~(size_t)15u)
+#define HCU_SNAPSHOT_BANK_BYTES (HCU_SNAPSHOT_BANK_SLOTS * HCU_SNAPSHOT_BANK_STRIDE)
 
 typedef struct hcu_snapshot_reader {
 	int slot;

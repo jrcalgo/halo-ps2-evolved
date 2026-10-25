@@ -1,5 +1,6 @@
 #include "stream/hcu_render_objects.h"
 
+#include <math.h>
 #include <string.h>
 
 /* ---- selection ---------------------------------------------------------------------------------- */
@@ -27,6 +28,16 @@ int hcu_render_objects_residency_may_evict(int loaded, int referenced_this_frame
 	int fence_observed)
 {
 	return loaded && !referenced_this_frame && fence_observed == 1;
+}
+
+int hcu_render_objects_residency_victim_ok(int loaded, int referenced_this_frame,
+	int fence_observed, uint32_t pins, uint32_t *evict_refused_pinned)
+{
+	if (!hcu_render_objects_residency_may_evict(loaded, referenced_this_frame, fence_observed))
+		return 0;
+	if (pins == 0u) return 1;
+	if (evict_refused_pinned) (*evict_refused_pinned)++;
+	return 0;
 }
 
 int hcu_render_objects_pool_request_fits(uint32_t need, uint32_t capacity)
@@ -89,6 +100,8 @@ int hcu_render_objects_select(const halo_ps2_frame_snapshot *snap, uint32_t view
 		out[emitted].flags = o->flags;
 		out[emitted].palette_first = o->palette_first;
 		out[emitted].palette_count = o->palette_count;
+		out[emitted].pose_hash = hcu_render_objects_pose_hash(snap->palette, snap->palette_count,
+			o->palette_first, o->palette_count);
 		out[emitted].world = o->world;
 		counters->model_hits++;
 		emitted++;
@@ -168,6 +181,226 @@ int hcu_render_objects_select_first_person(const halo_ps2_frame_snapshot *snap,
 	}
 	*count = emitted;
 	return 0;
+}
+
+/* ---- C3.6 pose hash, pose tracking, effect requests ------------------------------------------- */
+
+static uint32_t fnv_word(uint32_t h, uint32_t w)
+{
+	uint32_t b;
+	for (b = 0; b < 4u; b++) {
+		h ^= (w >> (8u * b)) & 0xFFu;
+		h *= 16777619u;
+	}
+	return h;
+}
+
+static uint32_t float_bits(float f)
+{
+	uint32_t u;
+	memcpy(&u, &f, sizeof u);
+	return u;
+}
+
+uint32_t hcu_render_objects_pose_hash(const halo_ps2_snapshot_matrix4x3 *palette, uint32_t palette_count,
+	uint32_t first, uint32_t n)
+{
+	uint32_t h = 2166136261u, i, k;
+	if (n == 0u || !palette || first > palette_count || n > palette_count - first) return 0u;
+	for (i = 0; i < n; i++) {
+		const halo_ps2_snapshot_matrix4x3 *m = &palette[first + i];
+		h = fnv_word(h, float_bits(m->scale));
+		for (k = 0; k < 3u; k++) h = fnv_word(h, float_bits(m->forward[k]));
+		for (k = 0; k < 3u; k++) h = fnv_word(h, float_bits(m->left[k]));
+		for (k = 0; k < 3u; k++) h = fnv_word(h, float_bits(m->up[k]));
+		for (k = 0; k < 3u; k++) h = fnv_word(h, float_bits(m->position[k]));
+	}
+	return h == 0u ? 1u : h;
+}
+
+int hcu_render_pose_track(hcu_render_pose_tracker *t, uint32_t object_index, uint32_t generation,
+	uint32_t hash, hcu_render_objects_counters *counters)
+{
+	int changed;
+	if (!t || object_index >= HCU_OBJECTS_POSE_TRACK) return HCU_RENDER_CONTENT_E_ARGUMENT;
+	changed = t->seen[object_index] && t->generation[object_index] == generation &&
+		t->hash[object_index] != hash;
+	if (counters) {
+		if (changed) counters->pose_changes++;
+		else if (t->seen[object_index] && t->generation[object_index] == generation) counters->pose_static++;
+	}
+	t->seen[object_index] = 1;
+	t->generation[object_index] = generation;
+	t->hash[object_index] = hash;
+	return changed;
+}
+
+int hcu_render_objects_track_poses(const halo_ps2_frame_snapshot *snap, hcu_render_pose_tracker *t,
+	hcu_render_objects_counters *counters)
+{
+	uint32_t oi;
+	if (!snap || !t) return HCU_RENDER_CONTENT_E_ARGUMENT;
+	if (snap->version != HALO_PS2_FRAME_SNAPSHOT_VERSION || snap->object_count > HALO_PS2_FRAME_MAX_OBJECTS ||
+		snap->palette_count > HALO_PS2_FRAME_MAX_PALETTE)
+		return HCU_RENDER_CONTENT_E_ARGUMENT;
+	for (oi = 0; oi < snap->object_count; oi++) {
+		const halo_ps2_frame_object *o = &snap->objects[oi];
+		uint32_t h;
+		if (o->palette_count == 0u) continue;
+		if ((uint32_t)o->palette_first + o->palette_count > snap->palette_count) {
+			if (counters) counters->failures++;
+			continue;
+		}
+		h = hcu_render_objects_pose_hash(snap->palette, snap->palette_count, o->palette_first, o->palette_count);
+		hcu_render_pose_track(t, oi, o->id.generation, h, counters);
+	}
+	return HCU_RENDER_CONTENT_OK;
+}
+
+int hcu_render_effects_select(const halo_ps2_frame_snapshot *snap, uint32_t view,
+	hcu_render_effect_draw *out, uint32_t capacity, uint32_t *count,
+	hcu_render_objects_counters *counters)
+{
+	const halo_ps2_frame_view *v;
+	uint32_t e, emitted = 0;
+	if (!snap || !out || !count) return HCU_RENDER_CONTENT_E_ARGUMENT;
+	*count = 0;
+	if (snap->version != HALO_PS2_FRAME_SNAPSHOT_VERSION || view >= snap->view_count ||
+		view >= HALO_PS2_FRAME_MAX_VIEWS || snap->fx_request_count > HALO_PS2_FRAME_MAX_FX_REQUESTS)
+		return HCU_RENDER_CONTENT_E_ARGUMENT;
+	if (capacity > HCU_FX_MAX_PER_VIEW) capacity = HCU_FX_MAX_PER_VIEW;   /* fixed per-view cap */
+	v = &snap->views[view];
+	if (!(v->flags & HALO_PS2_FRAME_VIEW_ACTIVE)) return 0;
+	for (e = 0; e < snap->fx_request_count; e++) {
+		const halo_ps2_frame_fx_request *fx = &snap->fx_requests[e];
+		uint32_t ref, owned = 0;
+		if (!(fx->view_mask & (1u << view))) continue;
+		if (fx->owner_object != HALO_PS2_FRAME_NONE_U16) {
+			for (ref = v->view_ref_first; ref < v->view_ref_first + v->view_ref_count && ref < snap->view_ref_count; ref++)
+				if (snap->view_refs[ref] == fx->owner_object) { owned = 1; break; }
+		}
+		if (!owned) continue;
+		if (!isfinite(fx->position[0]) || !isfinite(fx->position[1]) || !isfinite(fx->position[2]) ||
+			fx->kind == 0u || fx->kind > HALO_PS2_FRAME_FX_DECAL) {
+			if (counters) counters->effects_refused++;
+			continue;
+		}
+		if (emitted >= capacity) {
+			if (counters) counters->effects_refused++;
+			continue;
+		}
+		out[emitted].view = view;
+		out[emitted].owner_object = fx->owner_object;
+		out[emitted].source_index = fx->source_index;
+		out[emitted].source_generation = fx->source_generation;
+		out[emitted].resource_id = fx->resource_id;
+		out[emitted].permutation = fx->permutation;
+		out[emitted].kind = fx->kind;
+		out[emitted].flags = fx->flags;
+		out[emitted].position[0] = fx->position[0];
+		out[emitted].position[1] = fx->position[1];
+		out[emitted].position[2] = fx->position[2];
+		out[emitted].forward[0] = fx->forward[0];
+		out[emitted].forward[1] = fx->forward[1];
+		out[emitted].forward[2] = fx->forward[2];
+		out[emitted].scale = fx->scale;
+		out[emitted].age_sec = fx->age_sec;
+		if (counters) counters->effects_selected++;
+		emitted++;
+	}
+	*count = emitted;
+	return 0;
+}
+
+/* ---- C3.6(c) quad generation (pure) -------------------------------------------------------------- */
+
+static void fx_cross(const float a[3], const float b[3], float out[3])
+{
+	out[0] = a[1] * b[2] - a[2] * b[1];
+	out[1] = a[2] * b[0] - a[0] * b[2];
+	out[2] = a[0] * b[1] - a[1] * b[0];
+}
+
+static float fx_len(const float v[3])
+{
+	return sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+}
+
+static int fx_finite3(const float v[3])
+{
+	return isfinite(v[0]) && isfinite(v[1]) && isfinite(v[2]);
+}
+
+int hcu_render_fx_camera_basis(const halo_ps2_snapshot_camera *cam, float right[3], float up[3])
+{
+	float f[3], u[3], l, r[3], cu[3];
+	int k;
+	if (!cam || !right || !up) return HCU_RENDER_CONTENT_E_ARGUMENT;
+	if (!fx_finite3(cam->forward) || !fx_finite3(cam->up)) return HCU_RENDER_CONTENT_E_ARGUMENT;
+	for (k = 0; k < 3; k++) { f[k] = cam->forward[k]; u[k] = cam->up[k]; }
+	l = fx_len(f);
+	if (!(l > 1e-6f)) return HCU_RENDER_CONTENT_E_ARGUMENT;
+	for (k = 0; k < 3; k++) f[k] /= l;
+	fx_cross(f, u, r);
+	l = fx_len(r);
+	if (!(l > 1e-6f)) return HCU_RENDER_CONTENT_E_ARGUMENT;          /* forward parallel to up */
+	for (k = 0; k < 3; k++) r[k] /= l;
+	fx_cross(r, f, cu);                                                /* unit: r and f are orthonormal */
+	for (k = 0; k < 3; k++) { right[k] = r[k]; up[k] = cu[k]; }
+	return 0;
+}
+
+int hcu_render_fx_build_quad(const hcu_render_effect_draw *e, const float right[3], const float up[3],
+	hcu_render_fx_quad *q)
+{
+	float a[3], b[3], n[3], ref[3] = { 0.0f, 0.0f, 1.0f }, l, s;
+	int decal, k, c;
+	static const float sx[4] = { -1.0f, 1.0f, 1.0f, -1.0f };
+	static const float sy[4] = { -1.0f, -1.0f, 1.0f, 1.0f };
+	if (!e || !q || !right || !up) return HCU_RENDER_CONTENT_E_ARGUMENT;
+	s = e->scale;
+	if (!(s > 0.0f) || !isfinite(s) || !fx_finite3(e->position)) return HCU_RENDER_CONTENT_E_ARGUMENT;
+	if (e->kind != HALO_PS2_FRAME_FX_EFFECT && e->kind != HALO_PS2_FRAME_FX_PARTICLE_SYSTEM &&
+		e->kind != HALO_PS2_FRAME_FX_CONTRAIL && e->kind != HALO_PS2_FRAME_FX_DECAL)
+		return HCU_RENDER_CONTENT_E_ARGUMENT;
+	q->kind = (uint16_t)e->kind;
+	q->resource_id = e->resource_id;
+	q->pad = 0;
+	decal = 0;
+	if (e->kind == HALO_PS2_FRAME_FX_DECAL && fx_finite3(e->forward)) {
+		for (k = 0; k < 3; k++) n[k] = e->forward[k];
+		l = fx_len(n);
+		if (l > 1e-6f) {
+			for (k = 0; k < 3; k++) n[k] /= l;
+			decal = 1;
+		}
+	}
+	if (decal) {
+		/* tangent a = ref x n (ref is world up, or world +y when the normal is almost vertical), b = n x a */
+		if (fabsf(n[2]) > 0.99f) { ref[0] = 0.0f; ref[1] = 1.0f; ref[2] = 0.0f; }
+		fx_cross(ref, n, a);
+		l = fx_len(a);
+		for (k = 0; k < 3; k++) a[k] /= l;
+		fx_cross(n, a, b);
+	} else {
+		for (k = 0; k < 3; k++) { a[k] = right[k]; b[k] = up[k]; }
+	}
+	for (c = 0; c < 4; c++)
+		for (k = 0; k < 3; k++)
+			q->v[c][k] = e->position[k] + s * (sx[c] * a[k] + sy[c] * b[k]);
+	return 0;
+}
+
+int hcu_render_fx_flat_colour(uint16_t kind, uint8_t rgba[4])
+{
+	if (!rgba) return HCU_RENDER_CONTENT_E_ARGUMENT;
+	switch (kind) {
+	case HALO_PS2_FRAME_FX_EFFECT:          rgba[0] = 255; rgba[1] = 160; rgba[2] = 48;  rgba[3] = 128; return 0;
+	case HALO_PS2_FRAME_FX_PARTICLE_SYSTEM: rgba[0] = 200; rgba[1] = 200; rgba[2] = 200; rgba[3] = 96;  return 0;
+	case HALO_PS2_FRAME_FX_CONTRAIL:        rgba[0] = 176; rgba[1] = 208; rgba[2] = 255; rgba[3] = 80;  return 0;
+	case HALO_PS2_FRAME_FX_DECAL:           rgba[0] = 40;  rgba[1] = 32;  rgba[2] = 24;  rgba[3] = 112; return 0;
+	default: return HCU_RENDER_CONTENT_E_ARGUMENT;
+	}
 }
 
 /* ---- pin / unpin -------------------------------------------------------------------------------- */
@@ -306,7 +539,11 @@ int hcu_render_synthetic_object_add(halo_ps2_frame_snapshot *s, uint32_t view,
 /* ==== EE adapter ================================================================================= */
 #ifdef HCU_RENDER_OBJECTS_EE
 #include "core/mat.h"
+#include "platform/video.h"
 #include "render/bsp_render.h"
+#include "render/chain.h"
+#include "render/clip.h"
+#include "render/gs.h"
 #include "render/obj_render.h"
 #include "stream/sha256.h"
 #include "world/model.h"
@@ -334,6 +571,31 @@ typedef struct {
 static obj_slot s_slots[HCU_OBJECTS_MAX_MODELS];
 static hcu_render_objects_model s_meta[HCU_OBJECTS_MAX_MODELS];
 static uint32_t s_slot_count;
+/* C3.3: per-slot count of pinned-bank references (resource ids matched on the low 16 bits of source_datum,
+ * as residency_frame does). Applied +1 when a pin is taken and -1 when it is dropped, against the same
+ * immutable snapshot, so the counts balance; refused slots still count so the drop cannot leave a residue. */
+static uint16_t s_slot_pins[HCU_OBJECTS_MAX_MODELS];
+static hcu_render_objects_counters s_totals;
+static hcu_render_objects_pin_t s_pin;
+
+static void slot_pins_apply(const halo_ps2_frame_snapshot *snap, int delta)
+{
+	uint32_t r, k;
+	if (!snap) return;
+	for (r = 0; r < snap->resource_count && r < HALO_PS2_FRAME_MAX_RESOURCES; r++)
+		for (k = 0; k < s_slot_count; k++)
+			if ((s_slots[k].entry->source_datum & 0xFFFFu) == snap->resources[r].id) {
+				if (delta > 0) s_slot_pins[k]++;
+				else if (s_slot_pins[k] > 0u) s_slot_pins[k]--;
+			}
+}
+
+static void pin_drop(void)
+{
+	if (!s_pin.pinned) return;
+	slot_pins_apply(s_pin.snapshot, -1);
+	hcu_render_objects_unpin(&s_pin, &s_totals);
+}
 
 /* Residency pool: the render arena's rest, managed first-fit in 64-byte-aligned segments. Segments are kept
  * in offset order and cover the pool exactly; adjacent free segments merge on free. */
@@ -349,19 +611,21 @@ static uint32_t s_tex_total;
 static tex_source_t s_src_total;
 static int s_installed;
 
-static hcu_render_objects_counters s_totals;
 static hcu_render_objects_counters s_view_counters;
-static hcu_render_objects_pin_t s_pin;
 static uint32_t s_pending_seq;
 static uint32_t s_frame;
 static hcu_render_object_draw s_draw[HCU_OBJECTS_MAX_DRAW];
 static uint32_t s_draw_count;
 static hcu_render_first_person_draw s_fp_draw[2];
+static hcu_render_effect_draw s_fx[HCU_FX_MAX_PER_VIEW];
+static uint32_t s_fx_count;
 static uint32_t s_fp_draw_count;
 static hcu_render_parity_record s_parity_store[HCU_OBJECTS_MAX_PARITY];
 static hcu_render_parity_log s_parity;
 static uint32_t s_view_triangles, s_view_skinned, s_view_drawn;
 static const halo_ps2_frame_snapshot *s_snapshot;
+static hcu_render_pose_tracker s_poses;
+static uint32_t s_cur_view;
 
 static int read_verified(const hcu_asset_profile_view *view, uint32_t id, uint32_t size,
 	uint8_t *dst, const uint8_t want[32])
@@ -577,8 +841,8 @@ static void entry_request(const hcu_asset_profile_view *view, uint32_t i, uint32
 		{
 			uint32_t v, best = OBJ_NONE;
 			for (v = 0; v < s_slot_count; v++)
-				if (hcu_render_objects_residency_may_evict(s_slots[v].loaded,
-					s_slots[v].last_used > frame, safe) &&
+				if (hcu_render_objects_residency_victim_ok(s_slots[v].loaded,
+					s_slots[v].last_used > frame, safe, s_slot_pins[v], &s_res.evict_refused_pinned) &&
 					(best == OBJ_NONE || s_slots[v].last_used < s_slots[best].last_used)) best = v;
 			if (best == OBJ_NONE) { s_res.pool_refusals++; break; }
 			entry_evict(best);
@@ -725,6 +989,143 @@ static int pose_fn(void *user, const object_t *ob, object_nodes_t *out)
 /* ---- the object pass ----------------------------------------------------------------------------- */
 static obj_render_t s_objr;
 
+/* C3.6 parity identities: one record per model part of the permutations this draw uses (LOD 0 of each
+ * region's permutation). surface_id = the part's index in the model's part table, material_id = its
+ * Xbox shader tag id (the key of the OTEX binding), resource_id = the MODL chunk id. Frame 0 only. */
+static void log_part_parity(const obj_slot *s, const model_info *mi, const uint16_t *perm,
+	uint32_t resource_id, uint32_t kind)
+{
+	uint32_t region;
+	if (s_frame || !s_parity.records) return;
+	for (region = 0; region < mi->region_count && region < OBJ_MAX_REGIONS; region++) {
+		model_part_range pr = model_parts(&s->models, mi, perm[region], 0);
+		uint32_t p;
+		for (p = pr.first_part; p < (uint32_t)pr.first_part + pr.part_count; p++) {
+			model_part part = model_get_part(&s->models, p);
+			hcu_render_parity_record rec;
+			if (s_parity.count >= s_parity.capacity) { s_view_counters.parity_dropped++; return; }
+			rec.frame = s_frame;
+			rec.view = s_cur_view;
+			rec.kind = kind;
+			rec.surface_id = (int32_t)p;
+			rec.material_id = (int32_t)part.shader_id;
+			rec.resource_id = resource_id;
+			if (hcu_render_parity_log_append(&s_parity, &rec) == HCU_RENDER_CONTENT_OK) s_view_counters.parts_logged++;
+		}
+	}
+}
+
+/* ---- C3.6(c) effect and decal quads (EE) ----------------------------------------------------------
+ * Every admitted quad of a view goes into one GIF packet (PRIM triangle, alpha blend, depth test GEQUAL,
+ * no depth write). The packet is preceded by one A+D state chunk. Quads are clipped on the EE with the
+ * same planes as the BSP and packed with clip_pack_vertex, like the sky. Admission is decided before any
+ * byte is written: a quad that does not fit the chain is counted in fx_skipped_space and skipped. */
+#define FX_STATE_QW 5u        /* VIF header + GIF tag (AD) + three A+D pairs */
+#define FX_PACKET_HDR_QW 2u   /* VIF header + GIF tag */
+
+static hcu_render_fx_quad s_fxq[HCU_FX_MAX_PER_VIEW];
+static uint32_t s_fxn[HCU_FX_MAX_PER_VIEW];        /* clipped vertices of an admitted quad (0 = not admitted) */
+
+/* Clips the quad's two triangles and returns the fan vertex count. When `out` is non-NULL the fans are packed
+ * there (12 words per vertex) and `out` is not advanced; the caller advances it by 12 * the returned count. */
+static uint32_t fx_quad_clip(const render_ctx_t *rc, const hcu_render_fx_quad *q, const uint8_t rgba[4],
+	const clip_gs *g, uint32_t *out)
+{
+	static const int tri[2][3] = { { 0, 1, 2 }, { 0, 2, 3 } };
+	uint32_t total = 0;
+	int t, k, j;
+	for (t = 0; t < 2; t++) {
+		cvert in[3], poly[CLIP_MAX_VERTS];
+		int cnt;
+		for (k = 0; k < 3; k++) {
+			clip_project(rc->clip, q->v[tri[t][k]], &in[k]);
+			for (j = 0; j < CLIP_ATTRS; j++) in[k].a[j] = 0.0f;
+			in[k].a[4] = rgba[0]; in[k].a[5] = rgba[1]; in[k].a[6] = rgba[2]; in[k].a[7] = rgba[3];
+		}
+		cnt = clip_polygon(in, rc->cam->near_z, poly);
+		if (cnt < 3) continue;
+		for (j = 1; j + 1 < cnt; j++) {
+			if (out) {
+				clip_pack_vertex(&poly[0], 0, g, out); out += 12;
+				clip_pack_vertex(&poly[j], 0, g, out); out += 12;
+				clip_pack_vertex(&poly[j + 1], 0, g, out); out += 12;
+			}
+			total += 3;
+		}
+	}
+	return total;
+}
+
+static void fx_pass(render_ctx_t *rc)
+{
+	const halo_ps2_snapshot_camera *cam;
+	float right[3], up[3];
+	clip_gs g;
+	chain_t *c = rc->chain;
+	uint32_t i, admitted = 0, verts = 0;
+	uint32_t *pw;
+	u64 *q;
+	u32 *w;
+	if (!s_fx_count || !s_snapshot || s_cur_view >= s_snapshot->view_count) return;
+	cam = &s_snapshot->views[s_cur_view].camera;
+	if (hcu_render_fx_camera_basis(cam, right, up) != 0) { s_view_counters.failures++; return; }
+	g.near_z = rc->cam->near_z; g.zmax = 16777215.0f;
+	g.sx = (float)VIDEO_WIDTH * 0.5f; g.sy = (float)VIDEO_HEIGHT * 0.5f; g.ox = 2048.0f; g.oy = 2048.0f;
+	g.fog_k = 0.0f; g.fog_b = 4080.0f;
+
+	for (i = 0; i < s_fx_count; i++) {
+		uint8_t rgba[4];
+		uint32_t nv;
+		s_fxn[i] = 0;
+		if (hcu_render_fx_build_quad(&s_fx[i], right, up, &s_fxq[i]) != 0 ||
+			hcu_render_fx_flat_colour(s_fx[i].kind, rgba) != 0) {
+			s_view_counters.effects_refused++;
+			continue;
+		}
+		nv = fx_quad_clip(rc, &s_fxq[i], rgba, &g, NULL);
+		if (!nv) continue;                                /* behind the near plane or off the guard band */
+		if (!chain_has_space(c, FX_STATE_QW + FX_PACKET_HDR_QW + 3u * (verts + nv))) {
+			s_view_counters.fx_skipped_space++;
+			continue;
+		}
+		s_fxn[i] = nv;
+		verts += nv;
+		admitted++;
+	}
+	if (!admitted) return;
+
+	/* state: alpha blend (src alpha), depth test GEQUAL, depth write off */
+	w = chain_cnt(c, FX_STATE_QW, rb_take_pending());
+	if (!w) { s_view_counters.fx_skipped_space += admitted; return; }
+	w[0] = VIF_CODE(VIF_NOP, 0, 0); w[1] = VIF_CODE(VIF_NOP, 0, 0);
+	w[2] = VIF_CODE(VIF_FLUSHA, 0, 0); w[3] = VIF_CODE(VIF_DIRECT, 0, 1 + 3);
+	q = (u64 *)(w + 4);
+	q[0] = GIF_TAG(3, 1, 0, 0, GIFX_FLG_PACKED, 1); q[1] = GIF_REGS_AD;
+	q[2] = GS_ALPHA(0, 1, 0, 1, 0);                q[3] = GS_A_ALPHA_1;
+	q[4] = GS_TEST(0, 6, 0x40, 0, 0, 0, 1, 2);      q[5] = GS_A_TEST_1;
+	q[6] = GS_ZBUF(*rb_zbuf_page_ptr(), GS_PSMZ24, 1); q[7] = GS_A_ZBUF_1;
+
+	/* geometry: one packet of every admitted quad's triangles, flat-shaded (no effect texture source yet) */
+	w = chain_cnt(c, FX_PACKET_HDR_QW + 3u * verts, 0);
+	if (!w) { s_view_counters.fx_skipped_space += admitted; return; }
+	w[0] = VIF_CODE(VIF_NOP, 0, 0); w[1] = VIF_CODE(VIF_NOP, 0, 0);
+	w[2] = VIF_CODE(VIF_FLUSHA, 0, 0); w[3] = VIF_CODE(VIF_DIRECT, 0, 1 + 3 * verts);
+	q = (u64 *)(w + 4);
+	q[0] = GIF_TAG(verts, 1, 1, GS_PRIM(GSX_PRIM_TRIANGLE, 1, 0, rc->opt->fog, 1, 0, 0, 0, 0), GIFX_FLG_PACKED, 3);
+	q[1] = 0x412;
+	pw = (uint32_t *)(q + 2);
+	for (i = 0; i < s_fx_count; i++) {
+		uint8_t rgba[4];
+		uint32_t nv;
+		if (!s_fxn[i]) continue;
+		hcu_render_fx_flat_colour(s_fx[i].kind, rgba);
+		nv = fx_quad_clip(rc, &s_fxq[i], rgba, &g, pw);
+		pw += 12 * nv;
+		s_view_counters.fx_drawn++;
+		s_view_counters.fx_flat++;
+	}
+}
+
 static void object_pass(void *user, render_ctx_t *rc)
 {
 	uint32_t i;
@@ -773,6 +1174,8 @@ static void object_pass(void *user, render_ctx_t *rc)
 		s_objr.pose = pose_fn;
 		s_objr.pose_user = (void *)d;
 		obj_render_pass(&s_objr, rc);
+		log_part_parity(s, &mi, perm, d->resource_id, d->type == HCU_OBJECTS_TYPE_VEHICLE ? HCU_RENDER_PARITY_VEHICLE
+			: d->type == HCU_OBJECTS_TYPE_WEAPON ? HCU_RENDER_PARITY_WEAPON : HCU_RENDER_PARITY_OBJECT);
 		if (s_objr.st_visible) {
 			s_view_drawn++;
 			s_view_counters.objects_drawn++;
@@ -856,17 +1259,21 @@ static void object_pass(void *user, render_ctx_t *rc)
 		s_objr.pose = pose_fn;
 		s_objr.pose_user = &pose;
 		obj_render_pass(&s_objr, rc);
+		log_part_parity(s, &mi, perm, fp->resource_id, HCU_RENDER_PARITY_WEAPON);
 		s_view_triangles += s_objr.st_triangles;
 		s_view_skinned += fp->palette_count;
 		if (s_objr.st_visible) {
 			s_view_drawn++;
 			s_view_counters.objects_drawn++;
 			s_view_counters.first_person_draws++;
+			if (fp->kind == HCU_OBJECTS_FP_WEAPON) s_view_counters.first_person_weapon_draws++;
+			else if (fp->kind == HCU_OBJECTS_FP_HANDS) s_view_counters.first_person_hands_draws++;
 			s_view_counters.triangles += s_objr.st_triangles;
 		} else {
 			s_view_counters.failures++;
 		}
 	}
+	fx_pass(rc);
 }
 
 /* ---- public ------------------------------------------------------------------------------------- */
@@ -1035,16 +1442,21 @@ const halo_ps2_frame_snapshot *hcu_render_objects_frame_begin(uint32_t frame, ui
 	s_frame = frame;
 	memset(&s_view_counters, 0, sizeof s_view_counters);
 	if (s_pin.pinned && s_pending_seq && bsp_render_fence_observed(s_pending_seq) == 1) {
-		hcu_render_objects_unpin(&s_pin, &s_totals);
+		(void)bsp_render_source_release(BSP_SRC_OBJECT_PIN, s_pending_seq);
+		pin_drop();
 		s_pending_seq = 0;
 	}
 	if (synthetic_views) {
 		if (publish_synthetic(frame, synthetic_views, synthetic_cameras) != 0) s_totals.failures++;
 	}
-	if (!s_pin.pinned) hcu_render_objects_pin(&s_pin, &s_totals);
+	if (!s_pin.pinned) {
+		hcu_render_objects_pin(&s_pin, &s_totals);
+		if (s_pin.pinned) slot_pins_apply(s_pin.snapshot, 1);
+	}
 	s_snapshot = s_pin.pinned ? s_pin.snapshot : NULL;
 	residency_frame(s_snapshot, frame);
 	s_pose_snapshot = s_snapshot;
+	if (s_snapshot) hcu_render_objects_track_poses(s_snapshot, &s_poses, &s_totals);
 	return s_snapshot;
 }
 
@@ -1055,6 +1467,7 @@ void hcu_render_objects_view_begin(uint32_t view)
 	int st;
 	s_draw_count = 0;
 	s_fp_draw_count = 0;
+	s_cur_view = view;
 	s_view_triangles = 0;
 	s_view_skinned = 0;
 	s_view_drawn = 0;
@@ -1067,6 +1480,9 @@ void hcu_render_objects_view_begin(uint32_t view)
 		s_slot_count, s_fp_draw, &fp_n, &s_view_counters);
 	if (st != 0) { s_view_counters.failures++; fp_n = 0; }
 	s_fp_draw_count = fp_n;
+	s_fx_count = 0;
+	st = hcu_render_effects_select(s_snapshot, view, s_fx, HCU_FX_MAX_PER_VIEW, &s_fx_count, &s_view_counters);
+	if (st != 0) { s_view_counters.failures++; s_fx_count = 0; }
 	if (s_frame == 0) {
 		if (!s_parity.records) hcu_render_parity_log_init(&s_parity, s_parity_store, HCU_OBJECTS_MAX_PARITY);
 		if (hcu_render_objects_parity(&s_parity, s_frame, s_draw, n, &s_view_counters) != HCU_RENDER_CONTENT_OK)
@@ -1092,6 +1508,15 @@ void hcu_render_objects_view_end(uint32_t view, hcu_render_objects_view_stats *o
 		out->first_person_model_hits = s_view_counters.first_person_model_hits;
 		out->first_person_model_misses = s_view_counters.first_person_model_misses;
 		out->first_person_stale_resources = s_view_counters.first_person_stale_resources;
+		out->first_person_weapon_draws = s_view_counters.first_person_weapon_draws;
+		out->first_person_hands_draws = s_view_counters.first_person_hands_draws;
+		out->parts_logged = s_view_counters.parts_logged;
+		out->effects_selected = s_view_counters.effects_selected;
+		out->effects_refused = s_view_counters.effects_refused;
+		out->fx_drawn = s_view_counters.fx_drawn;
+		out->fx_skipped_space = s_view_counters.fx_skipped_space;
+		out->fx_textured = s_view_counters.fx_textured;
+		out->fx_flat = s_view_counters.fx_flat;
 		out->first_person_weapon_resource_id = 0u;
 		out->first_person_hands_resource_id = 0u;
 		out->first_person_weapon_resource_slot = HALO_PS2_FRAME_NONE_U16;
@@ -1123,6 +1548,19 @@ void hcu_render_objects_view_end(uint32_t view, hcu_render_objects_view_stats *o
 	s_totals.first_person_model_hits += s_view_counters.first_person_model_hits;
 	s_totals.first_person_model_misses += s_view_counters.first_person_model_misses;
 	s_totals.first_person_stale_resources += s_view_counters.first_person_stale_resources;
+	s_totals.first_person_weapon_draws += s_view_counters.first_person_weapon_draws;
+	s_totals.first_person_hands_draws += s_view_counters.first_person_hands_draws;
+	s_totals.effects_selected += s_view_counters.effects_selected;
+	s_totals.effects_refused += s_view_counters.effects_refused;
+	s_totals.parts_logged += s_view_counters.parts_logged;
+	s_totals.fx_drawn += s_view_counters.fx_drawn;
+	s_totals.fx_skipped_space += s_view_counters.fx_skipped_space;
+	s_totals.fx_textured += s_view_counters.fx_textured;
+	s_totals.fx_flat += s_view_counters.fx_flat;
+	s_view_counters.fx_drawn = s_view_counters.fx_skipped_space = 0;
+	s_view_counters.fx_textured = s_view_counters.fx_flat = 0;
+	s_view_counters.parts_logged = 0;
+	s_view_counters.first_person_weapon_draws = s_view_counters.first_person_hands_draws = 0;
 	s_totals.deduped += s_view_counters.deduped;
 	s_view_counters.deduped = 0;
 	s_view_counters.failures = 0;
@@ -1131,8 +1569,10 @@ void hcu_render_objects_view_end(uint32_t view, hcu_render_objects_view_stats *o
 	s_view_counters.first_person_draws = 0;
 	s_view_counters.first_person_model_hits = s_view_counters.first_person_model_misses = 0;
 	s_view_counters.first_person_stale_resources = 0;
+	s_view_counters.effects_selected = s_view_counters.effects_refused = 0;
 	s_draw_count = 0;
 	s_fp_draw_count = 0;
+	s_fx_count = 0;
 }
 
 void hcu_render_objects_frame_end(void)
@@ -1142,7 +1582,11 @@ void hcu_render_objects_frame_end(void)
 
 void hcu_render_objects_release(void)
 {
-	if (s_pin.pinned) hcu_render_objects_unpin(&s_pin, &s_totals);
+	/* C3.10: the pin is released here whatever its fence says; the release event records whether it was fenced */
+	if (s_pin.pinned) {
+		(void)bsp_render_source_release(BSP_SRC_OBJECT_PIN, s_pending_seq);
+		pin_drop();
+	}
 	s_pending_seq = 0;
 	s_snapshot = NULL;
 	s_pose_snapshot = NULL;
@@ -1151,5 +1595,10 @@ void hcu_render_objects_release(void)
 void hcu_render_objects_totals(hcu_render_objects_counters *out)
 {
 	if (out) *out = s_totals;
+}
+
+int hcu_render_objects_parity_summary(hcu_render_parity_summary *out)
+{
+	return hcu_render_parity_summarize(&s_parity, out);
 }
 #endif /* HCU_RENDER_OBJECTS_EE */

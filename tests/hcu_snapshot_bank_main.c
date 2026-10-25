@@ -91,14 +91,14 @@ static void test_bind_and_version(void)
 	s = hcu_snapshot_bank_begin_write();
 	assert(s);
 	assert(s->version == HALO_PS2_FRAME_SNAPSHOT_VERSION);
-	assert(s->version == 3u);
+	assert(s->version == 4u);
 	/* Wrong version must not publish. */
 	s->version = 1u;
 	assert(hcu_snapshot_bank_commit(s) == -1);
 	assert(hcu_snapshot_bank_latest() == NULL);
 	/* The rejected commit released the write slot. */
 	s = hcu_snapshot_bank_begin_write();
-	assert(s && s->version == 3u);
+	assert(s && s->version == 4u);
 	hcu_snapshot_bank_set_map_generation(41u);
 	assert(hcu_snapshot_bank_commit(s) == 0);
 	assert(hcu_snapshot_bank_latest()->map_generation == 41u);
@@ -305,16 +305,34 @@ static void test_bounds(void)
 
 	s = hcu_snapshot_bank_begin_write();
 	add_object(s, 3u);
+	s->fx_request_count = 1u;
 	s->effect_count = 1u;
-	s->effects[0].owner_object = 5u;
+	s->fx_requests[0].kind = HALO_PS2_FRAME_FX_EFFECT;
+	s->fx_requests[0].owner_object = 5u;
 	assert(hcu_snapshot_bank_commit(s) == -1);
 
 	s = hcu_snapshot_bank_begin_write();
 	add_object(s, 3u);
+	s->fx_request_count = 1u;
 	s->decal_count = 1u;
-	s->decals[0].owner_object = 0u;
-	s->decals[0].resource_slot = HALO_PS2_FRAME_NONE_U16;
-	s->decals[0].size = -1.0f;
+	s->fx_requests[0].kind = HALO_PS2_FRAME_FX_DECAL;
+	s->fx_requests[0].owner_object = HALO_PS2_FRAME_NONE_U16;
+	s->fx_requests[0].age_sec = -1.0f;
+	assert(hcu_snapshot_bank_commit(s) == -1);
+
+	/* Unknown kind, and a count that disagrees with the kind split. */
+	s = hcu_snapshot_bank_begin_write();
+	add_object(s, 3u);
+	s->fx_request_count = 1u;
+	s->effect_count = 1u;
+	s->fx_requests[0].kind = 9u;
+	assert(hcu_snapshot_bank_commit(s) == -1);
+
+	s = hcu_snapshot_bank_begin_write();
+	add_object(s, 3u);
+	s->fx_request_count = 1u;
+	s->effect_count = 0u;
+	s->fx_requests[0].kind = HALO_PS2_FRAME_FX_EFFECT;
 	assert(hcu_snapshot_bank_commit(s) == -1);
 
 	s = hcu_snapshot_bank_begin_write();
@@ -326,17 +344,21 @@ static void test_bounds(void)
 	/* A valid effect and decal referencing a valid object pass. */
 	s = hcu_snapshot_bank_begin_write();
 	add_object(s, 3u);
+	memset(s->fx_requests, 0, sizeof s->fx_requests);
+	s->fx_request_count = 2u;
 	s->effect_count = 1u;
-	s->effects[0].owner_object = 0u;
-	s->effects[0].priority = 1u;
 	s->decal_count = 1u;
-	s->decals[0].owner_object = 0u;
-	s->decals[0].resource_slot = HALO_PS2_FRAME_NONE_U16;
-	s->decals[0].size = 0.5f;
-	s->decals[0].lifetime_sec = 2.0f;
+	s->fx_requests[0].kind = HALO_PS2_FRAME_FX_EFFECT;
+	s->fx_requests[0].owner_object = 0u;
+	s->fx_requests[0].view_mask = 0x3u;
+	s->fx_requests[1].kind = HALO_PS2_FRAME_FX_DECAL;
+	s->fx_requests[1].owner_object = HALO_PS2_FRAME_NONE_U16;
+	s->fx_requests[1].view_mask = 0x1u;
+	s->fx_requests[1].age_sec = 2.0f;
+	s->fx_requests[1].scale = 0.5f;
 	assert(hcu_snapshot_bank_commit(s) == 0);
 
-	/* v3 first-person resources and model-order palettes accept exact bounded
+	/* v4 first-person resources and model-order palettes accept exact bounded
 	 * gun/arms ranges, then reject invalid ranges and resource slots. */
 	s = hcu_snapshot_bank_begin_write();
 	add_object(s, 3u);
@@ -395,7 +417,7 @@ static void test_bounds(void)
 	hcu_snapshot_bank_abandon(s);
 
 	assert(hcu_snapshot_bank_unbind() == 0);
-	printf("bounds: ok (views, palettes, v3 first-person ranges/slots, refs, attachments, effects, decals, resources)\n");
+	printf("bounds: ok (views, palettes, v4 first-person ranges/slots, refs, attachments, fx requests, resources)\n");
 }
 
 static void test_fits_frame_scratch(void)
@@ -403,7 +425,7 @@ static void test_fits_frame_scratch(void)
 	size_t bank = hcu_snapshot_bank_storage_required();
 	size_t frame_scratch = 393216u;
 	/* Pinned C2 owner: the v1 double bank must not be bound alongside. */
-	printf("bytes: v3 bank=%zu (3 slots, frame_scratch owner=%zu, share=%.1f%%)\n",
+	printf("bytes: v4 bank=%zu (3 slots, frame_scratch owner=%zu, share=%.1f%%)\n",
 		bank, frame_scratch, 100.0 * (double)bank / (double)frame_scratch);
 	assert(bank < frame_scratch);
 }

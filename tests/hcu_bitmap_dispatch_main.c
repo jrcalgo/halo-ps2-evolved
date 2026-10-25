@@ -20,7 +20,8 @@ static struct bitmap_data s_bitmap;
 static uint32_t s_datum;
 static halo_ps2_bitmap_request_queue s_queue;
 static hcu_asset_profile_view s_profile;
-static tc_t s_cache, s_cache_backup;
+static tc_t s_cache;
+static tc_journal_t s_journal;
 static uint16_t s_cache_readers[TC_MAX_KEYS];
 static hcu_bitmap_source_slot s_slots[4];
 static hcu_bitmap_lease s_leases[HALO_PS2_BITMAP_REQUEST_CAPACITY];
@@ -61,7 +62,7 @@ static int rejection_preserves_state(const hcu_bitmap_binding *binding,
 	chain_t upload_before = s_upload, geometry_before = s_geometry;
 	memcpy(&s_cache_before, &s_cache, sizeof(s_cache));
 	if (hcu_bitmap_dispatch_request(request, binding, 1, &s_profile, generation,
-		&s_cache, &s_cache_backup, s_cache_readers, TC_MAX_KEYS, s_slots, 4,
+		&s_cache, &s_journal, s_cache_readers, TC_MAX_KEYS, s_slots, 4,
 		s_source_storage, sizeof(s_source_storage), sizeof(s_staging), s_staging, sizeof(s_staging),
 		&s_upload, &s_geometry, s_context.texture_page_base_words,
 		s_context.clut_base_words, 640, 448, &lease) != expected)
@@ -137,7 +138,7 @@ int main(int argc, char **argv)
 	s_context.bindings = &s_binding; s_context.binding_count = 1;
 	s_context.profile = &s_profile; s_context.cache = &s_cache;
 	s_context.expected_generation = 9001;
-	s_context.cache_backup = &s_cache_backup; s_context.cache_readers = s_cache_readers;
+	s_context.journal = &s_journal; s_context.cache_readers = s_cache_readers;
 	s_context.cache_reader_count = TC_MAX_KEYS;
 	s_context.slots = s_slots; s_context.slot_count = 4;
 	s_context.source_storage = s_source_storage;

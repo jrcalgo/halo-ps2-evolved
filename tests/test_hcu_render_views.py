@@ -41,4 +41,4 @@ def test_views_block_is_wired_into_c3_render_and_build():
 	assert render.index("hcu_c3_views_end(") < render.index("bsp_render_wait_gpu();")
 	assert "bsp_render_view(&cam, NULL, &vp)" not in render
 	assert "hcu_views_camera_from_snapshot" in block and "hcu_snapshot_bank_begin_read" in block
-	assert "hcu_snapshot_bank_end_read" in block and "fp-drawn=0" in block
+	assert "hcu_snapshot_bank_end_read" in block and "fp-drawn=" in block

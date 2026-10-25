@@ -5,8 +5,8 @@
  * reads the pinned snapshot bank stays the only place that knows the wire layout.
  *
  * Camera: a snapshot view gives a position and a forward vector (plus up, which is only validated;
- * roll is zero in camera_t). Its vertical field of view is converted to camera_t's horizontal field
- * of view for the 4:3 reference display (camera_init's aspect). Anything not finite, a zero forward,
+ * roll is zero in camera_t). Its vertical field of view is kept and converted to camera_t's horizontal
+ * field of view with the view rectangle's own aspect (w/h), so each split view keeps the CE vertical extent. Anything not finite, a zero forward,
  * or a field of view outside (0.1, 2.8) radians is refused, and that view falls back to a fixed
  * camera. Radians are an assumption about the CE producer; the range check makes a degrees value
  * fail closed instead of drawing a wrong view.
@@ -53,10 +53,11 @@ typedef struct {
 	int32_t  have_generation;   /* 0 until the first accepted snapshot of a map */
 } hcu_views_stats;
 
-/* Converts a snapshot camera (position, forward, vertical fov in radians, near/far). Returns 1 when
- * the camera is usable, 0 otherwise (and out is left unchanged). */
+/* Converts a snapshot camera (position, forward, vertical fov in radians, the view rectangle's aspect w/h,
+ * near/far). Vertical fov is kept; the horizontal fov is derived from the view aspect. Returns 1 when the
+ * camera is usable, 0 otherwise (and out is left unchanged). */
 int hcu_views_camera_from_snapshot(const float pos[3], const float forward[3], const float up[3],
-	float vertical_fov, float z_near, float z_far, hcu_view_camera *out);
+	float vertical_fov, float view_aspect, float z_near, float z_far, hcu_view_camera *out);
 
 /* Snapshot views are accepted only for one map generation at a time: the first accepted view sets it,
  * a view from another generation is refused. Returns 1 when accepted. */
