@@ -75,6 +75,33 @@ int hcu_render_world_is_current(const hcu_render_world *w, const hcu_map_service
 	return bsp == &w->bsp && generation == w->generation;
 }
 
+static uint32_t parity_fold(uint32_t h, uint32_t v)
+{
+	uint32_t k;
+	for (k = 0; k < 4; k++) {
+		h ^= (v >> (8 * k)) & 0xFFu;
+		h *= 16777619u;
+	}
+	return h;
+}
+
+int hcu_render_world_parity_summary(const bsp_section *bsp, hcu_render_world_parity *out)
+{
+	uint32_t i, h = 2166136261u;
+	if (!bsp || !out) return HCU_RENDER_WORLD_E_ARGUMENT;
+	out->materials = bsp->material_count;
+	out->lightmapped = 0;
+	for (i = 0; i < bsp->material_count; i++) {
+		bsp_material m = bsp_get_material(bsp, i);
+		h = parity_fold(h, m.shader_id);
+		h = parity_fold(h, m.lightmap_page);
+		h = parity_fold(h, m.uv_shift);
+		if (m.lightmap_page != BSP_NO_LIGHTMAP) out->lightmapped++;
+	}
+	out->hash = h;
+	return HCU_RENDER_WORLD_OK;
+}
+
 static const uint8_t *s_profile_bsps;
 static size_t s_profile_bsps_bytes;
 

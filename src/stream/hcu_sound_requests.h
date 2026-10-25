@@ -72,12 +72,37 @@ typedef struct {
 	uint32_t evicted;           /* stored record removed to admit a playback event */
 } hcu_sound_request_counters;
 
+/* Field-preservation coverage (C3.8). Updated once per drained record, O(1).
+ * Field counts cover playback records (every event except PERMUTATION_REQUEST);
+ * kinds[] covers all drained records. Known flags come from metadata_known;
+ * position is known only when has_position is set. checksum is the XOR of an
+ * FNV-1a hash over (event, owner, position, priority, gain, pitch) per drained
+ * record. record_fold is the same XOR at accept time, out_fold the XOR of the
+ * records dropped without draining (eviction or reset). After a drain the
+ * invariant record_fold ^ out_fold == checksum holds iff no stored bytes
+ * changed between submit and drain. */
+typedef struct {
+	uint32_t kinds[8];          /* drained records by hcu_sound_event_kind */
+	uint32_t playback;          /* drained playback records */
+	uint32_t owner_known;
+	uint32_t position_known;
+	uint32_t priority_known;
+	uint32_t gain_known;
+	uint32_t pitch_known;
+	uint32_t priority_min;      /* over priority_known playback records; 255 when none */
+	uint32_t priority_max;      /* 0 when none */
+	uint32_t checksum;         /* XOR of drained-record FNV hashes */
+	uint32_t record_fold;       /* XOR of accepted-record FNV hashes */
+	uint32_t out_fold;          /* XOR of pending records dropped unsent */
+} hcu_sound_coverage;
+
 typedef struct {
 	hcu_sound_request ring[HCU_SOUND_REQUEST_CAPACITY];
 	uint32_t head;              /* next record to drain */
 	uint32_t count;             /* stored records */
 	uint32_t next_sequence;
 	hcu_sound_request_counters counters;
+	hcu_sound_coverage coverage;
 	int spu2_playback_qualified; /* always 0: see header comment */
 } hcu_sound_request_queue;
 
@@ -112,7 +137,10 @@ size_t hcu_sound_requests_drain(hcu_sound_request_queue *queue,
 /* Reads the counters into out. */
 void hcu_sound_requests_counters(const hcu_sound_request_queue *queue,
 	hcu_sound_request_counters *out);
-/* Prints the counters as one HALO_PS2_LOCAL line. Always reports
+/* Reads the field-coverage block into out. */
+void hcu_sound_requests_coverage(const hcu_sound_request_queue *queue,
+	hcu_sound_coverage *out);
+/* Prints the counters and coverage as one HALO_PS2_LOCAL line. Always reports
  * spu2-playback=not-qualified. */
 void hcu_sound_requests_print(const hcu_sound_request_queue *queue,
 	const char *phase);

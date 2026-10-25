@@ -279,6 +279,97 @@ static void test_zero_copy_drain(void)
 	printf("PASS zero-copy drain: in-place callback order matches the legacy drain\n");
 }
 
+/* Field coverage: known bits, position gated on has_position, priority range,
+ * checksum fold across drain, eviction and reset. */
+static void test_field_coverage(void)
+{
+	hcu_sound_request_queue q;
+	hcu_sound_coverage cov;
+	hcu_sound_request r;
+	hcu_sound_request out[8];
+	size_t n;
+	uint32_t i;
+
+	hcu_sound_requests_init(&q);
+	hcu_sound_requests_coverage(&q, &cov);
+	assert(cov.priority_min == 255u && cov.priority_max == 0u && cov.playback == 0u);
+
+	/* Fully known impulse, priority 9. */
+	r = play_req(HCU_SOUND_EVENT_IMPULSE, 9, 3u, 0x55u);
+	assert(hcu_sound_requests_submit(&q, &r));
+	/* Looping start without position: priority, gain, pitch known; owner and position not. */
+	r = play_req(HCU_SOUND_EVENT_LOOPING_START, 2, 4u, 0x66u);
+	r.has_position = 0;
+	r.metadata_known = 0x1cu;
+	assert(hcu_sound_requests_submit(&q, &r));
+	/* Fade whose gain and pitch are not known. */
+	r = play_req(HCU_SOUND_EVENT_FADE, 200, 5u, 0x77u);
+	r.metadata_known = 0x07u;
+	assert(hcu_sound_requests_submit(&q, &r));
+	/* Permutation request: kinds only, no playback field coverage. */
+	r = perm_req(0x99u, 0x1u);
+	r.metadata_known = 0;
+	r.owner_datum = UINT32_MAX;
+	r.priority = UINT8_MAX;
+	r.gain = 0.0f;
+	r.pitch = 0.0f;
+	assert(hcu_sound_requests_submit(&q, &r));
+
+	n = hcu_sound_requests_drain(&q, out, 8);
+	assert(n == 4);
+	hcu_sound_requests_coverage(&q, &cov);
+	assert(cov.kinds[HCU_SOUND_EVENT_IMPULSE] == 1u);
+	assert(cov.kinds[HCU_SOUND_EVENT_LOOPING_START] == 1u);
+	assert(cov.kinds[HCU_SOUND_EVENT_FADE] == 1u);
+	assert(cov.kinds[HCU_SOUND_EVENT_PERMUTATION_REQUEST] == 1u);
+	assert(cov.playback == 3u);
+	assert(cov.owner_known == 2u);      /* impulse and fade; looping start lacks bit 0 */
+	assert(cov.position_known == 2u);   /* impulse and fade; looping start has no position */
+	assert(cov.priority_known == 3u);   /* all three playback records */
+	assert(cov.gain_known == 2u);       /* impulse and looping start */
+	assert(cov.pitch_known == 2u);
+	assert(cov.priority_min == 2u && cov.priority_max == 200u);
+	assert(cov.record_fold == cov.checksum && cov.out_fold == 0u);
+
+	/* Checksum is order-independent and changes with a preserved field. */
+	{
+		hcu_sound_request a = play_req(HCU_SOUND_EVENT_IMPULSE, 4, 1u, 0x10u);
+		hcu_sound_request b = play_req(HCU_SOUND_EVENT_IMPULSE, 4, 1u, 0x10u);
+		uint32_t before, after;
+		hcu_sound_request_queue z;
+		hcu_sound_requests_init(&z);
+		assert(hcu_sound_requests_submit(&z, &a));
+		hcu_sound_requests_coverage(&z, &cov);
+		before = cov.record_fold;
+		hcu_sound_requests_init(&z);
+		b.gain = 0.5f;
+		assert(hcu_sound_requests_submit(&z, &b));
+		hcu_sound_requests_coverage(&z, &cov);
+		after = cov.record_fold;
+		assert(before != after);
+	}
+
+	/* Eviction and reset move the record into out_fold; the invariant still holds. */
+	hcu_sound_requests_init(&q);
+	for (i = 0; i < HCU_SOUND_REQUEST_CAPACITY; ++i) {
+		r = play_req(HCU_SOUND_EVENT_IMPULSE, 1, 10u + i, 0x20u + i);
+		assert(hcu_sound_requests_submit(&q, &r));
+	}
+	r = play_req(HCU_SOUND_EVENT_STOP, 3, 99u, 0x20u);
+	assert(hcu_sound_requests_submit(&q, &r)); /* evicts the oldest impulse */
+	hcu_sound_requests_coverage(&q, &cov);
+	assert(cov.out_fold != 0u);
+	hcu_sound_requests_reset(&q);
+	hcu_sound_requests_coverage(&q, &cov);
+	assert(hcu_sound_requests_submit(&q, &r));
+	n = hcu_sound_requests_drain(&q, out, 8);
+	assert(n == 1);
+	hcu_sound_requests_coverage(&q, &cov);
+	/* Drained records equal accepted records minus those dropped unsent. */
+	assert((cov.record_fold ^ cov.out_fold) == cov.checksum);
+	assert(cov.kinds[HCU_SOUND_EVENT_STOP] == 1u);
+}
+
 static hcu_sound_request_queue queue;
 
 int main(void)
@@ -408,6 +499,7 @@ int main(void)
 	test_stop_after_start();
 	test_power_of_two_wrap();
 	test_zero_copy_drain();
+	test_field_coverage();
 
 	hcu_sound_requests_print(&queue, "fixture");
 	printf("PASS sound request recorder: bounded ring, ordered drain, validation, counters\n");

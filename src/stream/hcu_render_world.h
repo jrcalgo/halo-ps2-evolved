@@ -62,6 +62,17 @@ int hcu_render_world_unbind(hcu_render_world *w, hcu_map_service *service);
  * same map generation. */
 int hcu_render_world_is_current(const hcu_render_world *w, const hcu_map_service *service);
 
+/* C3.6 world parity: identity of the bound BSP's source materials, printed once per map. hash is FNV-1a
+ * over (shader_id, lightmap_page, uv_shift) of every material in table order; lightmapped counts materials
+ * whose lightmap_page is not BSP_NO_LIGHTMAP. Pure, no allocation. */
+typedef struct {
+	uint32_t materials;
+	uint32_t lightmapped;
+	uint32_t hash;
+} hcu_render_world_parity;
+
+int hcu_render_world_parity_summary(const bsp_section *bsp, hcu_render_world_parity *out);
+
 /* Producer seam: the BSPS bytes of the mounted profile, as placed by
  * hcu_render_media_load (hcu_render_media.h). NO_PRODUCER with NULL outputs when
  * the package carries no BSPS chunk or nothing is loaded. */

@@ -181,6 +181,20 @@ int main(int argc, char **argv)
 		(unsigned)world.bsp.batch_count, (unsigned)world.bsp.cluster_count,
 		(unsigned)world.bsp.portal_count, (unsigned)world.bsp.triangle_count, (unsigned)size);
 
+	/* 6b. C3.6 world parity: one summary per bound BSP, counted from its source materials, deterministic. */
+	{
+		hcu_render_world_parity wp, wp2;
+		assert(hcu_render_world_parity_summary(&world.bsp, &wp) == HCU_RENDER_WORLD_OK);
+		assert(hcu_render_world_parity_summary(&world.bsp, &wp2) == HCU_RENDER_WORLD_OK);
+		assert(wp.materials == world.bsp.material_count && wp.materials > 0);
+		assert(wp.lightmapped <= wp.materials);
+		assert(wp.hash != 0 && wp.hash == wp2.hash);
+		assert(hcu_render_world_parity_summary(NULL, &wp) == HCU_RENDER_WORLD_E_ARGUMENT);
+		assert(hcu_render_world_parity_summary(&world.bsp, NULL) == HCU_RENDER_WORLD_E_ARGUMENT);
+		printf("[world] parity materials=%u lightmapped=%u hash=%08x\n",
+			(unsigned)wp.materials, (unsigned)wp.lightmapped, (unsigned)wp.hash);
+	}
+
 	/* 7. A second bind while bound is refused and takes no second reader. */
 	assert(hcu_render_world_bind(&world, &service, owner_span(), copy, size, s_flat_source) == HCU_RENDER_WORLD_E_STATE);
 	assert(service.reader_count == 1);

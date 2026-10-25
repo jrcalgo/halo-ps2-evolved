@@ -176,22 +176,40 @@ def _verdict(fn, *args, **kwargs) -> dict:
 def c3_8_sound_checks(lines: list[str], frames_periodic: int | None = None) -> dict:
     """C3.8 sound-request adapter evidence from the guest log.
 
-    'rejected' is read as the queue's rejected counter on the final sound-requests line (no request refused).
+    'rejected' is read as the queue's rejected counter on every sound-requests line (no request refused).
     Every sound-requests line must say spu2-playback=not-qualified, because SPU2 playback is not qualified.
+    The sound-coverage lines (one per sound-requests line) carry the field-preservation counters. The final
+    coverage line must show nonzero playback events with owner, position, priority, gain and pitch covered,
+    and its drain checksum must equal its record checksum on every line.
     """
     sound = [kv(l) for l in lines if "sound-requests phase=" in l]
+    coverage = [kv(l) for l in lines if "sound-coverage phase=" in l]
     periodic = [l for l in lines if "c3-frame kind=periodic " in l]
     if frames_periodic is None:
         frames_periodic = len(periodic)
     last = sound[-1] if sound else {}
+    cov = coverage[-1] if coverage else {}
+    playback = _int(cov.get("playback"), 0) or 0
     checks = {
         "sound_lines_present": bool(sound),
         "sound_line_per_periodic_frame": frames_periodic > 0 and len(sound) >= frames_periodic,
         "sound_rejected_zero": bool(sound) and all(s.get("rejected") == "0" for s in sound),
         "sound_drained_positive": (_int(last.get("drained"), 0) or 0) > 0,
         "spu2_playback_not_qualified": bool(sound) and all(s.get("spu2-playback") == "not-qualified" for s in sound),
+        "sound_coverage_line_per_sound_line": bool(coverage) and len(coverage) == len(sound),
+        "playback_events_nonzero": playback > 0,
+        "playback_owner_covered": (_int(cov.get("owner"), 0) or 0) > 0,
+        "playback_position_covered": (_int(cov.get("position"), 0) or 0) > 0,
+        "playback_priority_covered": (_int(cov.get("priority"), 0) or 0) > 0,
+        "playback_gain_covered": (_int(cov.get("gain"), 0) or 0) > 0,
+        "playback_pitch_covered": (_int(cov.get("pitch"), 0) or 0) > 0,
+        "drain_checksum_equals_record": bool(coverage) and all(
+            c.get("drain-checksum") is not None and c.get("drain-checksum") == c.get("record-checksum")
+            for c in coverage),
     }
     return {"checks": checks, "sound_lines": len(sound), "periodic_frames": frames_periodic,
+            "coverage": {k: cov.get(k) for k in ("playback", "owner", "position", "priority", "gain", "pitch",
+                                                  "prio-min", "prio-max", "drain-checksum", "record-checksum")},
             "reasons": [f"c3.8 sound check failed: {k}" for k, v in checks.items() if not v]}
 
 
@@ -258,6 +276,45 @@ def content_checks(lines: list[str], views: int) -> dict:
     return {"checks": checks}
 
 
+def _hash_nonzero(value) -> bool:
+    try:
+        return int(str(value), 16) != 0
+    except (TypeError, ValueError):
+        return False
+
+
+def c3_6_content_checks(lines: list[str], views: int) -> dict:
+    """C3.6 content evidence for one run: textured world and lightmapped pages, animated objects with pose
+    changes, first-person weapon and hands geometry in every active view, submitted fx geometry, and world and
+    object parity lines with nonzero identity hashes. Each check reads a real counter the guest prints."""
+    frames = [kv(l) for l in lines if "c3-frame " in l]
+    final = frames[-1] if frames else {}
+    ready = [kv(l) for l in lines if "c3-render-ready " in l]
+    poses = [kv(l) for l in lines if "c3-pose " in l]
+    fp = [kv(l) for l in lines if "c3-fp " in l]
+    effects = [kv(l) for l in lines if "c3-fx " in l]
+    parity = [kv(l) for l in lines if "c3-parity " in l]
+    world = [p for p in parity if p.get("kind") == "world"]
+    objects = [p for p in parity if p.get("kind") == "object"]
+    checks = {
+        "world_tex_hits_positive": (_int(final.get("tex-hits"), 0) or 0) > 0,
+        "world_lightmaps_present": bool(ready) and (_int(ready[-1].get("lm"), 0) or 0) > 0,
+        "objects_pose_changes_positive": any((_int(p.get("pose-changes"), 0) or 0) > 0 for p in poses),
+        "fp_weapon_draws_each_view": all(any(
+            f.get("view") == str(view) and (_int(f.get("fp-weapon-draws")) or 0) > 0 for f in fp)
+            for view in range(views)),
+        "fp_hands_draws_each_view": all(any(
+            f.get("view") == str(view) and (_int(f.get("fp-hands-draws")) or 0) > 0 for f in fp)
+            for view in range(views)),
+        "fx_drawn_positive": any((_int(f.get("fx-drawn"), 0) or 0) > 0 for f in effects),
+        "world_parity_present": bool(world) and (_int(world[-1].get("materials"), 0) or 0) > 0,
+        "world_parity_hash_nonzero": bool(world) and _hash_nonzero(world[-1].get("hash")),
+        "object_parity_present": bool(objects),
+        "object_parity_hash_nonzero": bool(objects) and _hash_nonzero(objects[-1].get("hash")),
+    }
+    return {"checks": checks, "reasons": [f"c3.6 content check failed: {k}" for k, v in checks.items() if not v]}
+
+
 def score_lines(c2m, lines: list[str] | None, *, views: int, frames: int, cap_pages: int, captures: list[dict],
                 successor: dict | None, emu_mode_verified: bool) -> dict:
     """Every requirement verdict for one run. successor is {'old', 'new', 'mode'} for C3.11 runs, else None."""
@@ -280,7 +337,7 @@ def score_lines(c2m, lines: list[str] | None, *, views: int, frames: int, cap_pa
         "C3.3": (_verdict(c2m.c3_3_scene_checks, lines, views, views) if views > 1 else
                  {"status": "n/a", "first_failing": "opposing-player scene is exercised by multiplayer cases", "error": None}),
         "C3.5": _verdict(c2m.c3_5_layout_checks, views, held),
-        "C3.6": _verdict(content_checks, lines, views),
+        "C3.6": _verdict(c3_6_content_checks, lines, views),
         "C3.7": _verdict(c2m.c3_7_texfence_checks, lines, views, frames, cap_pages),
         "C3.8": _verdict(c3_8_sound_checks, lines),
         "C3.9": _verdict(c2m.c3_9_bitmap_checks, lines, views),

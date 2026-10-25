@@ -67,23 +67,86 @@ int hcu_sound_request_capture_playback(hcu_sound_request *out,
 	return request_valid(out);
 }
 
+/* FNV-1a over the preserved fields only: event, owner, position, priority,
+ * gain and pitch. Sequence, repeat, accepted and metadata are excluded. */
+static uint32_t fnv_word(uint32_t h, uint32_t w)
+{
+	uint32_t i;
+	for (i = 0; i < 4u; ++i) {
+		h ^= (w >> (8u * i)) & 0xffu;
+		h *= 16777619u;
+	}
+	return h;
+}
+
+static uint32_t float_bits(float f)
+{
+	uint32_t u;
+	memcpy(&u, &f, sizeof(u));
+	return u;
+}
+
+static uint32_t record_hash(const hcu_sound_request *r)
+{
+	uint32_t h = 2166136261u;
+	h = fnv_word(h, r->event);
+	h = fnv_word(h, r->owner_kind);
+	h = fnv_word(h, r->owner_datum);
+	h = fnv_word(h, r->has_position);
+	h = fnv_word(h, float_bits(r->position[0]));
+	h = fnv_word(h, float_bits(r->position[1]));
+	h = fnv_word(h, float_bits(r->position[2]));
+	h = fnv_word(h, r->priority);
+	h = fnv_word(h, float_bits(r->gain));
+	h = fnv_word(h, float_bits(r->pitch));
+	return h;
+}
+
+static void coverage_one(hcu_sound_coverage *c, const hcu_sound_request *r,
+	uint32_t hash)
+{
+	c->kinds[r->event & 7u]++;
+	c->checksum ^= hash;
+	if (r->event == HCU_SOUND_EVENT_PERMUTATION_REQUEST)
+		return;
+	c->playback++;
+	if (r->metadata_known & 0x01u)
+		c->owner_known++;
+	if ((r->metadata_known & 0x02u) && r->has_position)
+		c->position_known++;
+	if (r->metadata_known & 0x04u) {
+		c->priority_known++;
+		if (r->priority < c->priority_min) c->priority_min = r->priority;
+		if (r->priority > c->priority_max) c->priority_max = r->priority;
+	}
+	if (r->metadata_known & 0x08u)
+		c->gain_known++;
+	if (r->metadata_known & 0x10u)
+		c->pitch_known++;
+}
+
+#define RING_MASK (HCU_SOUND_REQUEST_CAPACITY - 1u)
+
 void hcu_sound_requests_init(hcu_sound_request_queue *queue)
 {
 	if (!queue) return;
 	memset(queue, 0, sizeof(*queue));
+	queue->coverage.priority_min = 255u;
 	queue->spu2_playback_qualified = 0;
 }
 
 void hcu_sound_requests_reset(hcu_sound_request_queue *queue)
 {
+	uint32_t i;
 	if (!queue) return;
+	for (i = 0; i < queue->count; ++i)
+		queue->coverage.out_fold ^= record_hash(&queue->ring[(queue->head + i) & RING_MASK]);
 	queue->head = 0;
 	queue->count = 0;
 	queue->counters.pending = 0;
 	queue->counters.resets++;
 }
 
-#define RING_MASK (HCU_SOUND_REQUEST_CAPACITY - 1u)
 #define COALESCE_WINDOW 8u
 #define REPEAT_MAX 255u
 
@@ -196,6 +259,7 @@ static int pick_victim(const hcu_sound_request_queue *queue,
 static void evict_at(hcu_sound_request_queue *queue, uint32_t i)
 {
 	uint32_t j;
+	queue->coverage.out_fold ^= record_hash(&AT(queue, i));
 	for (j = i; j + 1u < queue->count; ++j)
 		AT(queue, j) = AT(queue, j + 1u);
 	queue->count--;
@@ -232,6 +296,7 @@ int hcu_sound_requests_submit(hcu_sound_request_queue *queue,
 	if (queue->next_sequence == 0) queue->next_sequence = 1;
 	slot->sequence = queue->next_sequence;
 	slot->repeat = 1u;
+	queue->coverage.record_fold ^= record_hash(slot);
 	queue->count++;
 	queue->counters.accepted++;
 	queue->counters.pending = queue->count;
@@ -246,7 +311,9 @@ size_t hcu_sound_requests_drain_each(hcu_sound_request_queue *queue,
 	size_t n = 0;
 	if (!queue) return 0;
 	while (n < max && queue->count > 0) {
-		if (fn) fn(context, &queue->ring[queue->head]);
+		const hcu_sound_request *r = &queue->ring[queue->head];
+		coverage_one(&queue->coverage, r, record_hash(r));
+		if (fn) fn(context, r);
 		queue->head = (queue->head + 1u) & RING_MASK;
 		queue->count--;
 		n++;
@@ -285,18 +352,42 @@ void hcu_sound_requests_counters(const hcu_sound_request_queue *queue,
 	*out = queue->counters;
 }
 
+void hcu_sound_requests_coverage(const hcu_sound_request_queue *queue,
+	hcu_sound_coverage *out)
+{
+	if (!queue || !out) return;
+	*out = queue->coverage;
+}
+
 void hcu_sound_requests_print(const hcu_sound_request_queue *queue,
 	const char *phase)
 {
+	const hcu_sound_coverage *c;
+	uint32_t i, pending_fold = 0;
 	if (!queue) return;
+	c = &queue->coverage;
+	/* Pending records are still in the ring; their fold completes the record side. */
+	for (i = 0; i < queue->count; ++i)
+		pending_fold ^= record_hash(&AT(queue, i));
 	printf("HALO_PS2_LOCAL sound-requests phase=%s submitted=%u accepted=%u "
 		"rejected=%u drained=%u pending=%u high=%u dropped-full=%u resets=%u "
 		"coalesced=%u evicted=%u capacity=%u spu2-playback=not-qualified\n",
 		phase ? phase : "-",
-		queue->counters.submitted, queue->counters.accepted,
-		queue->counters.rejected, queue->counters.drained,
-		queue->counters.pending, queue->counters.high_water,
-		queue->counters.dropped_while_full, queue->counters.resets,
-		queue->counters.coalesced, queue->counters.evicted,
+		(unsigned)queue->counters.submitted, (unsigned)queue->counters.accepted,
+		(unsigned)queue->counters.rejected, (unsigned)queue->counters.drained,
+		(unsigned)queue->counters.pending, (unsigned)queue->counters.high_water,
+		(unsigned)queue->counters.dropped_while_full, (unsigned)queue->counters.resets,
+		(unsigned)queue->counters.coalesced, (unsigned)queue->counters.evicted,
 		(unsigned)HCU_SOUND_REQUEST_CAPACITY);
+	printf("HALO_PS2_LOCAL sound-coverage phase=%s ev-perm=%u ev-impulse=%u "
+		"ev-loop-start=%u ev-loop-stop=%u ev-fade=%u ev-stop=%u playback=%u "
+		"owner=%u position=%u priority=%u gain=%u pitch=%u "
+		"prio-min=%u prio-max=%u drain-checksum=%08x record-checksum=%08x\n",
+		phase ? phase : "-",
+		(unsigned)c->kinds[1], (unsigned)c->kinds[2], (unsigned)c->kinds[3],
+		(unsigned)c->kinds[4], (unsigned)c->kinds[5], (unsigned)c->kinds[6],
+		(unsigned)c->playback, (unsigned)c->owner_known, (unsigned)c->position_known,
+		(unsigned)c->priority_known, (unsigned)c->gain_known, (unsigned)c->pitch_known,
+		(unsigned)c->priority_min, (unsigned)c->priority_max,
+		(unsigned)c->checksum, (unsigned)(c->record_fold ^ c->out_fold ^ pending_fold));
 }

@@ -160,6 +160,7 @@ typedef struct {
 	uint32_t fx_skipped_space;           /* C3.6(c): fx quads refused by chain_has_space and skipped */
 	uint32_t fx_textured;                /* C3.6(c): fx quads drawn with a resident texture */
 	uint32_t fx_flat;                    /* C3.6(c): fx quads drawn flat-shaded (no resident texture) */
+	uint32_t fx_no_binding;              /* C3.6(c): flat because no bitmap binding exists for resource_id */
 } hcu_render_objects_counters;
 
 /* Record a draw only after obj_render_pass emits one or more geometry batches. Counts every successful
@@ -316,7 +317,7 @@ typedef struct {
 	uint32_t first_person_stale_resources;
 	uint32_t first_person_weapon_draws, first_person_hands_draws;
 	uint32_t parts_logged, effects_selected, effects_refused;
-	uint32_t fx_drawn, fx_skipped_space, fx_textured, fx_flat;
+	uint32_t fx_drawn, fx_skipped_space, fx_textured, fx_flat, fx_no_binding;
 	uint32_t first_person_map_generation;
 	uint16_t first_person_weapon_resource_slot, first_person_hands_resource_slot;
 	uint32_t first_person_weapon_resource_id, first_person_hands_resource_id;

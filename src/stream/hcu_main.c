@@ -927,12 +927,12 @@ static void hcu_c3_sound_playback_sink(void *context, const void *sound,
 	if (priority < 0 || priority >= 255)
 		captured_metadata_known &= (uint8_t)~0x04u;
 	position[0] = x; position[1] = y; position[2] = z;
-	if (!hcu_sound_request_capture_playback(&request, (uint16_t)event,
+	/* Always submit: an invalid capture is refused and counted by the queue. */
+	(void)hcu_sound_request_capture_playback(&request, (uint16_t)event,
 		(uint32_t)(uintptr_t)sound, sound_definition, captured_owner_kind,
 		captured_owner_datum, has_position, position,
 		priority >= 0 && priority < 255 ? (uint8_t)priority : UINT8_MAX,
-		gain, pitch, game_time, captured_metadata_known))
-		return;
+		gain, pitch, game_time, captured_metadata_known);
 	(void)hcu_sound_requests_submit(&s_c3_sound_queue, &request);
 }
 #endif
@@ -1613,6 +1613,14 @@ void hcu_c3_render_map_loaded(const char *map_name)
 		return;
 	}
 	world_touched = 1;
+	/* C3:content begin */
+	{
+		hcu_render_world_parity wp;
+		if (hcu_render_world_parity_summary(&s_c3r.world.bsp, &wp) == HCU_RENDER_WORLD_OK)
+			printf("HALO_PS2_LOCAL c3-parity kind=world map=%s materials=%u lightmapped=%u hash=%08x\n",
+				map_name, (unsigned)wp.materials, (unsigned)wp.lightmapped, (unsigned)wp.hash);
+	}
+	/* C3:content end */
 	if (bsp_render_set_world(&s_c3r.level, &s_c3r.world.bsp, &s_c3r.media.source)) {
 		printf("HALO_PS2_FAIL c3-render set_world\n");
 		goto fail;
@@ -1960,10 +1968,10 @@ static void hcu_c3_objects_view_end(uint32_t view)
 			(unsigned)st.parts_logged, (unsigned)st.effects_selected, (unsigned)st.effects_refused);
 	if (s_c3r.frames == 0u || (s_c3r.frames % 30u) == 0u)
 		printf("HALO_PS2_LOCAL c3-fx frame=%u view=%u fx-drawn=%u fx-skipped-space=%u fx-textured=%u fx-flat=%u "
-			"effects-selected=%u effects-refused=%u\n",
+			"fx-no-binding=%u effects-selected=%u effects-refused=%u\n",
 			(unsigned)s_c3r.frames, (unsigned)view, (unsigned)st.fx_drawn, (unsigned)st.fx_skipped_space,
-			(unsigned)st.fx_textured, (unsigned)st.fx_flat, (unsigned)st.effects_selected,
-			(unsigned)st.effects_refused);
+			(unsigned)st.fx_textured, (unsigned)st.fx_flat, (unsigned)st.fx_no_binding,
+			(unsigned)st.effects_selected, (unsigned)st.effects_refused);
 	/* C3:content end */
 }
 
@@ -1974,7 +1982,7 @@ static void hcu_c3_objects_frame_end(void)
 	if (s_c3r.frames == 0u) {
 		hcu_render_parity_summary ps;
 		if (hcu_render_objects_parity_summary(&ps) == 0)
-			printf("HALO_PS2_LOCAL c3-parity frame=0 records=%u dropped=%u object=%u vehicle=%u weapon=%u "
+			printf("HALO_PS2_LOCAL c3-parity kind=object frame=0 records=%u dropped=%u object=%u vehicle=%u weapon=%u "
 				"effect=%u materials-known=%u hash=%08x\n", (unsigned)ps.records, (unsigned)ps.dropped,
 				(unsigned)ps.per_kind[HCU_RENDER_PARITY_OBJECT], (unsigned)ps.per_kind[HCU_RENDER_PARITY_VEHICLE],
 				(unsigned)ps.per_kind[HCU_RENDER_PARITY_WEAPON], (unsigned)ps.per_kind[HCU_RENDER_PARITY_EFFECT],

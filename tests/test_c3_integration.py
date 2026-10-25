@@ -25,6 +25,14 @@ def sound_line(phase="periodic", rejected=0, drained=5, playback="not-qualified"
             f"spu2-playback={playback}")
 
 
+def coverage_line(phase="periodic", playback=5, owner=5, position=3, priority=5, gain=4, pitch=4,
+                  drain="5046d7a6", record=None):
+    record = drain if record is None else record
+    return (f"HALO_PS2_LOCAL sound-coverage phase={phase} ev-perm=0 ev-impulse=3 ev-loop-start=1 ev-loop-stop=0 "
+            f"ev-fade=1 ev-stop=0 playback={playback} owner={owner} position={position} priority={priority} "
+            f"gain={gain} pitch={pitch} prio-min=2 prio-max=200 drain-checksum={drain} record-checksum={record}")
+
+
 def snapshot_lines(seqs, views=2, biped=4):
     out = []
     for i, seq in enumerate(seqs):
@@ -141,10 +149,32 @@ def test_state_round_trip_and_bad_state_is_empty(tmp_path):
 
 
 def test_sound_check_passes_on_synthetic_lines():
-    lines = [sound_line(), sound_line(drained=7), "HALO_PS2_LOCAL c3-frame kind=periodic frame=30",
+    lines = [sound_line(), coverage_line(), sound_line(drained=7), coverage_line(),
+             "HALO_PS2_LOCAL c3-frame kind=periodic frame=30",
              "HALO_PS2_LOCAL c3-frame kind=periodic frame=60"]
     out = ci.c3_8_sound_checks(lines)
     assert all(out["checks"].values()), out["checks"]
+    assert out["coverage"]["playback"] == "5"
+
+
+def test_sound_check_requires_playback_field_coverage():
+    base = [sound_line(), "HALO_PS2_LOCAL c3-frame kind=periodic frame=30"]
+    cases = {
+        "playback_events_nonzero": coverage_line(playback=0),
+        "playback_owner_covered": coverage_line(owner=0),
+        "playback_position_covered": coverage_line(position=0),
+        "playback_priority_covered": coverage_line(priority=0),
+        "playback_gain_covered": coverage_line(gain=0),
+        "playback_pitch_covered": coverage_line(pitch=0),
+        "drain_checksum_equals_record": coverage_line(drain="00000001", record="00000002"),
+    }
+    for key, bad in cases.items():
+        checks = ci.c3_8_sound_checks(base + [bad], frames_periodic=1)["checks"]
+        assert checks[key] is False, key
+        assert checks["sound_coverage_line_per_sound_line"] is True
+    missing = ci.c3_8_sound_checks(base, frames_periodic=1)["checks"]
+    assert missing["sound_coverage_line_per_sound_line"] is False
+    assert missing["playback_events_nonzero"] is False
 
 
 def test_sound_check_fails_on_missing_periodic_line_and_qualified_playback():
@@ -260,3 +290,51 @@ def test_successor_verdict_uses_rendered_successor_checks_with_mode(tmp_path):
                               successor={"old": "a", "new": "b", "mode": 3}, emu_mode_verified=True)
     assert calls == {"old": "a", "new": "b", "mode": 3, "views": 2}
     assert verdicts["C3.11"]["status"] == "pass"
+
+
+def c36_lines(views=2, world_hash="1a2b3c4d", object_hash="9f8e7d6c", fx=1, pose=3, tex=10, lm=2):
+    lines = [f"HALO_PS2_LOCAL c3-frame kind=final frame=300 views={views} emit-failures=0 tex-hits={tex}",
+             f"HALO_PS2_LOCAL c3-render-ready map=bloodgulch views={views} frames=300 lm={lm}",
+             f"HALO_PS2_LOCAL c3-pose frame=30 pose-changes={pose} pose-static=1",
+             f"HALO_PS2_LOCAL c3-parity kind=world map=bloodgulch materials=40 lightmapped=20 hash={world_hash}",
+             f"HALO_PS2_LOCAL c3-parity kind=object frame=0 records=12 dropped=0 object=4 hash={object_hash}"]
+    lines += [f"HALO_PS2_LOCAL c3-fp frame=30 view={v} fp-weapon-draws=1 fp-hands-draws=1" for v in range(views)]
+    lines.append(f"HALO_PS2_LOCAL c3-fx frame=30 view=0 fx-drawn={fx} fx-textured=0 fx-flat={fx} fx-no-binding={fx}")
+    return lines
+
+
+def test_c3_6_content_passes_on_complete_run():
+    out = ci.c3_6_content_checks(c36_lines(), 2)
+    assert out["checks"] and all(out["checks"].values()), out
+
+
+def test_c3_6_content_fails_each_missing_requirement():
+    cases = {
+        "world_tex_hits_positive": c36_lines(tex=0),
+        "world_lightmaps_present": c36_lines(lm=0),
+        "objects_pose_changes_positive": c36_lines(pose=0),
+        "fx_drawn_positive": c36_lines(fx=0),
+        "world_parity_hash_nonzero": c36_lines(world_hash="0"),
+        "object_parity_hash_nonzero": c36_lines(object_hash="00000000"),
+    }
+    for name, lines in cases.items():
+        checks = ci.c3_6_content_checks(lines, 2)["checks"]
+        assert checks[name] is False, name
+        assert all(v for k, v in checks.items() if k != name), name
+    no_world = [l for l in c36_lines() if "kind=world" not in l]
+    assert ci.c3_6_content_checks(no_world, 2)["checks"]["world_parity_present"] is False
+
+
+def test_c3_6_content_requires_fp_draws_in_every_active_view():
+    lines = [l for l in c36_lines(views=2) if not (" view=1 fp-weapon-draws" in l)]
+    checks = ci.c3_6_content_checks(lines, 2)["checks"]
+    assert checks["fp_weapon_draws_each_view"] is False and checks["fp_hands_draws_each_view"] is False
+    assert ci.c3_6_content_checks(c36_lines(views=2), 2)["checks"]["fp_weapon_draws_each_view"] is True
+
+
+def test_c3_6_verdict_is_wired_into_scoring():
+    lines = c36_lines()
+    fake = SimpleNamespace(**{name: getattr(c2m, name) for name in dir(c2m) if not name.startswith("__")})
+    verdicts = ci.score_lines(fake, lines, views=2, frames=300, cap_pages=0, captures=[],
+                              successor=None, emu_mode_verified=True)
+    assert verdicts["C3.6"]["status"] == "pass", verdicts["C3.6"]

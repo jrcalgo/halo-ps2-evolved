@@ -1161,6 +1161,9 @@ static void fx_pass(render_ctx_t *rc)
 		pw += 12 * nv;
 		s_view_counters.fx_drawn++;
 		s_view_counters.fx_flat++;
+		/* No bitmap binding exists for an fx request: resource_id is the CE effect, particle, contrail or
+		 * decal definition index, and the parent package carries no table from those to bitmap tags. */
+		s_view_counters.fx_no_binding++;
 	}
 }
 
@@ -1573,6 +1576,7 @@ void hcu_render_objects_view_end(uint32_t view, hcu_render_objects_view_stats *o
 		out->fx_skipped_space = s_view_counters.fx_skipped_space;
 		out->fx_textured = s_view_counters.fx_textured;
 		out->fx_flat = s_view_counters.fx_flat;
+		out->fx_no_binding = s_view_counters.fx_no_binding;
 		out->first_person_weapon_resource_id = 0u;
 		out->first_person_hands_resource_id = 0u;
 		out->first_person_weapon_resource_slot = HALO_PS2_FRAME_NONE_U16;
@@ -1626,8 +1630,9 @@ void hcu_render_objects_view_end(uint32_t view, hcu_render_objects_view_stats *o
 	s_totals.fx_skipped_space += s_view_counters.fx_skipped_space;
 	s_totals.fx_textured += s_view_counters.fx_textured;
 	s_totals.fx_flat += s_view_counters.fx_flat;
+	s_totals.fx_no_binding += s_view_counters.fx_no_binding;
 	s_view_counters.fx_drawn = s_view_counters.fx_skipped_space = 0;
-	s_view_counters.fx_textured = s_view_counters.fx_flat = 0;
+	s_view_counters.fx_textured = s_view_counters.fx_flat = s_view_counters.fx_no_binding = 0;
 	s_view_counters.parts_logged = 0;
 	s_view_counters.first_person_weapon_draws = s_view_counters.first_person_hands_draws = 0;
 	s_totals.deduped += s_view_counters.deduped;
