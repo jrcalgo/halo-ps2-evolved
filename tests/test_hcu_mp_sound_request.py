@@ -654,24 +654,27 @@ class SoundRequestSeamTest(unittest.TestCase):
             self.assertEqual(live[index]["wet"], row["wet"], row["name"])
             self.assertEqual(live[index]["min"], row["minimum"], row["name"])
 
-    def test_ps2_preferences_never_reach_the_platform(self):
+    def test_ps2_preferences_select_the_silent_recorder_platform(self):
         lines = dict(line.split(None, 1) for line in self.ps2.splitlines() if " " in line)
-        self.assertEqual(lines["preferences_platform"], "-1")
-        self.assertEqual(lines["sound_is_active"], "0")
+        # The PS2 build selects the silent recorder platform (slot 1). CE's channel
+        # bookkeeping runs, so playback and stop requests are issued; no audio is
+        # produced and the Xbox DirectSound stub (recorder_* counters) is never entered.
+        self.assertEqual(lines["preferences_platform"], "1")
+        self.assertEqual(lines["sound_is_active"], "1")
         self.assertEqual(lines["cache_new"], "1")
         self.assertEqual(lines["recorder_initialize"], "0")
         self.assertEqual(lines["recorder_queue"], "0")
         self.assertEqual(lines["recorder_properties"], "0")
         self.assertEqual(lines["recorder_location"], "0")
         self.assertEqual(lines["recorder_listener"], "0")
-        self.assertEqual(lines["platform_definition_null"], "1")
-        self.assertEqual(lines["platform_slot1_null"], "1")
-        for issue in ("ps2-platform-disabled", "initialize-before-vtable",
-                      "platform-slot-1-null", "queue-args-lack-tag-owner-position"):
-            self.assertIn(f"ISSUE {issue}", self.ps2)
+        self.assertEqual(lines["platform_definition_null"], "0")
+        self.assertEqual(lines["platform_slot1_null"], "0")
+        self.assertIn("ISSUE queue-args-lack-tag-owner-position", self.ps2)
+        for issue in ("ps2-platform-disabled", "initialize-before-vtable", "platform-slot-1-null"):
+            self.assertNotIn(f"ISSUE {issue}", self.ps2)
 
     def test_port_source_has_no_request_adapter(self):
-        preference_line, _text = line_matching(self.preferences, "-1,")
+        preference_line, _text = line_matching(self.preferences, "\t1,")
         self.assertGreater(preference_line, 0)
         self.assertIn("#ifdef HALO_PS2", self.preferences)
         return_line, _text = line_matching(
@@ -687,7 +690,7 @@ class SoundRequestSeamTest(unittest.TestCase):
         cache = (HCU / "port/ps2/src/ps2_sound_cache.c").read_text()
         memory = (HCU / "port/ps2/src/ps2_memory.c").read_text()
         self.assertIn("return (long)0x80004005;", edge)
-        self.assertIn("return sound != NULL;", cache)
+        self.assertIn("boolean accepted = sound != NULL;", cache)
         self.assertIn("#define PS2_SOUND_BYTES (512 * 1024)", memory)
         port = HCU / "port/ps2"
         for path in port.rglob("*"):
@@ -837,23 +840,23 @@ def source_issues():
     edge = (HCU / "port/ps2/src/ps2_edge.c").read_text()
     cache = (HCU / "port/ps2/src/ps2_sound_cache.c").read_text()
     found = [
-        ("source/sound/sound_preferences.c",) + line_matching(preferences, "-1,"),
+        ("source/sound/sound_preferences.c",) + line_matching(preferences, "\t1,"),
         ("source/sound/sound_manager.c",) + line_matching(
             manager, "if (platform_code < 0 || platform_code >= 2)"),
         ("source/sound/sound_manager.c",) + line_matching(manager, "\tNULL,"),
         ("source/sound/sound_manager.c",) + line_matching(
             manager, "platform_definition->queue_sound_to_channel("),
         ("port/ps2/src/ps2_edge.c",) + line_matching(edge, "return (long)0x80004005;"),
-        ("port/ps2/src/ps2_sound_cache.c",) + line_matching(cache, "return sound != NULL;"),
+        ("port/ps2/src/ps2_sound_cache.c",) + line_matching(cache, "boolean accepted = sound != NULL;"),
     ]
     text = []
     descriptions = [
-        "HALO_PS2 sets the sound platform to -1. There is no SPU2 request backend.",
-        "`sound_initialize` returns before selecting a platform, creating sound datums, or calling `initialize`.",
-        "`platform_definitions[1]` is NULL. Only the Xbox DirectSound slot is filled, and the PS2 build never selects it.",
+        "HALO_PS2 selects platform 1, the silent PS2 recorder backend (`ps2_recorder_platform`). It runs CE channel bookkeeping and never plays audio; there is no SPU2 request backend, so SPU2 playback stays unqualified.",
+        "`sound_initialize` selects platform 1 and calls the recorder `initialize`, so `initialized` is set and `update_channels` issues the playback and stop requests.",
+        "`platform_definitions[1]` is NULL outside HALO_PS2 only; under HALO_PS2 it is the silent recorder. The Xbox DirectSound slot 0 is never selected by the PS2 build.",
         "`queue_sound_to_channel` receives a channel index and a permutation pointer. Tag datum, owner, and position are not arguments. `set_channel_location` is the later position call and did not run for these unspatialized background sounds.",
         "`DirectSoundCreate` returns `0x80004005` and clears the device pointer.",
-        "`_sound_cache_sound_request` ignores block, load, and reference and returns whether the permutation pointer is non-NULL. That is not a playback request record.",
+        "`_sound_cache_sound_request` ignores block, load, and reference and returns whether the permutation pointer is non-NULL. That is a permutation request record, not a playback request record.",
     ]
     for (path, number, line), description in zip(found, descriptions):
         text.append(f"- `{path}:{number}` `{line}` — {description}")

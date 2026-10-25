@@ -858,15 +858,14 @@ int main(void)
 	printf("platform_definition_null %d\n",
 		sound_manager_globals.platform_definition == NULL);
 	soundreq_print_contract();
-	printf("ISSUE ps2-platform-disabled\n");
-	printf("ISSUE initialize-before-vtable\n");
-	printf("ISSUE platform-slot-1-null\n");
 	printf("ISSUE queue-args-lack-tag-owner-position\n");
-	if (preferences->platform != -1 || sound_is_active() ||
+	/* The PS2 build selects the silent recorder platform (slot 1). The Xbox
+	 * DirectSound stub must never be entered: its counters stay zero. */
+	if (preferences->platform != 1 || !sound_is_active() ||
 		soundreq_initialize_count || soundreq_request_count ||
 		soundreq_location_count || soundreq_listener_count ||
-		platform_definitions[1] != NULL ||
-		sound_manager_globals.platform_definition != NULL ||
+		platform_definitions[1] == NULL ||
+		sound_manager_globals.platform_definition != platform_definitions[1] ||
 		soundreq_cache_new_calls != 1)
 		return 1;
 	return 0;

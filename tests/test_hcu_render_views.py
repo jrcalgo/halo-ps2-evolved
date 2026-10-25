@@ -32,7 +32,7 @@ def test_views_block_is_wired_into_c3_render_and_build():
 	assert "hcu_c3_views_begin" in main and "hcu_c3_views_end" in main
 	assert "hcu_c3_views_camera(v, &cam, &vp)" in main
 	assert "camera=%s" in main
-	assert "HALO c3-views" in main
+	assert "HALO_PS2_LOCAL c3-views" in main
 	assert "hcu_render_views.o" in mk
 	assert "src/stream/hcu_render_views.c" in mk
 	# the per-view call sits in the C3:render loop, after the fixed camera it replaces, before the present

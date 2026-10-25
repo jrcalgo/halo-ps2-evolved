@@ -181,7 +181,7 @@ def _guest_lines(camera="snapshot", seqs=(10, 40, 70), active=4, source="bank", 
     lines = []
     for frame, seq in zip((0, 30, 60), seqs):
         for v in range(views):
-            lines.append(f"HALO c3-views frame={frame} view={v} camera={camera} pos_x100=0,0,0 active=1")
+            lines.append(f"HALO_PS2_LOCAL c3-views frame={frame} view={v} camera={camera} pos_x100=0,0,0 active=1")
         lines.append(f"HALO_PS2_LOCAL c3-snapshot frame={frame} map-gen=1 seq={seq} views={views} "
                      f"active-views={active} biped=4 weapon=8 vehicle=2")
         lines.append(f"HALO_PS2_LOCAL c3-objects frame={frame} view=0 source={source} drawn=10")

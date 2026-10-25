@@ -1881,7 +1881,7 @@ static void hcu_c3_views_end(unsigned view_count)
 	if (!print || view_count == 0u) return;
 	hcu_snapshot_bank_get_stats(&bs);
 	for (v = 0; v < view_count && v < HCU_RENDER_VIEWS_MAX; ++v) {
-		printf("HALO c3-views frame=%u view=%u camera=%s pos_x100=%d,%d,%d fov_h_x100=%d "
+		printf("HALO_PS2_LOCAL c3-views frame=%u view=%u camera=%s pos_x100=%d,%d,%d fov_h_x100=%d "
 			"pitch_x100=%d active=%u viewport=%d,%d,%d,%d hud=%u fp-nodes=%u fp-drawn=%u fp-placeholder=%d "
 			"bank-views=%u bank-seq=%u pins=%u\n",
 			(unsigned)s_c3r.frames, v,

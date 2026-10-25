@@ -55,12 +55,15 @@ def test_xbox_dsp_image_and_download_are_excluded_only_for_ps2():
     assert "port: this Xbox-only DSP image is absent from the PS2 build." in download
 
 
-def test_ps2_sound_manager_declines_the_unimplemented_platform_backend():
+def test_ps2_sound_manager_selects_the_silent_recorder_and_declines_directsound():
     preferences = (ROOT / "submodules/halo-ce-universal/source/sound/sound_preferences.c").read_text()
     manager = (ROOT / "submodules/halo-ce-universal/source/sound/sound_manager.c").read_text()
     edge = (ROOT / "submodules/halo-ce-universal/port/ps2/src/ps2_edge.c").read_text()
 
-    assert "#ifdef HALO_PS2\n\t-1,\n#else\n\t0,\n#endif" in preferences
+    # PS2 selects the silent recorder platform (slot 1), never the Xbox DirectSound slot 0.
+    assert "#ifdef HALO_PS2\n\t1,\n#else\n\t0,\n#endif" in preferences
+    assert "&ps2_recorder_platform," in manager
+    assert "&platform_sound_dsound," in manager
     init = manager[manager.index("void sound_initialize("):]
     platform_check = init.index("if (platform_code < 0 || platform_code >= 2)")
     platform_initialize = init.index("platform_definition->initialize(preferences)")

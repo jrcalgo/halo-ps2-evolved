@@ -1519,6 +1519,9 @@ static void object_pass(void *user, render_ctx_t *rc)
 				(void)hcu_render_objects_note_submission(&s_view_counters, &s_drawn_identities,
 					d->type, s_snapshot->objects[d->object_index].id.index, d->generation);
 			s_view_counters.triangles += s_objr.st_triangles;
+		} else if (s_objr.st_culled && !s_objr.st_visible) {
+			/* Frustum, distance, sub-pixel or pose culling is CE's normal per-view decision, not a draw
+			 * failure. Only an object that passed culling and was refused below counts as a failure. */
 		} else {
 			if (d->type == HCU_OBJECTS_TYPE_BIPED) s_view_counters.refused_bipeds++;
 			else if (d->type == HCU_OBJECTS_TYPE_VEHICLE) s_view_counters.refused_vehicles++;

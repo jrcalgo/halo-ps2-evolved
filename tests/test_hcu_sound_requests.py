@@ -44,6 +44,22 @@ class HcuSoundRequestsTest(unittest.TestCase):
         self.assertIn("PS2_SOUND_EVENT_STOP", ce)
         self.assertIn("PS2_SOUND_EVENT_FADE", ce)
 
+    def test_ps2_selects_silent_recorder_platform_not_spu2(self):
+        # The channel loop runs only when CE's sound manager is initialized, which needs a
+        # selected platform. The PS2 build selects the silent recorder (slot 1); it never
+        # plays audio, so SPU2 playback stays unqualified and the Xbox backend stays unselected.
+        prefs = (ROOT / "submodules/halo-ce-universal/source/sound/sound_preferences.c").read_text()
+        ce = (ROOT / "submodules/halo-ce-universal/source/sound/sound_manager.c").read_text()
+        self.assertIn("#ifdef HALO_PS2\n\t1,", prefs)
+        self.assertIn("&ps2_recorder_platform,", ce)
+        self.assertIn(".platform_code = 1,", ce)
+        self.assertIn("ps2_recorder_get_channel_state", ce)
+        self.assertIn("#define dsound_port_set_channel_stereo_position(...) ((void)0)", ce)
+        main = (ROOT / "src/stream/hcu_main.c").read_text()
+        self.assertIn("halo_ps2_sound_playback_bind_sink(hcu_c3_sound_playback_sink, NULL)", main)
+        recorder = (ROOT / "src/stream/hcu_sound_requests.c").read_text()
+        self.assertIn("spu2-playback=not-qualified", recorder)
+
 
 if __name__ == "__main__":
     unittest.main()

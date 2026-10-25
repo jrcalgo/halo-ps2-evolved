@@ -30,7 +30,7 @@ def good_lines(views, *, fp_nodes=2, fp_drawn=1, frame=30):
     for v in range(views):
         x, y, w, h = VIEWPORTS[views][v]
         out.append(
-            f"HALO c3-views frame={frame} view={v} camera=snapshot pos_x100=0,0,0 fov_h_x100=100 "
+            f"HALO_PS2_LOCAL c3-views frame={frame} view={v} camera=snapshot pos_x100=0,0,0 fov_h_x100=100 "
             f"pitch_x100=0 active=1 viewport={x},{y},{w},{h} hud=3 fp-nodes={fp_nodes} fp-drawn={fp_drawn} "
             f"fp-placeholder=0 bank-views={views} bank-seq={frame} pins=0")
     return out

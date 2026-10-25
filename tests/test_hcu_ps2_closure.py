@@ -705,5 +705,16 @@ class HcuPs2BuildArtifactGate(unittest.TestCase):
             self.assertIn(symbol, link_map)
 
 
+    def test_c3_viewmodel_visibility_is_defined_not_stubbed(self):
+        """C3 publishes the first-person gun through viewmodel_is_visible; the PS2 config defines it under the C3 gate."""
+        config = (HCU / "port/ps2/src/ps2_config.c").read_text()
+        gate = config.index("#if defined(HALO_PS2_C3_FRAME_SNAPSHOT)")
+        definition = config.index("boolean viewmodel_is_visible(void)")
+        self.assertLess(gate, definition)
+        self.assertIn('config_boolean("display.viewmodel_visible")', config[definition:])
+        self.assertEqual(classify("viewmodel_is_visible"), "render")
+        generated, _missing = emit(["viewmodel_is_visible"])
+        self.assertIn("viewmodel_is_visible(", generated)
+
 if __name__ == "__main__":
     unittest.main()
