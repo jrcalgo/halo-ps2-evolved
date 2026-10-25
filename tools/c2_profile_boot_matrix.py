@@ -705,6 +705,15 @@ def write_successor_includes(out: Path, succ_row: str, package_root: Path, mode:
     (include_dir / "hcu_c2_successor.h").write_text(
         f"#define HALO_PS2_C2_SUCCESSOR_MODE {mode}\n#define HALO_PS2_C2_SUCCESSOR_TICKS {ticks}\n")
     (include_dir / "hcu_c2_succ_image.h").write_text(successor_header_text(succ_row, package_root), encoding="utf-8")
+    # C3.11: the successor's own objects table (its MODL/OTEX chunk ids and hashes differ from the selected row's).
+    if os.environ.get("HCU_C3_OBJECTS") == "1":
+        generated = subprocess.run(
+            [sys.executable, "-I", str(ROOT / "tools/hcu_c3_objects_table.py"), "--package-json",
+             str(package_root / succ_row / f"{succ_row}.json"), "--sky-from-scenario", "--successor",
+             "--output", str(include_dir / "hcu_c3_objects_succ_table.h")],
+            cwd=ROOT, capture_output=True, text=True)
+        if generated.returncode:
+            raise RuntimeError(f"successor objects table generation failed: {generated.stderr.strip()[-400:]}")
     return include_dir
 
 

@@ -506,6 +506,29 @@ static void test_bounds(void)
 	printf("bounds: ok (views, palettes, v4 first-person ranges/slots, refs, attachments, fx requests, resources)\n");
 }
 
+static void test_map_change_unpublishes_previous_bank(void)
+{
+	hcu_snapshot_reader pinned, late;
+	halo_ps2_frame_snapshot const *old;
+	memset(&pinned, 0, sizeof pinned);
+	memset(&late, 0, sizeof late);
+	pinned.slot = -1;
+	late.slot = -1;
+	old = publish_shared(2u, 1u);
+	assert(old->map_generation == 42u);
+	assert(hcu_snapshot_bank_begin_read(&pinned) == old);
+	hcu_snapshot_bank_set_map_generation(44u);
+	/* The previous map's bank is no longer the latest, so a new reader gets nothing. */
+	assert(hcu_snapshot_bank_latest() == NULL);
+	assert(hcu_snapshot_bank_begin_read(&late) == NULL);
+	/* A pinned reader keeps its bytes; the new map's first publish is stamped 44. */
+	assert(pinned.snapshot == old);
+	assert(old->map_generation != 44u);
+	hcu_snapshot_bank_end_read(&pinned);
+	assert(publish_shared(2u, 1u)->map_generation == 44u);
+	printf("generation change: ok (previous bank unpublished, pinned reader keeps bytes)\n");
+}
+
 static void test_fits_frame_scratch(void)
 {
 	size_t bank = hcu_snapshot_bank_storage_required();
@@ -520,6 +543,7 @@ int main(void)
 {
 	test_bind_and_version();
 	test_publish_sequence_and_generation();
+	test_map_change_unpublishes_previous_bank();
 	test_dedupe();
 	test_refusal_when_all_free_slots_are_pinned();
 	test_reader_overwrite_refusal();

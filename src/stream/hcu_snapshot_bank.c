@@ -83,6 +83,10 @@ int hcu_snapshot_bank_unbind(void)
 
 void hcu_snapshot_bank_set_map_generation(uint32_t generation)
 {
+	/* A new map unpublishes the previous map's bank. Its bytes stay until a slot is reused, and readers that
+	 * already pinned it keep their pins, but begin_read returns NULL until this map publishes its first bank. */
+	if (generation != s_map_generation)
+		s_published = BANK_NONE;
 	s_map_generation = generation;
 }
 

@@ -35,7 +35,8 @@
  * Refusals never overwrite: begin_write returns NULL, and nothing is published
  * until a writer commits. A new map generation is set with
  * hcu_snapshot_bank_set_map_generation(); it is stamped on each commit and does
- * not alter pinned snapshots.
+ * not alter pinned snapshots. A change unpublishes the previous generation's
+ * bank, so latest() and begin_read() return NULL until the new map publishes.
  *
  * Thread model: single EE core. Readers and writers run in the frame lane and
  * never from an interrupt handler. */
