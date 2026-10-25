@@ -846,6 +846,21 @@ int main(int argc, char **argv)
 		assert(s_trace_count == 1 && strcmp(s_trace[0], "prepare:beavercreek") == 0);
 		printf("PASS successor B validates while live owner A stays untouched\n");
 
+		/* C3.11: a released (unbound, zeroed) renderer owner proves drain only through the reader count,
+		 * BSP readers and the renderer fence; a busy fence still refuses it. */
+		{
+			hcu_bitmap_frame_owner released;
+			const hcu_bitmap_frame_owner *live_owner = service.runtime.frame_owner;
+			memset(&released, 0, sizeof(released));
+			service.runtime.frame_owner = &released;
+			assert(profile_readers_drained(&service, &service.runtime) == 1);
+			s_renderer_drained = 0;
+			assert(profile_readers_drained(&service, &service.runtime) == 0);
+			s_renderer_drained = 1;
+			service.runtime.frame_owner = live_owner;
+		}
+		printf("PASS released renderer owner drains through reader count and fence\n");
+
 		/* A busy renderer blocks the unload: A and the staged B are retained. */
 		s_renderer_drained = 0;
 		unloads_before = s_unload_calls;

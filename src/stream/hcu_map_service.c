@@ -415,6 +415,14 @@ static int profile_readers_drained(const hcu_map_service *service,
 			rt->renderer_never_started(rt->renderer_start_context) != 0 &&
 			ps2_cache_bsp_readers_drained() && rt->renderer_drained &&
 			rt->renderer_drained(rt->renderer_context) != 0;
+	/* C3.11: after the old owner is released, the renderer hook unbinds it (hcu_c3_bitmap_map_released)
+	 * only once detach has verified zero leases, readers and frame state, then zeroes the structure.
+	 * A successor preflight that runs after that release sees an unbound, zeroed owner with no queue or
+	 * dispatch, so only the reader count, BSP readers and the renderer fence remain to prove. */
+	if (owner && !owner->bound)
+		return !owner->queue && !owner->dispatch && !owner->in_frame && !owner->gpu_pending &&
+			!owner->drain_pending && ps2_cache_bsp_readers_drained() && rt->renderer_drained &&
+			rt->renderer_drained(rt->renderer_context) != 0;
 	return owner && owner->bound && !owner->in_frame && !owner->gpu_pending &&
 		!owner->drain_pending &&
 		owner->dispatch && owner->dispatch->lease_count == 0 &&
