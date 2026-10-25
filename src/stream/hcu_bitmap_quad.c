@@ -40,7 +40,8 @@ hcu_bitmap_quad_status hcu_bitmap_quad_emit(chain_t *c,const tex_section *textur
 	static const unsigned order[6]={0,1,2,0,2,3};
 	if(!c||!c->base||!textures||!s||!vertices||!textures->data||image_index>=textures->texture_count||
 	   !s->screen_w||!s->screen_h||s->screen_w>4095u||s->screen_h>4095u||s->texture_layers!=1u||
-	   !s->clip_w||!s->clip_h||s->z>0xFFFFFFu||(unsigned)s->blend>HCU_BITMAP_BLEND_RAW_ADD) return HCU_BITMAP_QUAD_INVALID;
+	   !s->clip_w||!s->clip_h||s->z>0xFFFFFFu||(unsigned)s->blend>HCU_BITMAP_BLEND_RAW_ADD ||
+	   s->alpha_test>HCU_BITMAP_ALPHA_TEST_EMPTY) return HCU_BITMAP_QUAD_INVALID;
 	x1=(uint32_t)s->clip_x+s->clip_w; y1=(uint32_t)s->clip_y+s->clip_h;
 	if(x1>s->screen_w||y1>s->screen_h) return HCU_BITMAP_QUAD_INVALID;
 	image=tex_get(textures,image_index);
@@ -59,7 +60,8 @@ hcu_bitmap_quad_status hcu_bitmap_quad_emit(chain_t *c,const tex_section *textur
 	}
 	/* Premultiplied CE blend: first Cd *= 1-As, then add unweighted Cs.
 	 * Reserving both passes together prevents a capacity failure half-way. */
-	data_qw=HCU_QUAD_DATA_QW+(s->blend==HCU_BITMAP_BLEND_PREMULTIPLIED?21u:0u);
+	/* An alpha-tested pass adds a TEST restore packet (2 qw) after its draws. */
+	data_qw=HCU_QUAD_DATA_QW+(s->blend==HCU_BITMAP_BLEND_PREMULTIPLIED?21u:0u)+(s->alpha_test?2u:0u);
 	if(c->overflow||c->qw>c->cap_qw||data_qw+1u>c->cap_qw-c->qw) return HCU_BITMAP_QUAD_CAPACITY;
 	prim=GS_PRIM(GSX_PRIM_TRIANGLE,1,1,0,s->blend==HCU_BITMAP_BLEND_OPAQUE?0:1,0,1,0,0);
 	alpha=s->blend==HCU_BITMAP_BLEND_ADD?GS_ALPHA(0,2,0,1,0):GS_ALPHA(0,1,0,1,0);
@@ -71,7 +73,11 @@ hcu_bitmap_quad_status hcu_bitmap_quad_emit(chain_t *c,const tex_section *textur
 	q[0]=GIF_TAG(5,1,0,0,GIFX_FLG_PACKED,1); q[1]=GIF_REGS_AD;
 	q[2]=s->tex0; q[3]=GS_A_TEX0_1;
 	q[4]=GS_TEX1(1,0,s->point_sampled?0:1,s->point_sampled?0:1,0,0,0); q[5]=GS_A_TEX1_1;
-	q[6]=alpha; q[7]=GS_A_ALPHA_1; q[8]=GS_TEST(0,1,0,0,0,0,1,1); q[9]=GS_A_TEST_1;
+	q[6]=alpha; q[7]=GS_A_ALPHA_1;
+	/* Meter passes use the GS alpha test; every other quad writes TEST off, as before. */
+	q[8]=s->alpha_test?GS_TEST(1,s->alpha_test==HCU_BITMAP_ALPHA_TEST_FILL?5:2,s->alpha_ref,0,0,0,1,1)
+		:GS_TEST(0,1,0,0,0,0,1,1);
+	q[9]=GS_A_TEST_1;
 	q[10]=scissor_value(s); q[11]=GS_A_SCISSOR_1;
 	q[12]=GIF_TAG(6,1,1,prim,GIFX_FLG_PACKED,3); q[13]=0x531; q+=14;
 	for(i=0;i<6;i++,q+=6) put_vertex(q,&vertices[order[i]],s,&image);
@@ -80,6 +86,11 @@ hcu_bitmap_quad_status hcu_bitmap_quad_emit(chain_t *c,const tex_section *textur
 		q[2]=GS_ALPHA(0,2,2,1,128); q[3]=GS_A_ALPHA_1;
 		q[4]=GIF_TAG(6,1,1,prim,GIFX_FLG_PACKED,3); q[5]=0x531; q+=6;
 		for(i=0;i<6;i++,q+=6) put_vertex(q,&vertices[order[i]],s,&image);
+	}
+	if(s->alpha_test){
+		/* Restore TEST to alpha-test off so GS state after this packet is as before the meter. */
+		q[0]=GIF_TAG(1,1,0,0,GIFX_FLG_PACKED,1); q[1]=GIF_REGS_AD;
+		q[2]=GS_TEST(0,1,0,0,0,0,1,1); q[3]=GS_A_TEST_1;
 	}
 	return HCU_BITMAP_QUAD_OK;
 }

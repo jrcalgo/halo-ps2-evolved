@@ -21,7 +21,8 @@ static int s_fence_observed;
 static int32_t fake_fence_query(void *context, uint32_t frame_index)
 {
 	(void)context;
-	return ((frame_index == 10 || frame_index == 12) && s_fence_observed) ? 1 : 0;
+	(void)frame_index;
+	return s_fence_observed ? 1 : 0;
 }
 
 halo_ps2_bitmap_request_status halo_ps2_bitmap_requests_register_consumer(
@@ -139,28 +140,21 @@ int main(void)
 	}
 	if (s_dispatch_calls != 1 || dispatch.lease_count != 1 || !owner.gpu_pending || owner.drain_pending) return 7;
 	if (hcu_bitmap_frame_owner_unbind(&owner) != HCU_BITMAP_FRAME_E_BUSY) return 8;
-	if (hcu_bitmap_frame_begin_callback(&owner,11,1) != HCU_BITMAP_FRAME_E_BUSY) return 9;
-	if (hcu_bitmap_frame_owner_gpu_fence_complete(&owner,9) != HCU_BITMAP_FRAME_E_FENCE) return 10;
-	if (hcu_bitmap_frame_owner_gpu_fence_complete(&owner,10) != HCU_BITMAP_FRAME_E_BUSY ||
+	/* Frame 11 opens while frame 10's leases still await the GPU fence: capture only writes the queue. */
+	if (hcu_bitmap_frame_begin_callback(&owner,11,1) != 0) return 9;
+	if (hcu_bitmap_frame_set_view_callback(&owner,0,0) != 0) return 9;
+	if (hcu_bitmap_frame_end_callback(&owner,11,0) != 0 || !owner.drain_pending || owner.gpu_pending == 0 ||
+		s_dispatch_calls != 1 || dispatch.lease_count != 1) return 9;
+	if (hcu_bitmap_frame_owner_gpu_fence_complete(&owner,11) != HCU_BITMAP_FRAME_E_BUSY ||
 		dispatch.lease_count != 1 || s_dispatch_complete_calls != 0) return 11;
 	s_fence_observed = 1;
-	if (hcu_bitmap_frame_owner_gpu_fence_complete(&owner,10) != HCU_BITMAP_FRAME_OK ||
+	if (hcu_bitmap_frame_owner_gpu_fence_complete(&owner,11) != HCU_BITMAP_FRAME_OK ||
 		dispatch.lease_count || s_dispatch_complete_calls != 1) return 11;
+	/* Sealed frame 11 is still undispatched: a new begin must refuse until the emit window drains it. */
+	if (hcu_bitmap_frame_begin_callback(&owner,12,1) != HCU_BITMAP_FRAME_E_BUSY) return 12;
 	binding.chunk_id++;
-	if (hcu_bitmap_frame_begin_callback(&owner,11,1) != HCU_BITMAP_FRAME_E_NOT_READY) return 12;
+	if (hcu_bitmap_frame_begin_callback(&owner,12,1) != HCU_BITMAP_FRAME_E_NOT_READY) return 12;
 	binding.chunk_id--;
-	if (hcu_bitmap_frame_begin_callback(&owner,11,1) != 0) return 13;
-	if (hcu_bitmap_frame_set_view_callback(&owner,0,0) != 0) return 14;
-	/* A faulted batch drops only its frame: the CE end succeeds, nothing emits, nothing stays pending. */
-	queue.full_count=1;
-	if (hcu_bitmap_frame_end_callback(&owner,11,0) != HCU_BITMAP_FRAME_OK) return 15;
-	if (owner.stat_drops != 1 || owner.last_drop_cause != 16u || owner.drain_pending ||
-		owner.gpu_pending || owner.in_frame) return 16;
-	if (s_dispatch_calls != 1 || dispatch.lease_count) return 16;
-	/* Recovery: the next frame starts clean; its batch emits once the chains bind and the fence completes. */
-	if (hcu_bitmap_frame_begin_callback(&owner,12,1) != 0) return 20;
-	if (hcu_bitmap_frame_set_view_callback(&owner,0,0) != 0) return 21;
-	if (hcu_bitmap_frame_end_callback(&owner,12,0) != 0 || owner.stat_drops != 1 || !owner.drain_pending) return 22;
 	{
 		chain_t gc, uc;
 		memset(&gc,0,sizeof(gc)); memset(&uc,0,sizeof(uc));
@@ -169,7 +163,29 @@ int main(void)
 		dispatch.geometry_chain=0; dispatch.upload_chain=0;
 	}
 	if (s_dispatch_calls != 2 || dispatch.lease_count != 1 || !owner.gpu_pending || owner.drain_pending) return 24;
-	if (hcu_bitmap_frame_owner_gpu_fence_complete(&owner,12) != HCU_BITMAP_FRAME_OK ||
+	if (hcu_bitmap_frame_owner_gpu_fence_complete(&owner,11) != HCU_BITMAP_FRAME_OK ||
+		dispatch.lease_count || owner.gpu_pending) return 25;
+	/* A faulted batch drops only its frame: the CE end succeeds, nothing emits, nothing stays pending. */
+	if (hcu_bitmap_frame_begin_callback(&owner,12,1) != 0) return 13;
+	if (hcu_bitmap_frame_set_view_callback(&owner,0,0) != 0) return 14;
+	queue.full_count=1;
+	if (hcu_bitmap_frame_end_callback(&owner,12,0) != HCU_BITMAP_FRAME_OK) return 15;
+	if (owner.stat_drops != 1 || owner.last_drop_cause != 16u || owner.drain_pending ||
+		owner.gpu_pending || owner.in_frame) return 16;
+	if (s_dispatch_calls != 2 || dispatch.lease_count) return 16;
+	/* Recovery: the next frame opens clean and its batch dispatches at the next emit window. */
+	if (hcu_bitmap_frame_begin_callback(&owner,13,1) != 0) return 20;
+	if (hcu_bitmap_frame_set_view_callback(&owner,0,0) != 0) return 21;
+	if (hcu_bitmap_frame_end_callback(&owner,13,0) != 0 || owner.stat_drops != 1 || !owner.drain_pending) return 22;
+	{
+		chain_t gc, uc;
+		memset(&gc,0,sizeof(gc)); memset(&uc,0,sizeof(uc));
+		dispatch.geometry_chain=&gc; dispatch.upload_chain=&uc;
+		if (hcu_bitmap_frame_owner_drain_pending(&owner) != HCU_BITMAP_FRAME_OK) return 23;
+		dispatch.geometry_chain=0; dispatch.upload_chain=0;
+	}
+	if (s_dispatch_calls != 3 || dispatch.lease_count != 1 || !owner.gpu_pending || owner.drain_pending) return 24;
+	if (hcu_bitmap_frame_owner_gpu_fence_complete(&owner,13) != HCU_BITMAP_FRAME_OK ||
 		dispatch.lease_count || owner.gpu_pending) return 25;
 	if (hcu_bitmap_frame_owner_unbind(&owner) != HCU_BITMAP_FRAME_OK) return 17;
 	puts("FRAME_OWNER_OK binds/views/dispatch/fence/unbind/drop-and-recover");

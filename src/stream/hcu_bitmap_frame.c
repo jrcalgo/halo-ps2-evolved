@@ -228,8 +228,11 @@ int32_t hcu_bitmap_frame_begin_callback(void *context, uint32_t frame_index,
 		!profile_unchanged(owner) ||
 		!producer_descriptor_has(owner->producer_capabilities))
 		return HCU_BITMAP_FRAME_E_NOT_READY;
-	if (owner->in_frame || owner->gpu_pending || owner->drain_pending || owner->dispatch->lease_count ||
-		!queue_idle(owner->queue)) return HCU_BITMAP_FRAME_E_BUSY;
+	/* Capture only writes the request queue. Leases taken by the previous sealed batch stay pinned until
+	 * their real GPU fence (renderer begin_frame -> gpu_fence_complete), and only the emit-window drain
+	 * touches dispatch slots, so CE frame k+1 may open while frame k's leases are pending. drain_pending
+	 * still refuses, because begin resets the queue that the sealed batch has not been dispatched from. */
+	if (owner->in_frame || owner->drain_pending || !queue_idle(owner->queue)) return HCU_BITMAP_FRAME_E_BUSY;
 	if (!active_window_count || active_window_count > HALO_PS2_BITMAP_FRAME_MAX_WINDOWS)
 		return HCU_BITMAP_FRAME_E_VIEW;
 	if (halo_ps2_bitmap_requests_begin(owner->queue, frame_index, owner->generation, 0, 0) !=

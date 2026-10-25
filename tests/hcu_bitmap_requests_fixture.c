@@ -12,6 +12,21 @@ typedef char fixture_ilp32[sizeof(void *) == 4 && sizeof(long) == 4 ? 1 : -1];
 static struct bitmap_group s_group;
 static struct bitmap_data s_bitmaps[2];
 
+/* Same layout as hud_draw.c's struct rasterizer_meter_parameters (0x1C). */
+typedef struct fixture_meter_parameters {
+	pixel32 gradient_min_color;
+	pixel32 gradient_max_color;
+	pixel32 background_color;
+	pixel32 flash_color;
+	boolean flash_color_is_negative;
+	boolean tint_mode_2;
+	byte pad12[2];
+	pixel32 tint_color;
+	real gradient;
+} fixture_meter_parameters;
+typedef char fixture_meter_size[sizeof(fixture_meter_parameters) == 0x1C ? 1 : -1];
+typedef char fixture_request_size[sizeof(halo_ps2_bitmap_request) == 120 ? 1 : -1];
+
 typedef struct bitmap_consumer_probe {
 	uint32_t calls;
 	uint32_t observed_count;
@@ -71,6 +86,7 @@ int main(void)
 	struct dynamic_screen_vertex vertices[4];
 	bitmap_consumer_probe probe={0, 0, 0, 0};
 	bitmap_consumer_probe rejected_probe={0, 0, 0, 0};
+	fixture_meter_parameters meter_fixture;
 	int i;
 	memset(&queue, 0xA5, sizeof(queue));
 	memset(&s_group, 0, sizeof(s_group));
@@ -111,19 +127,37 @@ int main(void)
 	params.map[1] = &s_bitmaps[0];
 	if (!check(halo_ps2_bitmap_request_capture(&queue, &params, vertices) == HALO_PS2_BITMAP_REQUEST_UNSUPPORTED, "multitexture rejection")) return 1;
 	params.map[1] = NULL;
-	params.meter_parameters = &s_group;
-	if (!check(halo_ps2_bitmap_request_capture(&queue, &params, vertices) == HALO_PS2_BITMAP_REQUEST_UNSUPPORTED, "meter rejection")) return 1;
+	/* Meter capture: CE's struct copied by value; threshold = gradient_min alpha; flash when its alpha is higher. */
+	meter_fixture.gradient_min_color = 0x40112233u;
+	meter_fixture.gradient_max_color = 0x00FF8800u;
+	meter_fixture.background_color = 0x20000000u;
+	meter_fixture.flash_color = 0xC0AABBCCu;
+	params.meter_parameters = &meter_fixture;
+	if (!check(halo_ps2_bitmap_request_capture(&queue, &params, vertices) == HALO_PS2_BITMAP_REQUEST_OK, "meter capture accepted")) return 1;
+	{
+		halo_ps2_bitmap_request const *mr = &queue.requests[queue.count - 1];
+		if (!check(mr->has_meter == (HALO_PS2_BITMAP_METER_PRESENT | HALO_PS2_BITMAP_METER_FLASHING) &&
+			mr->meter_value == 0x40 && mr->meter_gradient_min_color == 0x40112233u &&
+			mr->meter_gradient_max_color == 0x00FF8800u && mr->meter_flash_color == 0xC0AABBCCu &&
+			mr->meter_background_color == 0x20000000u && mr->bitmap_index == 1, "meter fields copied")) return 1;
+		/* A non-flashing meter (flash alpha not above the threshold) keeps only the present bit. */
+		meter_fixture.flash_color = 0x40AABBCCu;
+		if (!check(halo_ps2_bitmap_request_capture(&queue, &params, vertices) == HALO_PS2_BITMAP_REQUEST_OK &&
+			queue.requests[queue.count - 1].has_meter == HALO_PS2_BITMAP_METER_PRESENT, "non-flashing meter")) return 1;
+	}
 	params.meter_parameters = NULL;
+	if (!check(halo_ps2_bitmap_request_capture(&queue, &params, vertices) == HALO_PS2_BITMAP_REQUEST_OK &&
+		queue.requests[queue.count - 1].has_meter == 0, "plain capture clears meter fields")) return 1;
 	params.map[0] = NULL;
 	if (!check(halo_ps2_bitmap_request_capture(&queue, &params, vertices) == HALO_PS2_BITMAP_REQUEST_MISSING_TEXTURE, "missing texture")) return 1;
 	params.map[0] = &s_bitmaps[1];
 	s_bitmaps[1].tag_index = 20;
 	if (!check(halo_ps2_bitmap_request_capture(&queue, &params, vertices) == HALO_PS2_BITMAP_REQUEST_INVALID_IDENTITY, "invalid identity")) return 1;
 	s_bitmaps[1].tag_index = 19;
-	for (i = 1; i < (int)HALO_PS2_BITMAP_REQUEST_CAPACITY; i++)
+	for (i = (int)queue.count; i < (int)HALO_PS2_BITMAP_REQUEST_CAPACITY; i++)
 		if (halo_ps2_bitmap_request_capture(&queue, &params, vertices) != HALO_PS2_BITMAP_REQUEST_OK) return 1;
 	if (!check(halo_ps2_bitmap_request_capture(&queue, &params, vertices) == HALO_PS2_BITMAP_REQUEST_FULL, "capacity bound")) return 1;
-	if (!check(queue.unsupported_count == 2 && queue.missing_texture_count == 1 && queue.invalid_identity_count == 1 && queue.full_count == 1, "failure counters")) return 1;
+	if (!check(queue.unsupported_count == 1 && queue.missing_texture_count == 1 && queue.invalid_identity_count == 1 && queue.full_count == 1, "failure counters")) return 1;
 	if (!check(halo_ps2_bitmap_requests_end(&queue) == HALO_PS2_BITMAP_REQUEST_OK, "queue end invokes consumer")) return 1;
 	if (!check(probe.calls == 1 && probe.observed_count == HALO_PS2_BITMAP_REQUEST_CAPACITY && probe.observed_generation == 9001 && queue.readers == 0, "consumer receives sealed pinned reader and releases it")) return 1;
 	if (!check(halo_ps2_bitmap_requests_set_view(&queue, 0, 0) == HALO_PS2_BITMAP_REQUEST_INVALID_ARGUMENT, "closed queue rejects view update")) return 1;

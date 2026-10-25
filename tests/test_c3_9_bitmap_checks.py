@@ -83,3 +83,33 @@ def test_failure_line_or_total_mismatch_fails():
     assert not out["checks"]["bitmap_no_failure"]
     assert not out["checks"]["bitmap_release_totals_match"]
     assert not out["c3_9_qualified"]
+
+
+def test_all_frames_dropped_never_qualifies():
+    # Every frame begins, but each sealed batch is dropped whole (cause 0x2 = unsupported capture).
+    dropped = [tick(n, begin=1) .replace("bitmap-frames-dropped=0", f"bitmap-frames-dropped={n}")
+               for n in (1, 2, 3)]
+    lines = [GOOD_BOUND] + dropped + [release(requests=6, begins=3, queue_ends=3)]
+    out = run(lines)
+    assert not out["checks"]["bitmap_accepted_frames_nonzero"]
+    assert not out["checks"]["bitmap_no_dropped_batches"]
+    assert not out["c3_9_qualified"]
+
+
+def test_accepted_frames_require_nonzero_count():
+    # One accepted frame and one drop is still incomplete evidence, and the accepted count must be positive.
+    lines = [GOOD_BOUND, tick(1, begin=1, views=4),
+             tick(2, begin=1).replace("bitmap-frames-dropped=0", "bitmap-frames-dropped=1"),
+             release(requests=4, begins=2, queue_ends=2)]
+    out = run(lines)
+    assert out["checks"]["bitmap_accepted_frames_nonzero"]
+    assert not out["checks"]["bitmap_no_dropped_batches"]
+    assert not out["c3_9_qualified"]
+
+
+def test_release_totals_must_balance_with_ticks():
+    lines = [GOOD_BOUND, tick(1, begin=1), tick(2, begin=1), release(requests=2, begins=2, queue_ends=2)]
+    out = run(lines)
+    assert not out["checks"]["bitmap_release_totals_match"]
+    assert not out["c3_9_qualified"]
+

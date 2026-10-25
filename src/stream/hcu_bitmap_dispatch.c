@@ -31,6 +31,46 @@ static unsigned pages_for(uint32_t w, uint32_t h, uint32_t psm)
 	return ((tbw + 1u) / 2u) * ((h + page_h - 1u) / page_h);
 }
 
+/* Meter (CE hud meter shader): the bitmap's alpha encodes the fill order and the request's
+ * meter_value is the fill threshold (0..255). Two exact GS alpha-test passes partition it:
+ * EMPTY draws the background where texel alpha < value, then FILL draws the gradient where it
+ * is >= value. The gradient is min->max lerped at value/255 (integer), or the flash colour when
+ * CE's flash is active. CE's per-channel combiner and subtractive flash are not reproduced.
+ * Each pass is its own GIF packet with TEST set and restored, so no state leaks. */
+static uint32_t meter_lerp_channel(uint32_t a, uint32_t b, uint32_t t)
+{
+	return (a * (255u - t) + b * t + 127u) / 255u;
+}
+
+static hcu_bitmap_quad_status meter_emit(chain_t *geometry_chain, const tex_section *section,
+	uint32_t image_index, hcu_bitmap_quad_state_t *state,
+	const hcu_bitmap_vertex_t vertices[4], const halo_ps2_bitmap_request *request)
+{
+	hcu_bitmap_vertex_t quad[4];
+	uint32_t t = request->meter_value, empty = request->meter_background_color, fill, i;
+	hcu_bitmap_quad_status status;
+	if (request->has_meter & HALO_PS2_BITMAP_METER_FLASHING) {
+		fill = request->meter_flash_color & 0x00FFFFFFu;
+	} else {
+		uint32_t mn = request->meter_gradient_min_color, mx = request->meter_gradient_max_color;
+		fill = (meter_lerp_channel((mn >> 16) & 255u, (mx >> 16) & 255u, t) << 16) |
+			(meter_lerp_channel((mn >> 8) & 255u, (mx >> 8) & 255u, t) << 8) |
+			meter_lerp_channel(mn & 255u, mx & 255u, t);
+	}
+	memcpy(quad, vertices, sizeof(quad));
+	if (empty >> 24) {
+		for (i = 0; i < 4; i++) quad[i].argb = empty;
+		state->alpha_test = HCU_BITMAP_ALPHA_TEST_EMPTY;
+		state->alpha_ref = (uint8_t)t;
+		status = hcu_bitmap_quad_emit(geometry_chain, section, image_index, state, quad);
+		if (status != HCU_BITMAP_QUAD_OK) return status;
+	}
+	for (i = 0; i < 4; i++) quad[i].argb = fill | 0xFF000000u;
+	state->alpha_test = HCU_BITMAP_ALPHA_TEST_FILL;
+	state->alpha_ref = (uint8_t)t;
+	return hcu_bitmap_quad_emit(geometry_chain, section, image_index, state, quad);
+}
+
 static int blend_for(int16_t ce_blend, hcu_bitmap_blend_t *out)
 {
 	/* Values are the pinned CE shader_framebuffer_blend_function enum. */
@@ -208,9 +248,14 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 		vertices[i].u = request->vertices[i].u; vertices[i].v = request->vertices[i].v;
 		vertices[i].argb = request->vertices[i].color;
 	}
-	if (hcu_bitmap_quad_emit(geometry_chain, &section, binding->image_index,
-		&state, vertices) != HCU_BITMAP_QUAD_OK)
+	if (request->has_meter & HALO_PS2_BITMAP_METER_PRESENT) {
+		if (meter_emit(geometry_chain, &section, binding->image_index,
+			&state, vertices, request) != HCU_BITMAP_QUAD_OK)
+			goto rollback;
+	} else if (hcu_bitmap_quad_emit(geometry_chain, &section, binding->image_index,
+		&state, vertices) != HCU_BITMAP_QUAD_OK) {
 		goto rollback;
+	}
 	if (acquired == TC_UPLOAD) {
 		slot->chunk_id = binding->chunk_id; slot->cache_key = binding->cache_key;
 		slot->storage_bytes = retained_bytes; slot->valid = 1;
@@ -276,6 +321,7 @@ int hcu_bitmap_dispatch_reader(const halo_ps2_bitmap_request_reader *reader,
 			ctx->texture_page_base_words, ctx->clut_base_words,
 			ctx->screen_w, ctx->screen_h, lease);
 		if (status == HCU_BITMAP_DISPATCH_OK) {
+			if (reader->requests[i].has_meter & HALO_PS2_BITMAP_METER_PRESENT) ctx->meter_quads++;
 			/* C3.10: dispatch runs inside the parent emit window, so the upload rides the next kick */
 			lease->kick_seq = bsp_render_kick_seq ? bsp_render_kick_seq() + 1u : 0u;
 			ctx->lease_count++;

@@ -39,6 +39,25 @@ int main(int argc,char **argv)
 		return 0;
 	}
 	if(argc>1 && strcmp(argv[1],"multitexture")==0) state.texture_layers=2;
+	if(argc>1 && (strcmp(argv[1],"meter_fill")==0 || strcmp(argv[1],"meter_empty")==0)){
+		uint64_t *mq; uint8_t meter_test=strcmp(argv[1],"meter_fill")==0?HCU_BITMAP_ALPHA_TEST_FILL:HCU_BITMAP_ALPHA_TEST_EMPTY;
+		state.alpha_test=meter_test; state.alpha_ref=77;
+		status=hcu_bitmap_quad_emit(&chain,&textures,0,&state,v);
+		if(status!=HCU_BITMAP_QUAD_OK||chain.qw!=29u) return 20;
+		mq=(uint64_t*)((uint8_t*)memory+32);
+		/* TEST set: alpha test on, GEQUAL for fill, LESS for empty, AREF 77, KEEP on fail. */
+		if(mq[8]!=GS_TEST(1,meter_test==HCU_BITMAP_ALPHA_TEST_FILL?5:2,77,0,0,0,1,1)||mq[9]!=GS_A_TEST_1) return 21;
+		/* TEST restored to off by a packet after both triangles; the draw itself is unchanged. */
+		if(mq[50]!=GIF_TAG(1,1,0,0,GIFX_FLG_PACKED,1)||mq[52]!=GS_TEST(0,1,0,0,0,0,1,1)||mq[53]!=GS_A_TEST_1) return 22;
+		if(mq[12]!=GIF_TAG(6,1,1,GS_PRIM(GSX_PRIM_TRIANGLE,1,1,0,1,0,1,0,0),GIFX_FLG_PACKED,3)||mq[13]!=0x531) return 23;
+		if(((uint8_t*)memory)[chain.qw*16u]!=0xA5) return 24;
+		return 0;
+	}
+	if(argc>1 && strcmp(argv[1],"meter_bad_ref")==0){
+		state.alpha_test=7; status=hcu_bitmap_quad_emit(&chain,&textures,0,&state,v);
+		if(status!=HCU_BITMAP_QUAD_INVALID||chain.qw!=0||((uint8_t*)memory)[0]!=0xA5) return 25;
+		return 0;
+	}
 	if(argc>1 && strcmp(argv[1],"overflow")==0){chain.cap_qw=26; status=hcu_bitmap_quad_emit(&chain,&textures,0,&state,v);
 		if(status!=HCU_BITMAP_QUAD_CAPACITY||chain.qw!=0||chain.overflow||((uint8_t*)memory)[0]!=0xA5) return 3;
 		return 0;}

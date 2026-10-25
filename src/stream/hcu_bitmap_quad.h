@@ -27,7 +27,18 @@ typedef struct {
 	hcu_bitmap_blend_t blend;
 	uint8_t texture_layers; /* only one sampled texture is currently supported */
 	uint8_t point_sampled;
+	/* Meter fill: GS alpha test on the texel alpha, which encodes the fill order.
+	 * FILL keeps texels with alpha >= alpha_ref; EMPTY keeps alpha < alpha_ref.
+	 * The pair partitions the meter exactly, so each pass is one quad. */
+	uint8_t alpha_test;     /* HCU_BITMAP_ALPHA_TEST_* */
+	uint8_t alpha_ref;
 } hcu_bitmap_quad_state_t;
+
+enum {
+	HCU_BITMAP_ALPHA_TEST_NONE = 0,
+	HCU_BITMAP_ALPHA_TEST_FILL = 1,
+	HCU_BITMAP_ALPHA_TEST_EMPTY = 2
+};
 
 typedef enum {
 	HCU_BITMAP_QUAD_OK = 0,

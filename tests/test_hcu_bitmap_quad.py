@@ -16,6 +16,6 @@ def test_real_chain_and_gs_tex_readers_validate_quad(tmp_path):
         str(ENGINE / "src/render/chain.c"), str(ENGINE / "src/world/tex.c"),
         "-lm", "-o", str(exe),
     ], check=True, capture_output=True, text=True)
-    for mode in ("valid", "overflow", "bad_uv", "add", "opaque", "multitexture", "premultiplied", "raw_add", "premultiplied_overflow"):
+    for mode in ("valid", "overflow", "bad_uv", "add", "opaque", "multitexture", "premultiplied", "raw_add", "premultiplied_overflow", "meter_fill", "meter_empty", "meter_bad_ref"):
         args = [str(exe)] if mode == "valid" else [str(exe), mode]
         subprocess.run(args, check=True, capture_output=True, text=True)

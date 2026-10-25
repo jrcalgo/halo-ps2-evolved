@@ -100,6 +100,7 @@ typedef struct {
 	hcu_bitmap_lease *leases;
 	uint32_t lease_capacity, lease_count;
 	hcu_bitmap_dispatch_status first_error;
+	uint32_t meter_quads;   /* monotonic: meter requests emitted (each is a fill pass plus an empty pass) */
 } hcu_bitmap_dispatch_context;
 
 /* Suitable for registration as the queue's closed-reader consumer. The queue
