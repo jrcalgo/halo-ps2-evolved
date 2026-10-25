@@ -212,3 +212,45 @@ def test_c3_2_checker_fails_closed_without_telemetry():
     result = matrix.c3_2_contract_checks([], 4)
     assert not result["c3_2_qualified"]
     assert not any(result["checks"].values())
+
+
+def _spawn_lines(prespawn_camera="fixed", active_camera="snapshot", skip_view=None, never_active=None):
+    lines = []
+    for v in range(4):
+        lines.append(f"HALO_PS2_LOCAL c3-views frame=0 view={v} camera={prespawn_camera} active=0")
+    for frame, seq in zip((30, 60), (10, 40)):
+        for v in range(4):
+            if v == never_active:
+                lines.append(f"HALO_PS2_LOCAL c3-views frame={frame} view={v} camera=fixed active=0")
+                continue
+            camera = "skipped" if v == skip_view else active_camera
+            lines.append(f"HALO_PS2_LOCAL c3-views frame={frame} view={v} camera={camera} active=1")
+        lines.append(f"HALO_PS2_LOCAL c3-snapshot frame={frame} map-gen=1 seq={seq} views=4 active-views=4")
+        lines.append(f"HALO_PS2_LOCAL c3-objects frame={frame} view=0 source=bank drawn=10")
+    return lines
+
+
+def test_c3_2_checker_exempts_only_prespawn_inactive_fixed_rows():
+    matrix = _load_matrix()
+    result = matrix.c3_2_contract_checks(_spawn_lines(), 4)
+    assert result["checks"]["camera_from_snapshot_all_views"], result["reasons"]
+    assert result["camera_rows"]["pre_spawn_inactive"] == 4
+    assert result["camera_rows"]["fixed"] == 4  # the frame-0 rows are counted but exempt
+    assert result["c3_2_qualified"], result["reasons"]
+
+
+def test_c3_2_checker_rejects_skipped_active_view_and_post_spawn_fixed_rows():
+    matrix = _load_matrix()
+    skipped = matrix.c3_2_contract_checks(_spawn_lines(skip_view=2), 4)
+    assert not skipped["checks"]["camera_from_snapshot_all_views"]
+    assert skipped["camera_rows"]["skipped"] == 2
+    assert not skipped["c3_2_qualified"]
+    # a view that goes inactive after spawn is drawn with the fixed camera today; it must fail as well
+    lines = _spawn_lines(never_active=1)
+    assert not matrix.c3_2_contract_checks(lines, 4)["checks"]["views_active_per_view"]
+
+
+def test_c3_2_checker_rejects_fixed_camera_on_active_row():
+    matrix = _load_matrix()
+    assert not matrix.c3_2_contract_checks(_spawn_lines(active_camera="fixed"), 4)["checks"][
+        "camera_from_snapshot_all_views"]

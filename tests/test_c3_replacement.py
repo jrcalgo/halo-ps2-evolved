@@ -238,3 +238,12 @@ def test_late_failure_must_reach_empty_state_then_retry_without_rendering():
     # the new map is drawn from a ready line emitted before the retry load
     lines = base[:idx] + [ready(NEW)] + base[idx:]
     assert "late_failure_no_render_while_empty" in failing(check(lines, mode=3))
+
+
+def test_late_failure_retry_does_not_dispose_or_unload_an_empty_state():
+    # The guarded retry (CE hcu_c2_successor_attempt) skips dispose/unload once the old map is no longer mounted:
+    # the log holds one release pair from the first attempt, and every ordered mode-3 check still holds.
+    lines = load_lines()
+    assert sum("step=dispose" in l for l in lines) == 1
+    assert sum("step=unload" in l for l in lines) == 1
+    assert not failing(check(lines, mode=3))

@@ -153,6 +153,12 @@ int main(void)
 	CHECK(st.generation == 7u && st.generation_refusals == 1u);
 	CHECK(hcu_views_accept_generation(NULL, 7u) == 0);
 
+	/* Skip rule: a never-active view may keep the fixed pre-spawn camera; once active it is skipped. */
+	CHECK(hcu_views_must_skip(0) == 0);
+	CHECK(hcu_views_must_skip(1) == 1);
+	CHECK(HCU_VIEW_CAMERA_SKIPPED != HCU_VIEW_CAMERA_FIXED && HCU_VIEW_CAMERA_SKIPPED != HCU_VIEW_CAMERA_SNAPSHOT);
+	CHECK(hcu_views_accept_generation(&st, 7u) == 1 && st.skipped_views == 0u);
+
 	/* HUD lines: visible flag gates them; values are clamped and rounded. */
 	CHECK(hcu_views_hud_lines(hud, 0u, lines) == 0);
 	n = hcu_views_hud_lines(hud, 0x01u, lines);

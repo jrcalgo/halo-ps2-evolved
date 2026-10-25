@@ -75,6 +75,11 @@ int hcu_views_camera_from_snapshot(const float pos[3], const float forward[3], c
 	return 1;
 }
 
+int hcu_views_must_skip(int ever_active)
+{
+	return ever_active != 0;
+}
+
 int hcu_views_accept_generation(hcu_views_stats *s, uint32_t map_generation)
 {
 	if (!s)

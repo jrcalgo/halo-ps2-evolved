@@ -28,7 +28,8 @@
 
 typedef enum {
 	HCU_VIEW_CAMERA_FIXED = 0,
-	HCU_VIEW_CAMERA_SNAPSHOT = 1
+	HCU_VIEW_CAMERA_SNAPSHOT = 1,
+	HCU_VIEW_CAMERA_SKIPPED = 2  /* active (or once-active) view with no usable snapshot camera: not drawn */
 } hcu_view_camera_source;
 
 /* camera_t-compatible pose in radians (yaw/pitch as camera_basis reads them). */
@@ -42,7 +43,8 @@ typedef struct {
 typedef struct {
 	uint32_t frames;            /* frames planned */
 	uint32_t snapshot_views;    /* views whose camera came from the snapshot */
-	uint32_t fixed_views;       /* views on a fixed camera */
+	uint32_t fixed_views;       /* views on a fixed camera (pre-spawn only) */
+	uint32_t skipped_views;     /* views not drawn: no usable snapshot camera after the view was active */
 	uint32_t refused_views;     /* snapshot views refused (camera, flags or generation) */
 	uint32_t generation_refusals;
 	uint32_t hud_lines;         /* health/shield/ammo lines drawn */
@@ -62,6 +64,11 @@ int hcu_views_camera_from_snapshot(const float pos[3], const float forward[3], c
 /* Snapshot views are accepted only for one map generation at a time: the first accepted view sets it,
  * a view from another generation is refused. Returns 1 when accepted. */
 int hcu_views_accept_generation(hcu_views_stats *s, uint32_t map_generation);
+
+/* A view with no usable snapshot camera this frame keeps the fixed pre-spawn camera only while it has never
+ * been active on this map. Once active (ever_active = 1) it must be skipped, never drawn from an invented
+ * camera. Returns 1 to skip, 0 to keep the fixed camera. */
+int hcu_views_must_skip(int ever_active);
 
 /* Health/shield/ammo lines for one view. hud_flags is the snapshot's HUD flags; with HUD_VISIBLE clear
  * the result is 0 lines. Writes at most HCU_RENDER_VIEWS_HUD_LINES strings of at most

@@ -1205,8 +1205,9 @@ def c3_2_contract_checks(lines: list[str], views: int) -> dict:
     """C3.2 parent-consumer evidence from existing telemetry only.
 
     The parent may only read CE-published snapshot data. The guest log shows this through:
-      - `HALO c3-views ... camera=snapshot|fixed`: every view's camera must come from the published bank
-        (camera=fixed is parent-authored view state and fails the contract);
+      - `HALO c3-views ... camera=snapshot|fixed|skipped active=`: once a view has been active, every one of
+        its rows must use camera=snapshot (a fixed or skipped camera fails the contract). Rows before the
+        view's first active row are the pre-spawn state and are exempt; each view needs at least one active row;
       - `c3-snapshot ... seq= active-views=`: CE publishes sequences that advance, with every view active;
       - `c3-objects ... source=`: object geometry must come from the bank, never the synthetic test producer.
     These counters cannot prove the absence of a parent call to CE simulation; the static audit in
@@ -1216,16 +1217,33 @@ def c3_2_contract_checks(lines: list[str], views: int) -> dict:
     view_rows = [fields_of(l) for l in lines if re.search(r"\bc3-views frame=", l)]
     snap_rows = [fields_of(l) for l in lines if re.search(r"\bc3-snapshot frame=", l) and " seq=" in l]
     object_rows = [fields_of(l) for l in lines if re.search(r"\bc3-objects frame=", l)]
-    cameras = [row.get("camera") for row in view_rows if _int(row.get("view")) is not None and _int(row.get("view")) < views]
+    in_range = [row for row in view_rows if _int(row.get("view")) is not None and _int(row.get("view")) < views]
+    cameras = [row.get("camera") for row in in_range]
     snapshot_views = sum(1 for c in cameras if c == "snapshot")
     fixed_views = sum(1 for c in cameras if c == "fixed")
+    skipped_views = sum(1 for c in cameras if c == "skipped")
+    seen_active: set[int] = set()
+    active_rows = {v: 0 for v in range(views)}
+    contract_rows = []
+    pre_spawn_rows = 0
+    for row in in_range:
+        v = _int(row.get("view"))
+        if row.get("active") == "1":
+            seen_active.add(v)
+            active_rows[v] += 1
+        elif v not in seen_active:
+            pre_spawn_rows += 1
+            continue
+        contract_rows.append(row)
     seqs = [_int(row.get("seq")) for row in snap_rows]
     seq_advancing = bool(seqs) and all(s is not None for s in seqs) and all(b > a for a, b in zip(seqs, seqs[1:])) \
         and seqs[-1] > seqs[0]
     last_active = _int(snap_rows[-1].get("active-views")) if snap_rows else None
     checks = {
         "views_reported_per_view": all(any(_int(r.get("view")) == v for r in view_rows) for v in range(views)),
-        "camera_from_snapshot_all_views": bool(cameras) and fixed_views == 0 and snapshot_views == len(cameras),
+        "views_active_per_view": all(active_rows[v] > 0 for v in range(views)),
+        "camera_from_snapshot_all_views": bool(contract_rows) and
+            all(row.get("camera") == "snapshot" for row in contract_rows),
         "snapshot_sequence_advances": seq_advancing,
         "snapshot_active_views_match": last_active == views,
         "object_source_bank_only": bool(object_rows) and all(r.get("source") == "bank" for r in object_rows),
@@ -1233,7 +1251,9 @@ def c3_2_contract_checks(lines: list[str], views: int) -> dict:
     reasons = [f"c3.2 contract check failed: {name}" for name, ok in checks.items() if not ok]
     return {
         "views": views,
-        "camera_rows": {"snapshot": snapshot_views, "fixed": fixed_views},
+        "camera_rows": {"snapshot": snapshot_views, "fixed": fixed_views, "skipped": skipped_views,
+                        "pre_spawn_inactive": pre_spawn_rows},
+        "active_rows_per_view": [active_rows[v] for v in range(views)],
         "snapshot_sequences": {"first": seqs[0] if seqs else None, "last": seqs[-1] if seqs else None,
                                "rows": len(seqs)},
         "checks": checks,
