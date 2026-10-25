@@ -225,6 +225,39 @@ def test_snapshot_seq_must_advance_each_periodic_frame():
     assert checks["snap_seq_advances_per_periodic_frame"] is False
 
 
+def _snap_shape_lines(snap_frames_seqs, periodic_frames):
+    """Periodic lines for every frame in periodic_frames, snapshot lines only for the given (frame, seq) pairs."""
+    lines = [f"HALO_PS2_LOCAL c3-frame kind=periodic frame={f} views=2" for f in periodic_frames]
+    lines += [f"HALO_PS2_LOCAL c3-snapshot frame={f} map-gen=1 seq={s} views=2 active-views=2 biped=4"
+              for f, s in snap_frames_seqs]
+    return lines
+
+
+def test_snapshot_seq_check_ignores_periodic_frame_without_snapshot():
+    # Real shape from c3-pkg-r1: frame 1 is a periodic line with no snapshot; snapshots start at frame 30.
+    periodic = [1] + [30 * i for i in range(1, 11)]
+    snaps = [(30 * i, 30 * i) for i in range(1, 10)] + [(300, 299)]
+    lines = _snap_shape_lines(snaps, periodic)
+    checks = ci.snapshot_exit_checks(lines, 2, [GOOD_CAPTURE], True, c2m.capture_has_scene_variation)["checks"]
+    assert checks["snap_seq_advances_per_periodic_frame"] is True
+
+
+def test_snapshot_seq_check_fails_on_stall_and_on_backwards_seq():
+    periodic = [1, 30, 60, 90, 120]
+    stalled = _snap_shape_lines([(30, 30), (60, 60), (90, 60), (120, 120)], periodic)
+    backwards = _snap_shape_lines([(30, 30), (60, 60), (90, 45), (120, 120)], periodic)
+    for lines in (stalled, backwards):
+        checks = ci.snapshot_exit_checks(lines, 2, [GOOD_CAPTURE], True,
+                                         c2m.capture_has_scene_variation)["checks"]
+        assert checks["snap_seq_advances_per_periodic_frame"] is False
+
+
+def test_snapshot_seq_check_needs_a_snapshot_on_a_periodic_frame():
+    lines = _snap_shape_lines([(999, 5)], [1, 30])
+    checks = ci.snapshot_exit_checks(lines, 2, [GOOD_CAPTURE], True, c2m.capture_has_scene_variation)["checks"]
+    assert checks["snap_seq_advances_per_periodic_frame"] is False
+
+
 def test_snapshot_black_capture_and_no_textures_fail():
     lines = exit_lines(tex_hits=0, lm=0, pose=0)
     checks = ci.snapshot_exit_checks(lines, 2, [BLACK_CAPTURE], True, c2m.capture_has_scene_variation)["checks"]

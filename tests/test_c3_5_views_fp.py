@@ -90,7 +90,10 @@ def test_combined_verdict_uses_pixels_and_state(tmp_path):
             for y in range(224, 448):
                 for x in range(256, 512):
                     px[x, y] = (16, 16, 24)
-        return img
+        # The capture is the 1280x1024 root with the game in the top-left 640x480 area.
+        root = Image.new("RGB", (1280, 1024), (0, 0, 0))
+        root.paste(img.resize((640, 480), Image.NEAREST), (0, 0))
+        return root
 
     capture = tmp_path / "held.png"
     frame(3).save(capture)

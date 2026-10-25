@@ -1565,8 +1565,9 @@ void hcu_c3_render_map_loaded(const char *map_name)
 	uint8_t *base;
 	size_t bytes;
 	/* C3:pack begin */
-	size_t bsps_need, tex_need;
-	hcu_render_media_pack pack;
+	size_t bsps_need = 0, tex_need = 0;
+	hcu_render_media_pack pack = {0};
+	int measure_rc = HCU_RENDER_MEDIA_OK;
 	/* C3:pack end */
 	hcu_render_media_span bsps, tex;
 	hcu_render_world_span owner;
@@ -1589,8 +1590,12 @@ void hcu_c3_render_map_loaded(const char *map_name)
 	 * before any read. The owner is 16-byte aligned; the spans need 64. */
 	base = (uint8_t *)(((uintptr_t)s_partition.render_texture_base + 63u) & ~(uintptr_t)63u);
 	bytes = s_partition.render_texture_bytes - (size_t)(base - (uint8_t *)s_partition.render_texture_base);
-	if (hcu_render_media_measure(&s_map_service.profile_view, 0, &bsps_need, &tex_need) != HCU_RENDER_MEDIA_OK ||
-		hcu_render_media_pack_plan(bytes, bsps_need, tex_need, &pack) != HCU_RENDER_MEDIA_OK ||
+	measure_rc = hcu_render_media_measure(&s_map_service.profile_view, 0, &bsps_need, &tex_need);
+	if (measure_rc != HCU_RENDER_MEDIA_OK) {
+		printf("HALO_PS2_FAIL c3-render media-absent rc=%d\n", measure_rc);
+		return;
+	}
+	if (hcu_render_media_pack_plan(bytes, bsps_need, tex_need, &pack) != HCU_RENDER_MEDIA_OK ||
 		pack.arena_bytes == 0) {
 		printf("HALO_PS2_FAIL c3-render pack-overflow bsps=%u tex=%u owner=%u\n",
 			(unsigned)bsps_need, (unsigned)tex_need, (unsigned)bytes);

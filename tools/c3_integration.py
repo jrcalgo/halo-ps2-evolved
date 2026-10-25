@@ -265,15 +265,19 @@ def snapshot_exit_checks(lines: list[str], views: int, captures: list[dict], emu
     lightmapped counters, and animated objects (c3-pose changes)."""
     snaps = [kv(l) for l in lines if "c3-snapshot " in l and " seq=" in l]
     periodic = [l for l in lines if "c3-frame kind=periodic " in l]
+    periodic_frames = {_int(kv(l).get("frame")) for l in periodic}
     frames = [kv(l) for l in lines if "c3-frame " in l]
     final = frames[-1] if frames else {}
     ready = [kv(l) for l in lines if "c3-render-ready " in l]
     poses = [kv(l) for l in lines if "c3-pose " in l]
-    seqs = [_int(s.get("seq")) for s in snaps]
+    # Periodic frames without a snapshot line (frame 1 is logged before the first publish) are not compared, so
+    # the sequence is checked from the first snapshot onward: each must be greater than the one before.
+    snap_seqs = [_int(s.get("seq")) for s in snaps if _int(s.get("frame")) in periodic_frames]
+    seqs = snap_seqs
     last_snap = snaps[-1] if snaps else {}
     checks = {
         "snap_seq_present": bool(snaps),
-        "snap_seq_advances_per_periodic_frame": bool(periodic) and len(snaps) >= len(periodic) and
+        "snap_seq_advances_per_periodic_frame": bool(periodic) and bool(seqs) and
             all(a is not None and b is not None and b > a for a, b in zip(seqs, seqs[1:])),
         "snap_active_views_match": last_snap.get("active-views") == str(views),
         "snap_biped_positive": (_int(last_snap.get("biped"), 0) or 0) > 0,

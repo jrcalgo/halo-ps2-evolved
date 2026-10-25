@@ -1061,13 +1061,34 @@ def render_checks(lines: list[str], views: int, frames: int) -> dict:
 
 
 C3_5_CLEAR_RGB = (16, 16, 24)  # the unused-quadrant clear colour of hcu_c3_render_tick
+C3_5_LAYOUT_SIZE = (512, 448)  # VIDEO_WIDTH x VIDEO_HEIGHT, the space the layout rectangles are written in
+# PCSX2's default GS display (640x480). tools/c2_guest_run.py does not set the window size and the guest does not
+# log its output size, so this is the fallback when neither is known. Real captures match it (game pixels fill
+# exactly 0..639 x 0..479 of the 1280x1024 root); the captured window size, when one exists, takes precedence.
+PCSX2_DEFAULT_GAME_SIZE = (640, 480)
 
 
-def c3_5_layout_checks(views: int, capture_files: list[str]) -> dict:
+def c3_5_game_size(captures: list[dict]) -> tuple[int, int] | None:
+    """Game output size of a run from its captures: the PCSX2 window size when the window itself was captured
+    (the capture is then exactly the window); None when only the root was captured (its size is the Xvfb screen,
+    not the game area)."""
+    for c in captures or []:
+        size = str(c.get("window_size") or "")
+        if c.get("window") not in (None, "", "root") and "x" in size:
+            w, h = size.split("x", 1)
+            if w.isdigit() and h.isdigit():
+                return int(w), int(h)
+    return None
+
+
+def c3_5_layout_checks(views: int, capture_files: list[str], game_size: tuple[int, int] | None = None) -> dict:
     """C3.5 layout evidence from the newest framebuffer capture: each view rectangle is non-black and carries
     scene pixels, the unused 3-view quadrant is uniformly cleared, and no clear colour bleeds into a view.
-    Rectangles follow hcu_render_layout_compute on VIDEO_WIDTH x VIDEO_HEIGHT (512x448, halo-ps2 video.h),
-    scaled to the capture's size; the halves are exact (256 x 224) so no rounding applies."""
+
+    Rectangles are defined in the 512x448 layout space (hcu_render_layout_compute, halo-ps2 video.h). The game
+    occupies the top-left of the capture at `game_size` (the window size when known, else PCSX2_DEFAULT_GAME_SIZE),
+    so each layout point maps to capture pixel gx + x * gw / 512, gy + y * gh / 448. The game rectangle is never
+    derived from pixel content: a black view would then shrink it and make a neighbouring view pass wrongly."""
     out = {"views": views, "checks": {}, "reasons": [], "regions": {}}
     try:
         from PIL import Image
@@ -1082,7 +1103,12 @@ def c3_5_layout_checks(views: int, capture_files: list[str]) -> dict:
     img = Image.open(capture_files[-1]).convert("RGB")
     sw, sh = img.size
     px = img.load()
-    fx, fy = sw / 512.0, sh / 448.0
+    gw, gh = game_size if game_size else PCSX2_DEFAULT_GAME_SIZE
+    gx, gy = 0, 0
+    source = "window" if game_size else "pcsx2-default"
+    out["game_rect"] = {"rect": (gx, gy, gw, gh), "source": source}
+    lw, lh = C3_5_LAYOUT_SIZE
+    fx, fy = gw / float(lw), gh / float(lh)
     rects = {
         1: [(0, 0, 512, 448)],
         2: [(0, 0, 512, 224), (0, 224, 512, 224)],
@@ -1091,11 +1117,14 @@ def c3_5_layout_checks(views: int, capture_files: list[str]) -> dict:
     }[views]
     clear_rect = (256, 224, 256, 224) if views == 3 else None
 
+    def to_capture(x, y):
+        return (min(sw - 1, int(gx + x * fx)), min(sh - 1, int(gy + y * fy)))
+
     def sample(rect, inset=4, step=6):
         x0, y0, w, h = rect
         for y in range(y0 + inset, y0 + h - inset, step):
             for x in range(x0 + inset, x0 + w - inset, step):
-                yield px[min(sw - 1, int(x * fx)), min(sh - 1, int(y * fy))]
+                yield px[to_capture(x, y)]
 
     def is_clear(c):
         return all(abs(c[i] - C3_5_CLEAR_RGB[i]) <= 3 for i in range(3))
@@ -1103,12 +1132,17 @@ def c3_5_layout_checks(views: int, capture_files: list[str]) -> dict:
     def is_black(c):
         return max(c) <= 6
 
-    checks = {"layout_capture_size_known": sw >= 320 and sh >= 224}
+    checks = {
+        "layout_capture_size_known": sw >= 320 and sh >= 224,
+        "layout_game_rect_in_capture": gw > 0 and gh > 0 and gx + gw <= sw and gy + gh <= sh,
+    }
     for i, r in enumerate(rects):
         pts = list(sample(r))
         nonblack = sum(1 for c in pts if not is_black(c)) / max(1, len(pts))
         clear_frac = sum(1 for c in pts if is_clear(c)) / max(1, len(pts))
-        out["regions"][f"view{i}"] = {"rect": r, "nonblack": round(nonblack, 3), "clear": round(clear_frac, 3)}
+        out["regions"][f"view{i}"] = {"rect": r, "capture_rect": (*to_capture(r[0], r[1]), round(r[2] * fx),
+                                                                   round(r[3] * fy)),
+                                      "nonblack": round(nonblack, 3), "clear": round(clear_frac, 3)}
         checks[f"layout_view{i}_nonblack"] = nonblack >= 0.05
         checks[f"layout_view{i}_no_clear_bleed"] = clear_frac < 0.05
     if clear_rect:
@@ -1434,7 +1468,8 @@ def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1
             result["captures"] = guest_run.get("captures", [])
             # C3.5 layout: geometry of the split views and the unused 3-view quadrant (pixel checks).
             layout = c3_5_layout_checks(render_views, [c.get("file", "") for c in result["captures"]
-                                                        if "c3-render-held" in c.get("marker", "")])
+                                                        if "c3-render-held" in c.get("marker", "")],
+                                        game_size=c3_5_game_size(result["captures"]))
             result["layout"] = layout
             result["failing_checks"] = result["failing_checks"] + [k for k, v in layout["checks"].items() if not v]
             result["reasons"].extend(layout["reasons"])
