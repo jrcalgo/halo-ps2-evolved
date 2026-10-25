@@ -22,9 +22,11 @@ def _publisher_body():
 
 def test_publisher_fills_units_palettes_attachments_and_views():
     _, body = _publisher_body()
-    # objects: interned by {datum index, magic}, once per object
+    # Objects: the datum identifier is the generation, not CE's mutable
+    # render marker. The intern key must remain stable across render passes.
     assert "halo_ps2_frame_snapshot_intern_object(snapshot, id," in body
-    assert "id.generation = (uint32_t)object->object.magic_number;" in body
+    assert "DATUM_INDEX_TO_IDENTIFIER(iterator.index)" in body
+    assert "object->object.magic_number" not in body
     # node palettes for bipeds, vehicles and weapons from the CE render pose
     assert "object_get_node_matrices(iterator.index)" in body
     assert "_object_type_biped || type == _object_type_vehicle" in body
@@ -38,12 +40,54 @@ def test_publisher_fills_units_palettes_attachments_and_views():
     assert "player_try_and_get(player_index)" in body
     assert "view->hud_values[0] = object_get(unit_index)->object.body_vitality;" in body
     assert "view->unit_object = HALO_PS2_FRAME_NONE_U16;" in body
+    # Viewmodel selection reads CE render globals; bind the matching window
+    # context before copying the pose and restore it before publishing.
+    copy = body.index("first_person_weapon_copy_render_models(")
+    assert body.index("render.local_player_index = window->local_player_index;") < copy
+    assert body.index("render.camera = window->render_camera;") < copy
+    assert "render.local_player_index = saved_player_index;" in body
+    assert "render.camera = saved_camera;" in body
     # every view reference resolves through the bank (dedupe hits)
     assert "halo_ps2_frame_snapshot_intern_object(snapshot,\n\t\t\t\tsnapshot->objects[object_index].id, &resolved)" in body
     # the publisher never moves CE state
     for forbidden in ("object_set_world_matrix(", "object_set_position(", "player_control_update(",
                       "game_time_update(", "object_destroy("):
         assert forbidden not in body
+
+
+def test_object_generation_uses_ce_datum_salt_not_render_marker():
+    import re
+
+    _, body = _publisher_body()
+    match = re.search(
+        r"id\.generation\s*=\s*(\(uint32_t\)\(uint16_t\)\s*"
+        r"DATUM_INDEX_TO_IDENTIFIER\(iterator\.index\));", body)
+    assert match, "snapshot identity must use the CE datum identifier"
+    # Execute the exact production RHS with a CE-style datum index. The marker
+    # changes between passes, while the same live datum keeps the same salt.
+    source = f'''#include <assert.h>
+#include <stdint.h>
+#define DATUM_INDEX_TO_IDENTIFIER(index) ((index) >> 16)
+struct object_iterator {{ long index; }};
+int main(void) {{
+    struct object_iterator iterator = {{ 37L | (9L << 16) }};
+    long render_marker = 100;
+    uint32_t first = {match.group(1)};
+    render_marker = -1;
+    uint32_t second = {match.group(1)};
+    assert(first == 9u && second == first);
+    (void)render_marker;
+    return 0;
+}}
+'''
+    with tempfile.TemporaryDirectory(prefix="c3-datum-identity-") as temp:
+        source_path = Path(temp) / "datum_identity.c"
+        executable = Path(temp) / "datum_identity"
+        source_path.write_text(source)
+        subprocess.run(["cc", "-std=c11", "-Wall", "-Wextra", "-Werror",
+                        str(source_path), "-o", str(executable)], check=True,
+                       capture_output=True, text=True)
+        subprocess.run([str(executable)], check=True, capture_output=True, text=True)
 
 
 def test_ce_tick_publishes_through_the_render_path_and_reports():
