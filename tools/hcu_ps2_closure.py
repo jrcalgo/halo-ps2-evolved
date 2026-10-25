@@ -560,6 +560,11 @@ def main() -> None:
             if hcu_c3:
                 # C3: the parent sound recorder binds this CE seam from hcu_main.c.
                 roots.append("halo_ps2_sound_request_bind_sink")
+                # The C3 caller also samples the real bitmap frame telemetry.
+                # These per-function sections otherwise have no strong caller
+                # inside the CE closure and are discarded by --gc-sections.
+                roots.extend(("halo_ps2_bitmap_frame_last_status",
+                              "halo_ps2_bitmap_frame_failure_count"))
             rooted_link = subprocess.run(
                 [str(linker), "-r", "--gc-sections", *[arg for name in roots for arg in ("-u", name)],
                  f"@{response}", "-o", str(rooted)],

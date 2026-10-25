@@ -38,6 +38,8 @@ class HcuPs2ClosureClassification(unittest.TestCase):
         for symbol in PRODUCTION_BITMAP_ROOTS:
             self.assertIn(f'"{symbol}"', closure)
         self.assertIn("roots.extend(PRODUCTION_BITMAP_ROOTS)", closure)
+        self.assertIn('roots.extend(("halo_ps2_bitmap_frame_last_status",', closure)
+        self.assertIn('"halo_ps2_bitmap_frame_failure_count"))', closure)
         self.assertIn("count != 1", closure)
         self.assertIn("production_bitmap_provider_definition_counts", parent_probe)
 
@@ -53,7 +55,12 @@ class HcuPs2ClosureClassification(unittest.TestCase):
 00100400 T halo_ps2_bitmap_frame_is_active
 00200000 D halo_ps2_real_producer_descriptor_instance
 00100500 T interface_draw_screen
+00100600 T halo_ps2_bitmap_frame_last_status
+00100700 T halo_ps2_bitmap_frame_failure_count
 """
+        sample_nm += "".join(
+            f"00100800 T {symbol}\n" for symbol in PRODUCTION_BITMAP_ROOTS
+            if symbol not in sample_nm)
         counts = rooted_symbol_definition_counts(sample_nm, PRODUCTION_BITMAP_ROOTS)
         self.assertEqual(counts, {symbol: 1 for symbol in PRODUCTION_BITMAP_ROOTS})
         duplicate = sample_nm + "00100600 T interface_draw_screen\n"
