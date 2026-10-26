@@ -44,7 +44,7 @@ from pathlib import Path
 import subprocess
 
 repo = Path.cwd()
-manifest_path = repo / "build/c3/perf/multiview-ab-20261025-r2/quiet-optimized-v1/desktop-launch.json"
+manifest_path = repo / "build/c3/movement/fixed-quiet-20261025-r1/quiet-optimized-v1/desktop-launch.json"
 manifest = json.loads(manifest_path.read_text())
 elf = Path(manifest["elf"])
 play = elf.parent
@@ -82,7 +82,8 @@ print(json.dumps(record, indent=2))
 PY
 ```
 
-This quiet build has `HCU_C3_TELEMETRY=0` and `HCU_C3_TIMING=0`. Separate
+This quiet build includes the controller configuration fix and has
+`HCU_C3_TELEMETRY=0`, `HCU_C3_TIMING=0` and `HCU_C3_MOVEMENT_TRACE=0`. Separate
 benchmark builds enable sparse timing. Both retain
 failure and map lifecycle messages, so a successful process launch is only the
 first check: wait for `production-ce-map-loaded result=1`, check the log for
@@ -93,7 +94,7 @@ by the recorded process group and capture only the emulator window. Desktop
 inspection and capture require the same execution context outside the sandbox.
 
 The verified launch record is
-`build/c3/perf/multiview-ab-20261025-r2/quiet-optimized-v1/desktop-active.json`; logs and captures are ignored build
+`build/c3/movement/fixed-quiet-20261025-r1/quiet-optimized-v1/desktop-active.json`; logs and captures are ignored build
 artifacts. Keep timing-only and quiet builds in separate output directories:
 changing compiler flags in an existing object directory can leave stale timing
 code in an otherwise quiet executable.
@@ -222,15 +223,15 @@ the [twelve-agent 30 FPS review](reports/c3-30fps-review-2026-10-25.md).
 
 ### Combined renderer optimization checkpoint
 
-The latest verified quiet checkpoint is
+The earlier combined-optimization quiet checkpoint is
 `build/c3/perf/multiview-ab-20261025-r2/quiet-optimized-v1/`. Its active record
 and `gameplay-quiet.png` show one-player Blood Gulch with manual controls,
 29.97 FPS / 59.94 VPS / 100% emulation speed, and no hot C3 timing output.
 The ELF SHA-256 is
 `2124217d0683c6b0b5ad03cadd03ddd2c5c4b4b0505118d2bedbbe5ec0c39cd4`.
-This is a retained verification checkpoint; movement diagnostic sessions may
-replace it. Inspect the active process record before controlling or launching
-an instance.
+This retained checkpoint predates the controller configuration fix below.
+Inspect the current active process record before controlling or launching
+an instance, and use the corrected build for manual play.
 
 The workspace helpers rebuild and launch a quiet optimized guest:
 
@@ -253,6 +254,39 @@ repeat produced exact full-frame baseline/optimized pixel parity at all four
 view counts. A successful process launch or nonblack corner is insufficient.
 The repeat's frame captures use the same recorded immutable snapshot after
 the timed interval; ordinary interactive builds omit that capture/replay hook.
+
+### Controller configuration fix
+
+The corrected quiet Blood Gulch build is retained under
+`build/c3/movement/fixed-quiet-20261025-r1/quiet-optimized-v1/`. Its manifest
+pins parent `8be0d23`, CE `6e35c0c` and renderer `ed88dbc`; its ELF SHA-256 is
+`3e5d95311b8485dad19a32b6196f5b571f63b1642fe995b6723f833632b30619`.
+It retains the combined renderer optimizations and manual controls, with
+timing, C3 telemetry and movement tracing all disabled.
+The fresh quiet run reached map-loaded at 95.7116 s. Its full-window
+`gameplay-quiet.png` capture shows 29.97 FPS / 59.94 VPS / 100% speed; manual
+W and Right tests responded before any jump, with no recurring pad setup
+messages. The active record identifies process group `931368`, left open
+after testing. Check that record before controlling it. The weapon mesh
+remains oversized/intersecting.
+
+```sh
+python3 build/c3/movement/fixed-quiet-20261025-r1/build.py --case optimized --views 1 --quiet
+python3 build/c3/movement/fixed-quiet-20261025-r1/launch.py
+```
+
+The pad driver previously restarted asynchronous mode setup during normal
+command-busy polls. That intermittently replaced held movement and look input
+with neutral samples even at 30 FPS. The staged handshake now waits for each
+request to complete and resets on a real disconnect. In the diagnostic
+same-spawn regression test, grounded forward movement settled near 2.245
+world units/s instead of the earlier 0.107 world units/s interval average;
+arrow-key facing and the published camera updated on every active test frame.
+The repaired run needed no jump or fall to recover input. These two speed
+figures use different windows (steady speed versus whole-interval average),
+so they are not a matched speedup ratio. See the
+[controller evidence](reports/c3-controller-input-recovery-2026-10-25.md)
+for interval measurements, tests, launch identities and limitations.
 
 ### `Unknown device 'd'` and `Unknown device 'z'`
 
