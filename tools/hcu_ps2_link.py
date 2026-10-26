@@ -448,6 +448,8 @@ def main() -> None:
         if os.environ.get("HCU_C3_TELEMETRY") == "1":
             # Same directory name as hcu_ps2_closure.py and hcu_parent_link_probe.py.
             OUT = OUT.with_name(OUT.name + "-telemetry")
+        if os.environ.get("HCU_C3_TIMING") == "1" or os.environ.get("HCU_C3_TELEMETRY") == "1":
+            OUT = OUT.with_name(OUT.name + "-timing")
         if os.environ.get("HCU_C3_REALTIME_SCHEDULER") == "1":
             OUT = OUT.with_name(OUT.name + "-realtime")
         if os.environ.get("HCU_C3_SNAPSHOT_INDEX") == "1":

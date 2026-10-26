@@ -375,6 +375,9 @@ def main() -> None:
         profile += "-hcu-c3"
         if os.environ.get("HCU_C3_TELEMETRY") == "1":
             profile += "-telemetry"
+        c3_timing = os.environ.get("HCU_C3_TIMING") == "1" or os.environ.get("HCU_C3_TELEMETRY") == "1"
+        if c3_timing:
+            profile += "-timing"
         if os.environ.get("HCU_C3_REALTIME_SCHEDULER") == "1":
             profile += "-realtime"
         if os.environ.get("HCU_C3_SNAPSHOT_INDEX") == "1":
@@ -399,6 +402,10 @@ def main() -> None:
                     for flag in FLAGS]
     if hcu_c3 and os.environ.get("HCU_C3_TELEMETRY") == "1":
         source_flags.append("-DHALO_PS2_C3_TELEMETRY=1")
+    c3_timing = hcu_c3 and (os.environ.get("HCU_C3_TIMING") == "1" or
+                            os.environ.get("HCU_C3_TELEMETRY") == "1")
+    if c3_timing:
+        source_flags.append("-DHALO_PS2_C3_TIMING=1")
     if hcu_c3 and os.environ.get("HCU_C3_REALTIME_SCHEDULER") == "1":
         source_flags.append("-DHALO_PS2_C3_REALTIME_SCHEDULER=1")
     if hcu_c3 and os.environ.get("HCU_C3_SNAPSHOT_INDEX") == "1":
@@ -433,6 +440,7 @@ def main() -> None:
                             (["HALO_PS2_C3_FRAME_SNAPSHOT"] if hcu_c3 else []) +
                             (["HALO_PS2_C3_TELEMETRY"]
                              if hcu_c3 and os.environ.get("HCU_C3_TELEMETRY") == "1" else []) +
+                            (["HALO_PS2_C3_TIMING"] if c3_timing else []) +
                             (["HALO_PS2_C3_REALTIME_SCHEDULER"]
                              if hcu_c3 and os.environ.get("HCU_C3_REALTIME_SCHEDULER") == "1" else []) +
                             (["HALO_PS2_C3_SNAPSHOT_INDEX"]

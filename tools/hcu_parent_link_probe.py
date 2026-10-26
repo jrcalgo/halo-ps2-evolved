@@ -272,6 +272,8 @@ def main() -> None:
         closure_suffix += "-hcu-c3"
         if os.environ.get("HCU_C3_TELEMETRY") == "1":
             closure_suffix += "-telemetry"
+        if os.environ.get("HCU_C3_TIMING") == "1" or os.environ.get("HCU_C3_TELEMETRY") == "1":
+            closure_suffix += "-timing"
         if os.environ.get("HCU_C3_REALTIME_SCHEDULER") == "1":
             closure_suffix += "-realtime"
         if os.environ.get("HCU_C3_SNAPSHOT_INDEX") == "1":
@@ -316,6 +318,15 @@ def main() -> None:
         closure_command.append("--production-runtime-guest")
         link_command.append("--production-runtime-guest")
     run(closure_command, env=env)
+    if hcu_c3 and (os.environ.get("HCU_C3_TIMING") == "1" or
+                   os.environ.get("HCU_C3_TELEMETRY") == "1"):
+        closure_report = json.loads((hcu_closure / "result.json").read_text())
+        if ("HALO_PS2_C3_TIMING" not in closure_report.get("profile_defines", []) or
+                "-DHALO_PS2_C3_TIMING=1" not in closure_report.get("flags", [])):
+            raise RuntimeError(
+                "timed C3 guest requires HALO_PS2_C3_TIMING in the selected CE closure; "
+                f"profile={hcu_closure}, defines={closure_report.get('profile_defines')}, "
+                f"flags={closure_report.get('flags')}")
     run(link_command, env=env)
     parent_vis = "src/world/visibility.c"
     run(["make", "-B", "-f", "tools/ee-world.mk", f"WORLD_OUTPUT={parent_output}",
@@ -415,6 +426,18 @@ def main() -> None:
         "-lmtap", "-lfileXio", "-lpatches", "-lm",
     ]
     run(gameplay_command, env=env)
+    c3_batch_profile_binding = None
+    if hcu_c3 and (os.environ.get("HCU_C3_TIMING") == "1" or
+                   os.environ.get("HCU_C3_TELEMETRY") == "1"):
+        symbols = run([str(nm), "-g", str(gameplay_elf)], env=env).splitlines()
+        matches = [line.split() for line in symbols
+                   if line.split() and line.split()[-1] == "hcu_c3_batch_profile"]
+        if len(matches) != 1 or len(matches[0]) < 2 or matches[0][-2] != "T":
+            raise RuntimeError(
+                "timed C3 guest must bind exactly one strong parent hcu_c3_batch_profile "
+                "(CE weak no-op must not satisfy the call); nm entries=" + repr(matches))
+        c3_batch_profile_binding = {"symbol": "hcu_c3_batch_profile", "nm_type": matches[0][-2],
+                                    "source": "parent stream/hcu_main.c strong logger"}
     gameplay_undefined = run([str(nm), "-u", str(gameplay_elf)], env=env).splitlines()
     gameplay_sizes = section_sizes(run([str(size), "-A", str(gameplay_elf)], env=env))
     gameplay_program_headers = run([str(readelf), "-l", str(gameplay_elf)], env=env)
@@ -504,6 +527,7 @@ def main() -> None:
             "partition_profile": args.partition_profile,
             "profile_package_root": str(args.profile_package_root),
             "headless_frame_state_object": headless_frame_state,
+            "c3_batch_profile_binding": c3_batch_profile_binding,
             "tag_cache_bytes": args.tag_cache_bytes,
             "tag_cache_limit_note": ("partition-selected guest tuple; runtime qualification is in the paired guest result"
                                      if guest_scope else "UI/bootstrap diagnostic only; not a retail map capacity claim"),
