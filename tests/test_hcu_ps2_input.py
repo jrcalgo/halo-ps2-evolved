@@ -45,6 +45,26 @@ class HcuPs2Input(unittest.TestCase):
                 self.assertTrue(result.stdout.strip().endswith(
                     "PS2 pad logical port/slot fixture passed"))
 
+    def test_ps2_pad_configuration_state_machine(self):
+        with tempfile.TemporaryDirectory() as temp:
+            exe = Path(temp) / "hcu-pad-state-machine"
+            subprocess.run(
+                ["cc", "-std=c11", "-Wall", "-Wextra", "-Werror",
+                 "-I" + str(ROOT / "tests/hcu_pad_shim"),
+                 "-I" + str(ROOT / "submodules/halo-ps2/engine/src"),
+                 str(ROOT / "tests/hcu_pad_poll_main.c"),
+                 str(ROOT / "submodules/halo-ps2/engine/src/platform/pad.c"),
+                 "-o", str(exe)],
+                check=True, capture_output=True, text=True)
+            for scenario in ("async", "unsupported", "failure", "pressfailure",
+                             "reconnect"):
+                with self.subTest(scenario=scenario):
+                    result = subprocess.run([str(exe), scenario], check=False,
+                                            text=True, capture_output=True)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertIn("PS2 pad state-machine fixture passed",
+                                  result.stdout)
+
     def test_dualshock_conversion_connection_and_packet_semantics(self):
         with tempfile.TemporaryDirectory() as temp:
             exe = Path(temp) / "hcu-ps2-input"

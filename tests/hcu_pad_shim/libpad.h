@@ -2,6 +2,13 @@
 
 #define PAD_STATE_STABLE 6
 #define PAD_STATE_FINDCTP1 2
+#define PAD_STATE_DISCONN 0
+#define PAD_STATE_FINDPAD 1
+#define PAD_STATE_EXECCMD 5
+#define PAD_STATE_ERROR 7
+#define PAD_RSTAT_COMPLETE 0
+#define PAD_RSTAT_FAILED 1
+#define PAD_RSTAT_BUSY 2
 #define PAD_MMODE_DUALSHOCK 1
 #define PAD_MMODE_LOCK 3
 #define PAD_CROSS 0x4000
@@ -25,6 +32,7 @@ struct padButtonStatus
 int padInit(int mode);
 int padPortOpen(int port, int slot, void *buffer);
 int padGetState(int port, int slot);
+int padGetReqState(int port, int slot);
 int padSetMainMode(int port, int slot, int mode, int lock);
 int padInfoPressMode(int port, int slot);
 int padEnterPressMode(int port, int slot);

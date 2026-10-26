@@ -2628,6 +2628,19 @@ void hcu_c3_render_tick(int tick)
 		/* C3:views begin */
 		overlay = hcu_c3_views_camera(v, &cam, &vp);
 		if (!overlay) continue;  /* skipped: no usable snapshot camera for an active view (counted, not drawn) */
+#if defined(HALO_PS2_C3_MOVEMENT_TRACE) && HALO_PS2_C3_MOVEMENT_TRACE
+		/* The parent consumes this camera directly. CE observer/render globals
+		 * can be unused in the headless publisher, so trace the actual draw view. */
+		if (v == 0u) {
+			printf("HALO_PS2_LOCAL c3-render-camera tick=%d frame=%u seq=%u map=%u source=%u "
+				"pos=%.5f,%.5f,%.5f facing=%.6f,%.6f hfov=%.6f aspect=%.5f\n",
+				tick, (unsigned)s_c3r.frames,
+				(unsigned)(s_c3v.snap ? s_c3v.snap->sequence : 0u),
+				(unsigned)(s_c3v.snap ? s_c3v.snap->map_generation : 0u),
+				(unsigned)s_c3v.source[v], cam.pos[0], cam.pos[1], cam.pos[2],
+				cam.yaw, cam.pitch, cam.hfov, cam.aspect);
+		}
+#endif
 		/* C3:views end */
 		/* C3:objects begin */
 		hcu_c3_objects_view_begin(v, vp.w, vp.h);

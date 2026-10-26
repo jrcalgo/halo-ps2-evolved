@@ -452,6 +452,8 @@ def main() -> None:
             OUT = OUT.with_name(OUT.name + "-realtime")
         if os.environ.get("HCU_C3_SNAPSHOT_INDEX") == "1":
             OUT = OUT.with_name(OUT.name + "-snapshot-index")
+        if os.environ.get("HCU_C3_MOVEMENT_TRACE") == "1":
+            OUT = OUT.with_name(OUT.name + "-movement-trace")
     build, prefix, env, _jobs = environment()
     compiler = prefix / "ee/bin/mips64r5900el-ps2-elf-gcc"
     nm = prefix / "ee/bin/mips64r5900el-ps2-elf-nm"

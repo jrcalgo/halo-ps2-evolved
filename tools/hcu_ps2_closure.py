@@ -379,6 +379,8 @@ def main() -> None:
             profile += "-realtime"
         if os.environ.get("HCU_C3_SNAPSHOT_INDEX") == "1":
             profile += "-snapshot-index"
+        if os.environ.get("HCU_C3_MOVEMENT_TRACE") == "1":
+            profile += "-movement-trace"
     output = build / "hcu-ps2-closure" / (args.layer + profile)
     output.mkdir(parents=True, exist_ok=True)
     header = HCU / manifest["prefix"]
@@ -401,6 +403,8 @@ def main() -> None:
         source_flags.append("-DHALO_PS2_C3_REALTIME_SCHEDULER=1")
     if hcu_c3 and os.environ.get("HCU_C3_SNAPSHOT_INDEX") == "1":
         source_flags.append("-DHALO_PS2_C3_SNAPSHOT_INDEX=1")
+    if hcu_c3 and os.environ.get("HCU_C3_MOVEMENT_TRACE") == "1":
+        source_flags.append("-DHALO_PS2_C3_MOVEMENT_TRACE=1")
     flags = [*source_flags, *includes, "-include", str(header), "-include", str(semantics), "-c"]
     members = selected_sources(manifest)
     report = {
@@ -433,6 +437,8 @@ def main() -> None:
                              if hcu_c3 and os.environ.get("HCU_C3_REALTIME_SCHEDULER") == "1" else []) +
                             (["HALO_PS2_C3_SNAPSHOT_INDEX"]
                              if hcu_c3 and os.environ.get("HCU_C3_SNAPSHOT_INDEX") == "1" else []) +
+                            (["HALO_PS2_C3_MOVEMENT_TRACE"]
+                             if hcu_c3 and os.environ.get("HCU_C3_MOVEMENT_TRACE") == "1" else []) +
                             ([f"HALO_PS2_STEP8_MP_WORKLOAD_PLAYERS={args.step8_mp_workload_players}"]
                              if args.step8_mp_workload_only else []) +
                             (["HALO_PS2_M2_ANIMATION_TRACE"]

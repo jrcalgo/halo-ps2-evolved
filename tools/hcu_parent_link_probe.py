@@ -276,6 +276,8 @@ def main() -> None:
             closure_suffix += "-realtime"
         if os.environ.get("HCU_C3_SNAPSHOT_INDEX") == "1":
             closure_suffix += "-snapshot-index"
+        if os.environ.get("HCU_C3_MOVEMENT_TRACE") == "1":
+            closure_suffix += "-movement-trace"
     hcu_closure = build / "hcu-ps2-closure" / (
         "all-no-bootstrap-memory" + closure_suffix)
     parent_output = output / "parent-sections-os"
