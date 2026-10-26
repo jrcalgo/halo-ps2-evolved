@@ -2130,6 +2130,13 @@ static void hcu_c3_fx_kind_telemetry(const halo_ps2_frame_snapshot *snap, uint32
  * successor (beavercreek) draws from its own table; the selected row's table is the default. */
 static const hcu_render_objects_table_entry *s_c3o_table = hcu_c3_objects_table;
 static uint32_t s_c3o_count = HCU_C3_OBJECTS_TABLE_COUNT;
+#if HCU_C3_OBJECT_PREPARE_CACHE
+static uint8_t *s_c3_prepare_guard;
+static int hcu_guard_intact(const uint8_t *guard, uint8_t pattern);
+#define HCU_C3_PREPARE_SCRATCH_WORST (15u + HCU_OBJECT_PREPARE_STORAGE_BYTES + MEM_LAYOUT_V2_GUARD_BYTES)
+#else
+#define HCU_C3_PREPARE_SCRATCH_WORST 0u
+#endif
 #if defined(HCU_C3_OBJECTS_SKY_INDEX)
 static uint32_t s_c3o_sky = HCU_C3_OBJECTS_SKY_INDEX;
 #else
@@ -2343,6 +2350,10 @@ static int hcu_c3_objects_final(void)
 #define hcu_c3_objects_final() (1)
 #endif
 /* C3:objects end */
+
+#ifndef HCU_C3_PREPARE_SCRATCH_WORST
+#define HCU_C3_PREPARE_SCRATCH_WORST 0u
+#endif
 
 /* C3:bitmap begin */
 /* C3.9: per-tick deltas of the CE bitmap frame callbacks (begin, set_view, queue end). Counters only
@@ -2593,6 +2604,13 @@ void hcu_c3_render_tick(int tick)
 	hcu_bitmap_dispatch_counters c3_hud_before = s_c3_bitmap_dispatch.counters;
 #endif
 	(void)tick;
+#if defined(HCU_C3_OBJECTS) && HCU_C3_OBJECT_PREPARE_CACHE
+	if (s_c3_prepare_guard && !hcu_guard_intact(s_c3_prepare_guard, 0xC7u)) {
+		printf("HALO_PS2_FAIL prepared-object cache canary corrupted\n");
+		s_c3r.active = 0;
+		return;
+	}
+#endif
 	/* C3:sound begin */
 #if defined(HCU_C3_FRAME_SNAPSHOT) && \
 	!(defined(HALO_PS2_C3_REALTIME_SCHEDULER) && HALO_PS2_C3_REALTIME_SCHEDULER)
@@ -2753,6 +2771,22 @@ void hcu_c3_render_tick(int tick)
 		printf("HALO_PS2_LOCAL c3-publication-perf frame=%u total-ms=%.3f binding-hash-ms=%.3f binding-bytes=%u binding-calls=%u\n",
 			(unsigned)s_c3r.frames, timer_ms(0, s_c3_publication_cycles),
 			timer_ms(0, (uint32_t)s_c3_binding_cycles), (unsigned)s_c3_binding_bytes, (unsigned)s_c3_binding_calls);
+#if defined(HCU_C3_OBJECTS)
+		{
+			hcu_object_prepare_stats prepared;
+			hcu_render_objects_prepare_cache_stats(&prepared);
+			printf("HALO_PS2_LOCAL c3-object-prepare frame=%u enabled=%u prepared-total=%u reused-total=%u slots-total=%u fallbacks-total=%u guard=%s\n",
+				(unsigned)s_c3r.frames, (unsigned)HCU_C3_OBJECT_PREPARE_CACHE,
+				(unsigned)prepared.prepared_objects, (unsigned)prepared.reused_objects,
+				(unsigned)prepared.prepared_slots, (unsigned)prepared.cache_fallbacks,
+#if HCU_C3_OBJECT_PREPARE_CACHE
+				hcu_guard_intact(s_c3_prepare_guard, 0xC7u) ? "ok" : "corrupt"
+#else
+				"unused"
+#endif
+				);
+		}
+#endif
 	}
 	#endif
 	/* C3.11 opt-in preflight immediately follows the selected real kick so the
@@ -3724,6 +3758,25 @@ int main(int argc, char **argv)
 	}
 	memset(snapshot_guard, 0xC7, MEM_LAYOUT_V2_GUARD_BYTES);
 	memset(renderer_workspace_guard, 0xC7, MEM_LAYOUT_V2_GUARD_BYTES);
+#if defined(HCU_C3_OBJECTS) && HCU_C3_OBJECT_PREPARE_CACHE
+	{
+		size_t prepare_bytes = hcu_render_objects_prepare_cache_bytes();
+		void *prepare_storage = arena_alloc(frame_scratch, prepare_bytes, 16);
+		s_c3_prepare_guard = arena_alloc(frame_scratch, MEM_LAYOUT_V2_GUARD_BYTES, 1);
+		if (prepare_bytes != HCU_OBJECT_PREPARE_STORAGE_BYTES || !prepare_storage ||
+			!s_c3_prepare_guard ||
+			hcu_render_objects_prepare_cache_bind(prepare_storage, prepare_bytes) != 0) {
+			printf("[err] cannot bind bounded prepared-object cache\n");
+			physical_memory_free();
+			__real_free(backing);
+			return 1;
+		}
+		memset(s_c3_prepare_guard, 0xC7, MEM_LAYOUT_V2_GUARD_BYTES);
+		printf("HALO_PS2_LOCAL object-prepare-storage cap=%u guard-bytes=%u frame-used=%u frame-cap=%u\n",
+			(unsigned)prepare_bytes, (unsigned)MEM_LAYOUT_V2_GUARD_BYTES,
+			(unsigned)frame_scratch->used, (unsigned)frame_scratch->cap);
+	}
+#endif
 	/* C3:snapshot begin */
 #if defined(HCU_C3_FRAME_SNAPSHOT)
 	if (hcu_snapshot_bank_bind(snapshot_storage, snapshot_bytes) != 0)
@@ -3776,20 +3829,21 @@ int main(int argc, char **argv)
 	/* C3.3 layout: the three banks, the renderer workspace and both guards all live in frame_scratch.
 	 * The pose tracker is static BSS (hcu_render_objects.c s_poses) and is not part of this owner. */
 	_Static_assert(HCU_SNAPSHOT_BANK_STORAGE_BYTES + MEM_LAYOUT_V2_GUARD_BYTES + 63u + BSP_RENDER_WORKSPACE_BYTES +
-		MEM_LAYOUT_V2_GUARD_BYTES <= HCU_C3_FRAME_SCRATCH_BYTES,
+		MEM_LAYOUT_V2_GUARD_BYTES + HCU_C3_PREPARE_SCRATCH_WORST
+		<= HCU_C3_FRAME_SCRATCH_BYTES,
 		"C3.3: snapshot banks plus renderer workspace exceed frame_scratch");
 	_Static_assert(HCU_C3_FRAME_SCRATCH_BYTES == 393216u, "C3.3: frame_scratch owner size changed");
 	HCU_C3_TELEM_PRINTF("HALO_PS2_LOCAL c3-scratch-layout cap=%u used=%u high=%u banks=%u bank-stride=%u bank-bytes=%u "
-		"workspace=%u guards=%u worst-case=%u free-worst=%u snapshot-size=%u\n",
+		"workspace=%u guards=%u worst-case=%u free-worst=%u snapshot-size=%u prepare-worst=%u\n",
 		(unsigned)frame_scratch->cap, (unsigned)frame_scratch->used, (unsigned)frame_scratch->high,
 		(unsigned)HCU_SNAPSHOT_BANK_SLOTS, (unsigned)HCU_SNAPSHOT_BANK_STRIDE,
 		(unsigned)HCU_SNAPSHOT_BANK_STORAGE_BYTES, (unsigned)BSP_RENDER_WORKSPACE_BYTES,
 		(unsigned)(2u * MEM_LAYOUT_V2_GUARD_BYTES),
 		(unsigned)(HCU_SNAPSHOT_BANK_STORAGE_BYTES + MEM_LAYOUT_V2_GUARD_BYTES + 63u + BSP_RENDER_WORKSPACE_BYTES +
-			MEM_LAYOUT_V2_GUARD_BYTES),
+			MEM_LAYOUT_V2_GUARD_BYTES + HCU_C3_PREPARE_SCRATCH_WORST),
 		(unsigned)(HCU_C3_FRAME_SCRATCH_BYTES - (HCU_SNAPSHOT_BANK_STORAGE_BYTES + MEM_LAYOUT_V2_GUARD_BYTES + 63u +
-			BSP_RENDER_WORKSPACE_BYTES + MEM_LAYOUT_V2_GUARD_BYTES)),
-		(unsigned)sizeof(halo_ps2_frame_snapshot));
+			BSP_RENDER_WORKSPACE_BYTES + MEM_LAYOUT_V2_GUARD_BYTES + HCU_C3_PREPARE_SCRATCH_WORST)),
+		(unsigned)sizeof(halo_ps2_frame_snapshot), (unsigned)HCU_C3_PREPARE_SCRATCH_WORST);
 #endif
 	/* C3:snapshot end */
 	/* Telemetry is registered before the first map service request, so the first
@@ -3913,7 +3967,11 @@ int main(int argc, char **argv)
 	hcu_report_cache_owners("after-shell");
 	hcu_report_owner_telemetry("after-shell");
 	if (!hcu_guard_intact(snapshot_guard, 0xC7u) ||
-		!hcu_guard_intact(renderer_workspace_guard, 0xC7u)) {
+		!hcu_guard_intact(renderer_workspace_guard, 0xC7u)
+#if defined(HCU_C3_OBJECTS) && HCU_C3_OBJECT_PREPARE_CACHE
+		|| !hcu_guard_intact(s_c3_prepare_guard, 0xC7u)
+#endif
+		) {
 		printf("HALO_PS2_FAIL renderer owner canary corrupted\n");
 		result = 1;
 	}

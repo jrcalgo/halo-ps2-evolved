@@ -29,6 +29,8 @@ extern "C" {
 #define HCU_OBJECTS_MAX_PARITY 64u      /* parity records kept for the first frame only */
 #define HCU_FX_MAX_PER_VIEW 64u          /* C3.6(c): fx requests drawn per view (fixed cap, no heap) */
 #define HCU_OBJECTS_DRAWN_IDENTITY_MAX 256u /* distinct visible snapshot identities remembered per map */
+#define HCU_OBJECT_PREPARE_STORAGE_BYTES 98304u
+#define HCU_OBJECTS_PREPARE_CACHE_BYTES HCU_OBJECT_PREPARE_STORAGE_BYTES
 
 /* Object types carried in halo_ps2_frame_object.type. */
 #define HCU_OBJECTS_TYPE_BIPED 0
@@ -189,6 +191,23 @@ int hcu_render_objects_select(const halo_ps2_frame_snapshot *snap, uint32_t view
 	const hcu_render_objects_model *models, uint32_t model_count,
 	hcu_render_object_draw *out, uint32_t capacity, uint32_t *count,
 	hcu_render_objects_counters *counters);
+/* Optional fixed arena cache. Bind once during renderer setup; cache contents are keyed by pinned snapshot
+ * sequence/map generation and slot residency epoch. A failed bind disables the optimization. */
+size_t hcu_render_objects_prepare_cache_bytes(void);
+int hcu_render_objects_prepare_cache_bind(void *memory, size_t bytes);
+typedef struct { uint32_t prepared_objects, reused_objects, prepared_slots, cache_fallbacks; } hcu_object_prepare_stats;
+void hcu_render_objects_prepare_cache_stats(hcu_object_prepare_stats *out);
+typedef struct {
+	uint32_t sequence, map_generation, object_generation, resource_id, slot_epoch;
+} hcu_object_prepare_key;
+int hcu_render_objects_prepare_key_valid(const hcu_object_prepare_key *key, uint32_t sequence,
+	uint32_t map_generation, uint32_t object_generation, uint32_t resource_id, uint32_t slot_epoch);
+int hcu_render_objects_prepare_select(int enabled, const hcu_object_prepare_key *key,
+	uint32_t sequence, uint32_t map_generation, uint32_t object_generation,
+	uint32_t resource_id, uint32_t slot_epoch, int prepared_slot, uint32_t prepared_hash,
+	int fallback_slot, uint32_t fallback_hash, int *slot, uint32_t *pose_hash);
+int hcu_render_objects_prepare_range_valid(uint32_t first, uint32_t count, uint32_t limit);
+void hcu_render_objects_prepare_matrix(const halo_ps2_snapshot_matrix4x3 *source, float *out);
 /* Select CE's exact per-view first-person gun and hands resources and their
  * already remapped model-node palettes, without deriving a proxy or sampling. */
 int hcu_render_objects_select_first_person(const halo_ps2_frame_snapshot *snap,

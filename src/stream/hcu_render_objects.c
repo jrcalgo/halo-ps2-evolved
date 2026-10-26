@@ -3,11 +3,19 @@
 #include <math.h>
 #include <string.h>
 
+#ifndef HCU_C3_OBJECT_PREPARE_CACHE
+#define HCU_C3_OBJECT_PREPARE_CACHE 0
+#endif
+
 #ifndef HCU_C3_OBJECT_FASTPATH
 #define HCU_C3_OBJECT_FASTPATH 0
 #endif
 #ifndef HCU_C3_OBJECT_VIEW_CACHE
 #define HCU_C3_OBJECT_VIEW_CACHE 0
+#endif
+#ifdef HCU_RENDER_OBJECTS_EE
+static hcu_render_objects_model s_meta[HCU_OBJECTS_MAX_MODELS];
+static int prepared_lookup(const halo_ps2_frame_snapshot *, uint32_t, uint32_t, uint32_t, int *, uint32_t *);
 #endif
 
 /* ---- selection ---------------------------------------------------------------------------------- */
@@ -20,6 +28,46 @@ int hcu_render_objects_find_model(const hcu_render_objects_model *models, uint32
 	for (i = 0; i < model_count && i < HCU_OBJECTS_MAX_MODELS; i++)
 		if (models[i].loaded && models[i].resource_id == resource_id) return (int)i;
 	return -1;
+}
+
+int hcu_render_objects_prepare_key_valid(const hcu_object_prepare_key *key, uint32_t sequence,
+	uint32_t map_generation, uint32_t object_generation, uint32_t resource_id, uint32_t slot_epoch)
+{
+	return key && key->sequence == sequence && key->map_generation == map_generation &&
+		key->object_generation == object_generation && key->resource_id == resource_id &&
+		key->slot_epoch == slot_epoch;
+}
+
+int hcu_render_objects_prepare_select(int enabled, const hcu_object_prepare_key *key,
+	uint32_t sequence, uint32_t map_generation, uint32_t object_generation,
+	uint32_t resource_id, uint32_t slot_epoch, int prepared_slot, uint32_t prepared_hash,
+	int fallback_slot, uint32_t fallback_hash, int *slot, uint32_t *pose_hash)
+{
+	int used;
+	if (!slot || !pose_hash) return 0;
+	used = enabled && hcu_render_objects_prepare_key_valid(key, sequence, map_generation,
+		object_generation, resource_id, slot_epoch);
+	*slot = used ? prepared_slot : fallback_slot;
+	*pose_hash = used ? prepared_hash : fallback_hash;
+	return used;
+}
+
+int hcu_render_objects_prepare_range_valid(uint32_t first, uint32_t count, uint32_t limit)
+{
+	return first <= limit && count <= limit - first;
+}
+
+void hcu_render_objects_prepare_matrix(const halo_ps2_snapshot_matrix4x3 *source, float *out)
+{
+	unsigned a, c;
+	if (!source || !out) return;
+	for (a = 0; a < 3; ++a) {
+		const float *basis = a == 0 ? source->forward : a == 1 ? source->left : source->up;
+		for (c = 0; c < 3; ++c) out[a * 4u + c] = basis[c] * source->scale;
+		out[a * 4u + 3u] = 0.0f;
+	}
+	for (c = 0; c < 3; ++c) out[12u + c] = source->position[c];
+	out[15] = 1.0f;
 }
 
 int hcu_render_objects_note_submission(hcu_render_objects_counters *counters,
@@ -231,7 +279,15 @@ int hcu_render_objects_select(const halo_ps2_frame_snapshot *snap, uint32_t view
 		if (i != emitted) { counters->deduped++; continue; }
 		if (o->resource_slot >= snap->resource_count) { counters->failures++; continue; }
 		r = &snap->resources[o->resource_slot];
-		slot = hcu_render_objects_find_model(models, model_count, r->id);
+		slot = -1;
+		{
+			uint32_t cached_hash = 0;
+#ifdef HCU_RENDER_OBJECTS_EE
+			if (HCU_C3_OBJECT_PREPARE_CACHE && models == s_meta)
+				(void)prepared_lookup(snap, oi, o->id.generation, r->id, &slot, &cached_hash);
+#endif
+			if (slot >= 0 && (uint32_t)slot >= model_count) slot = -1;
+			if (slot < 0) slot = hcu_render_objects_find_model(models, model_count, r->id);
 		if (slot < 0) { counters->model_misses++; counters->failures++; continue; }
 		if (o->palette_count > 0 && (uint32_t)o->palette_first + o->palette_count > snap->palette_count) {
 			counters->failures++;
@@ -252,9 +308,10 @@ int hcu_render_objects_select(const halo_ps2_frame_snapshot *snap, uint32_t view
 		out[emitted].flags = o->flags;
 		out[emitted].palette_first = o->palette_first;
 		out[emitted].palette_count = o->palette_count;
-		out[emitted].pose_hash = hcu_render_objects_pose_hash(snap->palette, snap->palette_count,
+		out[emitted].pose_hash = cached_hash ? cached_hash : hcu_render_objects_pose_hash(snap->palette, snap->palette_count,
 			o->palette_first, o->palette_count);
 		out[emitted].world = o->world;
+		}
 		counters->model_hits++;
 		emitted++;
 	}
@@ -403,7 +460,15 @@ int hcu_render_objects_track_poses(const halo_ps2_frame_snapshot *snap, hcu_rend
 			if (counters) counters->failures++;
 			continue;
 		}
-		h = hcu_render_objects_pose_hash(snap->palette, snap->palette_count, o->palette_first, o->palette_count);
+		h = 0u;
+#ifdef HCU_RENDER_OBJECTS_EE
+		if (HCU_C3_OBJECT_PREPARE_CACHE && o->resource_slot < snap->resource_count) {
+			int slot = -1;
+			if (prepared_lookup(snap, oi, o->id.generation, snap->resources[o->resource_slot].id, &slot, &h)) { /* prepared */ }
+		}
+#endif
+		if (!h) h = hcu_render_objects_pose_hash(snap->palette, snap->palette_count,
+			o->palette_first, o->palette_count);
 		hcu_render_pose_track(t, oi, o->id.generation, h, counters);
 	}
 	return HCU_RENDER_CONTENT_OK;
@@ -767,6 +832,47 @@ uint32_t hcu_render_objects_fp_lod(int32_t view_w, int32_t view_h, int32_t scree
 #include "stream/sha256.h"
 #include "stream/hcu_fx_bitmap.h"
 #include "world/model.h"
+
+/* The large converted palette pool lives in frame_scratch. Compact fixed records keep the cache bounded. */
+typedef struct {
+	uint32_t generation, resource_id, pose_hash;
+	uint16_t slot, palette_first, palette_count;
+	uint8_t valid, reserved;
+	mat4 root;
+} prepared_object;
+typedef struct {
+	uint32_t epoch;
+	model_info info;
+	uint16_t perm[OBJ_MAX_REGIONS];
+	uint8_t valid, pad[3];
+} prepared_slot;
+typedef struct {
+	uint32_t sequence, map_generation;
+	uint8_t ready;
+	uint8_t pad[3];
+	prepared_object object[HALO_PS2_FRAME_MAX_OBJECTS];
+	prepared_slot slot[HCU_OBJECTS_MAX_MODELS];
+	mat4 palette[HALO_PS2_FRAME_MAX_PALETTE];
+	uint8_t palette_ready[HALO_PS2_FRAME_MAX_PALETTE / 8u];
+} prepared_cache;
+_Static_assert(sizeof(prepared_cache) <= HCU_OBJECTS_PREPARE_CACHE_BYTES,
+	"C3 prepared object cache exceeds its frame_scratch reservation");
+static prepared_cache *s_prepared;
+static uint32_t s_slot_epoch[HCU_OBJECTS_MAX_MODELS];
+static hcu_object_prepare_stats s_prepare_stats;
+void hcu_render_objects_prepare_cache_stats(hcu_object_prepare_stats *out) { if (out) *out = s_prepare_stats; }
+static void prepared_invalidate_all(void)
+{
+	uint32_t i;
+	if (s_prepared) {
+		s_prepared->ready = 0u;
+		for (i = 0; i < HCU_OBJECTS_MAX_MODELS; ++i) s_prepared->slot[i].valid = 0u;
+	}
+	for (i = 0; i < HCU_OBJECTS_MAX_MODELS; ++i)
+		if (++s_slot_epoch[i] == 0u) ++s_slot_epoch[i];
+}
+
+
 #include "world/tex.h"
 #include <math.h>
 
@@ -851,6 +957,126 @@ static uint32_t s_cur_view;
 /* C3.6 sky: table index of the sky model entry (HCU_RENDER_OBJECTS_SKY_NONE = no sky) and its residency pin. */
 static uint32_t s_sky_index = HCU_RENDER_OBJECTS_SKY_NONE;
 static uint8_t s_sky_pinned;
+static mat4 mat_from_snapshot(const halo_ps2_snapshot_matrix4x3 *w);
+size_t hcu_render_objects_prepare_cache_bytes(void) { return HCU_OBJECTS_PREPARE_CACHE_BYTES; }
+int hcu_render_objects_prepare_cache_bind(void *memory, size_t bytes)
+{
+	if (!memory || bytes < sizeof(prepared_cache) || ((uintptr_t)memory & 15u)) {
+		s_prepared = NULL;
+		return HCU_RENDER_CONTENT_E_ARGUMENT;
+	}
+	s_prepared = (prepared_cache *)memory;
+	s_prepared->sequence = 0u;
+	s_prepared->map_generation = 0u;
+	s_prepared->ready = 0u;
+	{
+		uint32_t i;
+		for (i = 0; i < HALO_PS2_FRAME_MAX_OBJECTS; ++i) s_prepared->object[i].valid = 0u;
+		for (i = 0; i < HCU_OBJECTS_MAX_MODELS; ++i) s_prepared->slot[i].valid = 0u;
+	}
+	memset(s_prepared->palette_ready, 0, sizeof(s_prepared->palette_ready));
+	memset(&s_prepare_stats, 0, sizeof(s_prepare_stats));
+	return HCU_RENDER_CONTENT_OK;
+}
+
+static void prepare_snapshot(const halo_ps2_frame_snapshot *snap)
+{
+	uint32_t i;
+	if (!HCU_C3_OBJECT_PREPARE_CACHE || !s_prepared || !snap) return;
+	if (snap->object_count > HALO_PS2_FRAME_MAX_OBJECTS ||
+		snap->resource_count > HALO_PS2_FRAME_MAX_RESOURCES ||
+		snap->palette_count > HALO_PS2_FRAME_MAX_PALETTE ||
+		snap->version != HALO_PS2_FRAME_SNAPSHOT_VERSION) {
+		s_prepared->ready = 0u;
+		return;
+	}
+	if (s_prepared->ready && s_prepared->sequence == snap->sequence && s_prepared->map_generation == snap->map_generation) return;
+	{
+		uint32_t k;
+		for (k = 0; k < HALO_PS2_FRAME_MAX_OBJECTS; ++k) s_prepared->object[k].valid = 0u;
+		for (k = 0; k < HCU_OBJECTS_MAX_MODELS; ++k) s_prepared->slot[k].valid = 0u;
+	}
+	memset(s_prepared->palette_ready, 0, sizeof(s_prepared->palette_ready));
+	s_prepared->sequence = snap->sequence;
+	s_prepared->map_generation = snap->map_generation;
+	/* Model metadata/default permutations are shared by all objects using a resident slot. */
+	for (i = 0; i < s_slot_count && i < HCU_OBJECTS_MAX_MODELS; ++i) {
+		prepared_slot *p = &s_prepared->slot[i];
+		if (!s_slots[i].loaded) continue;
+		p->info = model_get(&s_slots[i].models, 0);
+		if (p->info.region_count > OBJ_MAX_REGIONS) continue;
+		memset(p->perm, 0, sizeof(p->perm));
+		model_select_permutations(&s_slots[i].models, &p->info, NULL, p->perm);
+		p->epoch = s_slot_epoch[i];
+		p->valid = 1;
+		s_prepare_stats.prepared_slots++;
+	}
+	for (i = 0; i < snap->object_count; ++i) {
+		const halo_ps2_frame_object *o = &snap->objects[i];
+		prepared_object *p = &s_prepared->object[i];
+		const halo_ps2_frame_resource *r;
+		int slot;
+		uint32_t n, j, shared = HALO_PS2_FRAME_MAX_OBJECTS;
+		if (o->resource_slot >= snap->resource_count) continue;
+		r = &snap->resources[o->resource_slot];
+		slot = hcu_render_objects_find_model(s_meta, s_slot_count, r->id);
+		if (slot < 0 || !s_prepared->slot[slot].valid) continue;
+		p->slot = (uint16_t)slot; p->resource_id = r->id; p->generation = o->id.generation;
+		p->root = mat_from_snapshot(&o->world);
+		p->pose_hash = 0u;
+		p->palette_count = 0u;
+		p->palette_first = o->palette_first;
+		n = o->palette_count;
+		if (n && hcu_render_objects_prepare_range_valid(o->palette_first, n, snap->palette_count)) {
+			for (j = 0; j < i; ++j) {
+				const halo_ps2_frame_object *prev = &snap->objects[j];
+				if (prev->palette_first == o->palette_first && prev->palette_count == n &&
+					s_prepared->object[j].valid && s_prepared->object[j].palette_count == n) { shared = j; break; }
+			}
+			if (shared < HALO_PS2_FRAME_MAX_OBJECTS) {
+				p->palette_first = s_prepared->object[shared].palette_first;
+				p->palette_count = (uint16_t)n;
+				p->pose_hash = s_prepared->object[shared].pose_hash;
+			} else {
+				for (j = 0; j < n; ++j) {
+					uint32_t pi = o->palette_first + j;
+					uint8_t mask = (uint8_t)(1u << (pi & 7u));
+					if (!(s_prepared->palette_ready[pi >> 3] & mask)) {
+						s_prepared->palette[pi] = mat_from_snapshot(&snap->palette[pi]);
+						s_prepared->palette_ready[pi >> 3] |= mask;
+					}
+				}
+				p->palette_count = (uint16_t)n;
+				p->pose_hash = hcu_render_objects_pose_hash(snap->palette, snap->palette_count,
+					o->palette_first, o->palette_count);
+			}
+		}
+		p->valid = 1;
+		s_prepare_stats.prepared_objects++;
+	}
+	s_prepared->ready = 1u;
+}
+
+static int prepared_lookup(const halo_ps2_frame_snapshot *snap, uint32_t oi, uint32_t generation,
+	uint32_t resource_id, int *slot, uint32_t *pose_hash)
+{
+	prepared_object *p;
+	hcu_object_prepare_key key;
+	if (!HCU_C3_OBJECT_PREPARE_CACHE || !s_prepared || !s_prepared->ready || !snap || !slot || !pose_hash ||
+		oi >= HALO_PS2_FRAME_MAX_OBJECTS || s_prepared->sequence != snap->sequence ||
+		s_prepared->map_generation != snap->map_generation) return 0;
+	p = &s_prepared->object[oi];
+	if (!p->valid || p->generation != generation || p->resource_id != resource_id ||
+		p->slot >= HCU_OBJECTS_MAX_MODELS || !s_prepared->slot[p->slot].valid ||
+		!s_slots[p->slot].loaded) return 0;
+	key.sequence = s_prepared->sequence; key.map_generation = s_prepared->map_generation;
+	key.object_generation = p->generation; key.resource_id = p->resource_id;
+	key.slot_epoch = s_prepared->slot[p->slot].epoch;
+	return hcu_render_objects_prepare_select(HCU_C3_OBJECT_PREPARE_CACHE, &key,
+		snap->sequence, snap->map_generation, generation, resource_id,
+		s_slot_epoch[p->slot], (int)p->slot, p->pose_hash, -1, 0u, slot, pose_hash);
+}
+
 
 static int read_verified(const hcu_asset_profile_view *view, uint32_t id, uint32_t size,
 	uint8_t *dst, const uint8_t want[32])
@@ -1017,6 +1243,8 @@ static int entry_load(const hcu_asset_profile_view *view, uint32_t i, uint32_t f
 	s->src.user = s;
 	s->src.texture_count = s->has_tex ? s->tex.texture_count : 0;
 	s->loaded = 1;
+	if (++s_slot_epoch[i] == 0u) ++s_slot_epoch[i];
+	if (s_prepared) { s_prepared->ready = 0u; s_prepared->slot[i].valid = 0u; }
 	s->last_used = frame + 1u;
 	s_meta[i].resource_id = e->source_datum & 0xFFFFu; /* CE model.index: low 16 bits of the tag datum */
 	s_meta[i].source_datum = e->source_datum;
@@ -1035,6 +1263,8 @@ static void entry_evict(uint32_t i)
 	obj_slot *s = &s_slots[i];
 	pool_free(s->pool_off);
 	s->loaded = 0;
+	if (++s_slot_epoch[i] == 0u) ++s_slot_epoch[i];
+	if (s_prepared) { s_prepared->ready = 0u; s_prepared->slot[i].valid = 0u; }
 	s->has_tex = 0;
 	s_meta[i].loaded = 0;
 	s_res.evictions++;
@@ -1185,14 +1415,7 @@ static int slot_texture(void *user, int tex, tex_image_t *out)
 static mat4 mat_from_snapshot(const halo_ps2_snapshot_matrix4x3 *w)
 {
 	mat4 m;
-	unsigned a, c;
-	for (a = 0; a < 3; a++) {
-		const float *basis = a == 0 ? w->forward : a == 1 ? w->left : w->up;
-		for (c = 0; c < 3; c++) m.m[a][c] = basis[c] * w->scale;
-	}
-	for (c = 0; c < 3; c++) m.m[3][c] = w->position[c];
-	m.m[0][3] = m.m[1][3] = m.m[2][3] = 0.0f;
-	m.m[3][3] = 1.0f;
+	hcu_render_objects_prepare_matrix(w, &m.m[0][0]);
 	return m;
 }
 
@@ -1212,12 +1435,30 @@ static int pose_fn(void *user, const object_t *ob, object_nodes_t *out)
 	unsigned n, i;
 	model_info mi;
 	mat4 root = ob->root;
-	if (!s->loaded) return 0;
-	mi = model_get(&s->models, 0);
+	const prepared_object *prepared = NULL;
+	if (!s->loaded || !s_pose_snapshot) return 0;
+	if (!(d->flags & HCU_OBJECTS_FLAG_CAMERA_LOCAL) && HCU_C3_OBJECT_PREPARE_CACHE && s_prepared && s_prepared->ready &&
+		d->object_index < HALO_PS2_FRAME_MAX_OBJECTS && s_prepared->sequence == s_pose_snapshot->sequence &&
+		s_prepared->map_generation == s_pose_snapshot->map_generation &&
+		s_prepared->object[d->object_index].valid && s_prepared->object[d->object_index].palette_count == d->palette_count &&
+		s_prepared->object[d->object_index].generation == d->generation &&
+		s_prepared->object[d->object_index].resource_id == d->resource_id &&
+		s_prepared->object[d->object_index].slot == d->slot &&
+		s_prepared->slot[d->slot].valid && s_prepared->slot[d->slot].epoch == s_slot_epoch[d->slot]) {
+		prepared = &s_prepared->object[d->object_index];
+		mi = s_prepared->slot[d->slot].info;
+	} else mi = model_get(&s->models, 0);
 	n = mi.node_count;
 	if (n == 0 || n > SKEL_MAX_NODES) return 0;
 	if (d->palette_count) {
 		if (d->palette_count < n || !s_pose_snapshot) return 0;
+		if (prepared) {
+			memcpy(out->skin, &s_prepared->palette[prepared->palette_first], n * sizeof(mat4));
+			memcpy(out->world, &s_prepared->palette[prepared->palette_first], n * sizeof(mat4));
+			s_view_skinned += n;
+			out->count = n;
+			return 1;
+		}
 		for (i = 0; i < n; i++) {
 			const halo_ps2_snapshot_matrix4x3 *src = &s_pose_snapshot->palette[d->palette_first + i];
 			if (d->flags & HCU_OBJECTS_FLAG_CAMERA_LOCAL) {
@@ -1556,9 +1797,23 @@ static void object_pass(void *user, render_ctx_t *rc)
 			else if (d->type == HCU_OBJECTS_TYPE_WEAPON) s_view_counters.refused_weapons++;
 			continue;
 		}
-		mi = model_get(&s->models, 0);
-		model_select_permutations(&s->models, &mi, NULL, perm);
-		root = mat_from_snapshot(&d->world);
+		if (HCU_C3_OBJECT_PREPARE_CACHE && s_prepared && s_prepared->ready && d->object_index < HALO_PS2_FRAME_MAX_OBJECTS &&
+			s_prepared->sequence == s_snapshot->sequence && s_prepared->map_generation == s_snapshot->map_generation &&
+			s_prepared->object[d->object_index].valid &&
+			s_prepared->object[d->object_index].generation == d->generation &&
+			s_prepared->object[d->object_index].resource_id == d->resource_id &&
+			s_prepared->object[d->object_index].slot == d->slot &&
+			s_prepared->slot[d->slot].valid && s_prepared->slot[d->slot].epoch == s_slot_epoch[d->slot]) {
+			mi = s_prepared->slot[d->slot].info;
+			memcpy(perm, s_prepared->slot[d->slot].perm, sizeof perm);
+			root = s_prepared->object[d->object_index].root;
+			s_prepare_stats.reused_objects++;
+		} else {
+			mi = model_get(&s->models, 0);
+			model_select_permutations(&s->models, &mi, NULL, perm);
+			root = mat_from_snapshot(&d->world);
+			if (HCU_C3_OBJECT_PREPARE_CACHE) s_prepare_stats.cache_fallbacks++;
+		}
 #if !HCU_C3_OBJECT_FASTPATH
 		memset(&table, 0, sizeof table);
 #endif
@@ -1756,6 +2011,7 @@ int hcu_render_objects_load(const hcu_asset_profile_view *view, arena_t *arena,
 	if (!view || !arena || !table || !info) return HCU_RENDER_CONTENT_E_ARGUMENT;
 	if (count > HCU_OBJECTS_MAX_MODELS) return HCU_RENDER_CONTENT_E_FULL;
 	memset(info, 0, sizeof *info);
+	prepared_invalidate_all();
 	memset(s_slots, 0, sizeof s_slots);
 	memset(s_meta, 0, sizeof s_meta);
 	memset(&s_res, 0, sizeof s_res);
@@ -1979,7 +2235,10 @@ const halo_ps2_frame_snapshot *hcu_render_objects_frame_begin(uint32_t frame, ui
 		}
 	}
 	s_pose_snapshot = s_snapshot;
-	if (s_snapshot) hcu_render_objects_track_poses(s_snapshot, &s_poses, &s_totals);
+	if (s_snapshot) {
+		prepare_snapshot(s_snapshot);
+		hcu_render_objects_track_poses(s_snapshot, &s_poses, &s_totals);
+	}
 	return s_snapshot;
 }
 
