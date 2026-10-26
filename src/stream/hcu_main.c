@@ -213,6 +213,7 @@ static hcu_memory_partition_t s_partition;
 /* Residency table for the selected row's map service arena: one entry per
  * 64 KiB slot. Lives in ELF static storage, not in CE, so it is not charged to the row. */
 #define HCU_PARTITION_RESIDENCY_SLOTS 16u
+#define HCU_PARTITION_RESIDENCY_SLOT_BYTES HCU_MEMORY_PROFILE_RESIDENCY_SLOT_BYTES
 static hcu_asset_residency_entry s_residency_entries[HCU_PARTITION_RESIDENCY_SLOTS];
 static const char *s_partition_name = "bootstrap";
 
@@ -649,9 +650,11 @@ static int hcu_c2s_compatible(void *context, const hcu_map_catalog_entry *entry,
 static int hcu_register_selected_runtime(hcu_map_service *service,
 	arena_t *owner, arena_t *scratch)
 {
+	uint32_t residency_slots;
 	if (!s_partition_selected) return 1;
 	if (!service || !s_partition.residency_base ||
-		s_partition.residency_bytes != HCU_PARTITION_RESIDENCY_SLOTS * 65536u) {
+		hcu_memory_profile_residency_slot_count(s_partition.residency_bytes,
+			HCU_PARTITION_RESIDENCY_SLOTS, &residency_slots) != 0) {
 		printf("[err] partition %s has no residency span for the map service\n",
 			s_partition_name);
 		return 0;
@@ -717,11 +720,17 @@ static int hcu_register_selected_runtime(hcu_map_service *service,
 #ifdef HCU_C2_SUCCESSOR_BUILT
 		/* The successor stages beside the live map, so the two runtimes split
 		 * the row's residency span: the selected row keeps the first half. */
-		runtime.residency_entry_capacity = HCU_PARTITION_RESIDENCY_SLOTS / 2u;
+		if (residency_slots < 2u || (residency_slots & 1u) != 0u) {
+			printf("[err] partition %s residency slots cannot be split across selected and successor maps\n",
+				s_partition_name);
+			hcu_c2_close_image_files();
+			return 0;
+		}
+		runtime.residency_entry_capacity = residency_slots / 2u;
 		runtime.residency_arena = s_partition.residency_base;
 		runtime.residency_arena_bytes = s_partition.residency_bytes / 2u;
 #else
-		runtime.residency_entry_capacity = HCU_PARTITION_RESIDENCY_SLOTS;
+		runtime.residency_entry_capacity = residency_slots;
 		runtime.residency_arena = s_partition.residency_base;
 		runtime.residency_arena_bytes = s_partition.residency_bytes;
 #endif
@@ -763,7 +772,15 @@ static int hcu_register_successor_runtime(hcu_map_service *service,
 	void *metadata_storage;
 	void *relocation_storage;
 	void *stream_scratch;
+	uint32_t successor_slots;
 	if (!s_partition_selected) return 1;
+	if (!s_partition.residency_base ||
+		hcu_memory_profile_residency_slot_count(s_partition.residency_bytes / 2u,
+			HCU_PARTITION_RESIDENCY_SLOTS / 2u, &successor_slots) != 0) {
+		printf("[err] partition %s residency span cannot be split for successor runtime\n",
+			s_partition_name);
+		return 0;
+	}
 	if (!hcu_c2s_open_files()) {
 		printf("[err] partition %s: successor package or source maps are not under the asset root\n",
 			s_partition_name);
@@ -809,7 +826,7 @@ static int hcu_register_successor_runtime(hcu_map_service *service,
 	runtime.headless_candidate_admission = 1;
 	runtime.partition_row = HCU_C2_IMAGE_ROW;
 	runtime.residency_entries = s_c2s_residency_entries;
-	runtime.residency_entry_capacity = HCU_PARTITION_RESIDENCY_SLOTS / 2u;
+	runtime.residency_entry_capacity = successor_slots;
 	runtime.residency_arena = (uint8_t *)s_partition.residency_base +
 		s_partition.residency_bytes / 2u;
 	runtime.residency_arena_bytes = s_partition.residency_bytes / 2u;

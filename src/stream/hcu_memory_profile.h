@@ -4,8 +4,25 @@
 
 #include "core/mem.h"
 #include <stddef.h>
+#include <stdint.h>
 
 #define HCU_MEMORY_PROFILE_VERSION_1 1u
+#define HCU_MEMORY_PROFILE_RESIDENCY_SLOT_BYTES 65536u
+
+/* Validate and convert a whole-slot residency span against the entry storage
+ * reserved by the caller. A profile may select fewer than the maximum entries. */
+static inline int hcu_memory_profile_residency_slot_count(size_t residency_bytes,
+	uint32_t maximum_slots, uint32_t *slot_count_out)
+{
+	if (slot_count_out) *slot_count_out = 0u;
+	if (!slot_count_out || !residency_bytes ||
+		residency_bytes % HCU_MEMORY_PROFILE_RESIDENCY_SLOT_BYTES != 0u ||
+		residency_bytes / HCU_MEMORY_PROFILE_RESIDENCY_SLOT_BYTES > maximum_slots)
+		return -1;
+	*slot_count_out = (uint32_t)(residency_bytes /
+		HCU_MEMORY_PROFILE_RESIDENCY_SLOT_BYTES);
+	return 0;
+}
 
 typedef struct {
 	unsigned version;

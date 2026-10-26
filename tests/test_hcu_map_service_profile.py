@@ -96,7 +96,7 @@ class MapServiceProfileLifecycleTest(unittest.TestCase):
             self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
             self.assertIn("PASS headless admission accepts a registered foreign successor under its own runtime", run.stdout)
             self.assertIn("PASS headless admission refuses a successor of another partition row", run.stdout)
-            self.assertEqual(run.stdout.count("PASS "), 32, run.stdout)
+            self.assertEqual(run.stdout.count("PASS "), 33, run.stdout)
             self.assertIn("map-preflight rejected reason=headless-candidate-capacity map=carousel", run.stdout)
             self.assertIn("map-service-profile-lifecycle passed", run.stdout)
 
@@ -137,7 +137,7 @@ class MapServiceProfileLifecycleTest(unittest.TestCase):
             ]
             run = subprocess.run(run_command, capture_output=True, text=True)
             self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
-            self.assertEqual(run.stdout.count("PASS "), 30, run.stdout)
+            self.assertEqual(run.stdout.count("PASS "), 31, run.stdout)
             self.assertIn("corrupt package, metadata and bindings rejected before live teardown", run.stdout)
             self.assertIn("repeated preflight revalidates and discards a corrupted empty stage", run.stdout)
             candidate = run.stdout.index("map-replacement phase=candidate-validated old=ui new=beavercreek")

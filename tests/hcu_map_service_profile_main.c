@@ -8,6 +8,7 @@
  * CTAG/CBSP mount is covered by tests/hcu_profile_mount_main.c. The scripted
  * mount records every prepare/load/unload so ordering and leases are observable. */
 #include "../src/stream/hcu_map_service.c"
+#include "../src/stream/hcu_memory_profile.h"
 
 #include <io_common.h>
 #include <fileXio_rpc.h>
@@ -32,16 +33,15 @@ static uint8_t s_stream_scratch[4096] __attribute__((aligned(16)));
 static uint8_t s_b_metadata_storage[256] __attribute__((aligned(16)));
 static uint8_t s_b_relocation_storage[4096] __attribute__((aligned(16)));
 static uint8_t s_b_stream_scratch[4096] __attribute__((aligned(16)));
-static hcu_asset_residency_entry s_b_residency_entries[4] __attribute__((aligned(16)));
-static uint8_t s_b_residency_arena[HCU_PROFILE_MOUNT_RESIDENCY_SEGMENT_BYTES]
-	__attribute__((aligned(16)));
+static hcu_asset_residency_entry s_b_residency_entries[5] __attribute__((aligned(16)));
 /* Stands for the published tag cache of the live owner: filled with its map's
  * first letter when the scripted load publishes it, cleared when it unmounts. */
 static uint8_t s_live_tags[32] __attribute__((aligned(16)));
-/* Two whole 64 KiB residency slots, as the production arena is sized. */
-static hcu_asset_residency_entry s_residency_entries[4] __attribute__((aligned(16)));
-static uint8_t s_residency_arena[2u * HCU_PROFILE_MOUNT_RESIDENCY_SEGMENT_BYTES]
+/* A production-shaped ten-slot span, split into two five-slot map generations. */
+static hcu_asset_residency_entry s_residency_entries[10] __attribute__((aligned(16)));
+static uint8_t s_residency_arena[10u * HCU_PROFILE_MOUNT_RESIDENCY_SEGMENT_BYTES]
 	__attribute__((aligned(16)));
+#define s_b_residency_arena (s_residency_arena + 5u * HCU_PROFILE_MOUNT_RESIDENCY_SEGMENT_BYTES)
 
 static unsigned s_prepare_calls;
 static unsigned s_load_calls;
@@ -448,8 +448,24 @@ int main(int argc, char **argv)
 	hcu_bitmap_frame_owner owner;
 	hcu_bitmap_dispatch_context dispatch;
 	unsigned prepares_before;
+	uint32_t slot_count;
 	/* Unbuffered, so the lines before an assertion abort still reach the log. */
 	setvbuf(stdout, NULL, _IONBF, 0);
+	assert(hcu_memory_profile_residency_slot_count(
+		10u * HCU_MEMORY_PROFILE_RESIDENCY_SLOT_BYTES, 16u, &slot_count) == 0);
+	assert(slot_count == 10u);
+	assert(hcu_memory_profile_residency_slot_count(
+		10u * HCU_MEMORY_PROFILE_RESIDENCY_SLOT_BYTES / 2u, 8u, &slot_count) == 0);
+	assert(slot_count == 5u);
+	assert(hcu_memory_profile_residency_slot_count(
+		16u * HCU_MEMORY_PROFILE_RESIDENCY_SLOT_BYTES, 16u, &slot_count) == 0);
+	assert(slot_count == 16u);
+	assert(hcu_memory_profile_residency_slot_count(
+		17u * HCU_MEMORY_PROFILE_RESIDENCY_SLOT_BYTES, 16u, &slot_count) != 0);
+	assert(hcu_memory_profile_residency_slot_count(
+		HCU_MEMORY_PROFILE_RESIDENCY_SLOT_BYTES + 8u, 16u, &slot_count) != 0);
+	assert(hcu_memory_profile_residency_slot_count(0u, 16u, &slot_count) != 0);
+	printf("PASS profile residency span derives aligned 10-slot capacity within 16-entry maximum; split is 5+5\n");
 	if (argc != 8) {
 		fprintf(stderr, "usage: %s package.hcp package_sha256 meta_ok.hcm meta_ok_sha256 meta_big.hcm meta_big_sha256 asset_root\n",
 			argv[0]);
@@ -786,6 +802,10 @@ int main(int argc, char **argv)
 		unsigned unloads_before;
 		runtime = make_runtime(&package, package_sha, meta_ok, meta_ok_size,
 			meta_ok_sha, s_metadata_storage, sizeof(s_metadata_storage), &owner);
+		assert(hcu_memory_profile_residency_slot_count(
+			sizeof(s_residency_arena) / 2u, 8u, &slot_count) == 0);
+		runtime.residency_entry_capacity = slot_count;
+		runtime.residency_arena_bytes = sizeof(s_residency_arena) / 2u;
 		runtime.renderer_quiesce = scripted_renderer_quiesce;
 		runtime.renderer_quiesce_context = &service;
 		assert(hcu_map_service_register_runtime(&service, "ui", &runtime));
@@ -799,7 +819,7 @@ int main(int argc, char **argv)
 		successor.residency_entry_capacity = sizeof(s_b_residency_entries) /
 			sizeof(s_b_residency_entries[0]);
 		successor.residency_arena = s_b_residency_arena;
-		successor.residency_arena_bytes = sizeof(s_b_residency_arena);
+		successor.residency_arena_bytes = 5u * HCU_PROFILE_MOUNT_RESIDENCY_SEGMENT_BYTES;
 		assert(!hcu_map_service_register_successor_runtime(&service, "ui", &successor));
 		assert(hcu_map_service_register_successor_runtime(&service, "beavercreek", &successor));
 		assert(!hcu_map_service_register_successor_runtime(&service, "beavercreek", &successor));
@@ -929,6 +949,10 @@ int main(int argc, char **argv)
 		s_trace_count = 0;
 		runtime = make_runtime(&package, package_sha, meta_ok, meta_ok_size,
 			meta_ok_sha, s_metadata_storage, sizeof(s_metadata_storage), NULL);
+		assert(hcu_memory_profile_residency_slot_count(
+			sizeof(s_residency_arena) / 2u, 8u, &slot_count) == 0);
+		runtime.residency_entry_capacity = slot_count;
+		runtime.residency_arena_bytes = sizeof(s_residency_arena) / 2u;
 		runtime.headless_no_bitmap_consumers = 1;
 		runtime.renderer_never_started = headless_never_started;
 		runtime.headless_candidate_admission = 1;
@@ -944,7 +968,7 @@ int main(int argc, char **argv)
 		successor.residency_entry_capacity = sizeof(s_b_residency_entries) /
 			sizeof(s_b_residency_entries[0]);
 		successor.residency_arena = s_b_residency_arena;
-		successor.residency_arena_bytes = sizeof(s_b_residency_arena);
+		successor.residency_arena_bytes = 5u * HCU_PROFILE_MOUNT_RESIDENCY_SEGMENT_BYTES;
 		successor.headless_no_bitmap_consumers = 1;
 		successor.renderer_never_started = headless_never_started;
 		successor.headless_candidate_admission = 1;
