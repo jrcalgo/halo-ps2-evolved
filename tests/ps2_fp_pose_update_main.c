@@ -1,5 +1,7 @@
 #include <stdio.h>
+#include <math.h>
 #include "halo_ps2_fp_pose_update.h"
+#include "halo_ps2_camera_fov.h"
 
 typedef struct {
 	unsigned calls;
@@ -91,6 +93,19 @@ static int invalid_and_frame_reset(void)
 	return 0;
 }
 
+static int observer_fallback_fov(void)
+{
+	float pi = 3.14159265358979323846f;
+	float tangent50 = tanf(50.0f * pi / 360.0f) * 0.85f;
+	float tangent70 = tanf(70.0f * pi / 360.0f) * 0.85f;
+	float vertical50 = halo_ps2_camera_vertical_fov_from_adjusted_tangent(tangent50);
+	float vertical70 = halo_ps2_camera_vertical_fov_from_adjusted_tangent(tangent70);
+	float expected50 = 33.1113879f * pi / 180.0f;
+	float expected70 = 48.1102782f * pi / 180.0f;
+	return fabsf(vertical50 - expected50) < 1e-5f &&
+		fabsf(vertical70 - expected70) < 1e-5f ? 0 : 1;
+}
+
 int main(void)
 {
 	int result;
@@ -98,6 +113,7 @@ int main(void)
 	if ((result = successful_and_partial_windows()) != 0) return 20 + result;
 	if ((result = duplicate_player_windows()) != 0) return 30 + result;
 	if ((result = invalid_and_frame_reset()) != 0) return 40 + result;
+	if ((result = observer_fallback_fov()) != 0) return 50 + result;
 	puts("PS2 first-person pose freshness helper fixture passed");
 	return 0;
 }

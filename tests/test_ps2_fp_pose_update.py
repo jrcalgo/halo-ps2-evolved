@@ -15,7 +15,7 @@ def test_ps2_c3_pose_freshness_paths(tmp_path):
     subprocess.run([
         compiler, "-std=c11", "-Wall", "-Wextra", "-Werror",
         "-I" + str(ROOT / "submodules/halo-ce-universal/port/ps2/include"),
-        str(ROOT / "tests/ps2_fp_pose_update_main.c"), "-o", str(executable),
+        str(ROOT / "tests/ps2_fp_pose_update_main.c"), "-lm", "-o", str(executable),
     ], cwd=ROOT, check=True, capture_output=True, text=True)
     result = subprocess.run([str(executable)], cwd=ROOT, check=True,
         capture_output=True, text=True, timeout=30)
@@ -42,3 +42,15 @@ def test_ps2_snapshot_updates_after_selecting_each_ce_camera():
     assert frame.index("halo_ps2_fp_pose_tracker_reset(&s_c3_fp_pose_tracker);") < \
         frame.index("if (s_bitmap_frame_consumer_registered &&")
     assert "#if !defined(HALO_PS2_C3_FRAME_SNAPSHOT)\n\tif (!s_bitmap_frame_consumer_registered &&" in frame
+
+    fallback = source[source.index("static void ps2_c3_unit_camera("):
+                      source.index("/* Effect and decal requests", source.index("static void ps2_c3_unit_camera("))]
+    assert "player_control_get_field_of_view(local_player_index)" in fallback
+    assert "render_camera_get_adjusted_field_of_view_tangent(control_field_of_view)" in fallback
+    assert "halo_ps2_camera_vertical_fov_from_adjusted_tangent" in fallback
+    assert "camera->vertical_field_of_view = 1.2217305f" in fallback
+    unit_fallback = snapshot.index("if (ps2_c3_camera_is_zero(view->camera.position))")
+    assert unit_fallback < snapshot.index("ps2_c3_unit_camera(unit_index, window->local_player_index,")
+
+    main_camera = (ROOT / "submodules/halo-ce-universal/source/main/main.c").read_text()
+    assert "2.0f * arctangent(\n\t\t\t\t0.75f * render_camera_get_adjusted_field_of_view_tangent(" in main_camera
