@@ -29,6 +29,10 @@ extern uint8_t *world_load_section_with_scratch(arena_t *owner,
 
 static hcu_map_service *s_service;
 
+static int preflight_package_reader_with_scratch(hcu_map_service *service,
+	hcu_asset_profile_read_at reader, void *context, uint32_t image_size,
+	uint32_t profile_id, hcu_asset_profile_view *candidate);
+
 /* A NULL hook is a no-op, so the host fixtures and the default build are unchanged. */
 static void notify_boundary(hcu_map_service *service, const char *phase)
 {
@@ -626,7 +630,7 @@ static int profile_preflight_successor(hcu_map_service *service,
 			entry->identity.map_name);
 		return 0;
 	}
-	if (hcu_asset_profile_preflight_reader(rt->package_read_at,
+	if (preflight_package_reader_with_scratch(service, rt->package_read_at,
 			rt->package_context, rt->package_size, rt->profile_id, view) != HCU_ASSET_PROFILE_OK ||
 		!verify_profile_package_hash(rt->package_read_at, rt->package_context,
 			rt->package_size, rt->package_sha256) ||
@@ -718,7 +722,7 @@ static int profile_preflight(hcu_map_service *service,
 		if (!rt->metadata_bytes || !rt->metadata_size ||
 			rt->metadata_size > UINT32_MAX || !runtime_spans_valid(rt) ||
 			!hcu_profile_mount_inputs_match(&service->profile_mount) ||
-			hcu_asset_profile_preflight_reader(rt->package_read_at,
+			preflight_package_reader_with_scratch(service, rt->package_read_at,
 				rt->package_context, rt->package_size, rt->profile_id,
 				&candidate) != HCU_ASSET_PROFILE_OK ||
 			!verify_profile_package_hash(rt->package_read_at, rt->package_context,
@@ -762,7 +766,7 @@ static int profile_preflight(hcu_map_service *service,
 		printf("HALO_PS2_LOCAL profile-preflight rejected reason=capacity-or-spans\n");
 		return 0;
 	}
-	if (hcu_asset_profile_preflight_reader(rt->package_read_at,
+	if (preflight_package_reader_with_scratch(service, rt->package_read_at,
 			rt->package_context, rt->package_size, rt->profile_id,
 			&candidate) != HCU_ASSET_PROFILE_OK ||
 		!verify_profile_package_hash(rt->package_read_at, rt->package_context,
@@ -1206,28 +1210,39 @@ static void fail_preflight_for_entry(hcu_map_service *service,
 		clear_staged_request(service);
 }
 
-/* Per-load package preflight with 64 KiB reads from section_scratch when free. */
-static int preflight_package_reader(hcu_map_service *service, hcu_asset_profile_view *candidate)
+/* Package envelope preflight uses 64 KiB caller scratch whenever the shared
+ * section arena can lend it; otherwise preserve the bounded stack fallback. */
+static int preflight_package_reader_with_scratch(hcu_map_service *service,
+	hcu_asset_profile_read_at reader, void *context, uint32_t image_size,
+	uint32_t profile_id, hcu_asset_profile_view *candidate)
 {
-	uint8_t small[512];
 	size_t mark, free_bytes;
 	uint8_t *scratch;
 	int rc;
-	if (!service->section_scratch) return hcu_asset_profile_preflight_reader(service->profile_read_at,
-		service->profile_reader_context, service->profile_image_size, service->expected_profile_id, candidate);
+	if (!reader || !candidate) return HCU_ASSET_PROFILE_E_ARGUMENT;
+	if (!service || !service->section_scratch) return hcu_asset_profile_preflight_reader(reader,
+		context, image_size, profile_id, candidate);
 	free_bytes = arena_free(service->section_scratch);
 	if (free_bytes > 65536u) free_bytes = 65536u;
-	if (free_bytes < 65536u) return hcu_asset_profile_preflight_reader(service->profile_read_at,
-		service->profile_reader_context, service->profile_image_size, service->expected_profile_id, candidate);
+	if (free_bytes < 512u) return hcu_asset_profile_preflight_reader(reader,
+		context, image_size, profile_id, candidate);
 	mark = arena_mark(service->section_scratch);
 	scratch = (uint8_t *)arena_alloc(service->section_scratch, free_bytes, 64);
-	if (!scratch) { (void)small; return hcu_asset_profile_preflight_reader(service->profile_read_at,
-		service->profile_reader_context, service->profile_image_size, service->expected_profile_id, candidate); }
-	rc = hcu_asset_profile_preflight_reader_scratch(service->profile_read_at,
-		service->profile_reader_context, service->profile_image_size, service->expected_profile_id,
+	if (!scratch) return hcu_asset_profile_preflight_reader(reader,
+		context, image_size, profile_id, candidate);
+	rc = hcu_asset_profile_preflight_reader_scratch(reader,
+		context, image_size, profile_id,
 		candidate, scratch, (uint32_t)free_bytes);
 	arena_release(service->section_scratch, mark);
 	return rc;
+}
+
+static int preflight_package_reader(hcu_map_service *service,
+	hcu_asset_profile_view *candidate)
+{
+	return preflight_package_reader_with_scratch(service, service->profile_read_at,
+		service->profile_reader_context, service->profile_image_size,
+		service->expected_profile_id, candidate);
 }
 
 static int hcu_map_service_preflight_impl(const char *map_name);
@@ -1472,8 +1487,8 @@ int hcu_map_service_register_profile(hcu_map_service *service,
 		!compatibility ||
 		!(entry = hcu_map_catalog_find(map_name)) ||
 		strcmp(map_name, entry->identity.map_name) != 0 ||
-		hcu_asset_profile_preflight_reader(read_at, reader_context, image_size,
-			profile_id, &candidate) != HCU_ASSET_PROFILE_OK ||
+		preflight_package_reader_with_scratch(service, read_at, reader_context,
+			image_size, profile_id, &candidate) != HCU_ASSET_PROFILE_OK ||
 		!verify_profile_package_hash(read_at, reader_context, image_size,
 		expected_package_sha256) ||
 		!compatibility(compatibility_context, entry, &candidate))
@@ -1518,7 +1533,8 @@ int hcu_map_service_unregister_profile(hcu_map_service *service)
 /* The checks every registered runtime passes: its catalog entry's package pin,
  * its compatibility gate and its storage. The candidate view is the package's
  * identity, kept for later preflights. */
-static int runtime_registration_valid(const hcu_map_catalog_entry *entry,
+static int runtime_registration_valid(hcu_map_service *service,
+	const hcu_map_catalog_entry *entry,
 	const hcu_map_profile_runtime *runtime, hcu_asset_profile_view *candidate)
 {
 	if (!entry || !runtime) return 0;
@@ -1533,7 +1549,7 @@ static int runtime_registration_valid(const hcu_map_catalog_entry *entry,
 		runtime->metadata_bytes && runtime->metadata_size &&
 		runtime->source_read && runtime->maximum_tag_image_bytes &&
 		runtime_residency_valid(runtime) && runtime_spans_valid(runtime) &&
-		hcu_asset_profile_preflight_reader(runtime->package_read_at,
+		preflight_package_reader_with_scratch(service, runtime->package_read_at,
 			runtime->package_context, runtime->package_size, runtime->profile_id,
 			candidate) == HCU_ASSET_PROFILE_OK &&
 		verify_profile_package_hash(runtime->package_read_at,
@@ -1556,7 +1572,7 @@ int hcu_map_service_register_runtime(hcu_map_service *service,
 	if (!(entry = hcu_map_catalog_find(map_name)) ||
 		strcmp(map_name, entry->identity.map_name) != 0 ||
 		strlen(entry->identity.map_name) >= sizeof(service->runtime_map_name) ||
-		!runtime_registration_valid(entry, runtime, &candidate))
+		!runtime_registration_valid(service, entry, runtime, &candidate))
 		return 0;
 	service->runtime = *runtime;
 	memset(service->runtime_map_name, 0, sizeof(service->runtime_map_name));
@@ -1580,7 +1596,7 @@ int hcu_map_service_register_successor_runtime(hcu_map_service *service,
 		strcmp(map_name, entry->identity.map_name) != 0 ||
 		strcmp(map_name, service->runtime_map_name) == 0 ||
 		strlen(entry->identity.map_name) >= sizeof(service->successor_map_name) ||
-		!runtime_registration_valid(entry, runtime, &candidate) ||
+		!runtime_registration_valid(service, entry, runtime, &candidate) ||
 		!runtime_spans_disjoint(&service->runtime, runtime))
 		return 0;
 	service->successor = *runtime;
