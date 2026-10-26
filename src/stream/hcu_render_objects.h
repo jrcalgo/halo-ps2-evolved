@@ -2,8 +2,8 @@
  * the exact per-view first-person gun and arms models) through the halo-ps2 object pass, after the BSP pass.
  *
  * Parent contract: the parent reads immutable published data only. It never advances animation or
- * gameplay. Node palettes are the CE-computed skin matrices from the snapshot; the parent does not
- * sample ANIM. The snapshot is read-pinned while the frame draws and unpinned once the frame's kick
+ * gameplay. Node palettes are CE-computed posed node matrices; the parent applies each model's default
+ * inverse bind for skinning but does not sample ANIM. The snapshot is read-pinned while the frame draws and unpinned once the frame's kick
  * has completed (hcu_render_objects_pin / hcu_render_objects_unpin).
  *
  * This header and the selection/builder half of hcu_render_objects.c are host-testable: they touch no
@@ -191,6 +191,10 @@ int hcu_render_objects_select(const halo_ps2_frame_snapshot *snap, uint32_t view
 	const hcu_render_objects_model *models, uint32_t model_count,
 	hcu_render_object_draw *out, uint32_t capacity, uint32_t *count,
 	hcu_render_objects_counters *counters);
+/* Shared by selection and residency so hidden or camera-local objects do not
+ * displace models that this view can actually draw. */
+int hcu_render_objects_object_visible_in_view(const halo_ps2_frame_snapshot *snap,
+	const halo_ps2_frame_view *view, uint32_t object_index);
 /* Optional fixed arena cache. Bind once during renderer setup; cache contents are keyed by pinned snapshot
  * sequence/map generation and slot residency epoch. A failed bind disables the optimization. */
 size_t hcu_render_objects_prepare_cache_bytes(void);

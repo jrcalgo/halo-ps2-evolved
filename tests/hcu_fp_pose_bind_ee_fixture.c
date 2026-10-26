@@ -1,7 +1,7 @@
 /* Exercises the production pose_fn by including the EE adapter directly. The synthetic
  * MODL node records and palettes are asset-free; only model accessors are stubbed. */
 #define HCU_RENDER_OBJECTS_EE 1
-#define HCU_C3_OBJECT_PREPARE_CACHE 0
+#define HCU_C3_OBJECT_PREPARE_CACHE 1
 #include <stdio.h>
 #include <stdlib.h>
 #include "stream/hcu_render_objects.c"
@@ -9,6 +9,7 @@
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "FAIL %s line %d\n", #x, __LINE__); return 1; } } while (0)
 
 static model_node s_test_nodes[3];
+static prepared_cache s_prepared_storage;
 model_info model_get(const model_section *s, uint32_t index)
 {
 	model_info m; (void)s; (void)index; memset(&m, 0, sizeof m); m.node_count = 3; return m;
@@ -125,13 +126,27 @@ int main(void)
 		CHECK(hcu_render_first_person_world(&snap.views[0].camera,&graph_root,&cam)==0);camera_root=mat_from_snapshot(&cam);
 		for(i=0;i<3;i++)CHECK(max_delta(&out.skin[i],&camera_root)<5e-5f);
 	}
-	/* World-object palettes without CAMERA_LOCAL keep their prior direct skin contract. */
+	/* World-object palettes use their model-specific inverse bind too; world[]
+	 * remains the unmodified CE pose for markers and attachment transforms. */
 	{
-		mat4 direct[3];
-		for(i=0;i<3;i++){snap.palette[i].position[0]=8.0f+i;snap.palette[i].position[1]=2.0f-i;}
-		CHECK(call_pose(&snap,0,HCU_OBJECTS_FLAG_SKINNED,&out,direct)==0);
-		for(i=0;i<3;i++)CHECK(max_delta(&out.skin[i],&direct[i])<1e-6f&&max_delta(&out.world[i],&direct[i])<1e-6f);
+		mat4 world[3];
+		make_palettes(&snap,0,1);
+		CHECK(call_pose(&snap,0,HCU_OBJECTS_FLAG_SKINNED,&out,world)==0);
+		CHECK(check_default_skin(0,world,&out)==0);
+		CHECK(max_delta(&out.world[1],&out.skin[1])>0.1f);
+		/* Seed the same converted-pose cache shape used by prepare_snapshot and
+		 * verify the early cache path applies that model's inverse bind as well. */
+		memset(&s_prepared_storage,0,sizeof s_prepared_storage);
+		s_prepared = &s_prepared_storage;
+		s_prepared->ready=1u;s_prepared->sequence=snap.sequence;s_prepared->map_generation=snap.map_generation;
+		s_prepared->object[0].valid=1u;s_prepared->object[0].generation=0u;s_prepared->object[0].resource_id=0u;
+		s_prepared->object[0].slot=0u;s_prepared->object[0].palette_first=0u;s_prepared->object[0].palette_count=3u;
+		s_prepared->slot[0].valid=1u;s_prepared->slot[0].epoch=s_slot_epoch[0];
+		s_prepared->slot[0].info=model_get(&s_slots[0].models,0u);
+		for(i=0;i<3;i++)s_prepared->palette[i]=world[i];
+		CHECK(call_pose(&snap,0,HCU_OBJECTS_FLAG_SKINNED,&out,world)==0);
+		CHECK(check_default_skin(0,world,&out)==0);
 	}
-	puts("hcu FP inverse-bind production pose_fn fixture passed (3-node hierarchy, 4 views, yaw/pitch, identity, world path)");
+	puts("hcu inverse-bind production pose_fn fixture passed (camera-local and world paths, 3-node hierarchy, 4 views)");
 	return 0;
 }

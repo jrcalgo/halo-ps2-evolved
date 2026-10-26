@@ -70,6 +70,25 @@ static int hcu_render_object_descends_from(const halo_ps2_frame_snapshot *snap,
 	return 0;
 }
 
+/* Keep residency requests in step with selection: the flat snapshot contains
+ * objects CE would not enter from this view, including the local first-person
+ * unit subtree. Requesting those models can evict the models that will draw. */
+int hcu_render_objects_object_visible_in_view(const halo_ps2_frame_snapshot *snap,
+	const halo_ps2_frame_view *view, uint32_t object_index)
+{
+	const halo_ps2_frame_object *object;
+	if (!snap || !view || object_index >= snap->object_count) return 0;
+	object = &snap->objects[object_index];
+	if (object->flags & HALO_PS2_FRAME_OBJECT_INVISIBLE) return 0;
+	if ((view->flags & (HALO_PS2_FRAME_VIEW_FIRST_PERSON_CAMERA |
+		HALO_PS2_FRAME_VIEW_FIRST_PERSON)) &&
+		view->unit_object != HALO_PS2_FRAME_NONE_U16 &&
+		(object_index == view->unit_object ||
+		 hcu_render_object_descends_from(snap, object_index, view->unit_object)))
+		return 0;
+	return 1;
+}
+
 int hcu_render_objects_prepare_key_valid(const hcu_object_prepare_key *key, uint32_t sequence,
 	uint32_t map_generation, uint32_t object_generation, uint32_t resource_id, uint32_t slot_epoch)
 {
@@ -309,22 +328,13 @@ int hcu_render_objects_select(const halo_ps2_frame_snapshot *snap, uint32_t view
 		int slot;
 		if (oi >= snap->object_count) { counters->failures++; continue; }
 		o = &snap->objects[oi];
-		/* CE's object renderer omits `_object_invisible_bit` objects. Carried
-		 * inactive weapons can have no parent link, so preserve this independent
-		 * visibility state instead of relying on ancestry to hide them. */
-		if (o->flags & HALO_PS2_FRAME_OBJECT_INVISIBLE) continue;
 		/* CE publishes the local player's unit and attached inventory with the
 		 * rest of the world. In first-person, it skips this biped and therefore
 		 * never enters its child list. Filter both the body and its descendants
 		 * only from this view; other players' attached weapons and loose world
 		 * weapons remain available. Camera mode is carried independently of FP
 		 * model-copy success; keep the older flag as a compatibility fallback. */
-		if ((v->flags & (HALO_PS2_FRAME_VIEW_FIRST_PERSON_CAMERA |
-			HALO_PS2_FRAME_VIEW_FIRST_PERSON)) &&
-			v->unit_object != HALO_PS2_FRAME_NONE_U16 &&
-			(oi == v->unit_object || hcu_render_object_descends_from(snap,
-				oi, v->unit_object)))
-			continue;
+		if (!hcu_render_objects_object_visible_in_view(snap, v, oi)) continue;
 		for (i = 0; i < emitted; i++)
 			if (out[i].object_index == oi) break;
 		if (i != emitted) { counters->deduped++; continue; }
@@ -1401,6 +1411,7 @@ static void residency_frame(const halo_ps2_frame_snapshot *snap, uint32_t frame)
 			uint32_t oi = snap->view_refs[ref];
 			uint32_t rid, k, rank;
 			if (oi >= snap->object_count) continue;
+			if (!hcu_render_objects_object_visible_in_view(snap, fv, oi)) continue;
 			if (snap->objects[oi].resource_slot >= snap->resource_count) continue;
 			rid = snap->resources[snap->objects[oi].resource_slot].id;
 			rank = hcu_render_objects_residency_priority(snap->objects[oi].type);
@@ -1550,30 +1561,30 @@ static int pose_fn(void *user, const object_t *ob, object_nodes_t *out)
 	if (d->palette_count) {
 		if (d->palette_count < n || !s_pose_snapshot) return 0;
 		if (prepared) {
-			memcpy(out->skin, &s_prepared->palette[prepared->palette_first], n * sizeof(mat4));
+			/* The cache holds converted CE pose matrices. Keep world[] in that
+			 * bind-space world form for markers/attachments; skin[] is derived
+			 * below with this model's own default inverse bind. */
 			memcpy(out->world, &s_prepared->palette[prepared->palette_first], n * sizeof(mat4));
-			s_view_skinned += n;
-			out->count = n;
-			return 1;
-		}
-		for (i = 0; i < n; i++) {
-			const halo_ps2_snapshot_matrix4x3 *src = &s_pose_snapshot->palette[d->palette_first + i];
-			if (d->flags & HCU_OBJECTS_FLAG_CAMERA_LOCAL) {
-				halo_ps2_snapshot_matrix4x3 w;
-				if (!s_fp_cam || hcu_render_first_person_world(s_fp_cam, src, &w) != 0) return 0;
-				src = &w;
+			memcpy(out->skin, &s_prepared->palette[prepared->palette_first], n * sizeof(mat4));
+		} else {
+			for (i = 0; i < n; i++) {
+				const halo_ps2_snapshot_matrix4x3 *src = &s_pose_snapshot->palette[d->palette_first + i];
+				if (d->flags & HCU_OBJECTS_FLAG_CAMERA_LOCAL) {
+					halo_ps2_snapshot_matrix4x3 w;
+					if (!s_fp_cam || hcu_render_first_person_world(s_fp_cam, src, &w) != 0) return 0;
+					src = &w;
+				}
+				out->world[i] = mat_from_snapshot(src);
+				out->skin[i] = out->world[i];
 			}
-			out->world[i] = mat_from_snapshot(src);
-			out->skin[i] = out->world[i];
 		}
-		/* CE's render_model applies each selected model node's inverse bind after
-		 * remapping the graph pose into model order. The snapshot carries the
-		 * remapped posed nodes, while MODL vertices remain in default bind space.
-		 * Rebuild the model's default hierarchy only for camera-local FP palettes;
-		 * keep world[] as the camera-composed pose for markers/attachments. Reuse
-		 * the output skin array as temporary bind-world storage, avoiding another
-		 * per-model matrix pool or per-node allocation. */
-		if (d->flags & HCU_OBJECTS_FLAG_CAMERA_LOCAL) {
+		/* CE's render_model applies runtime_default_inverse_matrix to every
+		 * posed node. MODL vertices are in bind pose, so do the same for every
+		 * object palette, including world vehicles and bipeds. Camera-local
+		 * FP needs the same model-specific transform after camera composition.
+		 * Preserve world[] for marker and attachment transforms; reuse skin[] as
+		 * bind-world scratch to keep the workspace bounded. */
+		{
 			skel_xform bind[SKEL_MAX_NODES];
 			int16_t parent[SKEL_MAX_NODES];
 			mat4 identity, inverse;
@@ -1591,7 +1602,8 @@ static int pose_fn(void *user, const object_t *ob, object_nodes_t *out)
 				mat4_mul(&out->skin[i], &inverse, &out->world[i]);
 			}
 #if defined(HALO_PS2_C3_MOVEMENT_TRACE)
-			fp_pose_diagnostic(d, out, n);
+			if (d->flags & HCU_OBJECTS_FLAG_CAMERA_LOCAL)
+				fp_pose_diagnostic(d, out, n);
 #endif
 		}
 		s_view_skinned += n;
