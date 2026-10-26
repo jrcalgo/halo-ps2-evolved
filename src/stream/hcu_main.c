@@ -19,6 +19,7 @@
 #include "halo_ps2_bitmap_frame.h"
 #include "ps2_step8_memory_owners.h"
 #include "stream/hcu_bitmap_renderer.h"
+#include "stream/hcu_batch_profile.h"
 
 #include <kernel.h>
 #include <dma.h>
@@ -137,6 +138,30 @@ extern unsigned hcu_c2_successor_fault_count;
 /* C3:world end */
 
 static hcu_map_service s_map_service;
+
+/* Batch profile input from CE's realtime loop. IDs: input, player, input-end,
+ * game-time, publication, parent callback, snapshot, idle sleep. They are
+ * disjoint; each is accumulated across catch-up steps before sparse output. */
+#if HCU_C3_TIMING_ENABLED
+void hcu_c3_batch_profile(unsigned steps, const unsigned long long *phase_ticks,
+	unsigned long long interval_ticks, unsigned long long frequency, unsigned dropped)
+{
+	static hcu_batch_profile_accumulator accumulator;
+	hcu_batch_profile_summary summary;
+	unsigned i;
+	int ready = hcu_batch_profile_add(&accumulator, steps, phase_ticks,
+		interval_ticks, frequency, &summary);
+	if (ready <= 0) return;
+	printf("HALO_PS2_LOCAL c3-batch n=%u steps-mean=%.2f interval-ms=%.3f..%.3f bins<10,<20,<30,<40,<60,<100,<200,>=200=%u,%u,%u,%u,%u,%u,%u,%u input=%.3f player=%.3f input-end=%.3f game-time=%.3f publish=%.3f parent=%.3f snapshot=%.3f idle=%.3f dropped=%u\n",
+		summary.count, (double)summary.step_total / summary.count,
+		(double)summary.min_interval * 1000.0 / frequency, (double)summary.max_interval * 1000.0 / frequency,
+		summary.interval_bins[0], summary.interval_bins[1], summary.interval_bins[2], summary.interval_bins[3], summary.interval_bins[4], summary.interval_bins[5], summary.interval_bins[6], summary.interval_bins[7],
+		(double)summary.phase_sums[0] * 1000.0 / (frequency * summary.count), (double)summary.phase_sums[1] * 1000.0 / (frequency * summary.count),
+		(double)summary.phase_sums[2] * 1000.0 / (frequency * summary.count), (double)summary.phase_sums[3] * 1000.0 / (frequency * summary.count),
+		(double)summary.phase_sums[4] * 1000.0 / (frequency * summary.count), (double)summary.phase_sums[5] * 1000.0 / (frequency * summary.count),
+		(double)summary.phase_sums[6] * 1000.0 / (frequency * summary.count), (double)summary.phase_sums[7] * 1000.0 / (frequency * summary.count), dropped);
+}
+#endif
 
 #ifdef HCU_C3_RENDER_BUILT
 #define HCU_C3_BITMAP_OWNER_BYTES (400u * 1024u)
@@ -2728,8 +2753,10 @@ void hcu_c3_render_tick(int tick)
 	#if HCU_C3_TIMING_ENABLED
 	if (s_c3r.frames == 1u || (s_c3r.frames % 30u) == 0u) {
 		bsp_render_phase_timing phases;
+		video_present_timing present_phases;
 		const hcu_bitmap_dispatch_counters *hc = &s_c3_bitmap_dispatch.counters;
 		bsp_render_phase_timing_get(&phases);
+		video_present_timing_get(&present_phases);
 		printf("HALO_PS2_LOCAL c3-timing frame=%u render-callback-ms=%.3f view-build-ms=%.3f "
 			"bsp-wait-ms=%.3f video-wait-ms=%.3f present-ms=%.3f frame-end-kick-ms=%.3f\n",
 			(unsigned)s_c3r.frames, timer_ms(c3_tick_t0, c3_submit_t1),
@@ -2768,6 +2795,13 @@ void hcu_c3_render_tick(int tick)
 			timer_ms(0, phases.view_sky_cycles), timer_ms(0, phases.view_world_emit_cycles),
 			timer_ms(0, phases.view_object_hook_cycles), timer_ms(0, phases.view_inline_hud_cycles),
 			timer_ms(0, phases.view_overlay_cycles), timer_ms(0, phases.view_other_cycles), (unsigned)phases.view_count);
+		printf("HALO_PS2_LOCAL c3-clip-perf frame=%u gather-ms=%.3f group-ms=%.3f batches-in=%u polys-out=%u vertices-out=%u\n",
+			(unsigned)s_c3r.frames, timer_ms(0, phases.view_clip_gather_cycles),
+			timer_ms(0, phases.view_clip_group_cycles), (unsigned)phases.clip_batches_in,
+			(unsigned)phases.clip_polys_out, (unsigned)phases.clip_vertices_out);
+		printf("HALO_PS2_LOCAL c3-present-perf frame=%u vsync-wait-ms=%.3f framebuffer-select-ms=%.3f\n",
+			(unsigned)s_c3r.frames, timer_ms(0, present_phases.wait_cycles),
+			timer_ms(0, present_phases.select_cycles));
 		printf("HALO_PS2_LOCAL c3-publication-perf frame=%u total-ms=%.3f binding-hash-ms=%.3f binding-bytes=%u binding-calls=%u\n",
 			(unsigned)s_c3r.frames, timer_ms(0, s_c3_publication_cycles),
 			timer_ms(0, (uint32_t)s_c3_binding_cycles), (unsigned)s_c3_binding_bytes, (unsigned)s_c3_binding_calls);

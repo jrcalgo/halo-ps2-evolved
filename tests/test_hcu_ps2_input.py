@@ -222,8 +222,12 @@ int main(void)
         self.assertIn("fire = FALSE;", prepare)
         self.assertIn("state=armed controllers=%d pattern=2-on-2-off", prepare)
         self.assertIn("state=manual controllers=%d input=physical", prepare)
-        loop_start = main_source.index("hcu_c3_workload_prepare_actions(tick);")
-        loop = main_source[loop_start:loop_start + 600]
+        # Bound this assertion by the scheduler's actual fixed-step block. The
+        # timing build adds QPC brackets inside this block, so a short character
+        # window is not a reliable representation of one simulation step.
+        loop_start = main_source.index("for (step = 0; step < steps; ++step)")
+        loop_end = main_source.index("++tick;", loop_start)
+        loop = main_source[loop_start:loop_end]
         order = ["hcu_c3_workload_prepare_actions(tick)",
                  "player_control_update(", "hcu_c3_workload_finish_actions()",
                  "game_time_update("]
