@@ -1909,10 +1909,10 @@ static void object_pass(void *user, render_ctx_t *rc)
 	uint32_t i;
 	(void)user;
 #if HCU_C3_OBJECT_VIEW_CACHE
-	obj_render_begin_view(rc);
-	s_objr.setup_emitted = 1;
+	s_objr.setup_emitted = obj_render_begin_view(rc);
+	if (!s_objr.setup_emitted) s_view_counters.failures++;
 #endif
-	for (i = 0; i < s_draw_count; i++) {
+	for (i = 0; i < s_draw_count && (!HCU_C3_OBJECT_VIEW_CACHE || s_objr.setup_emitted); i++) {
 		const hcu_render_object_draw *d = &s_draw[i];
 		obj_slot *s = &s_slots[d->slot];
 #if !HCU_C3_OBJECT_FASTPATH
@@ -2038,7 +2038,8 @@ static void object_pass(void *user, render_ctx_t *rc)
 				/* Clear only this view's depth before both models. AFAIL_ZB_ONLY preserves world color and the
 				 * model packets still use GEQUAL + writes, so hands/gun occlude each other normally. */
 				viewmodel_ready = rb_first_person_depth_begin(rc);
-				if (viewmodel_ready) obj_render_begin_view(&viewmodel_rc);
+				if (viewmodel_ready && !obj_render_begin_view(&viewmodel_rc))
+					viewmodel_ready = 0;
 			}
 		if (!viewmodel_ready) s_view_counters.failures++;
 		}

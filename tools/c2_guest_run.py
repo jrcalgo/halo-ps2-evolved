@@ -387,40 +387,120 @@ def _run_terminal(which: str, log_path: Path) -> str | None:
     return None
 
 
-def _wait_group_gone(pgid: int, timeout: float) -> bool:
-    """True once no process remains in the group (children of the launcher can outlive it)."""
-    deadline = time.monotonic() + timeout
-    while True:
-        try:
-            os.killpg(pgid, 0)
-        except ProcessLookupError:
-            return True
-        if time.monotonic() >= deadline:
-            return False
-        time.sleep(0.1)
+def _proc_record(pid: int) -> dict | None:
+    """Read the identity and ancestry fields needed to signal one exact process."""
+    try:
+        raw = Path(f"/proc/{pid}/stat").read_text()
+        tail = raw[raw.rfind(")") + 2:].split()
+        return {"pid": pid, "state": tail[0], "ppid": int(tail[1]),
+                "pgid": int(tail[2]), "sid": int(tail[3]),
+                "starttime": int(tail[19])}
+    except (OSError, ValueError, IndexError):
+        return None
 
 
-def _stop_owned_process(process: subprocess.Popen, grace: float = 5.0) -> str:
-    # The log is hashed after this returns, so every writer in the group must be gone.
+def _refresh_owned_processes(root_pid: int, root_sid: int,
+                             owned: dict[tuple[int, int], dict] | None = None
+                             ) -> dict[tuple[int, int], dict]:
+    """Remember the launch session and descendants that detached into new groups.
+
+    `starttime` is part of each key so a reused PID can never make cleanup signal an
+    unrelated process. The caller refreshes this while the launcher is alive and once
+    more during shutdown, before it hashes the shared emulator log.
+    """
+    known = dict(owned or {})
+    current = {}
+    try:
+        pids = (int(entry.name) for entry in Path("/proc").iterdir() if entry.name.isdigit())
+    except OSError:
+        pids = ()
+    for pid in pids:
+        record = _proc_record(pid)
+        if record:
+            current[pid] = record
+
+    # start_new_session=True makes the launcher's PID its private SID. All ordinary
+    # children stay in it; the ancestry walk catches wrappers that setsid() a child.
+    for record in current.values():
+        key = (record["pid"], record["starttime"])
+        if record["sid"] == root_sid or key in known:
+            known[key] = record
+    changed = True
+    while changed:
+        changed = False
+        for record in current.values():
+            key = (record["pid"], record["starttime"])
+            parent = current.get(record["ppid"])
+            parent_key = ((parent["pid"], parent["starttime"]) if parent else None)
+            if parent_key in known and key not in known:
+                known[key] = record
+                changed = True
+    # Keep a root identity even if a very short-lived launcher exited before the first scan.
+    if root_pid not in current and not any(pid == root_pid for pid, _start in known):
+        known[(root_pid, -1)] = {"pid": root_pid, "state": "X", "ppid": 0,
+                                "pgid": root_pid, "sid": root_sid, "starttime": -1}
+    if owned is not None:
+        owned.clear()
+        owned.update(known)
+    return known
+
+
+def _current_owned_processes(owned: dict[tuple[int, int], dict]) -> list[dict]:
+    live = []
+    for (pid, starttime) in owned:
+        record = _proc_record(pid)
+        if record and record["starttime"] == starttime and record["state"] not in ("Z", "X"):
+            live.append(record)
+    return live
+
+
+def _stop_owned_process(process: subprocess.Popen, grace: float = 5.0,
+                        owned: dict[tuple[int, int], dict] | None = None) -> str:
+    """Stop this guest and every recorded descendant before any log/hash is read."""
+    root_sid = process.pid  # the launch uses start_new_session=True
+    owned = _refresh_owned_processes(process.pid, root_sid, owned)
     if process.poll() is not None:
         status = f"host-exited-{process.returncode}"
     else:
-        os.killpg(process.pid, signal.SIGINT)
+        status = "host-stopped-sigint"
+
+    for record in _current_owned_processes(owned):
         try:
-            process.wait(timeout=grace)
-            status = f"host-stopped-sigint-{process.returncode}"
-        except subprocess.TimeoutExpired:
-            os.killpg(process.pid, signal.SIGKILL)
-            process.wait()
-            return f"host-stopped-sigkill-{process.returncode}"
-    if not _wait_group_gone(process.pid, grace):
-        try:
-            os.killpg(process.pid, signal.SIGKILL)
+            os.kill(record["pid"], signal.SIGINT)
         except ProcessLookupError:
             pass
-        _wait_group_gone(process.pid, grace)
-        status += "; group-sigkill"
-    return status
+
+    deadline = time.monotonic() + grace
+    while True:
+        owned = _refresh_owned_processes(process.pid, root_sid, owned)
+        live = _current_owned_processes(owned)
+        if not live or time.monotonic() >= deadline:
+            break
+        time.sleep(0.1)
+
+    if live:
+        status += "; descendant-sigkill"
+        for record in live:
+            try:
+                os.kill(record["pid"], signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        deadline = time.monotonic() + grace
+        while True:
+            owned = _refresh_owned_processes(process.pid, root_sid, owned)
+            live = _current_owned_processes(owned)
+            if not live or time.monotonic() >= deadline:
+                break
+            time.sleep(0.1)
+
+    if process.poll() is None:
+        process.wait(timeout=max(grace, 0.1))
+    owned = _refresh_owned_processes(process.pid, root_sid, owned)
+    live = _current_owned_processes(owned)
+    if live:
+        identities = ", ".join(f"{p['pid']}@{p['starttime']}" for p in live)
+        raise RuntimeError("owned emulator descendants still alive; refusing to hash logs: " + identities)
+    return status + f"-{process.returncode}"
 
 
 def production_guest_qualification(lines: list[str]) -> dict:
@@ -714,10 +794,12 @@ def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
     with (lane_run / "launcher.log").open("w") as launcher:
         process = subprocess.Popen(command, cwd=lane_run, env=env, stdout=launcher,
                                    stderr=subprocess.STDOUT, start_new_session=True)
+        owned_processes = _refresh_owned_processes(process.pid, process.pid)
         deadline = time.monotonic() + timeout
         pending_markers = list(capture_markers) if private else []
         waiting = []   # (marker, frame lines seen at the marker, time seen)
         while process.poll() is None and time.monotonic() < deadline:
+            owned_processes = _refresh_owned_processes(process.pid, process.pid, owned_processes)
             if pending_markers:
                 log_text = log.read_text(errors="replace") if log.exists() else ""
                 for marker in list(pending_markers):
@@ -747,15 +829,20 @@ def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
                 for marker, _seen, _since in waiting:
                     captures.append(take(marker, len(captures) + 1))
                 waiting = []
-                time.sleep(1.5)
                 break
             time.sleep(0.2)
+        bounded_timeout = not guest_terminal and process.poll() is None
         if guest_terminal:
-            exit_status = f"{guest_terminal}; {_stop_owned_process(process, grace=5.0)}"
-        elif process.poll() is not None:
-            exit_status = f"host-exited-{process.returncode}"
+            # Let PCSX2 flush its CE teardown tail before stopping it; flush held captures now.
+            time.sleep(1.5)
+        cleanup = _stop_owned_process(process, grace=20.0 if bounded_timeout else 5.0,
+                                      owned=owned_processes)
+        if guest_terminal:
+            exit_status = f"{guest_terminal}; {cleanup}"
+        elif bounded_timeout:
+            exit_status = f"bounded timeout after {timeout}s; {cleanup}"
         else:
-            exit_status = f"bounded timeout after {timeout}s; {_stop_owned_process(process, grace=20.0)}"
+            exit_status = cleanup
     if private:
         private.stop()
     elapsed = round(time.monotonic() - start, 1)
@@ -776,6 +863,16 @@ def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
             "launch_started_unix_ns": launch_started_unix_ns,
             "launch_completed_unix_ns": time.time_ns(), "pcsx2_pid": process.pid,
             "exit": exit_status, "elapsed_seconds": elapsed, "log": str(log),
+            "process_cleanup": {
+                "data_path": str(data),
+                "status": cleanup,
+                "verified_no_live_writers_before_log_hash": True,
+                "owned_identities": [
+                    {key: record[key] for key in ("pid", "starttime", "pgid", "sid")}
+                    for record in sorted(owned_processes.values(),
+                                         key=lambda item: (item["pid"], item["starttime"]))
+                ],
+            },
             "log_sha256": sha256(log) if log.is_file() else None,
             "pcsx2_config": config_identity,
             "halo_lines_saved": str(lane_run / "halo_ps2_local.txt"), "halo_line_count": len(lines),

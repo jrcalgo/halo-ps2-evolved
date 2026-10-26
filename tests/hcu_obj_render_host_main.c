@@ -7,9 +7,9 @@
 static unsigned chain_calls;
 static unsigned basis_calls;
 static int fail_pose;
-void *chain_cnt(chain_t *c, uint32_t q, uint64_t pair) { (void)pair; chain_calls++; c->qw += q; return c->base; }
-void chain_ref(chain_t *c, const void *p, uint32_t q, uint64_t pair) { (void)p; (void)pair; c->qw += q; }
-int chain_has_space(const chain_t *c, uint32_t q) { return c->qw + q <= c->cap_qw; }
+void *chain_cnt(chain_t *c, uint32_t q, uint64_t pair) { uint32_t at; (void)pair; chain_calls++; if(c->qw + 1u + q > c->cap_qw) { c->deferred++; return NULL; } at=c->qw++; c->qw+=q; return c->base + (size_t)(at+1u)*16u; }
+void chain_ref(chain_t *c, const void *p, uint32_t q, uint64_t pair) { (void)p; (void)q; (void)pair; c->qw++; }
+int chain_has_space(const chain_t *c, uint32_t q) { return c->qw + q + 1u <= c->cap_qw; }
 u64 rb_take_pending(void) { return 0; }
 void rb_set_pending(u64 p) { (void)p; }
 void rb_fog_params(float *k, float *b) { *k = 1.0f; *b = 0.0f; }
@@ -43,24 +43,53 @@ static int pose(void *u,const object_t *o,object_nodes_t *n) { (void)u; if (fail
 static int run_case(int span_mode, int cached, int culled)
 {
 	model_section models; object_t ob; object_table_t table; obj_render_t render; camera_t cam; frustum_t fr; float clip[4][4]={{0}}; render_options_t opt; chain_t chain; render_ctx_t rc;
+	uint8_t packet[256 * 16];
 	memset(&models,0,sizeof models); memset(&ob,0,sizeof ob); memset(&table,0,sizeof table); memset(&render,0,sizeof render); memset(&cam,0,sizeof cam); memset(&fr,0,sizeof fr); memset(&opt,0,sizeof opt); memset(&chain,0,sizeof chain);
 	cam.hfov=1.0f; cam.near_z=0.1f; ob.model=0; ob.region_count=1; ob.radius=2.0f; ob.flags=OBJ_F_VISIBLE; ob.root.m[0][0]=ob.root.m[1][1]=ob.root.m[2][2]=ob.root.m[3][3]=1.0f; ob.root.m[3][0]=5.0f; fail_pose=culled;
-	table.obj[0]=ob; table.count=1; chain.base=(uint8_t *)&clip; chain.cap_qw=256;
+	table.obj[0]=ob; table.count=1; chain.base=packet; chain.cap_qw=256;
 	rc.chain=&chain;rc.cam=&cam;rc.clip=(const float (*)[4])clip;rc.frustum=&fr;rc.opt=&opt;
 	render.world.models=&models;render.max_distance=culled?1.0f:1000.0f;render.max_batches=100;render.draw_objects=1;render.pose=pose;
 	if(span_mode){render.span=&ob;render.span_count=1;}else render.table=&table;
-	chain_calls=0; basis_calls=0;
-	if(cached){obj_render_begin_view(&rc);render.setup_emitted=1;}
+	chain_calls=0; basis_calls=0; fail_pose=0;
+	if(cached){render.setup_emitted=obj_render_begin_view(&rc);if(!render.setup_emitted)return 4;}
 	obj_render_pass(&render,&rc);
 	obj_render_pass(&render,&rc);
 	if(render.st_visible != (culled?0u:1u) || render.st_culled != (culled?1u:0u)) { fprintf(stderr,"stats vis=%u cull=%u target=%d\n",render.st_visible,render.st_culled,culled); return 1; }
-	if(chain.qw != (cached ? (culled ? 10u : 16u) : (culled ? 20u : 26u))) return 2;
+	if(chain.qw != (cached ? (culled ? 11u : 19u) : (culled ? 22u : 30u))) return 2;
 	if(basis_calls != (cached ? 1u : 2u)) return 3;
+	return 0;
+}
+
+static int run_setup_reservation_refusal(void)
+{
+	model_section models; object_t ob; object_table_t table; obj_render_t render; camera_t cam, next_cam; frustum_t fr; float clip[4][4]={{0}}; render_options_t opt; chain_t chain; render_ctx_t rc;
+	uint8_t packet[256 * 16];
+	memset(&models,0,sizeof models); memset(&ob,0,sizeof ob); memset(&table,0,sizeof table); memset(&render,0,sizeof render); memset(&cam,0,sizeof cam); memset(&next_cam,0,sizeof next_cam); memset(&fr,0,sizeof fr); memset(&opt,0,sizeof opt); memset(&chain,0,sizeof chain);
+	cam.hfov=next_cam.hfov=1.0f; cam.near_z=next_cam.near_z=0.1f; ob.model=0; ob.region_count=1; ob.radius=2.0f; ob.flags=OBJ_F_VISIBLE; ob.root.m[0][0]=ob.root.m[1][1]=ob.root.m[2][2]=ob.root.m[3][3]=1.0f; ob.root.m[3][0]=5.0f;
+	table.obj[0]=ob; table.count=1; chain.base=packet; chain.cap_qw=10;
+	rc.chain=&chain;rc.cam=&cam;rc.clip=(const float (*)[4])clip;rc.frustum=&fr;rc.opt=&opt;
+	render.world.models=&models;render.max_distance=1000.0f;render.max_batches=100;render.draw_objects=1;render.pose=pose;render.table=&table;
+	chain_calls=0; basis_calls=0; fail_pose=0;
+	if(obj_render_begin_view(&rc) || render.setup_emitted) return 1;
+	obj_render_pass(&render,&rc);
+	if(render.st_failures != 1u || render.setup_emitted || chain.qw != 0u || chain.deferred != 2u || basis_calls != 0u) return 2;
+	/* The capacity refusal is recoverable in the next view. Setup is emitted once and reused. */
+	chain.cap_qw=256; chain.deferred=0;
+	if(!obj_render_begin_view(&rc)) return 3;
+	render.setup_emitted=1;
+	obj_render_pass(&render,&rc); obj_render_pass(&render,&rc);
+	if(chain.qw != 19u || basis_calls != 1u || render.st_failures != 0u) return 4;
+	/* A different camera invalidates cached basis/setup identity and emits a fresh setup. */
+	rc.cam=&next_cam;
+	obj_render_pass(&render,&rc);
+	if(chain.qw != 34u || basis_calls != 2u || !render.setup_emitted) return 5;
+	obj_render_pass(&render,&rc);
+	if(chain.qw != 38u || basis_calls != 2u) return 6;
 	return 0;
 }
 int main(void)
 {
-	int a=run_case(0,0,0),b=run_case(1,0,0),c=run_case(0,1,0),d=run_case(1,1,0),e=run_case(1,1,1);
-	if(a||b||c||d||e){fprintf(stderr,"obj_render host failure %d %d %d %d %d\n",a,b,c,d,e);return 1;}
-	puts("obj_render span/table/setup behavior passed");return 0;
+	int a=run_case(0,0,0),b=run_case(1,0,0),c=run_case(0,1,0),d=run_case(1,1,0),e=run_case(1,1,1),f=run_setup_reservation_refusal();
+	if(a||b||c||d||e||f){fprintf(stderr,"obj_render host failure %d %d %d %d %d %d\n",a,b,c,d,e,f);return 1;}
+	puts("obj_render span/table/setup and reservation retry behavior passed");return 0;
 }

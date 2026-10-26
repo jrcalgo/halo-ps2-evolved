@@ -16,6 +16,7 @@ import subprocess
 import sys
 
 from build_toolchain import ROOT, environment, save
+from c3_build_preset import apply_c3_build_preset
 
 
 def _elf_static_bytes() -> int:
@@ -346,6 +347,10 @@ def main() -> None:
     parser.add_argument("--production-runtime-guest", action="store_true",
                         help="compile CE main with the production selected-map lifecycle driver")
     args = parser.parse_args()
+    try:
+        c3_build_preset = apply_c3_build_preset(os.environ)
+    except ValueError as error:
+        parser.error(str(error))
     manifest = json.loads(MANIFEST_PATH.read_text())
     if args.layer != "all" and args.layer not in manifest["layers"]:
         raise RuntimeError(f"Unknown layer {args.layer}")
@@ -433,6 +438,7 @@ def main() -> None:
     members = selected_sources(manifest)
     report = {
         "status": "layer-measured",
+        "c3_build_preset": c3_build_preset,
         "milestone": "M0",
         "gate": "open",
         "compiler": subprocess.check_output([str(compiler), "--version"], text=True).splitlines()[0],

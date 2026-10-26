@@ -15,6 +15,7 @@ import subprocess
 import sys
 
 from build_toolchain import ROOT, environment
+from c3_build_preset import apply_c3_build_preset
 
 
 def run(command: list[str], *, env: dict[str, str], cwd: Path = ROOT) -> str:
@@ -211,6 +212,10 @@ def main() -> None:
                               "instead of build/hcu-parent-link-probe; the shared HCU closure "
                               "directory is still rewritten, so hold the link lock around the run"))
     args = parser.parse_args()
+    try:
+        c3_build_preset = apply_c3_build_preset(os.environ)
+    except ValueError as error:
+        parser.error(str(error))
     if args.m2_ui_lifecycle_test and args.m3_render_clear_test:
         parser.error("the M2 lifecycle and M3 render-clear diagnostics are separate ELF profiles")
     if args.m2_animation_trace and (args.m2_ui_lifecycle_test or args.m3_render_clear_test or args.step8_mp_capacity_diagnostic):
@@ -486,6 +491,7 @@ def main() -> None:
     report = {
         "status": "linked-diagnostic",
         "acceptance": False,
+        "c3_build_preset": c3_build_preset,
         "entrypoint": "parent main; HCU shell is force-retained but not called",
         "limits": [
             "No runtime CE tick, map load, arena binding, or render snapshot is exercised.",

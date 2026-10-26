@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 from build_toolchain import ROOT, environment
+from c3_build_preset import apply_c3_build_preset
 from hcu_ps2_closure import HCU, classify
 
 OUT = ROOT / "build/hcu-ps2-closure/all"
@@ -418,6 +419,10 @@ def main() -> None:
     parser.add_argument("--production-runtime-guest", action="store_true",
                         help="link the selected-map production guest closure")
     args = parser.parse_args()
+    try:
+        apply_c3_build_preset(os.environ)
+    except ValueError as error:
+        parser.error(str(error))
     if args.no_bootstrap_memory:
         OUT = ROOT / "build/hcu-ps2-closure/all-no-bootstrap-memory"
     if args.m2_ui_lifecycle_test:

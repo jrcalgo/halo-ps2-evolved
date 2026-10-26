@@ -391,14 +391,25 @@ HCU_C3 ?= 0
 HCU_C3_TELEMETRY ?= 0
 HCU_C3_TIMING ?= 0
 HCU_C3_BITMAP_RESIDENT ?= 1
-# Interactive desktop scheduling; deterministic qualification keeps its default loop.
-HCU_C3_REALTIME_SCHEDULER ?= 0
-HCU_C3_OBJECT_FASTPATH ?= 0
-HCU_C3_OBJECT_VIEW_CACHE ?= 0
-HCU_C3_OBJECT_PREPARE_CACHE ?= 0
-HCU_C3_BINDING_SEAL ?= 0
-HCU_C3_SNAPSHOT_INDEX ?= 0
-HCU_C3_MOVEMENT_TRACE ?= 0
+HCU_C3_BUILD_PRESET ?= quiet
+# Preset values are canonical in tools/c3_build_presets.json. The Python
+# build helpers read the same file; Make's ?= assignments preserve overrides.
+ifeq ($(HCU_C3),1)
+HCU_C3_PRESET_VALUES := $(shell python3 tools/c3_build_preset.py --make-values $(HCU_C3_BUILD_PRESET) 2>/dev/null || echo invalid)
+ifeq ($(words $(HCU_C3_PRESET_VALUES)),9)
+HCU_C3_REALTIME_SCHEDULER ?= $(word 1,$(HCU_C3_PRESET_VALUES))
+HCU_C3_OBJECT_FASTPATH ?= $(word 2,$(HCU_C3_PRESET_VALUES))
+HCU_C3_OBJECT_VIEW_CACHE ?= $(word 3,$(HCU_C3_PRESET_VALUES))
+HCU_C3_BINDING_SEAL ?= $(word 4,$(HCU_C3_PRESET_VALUES))
+HCU_C3_SNAPSHOT_INDEX ?= $(word 5,$(HCU_C3_PRESET_VALUES))
+HCU_C3_OBJECT_PREPARE_CACHE ?= $(word 6,$(HCU_C3_PRESET_VALUES))
+HCU_C3_TELEMETRY ?= $(word 7,$(HCU_C3_PRESET_VALUES))
+HCU_C3_TIMING ?= $(word 8,$(HCU_C3_PRESET_VALUES))
+HCU_C3_MOVEMENT_TRACE ?= $(word 9,$(HCU_C3_PRESET_VALUES))
+else
+$(error unknown HCU_C3_BUILD_PRESET '$(HCU_C3_BUILD_PRESET)' (choose quiet or diagnostic))
+endif
+endif
 # C3.7 stress only: texture-cache fence lag in kicks. Unset/0 adds no define (every other build is unchanged).
 HCU_C3_FENCE_LAG_KICKS ?= 0
 ifeq ($(HCU_C3),1)

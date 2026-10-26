@@ -27,4 +27,4 @@ def test_real_object_renderer_span_and_view_setup(tmp_path):
     ], cwd=ROOT, check=True, capture_output=True, text=True)
     result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr
-    assert "obj_render span/table/setup behavior passed" in result.stdout
+    assert "obj_render span/table/setup and reservation retry behavior passed" in result.stdout
