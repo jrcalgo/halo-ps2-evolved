@@ -2,6 +2,9 @@
 
 #include <math.h>
 #include <string.h>
+#if defined(HALO_PS2_C3_MOVEMENT_TRACE)
+#include <stdio.h>
+#endif
 
 #ifndef HCU_C3_OBJECT_PREPARE_CACHE
 #define HCU_C3_OBJECT_PREPARE_CACHE 0
@@ -28,6 +31,43 @@ int hcu_render_objects_find_model(const hcu_render_objects_model *models, uint32
 	for (i = 0; i < model_count && i < HCU_OBJECTS_MAX_MODELS; i++)
 		if (models[i].loaded && models[i].resource_id == resource_id) return (int)i;
 	return -1;
+}
+
+/* CE's render_object_list() skips the local first-person biped and, on that
+ * branch, does not descend into its child object list. The parent snapshot is
+ * flat, so apply the same per-view rule to attached descendants before model
+ * selection. Follow only bounded snapshot links so malformed/cyclic input
+ * cannot loop. */
+static int hcu_render_object_descends_from(const halo_ps2_frame_snapshot *snap,
+	uint32_t object_index, uint32_t ancestor_index)
+{
+	uint32_t depth;
+	for (depth = 0; depth < snap->object_count && object_index < snap->object_count; ++depth) {
+		const halo_ps2_frame_object *object = &snap->objects[object_index];
+		uint32_t first = object->attachment_first;
+		uint32_t count = object->attachment_count;
+		uint32_t i, parent_index;
+		int found = 0;
+		if (first > snap->attachment_count || count > snap->attachment_count - first)
+			return 0;
+		for (i = first; i < first + count; ++i) {
+			const halo_ps2_frame_attachment *attachment = &snap->attachments[i];
+			if (attachment->kind != HALO_PS2_FRAME_ATTACHMENT_PARENT_LINK ||
+				attachment->child_object != object_index)
+				continue;
+			if (attachment->parent_object >= snap->object_count)
+				return 0;
+			parent_index = attachment->parent_object;
+			found = 1;
+			break;
+		}
+		if (!found)
+			return 0;
+		if (parent_index == ancestor_index)
+			return 1;
+		object_index = parent_index;
+	}
+	return 0;
 }
 
 int hcu_render_objects_prepare_key_valid(const hcu_object_prepare_key *key, uint32_t sequence,
@@ -250,7 +290,8 @@ int hcu_render_objects_select(const halo_ps2_frame_snapshot *snap, uint32_t view
 	*count = 0;
 	if (snap->version != HALO_PS2_FRAME_SNAPSHOT_VERSION || view >= snap->view_count ||
 		view >= HALO_PS2_FRAME_MAX_VIEWS || snap->object_count > HALO_PS2_FRAME_MAX_OBJECTS ||
-		snap->view_ref_count > HALO_PS2_FRAME_MAX_VIEW_REFS)
+		snap->view_ref_count > HALO_PS2_FRAME_MAX_VIEW_REFS ||
+		snap->attachment_count > HALO_PS2_FRAME_MAX_ATTACHMENTS)
 		return HCU_RENDER_CONTENT_E_ARGUMENT;
 	counters->views_seen++;
 	v = &snap->views[view];
@@ -267,13 +308,23 @@ int hcu_render_objects_select(const halo_ps2_frame_snapshot *snap, uint32_t view
 		const halo_ps2_frame_resource *r;
 		int slot;
 		if (oi >= snap->object_count) { counters->failures++; continue; }
-		/* CE publishes the local player's unit with the rest of the world.
-		 * In first-person, its full world-space biped overlaps the camera-local
-		 * hands and weapon; keep it available to other views and third-person. */
-		if ((v->flags & HALO_PS2_FRAME_VIEW_FIRST_PERSON) &&
-			v->unit_object != HALO_PS2_FRAME_NONE_U16 && oi == v->unit_object)
-			continue;
 		o = &snap->objects[oi];
+		/* CE's object renderer omits `_object_invisible_bit` objects. Carried
+		 * inactive weapons can have no parent link, so preserve this independent
+		 * visibility state instead of relying on ancestry to hide them. */
+		if (o->flags & HALO_PS2_FRAME_OBJECT_INVISIBLE) continue;
+		/* CE publishes the local player's unit and attached inventory with the
+		 * rest of the world. In first-person, it skips this biped and therefore
+		 * never enters its child list. Filter both the body and its descendants
+		 * only from this view; other players' attached weapons and loose world
+		 * weapons remain available. Camera mode is carried independently of FP
+		 * model-copy success; keep the older flag as a compatibility fallback. */
+		if ((v->flags & (HALO_PS2_FRAME_VIEW_FIRST_PERSON_CAMERA |
+			HALO_PS2_FRAME_VIEW_FIRST_PERSON)) &&
+			v->unit_object != HALO_PS2_FRAME_NONE_U16 &&
+			(oi == v->unit_object || hcu_render_object_descends_from(snap,
+				oi, v->unit_object)))
+			continue;
 		for (i = 0; i < emitted; i++)
 			if (out[i].object_index == oi) break;
 		if (i != emitted) { counters->deduped++; continue; }
@@ -829,6 +880,7 @@ uint32_t hcu_render_objects_fp_lod(int32_t view_w, int32_t view_h, int32_t scree
 #include "render/gs.h"
 #include "render/lodctl.h"
 #include "render/obj_render.h"
+#include "sim/skeleton.h"
 #include "stream/sha256.h"
 #include "stream/hcu_fx_bitmap.h"
 #include "world/model.h"
@@ -1428,6 +1480,51 @@ static const halo_ps2_snapshot_camera *s_fp_cam;
 static uint32_t s_view_fp_lod = HCU_OBJECTS_FP_LOD_NEAR;
 static lodctl_t s_fp_lodctl;
 
+#if defined(HALO_PS2_C3_MOVEMENT_TRACE)
+static uint16_t s_fp_pose_diag_first[2];
+static unsigned s_fp_pose_diag_count;
+static unsigned s_fp_view_diag_done;
+
+static void fp_view_diagnostic(const render_ctx_t *rc)
+{
+	unsigned i;
+	if (s_fp_view_diag_done || !rc || !rc->cam || !rc->clip) return;
+	s_fp_view_diag_done = 1u;
+	printf("HALO_PS2_FPVIEW view=%u viewport=%d,%d,%d,%d pos=%.9g,%.9g,%.9g yaw=%.9g pitch=%.9g hfov=%.9g aspect=%.9g near=%.9g far=%.9g\n",
+		(unsigned)s_cur_view, rc->viewport_x, rc->viewport_y, rc->viewport_w, rc->viewport_h,
+		rc->cam->pos[0], rc->cam->pos[1], rc->cam->pos[2], rc->cam->yaw, rc->cam->pitch,
+		rc->cam->hfov, rc->cam->aspect, rc->cam->near_z, rc->cam->far_z);
+	for (i = 0; i < 4u; ++i)
+		printf("HALO_PS2_FPCLIP view=%u row=%u %.9g %.9g %.9g %.9g\n", (unsigned)s_cur_view, i,
+		rc->clip[i][0], rc->clip[i][1], rc->clip[i][2], rc->clip[i][3]);
+}
+
+static void fp_pose_diagnostic(const hcu_render_object_draw *draw, const object_nodes_t *nodes,
+	unsigned count)
+{
+	unsigned i;
+	if (!draw || !nodes || !(draw->flags & HCU_OBJECTS_FLAG_CAMERA_LOCAL) || s_fp_pose_diag_count >= 2u)
+		return;
+	for (i = 0; i < s_fp_pose_diag_count; ++i)
+		if (s_fp_pose_diag_first[i] == draw->palette_first)
+			return;
+	s_fp_pose_diag_first[s_fp_pose_diag_count++] = draw->palette_first;
+	printf("HALO_PS2_FPPOSE parent model=%u resource=%u palette_first=%u palette_count=%u nodes=%u\n",
+		(unsigned)draw->slot, (unsigned)draw->resource_id, (unsigned)draw->palette_first,
+		(unsigned)draw->palette_count, count);
+	for (i = 0; i < count; ++i) {
+		const mat4 *w = &nodes->world[i];
+		const mat4 *s = &nodes->skin[i];
+		printf("HALO_PS2_FPPOSE parent_node model=%u i=%u worldP %.9g %.9g %.9g skinF %.9g %.9g %.9g L %.9g %.9g %.9g U %.9g %.9g %.9g P %.9g %.9g %.9g\n",
+			(unsigned)draw->slot, i, w->m[3][0], w->m[3][1], w->m[3][2],
+			s->m[0][0], s->m[0][1], s->m[0][2],
+			s->m[1][0], s->m[1][1], s->m[1][2],
+			s->m[2][0], s->m[2][1], s->m[2][2],
+			s->m[3][0], s->m[3][1], s->m[3][2]);
+	}
+}
+#endif
+
 static int pose_fn(void *user, const object_t *ob, object_nodes_t *out)
 {
 	const hcu_render_object_draw *d = user;
@@ -1466,8 +1563,36 @@ static int pose_fn(void *user, const object_t *ob, object_nodes_t *out)
 				if (!s_fp_cam || hcu_render_first_person_world(s_fp_cam, src, &w) != 0) return 0;
 				src = &w;
 			}
-			out->skin[i] = mat_from_snapshot(src);
-			out->world[i] = out->skin[i];
+			out->world[i] = mat_from_snapshot(src);
+			out->skin[i] = out->world[i];
+		}
+		/* CE's render_model applies each selected model node's inverse bind after
+		 * remapping the graph pose into model order. The snapshot carries the
+		 * remapped posed nodes, while MODL vertices remain in default bind space.
+		 * Rebuild the model's default hierarchy only for camera-local FP palettes;
+		 * keep world[] as the camera-composed pose for markers/attachments. Reuse
+		 * the output skin array as temporary bind-world storage, avoiding another
+		 * per-model matrix pool or per-node allocation. */
+		if (d->flags & HCU_OBJECTS_FLAG_CAMERA_LOCAL) {
+			skel_xform bind[SKEL_MAX_NODES];
+			int16_t parent[SKEL_MAX_NODES];
+			mat4 identity, inverse;
+			for (i = 0; i < n; i++) {
+				model_node node = model_get_node(&s->models, &mi, i);
+				memcpy(bind[i].rot, node.rotation, sizeof bind[i].rot);
+				memcpy(bind[i].trans, node.translation, sizeof bind[i].trans);
+				bind[i].scale = node.scale;
+				parent[i] = node.parent;
+			}
+			mat4_identity(&identity);
+			if (skel_world(out->skin, bind, parent, n, &identity) != 0) return 0;
+			for (i = 0; i < n; i++) {
+				mat4_rigid_inverse(&inverse, &out->skin[i]);
+				mat4_mul(&out->skin[i], &inverse, &out->world[i]);
+			}
+#if defined(HALO_PS2_C3_MOVEMENT_TRACE)
+			fp_pose_diagnostic(d, out, n);
+#endif
 		}
 		s_view_skinned += n;
 	} else {
@@ -1845,6 +1970,7 @@ static void object_pass(void *user, render_ctx_t *rc)
 		s_objr.world.anims = NULL;
 		s_objr.textures = &s->src;
 		s_objr.draw_objects = 1;
+		s_objr.viewmodel = 0;
 		s_objr.draw_fp = 0;
 		s_objr.fp = NULL;
 		s_objr.lod = NULL;
@@ -1884,7 +2010,27 @@ static void object_pass(void *user, render_ctx_t *rc)
 	 * graph pose into each model's node order. Draw arms and gun as separate
 	 * view-space model submissions, after world objects, using only the
 	 * snapshot's resource slots and palette ranges. */
-	for (i = 0; i < s_fp_draw_count; i++) {
+	{
+		camera_t viewmodel_cam;
+		frustum_t viewmodel_frustum;
+		float viewmodel_clip[4][4];
+		render_ctx_t viewmodel_rc;
+		int viewmodel_ready = 0;
+		if (s_fp_draw_count > 0u && rc && rc->cam) {
+			if (camera_viewmodel_context(rc->cam, rc->viewport_w, rc->viewport_h,
+				VIDEO_WIDTH, VIDEO_HEIGHT, &viewmodel_cam, viewmodel_clip, &viewmodel_frustum) == 0) {
+				viewmodel_rc = *rc;
+				viewmodel_rc.cam = &viewmodel_cam;
+				viewmodel_rc.clip = (const float (*)[4])viewmodel_clip;
+				viewmodel_rc.frustum = &viewmodel_frustum;
+				/* Clear only this view's depth before both models. AFAIL_ZB_ONLY preserves world color and the
+				 * model packets still use GEQUAL + writes, so hands/gun occlude each other normally. */
+				viewmodel_ready = rb_first_person_depth_begin(rc);
+				if (viewmodel_ready) obj_render_begin_view(&viewmodel_rc);
+			}
+		if (!viewmodel_ready) s_view_counters.failures++;
+		}
+	for (i = 0; viewmodel_ready && i < s_fp_draw_count; i++) {
 		const hcu_render_first_person_draw *fp = &s_fp_draw[i];
 		hcu_render_object_draw pose;
 #if !HCU_C3_OBJECT_FASTPATH
@@ -1965,6 +2111,7 @@ static void object_pass(void *user, render_ctx_t *rc)
 		s_objr.world.anims = NULL;
 		s_objr.textures = &s->src;
 		s_objr.draw_objects = 1;
+		s_objr.viewmodel = 1;
 		s_objr.draw_fp = 0;
 		s_objr.fp = NULL;
 		s_objr.lod = NULL;
@@ -1978,7 +2125,10 @@ static void object_pass(void *user, render_ctx_t *rc)
 		s_fp_lodctl.level = (s_view_fp_lod == HCU_OBJECTS_FP_LOD_FAR) ? 4 : 0;
 		s_objr.lod = &s_fp_lodctl;
 		s_fp_cam = &s_snapshot->views[s_cur_view].camera;
-		obj_render_pass(&s_objr, rc);
+#if defined(HALO_PS2_C3_MOVEMENT_TRACE)
+		if (s_cur_view == 0u) fp_view_diagnostic(&viewmodel_rc);
+#endif
+		obj_render_pass(&s_objr, &viewmodel_rc);
 		s_fp_cam = NULL;
 		log_part_parity(s, &mi, perm, fp->resource_id, HCU_RENDER_PARITY_WEAPON);
 		s_view_triangles += s_objr.st_triangles;
@@ -1995,6 +2145,10 @@ static void object_pass(void *user, render_ctx_t *rc)
 			s_view_counters.failures++;
 		}
 	}
+	if (viewmodel_ready && !rb_first_person_depth_end(rc)) s_view_counters.failures++;
+	}
+	/* s_objr is reused across views/frames; never let FP-only culling policy leak into a world pass. */
+	s_objr.viewmodel = 0;
 #if HCU_C3_OBJECT_VIEW_CACHE
 	s_objr.setup_emitted = 0;
 #endif

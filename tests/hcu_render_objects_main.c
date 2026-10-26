@@ -145,7 +145,8 @@ static int test_first_person_hides_only_own_unit(void)
 	models_table(models);
 	/* Object 0 is view 0's own biped and is also visible to view 1. */
 	s.views[0].unit_object = 0;
-	s.views[0].flags |= HALO_PS2_FRAME_VIEW_FIRST_PERSON;
+	/* Camera mode remains valid even when the FP model copy is unavailable. */
+	s.views[0].flags |= HALO_PS2_FRAME_VIEW_FIRST_PERSON_CAMERA;
 	s.views[1].unit_object = HALO_PS2_FRAME_NONE_U16;
 	memset(&c, 0, sizeof c);
 	CHECK(hcu_render_objects_select(&s, 0, models, 2, draw, HCU_OBJECTS_MAX_DRAW, &n, &c) == 0);
@@ -153,9 +154,153 @@ static int test_first_person_hides_only_own_unit(void)
 	CHECK(hcu_render_objects_select(&s, 1, models, 2, draw, HCU_OBJECTS_MAX_DRAW, &n, &c) == 0);
 	CHECK(n == 2 && draw[0].object_index == 0 && draw[1].object_index == 1);
 	/* Third-person keeps its own body in the ordinary world pass. */
-	s.views[0].flags &= (uint8_t)~HALO_PS2_FRAME_VIEW_FIRST_PERSON;
+	s.views[0].flags &= (uint8_t)~HALO_PS2_FRAME_VIEW_FIRST_PERSON_CAMERA;
 	CHECK(hcu_render_objects_select(&s, 0, models, 2, draw, HCU_OBJECTS_MAX_DRAW, &n, &c) == 0);
 	CHECK(n == 1 && draw[0].object_index == 0 && draw[0].type == HCU_OBJECTS_TYPE_BIPED);
+	return 0;
+}
+
+/* The CE render tree omits a first-person unit and does not recurse into its
+ * held weapon/attachment children. The flat snapshot must apply that decision
+ * per view while retaining other players' and loose world weapons. */
+static int test_first_person_filters_owned_descendants_per_view(void)
+{
+	halo_ps2_frame_snapshot s;
+	hcu_render_objects_model models[HCU_OBJECTS_MAX_MODELS];
+	hcu_render_object_draw draw[HCU_OBJECTS_MAX_DRAW];
+	hcu_render_objects_counters counters;
+	hcu_render_synthetic_object object;
+	uint8_t found[13];
+	uint32_t view, object_index, count;
+	CHECK(hcu_render_synthetic_begin(&s, 3u, 17u, 4u) == 0);
+	for (view = 0; view < 4u; ++view) {
+		CHECK(hcu_render_synthetic_view(&s, view, &kcam) == 0);
+		for (object_index = 0; object_index < 12u; ++object_index) {
+			memset(&object, 0, sizeof object);
+			if (object_index % 3u == 0u) {
+				object.resource_id = 100;
+				object.definition_index = 1000u + object_index;
+				object.type = HCU_OBJECTS_TYPE_BIPED;
+			} else {
+				object.resource_id = 200;
+				object.definition_index = 2000u + object_index;
+				object.type = HCU_OBJECTS_TYPE_WEAPON;
+			}
+			object.world = mat_at((float)object_index, (float)view, 0.0f);
+			CHECK(hcu_render_synthetic_object_add(&s, view, object_index, &object) == 0);
+		}
+		memset(&object, 0, sizeof object);
+		object.resource_id = 200;
+		object.definition_index = 2012u;
+		object.type = HCU_OBJECTS_TYPE_WEAPON;
+		object.world = mat_at(12.0f, (float)view, 0.0f);
+		CHECK(hcu_render_synthetic_object_add(&s, view, 12u, &object) == 0);
+		s.views[view].flags |= HALO_PS2_FRAME_VIEW_FIRST_PERSON |
+			HALO_PS2_FRAME_VIEW_FIRST_PERSON_CAMERA;
+		s.views[view].unit_object = (uint16_t)(3u * view);
+	}
+	/* One held weapon and one attached child per unit; these are the exact
+	 * bounded parent-link rows emitted by the CE publisher. */
+	for (view = 0; view < 4u; ++view) {
+		uint16_t unit = (uint16_t)(3u * view);
+		uint16_t weapon = (uint16_t)(unit + 1u);
+		uint16_t child = (uint16_t)(unit + 2u);
+		uint16_t first = (uint16_t)(2u * view);
+		s.objects[weapon].attachment_first = first;
+		s.objects[weapon].attachment_count = 1u;
+		s.attachments[first].parent_object = unit;
+		s.attachments[first].child_object = weapon;
+		s.attachments[first].parent_node = 0u;
+		s.attachments[first].kind = HALO_PS2_FRAME_ATTACHMENT_PARENT_LINK;
+		s.objects[child].attachment_first = (uint16_t)(first + 1u);
+		s.objects[child].attachment_count = 1u;
+		s.attachments[first + 1u].parent_object = weapon;
+		s.attachments[first + 1u].child_object = child;
+		s.attachments[first + 1u].parent_node = 1u;
+		s.attachments[first + 1u].kind = HALO_PS2_FRAME_ATTACHMENT_PARENT_LINK;
+	}
+	s.attachment_count = 8u;
+	models_table(models);
+	for (view = 0; view < 4u; ++view) {
+		uint32_t unit = 3u * view;
+		memset(&counters, 0, sizeof counters);
+		memset(found, 0, sizeof found);
+		CHECK(hcu_render_objects_select(&s, view, models, 2u, draw,
+			HCU_OBJECTS_MAX_DRAW, &count, &counters) == 0);
+		CHECK(count == 10u); /* 13 objects minus this view's body, gun and child. */
+		for (object_index = 0; object_index < count; ++object_index)
+			found[draw[object_index].object_index] = 1u;
+		for (object_index = 0; object_index < 13u; ++object_index) {
+			int own_subtree = object_index >= unit && object_index <= unit + 2u;
+			CHECK(found[object_index] == (uint8_t)!own_subtree);
+		}
+	}
+	/* Third-person keeps the selected player's body and all attached children. */
+	s.views[0].flags &= (uint8_t)~(HALO_PS2_FRAME_VIEW_FIRST_PERSON |
+		HALO_PS2_FRAME_VIEW_FIRST_PERSON_CAMERA);
+	memset(&counters, 0, sizeof counters);
+	CHECK(hcu_render_objects_select(&s, 0u, models, 2u, draw,
+		HCU_OBJECTS_MAX_DRAW, &count, &counters) == 0);
+	CHECK(count == 13u);
+	s.attachment_count = HALO_PS2_FRAME_MAX_ATTACHMENTS + 1u;
+	CHECK(hcu_render_objects_select(&s, 0u, models, 2u, draw,
+		HCU_OBJECTS_MAX_DRAW, &count, &counters) == HCU_RENDER_CONTENT_E_ARGUMENT);
+	return 0;
+}
+
+/* CE changes carried inventory visibility without requiring a parent link.
+ * Preserve that state independently from camera-local FP model availability. */
+static int test_first_person_camera_without_models_and_ce_invisibility(void)
+{
+	halo_ps2_frame_snapshot s;
+	hcu_render_objects_model models[HCU_OBJECTS_MAX_MODELS];
+	hcu_render_object_draw draw[HCU_OBJECTS_MAX_DRAW];
+	hcu_render_objects_counters counters;
+	hcu_render_synthetic_object object;
+	uint8_t found[5];
+	uint32_t view, oi, count;
+	CHECK(hcu_render_synthetic_begin(&s, 3u, 17u, 2u) == 0);
+	for (view = 0; view < 2u; ++view) {
+		CHECK(hcu_render_synthetic_view(&s, view, &kcam) == 0);
+		for (oi = 0; oi < 5u; ++oi) {
+			memset(&object, 0, sizeof object);
+			object.resource_id = (oi == 0u || oi == 3u) ? 100u : 200u;
+			object.definition_index = 3000u + oi;
+			object.type = (oi == 0u || oi == 3u) ?
+				HCU_OBJECTS_TYPE_BIPED : HCU_OBJECTS_TYPE_WEAPON;
+			object.world = mat_at((float)oi, (float)view, 0.0f);
+			if (oi == 2u) object.flags |= HALO_PS2_FRAME_OBJECT_INVISIBLE;
+			CHECK(hcu_render_synthetic_object_add(&s, view, oi, &object) == 0);
+		}
+	}
+	/* Object 1 is the visible active gun attached to the local unit; object 2
+	 * is an inactive carried gun hidden by CE but with no object parent link. */
+	s.attachments[0].parent_object = 0u;
+	s.attachments[0].child_object = 1u;
+	s.attachments[0].parent_node = 0u;
+	s.attachments[0].kind = HALO_PS2_FRAME_ATTACHMENT_PARENT_LINK;
+	s.attachment_count = 1u;
+	s.objects[1].attachment_first = 0u;
+	s.objects[1].attachment_count = 1u;
+	s.views[0].unit_object = 0u;
+	s.views[0].flags |= HALO_PS2_FRAME_VIEW_FIRST_PERSON_CAMERA;
+	s.views[1].unit_object = 3u; /* another player's visible biped */
+	models_table(models);
+	memset(&counters, 0, sizeof counters);
+	memset(found, 0, sizeof found);
+	CHECK(hcu_render_objects_select(&s, 0u, models, 2u, draw,
+		HCU_OBJECTS_MAX_DRAW, &count, &counters) == 0);
+	CHECK(count == 2u); /* opponents and loose weapons survive */
+	for (oi = 0; oi < count; ++oi) found[draw[oi].object_index] = 1u;
+	CHECK(!found[0] && !found[1] && !found[2] && found[3] && found[4]);
+	/* Third-person keeps both biped subtrees, but CE-hidden inventory stays hidden. */
+	memset(&counters, 0, sizeof counters);
+	memset(found, 0, sizeof found);
+	CHECK(hcu_render_objects_select(&s, 1u, models, 2u, draw,
+		HCU_OBJECTS_MAX_DRAW, &count, &counters) == 0);
+	CHECK(count == 4u);
+	for (oi = 0; oi < count; ++oi) found[draw[oi].object_index] = 1u;
+	CHECK(found[0] && found[1] && !found[2] && found[3] && found[4]);
 	return 0;
 }
 
@@ -451,7 +596,7 @@ static int test_c3_6(void)
 	CHECK(fx[0].owner_object == 0 && fx[0].scale == 2.0f);
 	CHECK(c.effects_selected == 1 && c.effects_refused == 1);
 	CHECK(hcu_render_effects_select(&s, 0, fx, 0, &count, &c) == 0 && count == 0);
-	CHECK(c.effects_refused == 3);   /* NaN again + no room: refusals are counted, never silent */
+	CHECK(c.effects_refused == 2 && c.fx_budget_deferred == 1); /* invalid request refused; no room is deferred */
 
 	/* parity summary: per-kind counts, known materials, and a hash that moves with the identity */
 	memset(recs, 0, sizeof recs);
@@ -591,9 +736,11 @@ static int test_fx_quads(void)
 	for (i = 0; i < s.fx_request_count; i++) s.fx_requests[i].view_mask = 0x1u;
 	memset(&c, 0, sizeof c);
 	CHECK(hcu_render_effects_select(&s, 0, out, 1000u, &count, &c) == 0);
-	CHECK(count == HCU_FX_MAX_PER_VIEW && c.effects_selected == HCU_FX_MAX_PER_VIEW && c.effects_refused == 0);
+	CHECK(count == HCU_FX_MAX_PER_VIEW / 2u && c.effects_selected == HCU_FX_MAX_PER_VIEW / 2u &&
+		c.effects_refused == 0 && c.fx_budget_deferred == 32u);
 	CHECK(hcu_render_effects_select(&s, 0, out, 10u, &count, &c) == 0);
-	CHECK(count == 10 && c.effects_refused == HALO_PS2_FRAME_MAX_FX_REQUESTS - 10u);
+	CHECK(count == 10 && c.effects_selected == HCU_FX_MAX_PER_VIEW / 2u + 10u &&
+		c.effects_refused == 0 && c.fx_budget_deferred == 86u);
 	return 0;
 }
 
@@ -823,6 +970,8 @@ int main(void)
 	if (test_builder()) return 1;
 	if (test_select()) return 2;
 	if (test_first_person_hides_only_own_unit()) return 15;
+	if (test_first_person_filters_owned_descendants_per_view()) return 16;
+	if (test_first_person_camera_without_models_and_ce_invisibility()) return 17;
 	if (test_submitted_category_counters()) return 9;
 	if (test_four_view_dedup()) return 10;
 	if (test_first_person_select()) return 3;
