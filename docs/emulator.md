@@ -44,7 +44,7 @@ from pathlib import Path
 import subprocess
 
 repo = Path.cwd()
-manifest_path = repo / "build/c3/movement/fixed-quiet-20261025-r1/quiet-optimized-v1/desktop-launch.json"
+manifest_path = repo / "build/c3/perf/object-sharing-ab-20261025-r1/quiet-baseline-v1/desktop-launch.json"
 manifest = json.loads(manifest_path.read_text())
 elf = Path(manifest["elf"])
 play = elf.parent
@@ -94,7 +94,7 @@ by the recorded process group and capture only the emulator window. Desktop
 inspection and capture require the same execution context outside the sandbox.
 
 The verified launch record is
-`build/c3/movement/fixed-quiet-20261025-r1/quiet-optimized-v1/desktop-active.json`; logs and captures are ignored build
+`build/c3/perf/object-sharing-ab-20261025-r1/quiet-baseline-v1/desktop-active.json`; logs and captures are ignored build
 artifacts. Keep timing-only and quiet builds in separate output directories:
 changing compiler flags in an existing object directory can leave stale timing
 code in an otherwise quiet executable.
@@ -287,6 +287,34 @@ figures use different windows (steady speed versus whole-interval average),
 so they are not a matched speedup ratio. See the
 [controller evidence](reports/c3-controller-input-recovery-2026-10-25.md)
 for interval measurements, tests, launch identities and limitations.
+
+### Prepared world-object cache comparison
+
+The subsequent [cross-view cache A/B](reports/c3-object-sharing-ab-2026-10-25.md)
+measured the prior optimizations with `HCU_C3_OBJECT_PREPARE_CACHE=0` versus `1`.
+All four framebuffer pairs matched, but FPS gains were inconsistent. The new
+cache remains off by default; it is also off in the restored quiet desktop
+build. That build retains the controller fix and all previous optimizations.
+
+The current quiet launch manifest and active record are under
+`build/c3/perf/object-sharing-ab-20261025-r1/quiet-baseline-v1/`. Its ELF SHA-256
+is `830224d4cc9ab7909b99d1a80855d111ae111f730ccb2c3d7bb1b602c722db03`.
+Within this experiment, `baseline` means only that the new preparation cache
+is disabled; the resident HUD, fixed-rate scheduler and four earlier renderer
+optimizations are enabled.
+
+```sh
+python3 build/c3/perf/object-sharing-ab-20261025-r1/build_case.py --case baseline --views 1 --quiet
+python3 build/c3/perf/object-sharing-ab-20261025-r1/launch_quiet.py
+```
+
+Use the owned-process and desktop checks above before launching. Build and
+launch manifests identify the exact source, package, emulator settings and
+process group; do not infer the live session from an older capture.
+The restored run was verified with a full `gameplay-quiet.png` capture at
+29.97 FPS / 59.94 VPS / 100% speed. Its `reportquiet-verification.json`
+records the owned window and source identity. Timing, movement tracing and
+C3 telemetry remain disabled; the known first-person mesh issue persists.
 
 ### `Unknown device 'd'` and `Unknown device 'z'`
 

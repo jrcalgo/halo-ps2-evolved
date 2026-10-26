@@ -60,7 +60,7 @@ Manual controls remain WASD movement, arrow-key look, Control crouch, F fire and
 
 ## Next object-sharing opportunity
 
-Snapshots already deduplicate world objects and poses, and model/texture residency is shared across views. The parent still repeats resource/model lookup, palette hashing, default permutation selection and matrix conversion when preparing each view. A bounded per-snapshot prepared-object cache could share those results while keeping visibility, LOD, clipping, first-person state and draw emission specific to each camera. This is a recommendation, not an implemented or measured optimization. The four-view object/FX phase is 6.866 ms; publication, simulation and other renderer phases also need attention before claiming 30 FPS split-screen.
+Snapshots already deduplicate world objects and poses, and model/texture residency is shared across views. The parent still repeats resource/model lookup, palette hashing, default permutation selection and matrix conversion when preparing each view. A bounded per-snapshot prepared-object cache could share those results while keeping visibility, LOD, clipping, first-person state and draw emission specific to each camera. This preparation cache was not part of the measurements above. It was subsequently implemented behind `HCU_C3_OBJECT_PREPARE_CACHE` and evaluated in the [separate cross-view A/B report](c3-object-sharing-ab-2026-10-25.md), which found no consistent FPS gain and retained the default-off setting. The four-view object/FX phase is 6.866 ms; publication, simulation and other renderer phases also need attention before claiming 30 FPS split-screen.
 
 ## Separate earlier isolated runs
 
