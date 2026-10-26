@@ -45,6 +45,18 @@ int hcu_asset_profile_lookup(const hcu_asset_profile_view *view, uint32_t type,
 /* Verify current backing bytes before copying a chunk into caller-owned storage. */
 int hcu_asset_profile_read_chunk(const hcu_asset_profile_view *view,
 	uint32_t type, uint32_t chunk_id, void *destination, uint32_t capacity);
+/* Read and verify a chunk in one sequential payload pass. After lookup and
+ * capacity validation, any read, metadata, or hash failure zeros chunk size
+ * bytes. Argument, lookup, and capacity errors leave destination untouched. */
+int hcu_asset_profile_read_chunk_staged(const hcu_asset_profile_view *view,
+	uint32_t type, uint32_t chunk_id, void *destination, uint32_t capacity);
+typedef struct {
+	uint32_t payload_read_calls, payload_read_bytes;
+	uint32_t read_cycles, hash_cycles, metadata_cycles;
+} hcu_asset_profile_staged_stats;
+int hcu_asset_profile_read_chunk_staged_profiled(const hcu_asset_profile_view *view,
+	uint32_t type, uint32_t chunk_id, void *destination, uint32_t capacity,
+	hcu_asset_profile_staged_stats *stats);
 /* Read a bounded logical byte range from its verified segments. Callers must
  * verify the returned range's full logical checksum before publishing it. */
 int hcu_asset_profile_read_range(const hcu_asset_profile_view *view,

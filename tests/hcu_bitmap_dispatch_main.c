@@ -33,6 +33,7 @@ static uint8_t s_geometry_memory[4096 * 16];
 static chain_t s_upload, s_geometry;
 static hcu_bitmap_binding s_binding;
 static hcu_bitmap_dispatch_context s_context;
+static hcu_bitmap_resident_descriptor s_resident_descriptors[64];
 static tc_t s_cache_before;
 static int s_bitmap_fence_complete;
 
@@ -160,6 +161,8 @@ int main(int argc, char **argv)
 	s_context.geometry_chain = &s_geometry; s_context.texture_page_base_words = 4096;
 	s_context.clut_base_words = 8192; s_context.screen_w = 640; s_context.screen_h = 448;
 	s_context.leases = s_leases; s_context.lease_capacity = HALO_PS2_BITMAP_REQUEST_CAPACITY;
+	if (hcu_bitmap_dispatch_resident_bind(&s_context, s_resident_descriptors, 64) != HCU_BITMAP_DISPATCH_OK)
+		return 21;
 	if (halo_ps2_bitmap_requests_register_consumer(&s_queue,
 		(halo_ps2_bitmap_request_consumer)hcu_bitmap_dispatch_reader, &s_context) != HALO_PS2_BITMAP_REQUEST_OK)
 		return 4;
@@ -183,6 +186,9 @@ int main(int argc, char **argv)
 	if (!entry->valid || entry->pending_upload || !s_cache_readers[cache_key] ||
 		!s_slots[s_leases[0].slot].readers || s_slots[s_leases[0].slot].readers != 1 ||
 		s_leases[1].slot != UINT16_MAX || s_leases[2].slot != UINT16_MAX) return 7;
+	if (s_context.counters.misses != 1 || s_context.counters.hits != 2 ||
+		s_context.counters.source_reads != 1 || s_context.counters.parses != 1 ||
+		s_context.counters.read_calls == 0) return 22;
 	if (hcu_asset_profile_read_chunk(&s_profile, HCU_ASSET_CHUNK_MEDIA,
 		chunk_id, s_staging, sizeof(s_staging)) != HCU_ASSET_PROFILE_OK) return 9;
 	{
@@ -245,10 +251,133 @@ int main(int argc, char **argv)
 		(unsigned)s_cache.misses, (unsigned)s_queue.frame_index);
 	/* The host proof calls this only at the simulated paired-chain fence boundary. */
 	if (hcu_bitmap_dispatch_complete(&s_context) != HCU_BITMAP_DISPATCH_E_BUSY ||
-		s_context.lease_count != 1 || !s_leases[0].active || !s_cache_readers[cache_key] ||
-		!s_slots[s_leases[0].slot].readers) return 8;
+		s_context.lease_count != 3 || !s_leases[0].active || !s_cache_readers[cache_key] ||
+		!s_slots[s_leases[0].slot].readers) return 32;
 	s_bitmap_fence_complete = 1;
 	if (hcu_bitmap_dispatch_complete(&s_context) != HCU_BITMAP_DISPATCH_OK) return 9;
-	if (s_context.lease_count || s_cache_readers[cache_key] || s_slots[s_leases[0].slot].readers) return 8;
+	if (s_context.lease_count || s_cache_readers[cache_key] || s_slots[0].valid) return 33;
+	/* A second resident-context dispatch must reproduce the same packet without
+	 * touching the package reader, hash verifier, or TEXS parser. */
+	{
+		halo_ps2_bitmap_request req = s_queue.requests[0];
+		halo_ps2_bitmap_request_reader reader;
+		uint32_t before_reads = s_context.counters.read_calls;
+		uint32_t before_hashes = s_context.counters.hash_checks;
+		uint32_t before_parses = s_context.counters.parses;
+		uint32_t before_qw = s_geometry.qw;
+		uint8_t baseline[48 * 16];
+		hcu_bitmap_lease *strict_lease = &s_context.leases[1];
+		hcu_bitmap_resident_descriptor descriptor_before = s_resident_descriptors[0];
+		memset(&reader, 0, sizeof(reader)); reader.requests = &req;
+		reader.generation = s_context.expected_generation; reader.count = 1; reader.held = 1;
+		if (hcu_bitmap_dispatch_reader(&reader, &s_context) != HCU_BITMAP_DISPATCH_OK ||
+			s_context.counters.hits != 3 || s_context.counters.read_calls != before_reads ||
+			s_context.counters.hash_checks != before_hashes || s_context.counters.parses != before_parses ||
+			s_geometry.qw - before_qw != 48u) return 23;
+		memcpy(baseline, s_geometry_memory + before_qw * 16u, sizeof(baseline));
+		/* Strict legacy API and resident hot path must emit the same command bytes. */
+		memset(strict_lease, 0, sizeof(*strict_lease));
+		before_qw = s_geometry.qw;
+		if (hcu_bitmap_dispatch_request(&req, &s_binding, 1, &s_profile,
+			s_context.expected_generation, &s_cache, &s_journal, s_cache_readers,
+			TC_MAX_KEYS, s_slots, 4, s_source_storage, sizeof(s_source_storage),
+			s_context.slot_stride, s_staging, sizeof(s_staging), &s_upload, &s_geometry,
+			s_context.texture_page_base_words, s_context.clut_base_words, 640, 448,
+			(hcu_bitmap_rect){0,0,640,448}, strict_lease) != HCU_BITMAP_DISPATCH_OK ||
+			s_geometry.qw - before_qw != 48u ||
+			memcmp(baseline, s_geometry_memory + before_qw * 16u, sizeof(baseline))) return 34;
+		strict_lease->kick_seq = 41u; s_context.lease_count = 2;
+		hcu_bitmap_dispatch_resident_reset(&s_context);
+		if (!s_resident_descriptors[0].valid || memcmp(&descriptor_before,
+			&s_resident_descriptors[0], sizeof(descriptor_before)) ||
+			hcu_bitmap_dispatch_resident_bind(&s_context, s_resident_descriptors, 64) !=
+			HCU_BITMAP_DISPATCH_E_ARGUMENT) return 35;
+		s_bitmap_fence_complete = 0;
+		if (hcu_bitmap_dispatch_complete(&s_context) != HCU_BITMAP_DISPATCH_E_BUSY ||
+			s_context.lease_count != 2) return 36;
+		s_bitmap_fence_complete = 1;
+		if (hcu_bitmap_dispatch_complete(&s_context) != HCU_BITMAP_DISPATCH_OK ||
+			s_context.lease_count) return 37;
+		before_qw = s_geometry.qw;
+		memset(&reader, 0, sizeof(reader)); reader.requests = &req;
+		reader.generation = s_context.expected_generation; reader.count = 1; reader.held = 1;
+		if (hcu_bitmap_dispatch_reader(&reader, &s_context) != HCU_BITMAP_DISPATCH_OK ||
+			s_context.counters.hits != 4 || s_context.counters.read_calls != before_reads ||
+			s_context.counters.hash_checks != before_hashes || s_context.counters.parses != before_parses ||
+			s_geometry.qw - before_qw != 48u ||
+			memcmp(baseline, s_geometry_memory + before_qw * 16u, sizeof(baseline))) return 23;
+		{
+			halo_ps2_bitmap_request stale = req;
+			hcu_bitmap_binding saved = s_binding;
+			hcu_asset_profile_view saved_profile = s_profile;
+			uint32_t saved_generation = s_context.expected_generation;
+			uint32_t reads = s_context.counters.read_calls;
+			stale.generation++;
+			memset(&reader, 0, sizeof(reader)); reader.requests = &stale;
+			reader.generation = s_context.expected_generation; reader.count = 1; reader.held = 1;
+			if (hcu_bitmap_dispatch_reader(&reader, &s_context) != HCU_BITMAP_DISPATCH_E_IDENTITY) return 30;
+			s_profile.profile_id++;
+			memset(&reader, 0, sizeof(reader)); reader.requests = &req;
+			reader.generation = s_context.expected_generation; reader.count = 1; reader.held = 1;
+			if (hcu_bitmap_dispatch_reader(&reader, &s_context) != HCU_BITMAP_DISPATCH_E_IDENTITY) return 38;
+			s_profile = saved_profile;
+			s_context.expected_generation++;
+			stale = req; stale.generation++;
+			memset(&reader, 0, sizeof(reader)); reader.requests = &stale;
+			reader.generation = s_context.expected_generation; reader.count = 1; reader.held = 1;
+			if (hcu_bitmap_dispatch_reader(&reader, &s_context) != HCU_BITMAP_DISPATCH_E_IDENTITY) return 39;
+			s_context.expected_generation = saved_generation;
+			if (s_context.counters.read_calls != reads) return 40;
+			s_binding.expected_source_datum++;
+			memset(&reader, 0, sizeof(reader)); reader.requests = &req;
+			reader.generation = s_context.expected_generation; reader.count = 1; reader.held = 1;
+			if (hcu_bitmap_dispatch_reader(&reader, &s_context) != HCU_BITMAP_DISPATCH_E_IDENTITY) return 31;
+			s_binding = saved;
+		}
+		/* Both view rectangles stay on the resident hot path and emit their own scissor. */
+		{
+			halo_ps2_bitmap_request view_req = req;
+			uint64_t left_scissor, right_scissor;
+			uint32_t reads = s_context.counters.read_calls;
+			s_context.views[0].window_index = 0;
+			s_context.views[0].rect = (hcu_bitmap_rect){0,0,320,224};
+			s_context.views[1].window_index = 1;
+			s_context.views[1].rect = (hcu_bitmap_rect){320,0,320,224};
+			s_context.view_count = 2;
+			before_qw = s_geometry.qw;
+			memset(&reader, 0, sizeof(reader)); reader.requests = &view_req;
+			reader.generation = s_context.expected_generation; reader.count = 1; reader.held = 1;
+			if (hcu_bitmap_dispatch_reader(&reader, &s_context) != HCU_BITMAP_DISPATCH_OK ||
+				s_context.counters.read_calls != reads || s_geometry.qw - before_qw != 48u) return 41;
+			memcpy(&left_scissor, s_geometry_memory + before_qw * 16u + 112u, sizeof(left_scissor));
+			view_req.view_index = 1; before_qw = s_geometry.qw;
+			memset(&reader, 0, sizeof(reader)); reader.requests = &view_req;
+			reader.generation = s_context.expected_generation; reader.count = 1; reader.held = 1;
+			if (hcu_bitmap_dispatch_reader(&reader, &s_context) != HCU_BITMAP_DISPATCH_OK ||
+				s_context.counters.read_calls != reads || s_geometry.qw - before_qw != 48u) return 42;
+			memcpy(&right_scissor, s_geometry_memory + before_qw * 16u + 112u, sizeof(right_scissor));
+			if (left_scissor != (((uint64_t)319u << 16) | ((uint64_t)223u << 48)) ||
+				right_scissor != (320u | ((uint64_t)639u << 16) | ((uint64_t)223u << 48))) return 43;
+		}
+		if (hcu_bitmap_dispatch_complete(&s_context) != HCU_BITMAP_DISPATCH_OK) return 24;
+		{
+			hcu_asset_chunk_view view;
+			uint32_t reads = s_context.counters.read_calls;
+			if (hcu_asset_profile_lookup(&s_profile, HCU_ASSET_CHUNK_MEDIA, chunk_id, &view) != HCU_ASSET_PROFILE_OK) return 25;
+			s_package[view.offset] ^= 1;
+			if (!rejection_preserves_state(&s_binding, &req, s_context.expected_generation,
+				HCU_BITMAP_DISPATCH_E_CHUNK)) return 26;
+			memset(&reader, 0, sizeof(reader)); reader.requests = &req;
+			reader.generation = s_context.expected_generation; reader.count = 1; reader.held = 1;
+			if (hcu_bitmap_dispatch_reader(&reader, &s_context) != HCU_BITMAP_DISPATCH_OK ||
+				s_context.counters.read_calls != reads) return 27;
+			if (hcu_bitmap_dispatch_complete(&s_context) != HCU_BITMAP_DISPATCH_OK) return 28;
+			tc_flush(&s_cache);
+			memset(&reader, 0, sizeof(reader)); reader.requests = &req;
+			reader.generation = s_context.expected_generation; reader.count = 1; reader.held = 1;
+			if (hcu_bitmap_dispatch_reader(&reader, &s_context) != HCU_BITMAP_DISPATCH_E_CHUNK) return 29;
+			s_package[view.offset] ^= 1;
+		}
+	}
 	return 0;
 }

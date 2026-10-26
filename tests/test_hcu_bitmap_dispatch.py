@@ -16,6 +16,42 @@ HCU = ROOT / "submodules/halo-ce-universal"
 ENGINE = ROOT / "submodules/halo-ps2/engine"
 
 
+def _upgrade_hcp1_fixture_to_hcp2(source: Path, manifest: Path, destination: Path,
+                                 destination_manifest: Path):
+    """Copy valid HCP2 input or reserialize legacy HCP1 with segmented HCP2 chunks."""
+    from tools import hcu_profile_chunks
+    from tools.hcu_profile_validate import parse_package
+    data = source.read_bytes()
+    magic, version, header_size, profile_id, count, directory, directory_size, total = \
+        hcu_profile_chunks.HEADER.unpack_from(data)
+    assert header_size == hcu_profile_chunks.HEADER.size and total == len(data)
+    if (magic, version) == (hcu_profile_chunks.MAGIC, hcu_profile_chunks.VERSION):
+        expected = hashlib.sha256(data).hexdigest()
+        parse_package(data, expected_package_sha256=expected, expected_profile_id=profile_id)
+        destination.write_bytes(data)
+    else:
+        assert magic == hcu_profile_chunks.MAGIC_V1 and version == 1
+        assert directory == header_size and directory_size == count * hcu_profile_chunks.V1_RECORD.size
+        chunks = {}
+        for index in range(count):
+            kind, chunk_id, offset, size, digest = hcu_profile_chunks.V1_RECORD.unpack_from(
+                data, directory + index * hcu_profile_chunks.V1_RECORD.size)
+            blob = data[offset:offset + size]
+            assert len(blob) == size and hashlib.sha256(blob).digest() == digest
+            chunks[(kind, chunk_id)] = blob
+        destination.write_bytes(hcu_profile_chunks.encode(profile_id, chunks, version=2))
+    document = json.loads(manifest.read_text())
+    document["package_sha256"] = hashlib.sha256(destination.read_bytes()).hexdigest()
+    destination_manifest.write_text(json.dumps(document, sort_keys=True, indent=2) + "\n")
+
+
+def _source_pin_path(path: Path) -> str:
+    try:
+        return path.relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
+
 def _compile(tmp_path):
     compiler = shutil.which("gcc-13") or shutil.which("gcc")
     if not compiler:
@@ -94,10 +130,16 @@ def test_actual_ce_ui_request_runs_through_final_profile_and_real_upload_pipelin
     from tools.hcu_bitmap_bindings import build as build_bindings
     from tools.hcu_profile_validate import parse_package
     profile_dir = ROOT / os.environ.get("HCU_C1_PROFILES", "build/m2-c1-corpus-primary-v3")
-    package = profile_dir / "ui.hcp"
-    manifest_path = profile_dir / "ui.json"
-    if not package.is_file() or not manifest_path.is_file():
+    source_package = profile_dir / "ui.hcp"
+    source_manifest = profile_dir / "ui.json"
+    if not source_package.is_file() or not source_manifest.is_file():
         pytest.skip("primary UI profile package unavailable")
+    artifact_dir = Path(os.environ.get("HCU_BITMAP_DISPATCH_ARTIFACTS",
+                                      ROOT / "build/m2-c1-bitmap-live-dispatch")).resolve()
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    package = artifact_dir / "ui-runtime.hcp"
+    manifest_path = artifact_dir / "ui-runtime.json"
+    _upgrade_hcp1_fixture_to_hcp2(source_package, source_manifest, package, manifest_path)
     bindings = build_bindings(manifest_path, package)
     source_map = ROOT / "build/retail-maps/decompressed/ui.map"
     row = next(b for b in bindings["bindings"]
@@ -117,9 +159,6 @@ def test_actual_ce_ui_request_runs_through_final_profile_and_real_upload_pipelin
     assert "ctag_reader=end-hook" in result.stdout
     assert "leases=held" in result.stdout and "upload_qw=16" in result.stdout and "geometry_qw=102" in result.stdout
     assert bindings["package"]["sha256"] == hashlib.sha256(package.read_bytes()).hexdigest()
-    artifact_dir = Path(os.environ.get("HCU_BITMAP_DISPATCH_ARTIFACTS",
-                                       ROOT / "build/m2-c1-bitmap-live-dispatch")).resolve()
-    artifact_dir.mkdir(parents=True, exist_ok=True)
     durable_exe = artifact_dir / "hcu-bitmap-dispatch-fixture"
     durable_compile = artifact_dir / "compile.json"
     durable_interface = artifact_dir / "interface_draw_bitmap_exact.c"
@@ -164,8 +203,8 @@ def test_actual_ce_ui_request_runs_through_final_profile_and_real_upload_pipelin
     source_pins[str(durable_compile.relative_to(ROOT))] = hashlib.sha256(durable_compile.read_bytes()).hexdigest()
     source_pins[str(durable_exe.relative_to(ROOT))] = hashlib.sha256(durable_exe.read_bytes()).hexdigest()
     source_pins[str(durable_log.relative_to(ROOT))] = hashlib.sha256(durable_log.read_bytes()).hexdigest()
-    source_pins[str(package.relative_to(ROOT))] = hashlib.sha256(package.read_bytes()).hexdigest()
-    source_pins[str(manifest_path.relative_to(ROOT))] = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+    source_pins[_source_pin_path(package)] = hashlib.sha256(package.read_bytes()).hexdigest()
+    source_pins[_source_pin_path(manifest_path)] = hashlib.sha256(manifest_path.read_bytes()).hexdigest()
     source_pins[str(source_map.relative_to(ROOT))] = hashlib.sha256(source_map.read_bytes()).hexdigest()
     # Retain exact final CE and BITM chunk identities alongside the run evidence.
     source_pins["ui_ctag_chunk_sha256"] = hashlib.sha256(package_info["chunks"][(1, 0)]).hexdigest()
@@ -211,6 +250,8 @@ def test_actual_ce_ui_request_runs_through_final_profile_and_real_upload_pipelin
             "compile_record": str(durable_compile.relative_to(ROOT)),
             "interface_body": str(durable_interface.relative_to(ROOT)),
             "bindings": str(durable_bindings.relative_to(ROOT)),
+            "package": str(package.relative_to(ROOT)),
+            "manifest": str(manifest_path.relative_to(ROOT)),
             "log": str(durable_log.relative_to(ROOT))}}
     out = artifact_dir / "result.json"
     out.write_text(json.dumps(result_record, sort_keys=True, indent=2) + "\n")

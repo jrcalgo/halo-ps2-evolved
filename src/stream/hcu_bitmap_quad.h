@@ -84,4 +84,10 @@ hcu_bitmap_quad_status hcu_bitmap_quad_emit(chain_t *chain,
 	const hcu_bitmap_quad_state_t *state,
 	const hcu_bitmap_vertex_t vertices[4]);
 
+/* Emits using metadata already validated and retained by a resident descriptor.
+ * This path does not require the original TEXS bytes or a tex_section. */
+hcu_bitmap_quad_status hcu_bitmap_quad_emit_validated(chain_t *chain,
+	const tex_info *image, const hcu_bitmap_quad_state_t *state,
+	const hcu_bitmap_vertex_t vertices[4]);
+
 #endif

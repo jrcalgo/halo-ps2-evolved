@@ -6,6 +6,14 @@
 #include <string.h>
 #include <stdint.h>
 
+#if (defined(_EE) || defined(_MIPS_ARCH_R5900)) && ((defined(HALO_PS2_C3_TIMING) && HALO_PS2_C3_TIMING) || \
+    (defined(HALO_PS2_C3_TELEMETRY) && HALO_PS2_C3_TELEMETRY))
+#include "platform/timer.h"
+#define BITMAP_CYCLES() timer_cycles()
+#else
+#define BITMAP_CYCLES() 0u
+#endif
+
 /* C3.10: weak links keep non-renderer host builds linkable. A lease release fails closed
  * when the exact BSP fence or release event is unavailable. */
 extern uint32_t bsp_render_kick_seq(void) __attribute__((weak));
@@ -14,6 +22,75 @@ extern int32_t bsp_render_source_release(uint32_t kind, uint32_t kick_seq) __att
 #define HCU_BITMAP_RELEASE_KIND_LEASE 2u   /* = BSP_SRC_BITMAP_LEASE in render/bsp_render.h */
 
 #define HCU_BITMAP_PAGE_WORDS 2048u
+
+hcu_bitmap_dispatch_status hcu_bitmap_dispatch_resident_bind(hcu_bitmap_dispatch_context *context,
+	hcu_bitmap_resident_descriptor *descriptors, uint32_t descriptor_capacity)
+{
+	if (!context || (descriptor_capacity && !descriptors) ||
+		context->lease_count || descriptor_capacity > UINT16_MAX ||
+		(descriptor_capacity && (!context->profile || !context->expected_generation ||
+		 !context->profile->profile_id || !context->bindings || !context->binding_count)))
+		return HCU_BITMAP_DISPATCH_E_ARGUMENT;
+	if (descriptors && descriptor_capacity)
+		memset(descriptors, 0, descriptor_capacity * sizeof(*descriptors));
+	context->resident_descriptors = descriptors;
+	context->resident_capacity = descriptor_capacity;
+	context->resident_generation = descriptor_capacity ? context->expected_generation : 0u;
+	if (descriptor_capacity) context->resident_profile = *context->profile;
+	else memset(&context->resident_profile, 0, sizeof(context->resident_profile));
+	memset(&context->counters, 0, sizeof(context->counters));
+	return HCU_BITMAP_DISPATCH_OK;
+}
+
+void hcu_bitmap_dispatch_resident_reset(hcu_bitmap_dispatch_context *context)
+{
+	if (!context || context->lease_count) return;
+	if (context->resident_descriptors && context->resident_capacity)
+		memset(context->resident_descriptors, 0,
+			context->resident_capacity * sizeof(*context->resident_descriptors));
+	memset(&context->counters, 0, sizeof(context->counters));
+}
+
+static int same_profile(const hcu_asset_profile_view *a, const hcu_asset_profile_view *b)
+{
+	return a && b && a->profile_id == b->profile_id && a->total_bytes == b->total_bytes &&
+		a->chunk_count == b->chunk_count && a->directory_bytes == b->directory_bytes &&
+		a->version == b->version && a->record_bytes == b->record_bytes &&
+		a->read_at == b->read_at && a->reader_context == b->reader_context &&
+		a->memory_image == b->memory_image;
+}
+
+static int descriptor_matches(const hcu_bitmap_resident_descriptor *d,
+	const hcu_bitmap_binding *b, uint32_t generation)
+{
+	return d->valid && d->generation == generation && d->profile_id == b->expected_profile_id &&
+		d->chunk_id == b->chunk_id && d->expected_source_datum == b->expected_source_datum &&
+		d->image_index == b->image_index && d->cache_key == b->cache_key &&
+		memcmp(d->chunk_sha256, b->expected_chunk_sha256, 32) == 0;
+}
+
+typedef struct {
+	const hcu_asset_profile_view *source;
+	hcu_bitmap_dispatch_counters *counters;
+} bitmap_read_probe;
+
+/* Count actual backing callbacks, including directory reads, without logging. */
+static int bitmap_counted_read(void *opaque, uint32_t offset, void *destination, uint32_t bytes)
+{
+	bitmap_read_probe *p = (bitmap_read_probe *)opaque;
+	uint32_t begin = BITMAP_CYCLES();
+	int result;
+	p->counters->read_calls++;
+	p->counters->read_bytes += bytes;
+	if (offset > p->source->total_bytes || bytes > p->source->total_bytes - offset) result = -1;
+	else if (p->source->memory_image) {
+		memcpy(destination, p->source->memory_image + offset, bytes);
+		result = 0;
+	} else result = p->source->read_at ?
+		p->source->read_at(p->source->reader_context, offset, destination, bytes) : -1;
+	p->counters->read_cycles += BITMAP_CYCLES() - begin;
+	return result;
+}
 
 static int log2_exact(uint32_t n)
 {
@@ -42,8 +119,8 @@ static uint32_t meter_lerp_channel(uint32_t a, uint32_t b, uint32_t t)
 	return (a * (255u - t) + b * t + 127u) / 255u;
 }
 
-static hcu_bitmap_quad_status meter_emit(chain_t *geometry_chain, const tex_section *section,
-	uint32_t image_index, hcu_bitmap_quad_state_t *state,
+static hcu_bitmap_quad_status meter_emit(chain_t *geometry_chain, const tex_info *image,
+	hcu_bitmap_quad_state_t *state,
 	const hcu_bitmap_vertex_t vertices[4], const halo_ps2_bitmap_request *request)
 {
 	hcu_bitmap_vertex_t quad[4];
@@ -62,13 +139,13 @@ static hcu_bitmap_quad_status meter_emit(chain_t *geometry_chain, const tex_sect
 		for (i = 0; i < 4; i++) quad[i].argb = empty;
 		state->alpha_test = HCU_BITMAP_ALPHA_TEST_EMPTY;
 		state->alpha_ref = (uint8_t)t;
-		status = hcu_bitmap_quad_emit(geometry_chain, section, image_index, state, quad);
+		status = hcu_bitmap_quad_emit_validated(geometry_chain, image, state, quad);
 		if (status != HCU_BITMAP_QUAD_OK) return status;
 	}
 	for (i = 0; i < 4; i++) quad[i].argb = fill | 0xFF000000u;
 	state->alpha_test = HCU_BITMAP_ALPHA_TEST_FILL;
 	state->alpha_ref = (uint8_t)t;
-	return hcu_bitmap_quad_emit(geometry_chain, section, image_index, state, quad);
+	return hcu_bitmap_quad_emit_validated(geometry_chain, image, state, quad);
 }
 
 static int blend_for(int16_t ce_blend, hcu_bitmap_blend_t *out)
@@ -82,7 +159,8 @@ static int blend_for(int16_t ce_blend, hcu_bitmap_blend_t *out)
 	}
 }
 
-hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
+static hcu_bitmap_dispatch_status dispatch_request_impl(
+	hcu_bitmap_dispatch_context *context,
 	const halo_ps2_bitmap_request *request,
 	const hcu_bitmap_binding *bindings, uint32_t binding_count,
 	const hcu_asset_profile_view *profile,
@@ -100,7 +178,7 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 	uint32_t i, slot_index = 0, read_bytes;
 	hcu_asset_chunk_view chunk_view;
 	const hcu_bitmap_binding *binding = NULL;
-	hcu_bitmap_source_slot *slot;
+	hcu_bitmap_source_slot *slot = NULL;
 	uint8_t *raw;
 	tex_section section;
 	tex_info image;
@@ -115,6 +193,13 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 	hcu_bitmap_vertex_t vertices[4], placed[4];
 	hcu_bitmap_blend_t blend;
 	int upload_source;
+	int resident_hit = 0;
+	int resident_mode = context && context->resident_descriptors && context->resident_capacity;
+	hcu_bitmap_resident_descriptor *descriptor = NULL, *empty_descriptor = NULL;
+	hcu_asset_profile_view observed_profile;
+	const hcu_asset_profile_view *read_profile = profile;
+	bitmap_read_probe probe;
+	uint32_t source_begin = 0, parse_begin = 0;
 
 	if (!request || !bindings || !profile || !cache || !journal || !cache_readers || !slots ||
 		!binding_count || !slot_count || !source_storage || !slot_stride || !staging_buffer || !upload_chain ||
@@ -142,28 +227,96 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 		return HCU_BITMAP_DISPATCH_E_UNSUPPORTED;
 
 	if (cache_readers[binding->cache_key] == UINT16_MAX) return HCU_BITMAP_DISPATCH_E_BUSY;
-	if (hcu_asset_profile_lookup(profile, HCU_ASSET_CHUNK_MEDIA,
-		binding->chunk_id, &chunk_view) != HCU_ASSET_PROFILE_OK || chunk_view.size > slot_stride)
-		return HCU_BITMAP_DISPATCH_E_CHUNK;
-	if (memcmp(chunk_view.sha256, binding->expected_chunk_sha256, 32))
-		return HCU_BITMAP_DISPATCH_E_IDENTITY;
-	raw = (uint8_t *)staging_buffer;
-	if (hcu_asset_profile_read_chunk(profile, HCU_ASSET_CHUNK_MEDIA,
-		binding->chunk_id, raw, slot_stride) != HCU_ASSET_PROFILE_OK)
-		return HCU_BITMAP_DISPATCH_E_CHUNK;
-	read_bytes = chunk_view.size;
-	if (tex_open(&section, raw, read_bytes) != TEX_OK || binding->image_index >= section.texture_count)
-		return HCU_BITMAP_DISPATCH_E_FORMAT;
-	image = tex_get(&section, binding->image_index);
-	if (image.source_id != binding->expected_source_datum)
-		return HCU_BITMAP_DISPATCH_E_IDENTITY;
-	if ((image.psm != GS_PSMT8 && image.psm != GS_PSMT4) || !image.width || !image.height ||
-		image.width > 256u || image.height > 256u || log2_exact(image.width) < 0 ||
-		log2_exact(image.height) < 0 || !tex_mip(&section, &image, 0, &mip))
-		return HCU_BITMAP_DISPATCH_E_FORMAT;
-	clut = tex_clut(&section, &image);
-	clut_bytes = (uint32_t)image.clut_entries * 4u;
-	if (!clut || !clut_bytes || (mip.bytes & 15u) || (clut_bytes & 15u))
+	if (resident_mode) {
+		if (context->resident_generation != expected_generation ||
+			!same_profile(profile, &context->resident_profile))
+			return HCU_BITMAP_DISPATCH_E_IDENTITY;
+		for (i = 0; i < context->resident_capacity; ++i) {
+			hcu_bitmap_resident_descriptor *d = &context->resident_descriptors[i];
+			if (!d->valid) { if (!empty_descriptor) empty_descriptor = d; continue; }
+			if (d->cache_key != binding->cache_key) continue;
+			/* Reusing a numeric key for different bytes requires a new bound
+			 * resource generation, even when the old VRAM entry was evicted. */
+			if (!descriptor_matches(d, binding, expected_generation))
+				return HCU_BITMAP_DISPATCH_E_IDENTITY;
+			descriptor = d;
+			break;
+		}
+	}
+	memset(&image, 0, sizeof(image));
+	memset(&mip, 0, sizeof(mip));
+	clut = NULL;
+	if (descriptor && cache->map[binding->cache_key]) {
+		uint32_t index = cache->map[binding->cache_key] - 1u;
+		if (index >= TC_MAX_ENTRIES || !cache->entry[index].valid ||
+			cache->entry[index].key != binding->cache_key || cache->entry[index].pending_upload)
+			return HCU_BITMAP_DISPATCH_E_BUSY;
+		image.source_id = descriptor->expected_source_datum;
+		image.width = descriptor->width; image.height = descriptor->height;
+		image.psm = descriptor->psm; image.clut_entries = descriptor->clut_entries;
+		mip.bytes = descriptor->mip_bytes;
+		clut_bytes = descriptor->clut_bytes;
+		resident_hit = 1;
+		/* No package/directory lookup, read, hash, parser or source pointer on
+		 * this path. A GPU lease is still acquired below for every draw. */
+	} else {
+		source_begin = BITMAP_CYCLES();
+		if (context) {
+			context->counters.misses++;
+			probe.source = profile; probe.counters = &context->counters;
+			observed_profile = *profile;
+			observed_profile.memory_image = NULL;
+			observed_profile.read_at = bitmap_counted_read;
+			observed_profile.reader_context = &probe;
+			read_profile = &observed_profile;
+		}
+		if (hcu_asset_profile_lookup(read_profile, HCU_ASSET_CHUNK_MEDIA,
+			binding->chunk_id, &chunk_view) != HCU_ASSET_PROFILE_OK || chunk_view.size > slot_stride)
+			return HCU_BITMAP_DISPATCH_E_CHUNK;
+		if (memcmp(chunk_view.sha256, binding->expected_chunk_sha256, 32))
+			return HCU_BITMAP_DISPATCH_E_IDENTITY;
+		raw = (uint8_t *)staging_buffer;
+		if (context) {
+			context->counters.source_reads++;
+			context->counters.source_bytes += chunk_view.size;
+			context->counters.hash_checks++;
+		}
+		if (resident_mode) {
+			hcu_asset_profile_staged_stats stats;
+			int result = hcu_asset_profile_read_chunk_staged_profiled(read_profile,
+				HCU_ASSET_CHUNK_MEDIA, binding->chunk_id, raw, slot_stride, &stats);
+			context->counters.hash_cycles += stats.hash_cycles;
+			context->counters.source_cycles += BITMAP_CYCLES() - source_begin;
+			if (result != HCU_ASSET_PROFILE_OK) return HCU_BITMAP_DISPATCH_E_CHUNK;
+		} else {
+			int result = hcu_asset_profile_read_chunk(read_profile, HCU_ASSET_CHUNK_MEDIA,
+				binding->chunk_id, raw, slot_stride);
+			if (context) context->counters.source_cycles += BITMAP_CYCLES() - source_begin;
+			if (result != HCU_ASSET_PROFILE_OK) return HCU_BITMAP_DISPATCH_E_CHUNK;
+		}
+		read_bytes = chunk_view.size;
+		parse_begin = BITMAP_CYCLES();
+		if (context) context->counters.parses++;
+		if (tex_open(&section, raw, read_bytes) != TEX_OK || binding->image_index >= section.texture_count)
+			return HCU_BITMAP_DISPATCH_E_FORMAT;
+		image = tex_get(&section, binding->image_index);
+		if (image.source_id != binding->expected_source_datum)
+			return HCU_BITMAP_DISPATCH_E_IDENTITY;
+		if ((image.psm != GS_PSMT8 && image.psm != GS_PSMT4) || !image.width || !image.height ||
+			image.width > 256u || image.height > 256u || log2_exact(image.width) < 0 ||
+			log2_exact(image.height) < 0 || !tex_mip(&section, &image, 0, &mip))
+			return HCU_BITMAP_DISPATCH_E_FORMAT;
+		clut = tex_clut(&section, &image);
+		clut_bytes = (uint32_t)image.clut_entries * 4u;
+		if (!clut || !clut_bytes || (mip.bytes & 15u) || (clut_bytes & 15u))
+			return HCU_BITMAP_DISPATCH_E_FORMAT;
+		if (context) context->counters.parse_cycles += BITMAP_CYCLES() - parse_begin;
+	}
+	if ((image.psm != GS_PSMT8 && image.psm != GS_PSMT4) ||
+		!image.width || !image.height || image.width > 256u || image.height > 256u ||
+		log2_exact(image.width) < 0 || log2_exact(image.height) < 0 ||
+		!mip.bytes || (mip.bytes & 15u) || !clut_bytes || (clut_bytes & 15u) ||
+		clut_bytes != (uint32_t)image.clut_entries * 4u)
 		return HCU_BITMAP_DISPATCH_E_FORMAT;
 	upload_source = !cache->map[binding->cache_key];
 	if (upload_source) {
@@ -171,15 +324,12 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 		if (slot_index == slot_count) return HCU_BITMAP_DISPATCH_E_CAPACITY;
 		slot = &slots[slot_index]; upload_source = 1;
 	}
-	if (upload_source) {
-		clut_w = image.psm == GS_PSMT4 ? 8u : 16u;
-		clut_h = image.psm == GS_PSMT4 ? 2u : 16u;
-	} else {
-		clut_w = image.psm == GS_PSMT4 ? 8u : 16u;
-		clut_h = image.psm == GS_PSMT4 ? 2u : 16u;
-	}
+	clut_w = image.psm == GS_PSMT4 ? 8u : 16u;
+	clut_h = image.psm == GS_PSMT4 ? 2u : 16u;
 	pages = pages_for(image.width, image.height, image.psm);
 	if (!pages || pages > cache->total_pages) return HCU_BITMAP_DISPATCH_E_CAPACITY;
+	if (resident_hit && cache->entry[cache->map[binding->cache_key] - 1u].pages != pages)
+		return HCU_BITMAP_DISPATCH_E_IDENTITY;
 	if (texture_page_base_words > 0x3FFFu * 64u || clut_base_words > 0x3FFFu * 64u)
 		return HCU_BITMAP_DISPATCH_E_ARGUMENT;
 
@@ -200,6 +350,7 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 	cbp = clut_base_words / 64u + entry->clut_slot * 4u;
 	if (tbp > 0x3FFFu || cbp > 0x3FFFu) goto rollback;
 	if (acquired == TC_UPLOAD) {
+		if (!mip.pixels || !clut) goto rollback;
 		/* Keep only the bytes the GIF upload chain references. HCP2 may make a
 		 * TEXS resource much larger than its selected image; retaining the whole
 		 * resource per lease would make storage scale with queue capacity instead
@@ -253,10 +404,10 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 	if (hcu_bitmap_quad_place(&state, &target, vertices, placed) != 0) goto rollback;
 	memcpy(vertices, placed, sizeof(vertices));
 	if (request->has_meter & HALO_PS2_BITMAP_METER_PRESENT) {
-		if (meter_emit(geometry_chain, &section, binding->image_index,
+		if (meter_emit(geometry_chain, &image,
 			&state, vertices, request) != HCU_BITMAP_QUAD_OK)
 			goto rollback;
-	} else if (hcu_bitmap_quad_emit(geometry_chain, &section, binding->image_index,
+	} else if (hcu_bitmap_quad_emit_validated(geometry_chain, &image,
 		&state, vertices) != HCU_BITMAP_QUAD_OK) {
 		goto rollback;
 	}
@@ -273,6 +424,21 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 		if (slots[i].valid && !slots[i].readers && slots[i].cache_key < cache->max_keys &&
 			!cache->map[slots[i].cache_key]) memset(&slots[i], 0, sizeof(slots[i]));
 	tc_journal_commit(journal);
+	if (resident_hit) context->counters.hits++;
+	else if (resident_mode && (descriptor || empty_descriptor)) {
+		hcu_bitmap_resident_descriptor *d = descriptor ? descriptor : empty_descriptor;
+		memset(d, 0, sizeof(*d));
+		d->bitmap_output_datum = binding->bitmap_output_datum;
+		d->bitmap_index = binding->bitmap_index; d->image_index = binding->image_index;
+		d->cache_key = binding->cache_key; d->chunk_id = binding->chunk_id;
+		d->expected_source_datum = binding->expected_source_datum;
+		d->profile_id = binding->expected_profile_id; d->generation = expected_generation;
+		d->width = image.width; d->height = image.height; d->psm = image.psm;
+		d->clut_entries = image.clut_entries; d->mip_bytes = mip.bytes; d->clut_bytes = clut_bytes;
+		d->source_offset = image.pixel_offset;
+		memcpy(d->chunk_sha256, binding->expected_chunk_sha256, 32);
+		d->valid = 1;
+	}
 	return HCU_BITMAP_DISPATCH_OK;
 
 rollback:
@@ -281,6 +447,26 @@ rollback:
 	tc_journal_rollback(cache, journal);
 	if (upload_source && slot) memset(slot, 0, sizeof(*slot));
 	return HCU_BITMAP_DISPATCH_E_CAPACITY;
+}
+
+/* Compatibility entry point: mutable backing is revalidated on every call. */
+hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
+	const halo_ps2_bitmap_request *request,
+	const hcu_bitmap_binding *bindings, uint32_t binding_count,
+	const hcu_asset_profile_view *profile, uint32_t expected_generation,
+	tc_t *cache, tc_journal_t *journal, uint16_t *cache_readers, uint32_t cache_reader_count,
+	hcu_bitmap_source_slot *slots, uint32_t slot_count,
+	void *source_storage, uint32_t source_storage_bytes, uint32_t slot_stride,
+	void *staging_buffer, uint32_t staging_buffer_bytes,
+	chain_t *upload_chain, chain_t *geometry_chain,
+	uint32_t texture_page_base_words, uint32_t clut_base_words,
+	uint16_t screen_w, uint16_t screen_h, hcu_bitmap_rect target, hcu_bitmap_lease *lease)
+{
+	return dispatch_request_impl(NULL, request, bindings, binding_count, profile, expected_generation,
+		cache, journal, cache_readers, cache_reader_count, slots, slot_count,
+		source_storage, source_storage_bytes, slot_stride, staging_buffer, staging_buffer_bytes,
+		upload_chain, geometry_chain, texture_page_base_words, clut_base_words,
+		screen_w, screen_h, target, lease);
 }
 
 void hcu_bitmap_dispatch_release(hcu_bitmap_source_slot *slots,
@@ -321,7 +507,7 @@ int hcu_bitmap_dispatch_reader(const halo_ps2_bitmap_request_reader *reader,
 			if (ctx->first_error == HCU_BITMAP_DISPATCH_OK) ctx->first_error = HCU_BITMAP_DISPATCH_E_VIEW;
 			continue;
 		}
-		status = hcu_bitmap_dispatch_request(&reader->requests[i], ctx->bindings,
+		status = dispatch_request_impl(ctx, &reader->requests[i], ctx->bindings,
 			ctx->binding_count, ctx->profile, ctx->expected_generation,
 			ctx->cache, ctx->journal, ctx->cache_readers, ctx->cache_reader_count,
 			ctx->slots, ctx->slot_count,

@@ -45,6 +45,9 @@ int main(int argc,char **argv)
 		p[n-1]^=1; for(i=0;i<sizeof(destination);i++) destination[i]=0xA5;
 		rc=hcu_asset_profile_read_chunk(&v,HCU_ASSET_CHUNK_SOUND_META,0,destination,sizeof(destination));
 		if(rc!=HCU_ASSET_PROFILE_E_HASH || destination[0]!=0xA5) return 95;
+		for(i=0;i<sizeof(destination);i++) destination[i]=0xA5;
+		rc=hcu_asset_profile_read_chunk_staged(&v,HCU_ASSET_CHUNK_SOUND_META,0,destination,sizeof(destination));
+		if(rc!=HCU_ASSET_PROFILE_E_HASH || destination[0]!=0) return 105;
 		p[n-1]^=1;
 		{
 			mutating_reader reader;

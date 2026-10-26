@@ -4,6 +4,22 @@
 
 #include <string.h>
 
+#if (defined(_EE) || defined(_MIPS_ARCH_R5900)) && ((defined(HALO_PS2_C3_TIMING) && HALO_PS2_C3_TIMING) || \
+	(defined(HALO_PS2_C3_TELEMETRY) && HALO_PS2_C3_TELEMETRY))
+#include "platform/timer.h"
+#define HCP_STAGED_TIMING 1
+#else
+#define HCP_STAGED_TIMING 0
+#endif
+
+#if HCP_STAGED_TIMING
+#define HCP_TIME_BEGIN(stats, stamp) do { if (stats) (stamp) = timer_cycles(); } while (0)
+#define HCP_TIME_END(stats, stamp, field) do { if (stats) (stats)->field += timer_cycles() - (stamp); } while (0)
+#else
+#define HCP_TIME_BEGIN(stats, stamp) do { (void)(stats); (void)(stamp); } while (0)
+#define HCP_TIME_END(stats, stamp, field) do { (void)(stats); (void)(stamp); } while (0)
+#endif
+
 #define HCP_HEADER_SIZE 32u
 #define HCP1_RECORD_SIZE 48u
 #define HCP2_RECORD_SIZE 96u
@@ -239,6 +255,85 @@ int hcu_asset_profile_read_chunk(const hcu_asset_profile_view*v,uint32_t type,ui
 	if(memcmp(dig,e.sha256,32)) { memset(dst,0,e.size); return HCU_ASSET_PROFILE_E_HASH; }
 	return HCU_ASSET_PROFILE_OK;
 }
+
+/* Disposable-destination variant for cold loads. It resolves each segment row
+ * once, then reads that segment directly into its final staging position.
+ * Hashes are computed over exactly those bytes, so no second payload pass is
+ * needed and a mutable backing source cannot publish unchecked data. */
+int hcu_asset_profile_read_chunk_staged_profiled(const hcu_asset_profile_view *v,
+	uint32_t type, uint32_t id, void *dst, uint32_t cap,
+	hcu_asset_profile_staged_stats *stats)
+{
+	hcu_asset_chunk_view e;
+	uint8_t row[HCP2_RECORD_SIZE], digest[32];
+	sha256_context logical_sha;
+	uint32_t seg, logical_at = 0;
+	uint32_t stamp = 0;
+	int rc = HCU_ASSET_PROFILE_E_BOUNDS;
+	if (stats) memset(stats, 0, sizeof(*stats));
+	if (!v || !dst) return HCU_ASSET_PROFILE_E_ARGUMENT;
+	HCP_TIME_BEGIN(stats, stamp);
+	if (hcu_asset_profile_lookup(v, type, id, &e)) { HCP_TIME_END(stats, stamp, metadata_cycles); return HCU_ASSET_PROFILE_E_FORMAT; }
+	HCP_TIME_END(stats, stamp, metadata_cycles);
+	if (v->version == 1 && type == HCU_ASSET_CHUNK_MEDIA &&
+		e.size > HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES) return HCU_ASSET_PROFILE_E_BOUNDS;
+	if (cap < e.size) return HCU_ASSET_PROFILE_E_MEMORY;
+	sha256_init(&logical_sha);
+	if (v->version == 1) {
+		uint32_t at = 0;
+		if (e.offset > v->total_bytes || e.size > v->total_bytes - e.offset) goto fail;
+		while (at < e.size) {
+			uint32_t n = e.size - at;
+			if (n > HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES) n = HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES;
+			if (stats) { stats->payload_read_calls++; stats->payload_read_bytes += n; }
+			HCP_TIME_BEGIN(stats, stamp);
+			if (!rawread(v, e.offset + at, (uint8_t *)dst + at, n)) { HCP_TIME_END(stats, stamp, read_cycles); goto fail; }
+			HCP_TIME_END(stats, stamp, read_cycles);
+			HCP_TIME_BEGIN(stats, stamp); sha256_update(&logical_sha, (uint8_t *)dst + at, n); HCP_TIME_END(stats, stamp, hash_cycles);
+			at += n;
+		}
+	} else if (v->version == 2) {
+		if (!e.segment_count || e.segment_count > v->chunk_count - e.first_segment) goto fail;
+		for (seg = 0; seg < e.segment_count; ++seg) {
+			sha256_context segment_sha;
+			uint32_t offset, bytes, logical_offset, at = 0;
+			HCP_TIME_BEGIN(stats, stamp);
+			if (!read_segment_record(v, &e, seg, row)) { HCP_TIME_END(stats, stamp, metadata_cycles); goto fail; }
+			HCP_TIME_END(stats, stamp, metadata_cycles);
+			HCU_LOAD_TRACE_READ_AT("segment-row", HCP2_RECORD_SIZE);
+			offset = le32(row + 8); bytes = le32(row + 12); logical_offset = le32(row + 16);
+			if (logical_offset != logical_at || !bytes || bytes > HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES ||
+				logical_at > e.size || bytes > e.size - logical_at) goto fail;
+			sha256_init(&segment_sha);
+			while (at < bytes) {
+				uint32_t n = bytes - at;
+				if (n > HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES) n = HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES;
+				if (stats) { stats->payload_read_calls++; stats->payload_read_bytes += n; }
+				HCP_TIME_BEGIN(stats, stamp);
+				if (!rawread(v, offset + at, (uint8_t *)dst + logical_at + at, n)) { HCP_TIME_END(stats, stamp, read_cycles); goto fail; }
+				HCP_TIME_END(stats, stamp, read_cycles);
+				HCP_TIME_BEGIN(stats, stamp);
+				sha256_update(&segment_sha, (uint8_t *)dst + logical_at + at, n);
+				sha256_update(&logical_sha, (uint8_t *)dst + logical_at + at, n);
+				HCP_TIME_END(stats, stamp, hash_cycles);
+				at += n;
+			}
+			HCP_TIME_BEGIN(stats, stamp); sha256_final(&segment_sha, digest); HCP_TIME_END(stats, stamp, hash_cycles);
+			if (memcmp(digest, row + 32, 32)) { rc = HCU_ASSET_PROFILE_E_HASH; goto fail; }
+			logical_at += bytes;
+		}
+		if (logical_at != e.size) goto fail;
+	} else { rc = HCU_ASSET_PROFILE_E_FORMAT; goto fail; }
+	HCP_TIME_BEGIN(stats, stamp); sha256_final(&logical_sha, digest); HCP_TIME_END(stats, stamp, hash_cycles);
+	if (memcmp(digest, e.sha256, 32)) { rc = HCU_ASSET_PROFILE_E_HASH; goto fail; }
+	return HCU_ASSET_PROFILE_OK;
+fail:
+	memset(dst, 0, e.size);
+	return rc;
+}
+int hcu_asset_profile_read_chunk_staged(const hcu_asset_profile_view *v,
+	uint32_t type, uint32_t id, void *dst, uint32_t cap)
+{ return hcu_asset_profile_read_chunk_staged_profiled(v, type, id, dst, cap, 0); }
 static const hcu_asset_chunk_kind chunk_kinds[] = {
 	{HCU_ASSET_CHUNK_CE, "CE", HCU_ASSET_LIFETIME_MAP_UNLOAD, 0},
 	{HCU_ASSET_CHUNK_MEDIA, "MEDIA", HCU_ASSET_LIFETIME_REQUEST, 1},

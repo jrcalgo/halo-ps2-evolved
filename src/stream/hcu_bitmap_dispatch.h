@@ -41,6 +41,23 @@ typedef struct {
 	uint32_t kick_seq;   /* C3.10: the parent kick that carries this lease's upload (0 = not bound to a kick) */
 } hcu_bitmap_lease;
 
+/* Pointer-free metadata for a verified resident resource generation. No source
+ * pixels are retained here; upload slots retain bytes through their real fence. */
+typedef struct {
+	uint32_t bitmap_output_datum, chunk_id, expected_source_datum, profile_id, generation;
+	uint32_t source_offset, mip_bytes, clut_bytes;
+	uint16_t bitmap_index, image_index, cache_key;
+	uint16_t width, height, clut_entries;
+	uint8_t psm, valid;
+	uint8_t chunk_sha256[32];
+} hcu_bitmap_resident_descriptor;
+
+typedef struct {
+	uint32_t hits, misses, source_reads, source_bytes, hash_checks, parses;
+	uint32_t read_calls, read_bytes;
+	uint32_t read_cycles, hash_cycles, parse_cycles, source_cycles;
+} hcu_bitmap_dispatch_counters;
+
 typedef enum {
 	HCU_BITMAP_DISPATCH_OK = 0,
 	HCU_BITMAP_DISPATCH_E_ARGUMENT = -1,
@@ -106,7 +123,18 @@ typedef struct {
 	uint32_t lease_capacity, lease_count;
 	hcu_bitmap_dispatch_status first_error;
 	uint32_t meter_quads;   /* monotonic: meter requests emitted (each is a fill pass plus an empty pass) */
+	hcu_bitmap_resident_descriptor *resident_descriptors;
+	uint32_t resident_capacity;
+	uint32_t resident_generation;
+	hcu_asset_profile_view resident_profile;
+	hcu_bitmap_dispatch_counters counters;
 } hcu_bitmap_dispatch_context;
+
+/* Opt in to resident descriptor mode. Bind/reset only at a map/profile lifecycle
+ * boundary after all outstanding leases have completed. */
+hcu_bitmap_dispatch_status hcu_bitmap_dispatch_resident_bind(hcu_bitmap_dispatch_context *context,
+	hcu_bitmap_resident_descriptor *descriptors, uint32_t descriptor_capacity);
+void hcu_bitmap_dispatch_resident_reset(hcu_bitmap_dispatch_context *context);
 
 /* Suitable for registration as the queue's closed-reader consumer. The queue
  * reader can be released after return; source leases remain until GPU fence. */

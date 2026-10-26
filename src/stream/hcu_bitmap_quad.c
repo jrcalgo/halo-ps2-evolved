@@ -65,19 +65,19 @@ int hcu_bitmap_quad_place(hcu_bitmap_quad_state_t *s, const hcu_bitmap_rect *r,
 	return 0;
 }
 
-hcu_bitmap_quad_status hcu_bitmap_quad_emit(chain_t *c,const tex_section *textures,uint32_t image_index,
+hcu_bitmap_quad_status hcu_bitmap_quad_emit_validated(chain_t *c,const tex_info *validated_image,
 	const hcu_bitmap_quad_state_t *s,const hcu_bitmap_vertex_t vertices[4])
 {
 	tex_info image; uint32_t psm,tw,th,tbw,x1,y1,data_qw;
 	uint64_t prim,alpha; uint32_t *w; uint64_t *q; unsigned i;
 	static const unsigned order[6]={0,1,2,0,2,3};
-	if(!c||!c->base||!textures||!s||!vertices||!textures->data||image_index>=textures->texture_count||
+	if(!c||!c->base||!validated_image||!s||!vertices||
 	   !s->screen_w||!s->screen_h||s->screen_w>4095u||s->screen_h>4095u||s->texture_layers!=1u||
 	   !s->clip_w||!s->clip_h||s->z>0xFFFFFFu||(unsigned)s->blend>HCU_BITMAP_BLEND_RAW_ADD ||
 	   s->alpha_test>HCU_BITMAP_ALPHA_TEST_EMPTY) return HCU_BITMAP_QUAD_INVALID;
 	x1=(uint32_t)s->clip_x+s->clip_w; y1=(uint32_t)s->clip_y+s->clip_h;
 	if(x1>s->screen_w||y1>s->screen_h) return HCU_BITMAP_QUAD_INVALID;
-	image=tex_get(textures,image_index);
+	image=*validated_image;
 	if(!image.width||!image.height||image.width>4096u||image.height>4096u) return HCU_BITMAP_QUAD_TEX;
 	psm=(uint32_t)((s->tex0>>20)&0x3Fu); tw=(uint32_t)((s->tex0>>26)&0xFu);
 	th=(uint32_t)((s->tex0>>30)&0xFu); tbw=(uint32_t)((s->tex0>>14)&0x3Fu);
@@ -126,4 +126,13 @@ hcu_bitmap_quad_status hcu_bitmap_quad_emit(chain_t *c,const tex_section *textur
 		q[2]=GS_TEST(0,1,0,0,0,0,1,1); q[3]=GS_A_TEST_1;
 	}
 	return HCU_BITMAP_QUAD_OK;
+}
+
+hcu_bitmap_quad_status hcu_bitmap_quad_emit(chain_t *c,const tex_section *textures,uint32_t image_index,
+	const hcu_bitmap_quad_state_t *s,const hcu_bitmap_vertex_t vertices[4])
+{
+	tex_info image;
+	if(!textures||!textures->data||image_index>=textures->texture_count) return HCU_BITMAP_QUAD_INVALID;
+	image=tex_get(textures,image_index);
+	return hcu_bitmap_quad_emit_validated(c,&image,s,vertices);
 }
