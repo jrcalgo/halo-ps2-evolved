@@ -483,8 +483,11 @@ def parse_successor_log(lines: list[str], row: str, map_name: str, succ_row: str
     steps = [fields_of(line) for line in lines if line.startswith(PREFIX + "production-ce-successor-step ")]
     names = [st.get("step") for st in steps]
     ok_attempt = ["preflight", "dispose", "unload", "load", "new-map"]
+    # The retry after a failed load has no old owner left to release: the guest
+    # (source/main/main.c hcu_c2_successor_attempt) skips dispose/unload when the old map is not loaded.
+    retry_attempt = ["preflight", "load", "new-map"]
     expected = {1: ok_attempt, 2: ["preflight", "after-failed-preflight"],
-                3: ["preflight", "dispose", "unload", "load", "after-failed-load"] + ok_attempt}[mode]
+                3: ["preflight", "dispose", "unload", "load", "after-failed-load"] + retry_attempt}[mode]
     require("step_sequence", names == expected, f"steps {names}, expected {expected}")
     values["steps"] = names
 
@@ -513,8 +516,7 @@ def parse_successor_log(lines: list[str], row: str, map_name: str, succ_row: str
             plan = ([("preflight", "1", "1", "0", "old", "old"), ("dispose", "1", "1", "0", "old", "old"),
                      ("unload", "1", "0", "0", 0, 0), ("load", "0", "0", "0", 0, 0),
                      ("after-failed-load", "1", "0", "0", 0, 0),
-                     ("preflight", "1", "0", "0", 0, 0), ("dispose", "1", "0", "0", 0, 0),
-                     ("unload", "1", "0", "0", 0, 0)] + plan_ok[3:])
+                     ("preflight", "1", "0", "0", 0, 0)] + plan_ok[3:])
         for index, (name, *want) in enumerate(plan):
             require(f"step_{index}_{name}", step_ok(steps[index], *want, name),
                     f"step {index} {name} wrong: {steps[index]}")
@@ -538,7 +540,7 @@ def parse_successor_log(lines: list[str], row: str, map_name: str, succ_row: str
             for k in ("tag-failures", "bsp-failures", "mount-rejections"))]
         # The first three steps are the old-map preflight/dispose/unload. The
         # expected tag failure appears at load and stays at one thereafter.
-        expected_tag_counts = ["0", "0", "0", "1", "1", "1", "1", "1", "1", "1"]
+        expected_tag_counts = ["0", "0", "0", "1", "1", "1", "1", "1"]
         counter_ok = (len(steps) == len(expected_tag_counts) and
                       all(st.get("tag-failures") == want and st.get("bsp-failures") == "0" and
                           st.get("mount-rejections") == "0"
@@ -797,10 +799,20 @@ def run_group(command: list[str], *, log: Path, timeout: int, env: dict | None =
 
 def link_row(row: str, package_root: Path, out: Path, cycles: int = 1, ticks: int = 0,
              include_dir: Path | None = None, render_views: int = 0,
-             render_frames: int = 300, workload_players: int = 0) -> tuple[Path | None, str]:
+             render_frames: int = 300, workload_players: int = 0,
+             workload_autofire: bool = True,
+             render_hold_vsyncs: int | None = None,
+             perf_capture_tick: int = 0,
+             perf_replay: bool = False) -> tuple[Path | None, str]:
     """Link the row's runtime-guest ELF under out/link, holding the shared link lock.
 
     include_dir (the --successor headers) is added to C_INCLUDE_PATH for every compile."""
+    if render_hold_vsyncs is not None and render_hold_vsyncs < 0:
+        return None, "render_hold_vsyncs must be nonnegative"
+    if perf_capture_tick < 0 or (perf_capture_tick and not (render_views and workload_players)):
+        return None, "perf_capture_tick requires rendered workload views and a nonnegative tick"
+    if perf_replay and not perf_capture_tick:
+        return None, "perf_replay requires perf_capture_tick"
     link_dir = out / "link"
     LINK_LOCK.parent.mkdir(parents=True, exist_ok=True)
     command = [sys.executable, str(ROOT / "tools/hcu_parent_link_probe.py"),
@@ -824,14 +836,25 @@ def link_row(row: str, package_root: Path, out: Path, cycles: int = 1, ticks: in
         (render_dir / "hcu_c3_render.h").write_text(
             f"#define HCU_C3_RENDER_VIEWS {render_views}\n"
             f"#define HCU_C3_RENDER_FRAMES {render_frames}\n"
-            f"#define HCU_C3_TEXFENCE_CAP_PAGES {TEXFENCE_CAP_PAGES}\n")
+            f"#define HCU_C3_TEXFENCE_CAP_PAGES {TEXFENCE_CAP_PAGES}\n" +
+            (f"#define HCU_C3_RENDER_HOLD_VSYNCS {render_hold_vsyncs}\n"
+             if render_hold_vsyncs is not None else ""))
+        if perf_capture_tick:
+            with (render_dir / "hcu_c3_render.h").open("a") as capture_header:
+                capture_header.write(f"#define HCU_C3_PERF_CAPTURE_TICK {perf_capture_tick}\n")
+                if perf_replay:
+                    capture_header.write("#define HCU_C3_PERF_REPLAY 1\n")
         include_dirs.append(str(render_dir))
     if workload_players:
         # main.c includes <hcu_c3_workload.h> (C3:workload block): CE's player_spawn_count.
         workload_dir = out / "workload-inc"
         workload_dir.mkdir(parents=True, exist_ok=True)
         (workload_dir / "hcu_c3_workload.h").write_text(
-            f"#define HCU_C3_WORKLOAD_LOCAL_PLAYERS {workload_players}\n")
+            f"#define HCU_C3_WORKLOAD_LOCAL_PLAYERS {workload_players}\n"
+            f"#define HCU_C3_WORKLOAD_AUTOFIRE {1 if workload_autofire else 0}\n")
+        if perf_capture_tick:
+            with (workload_dir / "hcu_c3_workload.h").open("a") as capture_header:
+                capture_header.write(f"#define HCU_C3_PERF_CAPTURE_TICK {perf_capture_tick}\n")
         include_dirs.append(str(workload_dir))
     if include_dir is not None:
         include_dirs.append(str(include_dir))
@@ -1943,6 +1966,7 @@ def main(argv=None) -> int:
             if not args.render_views:
                 parser.error("--c3 --successor requires --render-views for a live renderer consumer")
             os.environ["HCU_C3"] = "1"
+            os.environ["HCU_C3_TELEMETRY"] = "1"
             args.package_root = args.package_root or prepare_render_tree()
             result = run_successor(args.rows, args.successor, args.successor_fault,
                                    args.successor_ticks, package_root_override=args.package_root,
@@ -1981,6 +2005,7 @@ def main(argv=None) -> int:
             parser.error("--c3 runs the default single-cycle rows only")
         # Every subprocess (closure, link probe, guest runner) inherits HCU_C3=1.
         os.environ["HCU_C3"] = "1"
+        os.environ["HCU_C3_TELEMETRY"] = "1"
         RESULT_ROOT = C3_ROOT
     summary = []
     for row in rows:

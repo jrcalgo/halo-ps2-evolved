@@ -373,6 +373,12 @@ def main() -> None:
     hcu_c3 = os.environ.get("HCU_C3") == "1"
     if hcu_c3:
         profile += "-hcu-c3"
+        if os.environ.get("HCU_C3_TELEMETRY") == "1":
+            profile += "-telemetry"
+        if os.environ.get("HCU_C3_REALTIME_SCHEDULER") == "1":
+            profile += "-realtime"
+        if os.environ.get("HCU_C3_SNAPSHOT_INDEX") == "1":
+            profile += "-snapshot-index"
     output = build / "hcu-ps2-closure" / (args.layer + profile)
     output.mkdir(parents=True, exist_ok=True)
     header = HCU / manifest["prefix"]
@@ -389,6 +395,12 @@ def main() -> None:
                      "-I" + str(prefix / "ps2sdk/ee/include")))
     source_flags = [("-Oz" if args.m2_ui_lifecycle_test and flag == "-Os" else flag)
                     for flag in FLAGS]
+    if hcu_c3 and os.environ.get("HCU_C3_TELEMETRY") == "1":
+        source_flags.append("-DHALO_PS2_C3_TELEMETRY=1")
+    if hcu_c3 and os.environ.get("HCU_C3_REALTIME_SCHEDULER") == "1":
+        source_flags.append("-DHALO_PS2_C3_REALTIME_SCHEDULER=1")
+    if hcu_c3 and os.environ.get("HCU_C3_SNAPSHOT_INDEX") == "1":
+        source_flags.append("-DHALO_PS2_C3_SNAPSHOT_INDEX=1")
     flags = [*source_flags, *includes, "-include", str(header), "-include", str(semantics), "-c"]
     members = selected_sources(manifest)
     report = {
@@ -415,6 +427,12 @@ def main() -> None:
                             (["HALO_PS2_STEP8_MP_WORKLOAD_ONLY"]
                              if args.step8_mp_workload_only else []) +
                             (["HALO_PS2_C3_FRAME_SNAPSHOT"] if hcu_c3 else []) +
+                            (["HALO_PS2_C3_TELEMETRY"]
+                             if hcu_c3 and os.environ.get("HCU_C3_TELEMETRY") == "1" else []) +
+                            (["HALO_PS2_C3_REALTIME_SCHEDULER"]
+                             if hcu_c3 and os.environ.get("HCU_C3_REALTIME_SCHEDULER") == "1" else []) +
+                            (["HALO_PS2_C3_SNAPSHOT_INDEX"]
+                             if hcu_c3 and os.environ.get("HCU_C3_SNAPSHOT_INDEX") == "1" else []) +
                             ([f"HALO_PS2_STEP8_MP_WORKLOAD_PLAYERS={args.step8_mp_workload_players}"]
                              if args.step8_mp_workload_only else []) +
                             (["HALO_PS2_M2_ANIMATION_TRACE"]

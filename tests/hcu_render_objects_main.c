@@ -133,6 +133,32 @@ static int test_select(void)
 	return 0;
 }
 
+static int test_first_person_hides_only_own_unit(void)
+{
+	halo_ps2_frame_snapshot s;
+	halo_ps2_snapshot_matrix4x3 pal[3];
+	hcu_render_objects_model models[HCU_OBJECTS_MAX_MODELS];
+	hcu_render_object_draw draw[HCU_OBJECTS_MAX_DRAW];
+	hcu_render_objects_counters c;
+	uint32_t n = 0;
+	CHECK(build_two_views(&s, pal) == 0);
+	models_table(models);
+	/* Object 0 is view 0's own biped and is also visible to view 1. */
+	s.views[0].unit_object = 0;
+	s.views[0].flags |= HALO_PS2_FRAME_VIEW_FIRST_PERSON;
+	s.views[1].unit_object = HALO_PS2_FRAME_NONE_U16;
+	memset(&c, 0, sizeof c);
+	CHECK(hcu_render_objects_select(&s, 0, models, 2, draw, HCU_OBJECTS_MAX_DRAW, &n, &c) == 0);
+	CHECK(n == 0); /* first-person suppresses only this view's own body */
+	CHECK(hcu_render_objects_select(&s, 1, models, 2, draw, HCU_OBJECTS_MAX_DRAW, &n, &c) == 0);
+	CHECK(n == 2 && draw[0].object_index == 0 && draw[1].object_index == 1);
+	/* Third-person keeps its own body in the ordinary world pass. */
+	s.views[0].flags &= (uint8_t)~HALO_PS2_FRAME_VIEW_FIRST_PERSON;
+	CHECK(hcu_render_objects_select(&s, 0, models, 2, draw, HCU_OBJECTS_MAX_DRAW, &n, &c) == 0);
+	CHECK(n == 1 && draw[0].object_index == 0 && draw[0].type == HCU_OBJECTS_TYPE_BIPED);
+	return 0;
+}
+
 /* Four views share one biped and one weapon. The bank keeps one object record and one palette range, every
  * view references both, and the unique identity set counts each source identity once across the views. */
 static int test_four_view_dedup(void)
@@ -796,6 +822,7 @@ int main(void)
 {
 	if (test_builder()) return 1;
 	if (test_select()) return 2;
+	if (test_first_person_hides_only_own_unit()) return 15;
 	if (test_submitted_category_counters()) return 9;
 	if (test_four_view_dedup()) return 10;
 	if (test_first_person_select()) return 3;

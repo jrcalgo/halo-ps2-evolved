@@ -25,10 +25,16 @@ static size_t align16_size(size_t value)
 	return (value + 15u) & ~(size_t)15u;
 }
 
+typedef struct snapshot_index_entry { uint32_t key; uint16_t slot, reserved; } snapshot_index_entry;
+#if HALO_PS2_C3_SNAPSHOT_INDEX
+static snapshot_index_entry *s_index;
+static uint32_t index_hash(uint32_t key)
+{ uint32_t h = key; h ^= h >> 16; h *= 0x7feb352du; return h ^ (h >> 15); }
+#endif
+
 size_t hcu_snapshot_bank_storage_required(void)
 {
-	return align16_size(sizeof(halo_ps2_frame_snapshot)) *
-		HCU_SNAPSHOT_BANK_SLOTS;
+	return HCU_SNAPSHOT_BANK_STORAGE_BYTES;
 }
 
 int hcu_snapshot_bank_is_bound(void)
@@ -48,6 +54,10 @@ int hcu_snapshot_bank_bind(void *storage, size_t storage_bytes)
 		return -1;
 	s_storage = storage;
 	s_storage_bytes = storage_bytes;
+#if HALO_PS2_C3_SNAPSHOT_INDEX
+	s_index = (snapshot_index_entry *)((uint8_t *)storage + HCU_SNAPSHOT_BANK_BYTES);
+	memset(s_index, 0xff, HCU_SNAPSHOT_INDEX_BYTES);
+#endif
 	for (i = 0; i < HCU_SNAPSHOT_BANK_SLOTS; ++i) {
 		s_slots[i] = (halo_ps2_frame_snapshot *)
 			((uint8_t *)storage + i * stride);
@@ -109,6 +119,9 @@ halo_ps2_frame_snapshot *hcu_snapshot_bank_begin_write(void)
 		return NULL;
 	}
 	s_writing = slot;
+#if HALO_PS2_C3_SNAPSHOT_INDEX
+	memset(s_index, 0xff, HCU_SNAPSHOT_INDEX_BYTES);
+#endif
 	memset(s_slots[slot], 0, offsetof(halo_ps2_frame_snapshot, views));
 	s_slots[slot]->version = HALO_PS2_FRAME_SNAPSHOT_VERSION;
 	s_slots[slot]->map_generation = s_map_generation;
@@ -128,6 +141,20 @@ int hcu_snapshot_bank_intern_object(halo_ps2_frame_snapshot *snapshot,
 	if (!snapshot || s_writing == BANK_NONE || snapshot != s_slots[s_writing] ||
 		!out_index)
 		return -1;
+	#if HALO_PS2_C3_SNAPSHOT_INDEX
+	{
+		uint32_t probe = index_hash(id.index) & (HCU_SNAPSHOT_INDEX_CAPACITY - 1u);
+		unsigned n;
+		for (n = 0; n < HCU_SNAPSHOT_INDEX_CAPACITY; ++n) {
+			snapshot_index_entry *e = &s_index[(probe + n) & (HCU_SNAPSHOT_INDEX_CAPACITY - 1u)];
+			if (e->slot == UINT16_MAX) break;
+			if (e->key == id.index && e->slot < snapshot->object_count &&
+				snapshot->objects[e->slot].id.generation == id.generation) {
+				s_stats.object_dedupe_hits++; *out_index = e->slot; return 0;
+			}
+		}
+	}
+	#else
 	for (i = 0; i < snapshot->object_count; ++i) {
 		const halo_ps2_frame_object_id *known = &snapshot->objects[i].id;
 		if (known->index == id.index && known->generation == id.generation) {
@@ -136,6 +163,7 @@ int hcu_snapshot_bank_intern_object(halo_ps2_frame_snapshot *snapshot,
 			return 0;
 		}
 	}
+	#endif
 	if (snapshot->object_count >= HALO_PS2_FRAME_MAX_OBJECTS) {
 		s_stats.object_overflows++;
 		return -1;
@@ -144,8 +172,43 @@ int hcu_snapshot_bank_intern_object(halo_ps2_frame_snapshot *snapshot,
 	memset(&snapshot->objects[i], 0, sizeof snapshot->objects[i]);
 	snapshot->objects[i].id = id;
 	snapshot->objects[i].resource_slot = HALO_PS2_FRAME_NONE_U16;
+	#if HALO_PS2_C3_SNAPSHOT_INDEX
+	{
+		uint32_t probe = index_hash(id.index) & (HCU_SNAPSHOT_INDEX_CAPACITY - 1u);
+		unsigned n;
+		for (n = 0; n < HCU_SNAPSHOT_INDEX_CAPACITY; ++n) {
+			snapshot_index_entry *e = &s_index[(probe + n) & (HCU_SNAPSHOT_INDEX_CAPACITY - 1u)];
+			if (e->slot == UINT16_MAX) { e->key=id.index; e->slot=(uint16_t)i; break; }
+		}
+		if (n == HCU_SNAPSHOT_INDEX_CAPACITY) { snapshot->object_count--; s_stats.object_overflows++; return -1; }
+	}
+	#endif
 	*out_index = (int)i;
 	return 0;
+}
+
+int hcu_snapshot_bank_find_object(const halo_ps2_frame_snapshot *snapshot, uint32_t index, int *out_index)
+{
+#if !HALO_PS2_C3_SNAPSHOT_INDEX
+	unsigned i;
+#endif
+	if (!snapshot || !out_index || s_writing == BANK_NONE ||
+		snapshot != s_slots[s_writing]) return -1;
+#if HALO_PS2_C3_SNAPSHOT_INDEX
+	{
+		uint32_t probe = index_hash(index) & (HCU_SNAPSHOT_INDEX_CAPACITY - 1u);
+		unsigned n;
+		for (n=0; n<HCU_SNAPSHOT_INDEX_CAPACITY; ++n) {
+			 snapshot_index_entry *e=&s_index[(probe+n)&(HCU_SNAPSHOT_INDEX_CAPACITY-1u)];
+			 if (e->slot==UINT16_MAX) return -1;
+			 if (e->key==index && e->slot<snapshot->object_count) { *out_index=e->slot; return 0; }
+		}
+		return -1;
+	}
+#else
+	for (i=0;i<snapshot->object_count;++i) if(snapshot->objects[i].id.index==index){*out_index=(int)i;return 0;}
+	return -1;
+#endif
 }
 
 static int finite3(const float *v)
@@ -358,6 +421,12 @@ int halo_ps2_frame_snapshot_intern_object(halo_ps2_frame_snapshot *snapshot,
 	halo_ps2_frame_object_id id, int *out_index)
 {
 	return hcu_snapshot_bank_intern_object(snapshot, id, out_index);
+}
+
+int halo_ps2_frame_snapshot_find_object(const halo_ps2_frame_snapshot *snapshot,
+	uint32_t index, int *out_index)
+{
+	return hcu_snapshot_bank_find_object(snapshot, index, out_index);
 }
 
 int halo_ps2_frame_snapshot_commit(halo_ps2_frame_snapshot *snapshot)

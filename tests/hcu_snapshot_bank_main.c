@@ -154,6 +154,48 @@ static void test_dedupe(void)
 	printf("dedupe: ok (intern returns existing index, duplicate commit refused)\n");
 }
 
+static uint32_t fixture_bucket(uint32_t key)
+{
+	uint32_t h = key;
+	h ^= h >> 16;
+	h *= 0x7feb352du;
+	return (h ^ (h >> 15)) & (HCU_SNAPSHOT_INDEX_CAPACITY - 1u);
+}
+
+static void test_index_collision_and_parent_lookup(void)
+{
+	halo_ps2_frame_snapshot *s = hcu_snapshot_bank_begin_write();
+	uint32_t a, b;
+	int first, second, found, gen_a, gen_b, gen_a_again;
+	assert(s);
+	for (a = 0; a < 10000u; ++a) {
+		for (b = a + 1u; b < 10000u; ++b)
+			if (fixture_bucket(a) == fixture_bucket(b)) goto collision_found;
+	}
+	assert(!"could not find hash collision");
+collision_found:
+	assert(hcu_snapshot_bank_intern_object(s, oid(a, 11u), &first) == 0);
+	assert(hcu_snapshot_bank_intern_object(s, oid(b, 12u), &second) == 0);
+	assert(first != second);
+	assert(hcu_snapshot_bank_find_object(s, b, &found) == 0 && found == second);
+	assert(hcu_snapshot_bank_intern_object(s, oid(a, 99u), &found) == 0 && found != first);
+	/* The index key stores the full generation. Truncating this value to 16
+	 * bits aliases two valid identities with the same datum slot. */
+	assert(hcu_snapshot_bank_intern_object(s, oid(0x1234u, 1u), &gen_a) == 0);
+	assert(hcu_snapshot_bank_intern_object(s, oid(0x1234u, 65537u), &gen_b) == 0);
+	assert(gen_a != gen_b);
+	assert(hcu_snapshot_bank_intern_object(s, oid(0x1234u, 1u), &gen_a_again) == 0);
+	assert(gen_a_again == gen_a);
+	hcu_snapshot_bank_abandon(s);
+	/* Reusing the writer with a different generation must not see abandoned
+	 * publication entries left in the scratch hash table. */
+	s = hcu_snapshot_bank_begin_write();
+	assert(s);
+	assert(hcu_snapshot_bank_intern_object(s, oid(0x1234u, 65537u), &found) == 0);
+	assert(found == 0 && s->object_count == 1u);
+	hcu_snapshot_bank_abandon(s);
+}
+
 static void test_refusal_when_all_free_slots_are_pinned(void)
 {
 	hcu_snapshot_reader r1 = { 0, NULL }, r2 = { 0, NULL };
@@ -545,6 +587,7 @@ int main(void)
 	test_publish_sequence_and_generation();
 	test_map_change_unpublishes_previous_bank();
 	test_dedupe();
+	test_index_collision_and_parent_lookup();
 	test_refusal_when_all_free_slots_are_pinned();
 	test_reader_overwrite_refusal();
 	test_four_view_capacity();

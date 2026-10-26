@@ -53,6 +53,15 @@
 #define HCU_C3_FRAME_SCRATCH_BYTES 393216u
 #define HCU_SNAPSHOT_BANK_STRIDE ((sizeof(halo_ps2_frame_snapshot) + 15u) & ~(size_t)15u)
 #define HCU_SNAPSHOT_BANK_BYTES (HCU_SNAPSHOT_BANK_SLOTS * HCU_SNAPSHOT_BANK_STRIDE)
+/* 1024-entry open-addressed temporary identity index (8 bytes per entry).
+ * Its lifetime is one publication and it lives in the same frame owner. */
+#ifndef HALO_PS2_C3_SNAPSHOT_INDEX
+#define HALO_PS2_C3_SNAPSHOT_INDEX 0
+#endif
+#define HCU_SNAPSHOT_INDEX_CAPACITY 1024u
+#define HCU_SNAPSHOT_INDEX_BYTES (HCU_SNAPSHOT_INDEX_CAPACITY * 8u)
+#define HCU_SNAPSHOT_BANK_STORAGE_BYTES (HCU_SNAPSHOT_BANK_BYTES + \
+	(HALO_PS2_C3_SNAPSHOT_INDEX ? HCU_SNAPSHOT_INDEX_BYTES : 0u))
 
 typedef struct hcu_snapshot_reader {
 	int slot;
@@ -69,6 +78,8 @@ void hcu_snapshot_bank_set_map_generation(uint32_t generation);
 halo_ps2_frame_snapshot *hcu_snapshot_bank_begin_write(void);
 int hcu_snapshot_bank_intern_object(halo_ps2_frame_snapshot *snapshot,
 	halo_ps2_frame_object_id id, int *out_index);
+int hcu_snapshot_bank_find_object(const halo_ps2_frame_snapshot *snapshot,
+	uint32_t index, int *out_index);
 int hcu_snapshot_bank_commit(halo_ps2_frame_snapshot *snapshot);
 void hcu_snapshot_bank_abandon(halo_ps2_frame_snapshot *snapshot);
 

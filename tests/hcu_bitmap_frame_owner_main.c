@@ -125,6 +125,11 @@ int main(void)
 #endif
 	if (hcu_bitmap_frame_owner_bind(&owner,&queue,&dispatch,fake_fence_query,0,
 		HALO_PS2_BITMAP_FRAME_TEST_CAPS,&profile,&binding,1,7) != HCU_BITMAP_FRAME_OK) return 2;
+	/* Strict bind retains per-frame mutation detection and accounts its digest work. */
+	binding.expected_profile_id=20;
+	if (hcu_bitmap_frame_begin_callback(&owner,10,2) != HCU_BITMAP_FRAME_E_NOT_READY ||
+		owner.stat_binding_hash_calls != 1 || owner.stat_binding_hash_bytes != sizeof(binding)) return 20;
+	binding.expected_profile_id=19;
 	if (hcu_bitmap_frame_begin_callback(&owner,10,2) != 0) return 3;
 	if (hcu_bitmap_frame_set_view_callback(&owner,0,0) != 0) return 4;
 	if (hcu_bitmap_frame_set_view_callback(&owner,2,1) != 0) return 5;
@@ -242,6 +247,23 @@ int main(void)
 	}
 	/* After a discard the owner unbinds cleanly, and the fixed owner is zeroed. */
 	if (hcu_bitmap_frame_owner_unbind(&owner) != HCU_BITMAP_FRAME_OK) return 17;
+	/* The explicit immutable-generation contract skips only per-frame hashing. */
+	if (hcu_bitmap_frame_owner_bind_immutable(&owner,&queue,&dispatch,fake_fence_query,0,
+		HALO_PS2_BITMAP_FRAME_TEST_CAPS,&profile,&binding,1,7) != HCU_BITMAP_FRAME_OK) return 49;
+	/* Immutable bindings do not waive profile-snapshot integrity checks. */
+	profile.total_bytes++;
+	if (hcu_bitmap_frame_begin_callback(&owner,17,1) != HCU_BITMAP_FRAME_E_NOT_READY ||
+		owner.stat_binding_hash_calls != 0 || owner.stat_binding_hash_bytes != 0) return 54;
+	profile.total_bytes--;
+	binding.expected_profile_id=20; /* deliberate binding contract violation: fast path does not scan */
+	if (hcu_bitmap_frame_begin_callback(&owner,17,1) != HCU_BITMAP_FRAME_OK ||
+		owner.stat_binding_hash_calls != 0 || owner.stat_binding_hash_bytes != 0) return 50;
+	binding.expected_profile_id=19;
+	if (hcu_bitmap_frame_set_view_callback(&owner,0,0) != 0 ||
+		hcu_bitmap_frame_end_callback(&owner,17,0) != 0) return 51;
+	s_fence_observed=1;
+	if (hcu_bitmap_frame_owner_discard_pending(&owner) != HCU_BITMAP_FRAME_OK) return 53;
+	if (hcu_bitmap_frame_owner_unbind(&owner) != HCU_BITMAP_FRAME_OK) return 52;
 	puts("FRAME_OWNER_OK binds/views/dispatch/fence/unbind/drop-and-recover/discard");
 	return 0;
 }

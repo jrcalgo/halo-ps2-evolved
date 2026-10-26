@@ -164,7 +164,7 @@ def pending_cases(c2m, root: Path, cases: list[dict], state: dict, *, retry_fail
 def run_case(c2m, case: dict, root: Path, package_root: Path) -> dict:
     out = case_dir(root, case)
     out.mkdir(parents=True, exist_ok=True)
-    env = {**os.environ, "HCU_C3_OBJECTS": "1"}
+    env = {**os.environ, "HCU_C3_OBJECTS": "1", "HCU_C3_TELEMETRY": "1"}
     try:
         with (out / "matrix.log").open("w") as log:
             proc = subprocess.run(matrix_argv(case, out, package_root), cwd=ROOT, env=env, stdout=log,

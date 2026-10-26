@@ -26,6 +26,7 @@ SKIP = {
 	# C3: weak writer hooks; the parent snapshot bank (src/stream/hcu_snapshot_bank.c) implements them.
 	"halo_ps2_frame_snapshot_begin", "halo_ps2_frame_snapshot_commit",
 	"halo_ps2_frame_snapshot_intern_object",
+	"halo_ps2_frame_snapshot_find_object",
     # Implemented by the real PS2 memory provider. Keep undefined references
     # unresolved in every profile so the provider object must satisfy them.
     "ps2_step8_dynamic_sim_diagnostics",
@@ -447,6 +448,10 @@ def main() -> None:
         if os.environ.get("HCU_C3_TELEMETRY") == "1":
             # Same directory name as hcu_ps2_closure.py and hcu_parent_link_probe.py.
             OUT = OUT.with_name(OUT.name + "-telemetry")
+        if os.environ.get("HCU_C3_REALTIME_SCHEDULER") == "1":
+            OUT = OUT.with_name(OUT.name + "-realtime")
+        if os.environ.get("HCU_C3_SNAPSHOT_INDEX") == "1":
+            OUT = OUT.with_name(OUT.name + "-snapshot-index")
     build, prefix, env, _jobs = environment()
     compiler = prefix / "ee/bin/mips64r5900el-ps2-elf-gcc"
     nm = prefix / "ee/bin/mips64r5900el-ps2-elf-nm"

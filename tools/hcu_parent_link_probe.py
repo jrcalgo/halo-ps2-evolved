@@ -270,6 +270,12 @@ def main() -> None:
     hcu_c3 = os.environ.get("HCU_C3") == "1"
     if hcu_c3:
         closure_suffix += "-hcu-c3"
+        if os.environ.get("HCU_C3_TELEMETRY") == "1":
+            closure_suffix += "-telemetry"
+        if os.environ.get("HCU_C3_REALTIME_SCHEDULER") == "1":
+            closure_suffix += "-realtime"
+        if os.environ.get("HCU_C3_SNAPSHOT_INDEX") == "1":
+            closure_suffix += "-snapshot-index"
     hcu_closure = build / "hcu-ps2-closure" / (
         "all-no-bootstrap-memory" + closure_suffix)
     parent_output = output / "parent-sections-os"

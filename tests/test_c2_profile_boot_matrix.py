@@ -370,8 +370,6 @@ def retry_log():
               P + f"production-ce-successor-retry old={A_MAP} new={B_MAP}",
               _step("preflight", 1, 0, 0, 0, 0, fault=1, tag_failures=1),
               P + f"profile-preflight result=1 map={B_MAP}",
-              _step("dispose", 1, 0, 0, 0, 0, fault=1, tag_failures=1),
-              _step("unload", 1, 0, 0, 0, 0, fault=1, tag_failures=1),
               P + f"map-mount result=1 active=1 map={B_MAP} source=profile-runtime"]
     lines += _boundary("map-loaded", 3, 5, 1, tag_failures=1, tag_resets=2, bsp_resets=1)
     lines += [_step("load", 1, 0, 1, 0, 0, fault=1, tag_failures=1),
@@ -559,7 +557,7 @@ def test_fail_then_retry_log_passes_with_empty_state_between_attempts():
     parsed = parse_succ(retry_log(), 3)
     assert parsed["failing_checks"] == [], parsed["reasons"]
     assert parsed["values"]["steps"] == ["preflight", "dispose", "unload", "load", "after-failed-load",
-                                         "preflight", "dispose", "unload", "load", "new-map"]
+                                         "preflight", "load", "new-map"]
     assert parsed["values"]["successor_stage_passes"] == 2
     assert parsed["values"]["successor_mounts"] == 2
     assert parsed["values"]["successor_package_gate_rejections"] == 0
@@ -624,4 +622,4 @@ def test_fail_then_retry_requires_safe_cleanup_before_valid_retry():
     assert "fault_gate" in parse_succ(duplicate, 3)["failing_checks"]
     failed_retry = [line.replace("step=new-map result=1", "step=new-map result=0", 1)
                     if "step=new-map result=1" in line else line for line in retry_log()]
-    assert "step_9_new-map" in parse_succ(failed_retry, 3)["failing_checks"]
+    assert "step_7_new-map" in parse_succ(failed_retry, 3)["failing_checks"]

@@ -198,6 +198,10 @@ int main(void)
                         prepare.index("input_abstraction_update()"))
         # Fire from tick 0, two ticks on and two off for the whole run.
         self.assertIn("fire = tick >= 0 && (tick % 4) < 2;", prepare)
+        self.assertIn("#if !defined(HCU_C3_WORKLOAD_AUTOFIRE) || HCU_C3_WORKLOAD_AUTOFIRE", prepare)
+        self.assertIn("fire = FALSE;", prepare)
+        self.assertIn("state=armed controllers=%d pattern=2-on-2-off", prepare)
+        self.assertIn("state=manual controllers=%d input=physical", prepare)
         loop_start = main_source.index("hcu_c3_workload_prepare_actions(tick);")
         loop = main_source[loop_start:loop_start + 600]
         order = ["hcu_c3_workload_prepare_actions(tick)",

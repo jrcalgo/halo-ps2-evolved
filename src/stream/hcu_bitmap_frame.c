@@ -6,6 +6,10 @@
 #include "stream/hcu_render_frame.h"
 #include "stream/sha256.h"
 
+#if defined(HCU_BITMAP_FRAME_EE_TIMER)
+extern uint32_t hcu_bitmap_frame_ee_timer_read(void);
+#endif
+
 #define HCU_BITMAP_FRAME_MAX_BINDINGS 4096u
 
 static void bindings_digest(const hcu_bitmap_binding *bindings,
@@ -28,7 +32,22 @@ static int profile_unchanged(const hcu_bitmap_frame_owner *owner)
 		a->read_at != b->read_at || a->reader_context != b->reader_context ||
 		a->memory_image != b->memory_image || !owner->bindings || !owner->binding_count)
 		return 0;
+	/* Immutable metadata skips only the byte scan. Profile fields, generation,
+	 * pointers and all frame/reader/fence gates are still checked each frame. */
+	if (owner->bindings_immutable) return 1;
+	((hcu_bitmap_frame_owner *)owner)->stat_binding_hash_calls++;
+	((hcu_bitmap_frame_owner *)owner)->stat_binding_hash_bytes +=
+		(uint64_t)owner->binding_count * sizeof(*owner->bindings);
+#if defined(HCU_BITMAP_FRAME_EE_TIMER)
+	{
+		uint32_t start = hcu_bitmap_frame_ee_timer_read();
+		bindings_digest(owner->bindings, owner->binding_count, digest);
+		((hcu_bitmap_frame_owner *)owner)->stat_binding_hash_cycles +=
+			(uint32_t)(hcu_bitmap_frame_ee_timer_read() - start);
+	}
+#else
 	bindings_digest(owner->bindings, owner->binding_count, digest);
+#endif
 	return memcmp(digest, owner->bindings_sha256, sizeof(digest)) == 0;
 }
 
@@ -102,7 +121,7 @@ hcu_bitmap_frame_status hcu_bitmap_frame_owner_init(hcu_bitmap_frame_owner *owne
 	return HCU_BITMAP_FRAME_OK;
 }
 
-hcu_bitmap_frame_status hcu_bitmap_frame_owner_bind(
+hcu_bitmap_frame_status hcu_bitmap_frame_owner_bind_immutable(
 	hcu_bitmap_frame_owner *owner,
 	halo_ps2_bitmap_request_queue *queue,
 	hcu_bitmap_dispatch_context *dispatch,
@@ -138,6 +157,7 @@ hcu_bitmap_frame_status hcu_bitmap_frame_owner_bind(
 	owner->bindings = bindings;
 	owner->binding_count = binding_count;
 	bindings_digest(bindings, binding_count, owner->bindings_sha256);
+	owner->bindings_immutable = 1;
 	owner->generation = generation;
 	owner->producer_capabilities = producer_capabilities;
 	owner->queue_consumer_registered = 1;
@@ -155,6 +175,20 @@ hcu_bitmap_frame_status hcu_bitmap_frame_owner_bind(
 	owner->frame_consumer_registered = 1;
 	owner->bound = 1;
 	return HCU_BITMAP_FRAME_OK;
+}
+
+hcu_bitmap_frame_status hcu_bitmap_frame_owner_bind(
+	hcu_bitmap_frame_owner *owner, halo_ps2_bitmap_request_queue *queue,
+	hcu_bitmap_dispatch_context *dispatch,
+	hcu_bitmap_frame_fence_query_fn fence_query, void *fence_context,
+	uint32_t producer_capabilities, const hcu_asset_profile_view *profile,
+	const hcu_bitmap_binding *bindings, uint32_t binding_count, uint32_t generation)
+{
+	hcu_bitmap_frame_status status = hcu_bitmap_frame_owner_bind_immutable(owner, queue,
+		dispatch, fence_query, fence_context, producer_capabilities, profile,
+		bindings, binding_count, generation);
+	if (status == HCU_BITMAP_FRAME_OK) owner->bindings_immutable = 0;
+	return status;
 }
 
 hcu_bitmap_frame_status hcu_bitmap_frame_owner_unbind(hcu_bitmap_frame_owner *owner)

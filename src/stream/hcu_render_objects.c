@@ -3,6 +3,13 @@
 #include <math.h>
 #include <string.h>
 
+#ifndef HCU_C3_OBJECT_FASTPATH
+#define HCU_C3_OBJECT_FASTPATH 0
+#endif
+#ifndef HCU_C3_OBJECT_VIEW_CACHE
+#define HCU_C3_OBJECT_VIEW_CACHE 0
+#endif
+
 /* ---- selection ---------------------------------------------------------------------------------- */
 
 int hcu_render_objects_find_model(const hcu_render_objects_model *models, uint32_t model_count,
@@ -212,6 +219,12 @@ int hcu_render_objects_select(const halo_ps2_frame_snapshot *snap, uint32_t view
 		const halo_ps2_frame_resource *r;
 		int slot;
 		if (oi >= snap->object_count) { counters->failures++; continue; }
+		/* CE publishes the local player's unit with the rest of the world.
+		 * In first-person, its full world-space biped overlaps the camera-local
+		 * hands and weapon; keep it available to other views and third-person. */
+		if ((v->flags & HALO_PS2_FRAME_VIEW_FIRST_PERSON) &&
+			v->unit_object != HALO_PS2_FRAME_NONE_U16 && oi == v->unit_object)
+			continue;
 		o = &snap->objects[oi];
 		for (i = 0; i < emitted; i++)
 			if (out[i].object_index == oi) break;
@@ -1517,11 +1530,20 @@ static void object_pass(void *user, render_ctx_t *rc)
 {
 	uint32_t i;
 	(void)user;
+#if HCU_C3_OBJECT_VIEW_CACHE
+	obj_render_begin_view(rc);
+	s_objr.setup_emitted = 1;
+#endif
 	for (i = 0; i < s_draw_count; i++) {
 		const hcu_render_object_draw *d = &s_draw[i];
 		obj_slot *s = &s_slots[d->slot];
+#if !HCU_C3_OBJECT_FASTPATH
 		object_table_t table;
 		object_t *ob = &table.obj[0];
+#else
+		object_t object_storage;
+		object_t *ob = &object_storage;
+#endif
 		model_info mi;
 		uint16_t perm[OBJ_MAX_REGIONS];
 		mat4 root;
@@ -1537,7 +1559,9 @@ static void object_pass(void *user, render_ctx_t *rc)
 		mi = model_get(&s->models, 0);
 		model_select_permutations(&s->models, &mi, NULL, perm);
 		root = mat_from_snapshot(&d->world);
+#if !HCU_C3_OBJECT_FASTPATH
 		memset(&table, 0, sizeof table);
+#endif
 		memset(ob, 0, sizeof *ob);
 		ob->def = -1;
 		ob->type = (uint8_t)d->type;
@@ -1551,8 +1575,16 @@ static void object_pass(void *user, render_ctx_t *rc)
 		ob->pos[0] = root.m[3][0]; ob->pos[1] = root.m[3][1]; ob->pos[2] = root.m[3][2];
 		ob->radius = mi.radius * d->world.scale;
 		memcpy(ob->perm, perm, sizeof ob->perm);
+#if HCU_C3_OBJECT_FASTPATH
+		s_objr.table = NULL;
+		s_objr.span = ob;
+		s_objr.span_count = 1;
+#else
 		table.count = 1;
 		s_objr.table = &table;
+		s_objr.span = NULL;
+		s_objr.span_count = 0;
+#endif
 		s_objr.world.models = &s->models;
 		s_objr.world.scen = NULL;
 		s_objr.world.anims = NULL;
@@ -1600,8 +1632,13 @@ static void object_pass(void *user, render_ctx_t *rc)
 	for (i = 0; i < s_fp_draw_count; i++) {
 		const hcu_render_first_person_draw *fp = &s_fp_draw[i];
 		hcu_render_object_draw pose;
+#if !HCU_C3_OBJECT_FASTPATH
 		object_table_t table;
 		object_t *ob = &table.obj[0];
+#else
+		object_t object_storage;
+		object_t *ob = &object_storage;
+#endif
 		obj_slot *s;
 		model_info mi;
 		uint16_t perm[OBJ_MAX_REGIONS];
@@ -1643,7 +1680,9 @@ static void object_pass(void *user, render_ctx_t *rc)
 			for (region = 0; region < mi.region_count && region < OBJ_MAX_REGIONS; region++)
 				if (perm[region] >= mi.permutation_count) perm[region] = 0;
 		}
+#if !HCU_C3_OBJECT_FASTPATH
 		memset(&table, 0, sizeof table);
+#endif
 		memset(ob, 0, sizeof *ob);
 		ob->def = -1;
 		ob->type = HCU_OBJECTS_TYPE_WEAPON;
@@ -1656,8 +1695,16 @@ static void object_pass(void *user, render_ctx_t *rc)
 		ob->pos[0] = root.m[3][0]; ob->pos[1] = root.m[3][1]; ob->pos[2] = root.m[3][2];
 		ob->radius = mi.radius * s_snapshot->palette[fp->palette_first].scale;
 		memcpy(ob->perm, perm, sizeof ob->perm);
+#if HCU_C3_OBJECT_FASTPATH
+		s_objr.table = NULL;
+		s_objr.span = ob;
+		s_objr.span_count = 1;
+#else
 		table.count = 1;
 		s_objr.table = &table;
+		s_objr.span = NULL;
+		s_objr.span_count = 0;
+#endif
 		s_objr.world.models = &s->models;
 		s_objr.world.scen = NULL;
 		s_objr.world.anims = NULL;
@@ -1693,6 +1740,9 @@ static void object_pass(void *user, render_ctx_t *rc)
 			s_view_counters.failures++;
 		}
 	}
+#if HCU_C3_OBJECT_VIEW_CACHE
+	s_objr.setup_emitted = 0;
+#endif
 	fx_pass(rc);
 }
 

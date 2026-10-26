@@ -385,9 +385,34 @@ EE_CFLAGS = -std=gnu11 -Wall -Wextra -Wno-unused-parameter -MMD -MP -G0 \
 	-ffile-prefix-map=$(PS2SDK)=/ps2sdk
 EE_CFLAGS += $(EE_OPTFLAGS)
 # C3 umbrella (opt-in): the parent and the CE port compile the same frame-snapshot path.
+# C3 telemetry is separate and off by default; set HCU_C3_TELEMETRY=1 for qualification logs.
 HCU_C3 ?= 0
+HCU_C3_TELEMETRY ?= 0
+HCU_C3_TIMING ?= 0
+HCU_C3_BITMAP_RESIDENT ?= 1
+# Interactive desktop scheduling; deterministic qualification keeps its default loop.
+HCU_C3_REALTIME_SCHEDULER ?= 0
+HCU_C3_OBJECT_FASTPATH ?= 0
+HCU_C3_OBJECT_VIEW_CACHE ?= 0
+HCU_C3_BINDING_SEAL ?= 0
+HCU_C3_SNAPSHOT_INDEX ?= 0
 ifeq ($(HCU_C3),1)
 EE_CFLAGS += -DHCU_C3=1 -DHCU_C3_FRAME_SNAPSHOT -DHALO_PS2_C3_FRAME_SNAPSHOT
+EE_CFLAGS += -DHCU_C3_BITMAP_RESIDENT=$(HCU_C3_BITMAP_RESIDENT)
+EE_CFLAGS += -DHCU_C3_OBJECT_FASTPATH=$(HCU_C3_OBJECT_FASTPATH) \
+	-DHCU_C3_OBJECT_VIEW_CACHE=$(HCU_C3_OBJECT_VIEW_CACHE) \
+	-DHCU_C3_BINDING_SEAL=$(HCU_C3_BINDING_SEAL) \
+	-DHALO_PS2_C3_SNAPSHOT_INDEX=$(HCU_C3_SNAPSHOT_INDEX)
+ifeq ($(HCU_C3_REALTIME_SCHEDULER),1)
+EE_CFLAGS += -DHALO_PS2_C3_REALTIME_SCHEDULER=1
+endif
+ifeq ($(HCU_C3_TELEMETRY),1)
+EE_CFLAGS += -DHALO_PS2_C3_TELEMETRY=1
+endif
+ifneq ($(filter 1,$(HCU_C3_TIMING) $(HCU_C3_TELEMETRY)),)
+EE_CFLAGS += -DHALO_PS2_C3_TIMING=1
+EE_CFLAGS += -DHCU_BITMAP_FRAME_EE_TIMER=1
+endif
 endif
 # C3.objects (opt-in, needs HCU_C3=1): the object pass draws the published snapshot. HCU_C3_OBJECTS_SYNTHETIC=1
 # publishes a synthetic object snapshot until the CE publisher fills the bank. The table header is generated

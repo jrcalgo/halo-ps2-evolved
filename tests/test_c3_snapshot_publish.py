@@ -113,15 +113,25 @@ def test_parent_report_prints_every_30_frames_with_counters():
 def test_bank_host_contract_with_intern_and_pins():
     root = ROOT
     with tempfile.TemporaryDirectory(prefix="c3-snapshot-publish-") as temp:
-        executable = Path(temp) / "hcu-snapshot-bank-test"
-        subprocess.run([
-            "cc", "-std=c11", "-Wall", "-Wextra", "-Werror", "-Isrc",
-            "-I" + str(CE / "port/ps2/include"),
-            "tests/hcu_snapshot_bank_main.c", "src/stream/hcu_snapshot_bank.c",
-            "-lm", "-o", str(executable),
-        ], cwd=root, check=True, capture_output=True, text=True)
-        result = subprocess.run([str(executable)], check=True, capture_output=True, text=True)
-    assert "hcu_snapshot_bank tests passed" in result.stdout
+        outputs = []
+        for enabled in (0, 1):
+            executable = Path(temp) / f"hcu-snapshot-bank-test-{enabled}"
+            subprocess.run([
+                "cc", "-std=c11", "-Wall", "-Wextra", "-Werror", "-Isrc",
+                f"-DHALO_PS2_C3_SNAPSHOT_INDEX={enabled}",
+                "-I" + str(CE / "port/ps2/include"),
+                "tests/hcu_snapshot_bank_main.c", "src/stream/hcu_snapshot_bank.c",
+                "-lm", "-o", str(executable),
+            ], cwd=root, check=True, capture_output=True, text=True)
+            outputs.append(subprocess.run([str(executable)], check=True,
+                                          capture_output=True, text=True).stdout)
+    assert all("hcu_snapshot_bank tests passed" in output for output in outputs)
+    # Every semantic/statistics line is identical; only the explicitly reported
+    # owner byte count changes to account for the opt-in scratch index.
+    normalize = lambda output: "\n".join(line for line in output.splitlines()
+                                             if not line.startswith("bytes:"))
+    assert normalize(outputs[0]) == normalize(outputs[1])
+    assert "v5 bank=" in outputs[0] and "v5 bank=" in outputs[1]
 
 
 def test_publisher_fills_bounded_fx_requests_with_counted_drops():

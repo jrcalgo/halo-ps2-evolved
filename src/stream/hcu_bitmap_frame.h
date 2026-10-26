@@ -68,6 +68,11 @@ typedef struct {
 	/* Teardown discards of a sealed batch that was never dispatched, and the leases they released. */
 	uint32_t stat_discarded_batches;
 	uint32_t stat_discarded_leases;
+	/* Binding integrity work. Hash timing is collected only when the EE timer is enabled. */
+	uint32_t stat_binding_hash_calls;
+	uint64_t stat_binding_hash_bytes;
+	uint64_t stat_binding_hash_cycles;
+	uint8_t bindings_immutable;
 } hcu_bitmap_frame_owner;
 
 /* Initialize caller-owned state only while no frame callback can be running. */
@@ -76,6 +81,20 @@ hcu_bitmap_frame_status hcu_bitmap_frame_owner_init(hcu_bitmap_frame_owner *owne
  * owned and must outlive this binding. No frame is admitted unless the linked
  * real-producer descriptor validates. */
 hcu_bitmap_frame_status hcu_bitmap_frame_owner_bind(
+	hcu_bitmap_frame_owner *owner,
+	halo_ps2_bitmap_request_queue *queue,
+	hcu_bitmap_dispatch_context *dispatch,
+	hcu_bitmap_frame_fence_query_fn fence_query, void *fence_context,
+	uint32_t producer_capabilities,
+	const hcu_asset_profile_view *profile,
+	const hcu_bitmap_binding *bindings, uint32_t binding_count,
+	uint32_t generation);
+/* Bind against an explicitly sealed immutable generation. Caller guarantees that
+ * bindings bytes and their referenced metadata are not modified from this call
+ * until successful unbind; changes require unbind/rebind with a new generation.
+ * Profile, generation, pointer/queue, producer descriptor, reader and DMA/fence
+ * checks remain active. This API skips only the per-frame O(binding_count) hash. */
+hcu_bitmap_frame_status hcu_bitmap_frame_owner_bind_immutable(
 	hcu_bitmap_frame_owner *owner,
 	halo_ps2_bitmap_request_queue *queue,
 	hcu_bitmap_dispatch_context *dispatch,
