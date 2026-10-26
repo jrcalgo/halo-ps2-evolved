@@ -392656,7 +392656,7 @@
   ],
   "projected_capacity_failures_if_compressed_vertices_externalized": 0,
   "raw_current_bsp_capacity_failures": 21,
-  "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+  "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
   "structure_bsp_count": 82,
   "total_cbsp_envelope_bytes": 349869456,
   "total_raw_bsp_bytes": 348770304,

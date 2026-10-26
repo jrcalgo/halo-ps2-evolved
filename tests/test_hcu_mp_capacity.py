@@ -57,6 +57,8 @@ MP_PACKAGE_SHA256 = {
 sys.path.insert(0, str(ROOT / "tests"))
 sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT / "submodules/halo-ps2/tools"))
+sys.path.insert(0, str(ROOT / "tests/c4_host_shims"))
+from ce_host_link_closure import write_closure_tu
 from host_abi32 import flags
 from halo2ps2 import bsp, mapinfo, tagindex
 from ctag_schema_walk import read_xbox_tag_region
@@ -637,6 +639,8 @@ class MultiplayerHostCollisionMatrix(unittest.TestCase):
             sources += [HCU / "port/linux/game" / f"tag_schema_{p}.c" for p in (
                 "groups", "collision", "models", "objects", "render", "effects", "scenario")]
             sources += [temp / "hcu_map_service_host.c"]
+            # Real CE bodies for the object/camera/matrix/render symbols the object TU needs.
+            sources += write_closure_tu(temp)
             sources += [ROOT / "src/stream" / f"{p}.c" for p in (
                 "hcu_map_catalog", "ctag_mount", "ctag_ps2_backend",
                 "cbsp_catalog", "ctag_resource_index", "ctag_map_source", "sha256", "hmap",

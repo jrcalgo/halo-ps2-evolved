@@ -1,0 +1,1041 @@
+{
+  "blocked": [
+    {
+      "item": "CE collision-hit surface resolution on PS2 (structure_render_surface_from_point_and_leaf)",
+      "reason": "needs a runtime surface id (F1) and the collision leaf candidates; not present in the PS2 closure"
+    },
+    {
+      "item": "retail HP2 packs / shipped BSPS bytes per map",
+      "reason": "no HP2 packs under build/ or data/ (see m2-bsp-compressed-vertices-parity-audit.md); this audit re-converts from decompressed maps with the same converter"
+    },
+    {
+      "item": "CBSP byte recomputation per map",
+      "reason": "schema ELF for convert_retail_bsp.py is not built in this checkout; the preservation ledger's cbsp_round_trip_valid is cited, not recomputed"
+    }
+  ],
+  "driver": {
+    "binary_sha256": "e998270958e0e6bb0cafbc9553b84b62d9ba420f1213c418052e6b44b20afb07",
+    "engine_bsp_c": "submodules/halo-ps2/engine/src/world/bsp.c",
+    "source": "/home/ai/Documents/GitHub/haloce-decomp-ps2/build/c4-render-id/c4_render_id_dump.c"
+  },
+  "findings": [
+    {
+      "detail": "BSPS has no serialized CE surface id. bsp_batch_surface() returns UINT32_MAX unless a borrowed source ops table is bound (submodules/halo-ps2/engine/src/world/bsp.c:203-209; bsp.h:97-98). The CE surface id exists only in the converter's in-memory Material.surfaces (bspconv.py:71). The round trip is proven offline, not from the shipped section.",
+      "fix": "Serialize a per-triangle u32 surface table (4 B per expanded triangle, batches capped at 24 triangles) in BSPS, or bind a borrowed source ops with a surface table; charge its bytes in capacity.",
+      "id": "F1",
+      "kind": "runtime identity gap"
+    }
+  ],
+  "generated_by": "tools/audit_c4_render_id_mapping.py",
+  "host_engine_points_checked_total": 15600,
+  "ids_checked_total": 508490,
+  "limits": [
+    "The CE-side point->cluster walk uses the same parsed collision BSP3D tree as the converter (bsp.read_structure); it is a host re-implementation of the CE tree walk, not the CE binary.",
+    "Engine-side checks run the real engine/src/world/bsp.c on the emitted section bytes.",
+    "No PCSX2, GS, VU or target output is claimed."
+  ],
+  "map_count": 13,
+  "maps": [
+    {
+      "bsps": [
+        {
+          "batches_holding_more_than_one_surface": 275,
+          "bsp_block_bytes": 724992,
+          "bsp_block_sha256": "1fb6efe09129d9c477cac22e0462138b368e1b7e8228062110f2e3e52849c7c4",
+          "bsp_file_offset": 2048,
+          "bsp_index": 0,
+          "bsp_path": "levels\\test\\beavercreek\\beavercreek",
+          "bsps_batches": 300,
+          "bsps_materials": 65,
+          "bsps_triangles": 3317,
+          "ce_input_unchanged_by_conversion": true,
+          "ce_surface_count": 3317,
+          "cluster_mismatches": 0,
+          "diffuse_uv_saturated_corners_excluded": 0,
+          "dropped_surface_ids": [],
+          "geometry_mismatches": 0,
+          "host_engine_mismatch_total": 0,
+          "host_engine_mismatches": {
+            "batch": 0,
+            "cluster": 0,
+            "header": 0,
+            "material": 0,
+            "point": 0
+          },
+          "host_engine_point_sources": {
+            "random_uniform_in_section_bounds": 600,
+            "surface_centroids": 600
+          },
+          "host_engine_points_checked": 1200,
+          "ids_checked": {
+            "ce_to_ps2_to_ce_round_trip": 3317,
+            "cluster_membership_ids": 3749,
+            "cluster_records": 29,
+            "leaf_cluster_entries": 2683,
+            "lightmap_page_ids": 3317,
+            "lightmap_uv_corners": 9951,
+            "shader_tag_ids": 3317
+          },
+          "lightmap_page_mismatches": 0,
+          "lightmap_uv_mismatches": 0,
+          "max_abs_diffuse_uv_error_unsaturated": 0.00012183189392089844,
+          "max_abs_lightmap_uv_error": 0.0,
+          "max_abs_position_error": 0.000251400051638484,
+          "merge_policy": "batch merges recorded; each triangle keeps its CE surface via (batch, triangle) round trip",
+          "mismatches": 0,
+          "presentation_members_dropped_or_rewritten": [],
+          "problems": [],
+          "round_trip_mismatches": 0,
+          "runtime_surface_id_available": false,
+          "shader_mismatches": 0,
+          "source_material_count": 65,
+          "surfaces_checked": 3317,
+          "surfaces_dropped_no_cluster_route": 0
+        }
+      ],
+      "host_engine_points_checked": 1200,
+      "ids_checked": 26363,
+      "map": "beavercreek",
+      "map_sha256": "eaf90b2abc4fd295469eb2d640063618b0d14396f28e7d7f1758e834c061c50a",
+      "mismatches": 0,
+      "structure_bsp_count": 1,
+      "surfaces_checked": 3317
+    },
+    {
+      "bsps": [
+        {
+          "batches_holding_more_than_one_surface": 371,
+          "bsp_block_bytes": 1296384,
+          "bsp_block_sha256": "8b3fa60e1f01fcec21c97c1916e7ca3ac8ed51a24f00eef18e4c8361d48e18bf",
+          "bsp_file_offset": 2048,
+          "bsp_index": 0,
+          "bsp_path": "levels\\test\\bloodgulch\\bloodgulch",
+          "bsps_batches": 396,
+          "bsps_materials": 79,
+          "bsps_triangles": 5503,
+          "ce_input_unchanged_by_conversion": true,
+          "ce_surface_count": 5503,
+          "cluster_mismatches": 0,
+          "diffuse_uv_saturated_corners_excluded": 0,
+          "dropped_surface_ids": [],
+          "geometry_mismatches": 0,
+          "host_engine_mismatch_total": 0,
+          "host_engine_mismatches": {
+            "batch": 0,
+            "cluster": 0,
+            "header": 0,
+            "material": 0,
+            "point": 0
+          },
+          "host_engine_point_sources": {
+            "random_uniform_in_section_bounds": 600,
+            "surface_centroids": 600
+          },
+          "host_engine_points_checked": 1200,
+          "ids_checked": {
+            "ce_to_ps2_to_ce_round_trip": 5503,
+            "cluster_membership_ids": 6325,
+            "cluster_records": 30,
+            "leaf_cluster_entries": 5999,
+            "lightmap_page_ids": 5503,
+            "lightmap_uv_corners": 16509,
+            "shader_tag_ids": 5503
+          },
+          "lightmap_page_mismatches": 0,
+          "lightmap_uv_mismatches": 0,
+          "max_abs_diffuse_uv_error_unsaturated": 0.00024366378784179688,
+          "max_abs_lightmap_uv_error": 0.0,
+          "max_abs_position_error": 0.001114140497520566,
+          "merge_policy": "batch merges recorded; each triangle keeps its CE surface via (batch, triangle) round trip",
+          "mismatches": 0,
+          "presentation_members_dropped_or_rewritten": [],
+          "problems": [],
+          "round_trip_mismatches": 0,
+          "runtime_surface_id_available": false,
+          "shader_mismatches": 0,
+          "source_material_count": 79,
+          "surfaces_checked": 5503,
+          "surfaces_dropped_no_cluster_route": 0
+        }
+      ],
+      "host_engine_points_checked": 1200,
+      "ids_checked": 45372,
+      "map": "bloodgulch",
+      "map_sha256": "9eb0374cbe4571af640ae0d2e0ebf6119543cdbbece44d49543b4748c4cf0dc1",
+      "mismatches": 0,
+      "structure_bsp_count": 1,
+      "surfaces_checked": 5503
+    },
+    {
+      "bsps": [
+        {
+          "batches_holding_more_than_one_surface": 777,
+          "bsp_block_bytes": 1343488,
+          "bsp_block_sha256": "2b1397a58285f6e6157c6591590a0df21c7b44ed488116599ac89534efa3a54d",
+          "bsp_file_offset": 2048,
+          "bsp_index": 0,
+          "bsp_path": "levels\\test\\boardingaction\\boardingaction",
+          "bsps_batches": 863,
+          "bsps_materials": 173,
+          "bsps_triangles": 7142,
+          "ce_input_unchanged_by_conversion": true,
+          "ce_surface_count": 7142,
+          "cluster_mismatches": 0,
+          "diffuse_uv_saturated_corners_excluded": 577,
+          "dropped_surface_ids": [],
+          "geometry_mismatches": 0,
+          "host_engine_mismatch_total": 0,
+          "host_engine_mismatches": {
+            "batch": 0,
+            "cluster": 0,
+            "header": 0,
+            "material": 0,
+            "point": 0
+          },
+          "host_engine_point_sources": {
+            "random_uniform_in_section_bounds": 600,
+            "surface_centroids": 600
+          },
+          "host_engine_points_checked": 1200,
+          "ids_checked": {
+            "ce_to_ps2_to_ce_round_trip": 7142,
+            "cluster_membership_ids": 8942,
+            "cluster_records": 41,
+            "leaf_cluster_entries": 3134,
+            "lightmap_page_ids": 7142,
+            "lightmap_uv_corners": 21426,
+            "shader_tag_ids": 7142
+          },
+          "lightmap_page_mismatches": 0,
+          "lightmap_uv_mismatches": 0,
+          "max_abs_diffuse_uv_error_unsaturated": 0.0009765625,
+          "max_abs_lightmap_uv_error": 0.0,
+          "max_abs_position_error": 0.002352876588702202,
+          "merge_policy": "batch merges recorded; each triangle keeps its CE surface via (batch, triangle) round trip",
+          "mismatches": 0,
+          "presentation_members_dropped_or_rewritten": [],
+          "problems": [],
+          "round_trip_mismatches": 0,
+          "runtime_surface_id_available": false,
+          "shader_mismatches": 0,
+          "source_material_count": 173,
+          "surfaces_checked": 7142,
+          "surfaces_dropped_no_cluster_route": 0
+        }
+      ],
+      "host_engine_points_checked": 1200,
+      "ids_checked": 54969,
+      "map": "boardingaction",
+      "map_sha256": "34ddf961973b6aaf05f40f26bd9ad536ca97f8af503995611535ccf6ce911522",
+      "mismatches": 0,
+      "structure_bsp_count": 1,
+      "surfaces_checked": 7142
+    },
+    {
+      "bsps": [
+        {
+          "batches_holding_more_than_one_surface": 378,
+          "bsp_block_bytes": 507904,
+          "bsp_block_sha256": "40a8324d3d9a8a5d238ecf9caa15a2b634a316d3552762c2be34adf06622b0cf",
+          "bsp_file_offset": 2048,
+          "bsp_index": 0,
+          "bsp_path": "levels\\test\\carousel\\carousel",
+          "bsps_batches": 395,
+          "bsps_materials": 123,
+          "bsps_triangles": 2940,
+          "ce_input_unchanged_by_conversion": true,
+          "ce_surface_count": 2940,
+          "cluster_mismatches": 0,
+          "diffuse_uv_saturated_corners_excluded": 0,
+          "dropped_surface_ids": [],
+          "geometry_mismatches": 0,
+          "host_engine_mismatch_total": 0,
+          "host_engine_mismatches": {
+            "batch": 0,
+            "cluster": 0,
+            "header": 0,
+            "material": 0,
+            "point": 0
+          },
+          "host_engine_point_sources": {
+            "random_uniform_in_section_bounds": 600,
+            "surface_centroids": 600
+          },
+          "host_engine_points_checked": 1200,
+          "ids_checked": {
+            "ce_to_ps2_to_ce_round_trip": 2940,
+            "cluster_membership_ids": 3388,
+            "cluster_records": 36,
+            "leaf_cluster_entries": 1074,
+            "lightmap_page_ids": 2940,
+            "lightmap_uv_corners": 8820,
+            "shader_tag_ids": 2940
+          },
+          "lightmap_page_mismatches": 0,
+          "lightmap_uv_mismatches": 0,
+          "max_abs_diffuse_uv_error_unsaturated": 0.000244140625,
+          "max_abs_lightmap_uv_error": 0.0,
+          "max_abs_position_error": 0.00010238104732707143,
+          "merge_policy": "batch merges recorded; each triangle keeps its CE surface via (batch, triangle) round trip",
+          "mismatches": 0,
+          "presentation_members_dropped_or_rewritten": [],
+          "problems": [],
+          "round_trip_mismatches": 0,
+          "runtime_surface_id_available": false,
+          "shader_mismatches": 0,
+          "source_material_count": 123,
+          "surfaces_checked": 2940,
+          "surfaces_dropped_no_cluster_route": 0
+        }
+      ],
+      "host_engine_points_checked": 1200,
+      "ids_checked": 22138,
+      "map": "carousel",
+      "map_sha256": "3e4be29a7952af0b3f19a7540e454fd0deece6d6078c256cde70a734beba55e1",
+      "mismatches": 0,
+      "structure_bsp_count": 1,
+      "surfaces_checked": 2940
+    },
+    {
+      "bsps": [
+        {
+          "batches_holding_more_than_one_surface": 265,
+          "bsp_block_bytes": 567296,
+          "bsp_block_sha256": "2f8e7f85c0e52bf4a25bede449d1499068f629959bead6feb25574a47e8ad733",
+          "bsp_file_offset": 2048,
+          "bsp_index": 0,
+          "bsp_path": "levels\\test\\chillout\\chillout",
+          "bsps_batches": 268,
+          "bsps_materials": 163,
+          "bsps_triangles": 3108,
+          "ce_input_unchanged_by_conversion": true,
+          "ce_surface_count": 3108,
+          "cluster_mismatches": 0,
+          "diffuse_uv_saturated_corners_excluded": 0,
+          "dropped_surface_ids": [],
+          "geometry_mismatches": 0,
+          "host_engine_mismatch_total": 0,
+          "host_engine_mismatches": {
+            "batch": 0,
+            "cluster": 0,
+            "header": 0,
+            "material": 0,
+            "point": 0
+          },
+          "host_engine_point_sources": {
+            "random_uniform_in_section_bounds": 600,
+            "surface_centroids": 600
+          },
+          "host_engine_points_checked": 1200,
+          "ids_checked": {
+            "ce_to_ps2_to_ce_round_trip": 3108,
+            "cluster_membership_ids": 3155,
+            "cluster_records": 10,
+            "leaf_cluster_entries": 844,
+            "lightmap_page_ids": 3108,
+            "lightmap_uv_corners": 9324,
+            "shader_tag_ids": 3108
+          },
+          "lightmap_page_mismatches": 0,
+          "lightmap_uv_mismatches": 0,
+          "max_abs_diffuse_uv_error_unsaturated": 0.000232696533203125,
+          "max_abs_lightmap_uv_error": 0.0,
+          "max_abs_position_error": 0.0001396930601913482,
+          "merge_policy": "batch merges recorded; each triangle keeps its CE surface via (batch, triangle) round trip",
+          "mismatches": 0,
+          "presentation_members_dropped_or_rewritten": [],
+          "problems": [],
+          "round_trip_mismatches": 0,
+          "runtime_surface_id_available": false,
+          "shader_mismatches": 0,
+          "source_material_count": 163,
+          "surfaces_checked": 3108,
+          "surfaces_dropped_no_cluster_route": 0
+        }
+      ],
+      "host_engine_points_checked": 1200,
+      "ids_checked": 22657,
+      "map": "chillout",
+      "map_sha256": "52bc3e23b9142cf479770d1d601fe08b13d78fe3eb05eca72d313b7ebbd21ffb",
+      "mismatches": 0,
+      "structure_bsp_count": 1,
+      "surfaces_checked": 3108
+    },
+    {
+      "bsps": [
+        {
+          "batches_holding_more_than_one_surface": 461,
+          "bsp_block_bytes": 1320960,
+          "bsp_block_sha256": "d3118effad059fde0083f0fd6abc45b824048fd6fe22867047ae6973ac330087",
+          "bsp_file_offset": 2048,
+          "bsp_index": 0,
+          "bsp_path": "levels\\test\\damnation\\damnation",
+          "bsps_batches": 466,
+          "bsps_materials": 69,
+          "bsps_triangles": 8618,
+          "ce_input_unchanged_by_conversion": true,
+          "ce_surface_count": 8618,
+          "cluster_mismatches": 0,
+          "diffuse_uv_saturated_corners_excluded": 0,
+          "dropped_surface_ids": [],
+          "geometry_mismatches": 0,
+          "host_engine_mismatch_total": 0,
+          "host_engine_mismatches": {
+            "batch": 0,
+            "cluster": 0,
+            "header": 0,
+            "material": 0,
+            "point": 0
+          },
+          "host_engine_point_sources": {
+            "random_uniform_in_section_bounds": 600,
+            "surface_centroids": 600
+          },
+          "host_engine_points_checked": 1200,
+          "ids_checked": {
+            "ce_to_ps2_to_ce_round_trip": 8618,
+            "cluster_membership_ids": 9833,
+            "cluster_records": 12,
+            "leaf_cluster_entries": 2813,
+            "lightmap_page_ids": 8618,
+            "lightmap_uv_corners": 25854,
+            "shader_tag_ids": 8618
+          },
+          "lightmap_page_mismatches": 0,
+          "lightmap_uv_mismatches": 0,
+          "max_abs_diffuse_uv_error_unsaturated": 0.0009765625,
+          "max_abs_lightmap_uv_error": 0.0,
+          "max_abs_position_error": 0.0005994085222482681,
+          "merge_policy": "batch merges recorded; each triangle keeps its CE surface via (batch, triangle) round trip",
+          "mismatches": 0,
+          "presentation_members_dropped_or_rewritten": [],
+          "problems": [],
+          "round_trip_mismatches": 0,
+          "runtime_surface_id_available": false,
+          "shader_mismatches": 0,
+          "source_material_count": 69,
+          "surfaces_checked": 8618,
+          "surfaces_dropped_no_cluster_route": 0
+        }
+      ],
+      "host_engine_points_checked": 1200,
+      "ids_checked": 64366,
+      "map": "damnation",
+      "map_sha256": "87bd92c1821ff20bed03c559d7be5ac43baeb44aa68342ffdbb5a8cd978f711c",
+      "mismatches": 0,
+      "structure_bsp_count": 1,
+      "surfaces_checked": 8618
+    },
+    {
+      "bsps": [
+        {
+          "batches_holding_more_than_one_surface": 299,
+          "bsp_block_bytes": 589824,
+          "bsp_block_sha256": "4828fcc280c2c364e1e469dcf4626d2656ff6ca188cdcbdf3659f82992a3f4c3",
+          "bsp_file_offset": 2048,
+          "bsp_index": 0,
+          "bsp_path": "levels\\test\\hangemhigh\\hangemhigh",
+          "bsps_batches": 301,
+          "bsps_materials": 186,
+          "bsps_triangles": 3218,
+          "ce_input_unchanged_by_conversion": true,
+          "ce_surface_count": 3218,
+          "cluster_mismatches": 0,
+          "diffuse_uv_saturated_corners_excluded": 0,
+          "dropped_surface_ids": [],
+          "geometry_mismatches": 0,
+          "host_engine_mismatch_total": 0,
+          "host_engine_mismatches": {
+            "batch": 0,
+            "cluster": 0,
+            "header": 0,
+            "material": 0,
+            "point": 0
+          },
+          "host_engine_point_sources": {
+            "random_uniform_in_section_bounds": 600,
+            "surface_centroids": 600
+          },
+          "host_engine_points_checked": 1200,
+          "ids_checked": {
+            "ce_to_ps2_to_ce_round_trip": 3218,
+            "cluster_membership_ids": 3218,
+            "cluster_records": 1,
+            "leaf_cluster_entries": 1116,
+            "lightmap_page_ids": 3218,
+            "lightmap_uv_corners": 9654,
+            "shader_tag_ids": 3218
+          },
+          "lightmap_page_mismatches": 0,
+          "lightmap_uv_mismatches": 0,
+          "max_abs_diffuse_uv_error_unsaturated": 0.00048828125,
+          "max_abs_lightmap_uv_error": 0.0,
+          "max_abs_position_error": 0.00040727329906076193,
+          "merge_policy": "batch merges recorded; each triangle keeps its CE surface via (batch, triangle) round trip",
+          "mismatches": 0,
+          "presentation_members_dropped_or_rewritten": [],
+          "problems": [],
+          "round_trip_mismatches": 0,
+          "runtime_surface_id_available": false,
+          "shader_mismatches": 0,
+          "source_material_count": 186,
+          "surfaces_checked": 3218,
+          "surfaces_dropped_no_cluster_route": 0
+        }
+      ],
+      "host_engine_points_checked": 1200,
+      "ids_checked": 23643,
+      "map": "hangemhigh",
+      "map_sha256": "e3e4b25ed36178926f0df11f3cd82b07e2071f6aa0efaa77f0cfde8f8480981f",
+      "mismatches": 0,
+      "structure_bsp_count": 1,
+      "surfaces_checked": 3218
+    },
+    {
+      "bsps": [
+        {
+          "batches_holding_more_than_one_surface": 148,
+          "bsp_block_bytes": 374784,
+          "bsp_block_sha256": "d2583ce3f53d5ff9f04ecaf163fed8f801e355d858c5254e954929f2c425530f",
+          "bsp_file_offset": 2048,
+          "bsp_index": 0,
+          "bsp_path": "levels\\test\\longest\\longest",
+          "bsps_batches": 148,
+          "bsps_materials": 63,
+          "bsps_triangles": 2319,
+          "ce_input_unchanged_by_conversion": true,
+          "ce_surface_count": 2319,
+          "cluster_mismatches": 0,
+          "diffuse_uv_saturated_corners_excluded": 0,
+          "dropped_surface_ids": [],
+          "geometry_mismatches": 0,
+          "host_engine_mismatch_total": 0,
+          "host_engine_mismatches": {
+            "batch": 0,
+            "cluster": 0,
+            "header": 0,
+            "material": 0,
+            "point": 0
+          },
+          "host_engine_point_sources": {
+            "random_uniform_in_section_bounds": 600,
+            "surface_centroids": 600
+          },
+          "host_engine_points_checked": 1200,
+          "ids_checked": {
+            "ce_to_ps2_to_ce_round_trip": 2319,
+            "cluster_membership_ids": 2319,
+            "cluster_records": 1,
+            "leaf_cluster_entries": 363,
+            "lightmap_page_ids": 2319,
+            "lightmap_uv_corners": 6957,
+            "shader_tag_ids": 2319
+          },
+          "lightmap_page_mismatches": 0,
+          "lightmap_uv_mismatches": 0,
+          "max_abs_diffuse_uv_error_unsaturated": 0.00048655271530151367,
+          "max_abs_lightmap_uv_error": 0.0,
+          "max_abs_position_error": 0.0003696945495903492,
+          "merge_policy": "batch merges recorded; each triangle keeps its CE surface via (batch, triangle) round trip",
+          "mismatches": 0,
+          "presentation_members_dropped_or_rewritten": [],
+          "problems": [],
+          "round_trip_mismatches": 0,
+          "runtime_surface_id_available": false,
+          "shader_mismatches": 0,
+          "source_material_count": 63,
+          "surfaces_checked": 2319,
+          "surfaces_dropped_no_cluster_route": 0
+        }
+      ],
+      "host_engine_points_checked": 1200,
+      "ids_checked": 16597,
+      "map": "longest",
+      "map_sha256": "e045b0843f4a167a516f050161a651610fafc94ccc8c5f2c5d5725d108d5d1b9",
+      "mismatches": 0,
+      "structure_bsp_count": 1,
+      "surfaces_checked": 2319
+    },
+    {
+      "bsps": [
+        {
+          "batches_holding_more_than_one_surface": 284,
+          "bsp_block_bytes": 884736,
+          "bsp_block_sha256": "ea4000f883893868aa01df913f9dd9d239942e84d8f4a498f3017e87574d4f13",
+          "bsp_file_offset": 2048,
+          "bsp_index": 0,
+          "bsp_path": "levels\\test\\prisoner\\prisoner",
+          "bsps_batches": 284,
+          "bsps_materials": 79,
+          "bsps_triangles": 5234,
+          "ce_input_unchanged_by_conversion": true,
+          "ce_surface_count": 5234,
+          "cluster_mismatches": 0,
+          "diffuse_uv_saturated_corners_excluded": 0,
+          "dropped_surface_ids": [],
+          "geometry_mismatches": 0,
+          "host_engine_mismatch_total": 0,
+          "host_engine_mismatches": {
+            "batch": 0,
+            "cluster": 0,
+            "header": 0,
+            "material": 0,
+            "point": 0
+          },
+          "host_engine_point_sources": {
+            "random_uniform_in_section_bounds": 600,
+            "surface_centroids": 600
+          },
+          "host_engine_points_checked": 1200,
+          "ids_checked": {
+            "ce_to_ps2_to_ce_round_trip": 5234,
+            "cluster_membership_ids": 5234,
+            "cluster_records": 1,
+            "leaf_cluster_entries": 1039,
+            "lightmap_page_ids": 5234,
+            "lightmap_uv_corners": 15702,
+            "shader_tag_ids": 5234
+          },
+          "lightmap_page_mismatches": 0,
+          "lightmap_uv_mismatches": 0,
+          "max_abs_diffuse_uv_error_unsaturated": 0.000244140625,
+          "max_abs_lightmap_uv_error": 0.0,
+          "max_abs_position_error": 0.0002926550805568695,
+          "merge_policy": "batch merges recorded; each triangle keeps its CE surface via (batch, triangle) round trip",
+          "mismatches": 0,
+          "presentation_members_dropped_or_rewritten": [],
+          "problems": [],
+          "round_trip_mismatches": 0,
+          "runtime_surface_id_available": false,
+          "shader_mismatches": 0,
+          "source_material_count": 79,
+          "surfaces_checked": 5234,
+          "surfaces_dropped_no_cluster_route": 0
+        }
+      ],
+      "host_engine_points_checked": 1200,
+      "ids_checked": 37678,
+      "map": "prisoner",
+      "map_sha256": "85ff2fdc117b7640bda85a490b30c662f2626bd6d0685e41832935422891c307",
+      "mismatches": 0,
+      "structure_bsp_count": 1,
+      "surfaces_checked": 5234
+    },
+    {
+      "bsps": [
+        {
+          "batches_holding_more_than_one_surface": 471,
+          "bsp_block_bytes": 1638400,
+          "bsp_block_sha256": "273326a59e3d13678ebad96704eb690e6dd79f2ad3c752d96f82de9de2fd49ca",
+          "bsp_file_offset": 2048,
+          "bsp_index": 0,
+          "bsp_path": "levels\\test\\putput\\putput",
+          "bsps_batches": 475,
+          "bsps_materials": 67,
+          "bsps_triangles": 10490,
+          "ce_input_unchanged_by_conversion": true,
+          "ce_surface_count": 10494,
+          "cluster_mismatches": 0,
+          "diffuse_uv_saturated_corners_excluded": 0,
+          "dropped_surface_ids": [
+            10276,
+            10277,
+            10299,
+            10304
+          ],
+          "geometry_mismatches": 0,
+          "host_engine_mismatch_total": 0,
+          "host_engine_mismatches": {
+            "batch": 0,
+            "cluster": 0,
+            "header": 0,
+            "material": 0,
+            "point": 0
+          },
+          "host_engine_point_sources": {
+            "random_uniform_in_section_bounds": 600,
+            "surface_centroids": 600
+          },
+          "host_engine_points_checked": 1200,
+          "ids_checked": {
+            "ce_to_ps2_to_ce_round_trip": 10490,
+            "cluster_membership_ids": 10490,
+            "cluster_records": 9,
+            "leaf_cluster_entries": 1886,
+            "lightmap_page_ids": 10490,
+            "lightmap_uv_corners": 31470,
+            "shader_tag_ids": 10490
+          },
+          "lightmap_page_mismatches": 0,
+          "lightmap_uv_mismatches": 0,
+          "max_abs_diffuse_uv_error_unsaturated": 0.0009450912475585938,
+          "max_abs_lightmap_uv_error": 0.0,
+          "max_abs_position_error": 0.00010535982437431812,
+          "merge_policy": "batch merges recorded; each triangle keeps its CE surface via (batch, triangle) round trip",
+          "mismatches": 0,
+          "presentation_members_dropped_or_rewritten": [],
+          "problems": [],
+          "round_trip_mismatches": 0,
+          "runtime_surface_id_available": false,
+          "shader_mismatches": 0,
+          "source_material_count": 67,
+          "surfaces_checked": 10490,
+          "surfaces_dropped_no_cluster_route": 4
+        }
+      ],
+      "host_engine_points_checked": 1200,
+      "ids_checked": 75325,
+      "map": "putput",
+      "map_sha256": "efbe723188f34053d318105f20c7046f263171fbb937fbad45e3d00f8437f243",
+      "mismatches": 0,
+      "structure_bsp_count": 1,
+      "surfaces_checked": 10490
+    },
+    {
+      "bsps": [
+        {
+          "batches_holding_more_than_one_surface": 246,
+          "bsp_block_bytes": 544768,
+          "bsp_block_sha256": "060d953d098539f9247185ca342c47485dfd31942e1f2f98607dae9380fcfbce",
+          "bsp_file_offset": 2048,
+          "bsp_index": 0,
+          "bsp_path": "levels\\test\\ratrace\\ratrace",
+          "bsps_batches": 267,
+          "bsps_materials": 146,
+          "bsps_triangles": 2692,
+          "ce_input_unchanged_by_conversion": true,
+          "ce_surface_count": 2692,
+          "cluster_mismatches": 0,
+          "diffuse_uv_saturated_corners_excluded": 0,
+          "dropped_surface_ids": [],
+          "geometry_mismatches": 0,
+          "host_engine_mismatch_total": 0,
+          "host_engine_mismatches": {
+            "batch": 0,
+            "cluster": 0,
+            "header": 0,
+            "material": 0,
+            "point": 0
+          },
+          "host_engine_point_sources": {
+            "random_uniform_in_section_bounds": 600,
+            "surface_centroids": 600
+          },
+          "host_engine_points_checked": 1200,
+          "ids_checked": {
+            "ce_to_ps2_to_ce_round_trip": 2692,
+            "cluster_membership_ids": 2914,
+            "cluster_records": 16,
+            "leaf_cluster_entries": 1089,
+            "lightmap_page_ids": 2692,
+            "lightmap_uv_corners": 8076,
+            "shader_tag_ids": 2692
+          },
+          "lightmap_page_mismatches": 0,
+          "lightmap_uv_mismatches": 0,
+          "max_abs_diffuse_uv_error_unsaturated": 0.00024399906396865845,
+          "max_abs_lightmap_uv_error": 0.0,
+          "max_abs_position_error": 0.00015581678599119186,
+          "merge_policy": "batch merges recorded; each triangle keeps its CE surface via (batch, triangle) round trip",
+          "mismatches": 0,
+          "presentation_members_dropped_or_rewritten": [],
+          "problems": [],
+          "round_trip_mismatches": 0,
+          "runtime_surface_id_available": false,
+          "shader_mismatches": 0,
+          "source_material_count": 146,
+          "surfaces_checked": 2692,
+          "surfaces_dropped_no_cluster_route": 0
+        }
+      ],
+      "host_engine_points_checked": 1200,
+      "ids_checked": 20171,
+      "map": "ratrace",
+      "map_sha256": "577886f949f2648f04cf99e354fb04ca08d7b9199636c2f9fe1a161ccdaa4b1e",
+      "mismatches": 0,
+      "structure_bsp_count": 1,
+      "surfaces_checked": 2692
+    },
+    {
+      "bsps": [
+        {
+          "batches_holding_more_than_one_surface": 549,
+          "bsp_block_bytes": 1984512,
+          "bsp_block_sha256": "9e861ddb861fbaaf5b09a1431fa2acfa3f0f6c6bfee3a4fc4d64f90e75cb5a13",
+          "bsp_file_offset": 2048,
+          "bsp_index": 0,
+          "bsp_path": "levels\\test\\sidewinder\\sidewinder",
+          "bsps_batches": 554,
+          "bsps_materials": 136,
+          "bsps_triangles": 10036,
+          "ce_input_unchanged_by_conversion": true,
+          "ce_surface_count": 10036,
+          "cluster_mismatches": 0,
+          "diffuse_uv_saturated_corners_excluded": 0,
+          "dropped_surface_ids": [],
+          "geometry_mismatches": 0,
+          "host_engine_mismatch_total": 0,
+          "host_engine_mismatches": {
+            "batch": 0,
+            "cluster": 0,
+            "header": 0,
+            "material": 0,
+            "point": 0
+          },
+          "host_engine_point_sources": {
+            "random_uniform_in_section_bounds": 600,
+            "surface_centroids": 600
+          },
+          "host_engine_points_checked": 1200,
+          "ids_checked": {
+            "ce_to_ps2_to_ce_round_trip": 10036,
+            "cluster_membership_ids": 10548,
+            "cluster_records": 35,
+            "leaf_cluster_entries": 5845,
+            "lightmap_page_ids": 10036,
+            "lightmap_uv_corners": 30108,
+            "shader_tag_ids": 10036
+          },
+          "lightmap_page_mismatches": 0,
+          "lightmap_uv_mismatches": 0,
+          "max_abs_diffuse_uv_error_unsaturated": 0.00048828125,
+          "max_abs_lightmap_uv_error": 0.0,
+          "max_abs_position_error": 0.0014448612928390503,
+          "merge_policy": "batch merges recorded; each triangle keeps its CE surface via (batch, triangle) round trip",
+          "mismatches": 0,
+          "presentation_members_dropped_or_rewritten": [],
+          "problems": [],
+          "round_trip_mismatches": 0,
+          "runtime_surface_id_available": false,
+          "shader_mismatches": 0,
+          "source_material_count": 136,
+          "surfaces_checked": 10036,
+          "surfaces_dropped_no_cluster_route": 0
+        }
+      ],
+      "host_engine_points_checked": 1200,
+      "ids_checked": 76644,
+      "map": "sidewinder",
+      "map_sha256": "995561a68c8c5b142f13f1967730ce8c08d4f0db9574db8e987d915f2b118dcc",
+      "mismatches": 0,
+      "structure_bsp_count": 1,
+      "surfaces_checked": 10036
+    },
+    {
+      "bsps": [
+        {
+          "batches_holding_more_than_one_surface": 208,
+          "bsp_block_bytes": 552960,
+          "bsp_block_sha256": "c75e808bb3496a62e1c65fd01eade6b84ee38a2fdb72daade8fb18be6a155fdf",
+          "bsp_file_offset": 2048,
+          "bsp_index": 0,
+          "bsp_path": "levels\\test\\wizard\\wizard",
+          "bsps_batches": 223,
+          "bsps_materials": 47,
+          "bsps_triangles": 2972,
+          "ce_input_unchanged_by_conversion": true,
+          "ce_surface_count": 2972,
+          "cluster_mismatches": 0,
+          "diffuse_uv_saturated_corners_excluded": 0,
+          "dropped_surface_ids": [],
+          "geometry_mismatches": 0,
+          "host_engine_mismatch_total": 0,
+          "host_engine_mismatches": {
+            "batch": 0,
+            "cluster": 0,
+            "header": 0,
+            "material": 0,
+            "point": 0
+          },
+          "host_engine_point_sources": {
+            "random_uniform_in_section_bounds": 600,
+            "surface_centroids": 600
+          },
+          "host_engine_points_checked": 1200,
+          "ids_checked": {
+            "ce_to_ps2_to_ce_round_trip": 2972,
+            "cluster_membership_ids": 3517,
+            "cluster_records": 18,
+            "leaf_cluster_entries": 1200,
+            "lightmap_page_ids": 2972,
+            "lightmap_uv_corners": 8916,
+            "shader_tag_ids": 2972
+          },
+          "lightmap_page_mismatches": 0,
+          "lightmap_uv_mismatches": 0,
+          "max_abs_diffuse_uv_error_unsaturated": 0.00048673152923583984,
+          "max_abs_lightmap_uv_error": 0.0,
+          "max_abs_position_error": 0.00012418057303875685,
+          "merge_policy": "batch merges recorded; each triangle keeps its CE surface via (batch, triangle) round trip",
+          "mismatches": 0,
+          "presentation_members_dropped_or_rewritten": [],
+          "problems": [],
+          "round_trip_mismatches": 0,
+          "runtime_surface_id_available": false,
+          "shader_mismatches": 0,
+          "source_material_count": 47,
+          "surfaces_checked": 2972,
+          "surfaces_dropped_no_cluster_route": 0
+        }
+      ],
+      "host_engine_points_checked": 1200,
+      "ids_checked": 22567,
+      "map": "wizard",
+      "map_sha256": "978539ff70085998485870a15d4ec81d3811442ac48f9265db668a396f6ff1eb",
+      "mismatches": 0,
+      "structure_bsp_count": 1,
+      "surfaces_checked": 2972
+    }
+  ],
+  "mismatches_total": 0,
+  "ok": true,
+  "omissions_gate": {
+    "dispositions": {
+      "cluster_fog_bit15": "requires PS2 consumer",
+      "decal_range": "requires PS2 consumer",
+      "lens_flare_range": "retain-bytes",
+      "mirrors": "retain-bytes",
+      "portal_flags": "retain-bytes",
+      "predicted_resources": "requires PS2 consumer",
+      "render_nodes": "requires PS2 consumer",
+      "transition_bsp": "retain-bytes",
+      "unreferenced_surfaces": "retain-bytes"
+    },
+    "issues": 0,
+    "ok": true
+  },
+  "presentation_only_owners": [
+    "data structure_material.compressed_vertex_data"
+  ],
+  "preservation_binding": {
+    "beavercreek": {
+      "cbsp_round_trip_valid_all": true,
+      "present": true,
+      "presentation_only_owner_bytes": 168088,
+      "sim_owned_bytes_present": 27,
+      "structure_bsp_count": 1
+    },
+    "bloodgulch": {
+      "cbsp_round_trip_valid_all": true,
+      "present": true,
+      "presentation_only_owner_bytes": 229552,
+      "sim_owned_bytes_present": 27,
+      "structure_bsp_count": 1
+    },
+    "boardingaction": {
+      "cbsp_round_trip_valid_all": true,
+      "present": true,
+      "presentation_only_owner_bytes": 477280,
+      "sim_owned_bytes_present": 27,
+      "structure_bsp_count": 1
+    },
+    "carousel": {
+      "cbsp_round_trip_valid_all": true,
+      "present": true,
+      "presentation_only_owner_bytes": 174496,
+      "sim_owned_bytes_present": 26,
+      "structure_bsp_count": 1
+    },
+    "chillout": {
+      "cbsp_round_trip_valid_all": true,
+      "present": true,
+      "presentation_only_owner_bytes": 210368,
+      "sim_owned_bytes_present": 26,
+      "structure_bsp_count": 1
+    },
+    "damnation": {
+      "cbsp_round_trip_valid_all": true,
+      "present": true,
+      "presentation_only_owner_bytes": 453856,
+      "sim_owned_bytes_present": 26,
+      "structure_bsp_count": 1
+    },
+    "hangemhigh": {
+      "cbsp_round_trip_valid_all": true,
+      "present": true,
+      "presentation_only_owner_bytes": 209432,
+      "sim_owned_bytes_present": 23,
+      "structure_bsp_count": 1
+    },
+    "longest": {
+      "cbsp_round_trip_valid_all": true,
+      "present": true,
+      "presentation_only_owner_bytes": 150264,
+      "sim_owned_bytes_present": 23,
+      "structure_bsp_count": 1
+    },
+    "prisoner": {
+      "cbsp_round_trip_valid_all": true,
+      "present": true,
+      "presentation_only_owner_bytes": 368288,
+      "sim_owned_bytes_present": 22,
+      "structure_bsp_count": 1
+    },
+    "putput": {
+      "cbsp_round_trip_valid_all": true,
+      "present": true,
+      "presentation_only_owner_bytes": 656440,
+      "sim_owned_bytes_present": 24,
+      "structure_bsp_count": 1
+    },
+    "ratrace": {
+      "cbsp_round_trip_valid_all": true,
+      "present": true,
+      "presentation_only_owner_bytes": 183104,
+      "sim_owned_bytes_present": 26,
+      "structure_bsp_count": 1
+    },
+    "sidewinder": {
+      "cbsp_round_trip_valid_all": true,
+      "present": true,
+      "presentation_only_owner_bytes": 566832,
+      "sim_owned_bytes_present": 27,
+      "structure_bsp_count": 1
+    },
+    "wizard": {
+      "cbsp_round_trip_valid_all": true,
+      "present": true,
+      "presentation_only_owner_bytes": 202288,
+      "sim_owned_bytes_present": 26,
+      "structure_bsp_count": 1
+    }
+  },
+  "preservation_binding_ok": true,
+  "schema": "m4-c4-render-mapping-v1",
+  "scope": "13 stock multiplayer maps (audit_mp_bsp_presentation_omissions.MP_MAPS), all structure BSPs",
+  "sim_owned_owners_checked": [
+    "block collision_bsp.bsp2d.nodes",
+    "block collision_bsp.bsp2d_references",
+    "block collision_bsp.bsp3d.nodes",
+    "block collision_bsp.bsp3d.planes",
+    "block collision_bsp.edges",
+    "block collision_bsp.leaves",
+    "block collision_bsp.surfaces",
+    "block collision_bsp.vertices",
+    "block structure_bsp.background_sound_palette",
+    "block structure_bsp.cluster_portals",
+    "block structure_bsp.clusters",
+    "block structure_bsp.collision_bsp",
+    "block structure_bsp.collision_materials",
+    "block structure_bsp.detail_object_data",
+    "block structure_bsp.leaves",
+    "block structure_bsp.pathfinding_surfaces",
+    "block structure_bsp.runtime_decals",
+    "block structure_bsp.sound_environment_palette",
+    "block structure_bsp.surface_references",
+    "block structure_bsp.surfaces",
+    "block structure_bsp.weather_palette",
+    "block structure_cluster.portal_indices",
+    "block structure_cluster.predicted_resources",
+    "block structure_cluster.subclusters",
+    "block structure_cluster_portal.vertices",
+    "data structure_bsp.cluster_data",
+    "data structure_bsp.sound_cluster_data"
+  ],
+  "surfaces_checked_total": 67589,
+  "tolerances": {
+    "diffuse_uv": 0.0009765625,
+    "lightmap_uv": 3.051850947599719e-05,
+    "position_world_units": 0.01
+  }
+}

@@ -40,6 +40,16 @@ static void notify_boundary(hcu_map_service *service, const char *phase)
 		service->boundary_hook(service->boundary_context, phase, service->boundary_cycle);
 }
 
+/* C4 test-only owner-exhaustion seam. Host fixtures define HCU_C4_FAULT_SEAM and
+ * supply hcu_c4_fault_take_owner_failure(); without it the macro is the constant 0,
+ * so both allocation sites take the unchanged production path. */
+#ifdef HCU_C4_FAULT_SEAM
+int hcu_c4_fault_take_owner_failure(int site);
+#define HCU_C4_OWNER_FAILS(site) hcu_c4_fault_take_owner_failure(site)
+#else
+#define HCU_C4_OWNER_FAILS(site) 0
+#endif
+
 #ifdef HALO_PS2_M2_UI_LIFECYCLE_TEST
 static int s_lifecycle_fail_preflight_once;
 static int s_lifecycle_deferred_failure_armed;
@@ -60,7 +70,8 @@ static int verify_source_hash(hcu_map_service *service,
 			(unsigned)buffer_size);
 		return 0;
 	}
-	buffer = (uint8_t *)arena_alloc(service->section_scratch, buffer_size, 64);
+	buffer = HCU_C4_OWNER_FAILS(2) ? NULL :
+		(uint8_t *)arena_alloc(service->section_scratch, buffer_size, 64);
 	if (!buffer) {
 		arena_release(service->section_scratch, mark);
 		printf("HALO_PS2_LOCAL map-preflight sha256-scratch-failed bytes=%u\n",
@@ -218,8 +229,8 @@ static int feed_ctag_first_pass(void *context, uint32_t offset,
 			return 0;
 		}
 		pass->relocation_bytes = (size_t)relocation_count * 4u;
-		pass->relocations = (uint8_t *)arena_alloc(pass->owner,
-			pass->relocation_bytes, 4u);
+		pass->relocations = HCU_C4_OWNER_FAILS(1) ? NULL :
+			(uint8_t *)arena_alloc(pass->owner, pass->relocation_bytes, 4u);
 		if (!pass->relocations) {
 			printf("HALO_PS2_LOCAL map-preflight ctag-relocation-allocation-failed "
 				"bytes=%u used=%u cap=%u\n",

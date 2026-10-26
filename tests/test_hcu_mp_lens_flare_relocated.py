@@ -18,7 +18,6 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 HCU = ROOT / "submodules/halo-ce-universal"
 LIGHTS = HCU / "source/rasterizer/rasterizer_lights.c"
-PACKAGES = Path("/tmp/hcu-m2-capacity-repro.P5qdmI/packages")
 OUT = ROOT / "build/step7-swarm/lensflare"
 MAPS = (
     "beavercreek", "bloodgulch", "boardingaction", "carousel", "chillout",
@@ -60,6 +59,9 @@ PACKAGE_SHA256 = {
     "sidewinder": "968ab65ea7ae6fbd15925ed28eb0f8eafc267c78f53150b59b4cc1dea2d017f5",
     "wizard": "00bf468d4d8c96e234ef21e5bfb59b410cac7c3e8c9f4f848ea20fbfacf01c57",
 }
+# Pin-verified package root (env var, historical /tmp dir, then
+# build/mp-fog-selection-*/assets/maps); None when no verified set exists.
+PACKAGES = None
 # CE rasterizer_lens_flare_submit_for_cluster refuses marker indices at or
 # above SHORT_MAX+1-MAXIMUM_QUEUED_LENS_FLARES. That is the sprite-request bound.
 SPRITE_BOUND = 32767 + 1 - 8
@@ -78,6 +80,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT / "submodules/halo-ps2/tools"))
 from halo2ps2 import bsp, hp2, mapinfo, tagindex  # noqa: E402
 from host_abi32 import flags  # noqa: E402
+from hcu_package_root import resolve_package_dir  # noqa: E402
 import cbsp  # noqa: E402
 import ctag  # noqa: E402
 import hmap  # noqa: E402
@@ -228,6 +231,13 @@ def raw_oracle(map_name):
 
 
 def package_inputs(map_name, payload_dir):
+    global PACKAGES
+    if PACKAGES is None:
+        PACKAGES = resolve_package_dir(PACKAGE_SHA256)
+    if PACKAGES is None:
+        raise unittest.SkipTest(
+            "no pin-verified retail HP2 package set: set HALO_HCU_M2_PACKAGE_ROOT or keep "
+            "build/mp-fog-selection-*/assets/maps/*.hp2 matching PACKAGE_SHA256")
     package_path = PACKAGES / f"{map_name}.hp2"
     package = package_path.read_bytes()
     digest = sha256_bytes(package)

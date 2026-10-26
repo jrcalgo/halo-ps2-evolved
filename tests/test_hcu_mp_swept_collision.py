@@ -21,7 +21,13 @@ HCU = ROOT / "submodules/halo-ce-universal"
 MAP_NAME = "bloodgulch"
 MAP_SHA256 = "9eb0374cbe4571af640ae0d2e0ebf6119543cdbbece44d49543b4748c4cf0dc1"
 PACKAGE_SHA256 = "ded2bca19058f51d7feed6b40149f421f7b1c2c7704f0918a42bacc5601dd011"
-PACKAGE = Path("/tmp/hcu-m2-capacity-repro.P5qdmI/packages/bloodgulch.hp2")
+sys.path.insert(0, str(ROOT))
+from tools.hcu_package_root import LEGACY_DIR, resolve_package_dir  # noqa: E402
+
+# Pin-verified Blood Gulch package (env var, historical /tmp dir, then
+# build/mp-fog-selection-*/assets/maps); None when no verified copy exists.
+_PACKAGE_DIR = resolve_package_dir({MAP_NAME: PACKAGE_SHA256})
+PACKAGE = (_PACKAGE_DIR or LEGACY_DIR) / f"{MAP_NAME}.hp2"
 OUT = ROOT / "build/step7-swarm/swept"
 RADIUS = np.float32(0.25)
 PILL_EPSILON = np.float32(1.0 / 4096.0)
@@ -568,6 +574,9 @@ class HcuMpSweptCollision(unittest.TestCase):
             self.fail("GCC is unavailable for the ILP32 CE collision fixture")
         map_path = ROOT / "build/retail-maps/decompressed/bloodgulch.map"
         self.assertEqual(_sha256(map_path), MAP_SHA256)
+        if _PACKAGE_DIR is None:
+            self.skipTest("no pin-verified Blood Gulch HP2: set HALO_HCU_M2_PACKAGE_ROOT or keep "
+                          f"build/mp-fog-selection-*/assets/maps/bloodgulch.hp2 with sha256 {PACKAGE_SHA256}")
         self.assertTrue(PACKAGE.is_file(), "pinned Blood Gulch package is missing")
         self.assertEqual(_sha256(PACKAGE), PACKAGE_SHA256)
         oracle = retail_swept_oracle(map_path)

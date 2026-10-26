@@ -1,0 +1,233 @@
+{
+  "fields": {
+    "leaf_map.leaves": {
+      "construction_recipe": {
+        "alignment_bytes": 4,
+        "ancestor_block_counts": [],
+        "malformed_variant": "truncate the final image byte; schema walker rejects the leaving extent",
+        "payload_bytes": 24,
+        "payload_encoding": "zero bytes",
+        "root_offset": 32,
+        "route": [
+          "leaf_map",
+          "leaves"
+        ],
+        "source_base": 1879048192,
+        "target_block_count": 1,
+        "target_kind": "block"
+      },
+      "file": "leaf_map__leaves.bin",
+      "image_bytes": 704,
+      "payload_bytes": 24,
+      "sha256": "42a87c16618d1e7d9ef4da5309e640f6ca9c9104345e07b52e6960c58b81a1cd"
+    },
+    "leaf_map.portals": {
+      "construction_recipe": {
+        "alignment_bytes": 4,
+        "ancestor_block_counts": [],
+        "malformed_variant": "truncate the final image byte; schema walker rejects the leaving extent",
+        "payload_bytes": 24,
+        "payload_encoding": "zero bytes",
+        "root_offset": 32,
+        "route": [
+          "leaf_map",
+          "portals"
+        ],
+        "source_base": 1879048192,
+        "target_block_count": 1,
+        "target_kind": "block"
+      },
+      "file": "leaf_map__portals.bin",
+      "image_bytes": 704,
+      "payload_bytes": 24,
+      "sha256": "f71271fc7c5ed109763aa0611302e88c375d3bf007813752bb124021803371b1"
+    },
+    "leaf_portal.vertices": {
+      "construction_recipe": {
+        "alignment_bytes": 4,
+        "ancestor_block_counts": [
+          {
+            "element_count": 1,
+            "field": "portals"
+          }
+        ],
+        "malformed_variant": "truncate the final image byte; schema walker rejects the leaving extent",
+        "payload_bytes": 12,
+        "payload_encoding": "zero bytes",
+        "root_offset": 32,
+        "route": [
+          "leaf_map",
+          "portals",
+          "vertices"
+        ],
+        "source_base": 1879048192,
+        "target_block_count": 1,
+        "target_kind": "block"
+      },
+      "file": "leaf_portal__vertices.bin",
+      "image_bytes": 716,
+      "payload_bytes": 12,
+      "sha256": "8f3847e9a6bea019ae823cf4a1078fa3da01e56b9391ce92fb817dfd5b54174b"
+    },
+    "map_leaf.faces": {
+      "construction_recipe": {
+        "alignment_bytes": 4,
+        "ancestor_block_counts": [
+          {
+            "element_count": 1,
+            "field": "leaves"
+          }
+        ],
+        "malformed_variant": "truncate the final image byte; schema walker rejects the leaving extent",
+        "payload_bytes": 16,
+        "payload_encoding": "zero bytes",
+        "root_offset": 32,
+        "route": [
+          "leaf_map",
+          "leaves",
+          "faces"
+        ],
+        "source_base": 1879048192,
+        "target_block_count": 1,
+        "target_kind": "block"
+      },
+      "file": "map_leaf__faces.bin",
+      "image_bytes": 720,
+      "payload_bytes": 16,
+      "sha256": "45b292cadb799d3a5a9aeb7dd774e1ccb592bdae26b7c046a81648f7c60e4a75"
+    },
+    "map_leaf.portal_designators": {
+      "construction_recipe": {
+        "alignment_bytes": 4,
+        "ancestor_block_counts": [
+          {
+            "element_count": 1,
+            "field": "leaves"
+          }
+        ],
+        "malformed_variant": "truncate the final image byte; schema walker rejects the leaving extent",
+        "payload_bytes": 4,
+        "payload_encoding": "zero bytes",
+        "root_offset": 32,
+        "route": [
+          "leaf_map",
+          "leaves",
+          "portal_designators"
+        ],
+        "source_base": 1879048192,
+        "target_block_count": 1,
+        "target_kind": "block"
+      },
+      "file": "map_leaf__portal_designators.bin",
+      "image_bytes": 708,
+      "payload_bytes": 4,
+      "sha256": "809c77b869eceb29c2f52d1b7e9eadd9c500330864bca580dd5b72852c3e8b64"
+    },
+    "map_leaf_face.vertices": {
+      "construction_recipe": {
+        "alignment_bytes": 4,
+        "ancestor_block_counts": [
+          {
+            "element_count": 1,
+            "field": "leaves"
+          },
+          {
+            "element_count": 1,
+            "field": "faces"
+          }
+        ],
+        "malformed_variant": "truncate the final image byte; schema walker rejects the leaving extent",
+        "payload_bytes": 8,
+        "payload_encoding": "zero bytes",
+        "root_offset": 32,
+        "route": [
+          "leaf_map",
+          "leaves",
+          "faces",
+          "vertices"
+        ],
+        "source_base": 1879048192,
+        "target_block_count": 1,
+        "target_kind": "block"
+      },
+      "file": "map_leaf_face__vertices.bin",
+      "image_bytes": 728,
+      "payload_bytes": 8,
+      "sha256": "599a694e8e2654438735762f51d212c2921f447c428bd116cfcb797bb9ad7fc8"
+    },
+    "structure_bsp.pathfinding_edges": {
+      "construction_recipe": {
+        "alignment_bytes": 4,
+        "ancestor_block_counts": [],
+        "malformed_variant": "truncate the final image byte; schema walker rejects the leaving extent",
+        "payload_bytes": 1,
+        "payload_encoding": "zero bytes",
+        "root_offset": 32,
+        "route": [
+          "pathfinding_edges"
+        ],
+        "source_base": 1879048192,
+        "target_block_count": 1,
+        "target_kind": "block"
+      },
+      "file": "structure_bsp__pathfinding_edges.bin",
+      "image_bytes": 681,
+      "payload_bytes": 1,
+      "sha256": "db66dda60ac956482198748dc36b3d5f1f46cb0b12d346d25f16c645033508d8"
+    },
+    "structure_cluster.surface_indices": {
+      "construction_recipe": {
+        "alignment_bytes": 4,
+        "ancestor_block_counts": [
+          {
+            "element_count": 1,
+            "field": "clusters"
+          }
+        ],
+        "malformed_variant": "truncate the final image byte; schema walker rejects the leaving extent",
+        "payload_bytes": 4,
+        "payload_encoding": "zero bytes",
+        "root_offset": 32,
+        "route": [
+          "clusters",
+          "surface_indices"
+        ],
+        "source_base": 1879048192,
+        "target_block_count": 1,
+        "target_kind": "block"
+      },
+      "file": "structure_cluster__surface_indices.bin",
+      "image_bytes": 788,
+      "payload_bytes": 4,
+      "sha256": "85e4408ea7de8cc3dec9920b70ce21408014580595f5e2f1664d510fec6a78db"
+    },
+    "structure_material.uncompressed_vertex_data": {
+      "construction_recipe": {
+        "alignment_bytes": 4,
+        "ancestor_block_counts": [
+          {
+            "element_count": 1,
+            "field": "lightmaps"
+          }
+        ],
+        "malformed_variant": "truncate the final image byte; schema walker rejects the leaving extent",
+        "payload_bytes": 4,
+        "payload_encoding": "ASCII DATA",
+        "root_offset": 32,
+        "route": [
+          "lightmaps",
+          "materials",
+          "uncompressed_vertex_data"
+        ],
+        "source_base": 1879048192,
+        "target_block_count": null,
+        "target_kind": "data"
+      },
+      "file": "structure_material__uncompressed_vertex_data.bin",
+      "image_bytes": 972,
+      "payload_bytes": 4,
+      "sha256": "bee3f2b12490137acdab336bfee9a1607081d170bc0a72d6a3112ff7415bd403"
+    }
+  },
+  "schema_elf": "build/hcu-ps2-closure/all-no-bootstrap-memory/halo-local.elf"
+}

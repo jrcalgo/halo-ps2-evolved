@@ -346,6 +346,9 @@ struct cluster_partition noncollideable_object_cluster_partition;
 struct cluster_partition collideable_object_cluster_partition;
 struct data_array *object_header_data;
 """)
+    # port helper called by the extracted pool paths; verbatim from CE objects.c.
+    # Its HALO_PS2 body is compiled out in this host build, as in production.
+    add("object pool counters note", extract_last(objects, "static void object_pool_counters_note("))
     for signature in (
             "static void object_name_list_allocate(", "static void object_name_list_clear(",
             "void objects_initialize(", "void objects_initialize_for_new_map(",
@@ -396,6 +399,14 @@ struct vehicle_definition
 	real ai_steering_max_throttle;
 };
 """)
+    # actors_initialize() resets these file-static telemetry counters; copy the
+    # declarations verbatim from CE actors.c (each must occur exactly once).
+    for counter in ("s_actor_pool_high_water", "s_actor_pool_failed_allocations",
+                    "s_actor_pool_resets"):
+        declaration = f"static unsigned long {counter};"
+        if actors.count(declaration) != 1:
+            raise AssertionError(f"CE actors.c telemetry declaration changed: {counter}")
+        add("actor telemetry " + counter, declaration + "\n")
     for signature in (
             "void actors_initialize(", "void actors_initialize_for_new_map(",
             "long actor_new(", "long actor_create_for_unit(", "void actor_attach_unit(",

@@ -1,0 +1,4081 @@
+{
+  "format": "m4-c4-range-dispositions-v1",
+  "lane": "ranges",
+  "generated_by": "tools/audit_c4_range_dispositions.py",
+  "inputs": {
+    "docs/reports/m2-step7-bsp-range-member-layout-2026-10-22.json": "60b933028dd92a249f09246263aaec629473d520b93c41bb9e96341eadce71b7",
+    "docs/reports/m2-step7-eight-unmapped-exact-layout-2026-10-22.json": "0e760f83d3b95ff91082947a8e4535230ba9325563b143b7dc52d6df5a401237",
+    "docs/reports/m2-step7-eight-unmapped-range-source-map-2026-10-22.json": "f512d9e12c392eb415b9cf7168c6090e068617f5be847662ef416684ee5f3df5",
+    "docs/reports/m2-step7-bsp-member-inventory-2026-10-22.json": "8d0bfccd29daddae878703c9ebe0b85cc5111ee5b818f17e22494108dcec8b1e",
+    "docs/reports/m2-step7-empty-bsp-fields-2026-10-22.json": "1d96ac3416ee7a2c44f08afb9686a429a4006f4b03762f95b1e7e87922ceb97c"
+  },
+  "cited_source_sha256": {
+    "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c": "7163d79c74270009e7fe371422aa7997c5caeba5f12ae24647474b1d6e8d1b52",
+    "submodules/halo-ce-universal/port/linux/game/tag_schema_render.c": "49a728e31bb306e7b10af3d4473a8b486d3b55179ec6a5d004da7d8d0a82025c",
+    "submodules/halo-ce-universal/source/ai/path.c": "626755d212abc247d1a5a37ec48231d9058eeea668f973425beade991fd53c41",
+    "submodules/halo-ce-universal/source/ai/path_structure_bsp.c": "a3e1353f812ce1f70e7ea8d6b20a61dd02f041bcc8f96531877e0736f58f7b31",
+    "submodules/halo-ce-universal/source/cache/predicted_resources.c": "c2f81e7cab0307a5cb33f2094837556b3638594711a2e88dc187a1ec1c093eb4",
+    "submodules/halo-ce-universal/source/effects/weather_particle_systems.c": "5c6f2cbe81276d89203890b1dbba3eb833125b2eb1c8c24c4c96dd74d61360b3",
+    "submodules/halo-ce-universal/source/hs/hs_globals_external.c": "b06018d37fd760b1b7ea71766c7967d1dc804ea76720727f1ac28c70b12b835b",
+    "submodules/halo-ce-universal/source/objects/object_lights.c": "494b6aeda716ad34332a4dd07c5de8075f989ab658620d44b623337896282c01",
+    "submodules/halo-ce-universal/source/physics/breakable_surfaces.c": "a8349a2a064dcdc969153ebf81eaaa2a5528dc56c733ab0f1efb75e7d680a8e9",
+    "submodules/halo-ce-universal/source/physics/bsp2d.c": "e1e7f9378e8adefd23dababc794df515d6b8eedb697c541c4cc17ec6a00b302d",
+    "submodules/halo-ce-universal/source/physics/bsp3d.c": "5c445e73cd356d62d18336e45290dbb415f2a1c9267c6621d96a2fe46555d798",
+    "submodules/halo-ce-universal/source/physics/collision_bsp.c": "096debda0f9cdd62fa8b9981f040770e5e0dfbb8f6baa2f4a241ff0db00dde86",
+    "submodules/halo-ce-universal/source/rasterizer/rasterizer_geometry.h": "6a697024b8ac7816a8814e9c48d66b05131691cf3e84385368791716b300c647",
+    "submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c": "2a4db1e1f5e125436fddc05a46b1eb68102e2be978d8294919f85275d742b233",
+    "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_detail_objects.c": "1a91d34fd0e8a0683ac26b07077787996b4ed2b9c58b004c3609a358889d66c1",
+    "submodules/halo-ce-universal/source/render/render_objects.c": "a123b891ca6c3dbe7170bd705aa160ac496ede04540de9cda0674c123b9a33aa",
+    "submodules/halo-ce-universal/source/scenario/scenario.c": "22aef8353c6f4a1067d0e51e78565783d5f7c911e3b4d73f40ad49269a2546c0",
+    "submodules/halo-ce-universal/source/scenario/wind.c": "b4464221406b8388a77815afd84a179f9b8fe2c835f841b34caa6f6bc815f911",
+    "submodules/halo-ce-universal/source/structures/leaf_map.c": "8a37072ca5ea8de7ab2e7191d4aa3b76f89d3feca15d24f1aa58c9ae8418b20b",
+    "submodules/halo-ce-universal/source/structures/structure_detail_objects.c": "471e7a77c5f92bcd8587ffccd9f3cffe7cf7cabec94189f02e0a0231b2314a5a",
+    "submodules/halo-ce-universal/source/structures/structure_lens_flares.c": "44bcdc435f01d56a21822164e3aaa53df5fde56903e463453117699ca866306d",
+    "submodules/halo-ce-universal/source/structures/structure_render.c": "ce7240bf9643d98c6c10242465a1d6b9b557422b8986c0b41b0ac7fb75c090b6",
+    "submodules/halo-ce-universal/source/structures/structure_runtime_decals.c": "b8414f1c1d1305fcc23beafd6e74486485ce79078cc61868dfba35bde4023f58",
+    "submodules/halo-ce-universal/source/structures/structure_visibility.c": "9f1d05ac81293ecd895986561ceea0413383a7d43e8ec6cbfe3453a211b55a25",
+    "submodules/halo-ce-universal/source/structures/structures.c": "644dff5a5f5a0e1d4a6ae5f71109afde647809f67401775f2dc8c74d3ca87c3f"
+  },
+  "summary": {
+    "range_rows": 43,
+    "counts": {
+      "runtime-normalized": 0,
+      "preserved-opaque": 5,
+      "consumed": 37,
+      "schema-gap": 1,
+      "blocked": 0
+    },
+    "needs_fixture_count": 38,
+    "unresolved": 0
+  },
+  "needs_fixture": [
+    "structure_runtime_decal.<unclassified@0x0>",
+    "detail_object_z_reference_vector.<unclassified@0x0>",
+    "detail_object_count.<unclassified@0x0>",
+    "detail_object.<unclassified@0x0>",
+    "detail_object_cell.<unclassified@0x0>",
+    "structure_weather_polyhedron.<unclassified@0x0>",
+    "structure_weather_palette_entry.<unclassified@0x90>",
+    "structure_fog_plane.<unclassified@0x4>",
+    "structure_breakable_surface.<unclassified@0x0>",
+    "structure_cluster_portal.<unclassified@0x4>",
+    "structure_cluster.<unclassified@0x0>",
+    "structure_mirror.<unclassified@0x0>",
+    "structure_subcluster.<unclassified@0x0>",
+    "predicted_resource.<unclassified@0x2>",
+    "structure_lens_flare_marker.<unclassified@0x0>",
+    "structure_lightmap.<unclassified@0x0>",
+    "structure_material.<unclassified@0x10>",
+    "structure_material.<unclassified@0x9c>",
+    "structure_material.<unclassified@0xae>",
+    "structure_surface.<unclassified@0x0>",
+    "structure_surface_reference.<unclassified@0x4>",
+    "structure_leaf.<unclassified@0x0>",
+    "structure_leaf.<unclassified@0xa>",
+    "structure_node.<unclassified@0x0>",
+    "render_lighting.<unclassified@0x0>",
+    "render_lighting.<unclassified@0xe>",
+    "render_lighting.<unclassified@0x42>",
+    "collision_vertex.<unclassified@0x0>",
+    "collision_surface.<unclassified@0x0>",
+    "collision_surface.<unclassified@0x8>",
+    "bsp2d_node.<unclassified@0x0>",
+    "bsp2d_reference.<unclassified@0x0>",
+    "collision_leaf.<unclassified@0x0>",
+    "bsp3d_node.<unclassified@0x4>",
+    "real_plane3d.<unclassified@0x0>",
+    "real_point3d.<unclassified@0x0>",
+    "byte.<unclassified@0x0>",
+    "long.<unclassified@0x0>"
+  ],
+  "rows": [
+    {
+      "ledger_member": "leaf_portal.<unclassified@0x0>",
+      "disposition": "preserved-opaque",
+      "evidence": "The leaf map is not a gameplay store: its only readers are render_debug_leaf_portal(s), reached from structure_render_preprocess through the hs globals debug_leaf_index/debug_leaf_portal_index/debug_leaf_portals (default NONE/FALSE; listed FALSE in hs_external_global_settable_in_maps, so map scripts cannot set them, only the console), and leaf_map.c's own builder functions, which have no caller. The tag schema documents it as debug-only and zeroes leaf_map.bsp. All 82 audited retail BSPs have an empty leaf_map.portals block. Bytes stay exact-range preserved; a reader would only appear if PS2 added the debug visualiser. Cites: submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:892; submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:924; submodules/halo-ce-universal/source/structures/structure_render.c:667; submodules/halo-ce-universal/source/structures/structure_render.c:198; submodules/halo-ce-universal/source/hs/hs_globals_external.c:2519.",
+      "live_members": [
+        {
+          "name": "plane_index",
+          "disposition": "preserved-opaque",
+          "offset": 0,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/structures/leaf_map.h:33: long plane_index;",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 1,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "leaf_indices",
+          "disposition": "preserved-opaque",
+          "offset": 4,
+          "size": 8,
+          "declaration": "submodules/halo-ce-universal/source/structures/leaf_map.h:34: long leaf_indices[2];",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 4,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 2,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": false,
+      "notes": "debug-draw-only reader (hs-settable globals); marked preserved-opaque rather than consumed because there is no simulation, multiplayer, or presentation consumer. Orchestrator may veto and demand a debug-draw fixture.",
+      "struct": "leaf_portal",
+      "offset": 0,
+      "size": 12,
+      "ledger_family": "pvs-portals-pas",
+      "consumer": "none outside debug draw and the offline leaf-map builder",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 892,
+          "needle": "the leaf map (only drawn by debugging: structure_render.c)"
+        },
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 924,
+          "needle": "the bsp the tools built it from, which the game never sets"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_render.c",
+          "line": 667,
+          "needle": "render_debug_leaf_portals(&structure_bsp->leaf_map, debug_leaf_index)"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_render.c",
+          "line": 198,
+          "needle": "long debug_leaf_index = NONE;"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/hs/hs_globals_external.c",
+          "line": 2519,
+          "needle": "FALSE, /* debug_leaf_portals */"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "leaf_map.portals",
+          "retail_nonempty_bsp_count": 0,
+          "retail_empty_bsp_count": 82
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "map_leaf_face.<unclassified@0x0>",
+      "disposition": "preserved-opaque",
+      "evidence": "map_leaf_face.node_index is read only inside leaf_map.c (render_debug_leaf_portal and the builder). Same debug-only evidence as leaf_portal; map_leaf.faces is empty in all 82 audited retail BSPs. Cites: submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:892; submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:924; submodules/halo-ce-universal/source/structures/structure_render.c:667; submodules/halo-ce-universal/source/structures/structure_render.c:198; submodules/halo-ce-universal/source/hs/hs_globals_external.c:2519.",
+      "live_members": [
+        {
+          "name": "node_index",
+          "disposition": "preserved-opaque",
+          "offset": 0,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/structures/leaf_map.c:181: long node_index;",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 4,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 1,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": false,
+      "notes": "debug-draw-only reader.",
+      "struct": "map_leaf_face",
+      "offset": 0,
+      "size": 4,
+      "ledger_family": "pvs-portals-pas",
+      "consumer": "none outside debug draw and the offline leaf-map builder",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 892,
+          "needle": "the leaf map (only drawn by debugging: structure_render.c)"
+        },
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 924,
+          "needle": "the bsp the tools built it from, which the game never sets"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_render.c",
+          "line": 667,
+          "needle": "render_debug_leaf_portals(&structure_bsp->leaf_map, debug_leaf_index)"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_render.c",
+          "line": 198,
+          "needle": "long debug_leaf_index = NONE;"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/hs/hs_globals_external.c",
+          "line": 2519,
+          "needle": "FALSE, /* debug_leaf_portals */"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "map_leaf.faces",
+          "retail_nonempty_bsp_count": 0,
+          "retail_empty_bsp_count": 82
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_runtime_decal.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "position, palette_index, yaw and pitch are consumed on PVS enter; palette_index is guarded at use against the scenario decal_palette count (no validator check); yaw/pitch are signed bytes with no domain; unused is declared padding. Cites: submodules/halo-ce-universal/source/structures/structure_runtime_decals.c:202; submodules/halo-ce-universal/source/structures/structure_runtime_decals.c:230; submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1468.",
+      "live_members": [
+        {
+          "name": "position",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 12,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:138: real_point3d position;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/structures/structure_runtime_decals.c:230 (structure_decals_update)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "palette_index",
+          "disposition": "consumed",
+          "offset": 12,
+          "size": 1,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:139: byte palette_index;",
+          "reads_runtime_count": 2,
+          "reads_runtime_sites": [
+            "source/structures/structure_runtime_decals.c:202 (structure_decals_update)",
+            "source/structures/structure_runtime_decals.c:210 (structure_decals_update)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "unused",
+          "disposition": "preserved-opaque",
+          "offset": 13,
+          "size": 1,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:140: byte unused;",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "yaw",
+          "disposition": "consumed",
+          "offset": 14,
+          "size": 1,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:141: char yaw;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/structures/structure_runtime_decals.c:224 (structure_decals_update)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "pitch",
+          "disposition": "consumed",
+          "offset": 15,
+          "size": 1,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:142: char pitch;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/structures/structure_runtime_decals.c:225 (structure_decals_update)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "no fixture changes PVS to create/delete a decal (m2-step7-nested-bsp-field-consumers); 58/82 retail BSPs non-empty.",
+      "struct": "structure_runtime_decal",
+      "offset": 0,
+      "size": 16,
+      "ledger_family": "decals",
+      "consumer": "structure_decals_update (decal_new on cluster PVS entry)",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_runtime_decals.c",
+          "line": 202,
+          "needle": "if (runtime_decal->palette_index >= global_scenario_get()->decal_palette.count)"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_runtime_decals.c",
+          "line": 230,
+          "needle": "decal_new(definition_index, &runtime_decal->position, &normal, 1.0f, 1, NONE, FALSE)"
+        },
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1468,
+          "needle": "cluster %d's %d decals from %d are not the bsp's %ld: none"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_bsp.runtime_decals",
+          "retail_nonempty_bsp_count": 58,
+          "retail_empty_bsp_count": 24
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "detail_object_z_reference_vector.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "Containing CE type: real_vector4d, the element of structure_detail_object_data.z_reference_vectors, selected at the cell's count_index when in range, else the default (0,0,1,0). Components i,j,k,l are consumed only by the Xbox rasterizer. Cites: submodules/halo-ce-universal/source/structures/structure_detail_objects.c:372; submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1572; submodules/halo-ce-universal/source/structures/structure_detail_objects.c:543; submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_detail_objects.c:867.",
+      "live_members": [
+        {
+          "name": "i",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/math/real_math.h:443: struct { real i; real j; real k; real l; };",
+          "reads_runtime_count": 2,
+          "reads_runtime_sites": [
+            "source/rasterizer/xbox/rasterizer_xbox_detail_objects.c:867 (_rasterizer_detail_objects_draw)",
+            "source/rasterizer/xbox/rasterizer_xbox_detail_objects.c:879 (_rasterizer_detail_objects_draw)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "j",
+          "disposition": "consumed",
+          "offset": 4,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/math/real_math.h:443: struct { real i; real j; real k; real l; };",
+          "reads_runtime_count": 2,
+          "reads_runtime_sites": [
+            "source/rasterizer/xbox/rasterizer_xbox_detail_objects.c:868 (_rasterizer_detail_objects_draw)",
+            "source/rasterizer/xbox/rasterizer_xbox_detail_objects.c:879 (_rasterizer_detail_objects_draw)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "k",
+          "disposition": "consumed",
+          "offset": 8,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/math/real_math.h:443: struct { real i; real j; real k; real l; };",
+          "reads_runtime_count": 2,
+          "reads_runtime_sites": [
+            "source/rasterizer/xbox/rasterizer_xbox_detail_objects.c:869 (_rasterizer_detail_objects_draw)",
+            "source/rasterizer/xbox/rasterizer_xbox_detail_objects.c:879 (_rasterizer_detail_objects_draw)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "l",
+          "disposition": "consumed",
+          "offset": 12,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/math/real_math.h:443: struct { real i; real j; real k; real l; };",
+          "reads_runtime_count": 2,
+          "reads_runtime_sites": [
+            "source/rasterizer/xbox/rasterizer_xbox_detail_objects.c:870 (_rasterizer_detail_objects_draw)",
+            "source/rasterizer/xbox/rasterizer_xbox_detail_objects.c:879 (_rasterizer_detail_objects_draw)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "Retail: the 13 stock multiplayer BSPs all have detail_object_data.valid == 0 with empty child blocks (m2-step7-mp-detail-object-consumer); only 4/82 audited retail BSPs are non-empty. The pixel consumer is the Xbox rasterizer backend (rasterizer_xbox_detail_objects.c); PS2 has no equivalent, so the fixture is the CPU-side selector with synthetic nonempty data, or the orchestrator must classify detail-object drawing as unsupported.",
+      "struct": "detail_object_z_reference_vector",
+      "offset": 0,
+      "size": 16,
+      "ledger_family": "detail-objects",
+      "consumer": "structure_render_detail_objects (vector selection) and the Xbox rasterizer (vertex data 3)",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c",
+          "line": 372,
+          "needle": "if (count_index >= 0 && count_index < detail_object_data->counts.count)"
+        },
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1572,
+          "needle": "has detail object cell %ld out of order or past its objects:"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c",
+          "line": 543,
+          "needle": "&detail_object_global_runtime_data->default_z_reference_vector;"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_detail_objects.c",
+          "line": 867,
+          "needle": "z_reference_vector->i,"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_detail_object_data.z_reference_vectors",
+          "retail_nonempty_bsp_count": 4,
+          "retail_empty_bsp_count": 78
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "detail_object_count.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "Containing CE type: the structure_detail_object_data.counts block element, a word read through detail_object_count_get and bounded against detail_objects (the validator sums per-layer counts per cell). Cites: submodules/halo-ce-universal/source/structures/structure_detail_objects.c:372; submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1572.",
+      "live_members": [
+        {
+          "name": "value",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:866: TAG_SCHEMA_DEFINITION(detail_object_count, word, empty_fields)",
+          "reads_runtime_count": 2,
+          "reads_runtime_sites": [
+            "source/structures/structure_detail_objects.c:374 (structure_detail_objects_port_count)",
+            "source/structures/structure_detail_objects.c:79 (?)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 1,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "Retail: the 13 stock multiplayer BSPs all have detail_object_data.valid == 0 with empty child blocks (m2-step7-mp-detail-object-consumer); only 4/82 audited retail BSPs are non-empty. The pixel consumer is the Xbox rasterizer backend (rasterizer_xbox_detail_objects.c); PS2 has no equivalent, so the fixture is the CPU-side selector with synthetic nonempty data, or the orchestrator must classify detail-object drawing as unsupported.",
+      "struct": "detail_object_count",
+      "offset": 0,
+      "size": 2,
+      "ledger_family": "detail-objects",
+      "consumer": "structure_detail_objects_port_count / structure_render_detail_objects",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c",
+          "line": 372,
+          "needle": "if (count_index >= 0 && count_index < detail_object_data->counts.count)"
+        },
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1572,
+          "needle": "has detail object cell %ld out of order or past its objects:"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_detail_object_data.counts",
+          "retail_nonempty_bsp_count": 4,
+          "retail_empty_bsp_count": 78
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "detail_object.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "position[3], data (type/sprite nibbles) and color (16-bit) are unpacked into detail_object_vertex by the Xbox rasterizer. Cites: submodules/halo-ce-universal/source/structures/structure_detail_objects.c:372; submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1572; submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_detail_objects.c:300.",
+      "live_members": [
+        {
+          "name": "position",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 3,
+          "declaration": "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_detail_objects.c:110: byte position[3];",
+          "reads_runtime_count": 3,
+          "reads_runtime_sites": [
+            "source/rasterizer/xbox/rasterizer_xbox_detail_objects.c:290 (detail_object_build_vertices)",
+            "source/rasterizer/xbox/rasterizer_xbox_detail_objects.c:291 (detail_object_build_vertices)",
+            "source/rasterizer/xbox/rasterizer_xbox_detail_objects.c:292 (detail_object_build_vertices)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "data",
+          "disposition": "consumed",
+          "offset": 3,
+          "size": 1,
+          "declaration": "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_detail_objects.c:111: byte data;",
+          "reads_runtime_count": 2,
+          "reads_runtime_sites": [
+            "source/rasterizer/xbox/rasterizer_xbox_detail_objects.c:300 (detail_object_build_vertices)",
+            "source/rasterizer/xbox/rasterizer_xbox_detail_objects.c:310 (detail_object_build_vertices)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "color",
+          "disposition": "consumed",
+          "offset": 4,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_detail_objects.c:112: word color;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/rasterizer/xbox/rasterizer_xbox_detail_objects.c:293 (detail_object_build_vertices)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "Retail: the 13 stock multiplayer BSPs all have detail_object_data.valid == 0 with empty child blocks (m2-step7-mp-detail-object-consumer); only 4/82 audited retail BSPs are non-empty. The pixel consumer is the Xbox rasterizer backend (rasterizer_xbox_detail_objects.c); PS2 has no equivalent, so the fixture is the CPU-side selector with synthetic nonempty data, or the orchestrator must classify detail-object drawing as unsupported.",
+      "struct": "detail_object",
+      "offset": 0,
+      "size": 6,
+      "ledger_family": "detail-objects",
+      "consumer": "rasterizer_xbox_detail_objects.c vertex packing (Xbox backend); structure_detail_objects.c selection",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c",
+          "line": 372,
+          "needle": "if (count_index >= 0 && count_index < detail_object_data->counts.count)"
+        },
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1572,
+          "needle": "has detail object cell %ld out of order or past its objects:"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_detail_objects.c",
+          "line": 300,
+          "needle": "type_index = (detail_object->data >> 4) % type_definitions->count;"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_detail_object_data.detail_objects",
+          "retail_nonempty_bsp_count": 4,
+          "retail_empty_bsp_count": 78
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "detail_object_cell.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "Containing CE type: struct detail_object_cell_definition (0x20), the element of structure_detail_object_data.cells. cell_x/y/z are binary-searched, valid_layers expands layer counts, start_index/count_index index the sibling detail_objects/counts blocks (bounded by the validator and by structure_detail_objects_port_count), offset_z is the fractional z; unused14[3] is declared unused. Cites: submodules/halo-ce-universal/source/structures/structure_detail_objects.c:372; submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1572.",
+      "live_members": [
+        {
+          "name": "cell_x",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c:99: short cell_x;",
+          "reads_runtime_count": 7,
+          "reads_runtime_sites": [
+            "source/structures/structure_detail_objects.c:294 (key_compare_cells_lower_bound)",
+            "source/structures/structure_detail_objects.c:295 (key_compare_cells_lower_bound)",
+            "source/structures/structure_detail_objects.c:304 (key_compare_cells_upper_bound)",
+            "source/structures/structure_detail_objects.c:305 (key_compare_cells_upper_bound)",
+            "source/structures/structure_detail_objects.c:484 (structure_render_detail_objects)",
+            "source/structures/structure_detail_objects.c:486 (structure_render_detail_objects)",
+            "source/structures/structure_detail_objects.c:527 (structure_render_detail_objects)"
+          ],
+          "reads_debug_tool_test_count": 3,
+          "reads_validator_load_count": 2,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "cell_y",
+          "disposition": "consumed",
+          "offset": 2,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c:100: short cell_y;",
+          "reads_runtime_count": 7,
+          "reads_runtime_sites": [
+            "source/structures/structure_detail_objects.c:296 (key_compare_cells_lower_bound)",
+            "source/structures/structure_detail_objects.c:297 (key_compare_cells_lower_bound)",
+            "source/structures/structure_detail_objects.c:306 (key_compare_cells_upper_bound)",
+            "source/structures/structure_detail_objects.c:307 (key_compare_cells_upper_bound)",
+            "source/structures/structure_detail_objects.c:485 (structure_render_detail_objects)",
+            "source/structures/structure_detail_objects.c:487 (structure_render_detail_objects)",
+            "source/structures/structure_detail_objects.c:528 (structure_render_detail_objects)"
+          ],
+          "reads_debug_tool_test_count": 3,
+          "reads_validator_load_count": 2,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "cell_z",
+          "disposition": "consumed",
+          "offset": 4,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c:101: short cell_z;",
+          "reads_runtime_count": 4,
+          "reads_runtime_sites": [
+            "source/structures/structure_detail_objects.c:297 (key_compare_cells_lower_bound)",
+            "source/structures/structure_detail_objects.c:307 (key_compare_cells_upper_bound)",
+            "source/structures/structure_detail_objects.c:499 (structure_render_detail_objects)",
+            "source/structures/structure_detail_objects.c:530 (structure_render_detail_objects)"
+          ],
+          "reads_debug_tool_test_count": 5,
+          "reads_validator_load_count": 1,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "offset_z",
+          "disposition": "consumed",
+          "offset": 6,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c:102: short offset_z;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/structures/structure_detail_objects.c:530 (structure_render_detail_objects)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "valid_layers",
+          "disposition": "consumed",
+          "offset": 8,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c:103: unsigned long valid_layers;",
+          "reads_runtime_count": 2,
+          "reads_runtime_sites": [
+            "source/structures/structure_detail_objects.c:505 (structure_render_detail_objects)",
+            "source/structures/structure_detail_objects.c:508 (structure_render_detail_objects)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 1,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "start_index",
+          "disposition": "consumed",
+          "offset": 12,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c:104: long start_index;",
+          "reads_runtime_count": 2,
+          "reads_runtime_sites": [
+            "source/structures/structure_detail_objects.c:517 (structure_render_detail_objects)",
+            "source/structures/structure_detail_objects.c:532 (structure_render_detail_objects)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 1,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "count_index",
+          "disposition": "consumed",
+          "offset": 16,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c:105: long count_index;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/structures/structure_detail_objects.c:510 (structure_render_detail_objects)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 4,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "unused14",
+          "disposition": "preserved-opaque",
+          "offset": 20,
+          "size": 12,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c:106: long unused14[3];",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "Retail: the 13 stock multiplayer BSPs all have detail_object_data.valid == 0 with empty child blocks (m2-step7-mp-detail-object-consumer); only 4/82 audited retail BSPs are non-empty. The pixel consumer is the Xbox rasterizer backend (rasterizer_xbox_detail_objects.c); PS2 has no equivalent, so the fixture is the CPU-side selector with synthetic nonempty data, or the orchestrator must classify detail-object drawing as unsupported.",
+      "struct": "detail_object_cell",
+      "offset": 0,
+      "size": 32,
+      "ledger_family": "detail-objects",
+      "consumer": "structure_render_detail_objects camera-cell selection; structure_detail_object_data_check validation",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c",
+          "line": 372,
+          "needle": "if (count_index >= 0 && count_index < detail_object_data->counts.count)"
+        },
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1572,
+          "needle": "has detail object cell %ld out of order or past its objects:"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_detail_object_data.cells",
+          "retail_nonempty_bsp_count": 4,
+          "retail_empty_bsp_count": 78
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_weather_polyhedron.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "bounding_sphere_center/bounding_sphere_radius feed the squared-distance cull; the trailing long unused has no access. Cites: submodules/halo-ce-universal/source/effects/weather_particle_systems.c:465.",
+      "live_members": [
+        {
+          "name": "bounding_sphere_center",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 12,
+          "declaration": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c:254: real_point3d bounding_sphere_center;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/effects/weather_particle_systems.c:464 (weather_polyhedra_find)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "bounding_sphere_radius",
+          "disposition": "consumed",
+          "offset": 12,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c:255: real bounding_sphere_radius;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/effects/weather_particle_systems.c:465 (weather_polyhedra_find)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "unused",
+          "disposition": "preserved-opaque",
+          "offset": 16,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c:256: long unused;",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "Weather is presentation; retail non-empty in 8/82 BSPs (weather_polyhedra).",
+      "struct": "structure_weather_polyhedron",
+      "offset": 0,
+      "size": 20,
+      "ledger_family": "fog-weather-wind",
+      "consumer": "weather_polyhedra_find (camera distance cull of polyhedra)",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+          "line": 465,
+          "needle": "polyhedron->bounding_sphere_radius)*(maximum_distance + polyhedron->bounding_sphere_radius)"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_bsp.weather_polyhedra",
+          "retail_nonempty_bsp_count": 8,
+          "retail_empty_bsp_count": 74
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_weather_palette_entry.<unclassified@0x0>",
+      "disposition": "preserved-opaque",
+      "evidence": "name[32] is an authoring label. Neither wind.c nor weather_particle_systems.c reads a name member of the palette entry; the entry is addressed by cluster/region weather_palette_index. Cites: submodules/halo-ce-universal/source/effects/weather_particle_systems.c:134.",
+      "live_members": [
+        {
+          "name": "name",
+          "disposition": "preserved-opaque",
+          "offset": 0,
+          "size": 32,
+          "declaration": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c:237: char name[32];",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": false,
+      "notes": "preserved-opaque on zero-access evidence in both private declarations (weather_particle_systems.c, wind.c) plus the port schema declaration; not a declared padding field.",
+      "struct": "structure_weather_palette_entry",
+      "offset": 0,
+      "size": 32,
+      "ledger_family": "fog-weather-wind",
+      "consumer": "none",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+          "line": 134,
+          "needle": "char name[32];"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_bsp.weather_palette",
+          "retail_nonempty_bsp_count": 26,
+          "retail_empty_bsp_count": 56
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_weather_palette_entry.<unclassified@0x30>",
+      "disposition": "preserved-opaque",
+      "evidence": "pad30 and particle_system_unused[11] are declared padding/unused. runtime_particle_system_global_function_index and particle_system_global_function_name are named as runtime/global-function hooks but have zero reads and zero writes anywhere in CE source (only the three private struct declarations mention them), so the serialized value is never observed and nothing fills it at load. Cites: submodules/halo-ce-universal/source/effects/weather_particle_systems.c:240; submodules/halo-ce-universal/source/scenario/wind.c:76.",
+      "live_members": [
+        {
+          "name": "pad30",
+          "disposition": "preserved-opaque",
+          "offset": 48,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c:239: word pad30;",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "runtime_particle_system_global_function_index",
+          "disposition": "preserved-opaque",
+          "offset": 50,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c:240: short runtime_particle_system_global_function_index;",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "particle_system_global_function_name",
+          "disposition": "preserved-opaque",
+          "offset": 52,
+          "size": 32,
+          "declaration": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c:241: char particle_system_global_function_name[32];",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "particle_system_unused",
+          "disposition": "preserved-opaque",
+          "offset": 84,
+          "size": 44,
+          "declaration": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c:242: long particle_system_unused[11];",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": false,
+      "notes": "runtime_ prefix is NOT treated as runtime-normalized: no reset, fill, or journal entry exists, so it is preserved-opaque on zero-access evidence. Bytes keep the exact-range preservation guarantee.",
+      "struct": "structure_weather_palette_entry",
+      "offset": 48,
+      "size": 80,
+      "ledger_family": "fog-weather-wind",
+      "consumer": "none",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+          "line": 240,
+          "needle": "short runtime_particle_system_global_function_index;"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/scenario/wind.c",
+          "line": 76,
+          "needle": "short runtime_particle_system_global_function_index;"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_bsp.weather_palette",
+          "retail_nonempty_bsp_count": 26,
+          "retail_empty_bsp_count": 56
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_weather_palette_entry.<unclassified@0x90>",
+      "disposition": "consumed",
+      "evidence": "wind_direction and wind_magnitude scale the wind velocity of the entry's wind_state when its wind reference is set. padA0, wind_global_function_index/name and wind_unused[11] are declared padding/function hooks with zero access. Cites: submodules/halo-ce-universal/source/scenario/wind.c:249; submodules/halo-ce-universal/source/scenario/wind.c:257.",
+      "live_members": [
+        {
+          "name": "wind_direction",
+          "disposition": "consumed",
+          "offset": 144,
+          "size": 12,
+          "declaration": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c:244: real_vector3d wind_direction;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/scenario/wind.c:249 (wind_update)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "wind_magnitude",
+          "disposition": "consumed",
+          "offset": 156,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c:245: real wind_magnitude;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/scenario/wind.c:257 (wind_update)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "padA0",
+          "disposition": "preserved-opaque",
+          "offset": 160,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c:246: word padA0;",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "wind_global_function_index",
+          "disposition": "preserved-opaque",
+          "offset": 162,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c:247: short wind_global_function_index;",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "wind_global_function_name",
+          "disposition": "preserved-opaque",
+          "offset": 164,
+          "size": 32,
+          "declaration": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c:248: char wind_global_function_name[32];",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "wind_unused",
+          "disposition": "preserved-opaque",
+          "offset": 196,
+          "size": 44,
+          "declaration": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c:249: long wind_unused[11];",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "wind feeds point_physics and particle effects, so this is simulation-adjacent; 26/82 retail BSPs non-empty.",
+      "struct": "structure_weather_palette_entry",
+      "offset": 144,
+      "size": 96,
+      "ledger_family": "fog-weather-wind",
+      "consumer": "wind.c scenario wind update (wind_direction, wind_magnitude per weather palette entry)",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/scenario/wind.c",
+          "line": 249,
+          "needle": "&weather_palette->wind_direction);"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/scenario/wind.c",
+          "line": 257,
+          "needle": "scale = weather_palette->wind_magnitude * state->velocity;"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_bsp.weather_palette",
+          "retail_nonempty_bsp_count": 26,
+          "retail_empty_bsp_count": 56
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_fog_plane.<unclassified@0x4>",
+      "disposition": "consumed",
+      "evidence": "plane (real_plane3d) is tested against the query point to pick the fog region and offsets the fog plane vertices. This is the fog-plane half of the fog-region selection that the pinned HCU scenario_fog_at_point() behaviour (C4.6) depends on; the C4 fog parity artifacts are the related evidence, not asserted member-exact here. Cites: submodules/halo-ce-universal/source/scenario/scenario.c:677; submodules/halo-ce-universal/source/structures/structures.c:662.",
+      "live_members": [
+        {
+          "name": "plane",
+          "disposition": "consumed",
+          "offset": 4,
+          "size": 16,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:156: real_plane3d plane;",
+          "reads_runtime_count": 2,
+          "reads_runtime_sites": [
+            "source/scenario/scenario.c:677 (scenario_get_fog_region_index)",
+            "source/scenario/scenario.c:777 (scenario_location_water_depth)"
+          ],
+          "reads_debug_tool_test_count": 2,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "25/82 retail BSPs have fog planes. Exact Xbox attenuation is outside the gate (brief item 6).",
+      "struct": "structure_fog_plane",
+      "offset": 4,
+      "size": 16,
+      "ledger_family": "fog-weather-wind",
+      "consumer": "scenario.c scenario_get_fog_region_index / scenario_location_water_depth (plane distance) and structures.c fog plane render",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/scenario/scenario.c",
+          "line": 677,
+          "needle": "plane3d_distance_to_point(&fog_plane->plane, position) + plane_distance < 0.0f"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structures.c",
+          "line": 662,
+          "needle": "&fog_plane->plane.n, -render.fog.planar_maximum_distance"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_bsp.fog_planes",
+          "retail_nonempty_bsp_count": 25,
+          "retail_empty_bsp_count": 57
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_breakable_surface.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "centroid + bounding_radius select breakable surfaces hit by damage; collision_surface_index seeds the surface-queue break (validator clamps invalid indices to 0). unused[7] is declared unused. Cites: submodules/halo-ce-universal/source/physics/breakable_surfaces.c:291; submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1675.",
+      "live_members": [
+        {
+          "name": "centroid",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 12,
+          "declaration": "submodules/halo-ce-universal/source/physics/breakable_surfaces.h:48: real_point3d centroid;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/physics/breakable_surfaces.c:291 (breakable_surface_damage_area_of_effect)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "bounding_radius",
+          "disposition": "consumed",
+          "offset": 12,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/physics/breakable_surfaces.h:49: real bounding_radius;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/physics/breakable_surfaces.c:288 (breakable_surface_damage_area_of_effect)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "collision_surface_index",
+          "disposition": "consumed",
+          "offset": 16,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/physics/breakable_surfaces.h:50: long collision_surface_index;",
+          "reads_runtime_count": 2,
+          "reads_runtime_sites": [
+            "source/physics/breakable_surfaces.c:295 (breakable_surface_damage_area_of_effect)",
+            "source/physics/breakable_surfaces.c:331 (breakable_surface_port_break)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 2,
+          "writes_validator_load_count": 1,
+          "writes_validator_load_sites": [
+            "port/linux/game/tag_schema_collision.c:1677 (structure_bsp_check)"
+          ],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "unused",
+          "disposition": "preserved-opaque",
+          "offset": 20,
+          "size": 28,
+          "declaration": "submodules/halo-ce-universal/source/physics/breakable_surfaces.h:51: long unused[7];",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "Breakable-surface mutation (live units) belongs to the pathfinding lane; this row only needs member-exact assertions on centroid/radius/seed index. 32/82 retail BSPs non-empty.",
+      "struct": "structure_breakable_surface",
+      "offset": 0,
+      "size": 48,
+      "ledger_family": "breakables",
+      "consumer": "breakable_surfaces.c damage test (centroid/bounding_radius) and breakable_surface_effect (collision_surface_index)",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/breakable_surfaces.c",
+          "line": 291,
+          "needle": "point_in_sphere(&breakable_surface->centroid, &damage_data->epicenter, radius)"
+        },
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1675,
+          "needle": "breakable surface %ld's surface %ld is not the collision bsp's %ld: 0"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_bsp.breakable_surfaces",
+          "retail_nonempty_bsp_count": 32,
+          "retail_empty_bsp_count": 50
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_cluster_portal.<unclassified@0x4>",
+      "disposition": "consumed",
+      "evidence": "plane_index selects the bsp3d plane for the portal (validator-checked and corrected, structure_bsp_check); centroid and bounding_radius feed the portal sphere test; the six longs of unused are declared unused with no access. Cites: submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1641; submodules/halo-ce-universal/source/structures/structures.c:394; submodules/halo-ce-universal/source/structures/structure_visibility.c:1042.",
+      "live_members": [
+        {
+          "name": "plane_index",
+          "disposition": "consumed",
+          "offset": 4,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/structures/structures.c:137: long plane_index;",
+          "reads_runtime_count": 6,
+          "reads_runtime_sites": [
+            "source/structures/structure_visibility.c:1041 (portal_hull_from_portal)",
+            "source/structures/structure_visibility.c:1042 (portal_hull_from_portal)",
+            "source/structures/structure_visibility.c:1059 (portal_hull_from_portal)",
+            "source/structures/structures.c:371 (sphere_intersects_cluster_portal)",
+            "source/structures/structures.c:388 (sphere_intersects_cluster_portal)",
+            "source/structures/structures.c:398 (sphere_intersects_cluster_portal)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 2,
+          "writes_validator_load_count": 1,
+          "writes_validator_load_sites": [
+            "port/linux/game/tag_schema_collision.c:1643 (structure_bsp_check)"
+          ],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "centroid",
+          "disposition": "consumed",
+          "offset": 8,
+          "size": 12,
+          "declaration": "submodules/halo-ce-universal/source/structures/structures.c:138: real_point3d centroid;",
+          "reads_runtime_count": 2,
+          "reads_runtime_sites": [
+            "source/structures/structures.c:393 (sphere_intersects_cluster_portal)",
+            "source/structures/structures.c:809 (structure_clusters_in_cone)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "bounding_radius",
+          "disposition": "consumed",
+          "offset": 20,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/structures/structures.c:139: real bounding_radius;",
+          "reads_runtime_count": 2,
+          "reads_runtime_sites": [
+            "source/structures/structures.c:394 (sphere_intersects_cluster_portal)",
+            "source/structures/structures.c:810 (structure_clusters_in_cone)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "flags",
+          "disposition": "preserved-opaque",
+          "offset": 24,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/structures/structures.c:140: unsigned long flags;",
+          "note": "not declared padding, but no CE source access",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "unused",
+          "disposition": "preserved-opaque",
+          "offset": 28,
+          "size": 24,
+          "declaration": "submodules/halo-ce-universal/source/structures/structures.c:141: long unused[6];",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "flags has zero CE source accesses (structure_visibility_portal and structure_cluster_portal both declare it); kept preserved-opaque on grep evidence only.",
+      "struct": "structure_cluster_portal",
+      "offset": 4,
+      "size": 48,
+      "ledger_family": "pvs-portals-pas",
+      "consumer": "structures.c structure_cluster_portal geometry tests and structure_visibility.c portal-hull construction",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1641,
+          "needle": "cluster portal %ld's plane %ld is not the collision bsp's %ld: 0"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structures.c",
+          "line": 394,
+          "needle": "(portal->bounding_radius + radius) * (portal->bounding_radius + radius)"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+          "line": 1042,
+          "needle": "portal->plane_index >= TAG_BLOCK_GET_ELEMENT("
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_bsp.cluster_portals",
+          "retail_nonempty_bsp_count": 74,
+          "retail_empty_bsp_count": 8
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_cluster.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "sky_index is read by structure_visibility.c and range-guarded at use by scenario_get_sky_definition_index. fog_reference is the fog plane/region designator: validated and corrected by structure_cluster_check (the schema struct names it fog_designator) and read by scenario fog lookup. Cites: submodules/halo-ce-universal/source/structures/structure_visibility.c:408; submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1460; submodules/halo-ce-universal/source/scenario/scenario.c:652.",
+      "live_members": [
+        {
+          "name": "sky_index",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:91: short sky_index;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/structures/structure_visibility.c:408 (structure_visibility_find_camera)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "fog_reference",
+          "disposition": "consumed",
+          "offset": 2,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:92: short fog_reference;",
+          "reads_runtime_count": 7,
+          "reads_runtime_sites": [
+            "source/scenario/scenario.c:652 (scenario_get_fog_region_index)",
+            "source/scenario/scenario.c:764 (scenario_location_water_depth)",
+            "source/structures/structures.c:1061 (structure_get_planar_fog)",
+            "source/structures/structures.c:1066 (structure_get_planar_fog)",
+            "source/structures/structures.c:1079 (structure_get_planar_fog)",
+            "source/structures/structures.c:1086 (structure_get_planar_fog)",
+            "source/structures/structures.c:962 (structure_get_planar_fog_definition_index)"
+          ],
+          "reads_debug_tool_test_count": 1,
+          "reads_validator_load_count": 5,
+          "writes_validator_load_count": 1,
+          "writes_validator_load_sites": [
+            "port/linux/game/tag_schema_collision.c:1462 (structure_cluster_check)"
+          ],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "sky_index domain (scenario sky_references) is guarded at the consumer, not by the schema or validator.",
+      "struct": "structure_cluster",
+      "offset": 0,
+      "size": 4,
+      "ledger_family": "pvs-portals-pas",
+      "consumer": "structure_visibility.c sky selection; scenario.c/structures.c fog selection",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+          "line": 408,
+          "needle": "render.visible_sky_index = cluster->sky_index"
+        },
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1460,
+          "needle": "cluster %d's fog %04x is not a fog plane or region of the bsp's: none"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/scenario/scenario.c",
+          "line": 652,
+          "needle": "fog_reference = cluster->fog_reference"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_bsp.clusters",
+          "retail_nonempty_bsp_count": 82,
+          "retail_empty_bsp_count": 0
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_mirror.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "Containing CE type: struct structure_visibility_mirror (0x40): plane real_plane3d at 0 (16), long unused[5] at 16 (20), shader reference at 36 (schema-declared), points block at 52 (schema-declared). The range [0,36) is plane + unused[5]. plane is read; unused[5] has no access. Cites: submodules/halo-ce-universal/source/structures/structure_visibility.c:214; submodules/halo-ce-universal/source/structures/structure_visibility.c:1133; submodules/halo-ce-universal/source/structures/structure_visibility.c:1174.",
+      "live_members": [
+        {
+          "name": "plane",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 16,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_visibility.c:216: real_plane3d plane;",
+          "reads_runtime_count": 6,
+          "reads_runtime_sites": [
+            "source/structures/structure_visibility.c:1133 (structure_visibility_find_mirror)",
+            "source/structures/structure_visibility.c:1171 (structure_visibility_find_mirror)",
+            "source/structures/structure_visibility.c:1172 (structure_visibility_find_mirror)",
+            "source/structures/structure_visibility.c:1173 (structure_visibility_find_mirror)",
+            "source/structures/structure_visibility.c:1174 (structure_visibility_find_mirror)",
+            "source/structures/structure_visibility.c:1181 (structure_visibility_find_mirror)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "unused",
+          "disposition": "preserved-opaque",
+          "offset": 16,
+          "size": 20,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_visibility.c:217: long unused[5];",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "mapping: DWARF range is the leading 36 bytes of each structure_cluster.mirrors element.",
+      "struct": "structure_mirror",
+      "offset": 0,
+      "size": 36,
+      "ledger_family": "pvs-portals-pas",
+      "consumer": "structure_visibility_find_mirror (mirror->plane drives the mirror hull and the two-mirror consistency test)",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+          "line": 214,
+          "needle": "struct structure_visibility_mirror"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+          "line": 1133,
+          "needle": "&mirror->plane,"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+          "line": 1174,
+          "needle": "fabs(mirror->plane.d - result->plane.d) < 0.0001f"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_cluster.mirrors",
+          "retail_nonempty_bsp_count": 4,
+          "retail_empty_bsp_count": 78
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_subcluster.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "Containing CE type: struct structure_visibility_subcluster (0x24): world_bounds real_rectangle3d at 0 (24), surface_indices block at 24 (schema-declared). The range [0,24) is world_bounds, read by render_frustum_cube_visible. Cites: submodules/halo-ce-universal/source/structures/structure_visibility.c:186; submodules/halo-ce-universal/source/structures/structure_visibility.c:467.",
+      "live_members": [
+        {
+          "name": "world_bounds",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 24,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_visibility.c:188: real_rectangle3d world_bounds;",
+          "reads_runtime_count": 3,
+          "reads_runtime_sites": [
+            "source/structures/structure_visibility.c:1240 (structure_visibility_build_surfaces_traverse_clusters)",
+            "source/structures/structure_visibility.c:1242 (structure_visibility_build_surfaces_traverse_clusters)",
+            "source/structures/structure_visibility.c:467 (structure_visibility_traverse_subclusters)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "mapping: DWARF range is the leading 24 bytes of each structure_cluster.subclusters element.",
+      "struct": "structure_subcluster",
+      "offset": 0,
+      "size": 24,
+      "ledger_family": "pvs-portals-pas",
+      "consumer": "structure_visibility_traverse_subclusters (frustum cull of subcluster->world_bounds)",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+          "line": 186,
+          "needle": "struct structure_visibility_subcluster"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+          "line": 467,
+          "needle": "render_frustum_cube_visible(frustum, &subcluster->world_bounds, FALSE)"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_cluster.subclusters",
+          "retail_nonempty_bsp_count": 80,
+          "retail_empty_bsp_count": 2
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "predicted_resource.<unclassified@0x2>",
+      "disposition": "consumed",
+      "evidence": "resource_index is the bitmap index for a bitmap prediction; predicted_resource_valid range-guards it at use. Precache hints only; no simulation effect. Cites: submodules/halo-ce-universal/source/cache/predicted_resources.c:64.",
+      "live_members": [
+        {
+          "name": "resource_index",
+          "disposition": "consumed",
+          "offset": 2,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/cache/predicted_resources.h:26: short resource_index;",
+          "reads_runtime_count": 3,
+          "reads_runtime_sites": [
+            "source/cache/predicted_resources.c:115 (predicted_resource_valid)",
+            "source/cache/predicted_resources.c:64 (predicted_resources_precache)",
+            "source/cache/predicted_resources.c:97 (predicted_resource_valid)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "Fixture can be the existing CE predicted_resources host comparator extended with synthetic indices.",
+      "struct": "predicted_resource",
+      "offset": 2,
+      "size": 2,
+      "ledger_family": "predicted-resources",
+      "consumer": "predicted_resources_precache (bitmap index within tag_index's group)",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/cache/predicted_resources.c",
+          "line": 64,
+          "needle": "predicted_resource->resource_index"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_cluster.predicted_resources",
+          "retail_nonempty_bsp_count": 80,
+          "retail_empty_bsp_count": 2
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_lens_flare_marker.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "position and the three packed direction bytes are converted and submitted per marker. Existing slice m2-step7-mp-lens-flare-marker-consumer covers submission index sequence, not position/direction values. The only writers are the offline build_structure_lens_flares editor tool (hs: an editing tool), not load. Cites: submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c:814; submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c:827; submodules/halo-ce-universal/source/structures/structure_lens_flares.c:540.",
+      "live_members": [
+        {
+          "name": "position",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 12,
+          "declaration": "submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c:290: real_point3d position;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/rasterizer/rasterizer_lights.c:827 (rasterizer_lens_flare_submit_for_cluster)"
+          ],
+          "reads_debug_tool_test_count": 1,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 1,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "i_direction",
+          "disposition": "consumed",
+          "offset": 12,
+          "size": 1,
+          "declaration": "submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c:291: char i_direction;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/rasterizer/rasterizer_lights.c:814 (rasterizer_lens_flare_submit_for_cluster)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "j_direction",
+          "disposition": "consumed",
+          "offset": 13,
+          "size": 1,
+          "declaration": "submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c:292: char j_direction;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/rasterizer/rasterizer_lights.c:815 (rasterizer_lens_flare_submit_for_cluster)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "k_direction",
+          "disposition": "consumed",
+          "offset": 14,
+          "size": 1,
+          "declaration": "submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c:293: char k_direction;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/rasterizer/rasterizer_lights.c:816 (rasterizer_lens_flare_submit_for_cluster)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "50/82 retail BSPs have markers (Boarding Action, Damnation, Putput verified by the existing slice).",
+      "struct": "structure_lens_flare_marker",
+      "offset": 0,
+      "size": 15,
+      "ledger_family": "markers",
+      "consumer": "rasterizer_lens_flare_submit_for_cluster (rasterizer_lights.c)",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c",
+          "line": 814,
+          "needle": "marker->i_direction*(1.0f/127.0f),"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/rasterizer/rasterizer_lights.c",
+          "line": 827,
+          "needle": "parameters.position= marker->position;"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_lens_flares.c",
+          "line": 540,
+          "needle": "marker->position = position;"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_bsp.lens_flare_markers",
+          "retail_nonempty_bsp_count": 50,
+          "retail_empty_bsp_count": 32
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_lightmap.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "bitmap_index selects the lightmap bitmap in lightmap_group (validator maps out-of-range to NONE). pad (2) and unused[4] (16) are declared padding with zero access. Cites: submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1695; submodules/halo-ce-universal/source/objects/object_lights.c:1458.",
+      "live_members": [
+        {
+          "name": "bitmap_index",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:70: short bitmap_index;",
+          "reads_runtime_count": 7,
+          "reads_runtime_sites": [
+            "source/objects/object_lights.c:1454 (light_particle)",
+            "source/objects/object_lights.c:1458 (light_particle)",
+            "source/objects/object_lights.c:2221 (lights_illumination_at_point)",
+            "source/objects/object_lights.c:2225 (lights_illumination_at_point)",
+            "source/objects/object_lights.c:2462 (lights_distant_lighting_at_point)",
+            "source/objects/object_lights.c:2471 (lights_distant_lighting_at_point)",
+            "source/structures/structure_render.c:546 (structure_render_pass)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 3,
+          "writes_validator_load_count": 1,
+          "writes_validator_load_sites": [
+            "port/linux/game/tag_schema_collision.c:1697 (structure_bsp_check)"
+          ],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "pad",
+          "disposition": "preserved-opaque",
+          "offset": 2,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:71: word pad;",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "unused",
+          "disposition": "preserved-opaque",
+          "offset": 4,
+          "size": 16,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:72: long unused[4];",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "",
+      "struct": "structure_lightmap",
+      "offset": 0,
+      "size": 20,
+      "ledger_family": "lightmaps",
+      "consumer": "object_lights.c lightmap sampling; structure_render.c lightmap bitmap selection",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1695,
+          "needle": "lightmap %ld's bitmap %d is not its bitmaps' %ld: none"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/objects/object_lights.c",
+          "line": 1458,
+          "needle": "lightmap->bitmap_index);"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_bsp.lightmaps",
+          "retail_nonempty_bsp_count": 82,
+          "retail_empty_bsp_count": 0
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_material.<unclassified@0x10>",
+      "disposition": "consumed",
+      "evidence": "permutation_index selects the diffuse bitmap permutation; flags (coplanar/fog-plane bits) and centroid/plane feed the render pass; first_surface_index/surface_count define the surface-to-material map (validator clamps invalid spans to none). Cites: submodules/halo-ce-universal/source/objects/object_lights.c:1461; submodules/halo-ce-universal/source/structures/structure_render.c:616; submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1345.",
+      "live_members": [
+        {
+          "name": "permutation_index",
+          "disposition": "consumed",
+          "offset": 16,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:53: short permutation_index;",
+          "reads_runtime_count": 4,
+          "reads_runtime_sites": [
+            "source/objects/object_lights.c:1461 (light_particle)",
+            "source/objects/object_lights.c:2474 (lights_distant_lighting_at_point)",
+            "source/structures/structure_render.c:598 (structure_render_pass)",
+            "source/structures/structure_render.c:609 (structure_render_pass)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "flags",
+          "disposition": "consumed",
+          "offset": 18,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:54: word flags;",
+          "reads_runtime_count": 2,
+          "reads_runtime_sites": [
+            "source/structures/structure_render.c:616 (structure_render_pass)",
+            "source/structures/structure_render.c:619 (structure_render_pass)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "first_surface_index",
+          "disposition": "consumed",
+          "offset": 20,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:55: long first_surface_index;",
+          "reads_runtime_count": 9,
+          "reads_runtime_sites": [
+            "source/structures/structure_bsp_definitions.c:161 (structure_bsp_find_material_for_surface)",
+            "source/structures/structure_bsp_definitions.c:168 (structure_bsp_find_material_for_surface)",
+            "source/structures/structure_bsp_definitions.c:188 (structure_bsp_find_material_for_surface)",
+            "source/structures/structure_bsp_definitions.c:189 (structure_bsp_find_material_for_surface)",
+            "source/structures/structure_bsp_definitions.c:191 (structure_bsp_find_material_for_surface)",
+            "source/structures/structure_bsp_definitions.c:192 (structure_bsp_find_material_for_surface)",
+            "source/structures/structure_render.c:533 (structure_render_pass)",
+            "source/structures/structure_render.c:573 (structure_render_pass)"
+          ],
+          "reads_debug_tool_test_count": 1,
+          "reads_validator_load_count": 5,
+          "writes_validator_load_count": 1,
+          "writes_validator_load_sites": [
+            "port/linux/game/tag_schema_collision.c:1348 (structure_material_check)"
+          ],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "surface_count",
+          "disposition": "consumed",
+          "offset": 24,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:56: long surface_count;",
+          "reads_runtime_count": 6,
+          "reads_runtime_sites": [
+            "source/structures/structure_bsp_definitions.c:168 (structure_bsp_find_material_for_surface)",
+            "source/structures/structure_bsp_definitions.c:189 (structure_bsp_find_material_for_surface)",
+            "source/structures/structure_bsp_definitions.c:192 (structure_bsp_find_material_for_surface)",
+            "source/structures/structure_render.c:533 (structure_render_pass)",
+            "source/structures/structure_render.c:573 (structure_render_pass)",
+            "source/structures/structure_render.c:586 (structure_render_pass)"
+          ],
+          "reads_debug_tool_test_count": 1,
+          "reads_validator_load_count": 6,
+          "writes_validator_load_count": 2,
+          "writes_validator_load_sites": [
+            "port/linux/game/tag_schema_collision.c:1349 (structure_material_check)",
+            "port/linux/game/tag_schema_collision.c:1419 (structure_material_check)"
+          ],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "centroid",
+          "disposition": "consumed",
+          "offset": 28,
+          "size": 12,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:57: real_point3d centroid;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/structures/structure_render.c:615 (structure_render_pass)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "",
+      "struct": "structure_material",
+      "offset": 16,
+      "size": 24,
+      "ledger_family": "collision-wrappers-materials-surfaces",
+      "consumer": "structure_bsp_find_material_for_surface, structure_render pass, object_lights.c diffuse-bitmap permutation",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/objects/object_lights.c",
+          "line": 1461,
+          "needle": "(short)(material->permutation_index"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_render.c",
+          "line": 616,
+          "needle": "TEST_FLAG(material->flags, _structure_material_coplanar_bit)"
+        },
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1345,
+          "needle": "lightmap %d's material %d's %ld surfaces from %ld are not the bsp's %ld: none"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_lightmap.materials",
+          "retail_nonempty_bsp_count": 80,
+          "retail_empty_bsp_count": 2
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_material.<unclassified@0x9c>",
+      "disposition": "consumed",
+      "evidence": "plane is passed to the render pass only when the coplanar flag is set. Cites: submodules/halo-ce-universal/source/structures/structure_render.c:617.",
+      "live_members": [
+        {
+          "name": "plane",
+          "disposition": "consumed",
+          "offset": 156,
+          "size": 16,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:59: real_plane3d plane;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/structures/structure_render.c:617 (structure_render_pass)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "",
+      "struct": "structure_material",
+      "offset": 156,
+      "size": 16,
+      "ledger_family": "collision-wrappers-materials-surfaces",
+      "consumer": "structure_render.c render pass (coplanar material plane)",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_render.c",
+          "line": 617,
+          "needle": "? &material->plane"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_lightmap.materials",
+          "retail_nonempty_bsp_count": 80,
+          "retail_empty_bsp_count": 2
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_material.<unclassified@0xae>",
+      "disposition": "schema-gap",
+      "evidence": "copious_unused_space is declared unused. The two inline struct vertex_buffer records carry persisted type/count/offset (validator-checked, consumed) AND two pointer-shaped Xbox backend descriptors, base_address and hardware_format, that the schema neither relocates nor resets (bitmap_data, by contrast, has TAG_SCHEMA_RESET for both). ctag_schema_walk's normalization journal has no entry for them, so a retail map's stale Xbox addresses are carried verbatim; the only CE readers are the load-time validator (which resolves hardware_format against the BSP header buffer table or clears it for Custom Edition) and the Xbox rasterizer. Bytes remain retained by the exact-range check, but they must never be dereferenced on EE. Cites: submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1272; submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1295; submodules/halo-ce-universal/source/structures/structure_render.c:614; submodules/halo-ce-universal/port/linux/game/tag_schema_render.c:1964; submodules/halo-ce-universal/source/rasterizer/rasterizer_geometry.h:43.",
+      "live_members": [
+        {
+          "name": "copious_unused_space",
+          "disposition": "preserved-opaque",
+          "offset": 174,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:61: word copious_unused_space;",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "vertices",
+          "disposition": "schema-gap",
+          "offset": 176,
+          "size": 20,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:62: struct vertex_buffer vertices;",
+          "note": "inline struct vertex_buffer: type/count/offset consumed; base_address/hardware_format pointer-shaped",
+          "children": [
+            {
+              "name": "vertices.type",
+              "offset": 176,
+              "size": 2,
+              "disposition": "consumed",
+              "declaration": "submodules/halo-ce-universal/source/rasterizer/rasterizer_geometry.h:38: short type;",
+              "reads_runtime_count": 3,
+              "reads_runtime_sites": [
+                "source/objects/object_lights.c:643 (sample_diffuse_texture)",
+                "source/structures/structures.c:585 (structure_render_surface_from_point_and_leaf)",
+                "source/structures/structures.c:587 (structure_render_surface_from_point_and_leaf)"
+              ],
+              "reads_debug_tool_test_count": 0,
+              "reads_validator_load_count": 3,
+              "writes_validator_load_count": 3,
+              "writes_validator_load_sites": [
+                "port/linux/game/custom_edition_geometry.c:992 (custom_edition_structure_bsp_load)",
+                "port/linux/game/tag_schema_collision.c:1356 (structure_material_check)",
+                "port/linux/game/tag_schema_collision.c:1364 (structure_material_check)"
+              ],
+              "writes_tool_debug_test_count": 0,
+              "writes_runtime_count": 0,
+              "writes_runtime_sites": []
+            },
+            {
+              "name": "vertices.pad",
+              "offset": 178,
+              "size": 2,
+              "disposition": "preserved-opaque",
+              "declaration": "submodules/halo-ce-universal/source/rasterizer/rasterizer_geometry.h:39: word pad;",
+              "reads_runtime_count": 0,
+              "reads_runtime_sites": [],
+              "reads_debug_tool_test_count": 0,
+              "reads_validator_load_count": 0,
+              "writes_validator_load_count": 0,
+              "writes_validator_load_sites": [],
+              "writes_tool_debug_test_count": 0,
+              "writes_runtime_count": 0,
+              "writes_runtime_sites": []
+            },
+            {
+              "name": "vertices.count",
+              "offset": 180,
+              "size": 4,
+              "disposition": "consumed",
+              "declaration": "submodules/halo-ce-universal/source/rasterizer/rasterizer_geometry.h:40: long count;",
+              "reads_runtime_count": 1,
+              "reads_runtime_sites": [
+                "source/objects/object_lights.c:265 (?)"
+              ],
+              "reads_debug_tool_test_count": 3,
+              "reads_validator_load_count": 12,
+              "writes_validator_load_count": 2,
+              "writes_validator_load_sites": [
+                "port/linux/game/custom_edition_geometry.c:993 (custom_edition_structure_bsp_load)",
+                "port/linux/game/tag_schema_collision.c:1392 (structure_material_check)"
+              ],
+              "writes_tool_debug_test_count": 0,
+              "writes_runtime_count": 0,
+              "writes_runtime_sites": [],
+              "via": "validator-checked and passed whole (&material->vertices) to the structure_render pass"
+            },
+            {
+              "name": "vertices.offset",
+              "offset": 184,
+              "size": 4,
+              "disposition": "preserved-opaque",
+              "declaration": "submodules/halo-ce-universal/source/rasterizer/rasterizer_geometry.h:41: long offset;",
+              "reads_runtime_count": 0,
+              "reads_runtime_sites": [],
+              "reads_debug_tool_test_count": 0,
+              "reads_validator_load_count": 0,
+              "writes_validator_load_count": 0,
+              "writes_validator_load_sites": [],
+              "writes_tool_debug_test_count": 0,
+              "writes_runtime_count": 0,
+              "writes_runtime_sites": []
+            },
+            {
+              "name": "vertices.base_address",
+              "offset": 188,
+              "size": 4,
+              "disposition": "schema-gap",
+              "declaration": "submodules/halo-ce-universal/source/rasterizer/rasterizer_geometry.h:42: void *base_address;",
+              "reads_runtime_count": 0,
+              "reads_runtime_sites": [],
+              "reads_debug_tool_test_count": 0,
+              "reads_validator_load_count": 0,
+              "writes_validator_load_count": 0,
+              "writes_validator_load_sites": [],
+              "writes_tool_debug_test_count": 0,
+              "writes_runtime_count": 0,
+              "writes_runtime_sites": []
+            },
+            {
+              "name": "vertices.hardware_format",
+              "offset": 192,
+              "size": 4,
+              "disposition": "schema-gap",
+              "declaration": "submodules/halo-ce-universal/source/rasterizer/rasterizer_geometry.h:43: void *hardware_format;",
+              "reads_runtime_count": 0,
+              "reads_runtime_sites": [],
+              "reads_debug_tool_test_count": 0,
+              "reads_validator_load_count": 0,
+              "writes_validator_load_count": 0,
+              "writes_validator_load_sites": [],
+              "writes_tool_debug_test_count": 0,
+              "writes_runtime_count": 0,
+              "writes_runtime_sites": []
+            }
+          ]
+        },
+        {
+          "name": "lightmap_vertices",
+          "disposition": "schema-gap",
+          "offset": 196,
+          "size": 20,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:63: struct vertex_buffer lightmap_vertices;",
+          "note": "inline struct vertex_buffer: same layout as vertices",
+          "children": [
+            {
+              "name": "lightmap_vertices.type",
+              "offset": 196,
+              "size": 2,
+              "disposition": "consumed",
+              "declaration": "submodules/halo-ce-universal/source/rasterizer/rasterizer_geometry.h:38: short type;",
+              "reads_runtime_count": 2,
+              "reads_runtime_sites": [
+                "source/objects/object_lights.c:2234 (lights_illumination_at_point)",
+                "source/objects/object_lights.c:605 (sample_lightmap)"
+              ],
+              "reads_debug_tool_test_count": 0,
+              "reads_validator_load_count": 3,
+              "writes_validator_load_count": 3,
+              "writes_validator_load_sites": [
+                "port/linux/game/custom_edition_geometry.c:994 (custom_edition_structure_bsp_load)",
+                "port/linux/game/tag_schema_collision.c:1357 (structure_material_check)",
+                "port/linux/game/tag_schema_collision.c:1371 (structure_material_check)"
+              ],
+              "writes_tool_debug_test_count": 0,
+              "writes_runtime_count": 0,
+              "writes_runtime_sites": []
+            },
+            {
+              "name": "lightmap_vertices.pad",
+              "offset": 198,
+              "size": 2,
+              "disposition": "preserved-opaque",
+              "declaration": "submodules/halo-ce-universal/source/rasterizer/rasterizer_geometry.h:39: word pad;",
+              "reads_runtime_count": 0,
+              "reads_runtime_sites": [],
+              "reads_debug_tool_test_count": 0,
+              "reads_validator_load_count": 0,
+              "writes_validator_load_count": 0,
+              "writes_validator_load_sites": [],
+              "writes_tool_debug_test_count": 0,
+              "writes_runtime_count": 0,
+              "writes_runtime_sites": []
+            },
+            {
+              "name": "lightmap_vertices.count",
+              "offset": 200,
+              "size": 4,
+              "disposition": "consumed",
+              "declaration": "submodules/halo-ce-universal/source/rasterizer/rasterizer_geometry.h:40: long count;",
+              "reads_runtime_count": 0,
+              "reads_runtime_sites": [],
+              "reads_debug_tool_test_count": 0,
+              "reads_validator_load_count": 11,
+              "writes_validator_load_count": 2,
+              "writes_validator_load_sites": [
+                "port/linux/game/custom_edition_geometry.c:995 (custom_edition_structure_bsp_load)",
+                "port/linux/game/tag_schema_collision.c:1393 (structure_material_check)"
+              ],
+              "writes_tool_debug_test_count": 0,
+              "writes_runtime_count": 0,
+              "writes_runtime_sites": [],
+              "via": "validator-checked and passed whole (&material->lightmap_vertices) to the structure_render pass"
+            },
+            {
+              "name": "lightmap_vertices.offset",
+              "offset": 204,
+              "size": 4,
+              "disposition": "preserved-opaque",
+              "declaration": "submodules/halo-ce-universal/source/rasterizer/rasterizer_geometry.h:41: long offset;",
+              "reads_runtime_count": 0,
+              "reads_runtime_sites": [],
+              "reads_debug_tool_test_count": 0,
+              "reads_validator_load_count": 0,
+              "writes_validator_load_count": 0,
+              "writes_validator_load_sites": [],
+              "writes_tool_debug_test_count": 0,
+              "writes_runtime_count": 0,
+              "writes_runtime_sites": []
+            },
+            {
+              "name": "lightmap_vertices.base_address",
+              "offset": 208,
+              "size": 4,
+              "disposition": "schema-gap",
+              "declaration": "submodules/halo-ce-universal/source/rasterizer/rasterizer_geometry.h:42: void *base_address;",
+              "reads_runtime_count": 0,
+              "reads_runtime_sites": [],
+              "reads_debug_tool_test_count": 0,
+              "reads_validator_load_count": 0,
+              "writes_validator_load_count": 0,
+              "writes_validator_load_sites": [],
+              "writes_tool_debug_test_count": 0,
+              "writes_runtime_count": 0,
+              "writes_runtime_sites": []
+            },
+            {
+              "name": "lightmap_vertices.hardware_format",
+              "offset": 212,
+              "size": 4,
+              "disposition": "schema-gap",
+              "declaration": "submodules/halo-ce-universal/source/rasterizer/rasterizer_geometry.h:43: void *hardware_format;",
+              "reads_runtime_count": 0,
+              "reads_runtime_sites": [],
+              "reads_debug_tool_test_count": 0,
+              "reads_validator_load_count": 0,
+              "writes_validator_load_count": 1,
+              "writes_validator_load_sites": [
+                "port/linux/game/tag_schema_collision.c:1402 (structure_material_check)"
+              ],
+              "writes_tool_debug_test_count": 0,
+              "writes_runtime_count": 0,
+              "writes_runtime_sites": []
+            }
+          ]
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "schema-gap, not blocked: the bytes ARE retained exact-range (retail-bsp-preservation-2026-10-21.json); the gap is that the journal does not normalize pointer-shaped values the EE must never follow. type/count/offset still need a member-exact fixture.",
+      "struct": "structure_material",
+      "offset": 174,
+      "size": 42,
+      "ledger_family": "collision-wrappers-materials-surfaces",
+      "consumer": "structure_material_check / structure_vertex_buffer_check (validator), structures.c vertex type switch, object_lights.c structure_material_get_vertex (vertex counts), Xbox rasterizer (hardware_format/base_address)",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1272,
+          "needle": "static void structure_vertex_buffer_check("
+        },
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1295,
+          "needle": "vertices->hardware_format = NULL;"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_render.c",
+          "line": 614,
+          "needle": "&material->vertices,"
+        },
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_render.c",
+          "line": 1964,
+          "needle": "TAG_SCHEMA_RESET(struct bitmap_data, hardware_format, 0),"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/rasterizer/rasterizer_geometry.h",
+          "line": 43,
+          "needle": "void *hardware_format;"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_lightmap.materials",
+          "retail_nonempty_bsp_count": 80,
+          "retail_empty_bsp_count": 2
+        }
+      ],
+      "type_level": false,
+      "schema_addition": "Add TAG_SCHEMA_RESET(struct vertex_buffer, base_address, 0) and TAG_SCHEMA_RESET(struct vertex_buffer, hardware_format, 0) for structure_material.vertices and .lightmap_vertices (the bitmap_data precedent in tag_schema_render.c), keeping the validator's header-table resolution as a pre-reset step, or document an adapter normalization with its own byte allowance in the CBSP preservation journal. Until then the EE side must treat these 16 bytes as inert."
+    },
+    {
+      "ledger_member": "structure_surface.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "vertex_indices[3] (words) index the owning material's vertex array; the validator zeroes any index at or past the material's vertex count, and consumers re-guard (structure_visibility.c). Cites: submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1431; submodules/halo-ce-universal/source/structures/structure_render.c:417; submodules/halo-ce-universal/source/objects/object_lights.c:645.",
+      "live_members": [
+        {
+          "name": "vertex_indices",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 6,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:44: word vertex_indices[NUMBER_OF_VERTICES_PER_TRIANGLE];",
+          "reads_runtime_count": 27,
+          "reads_runtime_sites": [
+            "source/objects/object_lights.c:2499 (lights_distant_lighting_at_point)",
+            "source/objects/object_lights.c:2502 (lights_distant_lighting_at_point)",
+            "source/objects/object_lights.c:2505 (lights_distant_lighting_at_point)",
+            "source/objects/object_lights.c:2516 (lights_distant_lighting_at_point)",
+            "source/objects/object_lights.c:2519 (lights_distant_lighting_at_point)",
+            "source/objects/object_lights.c:2522 (lights_distant_lighting_at_point)",
+            "source/objects/object_lights.c:607 (sample_lightmap)",
+            "source/objects/object_lights.c:610 (sample_lightmap)"
+          ],
+          "reads_debug_tool_test_count": 6,
+          "reads_validator_load_count": 6,
+          "writes_validator_load_count": 1,
+          "writes_validator_load_sites": [
+            "port/linux/game/tag_schema_collision.c:1433 (structure_material_check)"
+          ],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "80/82 retail BSPs have surfaces.",
+      "struct": "structure_surface",
+      "offset": 0,
+      "size": 6,
+      "ledger_family": "collision-wrappers-materials-surfaces",
+      "consumer": "object_lights.c lightmap/vertex sampling, structure_render.c triangle arrays, structure_visibility.c surface build, structures.c surface point lookup",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1431,
+          "needle": "surface %ld's vertex %d is not lightmap %d's material %d's %ld: 0"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_render.c",
+          "line": 417,
+          "needle": "triangles[0] = surface->vertex_indices[0];"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/objects/object_lights.c",
+          "line": 645,
+          "needle": "structure_material_get_vertex(material, surface->vertex_indices[0]),"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_bsp.surfaces",
+          "retail_nonempty_bsp_count": 80,
+          "retail_empty_bsp_count": 2
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_surface_reference.<unclassified@0x4>",
+      "disposition": "consumed",
+      "evidence": "bsp3d_node_index names a collision bsp3d node; the validator maps out-of-domain values to NONE and the consumer treats NONE as no node. Cites: submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1629; submodules/halo-ce-universal/source/structures/structures.c:545.",
+      "live_members": [
+        {
+          "name": "bsp3d_node_index",
+          "disposition": "consumed",
+          "offset": 4,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/structures/structures.c:148: long bsp3d_node_index;",
+          "reads_runtime_count": 2,
+          "reads_runtime_sites": [
+            "source/structures/structures.c:545 (structure_render_surface_from_point_and_leaf)",
+            "source/structures/structures.c:552 (structure_render_surface_from_point_and_leaf)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 3,
+          "writes_validator_load_count": 1,
+          "writes_validator_load_sites": [
+            "port/linux/game/tag_schema_collision.c:1631 (structure_bsp_check)"
+          ],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "",
+      "struct": "structure_surface_reference",
+      "offset": 4,
+      "size": 4,
+      "ledger_family": "collision-wrappers-materials-surfaces",
+      "consumer": "structures.c surface-reference to bsp3d node lookup (location/surface queries)",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1629,
+          "needle": "surface reference %ld's node %ld is not the collision bsp's %ld: none"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structures.c",
+          "line": 545,
+          "needle": "if (surface_reference->bsp3d_node_index != NONE)"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_bsp.surface_references",
+          "retail_nonempty_bsp_count": 80,
+          "retail_empty_bsp_count": 2
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_leaf.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "bounds is a byte_rectangle3d dequantized against the parent node bounds; pad is declared padding. Cites: submodules/halo-ce-universal/source/structures/structure_visibility.c:1338.",
+      "live_members": [
+        {
+          "name": "bounds",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 6,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:35: byte_rectangle3d bounds;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/structures/structure_visibility.c:1338 (structure_visibility_build_surfaces_traverse_leaf)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "pad",
+          "disposition": "preserved-opaque",
+          "offset": 6,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:36: word pad;",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "",
+      "struct": "structure_leaf",
+      "offset": 0,
+      "size": 8,
+      "ledger_family": "pvs-portals-pas",
+      "consumer": "structure_visibility_build_surfaces_traverse_leaf (dequantized leaf bounds for culling)",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+          "line": 1338,
+          "needle": "dequantize_byte_to_real_rectangle3d(parent_bounds, &leaf->bounds, &leaf_bounds)"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_bsp.leaves",
+          "retail_nonempty_bsp_count": 82,
+          "retail_empty_bsp_count": 0
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_leaf.<unclassified@0xa>",
+      "disposition": "consumed",
+      "evidence": "surface_reference_count and first_surface_reference_index select the leaf's surface_references span; the validator clamps invalid spans to none, and the consumer re-guards (structure_visibility.c). Cites: submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1614; submodules/halo-ce-universal/source/structures/structures.c:535.",
+      "live_members": [
+        {
+          "name": "surface_reference_count",
+          "disposition": "consumed",
+          "offset": 10,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:38: short surface_reference_count;",
+          "reads_runtime_count": 4,
+          "reads_runtime_sites": [
+            "source/structures/structure_visibility.c:1310 (structure_visibility_build_surfaces_traverse_leaf)",
+            "source/structures/structure_visibility.c:1312 (structure_visibility_build_surfaces_traverse_leaf)",
+            "source/structures/structure_visibility.c:1355 (structure_visibility_build_surfaces_traverse_leaf)",
+            "source/structures/structures.c:537 (structure_render_surface_from_point_and_leaf)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 4,
+          "writes_validator_load_count": 1,
+          "writes_validator_load_sites": [
+            "port/linux/game/tag_schema_collision.c:1617 (structure_bsp_check)"
+          ],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "first_surface_reference_index",
+          "disposition": "consumed",
+          "offset": 12,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/structures/structure_bsp_definitions.h:39: long first_surface_reference_index;",
+          "reads_runtime_count": 6,
+          "reads_runtime_sites": [
+            "source/structures/structure_visibility.c:1309 (structure_visibility_build_surfaces_traverse_leaf)",
+            "source/structures/structure_visibility.c:1311 (structure_visibility_build_surfaces_traverse_leaf)",
+            "source/structures/structure_visibility.c:1354 (structure_visibility_build_surfaces_traverse_leaf)",
+            "source/structures/structure_visibility.c:1355 (structure_visibility_build_surfaces_traverse_leaf)",
+            "source/structures/structures.c:535 (structure_render_surface_from_point_and_leaf)",
+            "source/structures/structures.c:537 (structure_render_surface_from_point_and_leaf)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 3,
+          "writes_validator_load_count": 1,
+          "writes_validator_load_sites": [
+            "port/linux/game/tag_schema_collision.c:1618 (structure_bsp_check)"
+          ],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "",
+      "struct": "structure_leaf",
+      "offset": 10,
+      "size": 6,
+      "ledger_family": "pvs-portals-pas",
+      "consumer": "structures.c leaf surface-reference walk; structure_visibility.c leaf traversal",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1614,
+          "needle": "leaf %ld's %d surface references from %ld are not the bsp's %ld: none"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structures.c",
+          "line": 535,
+          "needle": "for (surface_reference_index = leaf->first_surface_reference_index;"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_bsp.leaves",
+          "retail_nonempty_bsp_count": 82,
+          "retail_empty_bsp_count": 0
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "structure_node.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "Containing CE type: the structure_bsp.nodes block element, a byte_rectangle3d (x0,x1,y0,y1,z0,z1 one byte each, integer_math.h). The 6-byte element is the whole range; the node index is bounded by structure nodes and collision bsp3d nodes before the read. Cites: submodules/halo-ce-universal/source/structures/structure_visibility.c:1448; submodules/halo-ce-universal/source/structures/structure_visibility.c:901.",
+      "live_members": [
+        {
+          "name": "x0",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 1,
+          "declaration": "submodules/halo-ce-universal/source/math/integer_math.h:39: struct { byte x0, x1, y0, y1, z0, z1; };",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/structures/structure_visibility.c:901 (dequantize_byte_to_real_rectangle3d)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "x1",
+          "disposition": "consumed",
+          "offset": 1,
+          "size": 1,
+          "declaration": "submodules/halo-ce-universal/source/math/integer_math.h:39: struct { byte x0, x1, y0, y1, z0, z1; };",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/structures/structure_visibility.c:902 (dequantize_byte_to_real_rectangle3d)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "y0",
+          "disposition": "consumed",
+          "offset": 2,
+          "size": 1,
+          "declaration": "submodules/halo-ce-universal/source/math/integer_math.h:39: struct { byte x0, x1, y0, y1, z0, z1; };",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/structures/structure_visibility.c:903 (dequantize_byte_to_real_rectangle3d)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "y1",
+          "disposition": "consumed",
+          "offset": 3,
+          "size": 1,
+          "declaration": "submodules/halo-ce-universal/source/math/integer_math.h:39: struct { byte x0, x1, y0, y1, z0, z1; };",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/structures/structure_visibility.c:904 (dequantize_byte_to_real_rectangle3d)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "z0",
+          "disposition": "consumed",
+          "offset": 4,
+          "size": 1,
+          "declaration": "submodules/halo-ce-universal/source/math/integer_math.h:39: struct { byte x0, x1, y0, y1, z0, z1; };",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/structures/structure_visibility.c:905 (dequantize_byte_to_real_rectangle3d)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "z1",
+          "disposition": "consumed",
+          "offset": 5,
+          "size": 1,
+          "declaration": "submodules/halo-ce-universal/source/math/integer_math.h:39: struct { byte x0, x1, y0, y1, z0, z1; };",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/structures/structure_visibility.c:906 (dequantize_byte_to_real_rectangle3d)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "mapping: DWARF range 'structure_node' is one byte_rectangle3d per structure_bsp.nodes element.",
+      "struct": "structure_node",
+      "offset": 0,
+      "size": 6,
+      "ledger_family": "collision-wrappers-materials-surfaces",
+      "consumer": "structure_visibility_build_surfaces_traverse_node (node bounds dequantized against parent bounds)",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+          "line": 1448,
+          "needle": "TAG_BLOCK_GET_ELEMENT(&structure->nodes, node_index, byte_rectangle3d)"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+          "line": 901,
+          "needle": "result->x0 = structure_visibility_dequantize_byte_to_real(parent->x0, parent->x1, compressed_rectangle->x0)"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_bsp.nodes",
+          "retail_nonempty_bsp_count": 82,
+          "retail_empty_bsp_count": 0
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "render_lighting.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "ambient_color is tested (.red != 0) and copied with the struct; it is the object lighting ambient term. Cites: submodules/halo-ce-universal/source/objects/object_lights.c:2413; submodules/halo-ce-universal/source/structures/structure_render.c:622; submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:597.",
+      "live_members": [
+        {
+          "name": "ambient_color",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 12,
+          "declaration": "submodules/halo-ce-universal/source/render/render.h:46: real_rgb_color ambient_color;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/objects/object_lights.c:2411 (lights_distant_lighting_at_point)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "render_lighting is embedded twice (structure_bsp.default_lighting and structure_material.lighting). BSP-sourced bytes reach runtime only through whole-struct copy (object_lights.c) and by-pointer pass to the render pass; the per-field readers in render_objects.c operate on the destination object lighting, so per-field BSP provenance is evidenced by the copy site, not by a per-field grep.",
+      "struct": "render_lighting",
+      "offset": 0,
+      "size": 12,
+      "ledger_family": "lightmaps",
+      "consumer": "object_lights.c default-lighting fallback (struct copy) and structure_render.c material lighting",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/objects/object_lights.c",
+          "line": 2413,
+          "needle": "*lighting = structure_bsp->default_lighting;"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_render.c",
+          "line": 622,
+          "needle": "&material->lighting,"
+        },
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 597,
+          "needle": "TAG_SCHEMA_ENUM(struct render_lighting, point_light_count, 1, 0),"
+        }
+      ],
+      "owner_block_retail_occupancy": [],
+      "type_level": false
+    },
+    {
+      "ledger_member": "render_lighting.<unclassified@0xe>",
+      "disposition": "consumed",
+      "evidence": "distant_lights[2] are copied (distant_light_count is schema range-checked); pad is declared padding. Cites: submodules/halo-ce-universal/source/objects/object_lights.c:2413; submodules/halo-ce-universal/source/structures/structure_render.c:622; submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:597.",
+      "live_members": [
+        {
+          "name": "pad",
+          "disposition": "preserved-opaque",
+          "offset": 14,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/render/render.h:48: word pad;",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "distant_lights",
+          "disposition": "consumed",
+          "offset": 16,
+          "size": 48,
+          "declaration": "submodules/halo-ce-universal/source/render/render.h:49: struct render_distant_light distant_lights[MAXIMUM_RENDERED_DISTANT_LIGHTS];",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/objects/object_lights.c:2411 (lights_distant_lighting_at_point)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "render_lighting is embedded twice (structure_bsp.default_lighting and structure_material.lighting). BSP-sourced bytes reach runtime only through whole-struct copy (object_lights.c) and by-pointer pass to the render pass; the per-field readers in render_objects.c operate on the destination object lighting, so per-field BSP provenance is evidenced by the copy site, not by a per-field grep.",
+      "struct": "render_lighting",
+      "offset": 14,
+      "size": 50,
+      "ledger_family": "lightmaps",
+      "consumer": "object_lights.c default-lighting struct copy; render pass lighting",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/objects/object_lights.c",
+          "line": 2413,
+          "needle": "*lighting = structure_bsp->default_lighting;"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_render.c",
+          "line": 622,
+          "needle": "&material->lighting,"
+        },
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 597,
+          "needle": "TAG_SCHEMA_ENUM(struct render_lighting, point_light_count, 1, 0),"
+        }
+      ],
+      "owner_block_retail_occupancy": [],
+      "type_level": false
+    },
+    {
+      "ledger_member": "render_lighting.<unclassified@0x42>",
+      "disposition": "consumed",
+      "evidence": "reflection_tint_color, shadow_vector and shadow_color are copied with the struct and consumed downstream. point_light_indices are runtime light-pool indices: the schema forces point_light_count to 0 for BSP lighting, so the indices are never dereferenced (preserved-opaque on validator evidence, not a reset); pad1 is declared padding. Cites: submodules/halo-ce-universal/source/objects/object_lights.c:2413; submodules/halo-ce-universal/source/structures/structure_render.c:622; submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:597; submodules/halo-ce-universal/source/render/render_objects.c:780.",
+      "live_members": [
+        {
+          "name": "pad1",
+          "disposition": "preserved-opaque",
+          "offset": 66,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/render/render.h:51: word pad1;",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "point_light_indices",
+          "disposition": "preserved-opaque",
+          "offset": 68,
+          "size": 8,
+          "declaration": "submodules/halo-ce-universal/source/render/render.h:52: long point_light_indices[MAXIMUM_RENDERED_POINT_LIGHTS];",
+          "note": "count forced to 0 by TAG_SCHEMA_ENUM(point_light_count, 1, 0)",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "reflection_tint_color",
+          "disposition": "consumed",
+          "offset": 76,
+          "size": 16,
+          "declaration": "submodules/halo-ce-universal/source/render/render.h:53: real_argb_color reflection_tint_color;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/objects/object_lights.c:2411 (lights_distant_lighting_at_point)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "shadow_vector",
+          "disposition": "consumed",
+          "offset": 92,
+          "size": 12,
+          "declaration": "submodules/halo-ce-universal/source/render/render.h:54: real_vector3d shadow_vector;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/objects/object_lights.c:2411 (lights_distant_lighting_at_point)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "shadow_color",
+          "disposition": "consumed",
+          "offset": 104,
+          "size": 12,
+          "declaration": "submodules/halo-ce-universal/source/render/render.h:55: real_rgb_color shadow_color;",
+          "reads_runtime_count": 1,
+          "reads_runtime_sites": [
+            "source/objects/object_lights.c:2411 (lights_distant_lighting_at_point)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "render_lighting is embedded twice (structure_bsp.default_lighting and structure_material.lighting). BSP-sourced bytes reach runtime only through whole-struct copy (object_lights.c) and by-pointer pass to the render pass; the per-field readers in render_objects.c operate on the destination object lighting, so per-field BSP provenance is evidenced by the copy site, not by a per-field grep.",
+      "struct": "render_lighting",
+      "offset": 66,
+      "size": 50,
+      "ledger_family": "lightmaps",
+      "consumer": "object_lights.c default-lighting struct copy; render_objects.c shadow/reflection consumers on the copy",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/objects/object_lights.c",
+          "line": 2413,
+          "needle": "*lighting = structure_bsp->default_lighting;"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_render.c",
+          "line": 622,
+          "needle": "&material->lighting,"
+        },
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 597,
+          "needle": "TAG_SCHEMA_ENUM(struct render_lighting, point_light_count, 1, 0),"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/render/render_objects.c",
+          "line": 780,
+          "needle": "shadow_color = data->lighting->shadow_color;"
+        }
+      ],
+      "owner_block_retail_occupancy": [],
+      "type_level": false
+    },
+    {
+      "ledger_member": "collision_vertex.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "point (real_point3d) is the vertex position walked by collision edge tests, breakable-surface polygons and AI path building/smoothing. The independent collision-golden corpus covers collision results but is family-level for this member. Cites: submodules/halo-ce-universal/source/physics/collision_bsp.c:473; submodules/halo-ce-universal/source/physics/breakable_surfaces.c:470.",
+      "live_members": [
+        {
+          "name": "point",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 12,
+          "declaration": "submodules/halo-ce-universal/source/physics/collision_bsp_definitions.h:53: real_point3d point;",
+          "reads_runtime_count": 46,
+          "reads_runtime_sites": [
+            "source/ai/path.c:1300 (build_path_edges_for_surface)",
+            "source/ai/path.c:1302 (build_path_edges_for_surface)",
+            "source/ai/path.c:1303 (build_path_edges_for_surface)",
+            "source/ai/path_smoothing.c:425 (find_turning_point)",
+            "source/ai/path_smoothing.c:426 (find_turning_point)",
+            "source/ai/path_smoothing.c:435 (find_turning_point)",
+            "source/ai/path_smoothing.c:436 (find_turning_point)",
+            "source/ai/path_smoothing.c:437 (find_turning_point)"
+          ],
+          "reads_debug_tool_test_count": 5,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "82/82 retail BSPs non-empty.",
+      "struct": "collision_vertex",
+      "offset": 0,
+      "size": 12,
+      "ledger_family": "collision-wrappers-materials-surfaces",
+      "consumer": "collision_bsp.c edge/vertex tests; breakable_surfaces.c surface polygons; ai/path.c, path_smoothing.c, path_structure_bsp.c",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp.c",
+          "line": 473,
+          "needle": "struct collision_vertex const *vertex = TAG_BLOCK_GET_ELEMENT("
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/physics/breakable_surfaces.c",
+          "line": 470,
+          "needle": "real_point3d const *vertex_point = &TAG_BLOCK_GET_ELEMENT(&collision_bsp->vertices"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "collision_bsp.vertices",
+          "retail_nonempty_bsp_count": 82,
+          "retail_empty_bsp_count": 0
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "collision_surface.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "plane_designator selects the bsp3d plane (sign bit = negated); the validator corrects out-of-domain values to 0. Cites: submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1191; submodules/halo-ce-universal/source/physics/breakable_surfaces.c:462.",
+      "live_members": [
+        {
+          "name": "plane_designator",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/physics/collision_bsp_definitions.h:37: long plane_designator;",
+          "reads_runtime_count": 5,
+          "reads_runtime_sites": [
+            "source/physics/breakable_surfaces.c:462 (breakable_surface_effect)",
+            "source/physics/collision_bsp.c:2284 (collision_bsp_test_vector_recursive)",
+            "source/physics/collision_bsp.c:748 (collision_surface_area)",
+            "source/physics/collision_bsp.c:816 (collision_surface_project_point2d)",
+            "source/physics/collision_features.c:444 (collision_features_from_surface)"
+          ],
+          "reads_debug_tool_test_count": 2,
+          "reads_validator_load_count": 2,
+          "writes_validator_load_count": 1,
+          "writes_validator_load_sites": [
+            "port/linux/game/tag_schema_collision.c:1193 (collision_surfaces_check)"
+          ],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "82/82 retail BSPs non-empty.",
+      "struct": "collision_surface",
+      "offset": 0,
+      "size": 4,
+      "ledger_family": "collision-wrappers-materials-surfaces",
+      "consumer": "collision_bsp.c plane lookup for surface tests; collisions.c query results; breakable_surfaces.c",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1191,
+          "needle": "surface %ld's plane %08lx is not one of its %ld: 0"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/physics/breakable_surfaces.c",
+          "line": 462,
+          "needle": "bsp3d_get_plane_from_designator(&collision_bsp->bsp3d, surface->plane_designator, &surface_plane)"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "collision_bsp.surfaces",
+          "retail_nonempty_bsp_count": 82,
+          "retail_empty_bsp_count": 0
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "collision_surface.<unclassified@0x8>",
+      "disposition": "consumed",
+      "evidence": "flags bit 3 (_collision_surface_breakable_bit) gates breakable lookup in collision and AI path smoothing; breakable_surface_index is bounds-checked against the breakable surface count at use (collision_bsp.c) and copied to the query result. No validator domain check against structure_bsp.breakable_surfaces. Cites: submodules/halo-ce-universal/source/physics/collision_bsp.c:1404; submodules/halo-ce-universal/source/physics/collision_bsp.c:1407; submodules/halo-ce-universal/source/ai/path.c:647.",
+      "live_members": [
+        {
+          "name": "flags",
+          "disposition": "consumed",
+          "offset": 8,
+          "size": 1,
+          "declaration": "submodules/halo-ce-universal/source/physics/collision_bsp_definitions.h:39: byte flags;",
+          "reads_runtime_count": 12,
+          "reads_runtime_sites": [
+            "source/ai/path.c:647 (surface_is_broken)",
+            "source/ai/path_smoothing.c:153 (surface_is_walkable)",
+            "source/ai/path_structure_bsp.c:148 (structure_test_ray2d)",
+            "source/ai/path_structure_bsp.c:180 (structure_test_ray2d)",
+            "source/ai/path_structure_bsp.c:422 (structure_test_line2d)",
+            "source/physics/collision_bsp.c:1404 (collision_surface_test_sphere)",
+            "source/physics/collision_bsp.c:1571 (collision_surface_test_point)",
+            "source/physics/collision_bsp.c:2273 (collision_bsp_test_vector_recursive)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "breakable_surface_index",
+          "disposition": "consumed",
+          "offset": 9,
+          "size": 1,
+          "declaration": "submodules/halo-ce-universal/source/physics/collision_bsp_definitions.h:40: byte breakable_surface_index;",
+          "reads_runtime_count": 12,
+          "reads_runtime_sites": [
+            "source/ai/path.c:654 (surface_is_broken)",
+            "source/ai/path_smoothing.c:154 (surface_is_walkable)",
+            "source/ai/path_structure_bsp.c:151 (structure_test_ray2d)",
+            "source/ai/path_structure_bsp.c:183 (structure_test_ray2d)",
+            "source/ai/path_structure_bsp.c:425 (structure_test_line2d)",
+            "source/physics/breakable_surfaces.c:434 (breakable_surface_effect)",
+            "source/physics/breakable_surfaces.c:555 (breakable_surface_effect)",
+            "source/physics/collision_bsp.c:1406 (collision_surface_test_sphere)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "Breakable mutation with live units belongs to the pathfinding lane; this row needs a member-exact flag/index fixture.",
+      "struct": "collision_surface",
+      "offset": 8,
+      "size": 2,
+      "ledger_family": "collision-wrappers-materials-surfaces",
+      "consumer": "collision_bsp.c breakable test (flags bit 3, breakable_surface_index vs breakable_surface_flags), ai/path*.c walkability",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp.c",
+          "line": 1404,
+          "needle": "if (TEST_FLAG(surface->flags, _collision_surface_breakable_bit))"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp.c",
+          "line": 1407,
+          "needle": "if (breakable_surface_index < data->breakable_surface_count &&"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/ai/path.c",
+          "line": 647,
+          "needle": "if (TEST_FLAG(surface->flags, _collision_surface_breakable_bit))"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "collision_bsp.surfaces",
+          "retail_nonempty_bsp_count": 82,
+          "retail_empty_bsp_count": 0
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "bsp2d_node.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "plane (real_plane2d) and child_indices (surface = LONG_MIN|index, or node) drive the 2D point-in-surface walk; the validator rewrites invalid children to surface 0. Cites: submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1132; submodules/halo-ce-universal/source/physics/bsp2d.c:57.",
+      "live_members": [
+        {
+          "name": "plane",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 12,
+          "declaration": "submodules/halo-ce-universal/source/physics/bsp2d.h:32: real_plane2d plane;",
+          "reads_runtime_count": 5,
+          "reads_runtime_sites": [
+            "source/physics/bsp2d.c:56 (bsp2d_test_point)",
+            "source/physics/collision_bsp.c:1804 (bsp2d_test_sphere_recursive)",
+            "source/physics/collision_bsp.c:2424 (bsp2d_test_pill_recursive)",
+            "source/physics/collision_bsp.c:2426 (bsp2d_test_pill_recursive)",
+            "source/physics/collision_bsp.c:2427 (bsp2d_test_pill_recursive)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "child_indices",
+          "disposition": "consumed",
+          "offset": 12,
+          "size": 8,
+          "declaration": "submodules/halo-ce-universal/source/physics/bsp2d.h:33: long child_indices[2];",
+          "reads_runtime_count": 5,
+          "reads_runtime_sites": [
+            "source/physics/bsp2d.c:57 (bsp2d_test_point)",
+            "source/physics/collision_bsp.c:1809 (bsp2d_test_sphere_recursive)",
+            "source/physics/collision_bsp.c:1813 (bsp2d_test_sphere_recursive)",
+            "source/physics/collision_bsp.c:2437 (bsp2d_test_pill_recursive)",
+            "source/physics/collision_bsp.c:2439 (bsp2d_test_pill_recursive)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 3,
+          "writes_validator_load_count": 1,
+          "writes_validator_load_sites": [
+            "port/linux/game/tag_schema_collision.c:1135 (bsp2d_check)"
+          ],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "80/82 retail BSPs non-empty.",
+      "struct": "bsp2d_node",
+      "offset": 0,
+      "size": 20,
+      "ledger_family": "collision-wrappers-materials-surfaces",
+      "consumer": "bsp2d.c bsp2d_test_point; collision_bsp.c surface-in-plane walks",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1132,
+          "needle": "bsp2d node %ld's child %08lx is not a surface nor a node of"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/physics/bsp2d.c",
+          "line": 57,
+          "needle": "node_index = node->child_indices[distance >= 0.0f];"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "collision_bsp.bsp2d.nodes",
+          "retail_nonempty_bsp_count": 80,
+          "retail_empty_bsp_count": 2
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "bsp2d_reference.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "plane_designator (bsp3d plane, sign = side) and root_index (surface or bsp2d node) are read per leaf reference; the validator corrects both. Cites: submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1112; submodules/halo-ce-universal/source/physics/collision_bsp.c:1849.",
+      "live_members": [
+        {
+          "name": "plane_designator",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/physics/collision_bsp.c:208: long plane_designator;",
+          "reads_runtime_count": 9,
+          "reads_runtime_sites": [
+            "source/physics/collision_bsp.c:1849 (collision_leaf_test_vector)",
+            "source/physics/collision_bsp.c:1870 (collision_leaf_test_vector)",
+            "source/physics/collision_bsp.c:2079 (bsp3d_test_sphere_recursive)",
+            "source/physics/collision_bsp.c:2083 (bsp3d_test_sphere_recursive)",
+            "source/physics/collision_bsp.c:2108 (bsp3d_test_sphere_recursive)",
+            "source/physics/collision_bsp.c:2536 (bsp3d_test_pill_recursive)",
+            "source/physics/collision_bsp.c:2540 (bsp3d_test_pill_recursive)",
+            "source/physics/collision_bsp.c:2576 (bsp3d_test_pill_recursive)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 2,
+          "writes_validator_load_count": 1,
+          "writes_validator_load_sites": [
+            "port/linux/game/tag_schema_collision.c:1114 (bsp2d_check)"
+          ],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "root_index",
+          "disposition": "consumed",
+          "offset": 4,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/physics/collision_bsp.c:209: long root_index;",
+          "reads_runtime_count": 4,
+          "reads_runtime_sites": [
+            "source/physics/collision_bsp.c:1878 (collision_leaf_test_vector)",
+            "source/physics/collision_bsp.c:2116 (bsp3d_test_sphere_recursive)",
+            "source/physics/collision_bsp.c:2592 (bsp3d_test_pill_recursive)",
+            "source/physics/collision_bsp.c:2646 (bsp3d_test_pill_recursive)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 2,
+          "writes_validator_load_count": 1,
+          "writes_validator_load_sites": [
+            "port/linux/game/tag_schema_collision.c:1120 (bsp2d_check)"
+          ],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "82/82 retail BSPs non-empty.",
+      "struct": "bsp2d_reference",
+      "offset": 0,
+      "size": 8,
+      "ledger_family": "collision-wrappers-materials-surfaces",
+      "consumer": "collision_bsp.c leaf bsp2d reference walk",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1112,
+          "needle": "bsp2d reference %ld's plane %08lx is not one of its %ld: 0"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp.c",
+          "line": 1849,
+          "needle": "if ((reference->plane_designator & LONG_MAX) == plane_index)"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "collision_bsp.bsp2d_references",
+          "retail_nonempty_bsp_count": 82,
+          "retail_empty_bsp_count": 0
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "collision_leaf.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "bsp2d_reference_count/first_bsp2d_reference_index select the leaf's reference span (validator corrects invalid spans); flags has no CE access. Cites: submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1161; submodules/halo-ce-universal/source/physics/collision_bsp.c:1335.",
+      "live_members": [
+        {
+          "name": "flags",
+          "disposition": "preserved-opaque",
+          "offset": 0,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/physics/collision_bsp.c:201: word flags;",
+          "note": "not declared padding; no CE source access",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "bsp2d_reference_count",
+          "disposition": "consumed",
+          "offset": 2,
+          "size": 2,
+          "declaration": "submodules/halo-ce-universal/source/physics/collision_bsp.c:202: short bsp2d_reference_count;",
+          "reads_runtime_count": 6,
+          "reads_runtime_sites": [
+            "source/physics/collision_bsp.c:1335 (collision_bsp_valid_leaf)",
+            "source/physics/collision_bsp.c:1337 (collision_bsp_valid_leaf)",
+            "source/physics/collision_bsp.c:1339 (collision_bsp_valid_leaf)",
+            "source/physics/collision_bsp.c:1841 (collision_leaf_test_vector)",
+            "source/physics/collision_bsp.c:2068 (bsp3d_test_sphere_recursive)",
+            "source/physics/collision_bsp.c:2525 (bsp3d_test_pill_recursive)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 4,
+          "writes_validator_load_count": 1,
+          "writes_validator_load_sites": [
+            "port/linux/game/tag_schema_collision.c:1164 (collision_leaves_check)"
+          ],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "first_bsp2d_reference_index",
+          "disposition": "consumed",
+          "offset": 4,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/physics/collision_bsp.c:203: long first_bsp2d_reference_index;",
+          "reads_runtime_count": 8,
+          "reads_runtime_sites": [
+            "source/physics/collision_bsp.c:1336 (collision_bsp_valid_leaf)",
+            "source/physics/collision_bsp.c:1338 (collision_bsp_valid_leaf)",
+            "source/physics/collision_bsp.c:1839 (collision_leaf_test_vector)",
+            "source/physics/collision_bsp.c:1841 (collision_leaf_test_vector)",
+            "source/physics/collision_bsp.c:2066 (bsp3d_test_sphere_recursive)",
+            "source/physics/collision_bsp.c:2068 (bsp3d_test_sphere_recursive)",
+            "source/physics/collision_bsp.c:2523 (bsp3d_test_pill_recursive)",
+            "source/physics/collision_bsp.c:2525 (bsp3d_test_pill_recursive)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 3,
+          "writes_validator_load_count": 1,
+          "writes_validator_load_sites": [
+            "port/linux/game/tag_schema_collision.c:1165 (collision_leaves_check)"
+          ],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "collision_leaf.flags: zero accesses of `leaf->flags` in physics/ai; preserved-opaque on grep evidence only.",
+      "struct": "collision_leaf",
+      "offset": 0,
+      "size": 8,
+      "ledger_family": "collision-wrappers-materials-surfaces",
+      "consumer": "collision_bsp.c leaf reference lookup",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1161,
+          "needle": "leaf %ld's %d bsp2d references from %ld are not the bsp's %ld: none"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/physics/collision_bsp.c",
+          "line": 1335,
+          "needle": "if (leaf->bsp2d_reference_count == 0 ||"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "collision_bsp.leaves",
+          "retail_nonempty_bsp_count": 82,
+          "retail_empty_bsp_count": 0
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "bsp3d_node.<unclassified@0x4>",
+      "disposition": "consumed",
+      "evidence": "children[2] (leaf = LONG_MIN|index, NONE, or node) drive every bsp3d descent; validator rewrites invalid children to NONE and bounds depth. Cites: submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1069; submodules/halo-ce-universal/source/physics/bsp3d.c:132.",
+      "live_members": [
+        {
+          "name": "children",
+          "disposition": "consumed",
+          "offset": 4,
+          "size": 8,
+          "declaration": "submodules/halo-ce-universal/source/physics/bsp3d.h:41: long children[2];",
+          "reads_runtime_count": 22,
+          "reads_runtime_sites": [
+            "source/physics/bsp3d.c:132 (bsp3d_test_point)",
+            "source/physics/bsp3d.c:196 (bsp3d_clip_line_to_leaves)",
+            "source/physics/bsp3d.c:350 (bsp3d_clip_polygon_to_leaves_recursive)",
+            "source/physics/bsp3d.c:352 (bsp3d_clip_polygon_to_leaves_recursive)",
+            "source/physics/bsp3d.c:359 (bsp3d_clip_polygon_to_leaves_recursive)",
+            "source/physics/bsp3d.c:371 (bsp3d_clip_polygon_to_leaves_recursive)",
+            "source/physics/collision_bsp.c:1731 (collision_bsp_test_pill_new_recursive)",
+            "source/physics/collision_bsp.c:1749 (collision_bsp_test_pill_new_recursive)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 2,
+          "writes_validator_load_count": 1,
+          "writes_validator_load_sites": [
+            "port/linux/game/tag_schema_collision.c:1071 (bsp3d_check)"
+          ],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "82/82 retail BSPs non-empty; collision golden and walk fixtures exist at family level.",
+      "struct": "bsp3d_node",
+      "offset": 4,
+      "size": 8,
+      "ledger_family": "collision-wrappers-materials-surfaces",
+      "consumer": "bsp3d.c bsp3d_test_point; collision_bsp.c plane stack walk; structure_visibility.c node traversal",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1069,
+          "needle": "bsp3d node %ld's child %08lx is not a leaf nor a node of the tree"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/physics/bsp3d.c",
+          "line": 132,
+          "needle": "node_index = node->children[plane3d_distance_to_point(plane, point) >= 0.f];"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "collision_bsp.bsp3d.nodes",
+          "retail_nonempty_bsp_count": 82,
+          "retail_empty_bsp_count": 0
+        }
+      ],
+      "type_level": false
+    },
+    {
+      "ledger_member": "real_plane3d.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "Owner blocks: collision_bsp.bsp3d.planes (82/82 retail BSPs) and structure_weather_polyhedron.planes (8/82). n (normal) and d (offset) are read by plane3d_distance_to_point-style tests. Cites: submodules/halo-ce-universal/source/physics/bsp3d.c:157; submodules/halo-ce-universal/source/effects/weather_particle_systems.c:705.",
+      "live_members": [
+        {
+          "name": "n",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 12,
+          "declaration": "submodules/halo-ce-universal/source/math/real_math.h:503: real_vector3d n;",
+          "reads_runtime_count": 35,
+          "reads_runtime_sites": [
+            "source/physics/bsp3d.c:300 (bsp3d_clip_polygon_to_leaves_recursive)",
+            "source/physics/bsp3d.c:78 (bsp3d_plane_distance_to_point)",
+            "source/physics/bsp3d.c:85 (bsp3d_polygon_plane_distance_to_point)",
+            "source/physics/collision_bsp.c:1697 (collision_bsp_test_pill_new_recursive)",
+            "source/physics/collision_bsp.c:1770 (collision_bsp_test_pill_new_recursive)",
+            "source/physics/collision_bsp.c:1855 (collision_leaf_test_vector)",
+            "source/physics/collision_bsp.c:1856 (collision_leaf_test_vector)",
+            "source/physics/collision_bsp.c:1857 (collision_leaf_test_vector)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "d",
+          "disposition": "consumed",
+          "offset": 12,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/math/real_math.h:504: real d;",
+          "reads_runtime_count": 3,
+          "reads_runtime_sites": [
+            "source/physics/bsp3d.c:78 (bsp3d_plane_distance_to_point)",
+            "source/physics/bsp3d.c:85 (bsp3d_polygon_plane_distance_to_point)",
+            "source/physics/collision_bsp.c:2615 (bsp3d_test_pill_recursive)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "type-level row: the DWARF range is the primitive element type shared by two owner blocks.",
+      "struct": "real_plane3d",
+      "offset": 0,
+      "size": 16,
+      "ledger_family": "typed-primitive-records",
+      "consumer": "bsp3d.c plane lookup (collision_bsp.bsp3d.planes) and weather_particle_systems.c polyhedron planes",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/physics/bsp3d.c",
+          "line": 157,
+          "needle": "real_plane3d const *plane = TAG_BLOCK_GET_ELEMENT(&bsp->planes, node->plane_designator, real_plane3d);"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/effects/weather_particle_systems.c",
+          "line": 705,
+          "needle": "real_plane3d *plane = TAG_BLOCK_GET_ELEMENT(&polyhedron->planes, polyhedron_plane_index, real_plane3d);"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_weather_polyhedron.planes",
+          "retail_nonempty_bsp_count": 8,
+          "retail_empty_bsp_count": 74
+        },
+        {
+          "owner_block": "collision_bsp.bsp3d.planes",
+          "retail_nonempty_bsp_count": 82,
+          "retail_empty_bsp_count": 0
+        }
+      ],
+      "type_level": true
+    },
+    {
+      "ledger_member": "real_point3d.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "Owner blocks: structure_fog_plane.vertices (25/82), structure_cluster_portal.vertices (74/82), structure_mirror.points (4/82), leaf_portal.vertices (0/82, debug-only). Consumed as x,y,z by fog-plane polygon rendering and portal/mirror hulls. Cites: submodules/halo-ce-universal/source/structures/structures.c:647; submodules/halo-ce-universal/source/structures/structure_visibility.c:1061; submodules/halo-ce-universal/source/structures/structure_visibility.c:1135.",
+      "live_members": [
+        {
+          "name": "n",
+          "disposition": "consumed",
+          "offset": 0,
+          "size": 12,
+          "declaration": "submodules/halo-ce-universal/source/math/real_math.h:420: real n[3];",
+          "reads_runtime_count": 8,
+          "reads_runtime_sites": [
+            "source/structures/structure_visibility.c:1061 (portal_hull_from_portal)",
+            "source/structures/structure_visibility.c:1062 (portal_hull_from_portal)",
+            "source/structures/structure_visibility.c:1134 (structure_visibility_find_mirror)",
+            "source/structures/structure_visibility.c:1135 (structure_visibility_find_mirror)",
+            "source/structures/structure_visibility.c:1791 (structure_visibility_traverse_cluster)",
+            "source/structures/structure_visibility.c:1792 (structure_visibility_traverse_cluster)",
+            "source/structures/structures.c:367 (sphere_intersects_cluster_portal)",
+            "source/structures/structures.c:419 (sphere_intersects_cluster_portal)"
+          ],
+          "reads_debug_tool_test_count": 4,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "z",
+          "disposition": "consumed",
+          "offset": 8,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/math/real_math.h:421: struct { real x, y, z; };",
+          "reads_runtime_count": 8,
+          "reads_runtime_sites": [
+            "source/structures/structure_visibility.c:1061 (portal_hull_from_portal)",
+            "source/structures/structure_visibility.c:1062 (portal_hull_from_portal)",
+            "source/structures/structure_visibility.c:1134 (structure_visibility_find_mirror)",
+            "source/structures/structure_visibility.c:1135 (structure_visibility_find_mirror)",
+            "source/structures/structure_visibility.c:1791 (structure_visibility_traverse_cluster)",
+            "source/structures/structure_visibility.c:1792 (structure_visibility_traverse_cluster)",
+            "source/structures/structures.c:367 (sphere_intersects_cluster_portal)",
+            "source/structures/structures.c:419 (sphere_intersects_cluster_portal)"
+          ],
+          "reads_debug_tool_test_count": 4,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "type-level row: n and z overlap the same 12 bytes (union); per-owner member-exact fixtures cover it.",
+      "struct": "real_point3d",
+      "offset": 0,
+      "size": 12,
+      "ledger_family": "typed-primitive-records",
+      "consumer": "structures.c fog plane render, structure_visibility.c portal hull/mirror hull; leaf_portal.vertices is debug-only",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structures.c",
+          "line": 647,
+          "needle": "fog_plane->vertices.count"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+          "line": 1061,
+          "needle": "(short)portal->vertices.count,"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+          "line": 1135,
+          "needle": "(real_point3d const *)mirror->points.address,"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "leaf_portal.vertices",
+          "retail_nonempty_bsp_count": 0,
+          "retail_empty_bsp_count": 82
+        },
+        {
+          "owner_block": "structure_fog_plane.vertices",
+          "retail_nonempty_bsp_count": 25,
+          "retail_empty_bsp_count": 57
+        },
+        {
+          "owner_block": "structure_cluster_portal.vertices",
+          "retail_nonempty_bsp_count": 74,
+          "retail_empty_bsp_count": 8
+        },
+        {
+          "owner_block": "structure_mirror.points",
+          "retail_nonempty_bsp_count": 4,
+          "retail_empty_bsp_count": 78
+        }
+      ],
+      "type_level": true
+    },
+    {
+      "ledger_member": "real_point2d.<unclassified@0x0>",
+      "disposition": "preserved-opaque",
+      "evidence": "The only owner is map_leaf_face.vertices (0/82 retail BSPs), read only by leaf_map.c debug draw and the builder. Cites: submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:892; submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:924; submodules/halo-ce-universal/source/structures/structure_render.c:667; submodules/halo-ce-universal/source/structures/structure_render.c:198; submodules/halo-ce-universal/source/hs/hs_globals_external.c:2519; submodules/halo-ce-universal/source/structures/leaf_map.c:587.",
+      "live_members": [
+        {
+          "name": "x",
+          "disposition": "preserved-opaque",
+          "offset": 0,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/math/real_math.h:413: struct { real x; real y; };",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "y",
+          "disposition": "preserved-opaque",
+          "offset": 4,
+          "size": 4,
+          "declaration": "submodules/halo-ce-universal/source/math/real_math.h:413: struct { real x; real y; };",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": false,
+      "notes": "debug-draw-only reader; same call as leaf_portal.",
+      "struct": "real_point2d",
+      "offset": 0,
+      "size": 8,
+      "ledger_family": "typed-primitive-records",
+      "consumer": "none outside debug draw and the offline leaf-map builder",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 892,
+          "needle": "the leaf map (only drawn by debugging: structure_render.c)"
+        },
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 924,
+          "needle": "the bsp the tools built it from, which the game never sets"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_render.c",
+          "line": 667,
+          "needle": "render_debug_leaf_portals(&structure_bsp->leaf_map, debug_leaf_index)"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_render.c",
+          "line": 198,
+          "needle": "long debug_leaf_index = NONE;"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/hs/hs_globals_external.c",
+          "line": 2519,
+          "needle": "FALSE, /* debug_leaf_portals */"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/structures/leaf_map.c",
+          "line": 587,
+          "needle": "for (vertex_index = 0; vertex_index < face->vertices.count; vertex_index++)"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "map_leaf_face.vertices",
+          "retail_nonempty_bsp_count": 0,
+          "retail_empty_bsp_count": 82
+        }
+      ],
+      "type_level": true
+    },
+    {
+      "ledger_member": "byte.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "Owner blocks: structure_bsp.pathfinding_surfaces (one flag byte per collision surface; 82/82 retail BSPs) and structure_bsp.pathfinding_edges (0/82, zero CE readers). pathfinding_surfaces bytes are read by path edge building, smoothing and walkability queries with bounds guards at use. pathfinding_edges is preserved-opaque on zero-access evidence. Cites: submodules/halo-ce-universal/source/ai/path.c:1205; submodules/halo-ce-universal/source/ai/path_structure_bsp.c:762; submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:971.",
+      "live_members": [
+        {
+          "name": "pathfinding_surfaces",
+          "disposition": "consumed",
+          "offset": null,
+          "size": null,
+          "owner_member_of": "structure_bsp",
+          "reads_runtime_count": 18,
+          "reads_runtime_sites": [
+            "source/ai/path.c:1205 (build_path_edges_for_surface)",
+            "source/ai/path.c:1281 (build_path_edges_for_surface)",
+            "source/ai/path.c:1282 (build_path_edges_for_surface)",
+            "source/ai/path.c:1289 (build_path_edges_for_surface)",
+            "source/ai/path_smoothing.c:109 (surface_is_walkable)",
+            "source/ai/path_smoothing.c:141 (surface_is_walkable)",
+            "source/ai/path_smoothing.c:349 (find_turning_point)",
+            "source/ai/path_smoothing.c:380 (find_turning_point)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "pathfinding_edges",
+          "disposition": "preserved-opaque",
+          "offset": null,
+          "size": null,
+          "owner_member_of": "structure_bsp",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "type-level row; live-unit pathfinding is the C4.3 lane. pathfinding_edges has only schema/declaration mentions.",
+      "struct": "byte",
+      "offset": 0,
+      "size": 1,
+      "ledger_family": "typed-primitive-records",
+      "consumer": "ai/path.c, ai/path_smoothing.c, ai/path_structure_bsp.c (pathfinding_surfaces flags)",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/ai/path.c",
+          "line": 1205,
+          "needle": "byte const *pathfinding_surfaces = structure->pathfinding_surfaces.address;"
+        },
+        {
+          "path": "submodules/halo-ce-universal/source/ai/path_structure_bsp.c",
+          "line": 762,
+          "needle": "return pathfinding_surfaces[surface_index];"
+        },
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 971,
+          "needle": "TAG_SCHEMA_BLOCK(struct structure_bsp, pathfinding_edges, byte_schema,"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "structure_bsp.pathfinding_surfaces",
+          "retail_nonempty_bsp_count": 82,
+          "retail_empty_bsp_count": 0
+        },
+        {
+          "owner_block": "structure_bsp.pathfinding_edges",
+          "retail_nonempty_bsp_count": 0,
+          "retail_empty_bsp_count": 82
+        }
+      ],
+      "type_level": true
+    },
+    {
+      "ledger_member": "long.<unclassified@0x0>",
+      "disposition": "consumed",
+      "evidence": "Owner blocks: structure_subcluster.surface_indices (80/82), structure_cluster.surface_indices (0/82 non-empty in the census), map_leaf.portal_designators (0/82, debug-only). Subcluster surface indices are skipped when outside structure.surfaces (consumer guard); cluster surface lists are validated per material group by structure_cluster_check. Cites: submodules/halo-ce-universal/source/structures/structure_visibility.c:472; submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c:1518.",
+      "live_members": [
+        {
+          "name": "surface_indices",
+          "disposition": "consumed",
+          "offset": null,
+          "size": null,
+          "owner_member_of": "structure_cluster/structure_subcluster",
+          "reads_runtime_count": 10,
+          "reads_runtime_sites": [
+            "source/structures/structure_visibility.c:1247 (structure_visibility_build_surfaces_traverse_clusters)",
+            "source/structures/structure_visibility.c:1251 (structure_visibility_build_surfaces_traverse_clusters)",
+            "source/structures/structure_visibility.c:472 (structure_visibility_traverse_subclusters)",
+            "source/structures/structure_visibility.c:476 (structure_visibility_traverse_subclusters)",
+            "source/structures/structure_visibility.c:520 (structure_visibility_traverse_surface_lists)",
+            "source/structures/structure_visibility.c:526 (structure_visibility_traverse_surface_lists)",
+            "source/structures/structure_visibility.c:536 (structure_visibility_traverse_surface_lists)",
+            "source/structures/structure_visibility.c:563 (structure_visibility_traverse_surface_lists)"
+          ],
+          "reads_debug_tool_test_count": 0,
+          "reads_validator_load_count": 2,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        },
+        {
+          "name": "portal_designators",
+          "disposition": "preserved-opaque",
+          "offset": null,
+          "size": null,
+          "owner_member_of": "map_leaf",
+          "note": "debug-draw/builder only",
+          "reads_runtime_count": 0,
+          "reads_runtime_sites": [],
+          "reads_debug_tool_test_count": 11,
+          "reads_validator_load_count": 0,
+          "writes_validator_load_count": 0,
+          "writes_validator_load_sites": [],
+          "writes_tool_debug_test_count": 0,
+          "writes_runtime_count": 0,
+          "writes_runtime_sites": []
+        }
+      ],
+      "needs_fixture": true,
+      "notes": "type-level row; consumers differ per owner block, so the fixture must target subcluster and cluster lists separately.",
+      "struct": "long",
+      "offset": 0,
+      "size": 4,
+      "ledger_family": "typed-primitive-records",
+      "consumer": "structure_visibility.c subcluster/cluster surface lists; leaf_map.c portal_designators is debug-only",
+      "citations": [
+        {
+          "path": "submodules/halo-ce-universal/source/structures/structure_visibility.c",
+          "line": 472,
+          "needle": "surface_index_buffer = TAG_BLOCK_GET_ELEMENT(&subcluster->surface_indices, 0, long);"
+        },
+        {
+          "path": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
+          "line": 1518,
+          "needle": "cluster %d's surface %ld is not of its group's material (lightmap %ld's"
+        }
+      ],
+      "owner_block_retail_occupancy": [
+        {
+          "owner_block": "map_leaf.portal_designators",
+          "retail_nonempty_bsp_count": 0,
+          "retail_empty_bsp_count": 82
+        },
+        {
+          "owner_block": "structure_cluster.surface_indices",
+          "retail_nonempty_bsp_count": 0,
+          "retail_empty_bsp_count": 82
+        },
+        {
+          "owner_block": "structure_subcluster.surface_indices",
+          "retail_nonempty_bsp_count": 80,
+          "retail_empty_bsp_count": 2
+        }
+      ],
+      "type_level": true
+    }
+  ]
+}

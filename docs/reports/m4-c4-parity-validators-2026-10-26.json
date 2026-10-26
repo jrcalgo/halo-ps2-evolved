@@ -1,0 +1,29 @@
+{
+  "lane": "validators",
+  "rows": [
+    {
+      "member": "structure_bsp.structure_bsp_check",
+      "test": "tests/test_c4_parity_validators.py",
+      "command": "python3 -m pytest -q -rs tests/test_c4_parity_validators.py",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "Verbatim CE callback (tag_schema_collision.c:1585) run via tests/c4_validators_main.c. Valid structure accepted with 0 corrections; no collision bsp refused ('has no collision bsp'); leaf surface-reference count past the table, negative leaf count, surface-reference node past the collision bsp, and cluster-portal plane past the collision planes each corrected in place with the rewritten value asserted. Data-only stubs: tag_validate_contains (region bounds), custom_edition FALSE, tag/vertex/index buffer lookups return none (material vertex path not driven)."
+    },
+    {
+      "member": "structure_detail_object_data.structure_detail_object_data_check",
+      "test": "tests/test_c4_parity_validators.py",
+      "command": "python3 -m pytest -q -rs tests/test_c4_parity_validators.py",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "Verbatim CE callback (tag_schema_collision.c:1532). Empty cells accepted with data still valid; cells out of (x,y,z) order and a negative count index each corrected and data marked invalid (none drawn), asserted from the rewritten flag. Object-count bounds with nonzero counts are not separately driven."
+    },
+    {
+      "member": "collision_bsp.structure_collision_bsp_check",
+      "test": "tests/test_c4_parity_validators.py",
+      "command": "python3 -m pytest -q -rs tests/test_c4_parity_validators.py",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "Verbatim CE wrapper and graph check (tag_schema_collision.c:1254, 1222 and callees bsp3d_check, bsp2d_check, collision_leaves_check, collision_surfaces_check). Valid one-leaf bsp accepted with 0 corrections; nodes without planes refused; child leaf index past the leaf count corrected to NONE; bsp2d references without surfaces dropped by correction. Surface-walk and bsp2d plane-designator paths need surfaces and are not driven here."
+    }
+  ]
+}

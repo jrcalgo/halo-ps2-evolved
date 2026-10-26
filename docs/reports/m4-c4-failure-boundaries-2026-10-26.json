@@ -1,0 +1,1138 @@
+{
+  "item": "C4 item 5",
+  "date": "2026-10-26",
+  "scope": "host-only PS2 CBSP load/publication failure boundaries",
+  "status_codes": {
+    "0": "OK",
+    "1": "TRUNCATED",
+    "2": "FORMAT",
+    "3": "BOUNDS",
+    "4": "CHECKSUM",
+    "5": "SPACE",
+    "6": "ADDRESS",
+    "7": "OVERLAP",
+    "-1": "not reached"
+  },
+  "boundaries": [
+    {
+      "id": "B1",
+      "name": "header parse/validate",
+      "source": "ps2_cbsp.c:76-150 (open_parts header), ps2_cbsp.c:153 (open), ps2_cache.c:458 (mount)"
+    },
+    {
+      "id": "B2",
+      "name": "section directory (count, table offset/size, source extent)",
+      "source": "ps2_cbsp.c:153-179 (open), ps2_cbsp.c:97-111 (table sizing)"
+    },
+    {
+      "id": "B3",
+      "name": "per-section decode + CRC (image size, psbs magic, CRC)",
+      "source": "ps2_cbsp.c:113-125"
+    },
+    {
+      "id": "B4",
+      "name": "relocation rows (field alignment/order, domain, padding, target match)",
+      "source": "ps2_cbsp.c:127-149"
+    },
+    {
+      "id": "B5",
+      "name": "relocation writes: materialize/rebase (CTAG strings, address range, destination size)",
+      "source": "ps2_cbsp.c:181-237 (materialize), 240-315 (rebase)"
+    },
+    {
+      "id": "B6",
+      "name": "owner allocation / capacity (BSP cache, max image, max relocs)",
+      "source": "ps2_cache.c:458-493 (mount), ps2_cache.c:745-768 (stream)"
+    },
+    {
+      "id": "B7",
+      "name": "streamed upload / cache read (sink, visitor, rebase, normalization)",
+      "source": "ps2_cache.c:713-779 (stream_cbsp_for_read; open_parts at 745, rebase at 762)"
+    },
+    {
+      "id": "B8",
+      "name": "CE publication (scenario_switch_structure_bsp: schema, verifier, global publish, rollback)",
+      "source": "submodules/halo-ce-universal/source/scenario/scenario.c:1101-1204"
+    },
+    {
+      "id": "B9",
+      "name": "late publication/commit (candidate write after publish, owner unload, renderer bind)",
+      "source": "tests/hcu_mp_bsp_failure_atomicity_check.h; src/stream/hcu_map_service.c (not modified)"
+    }
+  ],
+  "fault_classes": [
+    {
+      "id": "FC1",
+      "name": "malformed counts"
+    },
+    {
+      "id": "FC2",
+      "name": "malformed references"
+    },
+    {
+      "id": "FC3",
+      "name": "malformed domains"
+    },
+    {
+      "id": "FC4",
+      "name": "truncated sections"
+    },
+    {
+      "id": "FC5",
+      "name": "overlapping ranges"
+    },
+    {
+      "id": "FC6",
+      "name": "insufficient capacity"
+    },
+    {
+      "id": "FC7",
+      "name": "decode/CRC errors"
+    },
+    {
+      "id": "FC8",
+      "name": "partial relocation"
+    },
+    {
+      "id": "FC9",
+      "name": "upload failure"
+    },
+    {
+      "id": "FC10",
+      "name": "late publication failure"
+    }
+  ],
+  "matrix": [
+    {
+      "boundary": "B1",
+      "fault_class": "FC1",
+      "code": "N",
+      "evidence": "header has no count fields; counts are checked at B2"
+    },
+    {
+      "boundary": "B1",
+      "fault_class": "FC2",
+      "code": "N",
+      "evidence": "no references in the header"
+    },
+    {
+      "boundary": "B1",
+      "fault_class": "FC3",
+      "code": "I",
+      "evidence": "reserved_header_nonzero W -> FORMAT (ps2_cbsp.c:115); in tests/test_c4_bsp_fault_injection.py"
+    },
+    {
+      "boundary": "B1",
+      "fault_class": "FC4",
+      "code": "I",
+      "evidence": "truncated_header (W) and truncated_header_stream (S) -> TRUNCATED; tests/test_c4_bsp_fault_injection.py. Also tests/ps2_cache_cbsp_main.c:171-176 rejects bad payloads via ps2_cache_mount_cbsp (passed)"
+    },
+    {
+      "boundary": "B1",
+      "fault_class": "FC5",
+      "code": "E",
+      "evidence": "header/image overlap uses the same range_overlaps check as table overlap (ps2_cbsp.c:112-114); header is a separate span in every caller, so no injected case"
+    },
+    {
+      "boundary": "B1",
+      "fault_class": "FC6",
+      "code": "N",
+      "evidence": "header size is fixed at 36 bytes"
+    },
+    {
+      "boundary": "B1",
+      "fault_class": "FC7",
+      "code": "I",
+      "evidence": "bad_magic and bad_version (W) -> FORMAT; tests/test_c4_bsp_fault_injection.py"
+    },
+    {
+      "boundary": "B1",
+      "fault_class": "FC8",
+      "code": "N",
+      "evidence": "no relocation in header"
+    },
+    {
+      "boundary": "B1",
+      "fault_class": "FC9",
+      "code": "N",
+      "evidence": "upload is a B7 concern"
+    },
+    {
+      "boundary": "B1",
+      "fault_class": "FC10",
+      "code": "N",
+      "evidence": "publication is B8/B9"
+    },
+    {
+      "boundary": "B2",
+      "fault_class": "FC1",
+      "code": "I",
+      "evidence": "count_plus_one: W -> TRUNCATED, S -> FORMAT (tests/test_c4_bsp_fault_injection.py)"
+    },
+    {
+      "boundary": "B2",
+      "fault_class": "FC2",
+      "code": "N",
+      "evidence": "directory does not hold references"
+    },
+    {
+      "boundary": "B2",
+      "fault_class": "FC3",
+      "code": "N",
+      "evidence": "directory does not hold domains"
+    },
+    {
+      "boundary": "B2",
+      "fault_class": "FC4",
+      "code": "I",
+      "evidence": "truncated_table_tail (W TRUNCATED / S FORMAT), trailing_bytes (FORMAT), image_size_inflated (W TRUNCATED / S BOUNDS)"
+    },
+    {
+      "boundary": "B2",
+      "fault_class": "FC5",
+      "code": "I",
+      "evidence": "table_aliases_image: open_parts with table inside image -> OVERLAP (ps2_cbsp.c:113-114)"
+    },
+    {
+      "boundary": "B2",
+      "fault_class": "FC6",
+      "code": "I",
+      "evidence": "count_over_maximum (W,S) -> BOUNDS against maximum relocations (ps2_cbsp.c:99)"
+    },
+    {
+      "boundary": "B2",
+      "fault_class": "FC7",
+      "code": "N",
+      "evidence": "CRC covers the image only; see B3"
+    },
+    {
+      "boundary": "B2",
+      "fault_class": "FC8",
+      "code": "N",
+      "evidence": "no relocation writes at this boundary"
+    },
+    {
+      "boundary": "B2",
+      "fault_class": "FC9",
+      "code": "N",
+      "evidence": "upload failure is B7"
+    },
+    {
+      "boundary": "B2",
+      "fault_class": "FC10",
+      "code": "N",
+      "evidence": "publication is B8/B9"
+    },
+    {
+      "boundary": "B3",
+      "fault_class": "FC1",
+      "code": "N",
+      "evidence": "no counts consumed by the section decoder"
+    },
+    {
+      "boundary": "B3",
+      "fault_class": "FC2",
+      "code": "N",
+      "evidence": "no references consumed by the section decoder"
+    },
+    {
+      "boundary": "B3",
+      "fault_class": "FC3",
+      "code": "N",
+      "evidence": "no domains consumed by the section decoder"
+    },
+    {
+      "boundary": "B3",
+      "fault_class": "FC4",
+      "code": "I",
+      "evidence": "truncated_image_tail (W TRUNCATED), truncated_image_stream (S TRUNCATED)"
+    },
+    {
+      "boundary": "B3",
+      "fault_class": "FC5",
+      "code": "N",
+      "evidence": "single contiguous section"
+    },
+    {
+      "boundary": "B3",
+      "fault_class": "FC6",
+      "code": "I",
+      "evidence": "image_over_capacity (W,S) -> BOUNDS against bsp cache size; also tests/ps2_cache_cbsp_main.c:171-176 (passed)"
+    },
+    {
+      "boundary": "B3",
+      "fault_class": "FC7",
+      "code": "I",
+      "evidence": "image_bitflip_crc (W,S) and header_crc_mismatch -> CHECKSUM; image_magic_not_psbs -> FORMAT; source_extent_mismatch (W,S) -> BOUNDS; source_extent_unknown_with_size -> FORMAT. Python oracle equivalence: tests/test_cbsp.py:81-93 (passed)"
+    },
+    {
+      "boundary": "B3",
+      "fault_class": "FC8",
+      "code": "N",
+      "evidence": "no relocation at this boundary"
+    },
+    {
+      "boundary": "B3",
+      "fault_class": "FC9",
+      "code": "N",
+      "evidence": "upload is B7"
+    },
+    {
+      "boundary": "B3",
+      "fault_class": "FC10",
+      "code": "N",
+      "evidence": "publication is B8/B9"
+    },
+    {
+      "boundary": "B4",
+      "fault_class": "FC1",
+      "code": "N",
+      "evidence": "row count is validated at B2"
+    },
+    {
+      "boundary": "B4",
+      "fault_class": "FC2",
+      "code": "I",
+      "evidence": "field_unaligned, field_past_image, rows_unsorted (BOUNDS); reference_target_mismatch (FORMAT); dom0_target_outside_image (BOUNDS)"
+    },
+    {
+      "boundary": "B4",
+      "fault_class": "FC3",
+      "code": "I",
+      "evidence": "domain_out_of_range (W,S) -> BOUNDS; row_padding_nonzero (W) -> BOUNDS. Python oracle does NOT reject padding (tools/cbsp.py '<IB3xI'); pinned as KNOWN_PYTHON_GAPS in tests/test_c4_bsp_fault_injection.py"
+    },
+    {
+      "boundary": "B4",
+      "fault_class": "FC4",
+      "code": "N",
+      "evidence": "table truncation is B2"
+    },
+    {
+      "boundary": "B4",
+      "fault_class": "FC5",
+      "code": "E",
+      "evidence": "duplicate field fails the same 'field <= previous' test as rows_unsorted (ps2_cbsp.c:135)"
+    },
+    {
+      "boundary": "B4",
+      "fault_class": "FC6",
+      "code": "N",
+      "evidence": "no capacity at row validation"
+    },
+    {
+      "boundary": "B4",
+      "fault_class": "FC7",
+      "code": "E",
+      "evidence": "row/image mismatch is a FORMAT check, reached only after CRC passes (see B3 FC7)"
+    },
+    {
+      "boundary": "B4",
+      "fault_class": "FC8",
+      "code": "I",
+      "evidence": "last_row_target_mismatch_stream: FORMAT on row 4 after rows 0-3 validated; candidate not published"
+    },
+    {
+      "boundary": "B4",
+      "fault_class": "FC9",
+      "code": "N",
+      "evidence": "upload is B7"
+    },
+    {
+      "boundary": "B4",
+      "fault_class": "FC10",
+      "code": "N",
+      "evidence": "publication is B8/B9"
+    },
+    {
+      "boundary": "B5",
+      "fault_class": "FC1",
+      "code": "N",
+      "evidence": "no counts"
+    },
+    {
+      "boundary": "B5",
+      "fault_class": "FC2",
+      "code": "C",
+      "evidence": "bad pointer targets / materialization bounds: tests/test_cbsp.py:95-112 (leaves CTAG, wraps, alignment, NUL) passed; C side tests/ps2_cbsp_main.c:117-137 bad table rows, run by test_ps2_c_decoder_matches_python_materialization (passed)"
+    },
+    {
+      "boundary": "B5",
+      "fault_class": "FC3",
+      "code": "C",
+      "evidence": "unterminated CTAG string: tests/ps2_cbsp_main.c:144-157 (passed via test_ps2_c_decoder); tests/test_c4_bsp_fault_injection.py late_row_unterminated_tag_* also reject"
+    },
+    {
+      "boundary": "B5",
+      "fault_class": "FC4",
+      "code": "N",
+      "evidence": "tag image truncation is checked by the CTAG loader, not this boundary"
+    },
+    {
+      "boundary": "B5",
+      "fault_class": "FC5",
+      "code": "I",
+      "evidence": "bsp_tag_address_overlap -> ADDRESS (ps2_cbsp.c:197-198); Python tests/test_cbsp.py:107 passed"
+    },
+    {
+      "boundary": "B5",
+      "fault_class": "FC6",
+      "code": "I",
+      "evidence": "destination_one_short (W) and destination_short_stream (S) -> SPACE"
+    },
+    {
+      "boundary": "B5",
+      "fault_class": "FC7",
+      "code": "N",
+      "evidence": "CRC is checked before any write (B3)"
+    },
+    {
+      "boundary": "B5",
+      "fault_class": "FC8",
+      "code": "I",
+      "evidence": "late_row_unterminated_tag_stream and _whole: row 3 of 5 rejected after rows 0-2 valid; S-mode candidate verified unrelocated (raw=1); retry OK"
+    },
+    {
+      "boundary": "B5",
+      "fault_class": "FC9",
+      "code": "N",
+      "evidence": "upload is B7"
+    },
+    {
+      "boundary": "B5",
+      "fault_class": "FC10",
+      "code": "N",
+      "evidence": "publication is B8/B9"
+    },
+    {
+      "boundary": "B6",
+      "fault_class": "FC1",
+      "code": "N",
+      "evidence": "no counts"
+    },
+    {
+      "boundary": "B6",
+      "fault_class": "FC2",
+      "code": "N",
+      "evidence": "no references"
+    },
+    {
+      "boundary": "B6",
+      "fault_class": "FC3",
+      "code": "N",
+      "evidence": "no domains"
+    },
+    {
+      "boundary": "B6",
+      "fault_class": "FC4",
+      "code": "N",
+      "evidence": "no truncation at owner"
+    },
+    {
+      "boundary": "B6",
+      "fault_class": "FC5",
+      "code": "N",
+      "evidence": "owner ranges are fixed by the arena; no pointer overlap possible"
+    },
+    {
+      "boundary": "B6",
+      "fault_class": "FC6",
+      "code": "I",
+      "evidence": "owner exhaustion through the production legacy preflight: CTAG relocation owner allocation (site 1, src/stream/hcu_map_service.c:232) and preflight sha256 scratch (site 2, :73), via HCU_C4_FAULT_SEAM (default off). Each fault is rejected with an empty safe state (preflight_ready 0, arenas at their marks, no source/mount open, guard intact), and a clean retry reproduces the clean-load state exactly. tests/test_c4_bsp_fault_legacy.py (3 passed). Reachability: default build leaves WORLD_HCU_PARTITION_PROFILE empty (tools/ee-world.mk:56), so no profile runtime is registered and hcu_map_service_preflight takes the legacy branch (hcu_map_service.c:1459-1461), with the CE hook installed at :1176"
+    },
+    {
+      "boundary": "B6",
+      "fault_class": "FC7",
+      "code": "N",
+      "evidence": "no decode at owner"
+    },
+    {
+      "boundary": "B6",
+      "fault_class": "FC8",
+      "code": "N",
+      "evidence": "no relocation at owner"
+    },
+    {
+      "boundary": "B6",
+      "fault_class": "FC9",
+      "code": "N",
+      "evidence": "upload is B7"
+    },
+    {
+      "boundary": "B6",
+      "fault_class": "FC10",
+      "code": "N",
+      "evidence": "publication is B8/B9"
+    },
+    {
+      "boundary": "B7",
+      "fault_class": "FC1",
+      "code": "E",
+      "evidence": "S mode runs the same open_parts code as ps2_cache.c:745; count_plus_one_stream -> FORMAT (tests/test_c4_bsp_fault_injection.py)"
+    },
+    {
+      "boundary": "B7",
+      "fault_class": "FC2",
+      "code": "E",
+      "evidence": "S mode runs the same reference checks as B4; last_row_target_mismatch_stream covers the stream path"
+    },
+    {
+      "boundary": "B7",
+      "fault_class": "FC3",
+      "code": "I",
+      "evidence": "domain_out_of_range_stream -> BOUNDS"
+    },
+    {
+      "boundary": "B7",
+      "fault_class": "FC4",
+      "code": "I",
+      "evidence": "truncated_image_stream, truncated_table_stream, upload_half_stream, upload_short_one_byte_stream. Also tests/ps2_cache_cbsp_main.c:259-263 bsp_stream_fail_after=80 leaves sentinel, retry restores bytes (passed)"
+    },
+    {
+      "boundary": "B7",
+      "fault_class": "FC5",
+      "code": "E",
+      "evidence": "sink writes table after image with size checks (ps2_cache.c:620-707, cbsp_stream_sink); overlap is impossible by construction and covered by table_aliases_image at B2"
+    },
+    {
+      "boundary": "B7",
+      "fault_class": "FC6",
+      "code": "I",
+      "evidence": "destination_short_stream -> SPACE; image_over_capacity_stream and count_over_maximum_stream -> BOUNDS"
+    },
+    {
+      "boundary": "B7",
+      "fault_class": "FC7",
+      "code": "I",
+      "evidence": "image_bitflip_crc_stream -> CHECKSUM; source_extent_mismatch_stream -> BOUNDS"
+    },
+    {
+      "boundary": "B7",
+      "fault_class": "FC8",
+      "code": "I",
+      "evidence": "late_row_unterminated_tag_stream -> BOUNDS, candidate unrelocated; last_row_target_mismatch_stream -> FORMAT. Also tests/ps2_cache_cbsp_main.c:278-283 full stream with malformed final relocation rejected, restored source retried (passed)"
+    },
+    {
+      "boundary": "B7",
+      "fault_class": "FC9",
+      "code": "I",
+      "evidence": "upload_half_stream and upload_short_one_byte_stream; tests/ps2_cache_cbsp_main.c:259-270 (passed)"
+    },
+    {
+      "boundary": "B7",
+      "fault_class": "FC10",
+      "code": "N",
+      "evidence": "publication is B8"
+    },
+    {
+      "boundary": "B8",
+      "fault_class": "FC1",
+      "code": "N",
+      "evidence": "no counts at CE"
+    },
+    {
+      "boundary": "B8",
+      "fault_class": "FC2",
+      "code": "C",
+      "evidence": "CE schema rejects a candidate with bad references: tests/hcu_scenario_bsp_switch_main.c:2586,2608 (non-retail branch, passed via test_hcu_scenario_bsp_switch.py -k 'not retail')"
+    },
+    {
+      "boundary": "B8",
+      "fault_class": "FC3",
+      "code": "C",
+      "evidence": "CE schema domain rejection, same seam: tests/hcu_scenario_bsp_switch_main.c:2586,2608 (passed)"
+    },
+    {
+      "boundary": "B8",
+      "fault_class": "FC4",
+      "code": "C",
+      "evidence": "candidate read failure rolls back to previous BSP: tests/ps2_cache_cbsp_main.c:222-236 (passed). Retail counterpart tests/hcu_scenario_bsp_switch_main.c:2369 is skipped in this checkout (open items)"
+    },
+    {
+      "boundary": "B8",
+      "fault_class": "FC5",
+      "code": "N",
+      "evidence": "CE only sees published pointers"
+    },
+    {
+      "boundary": "B8",
+      "fault_class": "FC6",
+      "code": "C",
+      "evidence": "CE port-capacity verifier rejection: tests/hcu_scenario_bsp_switch_main.c:2593-2605 fail_verify_mask (passed). Injected verifier, not a measured capacity"
+    },
+    {
+      "boundary": "B8",
+      "fault_class": "FC7",
+      "code": "C",
+      "evidence": "corrupted final payload byte is rejected before CE publication and the restored source retries: tests/ps2_cache_cbsp_main.c:278-283 (passed). Retail outer/inner CRC counterpart tests/hcu_scenario_bsp_switch_main.c:2442-2480 is skipped in this checkout (open items)"
+    },
+    {
+      "boundary": "B8",
+      "fault_class": "FC8",
+      "code": "C",
+      "evidence": "malformed final relocation before publication, retry OK: tests/ps2_cache_cbsp_main.c:278-283 (passed)"
+    },
+    {
+      "boundary": "B8",
+      "fault_class": "FC9",
+      "code": "C",
+      "evidence": "partial/short stream at CE read: tests/ps2_cache_cbsp_main.c:259-270 (passed)"
+    },
+    {
+      "boundary": "B8",
+      "fault_class": "FC10",
+      "code": "C",
+      "evidence": "late failure after old BSP unloaded, both reads fail -> safe-null and menu: tests/ps2_cache_cbsp_main.c:239-244 (passed); verify/schema after load: tests/hcu_scenario_bsp_switch_main.c:2586-2617 (passed)"
+    },
+    {
+      "boundary": "B9",
+      "fault_class": "FC1",
+      "code": "N",
+      "evidence": "no counts at this boundary"
+    },
+    {
+      "boundary": "B9",
+      "fault_class": "FC2",
+      "code": "N",
+      "evidence": "references validated earlier"
+    },
+    {
+      "boundary": "B9",
+      "fault_class": "FC3",
+      "code": "N",
+      "evidence": "domains validated earlier"
+    },
+    {
+      "boundary": "B9",
+      "fault_class": "FC4",
+      "code": "N",
+      "evidence": "truncation validated earlier"
+    },
+    {
+      "boundary": "B9",
+      "fault_class": "FC5",
+      "code": "N",
+      "evidence": "no ranges at this boundary"
+    },
+    {
+      "boundary": "B9",
+      "fault_class": "FC6",
+      "code": "I",
+      "evidence": "same two preflight owner-exhaustion sites as B6 FC6 (both run before CE publication); rollback, canaries and retry asserted by tests/test_c4_bsp_fault_legacy.py (3 passed)"
+    },
+    {
+      "boundary": "B9",
+      "fault_class": "FC7",
+      "code": "N",
+      "evidence": "decode finished before this boundary"
+    },
+    {
+      "boundary": "B9",
+      "fault_class": "FC8",
+      "code": "N",
+      "evidence": "relocation finished before this boundary"
+    },
+    {
+      "boundary": "B9",
+      "fault_class": "FC9",
+      "code": "C",
+      "evidence": "candidate B000 write failure with restore and same-process retry: tests/hcu_mp_bsp_failure_atomicity_check.h:26-60, run by tests/test_hcu_mp_wind_package.py (passed)"
+    },
+    {
+      "boundary": "B9",
+      "fault_class": "FC10",
+      "code": "B",
+      "evidence": "re-verified against the re-derived pin (docs/reports/m4-c4-pin-rederivation-2026-10-26.md): tests/test_hcu_ce_map_lifecycle.py:58 still FAILS. It compares the HCP2 UI manifest field schema_elf_sha256 (build/m2-ce-map-lifecycle-host-hcp2/producer-ui-verified/ui.json) = 1b7e191b... with the current ELF b1d3c7b0... (sha256 of build/hcu-ps2-closure/all-no-bootstrap-memory/halo-local.elf). 1b7e191b... matches no file on disk, and no tool in tools/ writes producer-ui-verified/. The manifest file hash a94a3f2f... and package hash 4ad8b57b... do match the test pins, so the embedded field must change, which changes the manifest hash and so also requires the test pin HCP2_UI_MANIFEST_SHA256 to change. Needed: a producer run (not present in the repo) that regenerates ui.hcp and ui.json against b1d3c7b0, then the producer-generated manifest hash replacing the test pin. No hash was hand-edited"
+    }
+  ],
+  "counts": {
+    "N": 48,
+    "I": 24,
+    "E": 6,
+    "C": 11,
+    "B": 1
+  },
+  "injected_cases": [
+    {
+      "name": "truncated_header",
+      "mode": "W",
+      "open": 1,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "truncated_header_stream",
+      "mode": "S",
+      "open": 1,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "bad_magic",
+      "mode": "W",
+      "open": 2,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "bad_version",
+      "mode": "W",
+      "open": 2,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "trailing_bytes",
+      "mode": "W",
+      "open": 2,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "reserved_header_nonzero",
+      "mode": "W",
+      "open": 2,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "trailing_bytes_stream",
+      "mode": "S",
+      "open": 2,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "count_plus_one",
+      "mode": "W",
+      "open": 1,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "count_plus_one_stream",
+      "mode": "S",
+      "open": 2,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "count_over_maximum",
+      "mode": "W",
+      "open": 3,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "count_over_maximum_stream",
+      "mode": "S",
+      "open": 3,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "image_over_capacity",
+      "mode": "W",
+      "open": 3,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "image_over_capacity_stream",
+      "mode": "S",
+      "open": 3,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "image_size_inflated",
+      "mode": "W",
+      "open": 1,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "image_size_inflated_stream",
+      "mode": "S",
+      "open": 3,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "truncated_image_tail",
+      "mode": "W",
+      "open": 1,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "truncated_image_stream",
+      "mode": "S",
+      "open": 1,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "truncated_table_tail",
+      "mode": "W",
+      "open": 1,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "truncated_table_stream",
+      "mode": "S",
+      "open": 2,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "upload_half_stream",
+      "mode": "S",
+      "open": 1,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "upload_short_one_byte_stream",
+      "mode": "S",
+      "open": 2,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "image_bitflip_crc",
+      "mode": "W",
+      "open": 4,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "image_bitflip_crc_stream",
+      "mode": "S",
+      "open": 4,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "image_magic_not_psbs",
+      "mode": "W",
+      "open": 2,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "header_crc_mismatch",
+      "mode": "W",
+      "open": 4,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "source_extent_mismatch",
+      "mode": "W",
+      "open": 3,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "source_extent_mismatch_stream",
+      "mode": "S",
+      "open": 3,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "source_extent_unknown_with_size",
+      "mode": "W",
+      "open": 2,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "domain_out_of_range",
+      "mode": "W",
+      "open": 3,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "domain_out_of_range_stream",
+      "mode": "S",
+      "open": 3,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "row_padding_nonzero",
+      "mode": "W",
+      "open": 3,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "field_unaligned",
+      "mode": "W",
+      "open": 3,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "field_past_image",
+      "mode": "W",
+      "open": 3,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "rows_unsorted",
+      "mode": "W",
+      "open": 3,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "reference_target_mismatch",
+      "mode": "W",
+      "open": 2,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "dom0_target_outside_image",
+      "mode": "W",
+      "open": 3,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "last_row_target_mismatch_stream",
+      "mode": "S",
+      "open": 2,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "late_row_unterminated_tag_stream",
+      "mode": "S",
+      "open": 0,
+      "op": 3,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "late_row_unterminated_tag_whole",
+      "mode": "W",
+      "open": 0,
+      "op": 3,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "destination_one_short",
+      "mode": "W",
+      "open": 0,
+      "op": 5,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "destination_short_stream",
+      "mode": "S",
+      "open": 0,
+      "op": 5,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "table_aliases_image",
+      "mode": "OT",
+      "open": 7,
+      "op": -1,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    },
+    {
+      "name": "bsp_tag_address_overlap",
+      "mode": "OB",
+      "open": 0,
+      "op": 6,
+      "raw_unrelocated": true,
+      "published_intact": true,
+      "guards_intact": true,
+      "retry_matches_oracle": true
+    }
+  ],
+  "commands": [
+    {
+      "command": "cc -std=c89 -Wall -Wextra -Werror -no-pie -Isubmodules/halo-ce-universal/port/ps2/include tests/c4_bsp_fault_harness_main.c submodules/halo-ce-universal/port/ps2/src/ps2_cbsp.c",
+      "result": "compiles clean"
+    },
+    {
+      "command": "python3 -m pytest -q tests/test_c4_bsp_fault_injection.py",
+      "result": "5 passed, 77 subtests passed"
+    },
+    {
+      "command": "PYTHONPATH=submodules/halo-ps2/tools python3 -m pytest -v tests/test_cbsp.py",
+      "result": "12 passed, 1 skipped (test_ps2_cache_rematerializes_two_exact_retail_cbix_extents: retail package absent)"
+    },
+    {
+      "command": "PYTHONPATH=submodules/halo-ps2/tools python3 -m pytest -v tests/test_hcu_scenario_bsp_switch.py -k 'not retail'",
+      "result": "1 passed"
+    },
+    {
+      "command": "PYTHONPATH=submodules/halo-ps2/tools python3 -m pytest -q tests/test_hcu_mp_wind_package.py",
+      "result": "1 passed"
+    },
+    {
+      "command": "python3 -m pytest -q tests/test_c4_bsp_fault_legacy.py",
+      "result": "3 passed: clean accept, site 1 and site 2 rollback to safe-empty with guard intact, clean retry equals clean state, seam-off build equals seam-on clean run (host-only: HCU_M2_MP_HOST_ORACLE, 16 MiB host tag cache)"
+    },
+    {
+      "command": "python3 -m pytest -q tests/test_c4_parity_validators.py",
+      "result": "3 passed, 13 subtests: pin, wiring, and verbatim validator cases (valid accepted, malformed refused or corrected with rewritten values)"
+    },
+    {
+      "command": "python3 -m pytest -q tests/test_c4_bsp_fault_injection.py",
+      "result": "5 passed, 77 subtests (see above)"
+    },
+    {
+      "command": "PYTHONPATH=submodules/halo-ps2/tools python3 -m pytest -q tests/test_hcu_ce_map_lifecycle.py",
+      "result": "1 failed: HCP2 UI manifest pins a schema ELF hash that does not match build/hcu-ps2-closure/all-no-bootstrap-memory/halo-local.elf (test_hcu_ce_map_lifecycle.py:58); not edited"
+    },
+    {
+      "command": "PYTHONPATH=submodules/halo-ps2/tools python3 -m pytest -q tests/test_hcu_scenario_bsp_switch.py",
+      "result": "retail a30/a50 transaction skipped: HALO_HCU_M2_PACKAGE_ROOT/MANIFEST unset and a30.hp2/a50.hp2 not present in this checkout"
+    }
+  ],
+  "open_items": [
+    "retail a30/a50 CBSP transaction (tests/hcu_scenario_bsp_switch_main.c:2440-2530, 2369): packages not present; this session's runs of those cells are historical",
+    "test_hcu_ce_map_lifecycle.py fails its pinned schema-ELF check (test_hcu_ce_map_lifecycle.py:58); cells B9 FC10 depend on it",
+    "legacy-path fixture is host-only: HCU_M2_MP_HOST_ORACLE admits bloodgulch (hcu_map_service.c:1373) and the host tag cache is 16 MiB; at the production 2 MiB the clean bloodgulch preflight is rejected by the CTAG capacity check (status 8), a real production-capacity finding, not a seam result. The other admitted maps (beavercreek, longest) are likewise CTAG-capacity rejected; the ui map is HCP-profile only",
+    "B9 FC10 pending the schema-ELF pin re-derivation (docs/reports/m4-c4-pin-rederivation-2026-10-26.md not yet present)",
+    "validator descriptors: the three member-exact validator rows pass (docs/reports/m4-c4-parity-validators-2026-10-26.json) with verbatim CE callbacks; the material vertex-buffer and tag-lookup accessors are data stubs that report none, so that path is not driven",
+    "tools/cbsp.py decode ignores relocation-row padding bytes that ps2_cbsp.c rejects (pinned in KNOWN_PYTHON_GAPS)",
+    "owner-canary check is a neighbour region the decoder never writes; it proves no escape but is not a byte high-water measurement",
+    "test_hcu_mp_capacity.py:886 renderer late publication recorded from prior runs, not re-run this session"
+  ]
+}

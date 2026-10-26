@@ -57,7 +57,7 @@
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 164,
       "kind": "block",
       "nonempty_examples": [
@@ -87,14 +87,14 @@
           "target_kind": "block"
         },
         "image_bytes": 700,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "3619f720dbc7d4ab07470494562900e015a59814581b592115719ec19001b3eb"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 176,
       "kind": "block",
       "nonempty_examples": [
@@ -112,7 +112,7 @@
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 188,
       "kind": "block",
       "nonempty_examples": [
@@ -130,7 +130,7 @@
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 224,
       "kind": "block",
       "nonempty_examples": [
@@ -148,7 +148,7 @@
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 236,
       "kind": "block",
       "nonempty_examples": [
@@ -178,14 +178,14 @@
           "target_kind": "block"
         },
         "image_bytes": 688,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "0d818f5e5f2584cc71e1d11f52d93179344bc0e43522cf819439ac3c18f6232f"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 248,
       "kind": "block",
       "nonempty_examples": [
@@ -215,14 +215,14 @@
           "target_kind": "block"
         },
         "image_bytes": 686,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "8c7a24137e00622eb8d8c2499c2d10bcc32887d16ba2796dd1e5cde123ac28df"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 260,
       "kind": "block",
       "nonempty_examples": [
@@ -240,7 +240,7 @@
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 284,
       "kind": "block",
       "nonempty_examples": [
@@ -270,14 +270,14 @@
           "target_kind": "block"
         },
         "image_bytes": 696,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "25388cbf2b6a7690bb7f1ae55c306f16ac8b8808469bfbc134143c2d35679f11"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 296,
       "kind": "block",
       "nonempty_examples": [
@@ -307,14 +307,14 @@
           "target_kind": "block"
         },
         "image_bytes": 696,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "abcc4d95b508c0de3702ecdedc38d39c75298fba002a285b713fdc4b1113aeda"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 308,
       "kind": "block",
       "nonempty_examples": [
@@ -332,7 +332,7 @@
     {
       "consumer_semantics_proven": false,
       "element_size": 20,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 320,
       "kind": "data",
       "nonempty_examples": [
@@ -350,7 +350,7 @@
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 340,
       "kind": "block",
       "nonempty_examples": [
@@ -380,14 +380,14 @@
           "target_kind": "block"
         },
         "image_bytes": 744,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "f805419ea71110dbde21b4d2d8fd1fd83f44d80027954649cfd9569a21c4b26d"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 364,
       "kind": "block",
       "nonempty_examples": [
@@ -417,14 +417,14 @@
           "target_kind": "block"
         },
         "image_bytes": 728,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "73f82ce05cb98b4824650c3f552a18c1ee1632587bbe26e25089899dde341f0c"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 376,
       "kind": "block",
       "nonempty_examples": [
@@ -454,14 +454,14 @@
           "target_kind": "block"
         },
         "image_bytes": 712,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "c2a0ce61a4d59aca6421676766ac1a8e0f6dad62bcbb63e8a33f9b7581bd91d0"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 388,
       "kind": "block",
       "nonempty_examples": [
@@ -491,14 +491,14 @@
           "target_kind": "block"
         },
         "image_bytes": 720,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "a1447f18469ce76e779342437c6939426075772c78cce087e024bd3a7cb24852"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 400,
       "kind": "block",
       "nonempty_examples": [
@@ -528,14 +528,14 @@
           "target_kind": "block"
         },
         "image_bytes": 816,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "1a6e45a3eab607683f57162ed7a151103aa39980b834162a1e75abea25073a78"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 436,
       "kind": "block",
       "nonempty_examples": [
@@ -565,14 +565,14 @@
           "target_kind": "block"
         },
         "image_bytes": 920,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "bdd5c97b617d7671860d762d1956d40c741685b693e69f0728fcbf3834fba5ff"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 448,
       "kind": "block",
       "nonempty_examples": [
@@ -602,14 +602,14 @@
           "target_kind": "block"
         },
         "image_bytes": 712,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "c6464f940346cd259747af44884ff9e2fb2556c4e39b714a0af6aa2f13c8ba36"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 484,
       "kind": "block",
       "nonempty_examples": [
@@ -627,7 +627,7 @@
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 496,
       "kind": "block",
       "nonempty_examples": [],
@@ -651,14 +651,14 @@
           "target_kind": "block"
         },
         "image_bytes": 681,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "db66dda60ac956482198748dc36b3d5f1f46cb0b12d346d25f16c645033508d8"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 508,
       "kind": "block",
       "nonempty_examples": [
@@ -688,14 +688,14 @@
           "target_kind": "block"
         },
         "image_bytes": 796,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "b0dae31b14284f5e27c41e8a1978643b1161d6a4c9a4dfdafd0eaf46fa34e1ae"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 520,
       "kind": "block",
       "nonempty_examples": [
@@ -725,14 +725,14 @@
           "target_kind": "block"
         },
         "image_bytes": 760,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "ea8a5288101fa055f764e4eea1c64f1f4d73f2cbd1a8da7c0d4f7f44f8d33096"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 20,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 532,
       "kind": "data",
       "nonempty_examples": [
@@ -762,14 +762,14 @@
           "target_kind": "data"
         },
         "image_bytes": 684,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "e7c33d6deb77916379db8e93024307b4b9de81298445dd4a4f0f5e5b95c79313"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 588,
       "kind": "block",
       "nonempty_examples": [
@@ -787,7 +787,7 @@
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2981296",
+      "inventory_definition_id": "3056792",
       "inventory_offset": 600,
       "kind": "block",
       "nonempty_examples": [
@@ -817,14 +817,14 @@
           "target_kind": "block"
         },
         "image_bytes": 696,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "9458d28c071f7fdbc2131c105a1337613b820a8b75ad11daedf6e530ebb6ac40"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2982432",
+      "inventory_definition_id": "3057928",
       "inventory_offset": 4,
       "kind": "block",
       "nonempty_examples": [],
@@ -849,14 +849,14 @@
           "target_kind": "block"
         },
         "image_bytes": 704,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "42a87c16618d1e7d9ef4da5309e640f6ca9c9104345e07b52e6960c58b81a1cd"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2982432",
+      "inventory_definition_id": "3057928",
       "inventory_offset": 16,
       "kind": "block",
       "nonempty_examples": [],
@@ -881,14 +881,14 @@
           "target_kind": "block"
         },
         "image_bytes": 704,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "f71271fc7c5ed109763aa0611302e88c375d3bf007813752bb124021803371b1"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2982592",
+      "inventory_definition_id": "3058088",
       "inventory_offset": 12,
       "kind": "block",
       "nonempty_examples": [],
@@ -919,14 +919,14 @@
           "target_kind": "block"
         },
         "image_bytes": 716,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "8f3847e9a6bea019ae823cf4a1078fa3da01e56b9391ce92fb817dfd5b54174b"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2982680",
+      "inventory_definition_id": "3058176",
       "inventory_offset": 0,
       "kind": "block",
       "nonempty_examples": [],
@@ -957,14 +957,14 @@
           "target_kind": "block"
         },
         "image_bytes": 720,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "45b292cadb799d3a5a9aeb7dd774e1ccb592bdae26b7c046a81648f7c60e4a75"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2982680",
+      "inventory_definition_id": "3058176",
       "inventory_offset": 12,
       "kind": "block",
       "nonempty_examples": [],
@@ -995,14 +995,14 @@
           "target_kind": "block"
         },
         "image_bytes": 708,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "809c77b869eceb29c2f52d1b7e9eadd9c500330864bca580dd5b72852c3e8b64"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2982808",
+      "inventory_definition_id": "3058304",
       "inventory_offset": 4,
       "kind": "block",
       "nonempty_examples": [],
@@ -1038,14 +1038,14 @@
           "target_kind": "block"
         },
         "image_bytes": 728,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "599a694e8e2654438735762f51d212c2921f447c428bd116cfcb797bb9ad7fc8"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2982912",
+      "inventory_definition_id": "3058408",
       "inventory_offset": 0,
       "kind": "block",
       "nonempty_examples": [
@@ -1080,14 +1080,14 @@
           "target_kind": "block"
         },
         "image_bytes": 776,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "e376e4aace40d4f041c41a89895b43d04588a81a290b172cc9b4dbf3593d75e5"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2982912",
+      "inventory_definition_id": "3058408",
       "inventory_offset": 12,
       "kind": "block",
       "nonempty_examples": [
@@ -1122,14 +1122,14 @@
           "target_kind": "block"
         },
         "image_bytes": 750,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "d7b2853adfb046eb1b6636401d99e398e34c43e91c7e8a1b4748a0b9fa255991"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2982912",
+      "inventory_definition_id": "3058408",
       "inventory_offset": 24,
       "kind": "block",
       "nonempty_examples": [
@@ -1164,14 +1164,14 @@
           "target_kind": "block"
         },
         "image_bytes": 746,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "07c0936a62738e712a10cbcb55c91e0f00465635455a426c3c73481085c45890"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2982912",
+      "inventory_definition_id": "3058408",
       "inventory_offset": 36,
       "kind": "block",
       "nonempty_examples": [
@@ -1206,14 +1206,14 @@
           "target_kind": "block"
         },
         "image_bytes": 760,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "781a3e66e78f638622b507fa1b70905a59df321d84ca00caf17388e114d296ea"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2983472",
+      "inventory_definition_id": "3058968",
       "inventory_offset": 20,
       "kind": "block",
       "nonempty_examples": [
@@ -1249,14 +1249,14 @@
           "target_kind": "block"
         },
         "image_bytes": 728,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "2897111aaa53c0747d4746042f5716a130896b9c5c7f656c323ae2c12e88030c"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2984024",
+      "inventory_definition_id": "3059520",
       "inventory_offset": 20,
       "kind": "block",
       "nonempty_examples": [
@@ -1292,14 +1292,14 @@
           "target_kind": "block"
         },
         "image_bytes": 724,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "23414319379babb1f69e908fb7e4334fb8497bbd866ae953ceb9342bf7913999"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2984200",
+      "inventory_definition_id": "3059696",
       "inventory_offset": 52,
       "kind": "block",
       "nonempty_examples": [
@@ -1335,14 +1335,14 @@
           "target_kind": "block"
         },
         "image_bytes": 756,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "60640be118e96b496d4b66f3abf9f0b42d846b236fb69c6a9f73582507d6c7d7"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2984328",
+      "inventory_definition_id": "3059824",
       "inventory_offset": 40,
       "kind": "block",
       "nonempty_examples": [
@@ -1378,14 +1378,14 @@
           "target_kind": "block"
         },
         "image_bytes": 792,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "365e2b02a830141e45a5c15f819465c2e50e3a30bb51b8a4c895e925ac75165c"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2984328",
+      "inventory_definition_id": "3059824",
       "inventory_offset": 52,
       "kind": "block",
       "nonempty_examples": [
@@ -1421,14 +1421,14 @@
           "target_kind": "block"
         },
         "image_bytes": 820,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "476ea325446f2c1e2c45aab08b124014a5a7b99356e9329391fa614ac0e36811"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2984328",
+      "inventory_definition_id": "3059824",
       "inventory_offset": 68,
       "kind": "block",
       "nonempty_examples": [],
@@ -1458,14 +1458,14 @@
           "target_kind": "block"
         },
         "image_bytes": 788,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "85e4408ea7de8cc3dec9920b70ce21408014580595f5e2f1664d510fec6a78db"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2984328",
+      "inventory_definition_id": "3059824",
       "inventory_offset": 80,
       "kind": "block",
       "nonempty_examples": [
@@ -1500,14 +1500,14 @@
           "target_kind": "block"
         },
         "image_bytes": 848,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "9ef478e606b925fec02972bc5365ea4ec9022b5c4f03d2c27d56720d7d5cc64a"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2984328",
+      "inventory_definition_id": "3059824",
       "inventory_offset": 92,
       "kind": "block",
       "nonempty_examples": [
@@ -1543,14 +1543,14 @@
           "target_kind": "block"
         },
         "image_bytes": 786,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "4dc0096b39aff0676d8f53bfc84af5e209374a97c4db90f4a114eb689cc7ce12"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2984760",
+      "inventory_definition_id": "3060256",
       "inventory_offset": 52,
       "kind": "block",
       "nonempty_examples": [
@@ -1590,14 +1590,14 @@
           "target_kind": "block"
         },
         "image_bytes": 860,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "c8d48f13f11a6678083330c9e4ce13f96b14d8667cbf3a291a8d045f674dd83c"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2984928",
+      "inventory_definition_id": "3060424",
       "inventory_offset": 24,
       "kind": "block",
       "nonempty_examples": [
@@ -1638,14 +1638,14 @@
           "target_kind": "block"
         },
         "image_bytes": 824,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "33785dae217e8a8f8820bf6d4344a494e17d065003ab4f3ebd70017726b3d209"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2985696",
+      "inventory_definition_id": "3061192",
       "inventory_offset": 20,
       "kind": "block",
       "nonempty_examples": [
@@ -1681,14 +1681,14 @@
           "target_kind": "block"
         },
         "image_bytes": 968,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "549900068d3b795b4420e69fab8ff736627e5a8eae3cff17c2c14f596007d4cc"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 20,
-      "inventory_definition_id": "2985784",
+      "inventory_definition_id": "3061280",
       "inventory_offset": 216,
       "kind": "data",
       "nonempty_examples": [],
@@ -1719,14 +1719,14 @@
           "target_kind": "data"
         },
         "image_bytes": 972,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "bee3f2b12490137acdab336bfee9a1607081d170bc0a72d6a3112ff7415bd403"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 20,
-      "inventory_definition_id": "2985784",
+      "inventory_definition_id": "3061280",
       "inventory_offset": 236,
       "kind": "data",
       "nonempty_examples": [
@@ -1763,14 +1763,14 @@
           "target_kind": "data"
         },
         "image_bytes": 972,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "bcbc449cbcfa292627a2978bdb701ff17b795a3748a2c566f9ac070b711b807a"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2988624",
+      "inventory_definition_id": "3064120",
       "inventory_offset": 0,
       "kind": "block",
       "nonempty_examples": [
@@ -1788,7 +1788,7 @@
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2988624",
+      "inventory_definition_id": "3064120",
       "inventory_offset": 12,
       "kind": "block",
       "nonempty_examples": [
@@ -1806,7 +1806,7 @@
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2988624",
+      "inventory_definition_id": "3064120",
       "inventory_offset": 24,
       "kind": "block",
       "nonempty_examples": [
@@ -1824,7 +1824,7 @@
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2988624",
+      "inventory_definition_id": "3064120",
       "inventory_offset": 36,
       "kind": "block",
       "nonempty_examples": [
@@ -1842,7 +1842,7 @@
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2988624",
+      "inventory_definition_id": "3064120",
       "inventory_offset": 48,
       "kind": "block",
       "nonempty_examples": [
@@ -1878,14 +1878,14 @@
           "target_kind": "block"
         },
         "image_bytes": 796,
-        "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+        "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
         "sha256": "511eb82eddebb49172e98692fc0fba742da493b1c58d0cdffb27d1d3fc058d82"
       }
     },
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2988624",
+      "inventory_definition_id": "3064120",
       "inventory_offset": 60,
       "kind": "block",
       "nonempty_examples": [
@@ -1903,7 +1903,7 @@
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2988624",
+      "inventory_definition_id": "3064120",
       "inventory_offset": 72,
       "kind": "block",
       "nonempty_examples": [
@@ -1921,7 +1921,7 @@
     {
       "consumer_semantics_proven": false,
       "element_size": 12,
-      "inventory_definition_id": "2988624",
+      "inventory_definition_id": "3064120",
       "inventory_offset": 84,
       "kind": "block",
       "nonempty_examples": [
@@ -1940,11 +1940,11 @@
   "format": "hcu-step7-empty-retail-bsp-field-audit-v1",
   "inputs": {
     "inventory": "docs/reports/m2-step7-bsp-member-inventory-2026-10-22.json",
-    "inventory_sha256": "29fa47457d98782d61a8b09a20f5d84d2d9e336640b4b3bbd3000a6305206d15",
+    "inventory_sha256": "8d0bfccd29daddae878703c9ebe0b85cc5111ee5b818f17e22494108dcec8b1e",
     "retail_audit": "docs/reports/retail-bsp-cbsp-audit-c0-2026-10-22.json",
-    "retail_audit_sha256": "765ca7073073e6f060973290c180035c399839a105995c49c1c117a98d0d51af",
-    "retail_schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
-    "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037"
+    "retail_audit_sha256": "dc4bb2ab5b8c3f1fef4cdcca0f7afdae8c192c10e02e0d44672738c10c6157a1",
+    "retail_schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
+    "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5"
   },
   "interpretation": "Counts whether each compiler-inventory serialized BSP block/data field has serialized element bytes in the supplied audited retail corpus. Empty means no emitted owner extent; it does not establish that the field is unused or that the retail parser/consumer can be removed.",
   "retail_map_count": 24,

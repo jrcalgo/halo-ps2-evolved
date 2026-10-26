@@ -1,0 +1,61 @@
+{
+  "lane": "synthetic",
+  "rows": [
+    {
+      "member": "map_leaf.portal_designators",
+      "test": "tests/test_c4_synth_consumers.py::LeafMapConsumerTest::test_map_leaf_portal_designators_fixture_value_and_varied",
+      "command": "python3 -I -m pytest -q tests/test_c4_synth_consumers.py -k portal_designators",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "Walker-validated fixture decodes to designators [0]; verbatim CE leaf_map_close_portal/leaf_map_leaf_is_closed (leaf_map.c) run over it and over varied images (0x80000000 already closed; 1 -> ASSERT 673 on both sides). Matches independent Python oracle. Leaf and portal records are test-supplied companions (the fixture carries only the designator block)."
+    },
+    {
+      "member": "leaf_map.leaves",
+      "test": "tests/test_c4_synth_consumers.py::LeafMapConsumerTest::test_leaf_map_leaves_fixture_with_portals_fixture",
+      "command": "python3 -I -m pytest -q tests/test_c4_synth_consumers.py -k leaf_map_leaves",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "Fixture leaves block (one zeroed map_leaf, 0 designators, 0 faces) drives close/is_closed; portal record from the leaf_map.portals fixture. Zero-designator leaf asserts 673 on each side and stays open. Oracle matches. Varied leaf-index composition is in the portals row."
+    },
+    {
+      "member": "leaf_map.portals",
+      "test": "tests/test_c4_synth_consumers.py::LeafMapConsumerTest::test_leaf_map_portals_fixture_with_varied_leaf_indices",
+      "command": "python3 -I -m pytest -q tests/test_c4_synth_consumers.py -k leaf_map_portals",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "Fixture portal element (zeroed leaf_indices) drives close via verbatim leaf_map_close_portal; varied image sets leaf_indices[1]=1 (re-validated by the walker); two test-supplied leaves designate portal 0. Oracle matches."
+    },
+    {
+      "member": "map_leaf.faces",
+      "test": "tests/test_c4_synth_consumers.py::LeafMapConsumerTest::test_map_leaf_faces_fixture_bounds",
+      "command": "python3 -I -m pytest -q tests/test_c4_synth_consumers.py -k map_leaf_faces",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "Verbatim leaf_map_get_leaf_bounds faces branch (leaf_map.c:637+) over the fixture face (node 0, zero vertices) and test-supplied counts 2 and 3: bounds stay the CE null rectangle (center 0, radius inf) identical to the no-face leaf. Only the vertexless path is exercised; project_point2d is a stub that aborts if reached, so face vertices are not covered here (other lane owns vertex debug-draw fixtures)."
+    },
+    {
+      "member": "structure_cluster.surface_indices",
+      "test": "tests/test_c4_synth_consumers.py::ClusterSurfaceConsumerTest",
+      "command": "python3 -I -m pytest -q tests/test_c4_synth_consumers.py -k ClusterSurfaceConsumerTest",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "Verbatim structure_cluster_check (port/linux/game/tag_schema_collision.c:1444-1526, the surface-list validator; the brief's :753 is the schema row and ps2_render.c:64 only a struct declaration). Fixture element 0 plus test-supplied group headers; cluster non-surface fields set to retail-empty NONE/0. Covers whole group, out-of-material surface -> NONE, clamped group, out-of-range surface skipped, out-of-range lightmap breaks. Open: the runtime traversal reader structure_visibility.c:505-600 (structure_visibility_traverse_surface_lists) is NOT driven in this lane."
+    },
+    {
+      "member": "structure_material.uncompressed_vertex_data",
+      "test": "tests/test_c4_synth_consumers.py::MaterialConsumerTest",
+      "command": "python3 -I -m pytest -q tests/test_c4_synth_consumers.py -k MaterialConsumerTest",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "Verbatim structure_material_convert (port/linux/game/custom_edition_geometry.c:760+) with rasterizer stubs recording destination offsets and bytes. Fixture DATA block read as the compress destination when vertex count is nonzero. Finding (parity holds, contract gap): CE writes vertex_count*56 bytes into the uncompressed block without checking its size; the 4-byte synthetic block overruns for one vertex (OVERRUN need=56 have=4 in CE and oracle). The HCU consumer must bound-check or the validator must reject such counts."
+    },
+    {
+      "member": "structure_bsp.pathfinding_edges",
+      "test": "tests/test_c4_synth_consumers.py::PathfindingEdgesScanTest::test_scan_finds_only_declarations",
+      "command": "python3 -I -m pytest -q tests/test_c4_synth_consumers.py -k PathfindingEdgesScanTest",
+      "result": "blocked",
+      "scope": "member-exact",
+      "notes": "Blocked: no runtime reader exists to drive. Scoped grep for pathfinding_edges over src/, submodules/halo-ce-universal/source and port, and submodules/halo-ps2 finds only the schema declaration (port/linux/game/tag_schema_collision.c:971) and the struct field (source/structures/structure_bsp_definitions.h:210). tools/ and tests/ mention it only as audit data. The CE pathfinding reads (path.c, path_structure_bsp.c, path_smoothing.c) use collision_edge.surface_indices, a different member. Consumer parity is undefined until a reader exists."
+    }
+  ]
+}

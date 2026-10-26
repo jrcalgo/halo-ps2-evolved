@@ -2,8 +2,8 @@
   "format": "m2-step7-gap-consumer-evidence-v1",
   "generated_by": "tools/audit_step7_gap_consumer_evidence.py",
   "input_artifacts": {
-    "docs/reports/m2-step7-bsp-member-inventory-2026-10-22.json": "29fa47457d98782d61a8b09a20f5d84d2d9e336640b4b3bbd3000a6305206d15",
-    "docs/reports/m2-step7-schema-gap-dwarf-members-2026-10-22.json": "6b9edb0ccd7a4fc88ecf5a3bf7cbb7cb2a7938657fe6ab33e03f2da1cd51a540"
+    "docs/reports/m2-step7-bsp-member-inventory-2026-10-22.json": "8d0bfccd29daddae878703c9ebe0b85cc5111ee5b818f17e22494108dcec8b1e",
+    "docs/reports/m2-step7-schema-gap-dwarf-members-2026-10-22.json": "958ef393fbb383965240d1a9d6d10710d0044a1ba47dd523ac802fdb864a9ce6"
   },
   "rows": [
     {
@@ -352,7 +352,7 @@
         }
       ],
       "definition": "bsp2d_node",
-      "definition_id": "2989880",
+      "definition_id": "3065376",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "bsp2d_node.<unclassified@0x0>",
@@ -460,7 +460,7 @@
         }
       ],
       "definition": "bsp2d_reference",
-      "definition_id": "2989896",
+      "definition_id": "3065392",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "bsp2d_reference.<unclassified@0x0>",
@@ -500,7 +500,7 @@
         }
       ],
       "definition": "bsp3d_node",
-      "definition_id": "2989928",
+      "definition_id": "3065424",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "bsp3d_node.<unclassified@0x4>",
@@ -639,7 +639,7 @@
         }
       ],
       "definition": "collision_leaf",
-      "definition_id": "2989912",
+      "definition_id": "3065408",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "collision_leaf.<unclassified@0x0>",
@@ -734,7 +734,7 @@
         }
       ],
       "definition": "collision_surface",
-      "definition_id": "2989624",
+      "definition_id": "3065120",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "collision_surface.<unclassified@0x0>",
@@ -903,7 +903,7 @@
         }
       ],
       "definition": "collision_surface",
-      "definition_id": "2989624",
+      "definition_id": "3065120",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "collision_surface.<unclassified@0x8>",
@@ -1058,7 +1058,7 @@
         }
       ],
       "definition": "collision_vertex",
-      "definition_id": "2989376",
+      "definition_id": "3064872",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "collision_vertex.<unclassified@0x0>",
@@ -1173,7 +1173,7 @@
         }
       ],
       "definition": "detail_object",
-      "definition_id": "2983176",
+      "definition_id": "3058672",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "detail_object.<unclassified@0x0>",
@@ -1245,7 +1245,7 @@
         }
       ],
       "definition": "leaf_portal",
-      "definition_id": "2982592",
+      "definition_id": "3058088",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "leaf_portal.<unclassified@0x0>",
@@ -1285,7 +1285,7 @@
         }
       ],
       "definition": "map_leaf_face",
-      "definition_id": "2982808",
+      "definition_id": "3058304",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "map_leaf_face.<unclassified@0x0>",
@@ -1345,7 +1345,7 @@
         }
       ],
       "definition": "predicted_resource",
-      "definition_id": "2985016",
+      "definition_id": "3060512",
       "direct_member_fixture_claims": [
         {
           "claim": "Host fixture extracts CE predicted_resource_valid and proves bitmap resource_index acceptance/rejection at valid, end, and negative indices; also exercises sound group and missing-tag rejection.",
@@ -1664,7 +1664,7 @@
         }
       ],
       "definition": "real_plane3d",
-      "definition_id": "2990016",
+      "definition_id": "3065512",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "real_plane3d.<unclassified@0x0>",
@@ -1947,7 +1947,7 @@
         }
       ],
       "definition": "real_point2d",
-      "definition_id": "2990048",
+      "definition_id": "3065544",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "real_point2d.<unclassified@0x0>",
@@ -2230,7 +2230,7 @@
         }
       ],
       "definition": "real_point3d",
-      "definition_id": "2990032",
+      "definition_id": "3065528",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "real_point3d.<unclassified@0x0>",
@@ -2270,7 +2270,7 @@
         }
       ],
       "definition": "render_lighting",
-      "definition_id": "2986432",
+      "definition_id": "3061928",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "render_lighting.<unclassified@0x0>",
@@ -2279,7 +2279,7 @@
         {
           "path": "tests/test_hcu_mp_lightmap_surface_consumer.py",
           "relation": "related consumer fixture; not proof that every overlapping member is observed",
-          "sha256": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8"
+          "sha256": "67a84d932a942dede7df51a639aeb92bcf0c271e704ea7d2c1f3829061b2ba02"
         }
       ],
       "related_reports": [],
@@ -2323,7 +2323,7 @@
         }
       ],
       "definition": "render_lighting",
-      "definition_id": "2986432",
+      "definition_id": "3061928",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "render_lighting.<unclassified@0xe>",
@@ -2332,7 +2332,7 @@
         {
           "path": "tests/test_hcu_mp_lightmap_surface_consumer.py",
           "relation": "related consumer fixture; not proof that every overlapping member is observed",
-          "sha256": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8"
+          "sha256": "67a84d932a942dede7df51a639aeb92bcf0c271e704ea7d2c1f3829061b2ba02"
         }
       ],
       "related_reports": [],
@@ -2415,7 +2415,7 @@
         }
       ],
       "definition": "render_lighting",
-      "definition_id": "2986432",
+      "definition_id": "3061928",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "render_lighting.<unclassified@0x42>",
@@ -2424,7 +2424,7 @@
         {
           "path": "tests/test_hcu_mp_lightmap_surface_consumer.py",
           "relation": "related consumer fixture; not proof that every overlapping member is observed",
-          "sha256": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8"
+          "sha256": "67a84d932a942dede7df51a639aeb92bcf0c271e704ea7d2c1f3829061b2ba02"
         }
       ],
       "related_reports": [],
@@ -2456,7 +2456,7 @@
         }
       ],
       "definition": "structure_background_sound_palette_entry",
-      "definition_id": "2983336",
+      "definition_id": "3058832",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_background_sound_palette_entry.<unclassified@0x0>",
@@ -2497,7 +2497,7 @@
         }
       ],
       "definition": "structure_background_sound_palette_entry",
-      "definition_id": "2983336",
+      "definition_id": "3058832",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_background_sound_palette_entry.<unclassified@0x30>",
@@ -2603,7 +2603,7 @@
         }
       ],
       "definition": "structure_breakable_surface",
-      "definition_id": "2984184",
+      "definition_id": "3059680",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_breakable_surface.<unclassified@0x0>",
@@ -2663,7 +2663,7 @@
         }
       ],
       "definition": "structure_cluster",
-      "definition_id": "2984328",
+      "definition_id": "3059824",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_cluster.<unclassified@0x0>",
@@ -2703,7 +2703,7 @@
         }
       ],
       "definition": "structure_cluster",
-      "definition_id": "2984328",
+      "definition_id": "3059824",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_cluster.<unclassified@0xa>",
@@ -2743,7 +2743,7 @@
         }
       ],
       "definition": "structure_cluster",
-      "definition_id": "2984328",
+      "definition_id": "3059824",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_cluster.<unclassified@0x40>",
@@ -2854,7 +2854,7 @@
         }
       ],
       "definition": "structure_cluster_portal",
-      "definition_id": "2984200",
+      "definition_id": "3059696",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_cluster_portal.<unclassified@0x4>",
@@ -2894,7 +2894,7 @@
         }
       ],
       "definition": "structure_collision_material",
-      "definition_id": "2986264",
+      "definition_id": "3061760",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_collision_material.<unclassified@0x10>",
@@ -2934,7 +2934,7 @@
         }
       ],
       "definition": "structure_detail_object_data",
-      "definition_id": "2982912",
+      "definition_id": "3058408",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_detail_object_data.<unclassified@0x30>",
@@ -2974,7 +2974,7 @@
         }
       ],
       "definition": "structure_fog_palette_entry",
-      "definition_id": "2983768",
+      "definition_id": "3059264",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_fog_palette_entry.<unclassified@0x0>",
@@ -3025,7 +3025,7 @@
         }
       ],
       "definition": "structure_fog_palette_entry",
-      "definition_id": "2983768",
+      "definition_id": "3059264",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_fog_palette_entry.<unclassified@0x30>",
@@ -3076,7 +3076,7 @@
         }
       ],
       "definition": "structure_fog_plane",
-      "definition_id": "2984024",
+      "definition_id": "3059520",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_fog_plane.<unclassified@0x4>",
@@ -3085,7 +3085,7 @@
         {
           "path": "tests/test_hcu_mp_wind_package.py",
           "relation": "related consumer fixture; not proof that every overlapping member is observed",
-          "sha256": "582e716a1808c684708b5c887da54785f54e3db347b5af292c97f043b046bc38"
+          "sha256": "4d668a01378d9820ae8da74a40a9d98b239cd399cc1ec47f181fcef3cefa5bfd"
         },
         {
           "path": "tests/test_location.py",
@@ -3127,7 +3127,7 @@
         }
       ],
       "definition": "structure_fog_region",
-      "definition_id": "2983896",
+      "definition_id": "3059392",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_fog_region.<unclassified@0x0>",
@@ -3198,7 +3198,7 @@
         }
       ],
       "definition": "structure_leaf",
-      "definition_id": "2986160",
+      "definition_id": "3061656",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_leaf.<unclassified@0x0>",
@@ -3295,7 +3295,7 @@
         }
       ],
       "definition": "structure_leaf",
-      "definition_id": "2986160",
+      "definition_id": "3061656",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_leaf.<unclassified@0xa>",
@@ -3387,7 +3387,7 @@
         }
       ],
       "definition": "structure_lens_flare_marker",
-      "definition_id": "2985480",
+      "definition_id": "3060976",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_lens_flare_marker.<unclassified@0x0>",
@@ -3453,7 +3453,7 @@
         }
       ],
       "definition": "structure_lightmap",
-      "definition_id": "2985696",
+      "definition_id": "3061192",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_lightmap.<unclassified@0x0>",
@@ -3462,7 +3462,7 @@
         {
           "path": "tests/test_hcu_mp_lightmap_surface_consumer.py",
           "relation": "related consumer fixture; not proof that every overlapping member is observed",
-          "sha256": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8"
+          "sha256": "67a84d932a942dede7df51a639aeb92bcf0c271e704ea7d2c1f3829061b2ba02"
         }
       ],
       "related_reports": [],
@@ -3658,7 +3658,7 @@
         }
       ],
       "definition": "structure_material",
-      "definition_id": "2985784",
+      "definition_id": "3061280",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_material.<unclassified@0x10>",
@@ -3667,7 +3667,7 @@
         {
           "path": "tests/test_hcu_mp_lightmap_surface_consumer.py",
           "relation": "related consumer fixture; not proof that every overlapping member is observed",
-          "sha256": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8"
+          "sha256": "67a84d932a942dede7df51a639aeb92bcf0c271e704ea7d2c1f3829061b2ba02"
         }
       ],
       "related_reports": [],
@@ -3736,7 +3736,7 @@
         }
       ],
       "definition": "structure_material",
-      "definition_id": "2985784",
+      "definition_id": "3061280",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_material.<unclassified@0x9c>",
@@ -3745,7 +3745,7 @@
         {
           "path": "tests/test_hcu_mp_lightmap_surface_consumer.py",
           "relation": "related consumer fixture; not proof that every overlapping member is observed",
-          "sha256": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8"
+          "sha256": "67a84d932a942dede7df51a639aeb92bcf0c271e704ea7d2c1f3829061b2ba02"
         }
       ],
       "related_reports": [],
@@ -3852,7 +3852,7 @@
         }
       ],
       "definition": "structure_material",
-      "definition_id": "2985784",
+      "definition_id": "3061280",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_material.<unclassified@0xae>",
@@ -3861,7 +3861,7 @@
         {
           "path": "tests/test_hcu_mp_lightmap_surface_consumer.py",
           "relation": "related consumer fixture; not proof that every overlapping member is observed",
-          "sha256": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8"
+          "sha256": "67a84d932a942dede7df51a639aeb92bcf0c271e704ea7d2c1f3829061b2ba02"
         }
       ],
       "related_reports": [],
@@ -3978,7 +3978,7 @@
         }
       ],
       "definition": "structure_runtime_decal",
-      "definition_id": "2982896",
+      "definition_id": "3058392",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_runtime_decal.<unclassified@0x0>",
@@ -4019,7 +4019,7 @@
         }
       ],
       "definition": "structure_sound_environment_palette_entry",
-      "definition_id": "2983208",
+      "definition_id": "3058704",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_sound_environment_palette_entry.<unclassified@0x0>",
@@ -4060,7 +4060,7 @@
         }
       ],
       "definition": "structure_sound_environment_palette_entry",
-      "definition_id": "2983208",
+      "definition_id": "3058704",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_sound_environment_palette_entry.<unclassified@0x30>",
@@ -4137,7 +4137,7 @@
         }
       ],
       "definition": "structure_surface",
-      "definition_id": "2986056",
+      "definition_id": "3061552",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_surface.<unclassified@0x0>",
@@ -4146,7 +4146,7 @@
         {
           "path": "tests/test_hcu_mp_lightmap_surface_consumer.py",
           "relation": "related consumer fixture; not proof that every overlapping member is observed",
-          "sha256": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8"
+          "sha256": "67a84d932a942dede7df51a639aeb92bcf0c271e704ea7d2c1f3829061b2ba02"
         }
       ],
       "related_reports": [],
@@ -4191,7 +4191,7 @@
         }
       ],
       "definition": "structure_surface_reference",
-      "definition_id": "2986072",
+      "definition_id": "3061568",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_surface_reference.<unclassified@0x4>",
@@ -4200,7 +4200,7 @@
         {
           "path": "tests/test_hcu_mp_lightmap_surface_consumer.py",
           "relation": "related consumer fixture; not proof that every overlapping member is observed",
-          "sha256": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8"
+          "sha256": "67a84d932a942dede7df51a639aeb92bcf0c271e704ea7d2c1f3829061b2ba02"
         },
         {
           "path": "tests/test_hcu_mp_portal_visibility.py",
@@ -4237,7 +4237,7 @@
         }
       ],
       "definition": "structure_weather_palette_entry",
-      "definition_id": "2983560",
+      "definition_id": "3059056",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_weather_palette_entry.<unclassified@0x0>",
@@ -4251,7 +4251,7 @@
         {
           "path": "tests/test_hcu_mp_wind_package.py",
           "relation": "related consumer fixture; not proof that every overlapping member is observed",
-          "sha256": "582e716a1808c684708b5c887da54785f54e3db347b5af292c97f043b046bc38"
+          "sha256": "4d668a01378d9820ae8da74a40a9d98b239cd399cc1ec47f181fcef3cefa5bfd"
         }
       ],
       "related_reports": [],
@@ -4322,7 +4322,7 @@
         }
       ],
       "definition": "structure_weather_palette_entry",
-      "definition_id": "2983560",
+      "definition_id": "3059056",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_weather_palette_entry.<unclassified@0x30>",
@@ -4336,7 +4336,7 @@
         {
           "path": "tests/test_hcu_mp_wind_package.py",
           "relation": "related consumer fixture; not proof that every overlapping member is observed",
-          "sha256": "582e716a1808c684708b5c887da54785f54e3db347b5af292c97f043b046bc38"
+          "sha256": "4d668a01378d9820ae8da74a40a9d98b239cd399cc1ec47f181fcef3cefa5bfd"
         }
       ],
       "related_reports": [],
@@ -4447,7 +4447,7 @@
         }
       ],
       "definition": "structure_weather_palette_entry",
-      "definition_id": "2983560",
+      "definition_id": "3059056",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_weather_palette_entry.<unclassified@0x90>",
@@ -4461,7 +4461,7 @@
         {
           "path": "tests/test_hcu_mp_wind_package.py",
           "relation": "related consumer fixture; not proof that every overlapping member is observed",
-          "sha256": "582e716a1808c684708b5c887da54785f54e3db347b5af292c97f043b046bc38"
+          "sha256": "4d668a01378d9820ae8da74a40a9d98b239cd399cc1ec47f181fcef3cefa5bfd"
         }
       ],
       "related_reports": [],
@@ -4532,7 +4532,7 @@
         }
       ],
       "definition": "structure_weather_polyhedron",
-      "definition_id": "2983472",
+      "definition_id": "3058968",
       "direct_member_fixture_claims": [],
       "fixture_status": "related_fixture_exists",
       "inventory_path": "structure_weather_polyhedron.<unclassified@0x0>",
@@ -4554,10 +4554,10 @@
     }
   ],
   "source_pins": {
-    "docs/reports/m2-step7-bsp-member-inventory-2026-10-22.json": "29fa47457d98782d61a8b09a20f5d84d2d9e336640b4b3bbd3000a6305206d15",
+    "docs/reports/m2-step7-bsp-member-inventory-2026-10-22.json": "8d0bfccd29daddae878703c9ebe0b85cc5111ee5b818f17e22494108dcec8b1e",
     "docs/reports/m2-step7-fog-plane-consumer-qualification-2026-10-21.md": "fd00e24bd8444a8ec730f94663d0bd6ea56d80235c44510e8d08503e0ef9617b",
     "docs/reports/m2-step7-mp-valid-fog-selection-all13-2026-10-22.md": "ab86531e007e46eb6909c7cd70a31133650852c98a1327dbefa64a518a4e9dd6",
-    "docs/reports/m2-step7-schema-gap-dwarf-members-2026-10-22.json": "6b9edb0ccd7a4fc88ecf5a3bf7cbb7cb2a7938657fe6ab33e03f2da1cd51a540",
+    "docs/reports/m2-step7-schema-gap-dwarf-members-2026-10-22.json": "958ef393fbb383965240d1a9d6d10710d0044a1ba47dd523ac802fdb864a9ce6",
     "submodules/halo-ce-universal/source/cache/predicted_resources.c": "c2f81e7cab0307a5cb33f2094837556b3638594711a2e88dc187a1ec1c093eb4",
     "submodules/halo-ce-universal/source/camera/observer.c": "3615f6fa451c3c7774552f6d8de8d24fac4e4c490cce4abd9b411a63e0131ce9",
     "submodules/halo-ce-universal/source/effects/weather_particle_systems.c": "5c6f2cbe81276d89203890b1dbba3eb833125b2eb1c8c24c4c96dd74d61360b3",
@@ -4575,13 +4575,13 @@
     "tests/test_hcu_mp_breakable_runtime.py": "e6da6bafbc86967a0f748293042d7dd790983ed7574c812bd199e1af65cf4d91",
     "tests/test_hcu_mp_detail_object_consumer.py": "1beab7cc411b30ba14c0e2801967c335504f306288b28a7f8b1241719e171559",
     "tests/test_hcu_mp_lens_flare_consumer.py": "005ea3db352e56fc06d5fa0c0d07e3620a720534f470163da78d6b447aef3cdc",
-    "tests/test_hcu_mp_lightmap_surface_consumer.py": "ee75c3acd62ebe9ca5b37fef0090d9d0581181999958ce47a21c31b4fce3fcb8",
+    "tests/test_hcu_mp_lightmap_surface_consumer.py": "67a84d932a942dede7df51a639aeb92bcf0c271e704ea7d2c1f3829061b2ba02",
     "tests/test_hcu_mp_portal_visibility.py": "32867ddecc501db0afd4939e0eebe55471d95e5208a3ccdf2c1b4e23ffadfcfd",
     "tests/test_hcu_mp_predicted_resource_member.py": "8628349721891c84a484834dfea37a4530381a9a5e64065c206aefca3b0946d4",
     "tests/test_hcu_mp_sound_scenery_runtime.py": "659ab98a333118719c39573e8a34b6c8d070e13c5bdd771baf6db7d1ce766736",
     "tests/test_hcu_mp_weather_particle_all13.py": "8096219496432da09b9b292d829aa02ca36f28d4cb08f7f859e0de5adde30b0a",
     "tests/test_hcu_mp_weather_particle_consumer.py": "a7b0fc527b66bcc3bd2a480afdb53dcac88ede3c6f7e0ea35a8b74c95e682b50",
-    "tests/test_hcu_mp_wind_package.py": "582e716a1808c684708b5c887da54785f54e3db347b5af292c97f043b046bc38",
+    "tests/test_hcu_mp_wind_package.py": "4d668a01378d9820ae8da74a40a9d98b239cd399cc1ec47f181fcef3cefa5bfd",
     "tests/test_hcu_runtime_decals_consumer.py": "44f12dcaa9a9983790cf6a71ad964d12dee0877b20a2bae8fda6706b9a829fea",
     "tests/test_location.py": "41e7d4b844922afc6027533c18f56203d86079fbeadf0a327775868b88a0edd0",
     "tests/test_m3_collision_oracle.py": "ceb9cd8430aa547a57f257c9cb05fa20c1534590ce97d1be8bbf2e3328498688"

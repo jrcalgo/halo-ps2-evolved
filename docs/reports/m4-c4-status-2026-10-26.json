@@ -1,0 +1,32 @@
+{
+  "item": "C4",
+  "date": "2026-10-26",
+  "ledger": {
+    "rows": 164,
+    "consumed": 128,
+    "preserved-opaque": 20,
+    "synthetic-covered": 8,
+    "blocked": 8,
+    "unclassified": 0
+  },
+  "tests": {
+    "command": "python3 -m pytest -q tests/test_c4_*.py",
+    "passed": 188,
+    "subtests": 143,
+    "failed": 0
+  },
+  "exit_unclassified_met": true,
+  "exit_parity_fully_met": false,
+  "open": [
+    "structure_bsp.pathfinding_edges",
+    "detail_object",
+    "detail_object_z_reference_vector",
+    "structure_material@0x10",
+    "structure_material@0x9c",
+    "structure_material.lighting",
+    "structure_material.compressed_vertex_data",
+    "structure_material@0xae(schema-gap)",
+    "B9 FC10",
+    "test_step7_package_provenance"
+  ]
+}

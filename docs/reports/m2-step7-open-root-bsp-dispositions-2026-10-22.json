@@ -1,5 +1,5 @@
 {
-  "ce_source_pin": "c9f59a8548320b0663a8b555b452c30b25d2c714",
+  "ce_source_pin": "6de9046205cf65117f844a81318ba33dfbfd46eb",
   "counts": {
     "consumer_behavior_target_unverified": 3,
     "opaque_pointer_unusable": 1,
@@ -17,7 +17,7 @@
   "generator_sha256": "59cd184a442ddee649ab31ae4ab1dec98c8dd789b758efde77173d0fe415cd13",
   "interpretation": "Resolved means the byte-preservation/consumer disposition is source-backed; it does not mean a target consumer executed. The eight explicitly unused scalar ranges have exact host preservation/non-interpretation fixtures, but remain open semantically; their safe handling is to preserve unchanged. The legacy markers block is retained without claiming relocation or dereference safety.",
   "inventory_path": "docs/reports/m2-step7-bsp-member-inventory-2026-10-22.json",
-  "inventory_sha256": "29fa47457d98782d61a8b09a20f5d84d2d9e336640b4b3bbd3000a6305206d15",
+  "inventory_sha256": "8d0bfccd29daddae878703c9ebe0b85cc5111ee5b818f17e22494108dcec8b1e",
   "layout_evidence": {
     "claim": "CE compiler structure_bsp declaration and member order",
     "lines": "178-220",
@@ -395,5 +395,5 @@
     }
   ],
   "schema_elf_path": "build/hcu-ps2-closure/all-no-bootstrap-memory/halo-local.elf",
-  "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037"
+  "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5"
 }

@@ -1,0 +1,21 @@
+{
+  "lane": "pathfinding",
+  "rows": [
+    {
+      "member": "structure_bsp.pathfinding_surfaces",
+      "test": "tests/test_c4_live_pathfinding_real.py::C4RealPathfindingTest::test_structure_bsp_pathfinding_surfaces_walkable_bit_gates_selection_and_routes",
+      "command": "python3 -I -m pytest -q tests/test_c4_live_pathfinding_real.py -k pathfinding_surfaces",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "Real CE edge builder/traverse and selector read the per-surface flag byte (walkable bit 6, breakable bit 7). Asserts the stock Prisoner walkable pattern from the raw payload (walkable 0,1,94,500; not 100,457,902,2838), that all 8 stock breakables are not walkable, that the selector still returns non-walkable probes (CE's selection ignores the walkable bit), and that clearing the synthetic gate's walkable bit reroutes the real smoothing (smoothing.gate_blocked, breakable.smoothing_avoids_destroyed). Finding: stock breakables are unreachable in the walkable graph."
+    },
+    {
+      "member": "structure_bsp.pathfinding_edges",
+      "test": "none",
+      "command": "grep -rn 'pathfinding_edges' submodules/halo-ce-universal/source submodules/halo-ps2 src tests tools --include=*.c --include=*.h --include=*.py",
+      "result": "blocked",
+      "scope": "member-exact",
+      "notes": "No runtime reader in the CE source: the top-level pathfinding_edges block is never read by path.c or path_smoothing.c (CE derives adjacency from collision edge rings). The only hits are census and span-check code in tests (hcu_mp_nested_bsp_census.h, test_step7_synthetic_empty_bsp_fields.py, struct declarations in test C files) which read count/address and never the edge records. Nothing to test at runtime; blocked by absence of a consumer."
+    }
+  ]
+}

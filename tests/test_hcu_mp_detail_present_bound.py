@@ -17,7 +17,6 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 HCU = ROOT / "submodules/halo-ce-universal"
 OUT = ROOT / "build/step7-swarm/detail"
-PACKAGES = Path("/tmp/hcu-m2-capacity-repro.P5qdmI/packages")
 MP_MAPS = (
     "beavercreek", "bloodgulch", "boardingaction", "carousel", "chillout",
     "damnation", "hangemhigh", "longest", "prisoner", "putput", "ratrace",
@@ -49,6 +48,12 @@ sys.path.insert(0, str(ROOT / "tests"))
 sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT / "submodules/halo-ps2/tools"))
 from host_abi32 import flags  # noqa: E402
+from hcu_package_root import resolve_package_dir  # noqa: E402
+from audit_mp_lightmap_surface_consumer import PACKAGE_SHA256  # noqa: E402
+
+# The 13 retail HP2 packages are pinned by the lightmap audit; a directory is
+# accepted only when every one matches (env var, /tmp, build/mp-fog-selection-*).
+PACKAGES = resolve_package_dir(PACKAGE_SHA256)
 from halo2ps2 import bsp, mapinfo, tagindex  # noqa: E402
 from ctag_schema_walk import read_xbox_tag_region  # noqa: E402
 from test_hcu_scenario_bsp_switch import (  # noqa: E402
@@ -245,6 +250,9 @@ class DetailPresentBoundTest(unittest.TestCase):
         assets = work / "assets/maps"
         assets.mkdir(parents=True)
         package_hashes = {}
+        if PACKAGES is None:
+            self.skipTest("no pin-verified retail HP2 package set: set HALO_HCU_M2_PACKAGE_ROOT or keep "
+                          "build/mp-fog-selection-*/assets/maps/*.hp2 matching the lightmap audit pins")
         for name in MP_MAPS:
             package = PACKAGES / f"{name}.hp2"
             source = ROOT / "build/retail-maps/decompressed" / f"{name}.map"

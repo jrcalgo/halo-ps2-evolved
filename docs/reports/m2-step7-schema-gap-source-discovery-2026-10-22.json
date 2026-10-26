@@ -1,11 +1,11 @@
 {
   "format": "hcu-step7-schema-gap-source-discovery-v1",
-  "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+  "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
   "gap_count": 54,
   "interpretation": "Source declaration discovery is not a layout classification. A gap remains open until exact ABI compiler layout or a tested byte-preservation rule classifies it; semantic consumer disposition is separate.",
   "gaps": [
     {
-      "definition_id": "2982592",
+      "definition_id": "3058088",
       "definition": "leaf_portal",
       "schema_range": {
         "offset": 0,
@@ -22,7 +22,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2982808",
+      "definition_id": "3058304",
       "definition": "map_leaf_face",
       "schema_range": {
         "offset": 0,
@@ -39,7 +39,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2982896",
+      "definition_id": "3058392",
       "definition": "structure_runtime_decal",
       "schema_range": {
         "offset": 0,
@@ -56,7 +56,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2982912",
+      "definition_id": "3058408",
       "definition": "structure_detail_object_data",
       "schema_range": {
         "offset": 48,
@@ -78,7 +78,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2983144",
+      "definition_id": "3058640",
       "definition": "detail_object_z_reference_vector",
       "schema_range": {
         "offset": 0,
@@ -89,7 +89,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2983160",
+      "definition_id": "3058656",
       "definition": "detail_object_count",
       "schema_range": {
         "offset": 0,
@@ -100,7 +100,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2983176",
+      "definition_id": "3058672",
       "definition": "detail_object",
       "schema_range": {
         "offset": 0,
@@ -122,7 +122,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2983192",
+      "definition_id": "3058688",
       "definition": "detail_object_cell",
       "schema_range": {
         "offset": 0,
@@ -133,7 +133,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2983208",
+      "definition_id": "3058704",
       "definition": "structure_sound_environment_palette_entry",
       "schema_range": {
         "offset": 0,
@@ -150,7 +150,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2983208",
+      "definition_id": "3058704",
       "definition": "structure_sound_environment_palette_entry",
       "schema_range": {
         "offset": 48,
@@ -167,7 +167,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2983336",
+      "definition_id": "3058832",
       "definition": "structure_background_sound_palette_entry",
       "schema_range": {
         "offset": 0,
@@ -184,7 +184,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2983336",
+      "definition_id": "3058832",
       "definition": "structure_background_sound_palette_entry",
       "schema_range": {
         "offset": 48,
@@ -201,7 +201,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2983472",
+      "definition_id": "3058968",
       "definition": "structure_weather_polyhedron",
       "schema_range": {
         "offset": 0,
@@ -218,7 +218,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2983560",
+      "definition_id": "3059056",
       "definition": "structure_weather_palette_entry",
       "schema_range": {
         "offset": 0,
@@ -240,7 +240,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2983560",
+      "definition_id": "3059056",
       "definition": "structure_weather_palette_entry",
       "schema_range": {
         "offset": 48,
@@ -262,7 +262,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2983560",
+      "definition_id": "3059056",
       "definition": "structure_weather_palette_entry",
       "schema_range": {
         "offset": 144,
@@ -284,7 +284,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2983768",
+      "definition_id": "3059264",
       "definition": "structure_fog_palette_entry",
       "schema_range": {
         "offset": 0,
@@ -301,7 +301,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2983768",
+      "definition_id": "3059264",
       "definition": "structure_fog_palette_entry",
       "schema_range": {
         "offset": 48,
@@ -318,7 +318,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2983896",
+      "definition_id": "3059392",
       "definition": "structure_fog_region",
       "schema_range": {
         "offset": 0,
@@ -335,7 +335,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2984024",
+      "definition_id": "3059520",
       "definition": "structure_fog_plane",
       "schema_range": {
         "offset": 4,
@@ -352,7 +352,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2984184",
+      "definition_id": "3059680",
       "definition": "structure_breakable_surface",
       "schema_range": {
         "offset": 0,
@@ -369,7 +369,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2984200",
+      "definition_id": "3059696",
       "definition": "structure_cluster_portal",
       "schema_range": {
         "offset": 4,
@@ -386,7 +386,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2984328",
+      "definition_id": "3059824",
       "definition": "structure_cluster",
       "schema_range": {
         "offset": 0,
@@ -408,7 +408,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2984328",
+      "definition_id": "3059824",
       "definition": "structure_cluster",
       "schema_range": {
         "offset": 10,
@@ -430,7 +430,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2984328",
+      "definition_id": "3059824",
       "definition": "structure_cluster",
       "schema_range": {
         "offset": 64,
@@ -452,7 +452,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2984760",
+      "definition_id": "3060256",
       "definition": "structure_mirror",
       "schema_range": {
         "offset": 0,
@@ -463,7 +463,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2984928",
+      "definition_id": "3060424",
       "definition": "structure_subcluster",
       "schema_range": {
         "offset": 0,
@@ -474,7 +474,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2985016",
+      "definition_id": "3060512",
       "definition": "predicted_resource",
       "schema_range": {
         "offset": 2,
@@ -491,7 +491,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2985480",
+      "definition_id": "3060976",
       "definition": "structure_lens_flare_marker",
       "schema_range": {
         "offset": 0,
@@ -513,7 +513,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2985696",
+      "definition_id": "3061192",
       "definition": "structure_lightmap",
       "schema_range": {
         "offset": 0,
@@ -530,7 +530,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2985784",
+      "definition_id": "3061280",
       "definition": "structure_material",
       "schema_range": {
         "offset": 16,
@@ -547,7 +547,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2985784",
+      "definition_id": "3061280",
       "definition": "structure_material",
       "schema_range": {
         "offset": 156,
@@ -564,7 +564,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2985784",
+      "definition_id": "3061280",
       "definition": "structure_material",
       "schema_range": {
         "offset": 174,
@@ -581,7 +581,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2986056",
+      "definition_id": "3061552",
       "definition": "structure_surface",
       "schema_range": {
         "offset": 0,
@@ -598,7 +598,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2986072",
+      "definition_id": "3061568",
       "definition": "structure_surface_reference",
       "schema_range": {
         "offset": 4,
@@ -615,7 +615,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2986160",
+      "definition_id": "3061656",
       "definition": "structure_leaf",
       "schema_range": {
         "offset": 0,
@@ -632,7 +632,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2986160",
+      "definition_id": "3061656",
       "definition": "structure_leaf",
       "schema_range": {
         "offset": 10,
@@ -649,7 +649,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2986248",
+      "definition_id": "3061744",
       "definition": "structure_node",
       "schema_range": {
         "offset": 0,
@@ -660,7 +660,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2986264",
+      "definition_id": "3061760",
       "definition": "structure_collision_material",
       "schema_range": {
         "offset": 16,
@@ -677,7 +677,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2986432",
+      "definition_id": "3061928",
       "definition": "render_lighting",
       "schema_range": {
         "offset": 0,
@@ -694,7 +694,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2986432",
+      "definition_id": "3061928",
       "definition": "render_lighting",
       "schema_range": {
         "offset": 14,
@@ -711,7 +711,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2986432",
+      "definition_id": "3061928",
       "definition": "render_lighting",
       "schema_range": {
         "offset": 66,
@@ -728,7 +728,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2989376",
+      "definition_id": "3064872",
       "definition": "collision_vertex",
       "schema_range": {
         "offset": 0,
@@ -745,7 +745,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2989624",
+      "definition_id": "3065120",
       "definition": "collision_surface",
       "schema_range": {
         "offset": 0,
@@ -762,7 +762,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2989624",
+      "definition_id": "3065120",
       "definition": "collision_surface",
       "schema_range": {
         "offset": 8,
@@ -779,7 +779,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2989880",
+      "definition_id": "3065376",
       "definition": "bsp2d_node",
       "schema_range": {
         "offset": 0,
@@ -796,7 +796,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2989896",
+      "definition_id": "3065392",
       "definition": "bsp2d_reference",
       "schema_range": {
         "offset": 0,
@@ -813,7 +813,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2989912",
+      "definition_id": "3065408",
       "definition": "collision_leaf",
       "schema_range": {
         "offset": 0,
@@ -830,7 +830,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2989928",
+      "definition_id": "3065424",
       "definition": "bsp3d_node",
       "schema_range": {
         "offset": 4,
@@ -847,7 +847,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2990016",
+      "definition_id": "3065512",
       "definition": "real_plane3d",
       "schema_range": {
         "offset": 0,
@@ -864,7 +864,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2990032",
+      "definition_id": "3065528",
       "definition": "real_point3d",
       "schema_range": {
         "offset": 0,
@@ -881,7 +881,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2990048",
+      "definition_id": "3065544",
       "definition": "real_point2d",
       "schema_range": {
         "offset": 0,
@@ -898,7 +898,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2990064",
+      "definition_id": "3065560",
       "definition": "byte",
       "schema_range": {
         "offset": 0,
@@ -909,7 +909,7 @@
       "note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     },
     {
-      "definition_id": "2990080",
+      "definition_id": "3065576",
       "definition": "long",
       "schema_range": {
         "offset": 0,

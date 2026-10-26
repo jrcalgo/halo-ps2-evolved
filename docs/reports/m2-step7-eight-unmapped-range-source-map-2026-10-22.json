@@ -3,7 +3,7 @@
   "generated_by": "tools/audit_step7_eight_unmapped_ranges.py",
   "interpretation": "These mappings identify serialized member ownership and sibling index domains where source proves them. They do not qualify target execution, justify normalization/removal, or close the schema byte-preservation gate.",
   "inventory_path": "docs/reports/m2-step7-bsp-member-inventory-2026-10-22.json",
-  "inventory_sha256": "29fa47457d98782d61a8b09a20f5d84d2d9e336640b4b3bbd3000a6305206d15",
+  "inventory_sha256": "8d0bfccd29daddae878703c9ebe0b85cc5111ee5b818f17e22494108dcec8b1e",
   "ranges": [
     {
       "consumer_and_domain_evidence": "structure_detail_objects.c reads cell coordinates, layer bits, and start/count indices; count and object indices are bounds checked by structure_detail_objects_port_count.",
@@ -28,7 +28,7 @@
         }
       ],
       "definition": "detail_object_cell",
-      "definition_id": "2983192",
+      "definition_id": "3058688",
       "evidence_level": "source inspection; offsets cross-checked against compiler-derived schema record extents",
       "inventory_range": {
         "offset": 0,
@@ -105,7 +105,7 @@
         }
       ],
       "definition": "detail_object_count",
-      "definition_id": "2983160",
+      "definition_id": "3058656",
       "evidence_level": "source inspection; offsets cross-checked against compiler-derived schema record extents",
       "inventory_range": {
         "offset": 0,
@@ -139,7 +139,7 @@
         }
       ],
       "definition": "detail_object_z_reference_vector",
-      "definition_id": "2983144",
+      "definition_id": "3058640",
       "evidence_level": "source inspection; offsets cross-checked against compiler-derived schema record extents",
       "inventory_range": {
         "offset": 0,
@@ -173,7 +173,7 @@
         }
       ],
       "definition": "structure_mirror",
-      "definition_id": "2984760",
+      "definition_id": "3060256",
       "evidence_level": "source inspection; offsets cross-checked against compiler-derived schema record extents",
       "inventory_range": {
         "offset": 0,
@@ -211,7 +211,7 @@
         }
       ],
       "definition": "structure_node",
-      "definition_id": "2986248",
+      "definition_id": "3061744",
       "evidence_level": "source inspection; offsets cross-checked against compiler-derived schema record extents",
       "inventory_range": {
         "offset": 0,
@@ -243,7 +243,7 @@
         }
       ],
       "definition": "structure_subcluster",
-      "definition_id": "2984928",
+      "definition_id": "3060424",
       "evidence_level": "source inspection; offsets cross-checked against compiler-derived schema record extents",
       "inventory_range": {
         "offset": 0,
@@ -275,7 +275,7 @@
         }
       ],
       "definition": "byte",
-      "definition_id": "2990064",
+      "definition_id": "3065560",
       "evidence_level": "source inspection; offsets cross-checked against compiler-derived schema record extents",
       "inventory_range": {
         "offset": 0,
@@ -313,7 +313,7 @@
         }
       ],
       "definition": "long",
-      "definition_id": "2990080",
+      "definition_id": "3065576",
       "evidence_level": "source inspection; offsets cross-checked against compiler-derived schema record extents",
       "inventory_range": {
         "offset": 0,

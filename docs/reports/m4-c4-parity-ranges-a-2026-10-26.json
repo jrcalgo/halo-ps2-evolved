@@ -1,0 +1,141 @@
+{
+  "lane": "ranges-a",
+  "rows": [
+    {
+      "member": "structure_runtime_decal.<unclassified@0x0>",
+      "test": "tests/test_c4_parity_ranges_a.py",
+      "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_a.py -k structure_runtime_decal_unclassified_0x0_member_exact",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "Round 2: structure_decals_update driven verbatim (structure_runtime_decals.c:~178-240) by tests/c4_parity_ranges_a_decal_main.c with a data-only decal manager stand-in (decal_new and decals_delete_permanent_from_cluster record their calls). position (0x0), palette_index (0xc), yaw (0xe) and pitch (0xf) varied; output checked against a model of the CE loop (PVS delete/create, bounds and palette checks, malformed reports). unused (0xd) poisoned with no change. The euler-to-vector conversion is recorded through the stand-in, so the check is the angles produced, not the decal placement."
+    },
+    {
+      "member": "detail_object_z_reference_vector.<unclassified@0x0>",
+      "test": "tests/test_c4_parity_ranges_a.py",
+      "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_a.py -k detail_object_z_reference_vector_unclassified_0x0",
+      "result": "blocked",
+      "scope": "member-exact",
+      "notes": "Blocked: the only component consumer is the Xbox rasterizer (rasterizer/xbox/rasterizer_xbox_detail_objects.c:867-879). The CPU-side selection (structure_detail_objects.c:536-541) is inline in structure_render_detail_objects (420-593), not extractable without its render-state stubs. PS2 has no reader."
+    },
+    {
+      "member": "detail_object_count.<unclassified@0x0>",
+      "test": "tests/test_c4_parity_ranges_a.py",
+      "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_a.py -k test_detail_object_count_unclassified_0x0_member_exact",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "structure_detail_objects_port_count verbatim (structure_detail_objects.c:365-396) with synthetic counts (incl. huge, empty, out-of-range index, remainder overflow) vs independent oracle. Counts word at 0x0 varied; counts[] changes the output as CE does."
+    },
+    {
+      "member": "detail_object.<unclassified@0x0>",
+      "test": "tests/test_c4_parity_ranges_a.py",
+      "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_a.py -k detail_object_unclassified_0x0_blocked_reason",
+      "result": "blocked",
+      "scope": "member-exact",
+      "notes": "Blocked: position/data/color are consumed only by detail_object_build_vertices (rasterizer/xbox/rasterizer_xbox_detail_objects.c:280-320), Xbox vertex packing. PS2 detail-object drawing is unsupported/unverified, and the CPU selector does not read these fields. No nonempty PS2 consumer to drive; retail maps have empty detail data."
+    },
+    {
+      "member": "detail_object_cell.<unclassified@0x0>",
+      "test": "tests/test_c4_parity_ranges_a.py",
+      "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_a.py -k test_detail_object_cell_unclassified_0x0_sort_keys_member_exact",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "key_compare_cells_lower/upper_bound and get_lower/upper_bound_cell verbatim (structure_detail_objects.c:290-362) with synthetic sorted nonempty cell lists; cell_x/cell_y/cell_z moved within sort order, bounds compared with bisect oracle. Output changes where CE's do. offset_z/valid_layers/start_index/count_index are not in this selector; they are covered by the rendering path only (not driven)."
+    },
+    {
+      "member": "structure_weather_polyhedron.<unclassified@0x0>",
+      "test": "tests/test_c4_parity_ranges_a.py",
+      "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_a.py -k test_structure_weather_polyhedron_unclassified_0x0_member_exact",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "weather_polyhedra_find verbatim (effects/weather_particle_systems.c:449-478); bounding_sphere_center (0x0) and radius (0xc) varied with a squared-distance oracle including the 8-entry cap. unused long (0x10) has no access (no read in CE, not driven)."
+    },
+    {
+      "member": "structure_weather_palette_entry.<unclassified@0x90>",
+      "test": "tests/test_c4_parity_ranges_a.py",
+      "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_a.py -k structure_weather_palette_entry_unclassified_0x90_member_exact",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "Round 2: wind_update verbatim (scenario/wind.c:184) with the euler/vector helpers verbatim from math/real_math.c, and seed_random_range pinned to a fixed bit pattern (the output depends only on the synthetic bytes). wind_direction (0x90) and wind_magnitude (0x9c) varied; a wind-less entry is unaffected by them. Palette layout asserted (0xf0 total, offsets 0x80/0x90). padA0, wind_unused and the wind function hook have no CE reads (grep)."
+    },
+    {
+      "member": "structure_fog_plane.<unclassified@0x4>",
+      "test": "tests/test_c4_parity_ranges_a.py",
+      "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_a.py -k test_structure_fog_plane_unclassified_0x4_plane_member_exact",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "Scenario fog harness reused (tests/test_c4_parity_fog.py) with plane d and n varied in planes[0]; scenario_get_fog_region_index (scenario/scenario.c:677) verbatim, oracle from fog module. Output changes when d changes."
+    },
+    {
+      "member": "structure_breakable_surface.<unclassified@0x0>",
+      "test": "tests/test_c4_parity_ranges_a.py",
+      "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_a.py -k structure_breakable_surface_unclassified_0x0_member_exact",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "Round 2: breakable_surface_damage_area_of_effect, breakable_surface_extant and breakable_surface_indices_valid verbatim (physics/breakable_surfaces.c) with a data-only queue stand-in (flag bit vector, vitality, recorded breakable_surface_effect). centroid (0x0), bounding_radius (0xc) and collision_surface_index (0x10) varied; gates (disabled, zero bounds, all broken) checked. unused[7] has no CE access (grep). The flag polarity follows CE (set = extant)."
+    },
+    {
+      "member": "structure_lens_flare_marker.<unclassified@0x0>",
+      "test": "tests/test_c4_parity_ranges_a.py",
+      "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_a.py -k test_structure_lens_flare_marker_unclassified_0x0_member_exact",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "rasterizer_lens_flare_submit_for_cluster verbatim (rasterizer/rasterizer_lights.c:771-835) with real perpendicular/normalize stand-ins and recorded compress inputs. Marker position (0x0..0xb) and i/j/k bytes (0xc..0xe) varied; direction checked against normalize(ijk/127), up checked as unit and perpendicular. Stand-ins for perpendicular3d are not CE code; the oracle checks only the derived vectors' properties."
+    },
+    {
+      "member": "structure_lightmap.<unclassified@0x0>",
+      "test": "tests/test_c4_parity_ranges_a.py",
+      "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_a.py -k test_structure_lightmap_unclassified_0x0_bitmap_index_member_exact",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "bitmap_index (0x0) through lights_distant_lighting_at_point via the lighting harness (tests/test_c4_parity_fog.py): NONE gives default copy, valid indices give hit path; compared with oracle. pad (0x2) and unused[4] (0x4) have zero access (grep) and are not driven."
+    },
+    {
+      "member": "structure_material.<unclassified@0x10>",
+      "test": "tests/test_c4_parity_ranges_a.py",
+      "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_a.py -k structure_material_unclassified_0x10_span_members_member_exact",
+      "result": "blocked",
+      "scope": "member-exact",
+      "notes": "Partial, still blocked: first_surface_index (0x14) and surface_count (0x18) pass against a contiguous-span oracle (structure_bsp_find_material_for_surface, structure_bsp_definitions.c:76-200 verbatim). permutation_index (0x10), flags (0x12) and centroid (0x1c) are consumed only by structure_render_pass (structure_render.c:598-619) with no host-observable output: left blocked by instruction. GAP FINDING, checked on retail: every lightmap's material spans are contiguous in all 82 retail structure BSPs (24 maps, 2288 lightmaps; sha256 verified against docs/reports/retail-bsp-preservation-2026-10-21.json; test RetailSpanContiguityTest). The surface-in-gap match_assert at structure_bsp_definitions.c:103 (GapSurfaceFindingTest) therefore does not occur on retail input; it is a finding for malformed input only. Retail-check tool note: the hp2 package pins in tools/hcu_package_root.py do not cover the decompressed .map sources, so the pinned source_sha256 of the preservation report was used instead."
+    },
+    {
+      "member": "structure_material.<unclassified@0x9c>",
+      "test": "tests/test_c4_parity_ranges_a.py",
+      "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_a.py -k structure_material_unclassified_0x9c_blocked_reason",
+      "result": "blocked",
+      "scope": "member-exact",
+      "notes": "Blocked: plane (0x9c) is passed to structure_render_pass only when the coplanar flag is set (structure_render.c:615-617) into the rasterizer draw path; no host-observable result."
+    },
+    {
+      "member": "structure_material.<unclassified@0xae>",
+      "test": "tests/test_c4_parity_ranges_a.py",
+      "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_a.py -k MaterialCopiousUnusedSpaceUnclassified0xae",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "Round 2 (schema-gap): copious_unused_space (0xae) has no reader anywhere in CE (grep; the test asserts none). The inline vertex_buffer records next to it are consumed by structure_vertex_buffer_check (port/linux/game/tag_schema_collision.c:1272-1308); the validator harness tests/c4_validators_main.c now drives it with a material-bearing vertex buffer (contained, and past the bsp region: corrected to none) and test_c4_parity_validators.py EXPECTED lists both cases (run: python3 -I -m pytest -q tests/test_c4_parity_validators.py: 3 passed). base_address has no reader outside rasterizer/xbox and Xbox-only paths (grep of port/ and source/). hardware_format is read by the validator and by port/linux/game/object_mesh.c (D3D8 lock, Xbox API). No schema change made."
+    },
+    {
+      "member": "render_lighting.<unclassified@0x0>",
+      "test": "tests/test_c4_parity_ranges_a.py",
+      "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_a.py -k test_render_lighting_unclassified_0x0_ambient_color_member_exact",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "ambient_color red tested against zero (object_lights.c:2411 via lights_distant_lighting_at_point, verbatim) with the fog harness oracle; zero red takes the default table, nonzero red changes the output."
+    },
+    {
+      "member": "render_lighting.<unclassified@0xe>",
+      "test": "tests/test_c4_parity_ranges_a.py",
+      "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_a.py -k test_render_lighting_unclassified_0xe_and_unclassified_0x42_no_consumer_member_exact",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "pad (0xe) is a pad-like byte with no reader (regex scan of object_lights.c and structure_render.c for .pad/.pad1 finds none); the BSP lighting is passed by address (&material->lighting, structure_render.c:622-623) and never assigned, so bytes are retained. Result unchanged across repeated runs. The unchanged-result check is trivial (the pad is not a consumer input), the retention check is static."
+    },
+    {
+      "member": "render_lighting.<unclassified@0x42>",
+      "test": "tests/test_c4_parity_ranges_a.py",
+      "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_a.py -k test_render_lighting_unclassified_0xe_and_unclassified_0x42_no_consumer_member_exact",
+      "result": "pass",
+      "scope": "member-exact",
+      "notes": "pad1 (0x42) no reader; point_light_indices (0x44) are read only in the object lighting paths (object_lights.c, render_objects.c, rasterizer_xbox.c model lighting guarded by point_light_count). The BSP schema pins point_light_count to 0 (port/linux/game/tag_schema_collision.c:597), so the BSP lighting never reads its indices. Static evidence; the retention check is the struct-by-address pass."
+    }
+  ]
+}

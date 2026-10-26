@@ -91,7 +91,7 @@
       "path": "structure_bsp.default_lighting",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2986432",
+        "child_definition_id": "3061928",
         "count": 1,
         "flags": 0,
         "maximum": 0,
@@ -126,7 +126,7 @@
       "path": "structure_bsp.collision_materials",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2986264",
+        "child_definition_id": "3061760",
         "count": 1,
         "flags": 0,
         "maximum": 512,
@@ -147,7 +147,7 @@
       "path": "structure_bsp.collision_bsp",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2988624",
+        "child_definition_id": "3064120",
         "count": 1,
         "flags": 0,
         "maximum": 1,
@@ -168,7 +168,7 @@
       "path": "structure_bsp.nodes",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2986248",
+        "child_definition_id": "3061744",
         "count": 1,
         "flags": 0,
         "maximum": 131072,
@@ -203,7 +203,7 @@
       "path": "structure_bsp.leaves",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2986160",
+        "child_definition_id": "3061656",
         "count": 1,
         "flags": 0,
         "maximum": 65536,
@@ -224,7 +224,7 @@
       "path": "structure_bsp.surface_references",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2986072",
+        "child_definition_id": "3061568",
         "count": 1,
         "flags": 0,
         "maximum": 262144,
@@ -245,7 +245,7 @@
       "path": "structure_bsp.surfaces",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2986056",
+        "child_definition_id": "3061552",
         "count": 1,
         "flags": 0,
         "maximum": 131072,
@@ -266,7 +266,7 @@
       "path": "structure_bsp.lightmaps",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2985696",
+        "child_definition_id": "3061192",
         "count": 1,
         "flags": 0,
         "maximum": 128,
@@ -301,7 +301,7 @@
       "path": "structure_bsp.lens_flares",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2985568",
+        "child_definition_id": "3061064",
         "count": 1,
         "flags": 0,
         "maximum": 256,
@@ -322,7 +322,7 @@
       "path": "structure_bsp.lens_flare_markers",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2985480",
+        "child_definition_id": "3060976",
         "count": 1,
         "flags": 0,
         "maximum": 65536,
@@ -343,7 +343,7 @@
       "path": "structure_bsp.clusters",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2984328",
+        "child_definition_id": "3059824",
         "count": 1,
         "flags": 0,
         "maximum": 512,
@@ -384,7 +384,7 @@
       "path": "structure_bsp.cluster_portals",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2984200",
+        "child_definition_id": "3059696",
         "count": 1,
         "flags": 0,
         "maximum": 512,
@@ -419,7 +419,7 @@
       "path": "structure_bsp.breakable_surfaces",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2984184",
+        "child_definition_id": "3059680",
         "count": 1,
         "flags": 0,
         "maximum": 256,
@@ -440,7 +440,7 @@
       "path": "structure_bsp.fog_planes",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2984024",
+        "child_definition_id": "3059520",
         "count": 1,
         "flags": 0,
         "maximum": 32,
@@ -461,7 +461,7 @@
       "path": "structure_bsp.fog_regions",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2983896",
+        "child_definition_id": "3059392",
         "count": 1,
         "flags": 0,
         "maximum": 32,
@@ -482,7 +482,7 @@
       "path": "structure_bsp.fog_palette",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2983768",
+        "child_definition_id": "3059264",
         "count": 1,
         "flags": 0,
         "maximum": 32,
@@ -517,7 +517,7 @@
       "path": "structure_bsp.weather_palette",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2983560",
+        "child_definition_id": "3059056",
         "count": 1,
         "flags": 0,
         "maximum": 32,
@@ -538,7 +538,7 @@
       "path": "structure_bsp.weather_polyhedra",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2983472",
+        "child_definition_id": "3058968",
         "count": 1,
         "flags": 0,
         "maximum": 32,
@@ -573,7 +573,7 @@
       "path": "structure_bsp.pathfinding_surfaces",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2990064",
+        "child_definition_id": "3065560",
         "count": 1,
         "flags": 0,
         "maximum": 131072,
@@ -594,7 +594,7 @@
       "path": "structure_bsp.pathfinding_edges",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2990064",
+        "child_definition_id": "3065560",
         "count": 1,
         "flags": 0,
         "maximum": 262144,
@@ -615,7 +615,7 @@
       "path": "structure_bsp.background_sound_palette",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2983336",
+        "child_definition_id": "3058832",
         "count": 1,
         "flags": 0,
         "maximum": 64,
@@ -636,7 +636,7 @@
       "path": "structure_bsp.sound_environment_palette",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2983208",
+        "child_definition_id": "3058704",
         "count": 1,
         "flags": 0,
         "maximum": 64,
@@ -705,7 +705,7 @@
       "path": "structure_bsp.detail_object_data",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2982912",
+        "child_definition_id": "3058408",
         "count": 1,
         "flags": 0,
         "maximum": 1,
@@ -726,7 +726,7 @@
       "path": "structure_bsp.runtime_decals",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2982896",
+        "child_definition_id": "3058392",
         "count": 1,
         "flags": 0,
         "maximum": 6144,
@@ -761,7 +761,7 @@
       "path": "structure_bsp.leaf_map",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2982432",
+        "child_definition_id": "3057928",
         "count": 1,
         "flags": 0,
         "maximum": 0,
@@ -802,7 +802,7 @@
       "path": "leaf_map.leaves",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2982680",
+        "child_definition_id": "3058176",
         "count": 1,
         "flags": 0,
         "maximum": 65536,
@@ -823,7 +823,7 @@
       "path": "leaf_map.portals",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2982592",
+        "child_definition_id": "3058088",
         "count": 1,
         "flags": 0,
         "maximum": 131072,
@@ -858,7 +858,7 @@
       "path": "leaf_portal.vertices",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2990032",
+        "child_definition_id": "3065528",
         "count": 1,
         "flags": 0,
         "maximum": 65536,
@@ -879,7 +879,7 @@
       "path": "map_leaf.faces",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2982808",
+        "child_definition_id": "3058304",
         "count": 1,
         "flags": 0,
         "maximum": 65536,
@@ -900,7 +900,7 @@
       "path": "map_leaf.portal_designators",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2990080",
+        "child_definition_id": "3065576",
         "count": 1,
         "flags": 0,
         "maximum": 65536,
@@ -935,7 +935,7 @@
       "path": "map_leaf_face.vertices",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2990048",
+        "child_definition_id": "3065544",
         "count": 1,
         "flags": 0,
         "maximum": 65536,
@@ -970,7 +970,7 @@
       "path": "structure_detail_object_data.cells",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2983192",
+        "child_definition_id": "3058688",
         "count": 1,
         "flags": 0,
         "maximum": 262144,
@@ -1003,7 +1003,7 @@
       "path": "structure_detail_object_data.detail_objects",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2983176",
+        "child_definition_id": "3058672",
         "count": 1,
         "flags": 0,
         "maximum": 2097152,
@@ -1024,7 +1024,7 @@
       "path": "structure_detail_object_data.counts",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2983160",
+        "child_definition_id": "3058656",
         "count": 1,
         "flags": 0,
         "maximum": 8388608,
@@ -1045,7 +1045,7 @@
       "path": "structure_detail_object_data.z_reference_vectors",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2983144",
+        "child_definition_id": "3058640",
         "count": 1,
         "flags": 0,
         "maximum": 8388608,
@@ -1246,7 +1246,7 @@
       "path": "structure_weather_polyhedron.planes",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2990016",
+        "child_definition_id": "3065512",
         "count": 1,
         "flags": 0,
         "maximum": 16,
@@ -1505,7 +1505,7 @@
       "path": "structure_fog_plane.vertices",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2990032",
+        "child_definition_id": "3065528",
         "count": 1,
         "flags": 0,
         "maximum": 4096,
@@ -1574,7 +1574,7 @@
       "path": "structure_cluster_portal.vertices",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2990032",
+        "child_definition_id": "3065528",
         "count": 1,
         "flags": 0,
         "maximum": 128,
@@ -1683,7 +1683,7 @@
       "path": "structure_cluster.predicted_resources",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2985016",
+        "child_definition_id": "3060512",
         "count": 1,
         "flags": 0,
         "maximum": 1024,
@@ -1704,7 +1704,7 @@
       "path": "structure_cluster.subclusters",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2984928",
+        "child_definition_id": "3060424",
         "count": 1,
         "flags": 0,
         "maximum": 4096,
@@ -1739,7 +1739,7 @@
       "path": "structure_cluster.surface_indices",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2990080",
+        "child_definition_id": "3065576",
         "count": 1,
         "flags": 0,
         "maximum": 32768,
@@ -1760,7 +1760,7 @@
       "path": "structure_cluster.mirrors",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2984760",
+        "child_definition_id": "3060256",
         "count": 1,
         "flags": 0,
         "maximum": 16,
@@ -1781,7 +1781,7 @@
       "path": "structure_cluster.portal_indices",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2984672",
+        "child_definition_id": "3060168",
         "count": 1,
         "flags": 0,
         "maximum": 128,
@@ -1856,7 +1856,7 @@
       "path": "structure_mirror.points",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2990032",
+        "child_definition_id": "3065528",
         "count": 1,
         "flags": 0,
         "maximum": 256,
@@ -1891,7 +1891,7 @@
       "path": "structure_subcluster.surface_indices",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2990080",
+        "child_definition_id": "3065576",
         "count": 1,
         "flags": 0,
         "maximum": 128,
@@ -2034,7 +2034,7 @@
       "path": "structure_lightmap.materials",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2985784",
+        "child_definition_id": "3061280",
         "count": 1,
         "flags": 0,
         "maximum": 2048,
@@ -2089,7 +2089,7 @@
       "path": "structure_material.lighting",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2986432",
+        "child_definition_id": "3061928",
         "count": 1,
         "flags": 0,
         "maximum": 0,
@@ -2444,7 +2444,7 @@
       "path": "collision_bsp.bsp3d.nodes",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2989928",
+        "child_definition_id": "3065424",
         "count": 1,
         "flags": 0,
         "maximum": 131072,
@@ -2477,7 +2477,7 @@
       "path": "collision_bsp.bsp3d.planes",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2990016",
+        "child_definition_id": "3065512",
         "count": 1,
         "flags": 0,
         "maximum": 65536,
@@ -2498,7 +2498,7 @@
       "path": "collision_bsp.leaves",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2989912",
+        "child_definition_id": "3065408",
         "count": 1,
         "flags": 0,
         "maximum": 65536,
@@ -2519,7 +2519,7 @@
       "path": "collision_bsp.bsp2d_references",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2989896",
+        "child_definition_id": "3065392",
         "count": 1,
         "flags": 0,
         "maximum": 131072,
@@ -2540,7 +2540,7 @@
       "path": "collision_bsp.bsp2d.nodes",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2989880",
+        "child_definition_id": "3065376",
         "count": 1,
         "flags": 0,
         "maximum": 65535,
@@ -2561,7 +2561,7 @@
       "path": "collision_bsp.surfaces",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2989624",
+        "child_definition_id": "3065120",
         "count": 1,
         "flags": 0,
         "maximum": 131072,
@@ -2582,7 +2582,7 @@
       "path": "collision_bsp.edges",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2989464",
+        "child_definition_id": "3064960",
         "count": 1,
         "flags": 0,
         "maximum": 262144,
@@ -2603,7 +2603,7 @@
       "path": "collision_bsp.vertices",
       "runtime_semantics": "remain subject to Step 7 consumer qualification",
       "schema_metadata": {
-        "child_definition_id": "2989376",
+        "child_definition_id": "3064872",
         "count": 1,
         "flags": 0,
         "maximum": 131072,
@@ -2923,17 +2923,17 @@
   ],
   "semantic_open_statuses_preserved": true,
   "source_pins": {
-    "build/hcu-ps2-closure/all-no-bootstrap-memory/halo-local.elf": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
-    "docs/reports/m2-step7-bsp-member-inventory-2026-10-22.json": "29fa47457d98782d61a8b09a20f5d84d2d9e336640b4b3bbd3000a6305206d15",
-    "docs/reports/m2-step7-bsp-range-member-layout-2026-10-22.json": "cc2b4687dbd4a15fd7069d1003d1402a0f0189b80d46c008b940814f4aa6685d",
-    "docs/reports/m2-step7-empty-bsp-fields-2026-10-22.json": "71be6e234439f69300c6bc3e5299b7a1b315e494e8a3395a97ee4358f941ecc7",
-    "docs/reports/m2-step7-open-root-bsp-dispositions-2026-10-22.json": "fb91d0e0a835edf99681da868406dc164c3b77f8e09c0f4546581280f89c4c8b",
-    "docs/reports/m2-step7-unclassified-range-dispositions-2026-10-22.json": "06db2f9ecfea67fa7b5a4adddfcf19b5f82d0fe1313124afbb75ba4340c157e5",
-    "docs/reports/retail-bsp-cbsp-audit-c0-2026-10-22.json": "765ca7073073e6f060973290c180035c399839a105995c49c1c117a98d0d51af",
+    "build/hcu-ps2-closure/all-no-bootstrap-memory/halo-local.elf": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
+    "docs/reports/m2-step7-bsp-member-inventory-2026-10-22.json": "8d0bfccd29daddae878703c9ebe0b85cc5111ee5b818f17e22494108dcec8b1e",
+    "docs/reports/m2-step7-bsp-range-member-layout-2026-10-22.json": "60b933028dd92a249f09246263aaec629473d520b93c41bb9e96341eadce71b7",
+    "docs/reports/m2-step7-empty-bsp-fields-2026-10-22.json": "1d96ac3416ee7a2c44f08afb9686a429a4006f4b03762f95b1e7e87922ceb97c",
+    "docs/reports/m2-step7-open-root-bsp-dispositions-2026-10-22.json": "2c5f649738b448a044e090fc12d89050a1280f1837f3f417e5e9207bacbbe133",
+    "docs/reports/m2-step7-unclassified-range-dispositions-2026-10-22.json": "1176f5ce520c85d8132748af68ef282d68e11b07d940b842a28c2239531e36af",
+    "docs/reports/retail-bsp-cbsp-audit-c0-2026-10-22.json": "dc4bb2ab5b8c3f1fef4cdcca0f7afdae8c192c10e02e0d44672738c10c6157a1",
     "tests/test_hcu_step7_open_root_bsp_dispositions.py": "5750f448c6479db297cd255daa5db168da4e0628510a3c615c4b98907cbcb3df",
     "tests/test_step7_synthetic_empty_bsp_fields.py": "1e08edc437b20832c377c8a23505a13ce41655f35812bde9276ffce4f619388a",
     "tests/test_step7_unmapped_bsp_range_retention.py": "acec50e53f77dc7d451532c0a6803fd4311a175eddbf6b297a0fed6b6c46227e",
-    "tools/ctag_schema_walk.py": "d7b497b8b9a32408bec49c937c057a6ab09bac8665ea64ec64becab2284014ba"
+    "tools/ctag_schema_walk.py": "d2e84b01718a03ec5967c7a7c0409ee337dee03d940d7949f5b5d6ce91d1a550"
   },
   "unclassified_member_dispositions": 0,
   "unexplained_removals": 0

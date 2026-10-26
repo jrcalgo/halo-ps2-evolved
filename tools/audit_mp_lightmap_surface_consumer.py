@@ -25,8 +25,6 @@ HCU = ROOT / "submodules/halo-ce-universal"
 CE_SOURCE = HCU / "source/structures/structure_bsp_definitions.c"
 HARNESS = ROOT / "tests/lightmap_surface_consumer_main.c"
 OUT = ROOT / "build/step7-swarm/lightmap"
-PACKAGE_DIR = Path(os.environ.get(
-    "HALO_HCU_M2_PACKAGE_ROOT", "/tmp/hcu-m2-capacity-repro.P5qdmI/packages"))
 SOURCE_DIR = Path(os.environ.get(
     "HALO_HCU_MP_MAP_DIR", ROOT / "build/retail-maps/decompressed"))
 TAG_BASE = 0xE0000000
@@ -73,6 +71,12 @@ PACKAGE_SHA256 = {
 }
 
 sys.path[:0] = [str(ROOT / "tools"), str(ROOT / "submodules/halo-ps2/tools")]
+from hcu_package_root import LEGACY_DIR, resolve_package_dir  # noqa: E402
+
+# Pin-verified package root (env var, historical /tmp dir, then persistent
+# build/mp-fog-selection-*/assets/maps); None when no verified set exists.
+PACKAGE_DIR_RESOLVED = resolve_package_dir(PACKAGE_SHA256)
+PACKAGE_DIR = PACKAGE_DIR_RESOLVED or LEGACY_DIR
 from host_abi32 import flags as host_abi32_flags  # noqa: E402
 from halo2ps2 import bsp, bspconv, hp2, mapinfo, tagindex, texconv  # noqa: E402
 from ctag_schema_walk import read_xbox_tag_region  # noqa: E402

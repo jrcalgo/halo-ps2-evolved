@@ -14,6 +14,10 @@ PUTPUT_UNREFERENCED = [10276, 10277, 10299, 10304]
 class LightmapSurfaceConsumerTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        if audit.PACKAGE_DIR_RESOLVED is None:
+            raise unittest.SkipTest(
+                "no pin-verified retail HP2 package set: set HALO_HCU_M2_PACKAGE_ROOT or keep "
+                "build/mp-fog-selection-*/assets/maps/*.hp2 matching audit.PACKAGE_SHA256")
         cls.payload = audit.run()
 
     def test_pinned_ce_source_and_synthetic_empty_block(self):

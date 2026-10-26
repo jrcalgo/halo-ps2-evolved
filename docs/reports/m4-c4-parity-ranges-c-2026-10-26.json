@@ -1,0 +1,93 @@
+{
+ "lane": "ranges-c",
+ "rows": [
+  {
+   "member": "collision_vertex.<unclassified@0x0>",
+   "test": "tests/test_c4_parity_ranges_c.py",
+   "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_c.py -k C4RangesCollisionVertexPoint",
+   "result": "pass",
+   "scope": "member-exact",
+   "notes": "Consumer: collision_bsp.c collision_surface_polygon (edge/vertex walk), unmodified CE TU #included by tests/c4_parity_ranges_c_collision_main.c. Vertex point (real_point3d, 12 bytes) varied per axis and per vertex; polygon points match an independent square oracle. Owner collision_bsp.vertices (82/82 retail). Not separately exercised: breakable_surfaces.c:470, ai/path.c and path_smoothing.c vertex readers (same member, other consumers; no fixture in this lane). Ledger disposition consumed is confirmed for the collision_bsp.c consumer."
+  },
+  {
+   "member": "collision_surface.<unclassified@0x0>",
+   "test": "tests/test_c4_parity_ranges_c.py",
+   "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_c.py -k C4RangesCollisionSurfacePlane",
+   "result": "pass",
+   "scope": "member-exact",
+   "notes": "plane_designator (long at 0x0) drives collision_surface_area (collision_bsp.c:705-800, sign-aware via bsp3d_get_plane_from_designator) and collision_surface_project_point2d (collision_bsp.c:802-820). Area: positive part of 2*n_k for plane 0, negated by the sign bit, plane index 1 chosen by index; matches oracle. FINDING: project_point2d masks LONG_MAX and never applies the sign bit, so the sign bit changes area but not the projection; ledger wording 'sign bit = negated' holds for area only. Owner collision_bsp.surfaces (82/82)."
+  },
+  {
+   "member": "collision_surface.<unclassified@0x8>",
+   "test": "tests/test_c4_parity_ranges_c.py",
+   "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_c.py -k C4RangesCollisionSurfaceBits",
+   "result": "pass",
+   "scope": "member-exact",
+   "notes": "Bytes 8 (flags, bit 3 = breakable) and 9 (breakable_surface_index) of collision_surface (struct size 0xC; material_index short sits at 10, outside this range). collision_surface_test_point (collision_bsp.c:1544-1580) gates on bit 3 and the index against the breakable count; ai/path.c surface_is_broken (path.c:632-660, spliced verbatim) reads the index at path.c:654 with the breakable flag word. Both match oracles; index beyond the breakable count is not gated (CE behaviour). Not exercised here: collision_bsp.c:1404-1407 sphere gate (same pattern), path_smoothing.c:153-154 surface_is_walkable, path_structure_bsp.c:148-183/422, breakable_surfaces.c:434/555. Owner collision_bsp.surfaces (82/82)."
+  },
+  {
+   "member": "bsp2d_node.<unclassified@0x0>",
+   "test": "tests/test_c4_parity_ranges_c.py",
+   "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_c.py -k C4RangesCollisionLeaf",
+   "result": "pass",
+   "scope": "member-exact",
+   "notes": "bsp2d_node plane (real_plane2d, 12 bytes) and child_indices (2 longs) read by bsp2d.c bsp2d_test_point (unmodified, #included) through collision_leaf_test_vector. Plane normal rotation, plane offset and child swap each change the selected surface; matches independent 2D walk oracle. Owner collision_bsp.bsp2d.nodes (80/82 retail; the synthetic node is the nonempty fixture)."
+  },
+  {
+   "member": "bsp2d_reference.<unclassified@0x0>",
+   "test": "tests/test_c4_parity_ranges_c.py",
+   "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_c.py -k C4RangesCollisionLeaf",
+   "result": "pass",
+   "scope": "member-exact",
+   "notes": "plane_designator (sign bit = projection side, low bits = bsp3d plane index) and root_index read by collision_leaf_test_vector (collision_bsp.c:1821-1900). Sign bit swaps the projected axes and changes the surface; a foreign plane index is passed over; a root that is a surface bypasses the 2D nodes. Owner collision_bsp.bsp2d_references (82/82)."
+  },
+  {
+   "member": "collision_leaf.<unclassified@0x0>",
+   "test": "tests/test_c4_parity_ranges_c.py",
+   "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_c.py -k C4RangesCollisionLeaf",
+   "result": "pass",
+   "scope": "member-exact",
+   "notes": "Two members. bsp2d_reference_count and first_bsp2d_reference_index (offsets 2 and 4) are consumed by collision_bsp_valid_leaf (collision_bsp.c:1322-1345) and collision_leaf_test_vector; span validity and reference selection match oracle (invalid span not walked). flags (word, offset 0) IS READ by collision_bsp_test_vector_recursive at collision_bsp.c:2216-2224 (TEST_FLAG(...)->flags, _collision_leaf_contains_two_sided_bit selects semi-empty vs empty contents, which decides whether the leaf's surfaces are tested). FINDING: the ledger's preserved-opaque disposition for collision_leaf.flags rests on a scoped grep for 'leaf->flags' that missed the ')->flags' accessor form; the disposition should be consumed. This pass covers the member fixture only; the ledger correction is not made here. Owner collision_bsp.leaves (82/82)."
+  },
+  {
+   "member": "bsp3d_node.<unclassified@0x4>",
+   "test": "tests/test_c4_parity_ranges_c.py",
+   "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_c.py -k C4RangesBsp3dNode",
+   "result": "pass",
+   "scope": "member-exact",
+   "notes": "children[2] (offset 4, two longs) read by bsp3d.c bsp3d_test_point (unmodified, #included). Child swap, leaf-vs-NONE and out-of-range node children match oracle. Owner collision_bsp.bsp3d.nodes (82/82); the single-node synthetic tree is the nonempty fixture."
+  },
+  {
+   "member": "real_plane3d.<unclassified@0x0>",
+   "test": "tests/test_c4_parity_ranges_c.py",
+   "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_c.py -k 'C4RangesBsp3dNode or C4RangesCollisionSurfacePlane or C4RangesCollisionLeaf or C4RangesRealPlane3dWeather'",
+   "result": "pass",
+   "scope": "member-exact",
+   "notes": "Type-level row. Owner blocks: (a) collision_bsp.bsp3d.planes (82/82): n (offset 0, 12 bytes) and d (offset 12) read by bsp3d_test_point, collision_surface_area/project and collision_leaf_test_vector; covered by C4RangesBsp3dNode, C4RangesCollisionSurfacePlane and C4RangesCollisionLeaf. (b) structure_weather_polyhedron.planes (8/82 retail): covered by C4RangesRealPlane3dWeather, which splices the CE polyhedron containment loop of weather_particle_systems.c:695 verbatim (synthetic nonempty box). Both owner blocks covered, so pass."
+  },
+  {
+   "member": "real_point3d.<unclassified@0x0>",
+   "test": "tests/test_c4_parity_ranges_c.py",
+   "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_c.py -k 'C4RangesRealPoint3dLeafPortal or C4RangesRealPoint3dCoveredElsewhere'",
+   "result": "pass",
+   "scope": "member-exact",
+   "notes": "Type-level row. Owner blocks: (a) leaf_portal.vertices (0/82 retail): synthetic nonempty fixture C4RangesRealPoint3dLeafPortal splices render_debug_leaf_portal (leaf_map.c:528-564, debug draw only) verbatim; the portal vertices reach the triangle and line calls in CE order. (b) structure_fog_plane.vertices (25/82), (c) structure_cluster_portal.vertices (74/82), (d) structure_mirror.points (4/82): C4RangesRealPoint3dCoveredElsewhere runs the existing fog and PVS-lane fixtures (C4FogPlaneVerticesTest, PvsMemberParity portal and mirror tests), which pass. CAVEAT (open item): the PVS portal and mirror fixtures stop at the portal_hull_from_points handoff (count and first vertex); the hull math is stubbed there, so per-vertex hull effects are not covered by any fixture found."
+  },
+  {
+   "member": "byte.<unclassified@0x0>",
+   "test": "tests/test_c4_parity_ranges_c.py",
+   "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_c.py -k C4RangesBytePathfinding",
+   "result": "pass",
+   "scope": "member-exact",
+   "notes": "Type-level row. Owner blocks: (a) structure_bsp.pathfinding_surfaces (82/82): fixture splices ai/path_structure_bsp.c path_pathfinding_surface (path_structure_bsp.c:753-778) verbatim; each index returns its byte, out-of-range returns 0. FINDING: NONE (-1) reads pathfinding_surfaces[-1], the byte before the owner block (CE comment says so); the test shows the value follows the guard byte, i.e. it reads outside the owner block. The port keeps this read. (b) structure_bsp.pathfinding_edges (0/82): preserved-opaque; no CE reader in source/ (scoped grep over source/ai, physics, structures, render, items, units and port/ tag schema: only the struct declaration and tag schema entry), so no fixture is required for a consumed owner."
+  },
+  {
+   "member": "long.<unclassified@0x0>",
+   "test": "tests/test_c4_parity_ranges_c.py",
+   "command": "python3 -I -m pytest -q tests/test_c4_parity_ranges_c.py -k 'C4RangesLongSurfaceLists or C4RangesLongPortalDesignators'",
+   "result": "pass",
+   "scope": "member-exact",
+   "notes": "Type-level row. Owner blocks: (a) structure_subcluster.surface_indices (80/82): fixture splices structure_visibility.c traverse_subclusters inner loop (structure_visibility.c:472-500) verbatim; out-of-range and negative indices are skipped, valid indices set the flag set; a moved index changes the set. (b) structure_cluster.surface_indices (0/82 retail): synthetic nonempty fixture splices traverse_surface_lists group loop (structure_visibility.c:526 onward) verbatim with frustum visibility stubbed TRUE; group header checks, group length cut and vertex-range checks match oracle. (c) map_leaf.portal_designators (0/82): readers are leaf_map.c leaf_map_close_portal and leaf_map_leaf_is_closed (leaf_map.c:472-525), reached only from the leaf-map builder; covered by the PVS-lane fixture LeafMapParity (run by C4RangesLongPortalDesignators). The JSON's 'debug-only' wording is imprecise: these are builder readers, not debug draws. All owner blocks covered, pass."
+  }
+ ]
+}

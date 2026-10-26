@@ -20,7 +20,7 @@ OUT = ROOT / "docs/reports/m2-step7-eight-unmapped-range-source-map-2026-10-22.j
 # their established serialized 12/16-byte layouts.
 RANGES = {
     "detail_object_cell": {
-        "definition_id": "2983192", "size": 32,
+        "definition_id": "3058688", "size": 32,
         "source": "submodules/halo-ce-universal/source/structures/structure_detail_objects.c",
         "declaration": "struct detail_object_cell_definition",
         "members": [
@@ -42,7 +42,7 @@ RANGES = {
         ],
     },
     "detail_object_count": {
-        "definition_id": "2983160", "size": 2,
+        "definition_id": "3058656", "size": 2,
         "source": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
         "declaration": "TAG_SCHEMA_DEFINITION(detail_object_count, word, empty_fields)",
         "members": [("word", 0, 2, "unsigned 16-bit count value")],
@@ -51,7 +51,7 @@ RANGES = {
         "consumer_evidence": [("submodules/halo-ce-universal/source/structures/structure_detail_objects.c", "structure_detail_objects_port_count", "word is loaded as an unsigned count; count_index is bounded by counts and count is checked against detail_objects")],
     },
     "detail_object_z_reference_vector": {
-        "definition_id": "2983144", "size": 16,
+        "definition_id": "3058640", "size": 16,
         "source": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
         "declaration": "TAG_SCHEMA_DEFINITION(detail_object_z_reference_vector, real_vector4d, empty_fields)",
         "members": [("real_vector4d", 0, 16, "four 32-bit real components")],
@@ -60,7 +60,7 @@ RANGES = {
         "consumer_evidence": [("submodules/halo-ce-universal/source/structures/structure_detail_objects.c", "structure_render_detail_objects", "vector selected at the current sibling count index only when inside z_reference_vectors; otherwise default runtime vector is used")],
     },
     "structure_mirror": {
-        "definition_id": "2984760", "size": 36,
+        "definition_id": "3060256", "size": 36,
         "source": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
         "declaration": "struct structure_mirror",
         "members": [
@@ -72,7 +72,7 @@ RANGES = {
         "consumer_evidence": [("submodules/halo-ce-universal/source/structures/structure_visibility.c", "structure_visibility_find_mirror", "plane is passed to mirror hull construction and copied to the result; five-long unused array has no established consumer")],
     },
     "structure_node": {
-        "definition_id": "2986248", "size": 6,
+        "definition_id": "3061744", "size": 6,
         "source": "submodules/halo-ce-universal/source/math/integer_math.h",
         "declaration": "union byte_rectangle3d",
         "members": [("x0,x1,y0,y1,z0,z1", 0, 6, "six byte bounds; not a pointer")],
@@ -81,7 +81,7 @@ RANGES = {
         "consumer_evidence": [("submodules/halo-ce-universal/source/structures/structure_visibility.c", "structure_visibility_build_surfaces_traverse_node", "node_index is bounded by both structure.nodes and collision.bsp3d.nodes; compressed byte rectangle is dequantized against parent_bounds")],
     },
     "structure_subcluster": {
-        "definition_id": "2984928", "size": 24,
+        "definition_id": "3060424", "size": 24,
         "source": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
         "declaration": "struct structure_subcluster",
         "members": [("world_bounds", 0, 24, "real_rectangle3d; subcluster world-space bounds")],
@@ -90,7 +90,7 @@ RANGES = {
         "consumer_evidence": [("submodules/halo-ce-universal/source/structures/structure_visibility.c", "structure_visibility_traverse_subclusters", "world_bounds feeds frustum culling; surface_indices are iterated by block count and values outside structure.surfaces are skipped")],
     },
     "byte": {
-        "definition_id": "2990064", "size": 1,
+        "definition_id": "3065560", "size": 1,
         "source": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
         "declaration": "TAG_SCHEMA_DEFINITION(byte, byte, empty_fields)",
         "members": [("byte", 0, 1, "unsigned one-byte scalar")],
@@ -99,7 +99,7 @@ RANGES = {
         "consumer_evidence": [("submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c", "structure_bsp pathfinding_surfaces/pathfinding_edges schema blocks", "both sibling blocks use byte_schema; byte elements have no standalone pointer/index domain")],
     },
     "long": {
-        "definition_id": "2990080", "size": 4,
+        "definition_id": "3065576", "size": 4,
         "source": "submodules/halo-ce-universal/port/linux/game/tag_schema_collision.c",
         "declaration": "TAG_SCHEMA_DEFINITION(long, long, empty_fields)",
         "members": [("long", 0, 4, "32-bit scalar; owning block defines index/value semantics")],

@@ -4,9 +4,9 @@
   "generated_by": "tools/probe_step7_bsp_range_members.py",
   "interpretation": "Exact field offsets/sizes are emitted only when a compiler-selected source declaration compiled and its constants decoded from the R5900 object. Schema classifications are intentionally unchanged; no byte range is deemed safe or removable.",
   "inventory_path": "docs/reports/m2-step7-bsp-member-inventory-2026-10-22.json",
-  "inventory_sha256": "29fa47457d98782d61a8b09a20f5d84d2d9e336640b4b3bbd3000a6305206d15",
+  "inventory_sha256": "8d0bfccd29daddae878703c9ebe0b85cc5111ee5b818f17e22494108dcec8b1e",
   "layout_report_path": "docs/reports/m2-step7-schema-gap-layout-2026-10-22.json",
-  "layout_report_sha256": "ecc2ddb487c45d5bbd8adfaa54343a11afeadd3e92c9488e82202beb587132f2",
+  "layout_report_sha256": "6072412d7abd9cda82730c0548d85f55fbaaddbccc19d613da4f849a13931da3",
   "ranges": [
     {
       "candidate_c_members": [
@@ -26,7 +26,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "leaf_portal",
-      "definition_id": "2982592",
+      "definition_id": "3058088",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "leaf_portal.<unclassified@0x0>",
       "schema_range": {
@@ -53,7 +53,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "map_leaf_face",
-      "definition_id": "2982808",
+      "definition_id": "3058304",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "map_leaf_face.<unclassified@0x0>",
       "schema_range": {
@@ -104,7 +104,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_runtime_decal",
-      "definition_id": "2982896",
+      "definition_id": "3058392",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_runtime_decal.<unclassified@0x0>",
       "schema_range": {
@@ -131,7 +131,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_detail_object_data",
-      "definition_id": "2982912",
+      "definition_id": "3058408",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_detail_object_data.<unclassified@0x30>",
       "schema_range": {
@@ -151,7 +151,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "no compiler-selected source declaration",
       "definition": "detail_object_z_reference_vector",
-      "definition_id": "2983144",
+      "definition_id": "3058640",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "detail_object_z_reference_vector.<unclassified@0x0>",
       "schema_range": {
@@ -167,7 +167,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "no compiler-selected source declaration",
       "definition": "detail_object_count",
-      "definition_id": "2983160",
+      "definition_id": "3058656",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "detail_object_count.<unclassified@0x0>",
       "schema_range": {
@@ -202,7 +202,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "detail_object",
-      "definition_id": "2983176",
+      "definition_id": "3058672",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "detail_object.<unclassified@0x0>",
       "schema_range": {
@@ -222,7 +222,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "no compiler-selected source declaration",
       "definition": "detail_object_cell",
-      "definition_id": "2983192",
+      "definition_id": "3058688",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "detail_object_cell.<unclassified@0x0>",
       "schema_range": {
@@ -245,7 +245,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_sound_environment_palette_entry",
-      "definition_id": "2983208",
+      "definition_id": "3058704",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_sound_environment_palette_entry.<unclassified@0x0>",
       "schema_range": {
@@ -272,7 +272,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_sound_environment_palette_entry",
-      "definition_id": "2983208",
+      "definition_id": "3058704",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_sound_environment_palette_entry.<unclassified@0x30>",
       "schema_range": {
@@ -299,7 +299,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_background_sound_palette_entry",
-      "definition_id": "2983336",
+      "definition_id": "3058832",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_background_sound_palette_entry.<unclassified@0x0>",
       "schema_range": {
@@ -326,7 +326,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_background_sound_palette_entry",
-      "definition_id": "2983336",
+      "definition_id": "3058832",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_background_sound_palette_entry.<unclassified@0x30>",
       "schema_range": {
@@ -365,7 +365,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_weather_polyhedron",
-      "definition_id": "2983472",
+      "definition_id": "3058968",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_weather_polyhedron.<unclassified@0x0>",
       "schema_range": {
@@ -392,7 +392,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_weather_palette_entry",
-      "definition_id": "2983560",
+      "definition_id": "3059056",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_weather_palette_entry.<unclassified@0x0>",
       "schema_range": {
@@ -437,7 +437,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_weather_palette_entry",
-      "definition_id": "2983560",
+      "definition_id": "3059056",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_weather_palette_entry.<unclassified@0x30>",
       "schema_range": {
@@ -494,7 +494,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_weather_palette_entry",
-      "definition_id": "2983560",
+      "definition_id": "3059056",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_weather_palette_entry.<unclassified@0x90>",
       "schema_range": {
@@ -521,7 +521,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_fog_palette_entry",
-      "definition_id": "2983768",
+      "definition_id": "3059264",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_fog_palette_entry.<unclassified@0x0>",
       "schema_range": {
@@ -548,7 +548,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_fog_palette_entry",
-      "definition_id": "2983768",
+      "definition_id": "3059264",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_fog_palette_entry.<unclassified@0x30>",
       "schema_range": {
@@ -575,7 +575,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_fog_region",
-      "definition_id": "2983896",
+      "definition_id": "3059392",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_fog_region.<unclassified@0x0>",
       "schema_range": {
@@ -602,7 +602,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_fog_plane",
-      "definition_id": "2984024",
+      "definition_id": "3059520",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_fog_plane.<unclassified@0x4>",
       "schema_range": {
@@ -647,7 +647,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_breakable_surface",
-      "definition_id": "2984184",
+      "definition_id": "3059680",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_breakable_surface.<unclassified@0x0>",
       "schema_range": {
@@ -698,7 +698,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_cluster_portal",
-      "definition_id": "2984200",
+      "definition_id": "3059696",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_cluster_portal.<unclassified@0x4>",
       "schema_range": {
@@ -731,7 +731,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_cluster",
-      "definition_id": "2984328",
+      "definition_id": "3059824",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_cluster.<unclassified@0x0>",
       "schema_range": {
@@ -758,7 +758,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_cluster",
-      "definition_id": "2984328",
+      "definition_id": "3059824",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_cluster.<unclassified@0xa>",
       "schema_range": {
@@ -785,7 +785,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_cluster",
-      "definition_id": "2984328",
+      "definition_id": "3059824",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_cluster.<unclassified@0x40>",
       "schema_range": {
@@ -805,7 +805,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "no compiler-selected source declaration",
       "definition": "structure_mirror",
-      "definition_id": "2984760",
+      "definition_id": "3060256",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_mirror.<unclassified@0x0>",
       "schema_range": {
@@ -821,7 +821,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "no compiler-selected source declaration",
       "definition": "structure_subcluster",
-      "definition_id": "2984928",
+      "definition_id": "3060424",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_subcluster.<unclassified@0x0>",
       "schema_range": {
@@ -844,7 +844,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "predicted_resource",
-      "definition_id": "2985016",
+      "definition_id": "3060512",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "predicted_resource.<unclassified@0x2>",
       "schema_range": {
@@ -889,7 +889,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_lens_flare_marker",
-      "definition_id": "2985480",
+      "definition_id": "3060976",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_lens_flare_marker.<unclassified@0x0>",
       "schema_range": {
@@ -928,7 +928,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_lightmap",
-      "definition_id": "2985696",
+      "definition_id": "3061192",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_lightmap.<unclassified@0x0>",
       "schema_range": {
@@ -979,7 +979,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_material",
-      "definition_id": "2985784",
+      "definition_id": "3061280",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_material.<unclassified@0x10>",
       "schema_range": {
@@ -1006,7 +1006,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_material",
-      "definition_id": "2985784",
+      "definition_id": "3061280",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_material.<unclassified@0x9c>",
       "schema_range": {
@@ -1045,7 +1045,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_material",
-      "definition_id": "2985784",
+      "definition_id": "3061280",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_material.<unclassified@0xae>",
       "schema_range": {
@@ -1072,7 +1072,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_surface",
-      "definition_id": "2986056",
+      "definition_id": "3061552",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_surface.<unclassified@0x0>",
       "schema_range": {
@@ -1099,7 +1099,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_surface_reference",
-      "definition_id": "2986072",
+      "definition_id": "3061568",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_surface_reference.<unclassified@0x4>",
       "schema_range": {
@@ -1132,7 +1132,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_leaf",
-      "definition_id": "2986160",
+      "definition_id": "3061656",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_leaf.<unclassified@0x0>",
       "schema_range": {
@@ -1165,7 +1165,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_leaf",
-      "definition_id": "2986160",
+      "definition_id": "3061656",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_leaf.<unclassified@0xa>",
       "schema_range": {
@@ -1185,7 +1185,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "no compiler-selected source declaration",
       "definition": "structure_node",
-      "definition_id": "2986248",
+      "definition_id": "3061744",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_node.<unclassified@0x0>",
       "schema_range": {
@@ -1208,7 +1208,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "structure_collision_material",
-      "definition_id": "2986264",
+      "definition_id": "3061760",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "structure_collision_material.<unclassified@0x10>",
       "schema_range": {
@@ -1235,7 +1235,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "render_lighting",
-      "definition_id": "2986432",
+      "definition_id": "3061928",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "render_lighting.<unclassified@0x0>",
       "schema_range": {
@@ -1268,7 +1268,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "render_lighting",
-      "definition_id": "2986432",
+      "definition_id": "3061928",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "render_lighting.<unclassified@0xe>",
       "schema_range": {
@@ -1319,7 +1319,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "render_lighting",
-      "definition_id": "2986432",
+      "definition_id": "3061928",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "render_lighting.<unclassified@0x42>",
       "schema_range": {
@@ -1346,7 +1346,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "collision_vertex",
-      "definition_id": "2989376",
+      "definition_id": "3064872",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "collision_vertex.<unclassified@0x0>",
       "schema_range": {
@@ -1373,7 +1373,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "collision_surface",
-      "definition_id": "2989624",
+      "definition_id": "3065120",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "collision_surface.<unclassified@0x0>",
       "schema_range": {
@@ -1406,7 +1406,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "collision_surface",
-      "definition_id": "2989624",
+      "definition_id": "3065120",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "collision_surface.<unclassified@0x8>",
       "schema_range": {
@@ -1439,7 +1439,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "bsp2d_node",
-      "definition_id": "2989880",
+      "definition_id": "3065376",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "bsp2d_node.<unclassified@0x0>",
       "schema_range": {
@@ -1472,7 +1472,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "bsp2d_reference",
-      "definition_id": "2989896",
+      "definition_id": "3065392",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "bsp2d_reference.<unclassified@0x0>",
       "schema_range": {
@@ -1511,7 +1511,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "collision_leaf",
-      "definition_id": "2989912",
+      "definition_id": "3065408",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "collision_leaf.<unclassified@0x0>",
       "schema_range": {
@@ -1538,7 +1538,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "bsp3d_node",
-      "definition_id": "2989928",
+      "definition_id": "3065424",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "bsp3d_node.<unclassified@0x4>",
       "schema_range": {
@@ -1571,7 +1571,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "real_plane3d",
-      "definition_id": "2990016",
+      "definition_id": "3065512",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "real_plane3d.<unclassified@0x0>",
       "schema_range": {
@@ -1604,7 +1604,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "real_point3d",
-      "definition_id": "2990032",
+      "definition_id": "3065528",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "real_point3d.<unclassified@0x0>",
       "schema_range": {
@@ -1643,7 +1643,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "passed",
       "definition": "real_point2d",
-      "definition_id": "2990048",
+      "definition_id": "3065544",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "real_point2d.<unclassified@0x0>",
       "schema_range": {
@@ -1663,7 +1663,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "no compiler-selected source declaration",
       "definition": "byte",
-      "definition_id": "2990064",
+      "definition_id": "3065560",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "byte.<unclassified@0x0>",
       "schema_range": {
@@ -1679,7 +1679,7 @@
       "classification_remains": "unclassified",
       "compiler_source_type_probe_status": "no compiler-selected source declaration",
       "definition": "long",
-      "definition_id": "2990080",
+      "definition_id": "3065576",
       "interpretation": "C-layout overlap identifies source member ownership only; it does not close schema byte preservation, consumer, normalization, or safety disposition.",
       "inventory_path": "long.<unclassified@0x0>",
       "schema_range": {
@@ -1691,9 +1691,9 @@
       "source_discovery_note": "Declaration locations are discovery evidence only; this record makes no byte-layout or retention claim."
     }
   ],
-  "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+  "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
   "source_discovery_path": "docs/reports/m2-step7-schema-gap-source-discovery-2026-10-22.json",
-  "source_discovery_sha256": "1e037a95cf98af7fec81d250aa1ff4267bbe17bcea7ab6849d997422b65238c6",
+  "source_discovery_sha256": "6f624514c905e2de5e55a04f3e27935d6c2779e56177f3335fecf863bc91b494",
   "summary": {
     "definitions_with_compiled_field_offsets": 33,
     "definitions_without_compiled_field_offsets": [

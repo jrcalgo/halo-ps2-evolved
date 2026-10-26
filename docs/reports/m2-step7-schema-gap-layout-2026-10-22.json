@@ -1,14 +1,14 @@
 {
   "format": "hcu-step7-schema-gap-layout-v1",
   "inventory": "docs/reports/m2-step7-bsp-member-inventory-2026-10-22.json",
-  "inventory_sha256": "29fa47457d98782d61a8b09a20f5d84d2d9e336640b4b3bbd3000a6305206d15",
+  "inventory_sha256": "8d0bfccd29daddae878703c9ebe0b85cc5111ee5b818f17e22494108dcec8b1e",
   "source_discovery": "docs/reports/m2-step7-schema-gap-source-discovery-2026-10-22.json",
-  "source_discovery_sha256": "1e037a95cf98af7fec81d250aa1ff4267bbe17bcea7ab6849d997422b65238c6",
-  "schema_elf_sha256": "56cd9fb82c4729b6870972c8d8be36fab78916ff1fa2026c5e22bf7cfe263037",
+  "source_discovery_sha256": "6f624514c905e2de5e55a04f3e27935d6c2779e56177f3335fecf863bc91b494",
+  "schema_elf_sha256": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
   "compiler": "mips64r5900el-ps2-elf-gcc (GCC) 15.2.0",
   "exact_source_rebuild": {
     "status": "layer-measured",
-    "compiled_units": 371,
+    "compiled_units": 373,
     "failed_units": 0
   },
   "type_size_results": {
@@ -1739,7 +1739,7 @@
   ],
   "ranges": [
     {
-      "definition_id": "2982592",
+      "definition_id": "3058088",
       "definition": "leaf_portal",
       "schema_range": {
         "offset": 0,
@@ -1773,7 +1773,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2982808",
+      "definition_id": "3058304",
       "definition": "map_leaf_face",
       "schema_range": {
         "offset": 0,
@@ -1807,7 +1807,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2982896",
+      "definition_id": "3058392",
       "definition": "structure_runtime_decal",
       "schema_range": {
         "offset": 0,
@@ -1841,7 +1841,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2982912",
+      "definition_id": "3058408",
       "definition": "structure_detail_object_data",
       "schema_range": {
         "offset": 48,
@@ -1880,7 +1880,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2983144",
+      "definition_id": "3058640",
       "definition": "detail_object_z_reference_vector",
       "schema_range": {
         "offset": 0,
@@ -1895,7 +1895,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2983160",
+      "definition_id": "3058656",
       "definition": "detail_object_count",
       "schema_range": {
         "offset": 0,
@@ -1910,7 +1910,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2983176",
+      "definition_id": "3058672",
       "definition": "detail_object",
       "schema_range": {
         "offset": 0,
@@ -1949,7 +1949,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2983192",
+      "definition_id": "3058688",
       "definition": "detail_object_cell",
       "schema_range": {
         "offset": 0,
@@ -1964,7 +1964,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2983208",
+      "definition_id": "3058704",
       "definition": "structure_sound_environment_palette_entry",
       "schema_range": {
         "offset": 0,
@@ -1998,7 +1998,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2983208",
+      "definition_id": "3058704",
       "definition": "structure_sound_environment_palette_entry",
       "schema_range": {
         "offset": 48,
@@ -2032,7 +2032,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2983336",
+      "definition_id": "3058832",
       "definition": "structure_background_sound_palette_entry",
       "schema_range": {
         "offset": 0,
@@ -2066,7 +2066,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2983336",
+      "definition_id": "3058832",
       "definition": "structure_background_sound_palette_entry",
       "schema_range": {
         "offset": 48,
@@ -2100,7 +2100,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2983472",
+      "definition_id": "3058968",
       "definition": "structure_weather_polyhedron",
       "schema_range": {
         "offset": 0,
@@ -2134,7 +2134,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2983560",
+      "definition_id": "3059056",
       "definition": "structure_weather_palette_entry",
       "schema_range": {
         "offset": 0,
@@ -2173,7 +2173,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2983560",
+      "definition_id": "3059056",
       "definition": "structure_weather_palette_entry",
       "schema_range": {
         "offset": 48,
@@ -2212,7 +2212,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2983560",
+      "definition_id": "3059056",
       "definition": "structure_weather_palette_entry",
       "schema_range": {
         "offset": 144,
@@ -2251,7 +2251,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2983768",
+      "definition_id": "3059264",
       "definition": "structure_fog_palette_entry",
       "schema_range": {
         "offset": 0,
@@ -2285,7 +2285,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2983768",
+      "definition_id": "3059264",
       "definition": "structure_fog_palette_entry",
       "schema_range": {
         "offset": 48,
@@ -2319,7 +2319,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2983896",
+      "definition_id": "3059392",
       "definition": "structure_fog_region",
       "schema_range": {
         "offset": 0,
@@ -2353,7 +2353,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2984024",
+      "definition_id": "3059520",
       "definition": "structure_fog_plane",
       "schema_range": {
         "offset": 4,
@@ -2387,7 +2387,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2984184",
+      "definition_id": "3059680",
       "definition": "structure_breakable_surface",
       "schema_range": {
         "offset": 0,
@@ -2421,7 +2421,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2984200",
+      "definition_id": "3059696",
       "definition": "structure_cluster_portal",
       "schema_range": {
         "offset": 4,
@@ -2455,7 +2455,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2984328",
+      "definition_id": "3059824",
       "definition": "structure_cluster",
       "schema_range": {
         "offset": 0,
@@ -2494,7 +2494,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2984328",
+      "definition_id": "3059824",
       "definition": "structure_cluster",
       "schema_range": {
         "offset": 10,
@@ -2533,7 +2533,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2984328",
+      "definition_id": "3059824",
       "definition": "structure_cluster",
       "schema_range": {
         "offset": 64,
@@ -2572,7 +2572,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2984760",
+      "definition_id": "3060256",
       "definition": "structure_mirror",
       "schema_range": {
         "offset": 0,
@@ -2587,7 +2587,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2984928",
+      "definition_id": "3060424",
       "definition": "structure_subcluster",
       "schema_range": {
         "offset": 0,
@@ -2602,7 +2602,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2985016",
+      "definition_id": "3060512",
       "definition": "predicted_resource",
       "schema_range": {
         "offset": 2,
@@ -2636,7 +2636,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2985480",
+      "definition_id": "3060976",
       "definition": "structure_lens_flare_marker",
       "schema_range": {
         "offset": 0,
@@ -2675,7 +2675,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2985696",
+      "definition_id": "3061192",
       "definition": "structure_lightmap",
       "schema_range": {
         "offset": 0,
@@ -2709,7 +2709,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2985784",
+      "definition_id": "3061280",
       "definition": "structure_material",
       "schema_range": {
         "offset": 16,
@@ -2743,7 +2743,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2985784",
+      "definition_id": "3061280",
       "definition": "structure_material",
       "schema_range": {
         "offset": 156,
@@ -2777,7 +2777,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2985784",
+      "definition_id": "3061280",
       "definition": "structure_material",
       "schema_range": {
         "offset": 174,
@@ -2811,7 +2811,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2986056",
+      "definition_id": "3061552",
       "definition": "structure_surface",
       "schema_range": {
         "offset": 0,
@@ -2845,7 +2845,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2986072",
+      "definition_id": "3061568",
       "definition": "structure_surface_reference",
       "schema_range": {
         "offset": 4,
@@ -2879,7 +2879,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2986160",
+      "definition_id": "3061656",
       "definition": "structure_leaf",
       "schema_range": {
         "offset": 0,
@@ -2913,7 +2913,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2986160",
+      "definition_id": "3061656",
       "definition": "structure_leaf",
       "schema_range": {
         "offset": 10,
@@ -2947,7 +2947,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2986248",
+      "definition_id": "3061744",
       "definition": "structure_node",
       "schema_range": {
         "offset": 0,
@@ -2962,7 +2962,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2986264",
+      "definition_id": "3061760",
       "definition": "structure_collision_material",
       "schema_range": {
         "offset": 16,
@@ -2996,7 +2996,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2986432",
+      "definition_id": "3061928",
       "definition": "render_lighting",
       "schema_range": {
         "offset": 0,
@@ -3030,7 +3030,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2986432",
+      "definition_id": "3061928",
       "definition": "render_lighting",
       "schema_range": {
         "offset": 14,
@@ -3064,7 +3064,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2986432",
+      "definition_id": "3061928",
       "definition": "render_lighting",
       "schema_range": {
         "offset": 66,
@@ -3098,7 +3098,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2989376",
+      "definition_id": "3064872",
       "definition": "collision_vertex",
       "schema_range": {
         "offset": 0,
@@ -3132,7 +3132,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2989624",
+      "definition_id": "3065120",
       "definition": "collision_surface",
       "schema_range": {
         "offset": 0,
@@ -3166,7 +3166,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2989624",
+      "definition_id": "3065120",
       "definition": "collision_surface",
       "schema_range": {
         "offset": 8,
@@ -3200,7 +3200,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2989880",
+      "definition_id": "3065376",
       "definition": "bsp2d_node",
       "schema_range": {
         "offset": 0,
@@ -3234,7 +3234,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2989896",
+      "definition_id": "3065392",
       "definition": "bsp2d_reference",
       "schema_range": {
         "offset": 0,
@@ -3268,7 +3268,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2989912",
+      "definition_id": "3065408",
       "definition": "collision_leaf",
       "schema_range": {
         "offset": 0,
@@ -3302,7 +3302,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2989928",
+      "definition_id": "3065424",
       "definition": "bsp3d_node",
       "schema_range": {
         "offset": 4,
@@ -3336,7 +3336,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2990016",
+      "definition_id": "3065512",
       "definition": "real_plane3d",
       "schema_range": {
         "offset": 0,
@@ -3370,7 +3370,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2990032",
+      "definition_id": "3065528",
       "definition": "real_point3d",
       "schema_range": {
         "offset": 0,
@@ -3404,7 +3404,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2990048",
+      "definition_id": "3065544",
       "definition": "real_point2d",
       "schema_range": {
         "offset": 0,
@@ -3438,7 +3438,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2990064",
+      "definition_id": "3065560",
       "definition": "byte",
       "schema_range": {
         "offset": 0,
@@ -3453,7 +3453,7 @@
       "semantic_consumer_disposition": "unresolved"
     },
     {
-      "definition_id": "2990080",
+      "definition_id": "3065576",
       "definition": "long",
       "schema_range": {
         "offset": 0,
