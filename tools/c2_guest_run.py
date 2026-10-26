@@ -30,6 +30,24 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "build/m2-c2-r9-peaks"
+# C3.11 capture markers that are captured 1 s after they are logged, while the image is live and
+# before the teardown that follows the usable line. SUCCESSOR_FIRST_FRAME is the successor's first
+# periodic frame; the old map logs the same text before the load, so it is matched only after
+# SUCCESSOR_FIRST_FRAME_AFTER.
+SUCCESSOR_FIRST_FRAME = "c3-frame kind=periodic frame=1 views=2 "
+SUCCESSOR_FIRST_FRAME_AFTER = "production-ce-successor-loaded result=1 "
+# The rejected-preflight case captures the old map on the successor-attempt line: its held frame is
+# still on screen there, and it is logged after the held line and about 1 s before the usable line.
+PREFLIGHT_ATTEMPT = "production-ce-successor-attempt "
+EARLY_CAPTURES = (SUCCESSOR_FIRST_FRAME,)
+IMMEDIATE_CAPTURES = (PREFLIGHT_ATTEMPT,)
+
+
+def marker_seen(log_text: str, marker: str) -> bool:
+    if not marker.startswith(SUCCESSOR_FIRST_FRAME):
+        return marker in log_text
+    at = log_text.find(SUCCESSOR_FIRST_FRAME_AFTER)
+    return at >= 0 and marker in log_text[at + len(SUCCESSOR_FIRST_FRAME_AFTER):]
 PROBE = ROOT / "build/hcu-parent-link-probe"
 PCSX2 = Path(os.environ.get("PCSX2_BIN", "/home/ai/.local/bin/pcsx2"))
 READELF = ROOT / "build/toolchain/install/ee/bin/mips64r5900el-ps2-elf-readelf"
@@ -703,7 +721,7 @@ def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
             if pending_markers:
                 log_text = log.read_text(errors="replace") if log.exists() else ""
                 for marker in list(pending_markers):
-                    if marker in log_text:
+                    if marker_seen(log_text, marker):
                         pending_markers.remove(marker)
                         waiting.append((marker, frames_in(log), time.monotonic()))
             # A periodic frame marker waits for two more presented frames; a held one waits a
@@ -711,8 +729,16 @@ def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
             for item in list(waiting):
                 marker, seen, since = item
                 enough = (frames_in(log) >= seen + 2) if " c3-frame " in marker else False
-                if enough or time.monotonic() - since >= (3.0 if "held" in marker else 25.0):
-                    time.sleep(1.0)
+                # A held frame is captured inside the guest's hold window (HCU_C3_RENDER_HOLD_VSYNCS
+                # vsyncs, about 4 s). Waiting 3 s plus 1 s landed on the teardown that follows the hold.
+                held = "held" in marker
+                # Early captures settle 1 s: the successor's first frame is logged about 0.3 s after its
+                # load and about 3 s before its teardown; the rejected preflight keeps the old map live.
+                early = marker.startswith(EARLY_CAPTURES)
+                immediate = marker.startswith(IMMEDIATE_CAPTURES)
+                if enough or time.monotonic() - since >= (0.0 if immediate else 1.0 if held or early else 25.0):
+                    if not (held or early or immediate):
+                        time.sleep(1.0)
                     waiting.remove(item)
                     captures.append(take(marker, len(captures) + 1))
             guest_terminal = _run_terminal(which, log)

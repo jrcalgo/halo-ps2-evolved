@@ -53,6 +53,17 @@ FOREIGN_ROOT = ROOT / "build/m2-c2-foreign"   # output root for --successor runs
 # --successor-fault value -> (guest HALO_PS2_C2_SUCCESSOR_MODE, result directory label)
 SUCCESSOR_CASES = {"none": (1, "replace"), "preflight": (2, "failed-preflight"),
                    "load": (3, "fail-then-retry")}
+def successor_capture_marker(mode: int) -> str:
+    """Second C3.11 capture marker (c2_guest_run EARLY_CAPTURES / IMMEDIATE_CAPTURES). The usable line
+    is followed by teardown within about 1 ms, so it is never a capture trigger. A replaced successor
+    is captured 1 s after its first periodic frame (matched after its loaded line). A rejected
+    preflight is captured immediately on the successor-attempt line: the old map's held frame is
+    still on screen there, after the held line and before teardown."""
+    if mode == 2:
+        return "production-ce-successor-attempt "
+    return "c3-frame kind=periodic frame=1 views=2 "
+
+
 SUCCESSOR_TICKS = 30
 SUCCESSOR_GUEST_TIMEOUT = 1500         # guest seconds: two package hashes and two loads
 SUCCESSOR_PROCESS_TIMEOUT = 1600
@@ -1675,7 +1686,7 @@ def rendered_successor_checks(lines: list[str], old_map: str, new_map: str, mode
         "replacement_captures_visible": len(captures) == 2 and all(captured_visible(c) for c in captures),
         "capture_order_map_a_then_map_b": len(captures) == 2 and
             str(captures[0].get("marker", "")).startswith("c3-render-held") and
-            str(captures[1].get("marker", "")).startswith("production-ce-successor-usable"),
+            str(captures[1].get("marker", "")).startswith(successor_capture_marker(mode).strip()),
         "preflight_started_with_live_submission": bool(before) and any(
             r.get("inflight") == "1" and r.get("fence") == "0" and
             (_int(r.get("kick-seq")) or 0) > 0 and (_int(r.get("map-generation")) or 0) > 0 and
@@ -1816,7 +1827,7 @@ def run_successor(row: str, succ_row: str, fault: str = "none", ticks: int = SUC
         ok, why = guest_row(row, elf, plan, out, SUCCESSOR_GUEST_TIMEOUT, SUCCESSOR_PROCESS_TIMEOUT,
                             successor_stage_paths(plan, succ_plan, succ_row, succ_root),
                             released_map=plan["map"] if mode == 2 else succ_plan["map"],
-                            capture_markers=("c3-render-held ", "production-ce-successor-usable result=1 ")
+                            capture_markers=("c3-render-held ", successor_capture_marker(mode))
                             if render_views else ())
         if not ok:
             raise RuntimeError(why)
@@ -1909,6 +1920,10 @@ def main(argv=None) -> int:
                         help="frames the render loop draws with --render-views (default %(default)s; must be a multiple of 30)")
     parser.add_argument("--texfence-cap-pages", type=int, default=0, metavar="N",
                         help="C3.7 debug: cap the texture cache at N pages to force slot reuse (default 0 = off)")
+    parser.add_argument("--c3-fence-lag", type=int, default=0, metavar="N",
+                        help=("C3.7 stress: the texture cache sees the fence lag N kicks (0 = off, default). Only the "
+                              "texture cache lags; DMA chains and HUD owners keep the real fence. Builds get a "
+                              "-fence-lagN closure suffix and c3-texfence logs fence-lag=N"))
     parser.add_argument("--output-root", type=Path, metavar="DIR",
                         help=("write each row's results to DIR/<row>/ instead of the default root (build/c3/integrate, "
                               "build/c3/render-loop/v<N>, build/m2-c2-gaps-reuse, ...); default unchanged"))
@@ -1941,6 +1956,11 @@ def main(argv=None) -> int:
     if args.texfence_cap_pages < 0 or args.texfence_cap_pages > 4096:
         parser.error("--texfence-cap-pages must be 0..4096")
     TEXFENCE_CAP_PAGES = args.texfence_cap_pages
+    if args.c3_fence_lag < 0 or args.c3_fence_lag > 16:
+        parser.error("--c3-fence-lag must be 0..16")
+    if args.c3_fence_lag:
+        # C3.7 stress: read by tools/ee-world.mk (-DHALO_PS2_C3_FENCE_LAG_KICKS) and hcu_ps2_closure (profile suffix).
+        os.environ["HCU_C3_FENCE_LAG_KICKS"] = str(args.c3_fence_lag)
     if args.render_views and not args.c3:
         parser.error("--render-views needs --c3")
     if args.render_views and (args.render_frames < 30 or args.render_frames % 30):

@@ -379,5 +379,36 @@ int main(int argc, char **argv)
 			s_package[view.offset] ^= 1;
 		}
 	}
+	/* E_DEFERRED path: a miss the cache cannot admit this frame (every page held by entries used this frame)
+	 * is rolled back, counted as deferred, and does not fail the batch. The single-request API reports E_CAPACITY. */
+	{
+		halo_ps2_bitmap_request dreq = s_queue.requests[0];
+		halo_ps2_bitmap_request_reader dreader;
+		const tc_entry *fill;
+		uint32_t key, filled = 0, before_deferred = s_context.counters.deferred;
+		uint32_t before_leases = s_context.lease_count, before_geometry = s_geometry.qw, before_upload = s_upload.qw;
+		hcu_bitmap_lease dlease = {0};
+		tc_init(&s_cache, 128, 128, TC_MAX_KEYS, 1024 * 1024);
+		tc_begin_frame(&s_cache, 2);
+		memset(s_cache_readers, 0, sizeof(s_cache_readers));
+		memset(s_slots, 0, sizeof(s_slots));
+		for (key = 0; key < TC_MAX_KEYS && filled < 128u; key++) {
+			if (key == s_binding.cache_key) continue;
+			if (tc_acquire(&s_cache, key, 1, 0, &fill) != TC_UPLOAD) continue;
+			filled++;
+		}
+		if (filled != 128u || s_cache.map[s_binding.cache_key]) return 61;
+		memset(&dreader, 0, sizeof(dreader)); dreader.requests = &dreq;
+		dreader.generation = s_context.expected_generation; dreader.count = 1; dreader.held = 1;
+		if (hcu_bitmap_dispatch_reader(&dreader, &s_context) != HCU_BITMAP_DISPATCH_OK) return 62;
+		if (s_context.counters.deferred != before_deferred + 1u || s_context.lease_count != before_leases ||
+			s_geometry.qw != before_geometry || s_upload.qw != before_upload ||
+			s_cache.map[s_binding.cache_key]) return 63;
+		if (hcu_bitmap_dispatch_request(&dreq, &s_binding, 1, &s_profile, s_context.expected_generation,
+			&s_cache, &s_journal, s_cache_readers, TC_MAX_KEYS, s_slots, 4, s_source_storage,
+			sizeof(s_source_storage), s_context.slot_stride, s_staging, sizeof(s_staging), &s_upload,
+			&s_geometry, s_context.texture_page_base_words, s_context.clut_base_words, 640, 448,
+			(hcu_bitmap_rect){0,0,640,448}, &dlease) != HCU_BITMAP_DISPATCH_E_CAPACITY) return 64;
+	}
 	return 0;
 }

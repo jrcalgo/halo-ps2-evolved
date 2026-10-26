@@ -56,13 +56,22 @@ def build_cases() -> list[dict]:
                       "mode": "recompiler", "cap_pages": 0, "fault": None})
     cases.append({"name": "render-v4-interpreter", "kind": "render", "views": 4,
                   "mode": "interpreter", "cap_pages": 0, "fault": None})
-    cases.append({"name": "render-v4-recompiler-cap48", "kind": "render", "views": 4,
-                  "mode": "recompiler", "cap_pages": 48, "fault": None})
+    # C3.7 stress: the texture cache cap plus a 2-kick fence lag (the GPU "lags"), so age-eligible victims are still
+    # in flight when searched. Only this case sets it; the DMA chains and HUD owners keep the real fence.
+    # cap48+lag2 starved players 3-4 at spawn (controllers=2), so the cap is 64 with the same lag.
+    cases.append({"name": "render-v4-recompiler-cap64-lag2", "kind": "render", "views": 4,
+                  "mode": "recompiler", "cap_pages": 64, "fence_lag": 2, "fault": None})
     for mode in ("recompiler", "interpreter"):
         for fault in ("none", "preflight", "load"):
             cases.append({"name": f"c3-11-{fault}-{mode}", "kind": "successor", "views": 2,
                           "mode": mode, "cap_pages": 0, "fault": fault})
     return cases
+
+
+def case_cost(case: dict) -> int:
+    """Relative wall-clock weight (measured: interpreter guests run ~2x the recompiler; successor runs add a map swap)."""
+    cost = 10 if case["mode"] == "interpreter" else 4
+    return cost + (3 if case["kind"] == "successor" else 0) + (1 if case["cap_pages"] else 0)
 
 
 def load_matrix():
@@ -113,6 +122,8 @@ def matrix_argv(case: dict, out_dir: Path, package_root: Path) -> list[str]:
                  "--render-frames", str(FRAMES)]
     if case["cap_pages"]:
         argv += ["--texfence-cap-pages", str(case["cap_pages"])]
+    if case.get("fence_lag"):
+        argv += ["--c3-fence-lag", str(case["fence_lag"])]
     return argv
 
 
@@ -532,7 +543,7 @@ def write_report(root: Path, stamp: str, scored: list[dict], state: dict) -> dic
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    parser.add_argument("--jobs", type=int, default=3, help="matrix subprocesses in flight (default %(default)s)")
+    parser.add_argument("--jobs", type=int, default=4, help="matrix subprocesses in flight (default %(default)s)")
     parser.add_argument("--stamp", help="output stamp; pass an existing one to resume (default: now)")
     parser.add_argument("--dry-run", action="store_true", help="print the 12 matrix commands and exit")
     parser.add_argument("--score-only", action="store_true", help="do not run anything; score existing runs")
@@ -572,6 +583,9 @@ def main(argv=None) -> int:
             # once here, so concurrent matrix runs do not race on it; the matrix checks each HCP sha256 pin itself
             package_root = stage_package_tree(package_dir, SUCC_PACKAGE_DIR, root / PACKAGE_TREE_NAME)
             print(f"package root: {package_root} ({package_dir})", flush=True)
+            # Longest first so the slow interpreter cases do not trail the schedule; links serialize on the
+            # matrix's own link lock while the guest runs (private Xvfb and PCSX2 data dir each) overlap.
+            todo.sort(key=case_cost, reverse=True)
             with ThreadPoolExecutor(max_workers=args.jobs) as pool:
                 futures = {pool.submit(run_case, c2m, case, root, package_root): case for case in todo}
                 for future in as_completed(futures):

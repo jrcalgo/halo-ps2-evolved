@@ -456,6 +456,17 @@ def main() -> None:
             OUT = OUT.with_name(OUT.name + "-snapshot-index")
         if os.environ.get("HCU_C3_MOVEMENT_TRACE") == "1":
             OUT = OUT.with_name(OUT.name + "-movement-trace")
+        fence_lag = (os.environ.get("HCU_C3_FENCE_LAG_KICKS") or "0").strip()
+        if fence_lag not in ("", "0"):
+            OUT = OUT.with_name(OUT.name + f"-fence-lag{fence_lag}")
+    # Same workload key as hcu_ps2_closure.c3_workload_suffix() and hcu_parent_link_probe.py (CE main.c's players).
+    for item in os.environ.get("C_INCLUDE_PATH", "").split(":"):
+        workload_header = os.path.join(item, "hcu_c3_workload.h") if item else None
+        if workload_header and os.path.isfile(workload_header):
+            import hashlib
+            with open(workload_header, "rb") as handle:
+                OUT = OUT.with_name(OUT.name + "-workload-" + hashlib.sha256(handle.read()).hexdigest()[:12])
+            break
     build, prefix, env, _jobs = environment()
     compiler = prefix / "ee/bin/mips64r5900el-ps2-elf-gcc"
     nm = prefix / "ee/bin/mips64r5900el-ps2-elf-nm"

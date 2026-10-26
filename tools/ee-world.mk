@@ -19,6 +19,7 @@ EE_OBJS = $(WORLD_OUTPUT)/platform/screenshot_sdk.o \
 	$(WORLD_OUTPUT)/render/chain.o \
 	$(WORLD_OUTPUT)/render/clip.o \
 	$(WORLD_OUTPUT)/render/flycam.o \
+	$(WORLD_OUTPUT)/render/fp_depth.o \
 	$(WORLD_OUTPUT)/render/lodctl.o \
 	$(WORLD_OUTPUT)/render/obj_render.o \
 	$(WORLD_OUTPUT)/render/selftest.o \
@@ -398,7 +399,12 @@ HCU_C3_OBJECT_PREPARE_CACHE ?= 0
 HCU_C3_BINDING_SEAL ?= 0
 HCU_C3_SNAPSHOT_INDEX ?= 0
 HCU_C3_MOVEMENT_TRACE ?= 0
+# C3.7 stress only: texture-cache fence lag in kicks. Unset/0 adds no define (every other build is unchanged).
+HCU_C3_FENCE_LAG_KICKS ?= 0
 ifeq ($(HCU_C3),1)
+ifneq ($(strip $(filter-out 0,$(HCU_C3_FENCE_LAG_KICKS))),)
+EE_CFLAGS += -DHALO_PS2_C3_FENCE_LAG_KICKS=$(HCU_C3_FENCE_LAG_KICKS)
+endif
 EE_CFLAGS += -DHCU_C3=1 -DHCU_C3_FRAME_SNAPSHOT -DHALO_PS2_C3_FRAME_SNAPSHOT
 EE_CFLAGS += -DHCU_C3_BITMAP_RESIDENT=$(HCU_C3_BITMAP_RESIDENT)
 EE_CFLAGS += -DHCU_C3_OBJECT_FASTPATH=$(HCU_C3_OBJECT_FASTPATH) \

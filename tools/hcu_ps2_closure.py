@@ -180,6 +180,16 @@ FLAGS = [
 ]
 
 
+def c3_workload_suffix() -> str:
+    """Closure dirs cache CE main.c, whose player count comes from <hcu_c3_workload.h> on C_INCLUDE_PATH.
+    Key the closure directory by that header's content so differently-staffed runs never share objects."""
+    for item in os.environ.get("C_INCLUDE_PATH", "").split(":"):
+        header = Path(item) / "hcu_c3_workload.h" if item else None
+        if header and header.is_file():
+            return "-workload-" + hashlib.sha256(header.read_bytes()).hexdigest()[:12]
+    return ""
+
+
 def digest(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as file:
@@ -384,6 +394,10 @@ def main() -> None:
             profile += "-snapshot-index"
         if os.environ.get("HCU_C3_MOVEMENT_TRACE") == "1":
             profile += "-movement-trace"
+        fence_lag = (os.environ.get("HCU_C3_FENCE_LAG_KICKS") or "0").strip()
+        if fence_lag not in ("", "0"):
+            profile += f"-fence-lag{fence_lag}"
+    profile += c3_workload_suffix()
     output = build / "hcu-ps2-closure" / (args.layer + profile)
     output.mkdir(parents=True, exist_ok=True)
     header = HCU / manifest["prefix"]
@@ -412,6 +426,9 @@ def main() -> None:
         source_flags.append("-DHALO_PS2_C3_SNAPSHOT_INDEX=1")
     if hcu_c3 and os.environ.get("HCU_C3_MOVEMENT_TRACE") == "1":
         source_flags.append("-DHALO_PS2_C3_MOVEMENT_TRACE=1")
+    fence_lag = (os.environ.get("HCU_C3_FENCE_LAG_KICKS") or "0").strip()
+    if hcu_c3 and fence_lag not in ("", "0"):
+        source_flags.append(f"-DHALO_PS2_C3_FENCE_LAG_KICKS={int(fence_lag)}")
     flags = [*source_flags, *includes, "-include", str(header), "-include", str(semantics), "-c"]
     members = selected_sources(manifest)
     report = {

@@ -68,16 +68,19 @@ def test_case_plan_has_twelve_unique_cases_with_expected_shape():
     assert len(renders) == 6 and len(successors) == 6
     assert sorted((c["views"], c["mode"]) for c in renders if not c["cap_pages"]) == [
         (1, "recompiler"), (2, "recompiler"), (3, "recompiler"), (4, "interpreter"), (4, "recompiler")]
-    assert [c["cap_pages"] for c in renders if c["cap_pages"]] == [48]
+    assert [c["cap_pages"] for c in renders if c["cap_pages"]] == [64]
     assert sorted({c["fault"] for c in successors}) == ["load", "none", "preflight"]
     assert {c["mode"] for c in successors} == {"recompiler", "interpreter"}
 
 
 def test_matrix_argv_flags_and_no_flock(tmp_path):
     cases = {c["name"]: c for c in ci.build_cases()}
-    argv = ci.matrix_argv(cases["render-v4-recompiler-cap48"], tmp_path, Path("/pkg"))
+    argv = ci.matrix_argv(cases["render-v4-recompiler-cap64-lag2"], tmp_path, Path("/pkg"))
     assert argv[argv.index("--render-views") + 1] == "4"
-    assert argv[argv.index("--texfence-cap-pages") + 1] == "48"
+    assert argv[argv.index("--texfence-cap-pages") + 1] == "64"
+    assert argv[argv.index("--c3-fence-lag") + 1] == "2"
+    plain = ci.matrix_argv(cases["render-v4-recompiler"], tmp_path, Path("/pkg"))
+    assert "--c3-fence-lag" not in plain and "--texfence-cap-pages" not in plain
     assert argv[argv.index("--emu-mode") + 1] == "recompiler"
     assert argv[argv.index("--c3-local-players") + 1] == "4"
     assert "flock" not in " ".join(argv)

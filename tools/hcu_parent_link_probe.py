@@ -280,6 +280,15 @@ def main() -> None:
             closure_suffix += "-snapshot-index"
         if os.environ.get("HCU_C3_MOVEMENT_TRACE") == "1":
             closure_suffix += "-movement-trace"
+        fence_lag = (os.environ.get("HCU_C3_FENCE_LAG_KICKS") or "0").strip()
+        if fence_lag not in ("", "0"):
+            closure_suffix += f"-fence-lag{fence_lag}"
+    # Must match hcu_ps2_closure.c3_workload_suffix(): CE main.c's player count is keyed on the workload header.
+    for item in os.environ.get("C_INCLUDE_PATH", "").split(":"):
+        workload_header = Path(item) / "hcu_c3_workload.h" if item else None
+        if workload_header and workload_header.is_file():
+            closure_suffix += "-workload-" + hashlib.sha256(workload_header.read_bytes()).hexdigest()[:12]
+            break
     hcu_closure = build / "hcu-ps2-closure" / (
         "all-no-bootstrap-memory" + closure_suffix)
     parent_output = output / "parent-sections-os"
@@ -427,8 +436,12 @@ def main() -> None:
     ]
     run(gameplay_command, env=env)
     c3_batch_profile_binding = None
-    if hcu_c3 and (os.environ.get("HCU_C3_TIMING") == "1" or
-                   os.environ.get("HCU_C3_TELEMETRY") == "1"):
+    # CE calls hcu_c3_batch_profile only from its realtime-scheduler batch loop
+    # (main.c, HALO_PS2_C3_REALTIME_SCHEDULER); a deterministic timed build has no
+    # call site, so --gc-sections correctly drops both definitions.
+    if hcu_c3 and os.environ.get("HCU_C3_REALTIME_SCHEDULER") == "1" and (
+            os.environ.get("HCU_C3_TIMING") == "1" or
+            os.environ.get("HCU_C3_TELEMETRY") == "1"):
         symbols = run([str(nm), "-g", str(gameplay_elf)], env=env).splitlines()
         matches = [line.split() for line in symbols
                    if line.split() and line.split()[-1] == "hcu_c3_batch_profile"]

@@ -1188,9 +1188,15 @@ static uintptr_t ee_physical_address(const void *pointer)
 /* C3.7 texture fence counters. They are recorded inside the texture cache at the real event points
  * (tc_publish_claim, the upload chain release and the eviction path); this block only prints them.
  * HCU_C3_TEXFENCE_CAP_PAGES (debug, 0 = off) caps the renderer's texture cache pages so that slot reuse
- * happens under pressure; it is set by --texfence-cap-pages in the boot matrix. */
+ * happens under pressure; it is set by --texfence-cap-pages in the boot matrix.
+ * HALO_PS2_C3_FENCE_LAG_KICKS (stress only, 0 = off, set from HCU_C3_FENCE_LAG_KICKS by tools/ee-world.mk) makes the
+ * texture cache see the fence lag that many kicks, so in-flight reuse is blocked under pressure. Only the texture
+ * cache lags; the DMA chains and HUD owners keep the real fence. */
 #ifndef HCU_C3_TEXFENCE_CAP_PAGES
 #define HCU_C3_TEXFENCE_CAP_PAGES 0
+#endif
+#ifndef HALO_PS2_C3_FENCE_LAG_KICKS
+#define HALO_PS2_C3_FENCE_LAG_KICKS 0
 #endif
 
 static void hcu_c3_print_texfence(const char *kind, uint32_t frame)
@@ -1199,12 +1205,12 @@ static void hcu_c3_print_texfence(const char *kind, uint32_t frame)
 	const tc_fence_t *t = bsp_render_texfence_counters();
 	HCU_C3_TELEM_PRINTF("HALO_PS2_LOCAL c3-texfence kind=%s frame=%u kick-seq=%u fence-seq=%u claims-published=%u "
 		"claims-published-before-queue=%u source-released=%u source-released-before-fence=%u "
-		"reuse-blocked-by-fence=%u reuse-after-fence=%u reuse-unfenced=%u evictions=%u cap-pages=%u\n",
+		"reuse-blocked-by-fence=%u reuse-after-fence=%u reuse-unfenced=%u evictions=%u cap-pages=%u fence-lag=%u\n",
 		kind, (unsigned)frame, (unsigned)bsp_render_kick_seq(), (unsigned)bsp_render_completed_kick_seq(),
 		(unsigned)t->claims_published, (unsigned)t->claims_published_before_queue,
 		(unsigned)t->sources_released, (unsigned)t->source_released_before_fence,
 		(unsigned)t->reuse_blocked_by_fence, (unsigned)t->reuse_after_fence, (unsigned)t->reuse_unfenced,
-		(unsigned)t->evictions, (unsigned)HCU_C3_TEXFENCE_CAP_PAGES);
+		(unsigned)t->evictions, (unsigned)HCU_C3_TEXFENCE_CAP_PAGES, (unsigned)HALO_PS2_C3_FENCE_LAG_KICKS);
 #else
 	(void)kind;
 	(void)frame;
@@ -1791,6 +1797,7 @@ void hcu_c3_render_map_loaded(const char *map_name)
 #endif
 	/* C3:texfence begin */
 	if (HCU_C3_TEXFENCE_CAP_PAGES) bsp_render_cache_limit(HCU_C3_TEXFENCE_CAP_PAGES);
+	if (HALO_PS2_C3_FENCE_LAG_KICKS) bsp_render_cache_fence_lag(HALO_PS2_C3_FENCE_LAG_KICKS);
 	/* C3:texfence end */
 	s_c3r.active = 1;
 	HCU_C3_TELEM_PRINTF("HALO_PS2_LOCAL c3-render-ready map=%s views=%u frames=%u bsps=%u texs=%u lm=%u texture-count=%u "
@@ -2242,6 +2249,7 @@ static void hcu_c3_objects_frame_begin(void)
 		hcu_render_objects_install();
 		/* C3.7: the object install lifts the texture cache cap (bsp_render_cache_limit(0)); re-apply the debug cap. */
 		if (HCU_C3_TEXFENCE_CAP_PAGES) bsp_render_cache_limit(HCU_C3_TEXFENCE_CAP_PAGES);
+		if (HALO_PS2_C3_FENCE_LAG_KICKS) bsp_render_cache_fence_lag(HALO_PS2_C3_FENCE_LAG_KICKS);
 		s_c3o_installed = 1;
 	}
 }
@@ -2404,7 +2412,7 @@ static void hcu_c3_bitmap_print_tick(int tick)
 		"end-failed-total=%u in-frame=%u drain-pending=%u gpu-pending=%u leases=%u last-status=%d "
 		"bitmap-frames-dropped=%u drop-cause=0x%x ce-status=%d ce-failures=%u "
 		"unsupported-reasons=0x%x unsupported-counts=%u,%u,%u,%u,%u,%u,%u first-unsupported=%u/%u flags=0x%x "
-		"first-map-scale=0x%08x,0x%08x first-texture-scale=0x%08x,0x%08x meter-quads=%u\n",
+		"first-map-scale=0x%08x,0x%08x first-texture-scale=0x%08x,0x%08x meter-quads=%u deferred=%u\n",
 		tick, (unsigned)o->frame_index, (unsigned)o->active_window_count,
 		(unsigned)(cur[0] - s_c3b_last[0]), (unsigned)(cur[1] - s_c3b_last[1]),
 		(unsigned)(cur[2] - s_c3b_last[2]), (unsigned)(cur[5] - s_c3b_last[5]),
@@ -2425,7 +2433,8 @@ static void hcu_c3_bitmap_print_tick(int tick)
 		(unsigned)(q ? q->first_unsupported_reason : 0u),
 		(unsigned)(q ? q->first_unsupported_flags : 0u),
 		(unsigned)map_i.u, (unsigned)map_j.u, (unsigned)tex_i.u, (unsigned)tex_j.u,
-		(unsigned)(o->dispatch ? o->dispatch->meter_quads : 0u));
+		(unsigned)(o->dispatch ? o->dispatch->meter_quads : 0u),
+		(unsigned)(o->dispatch ? o->dispatch->counters.deferred : 0u));
 	memcpy(s_c3b_last, cur, sizeof(s_c3b_last));
 }
 #else

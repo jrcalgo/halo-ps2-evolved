@@ -343,7 +343,8 @@ static hcu_bitmap_dispatch_status dispatch_request_impl(
 		upload_source ? mip.bytes + clut_bytes : 0u, &entry);
 	if (acquired != TC_HIT && acquired != TC_UPLOAD) {
 		tc_journal_rollback(cache, journal);
-		return HCU_BITMAP_DISPATCH_E_CAPACITY;
+		/* TC_DEFER: pages or budget are held by entries used this frame; retry next frame, not a failure. */
+		return acquired == TC_DEFER ? HCU_BITMAP_DISPATCH_E_DEFERRED : HCU_BITMAP_DISPATCH_E_CAPACITY;
 	}
 	tbw = (image.width + 63u) / 64u;
 	tbp = (texture_page_base_words + entry->first_page * HCU_BITMAP_PAGE_WORDS) / 64u;
@@ -462,11 +463,13 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 	uint32_t texture_page_base_words, uint32_t clut_base_words,
 	uint16_t screen_w, uint16_t screen_h, hcu_bitmap_rect target, hcu_bitmap_lease *lease)
 {
-	return dispatch_request_impl(NULL, request, bindings, binding_count, profile, expected_generation,
-		cache, journal, cache_readers, cache_reader_count, slots, slot_count,
+	hcu_bitmap_dispatch_status status = dispatch_request_impl(NULL, request, bindings, binding_count, profile,
+		expected_generation, cache, journal, cache_readers, cache_reader_count, slots, slot_count,
 		source_storage, source_storage_bytes, slot_stride, staging_buffer, staging_buffer_bytes,
 		upload_chain, geometry_chain, texture_page_base_words, clut_base_words,
 		screen_w, screen_h, target, lease);
+	/* Single-request callers have no batch to defer into; they keep the capacity status. */
+	return status == HCU_BITMAP_DISPATCH_E_DEFERRED ? HCU_BITMAP_DISPATCH_E_CAPACITY : status;
 }
 
 void hcu_bitmap_dispatch_release(hcu_bitmap_source_slot *slots,
@@ -521,6 +524,9 @@ int hcu_bitmap_dispatch_reader(const halo_ps2_bitmap_request_reader *reader,
 			/* C3.10: dispatch runs inside the parent emit window, so the upload rides the next kick */
 			lease->kick_seq = bsp_render_kick_seq ? bsp_render_kick_seq() + 1u : 0u;
 			ctx->lease_count++;
+		} else if (status == HCU_BITMAP_DISPATCH_E_DEFERRED) {
+			/* Rolled back with no state change; the request is not drawn this frame and CE re-issues it. */
+			ctx->counters.deferred++;
 		} else if (ctx->first_error == HCU_BITMAP_DISPATCH_OK) ctx->first_error = status;
 	}
 	return ctx->first_error;

@@ -56,6 +56,7 @@ typedef struct {
 	uint32_t hits, misses, source_reads, source_bytes, hash_checks, parses;
 	uint32_t read_calls, read_bytes;
 	uint32_t read_cycles, hash_cycles, parse_cycles, source_cycles;
+	uint32_t deferred;
 } hcu_bitmap_dispatch_counters;
 
 typedef enum {
@@ -67,7 +68,11 @@ typedef enum {
 	HCU_BITMAP_DISPATCH_E_CAPACITY = -5,
 	HCU_BITMAP_DISPATCH_E_BUSY = -6,
 	HCU_BITMAP_DISPATCH_E_UNSUPPORTED = -7,
-	HCU_BITMAP_DISPATCH_E_VIEW = -8
+	HCU_BITMAP_DISPATCH_E_VIEW = -8,
+	/* Texture cache could not admit this request this frame (no evictable victim or upload budget). Not a
+	 * failure: the request is counted as deferred and CE re-issues it next frame. Internal to the reader;
+	 * hcu_bitmap_dispatch_request reports it as E_CAPACITY. */
+	HCU_BITMAP_DISPATCH_E_DEFERRED = -9
 } hcu_bitmap_dispatch_status;
 
 /* Every backing store is caller-owned. `source_storage` packs only the pixel and

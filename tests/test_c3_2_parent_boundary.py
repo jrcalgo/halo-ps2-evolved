@@ -50,7 +50,9 @@ BANK_WRITER_CALLS = re.compile(
 BANK_WRITER_ALLOWED = {
     "src/stream/hcu_snapshot_bank.c": None,      # the bank implementation
     "src/stream/hcu_render_objects.c": {"publish_synthetic"},   # gated test-only producer
-    "src/stream/hcu_main.c": {"hcu_c3_snapshot_map_loaded"},     # map-load generation metadata
+    # map-load generation metadata; and the perf-replay producer, which only re-publishes a CE-recorded snapshot
+    # (host:c3-perf-reference.bin) after validating it against the live frame, compiled only under HCU_C3_PERF_REPLAY.
+    "src/stream/hcu_main.c": {"hcu_c3_snapshot_map_loaded", "hcu_c3_perf_replay_snapshot"},
 }
 
 # A mutable frame-snapshot pointer or a store through one, in consumer code.
@@ -254,3 +256,12 @@ def test_c3_2_checker_rejects_fixed_camera_on_active_row():
     matrix = _load_matrix()
     assert not matrix.c3_2_contract_checks(_spawn_lines(active_camera="fixed"), 4)["checks"][
         "camera_from_snapshot_all_views"]
+
+
+def test_perf_replay_snapshot_producer_is_compile_gated_off_by_default():
+    text = _read("src/stream/hcu_main.c")
+    start = text.index("static int hcu_c3_perf_replay_snapshot(")
+    gate = text.rindex("#if HCU_C3_PERF_REPLAY_ENABLED", 0, start)
+    end = text.index("#endif /* HCU_C3_PERF_REPLAY_ENABLED */", start)
+    assert gate < start < end
+    assert "#define HCU_C3_PERF_REPLAY_ENABLED 0" in text

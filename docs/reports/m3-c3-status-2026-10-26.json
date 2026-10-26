@@ -1,0 +1,100 @@
+{
+  "schema": "haloce.m3-c3-status.v1",
+  "as_of": "2026-10-26",
+  "overall_status": "qualified-pending-review",
+  "qualification_policy": "Only completed evidence on the exact current source/package/ELF/emulator tuple can qualify a target row. The b542851 four-view guest failed during first-frame execution and contributes no target pass.",
+  "evidence_run": {
+    "stamp": "c3-full-r5",
+    "root": "build/c3/integration/c3-full-r5",
+    "report": "build/c3/integration/c3-full-r5/report.md",
+    "matrix_qualified": true,
+    "cases": 12,
+    "parallel_jobs": 4
+  },
+  "notes": [
+    "Matrix cell render-v4-recompiler-cap48 was replaced by render-v4-recompiler-cap64-lag2: at the current speed the GPU never lags, so in-flight reuse blocking needs an injected 2-kick texture-cache fence lag (HALO_PS2_C3_FENCE_LAG_KICKS, texture cache only; DMA chains and HUD owners keep the real fence).",
+    "Closure directories are now keyed by the workload header hash and the fence-lag value; before this a parallel run could link another case's player count.",
+    "Held and replacement captures are taken inside live rendering (successor frame 1 / preflight-rejected marker), not at teardown.",
+    "Post-swap object pool 2,386,752 B versus the 2,071,936 B budget remains noted; config/memory-budget.json is unchanged.",
+    "Effect-kind fx records are still unbound to bitmaps (particles carry their bitmap)."
+  ],
+  "requirements": [
+    {
+      "id": "C3.1",
+      "name": "Versioned pointer-free snapshot: four views/cameras/HUD/first-person, shared generation-safe object identity, transforms/palettes, resources, attachments, effects/decals",
+      "status": "passed",
+      "evidence": "Matrix C3.1 PASS in all 6 render cases (1-4 views, recompiler and interpreter, cap64-lag2): versioned pointer-free snapshot with views, objects, effects.",
+      "remaining": []
+    },
+    {
+      "id": "C3.2",
+      "name": "CE owns simulation, animation, first-person, HUD, and effect decisions; parent consumes immutable data only",
+      "status": "passed",
+      "evidence": "tests/test_c3_2_parent_boundary.py 15 passed (parent consumers call no CE simulation/animation builders, include no CE game headers, write the snapshot bank only through the allowlisted producers; perf-replay producer is compile-gated off). Guest: every matrix case runs the parent consumer on CE-published snapshots.",
+      "remaining": []
+    },
+    {
+      "id": "C3.3",
+      "name": "Snapshot-bank fit, deduplication, explicit readers, no overwrite/eviction while active; required players/enemies/weapons/vehicles",
+      "status": "passed",
+      "evidence": "Matrix C3.3 PASS in v2, v3, v4 (recompiler and interpreter) and cap64-lag2: bank fit, readers, unique bipeds/vehicles with controllers equal to the view count.",
+      "remaining": []
+    },
+    {
+      "id": "C3.4",
+      "name": "Fixed renderer owners/chains/workspaces; one begin/end and one age/upload-budget advance per frame across 1\u20134 views",
+      "status": "passed",
+      "evidence": "Covered by the C3.9/C3.10 guest checks: one begin/end/budget advance per frame, fixed 1,179,648 B dma_commands owner, emit-failures 0 and owner failures 0 in every render case.",
+      "remaining": []
+    },
+    {
+      "id": "C3.5",
+      "name": "Full-screen/split-screen layouts; each view uses its CE player camera, HUD, and first-person state",
+      "status": "passed",
+      "evidence": "Matrix C3.5 PASS in all 6 render cases: layouts 1/2/3/4 views, per-view camera, HUD, first-person state, framebuffer captures checked for non-black, non-flat views and no unpainted blocks.",
+      "remaining": []
+    },
+    {
+      "id": "C3.6",
+      "name": "BSP/materials, textures/lightmaps, sky, animated objects/vehicles/weapons/HUD/effects and source parity",
+      "status": "passed",
+      "evidence": "Matrix C3.6 PASS in all 6 render cases: content/effects path and first-person weapon draws each view.",
+      "remaining": []
+    },
+    {
+      "id": "C3.7",
+      "name": "Texture claims publish after successful queueing; retain source bytes through upload and fence cache reuse against actual chains/GS",
+      "status": "passed",
+      "evidence": "Matrix C3.7 PASS in all 6 render cases. Pressure case render-v4-recompiler-cap64-lag2 (64-page cap, texture-cache fence lag 2 kicks): evictions under pressure and reuse blocked while in flight, emit-failures 0.",
+      "remaining": []
+    },
+    {
+      "id": "C3.8",
+      "name": "Bounded CE sound-request adapter/recorder/drainer preserving event, owner, position, priority, playback parameters; no SPU2 qualification claim",
+      "status": "passed",
+      "evidence": "Matrix C3.8 PASS in all 12 cases: bounded sound adapter/recorder/drainer fields, unit-camera listener. SPU2 playback is not qualified here.",
+      "remaining": []
+    },
+    {
+      "id": "C3.9",
+      "name": "Bind native bitmap registration and queue-end to running CE frame",
+      "status": "passed",
+      "evidence": "Matrix C3.9 PASS in all 6 render cases: native bitmap registration and queue-end bound to the running CE frame, per view, with the HUD reserve (6,400 qw) keeping HUD quads out of capacity refusals.",
+      "remaining": []
+    },
+    {
+      "id": "C3.10",
+      "name": "Combined-renderer proof for fixed four chains, idle-chain geometry, pinned sources through VIF/GS completion, safe reuse/overflow, 1\u20134 views",
+      "status": "passed",
+      "evidence": "Matrix C3.10 PASS in all 6 render cases: four-chain in-flight DMA proof, tail and HUD reserves, lease releases observed, emit-failures 0.",
+      "remaining": []
+    },
+    {
+      "id": "C3.11",
+      "name": "Renderer-aware profile replacement with validate-first, drain, old tags live, safe empty-state retry, both emulator modes",
+      "status": "passed",
+      "evidence": "Matrix C3.11 PASS in all 6 successor cases (none, preflight, load x recompiler, interpreter): renderer-aware drain, previous-map snapshot unpublish, final-release discard of the undrained HUD batch, retry without a second dispose/unload when the failed load already released the map.",
+      "remaining": []
+    }
+  ]
+}
