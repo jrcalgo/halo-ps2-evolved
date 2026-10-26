@@ -6,7 +6,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#define VIEWS_FOV_MIN 0.1f
+/* CE weapon_get_field_of_view accepts native angles above PI/100. After the
+ * production vertical-FOV conversion (2*atan(0.75*0.85*tan(fov/2))), that
+ * legal lower limit is about 0.020 radians. Keep a small rounding margin. */
+#define VIEWS_FOV_MIN 0.019f
 #define VIEWS_FOV_MAX 2.8f
 #define VIEWS_NEAR_DEFAULT 0.05f
 #define VIEWS_FAR_DEFAULT 2000.0f

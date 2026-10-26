@@ -69,11 +69,16 @@ int main(void)
 	/* An invalid up (parallel to forward) is refused whatever the rest is. */
 	CHECK(hcu_views_camera_from_snapshot(pos, tilt_fwd, tilt_fwd, fov_deg, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 0);
 
-	/* Refusals: NaN or zero forward, zero up, non-finite position, field of view in degrees. */
+	/* Refusals: NaN or zero forward, zero up, non-finite position/FOV, and invalid FOV bounds. */
 	CHECK(hcu_views_camera_from_snapshot(pos, nan_fwd, up, fov_deg, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 0);
 	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, zero, fov_deg, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 0);
 	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, 60.0f, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 0);
 	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, 0.0f, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 0);
+	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, 0.018f, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 0);
+	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, -0.01f, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 0);
+	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, NAN, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 0);
+	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, INFINITY, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 0);
+	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, -INFINITY, 4.0f / 3.0f, 0.5f, 900.0f, &cam) == 0);
 	{
 		const float bad[3] = { NAN, 0.0f, 0.0f };
 		hcu_view_camera keep = cam;
@@ -109,6 +114,15 @@ int main(void)
 	{
 		const float fov70 = 70.0f * 3.14159265f / 180.0f;
 		const float ce_vfov = 2.0f * atanf(0.75f * 0.85f * tanf(fov70 * 0.5f));
+		const float fov35 = 35.0f * 3.14159265f / 180.0f;
+		const float fov7 = 7.0f * 3.14159265f / 180.0f;
+		const float native_min = 3.14159265f / 100.0f + 1.0e-6f;
+		const float ce_fovs[] = {
+			2.0f * atanf(0.75f * 0.85f * tanf(fov70 * 0.5f)),
+			2.0f * atanf(0.75f * 0.85f * tanf(fov35 * 0.5f)),
+			2.0f * atanf(0.75f * 0.85f * tanf(fov7 * 0.5f)),
+			2.0f * atanf(0.75f * 0.85f * tanf(native_min * 0.5f)),
+		};
 		static const struct { const char *name; float w, h; } views[] = {
 			{ "1 view full 640x448", 640.0f, 448.0f },
 			{ "2 views top 640x224", 640.0f, 224.0f },
@@ -122,6 +136,22 @@ int main(void)
 			{ "CE 3 players bottom-left 320x224", 320.0f, 224.0f },
 		};
 		size_t i;
+		/* Production CE conversion must retain the full-screen view at 1x, 2x,
+		 * 10x sniper magnification, and its narrowest legal weapon FOV. */
+		for (i = 0; i < sizeof ce_fovs / sizeof ce_fovs[0]; ++i) {
+			int row, col;
+			CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, ce_fovs[i],
+				640.0f / 448.0f, 0.5f, 900.0f, &cam) == 1);
+			CHECK(isfinite(cam.hfov) && cam.hfov > 0.0f);
+			camera_init(&c);
+			c.hfov = cam.hfov;
+			c.aspect = 640.0f / 448.0f;
+			camera_clip_matrix(&c, m);
+			for (row = 0; row < 4; ++row)
+				for (col = 0; col < 4; ++col)
+					CHECK(isfinite(m[row][col]));
+		}
+		CHECK(near(ce_fovs[2], 0.0782f, 0.001f));
 		for (i = 0; i < sizeof views / sizeof views[0]; ++i) {
 			const float aspect = views[i].w / views[i].h;
 			const float expect_h = 2.0f * atanf(tanf(ce_vfov * 0.5f) * aspect);

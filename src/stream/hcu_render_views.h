@@ -7,7 +7,7 @@
  * Camera: a snapshot view gives a position and a forward vector (plus up, which is only validated;
  * roll is zero in camera_t). Its vertical field of view is kept and converted to camera_t's horizontal
  * field of view with the view rectangle's own aspect (w/h), so each split view keeps the CE vertical extent. Anything not finite, a zero forward,
- * or a field of view outside (0.1, 2.8) radians is refused, and that view falls back to a fixed
+ * or a field of view below 0.019 or above 2.8 radians is refused, and that view falls back to a fixed
  * camera. Radians are an assumption about the CE producer; the range check makes a degrees value
  * fail closed instead of drawing a wrong view.
  *
