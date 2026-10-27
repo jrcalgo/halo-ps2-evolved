@@ -77,6 +77,13 @@ enum hcu_coop_status hcu_coop_admit(enum hcu_coop_mode mode, const struct hcu_co
 	return hcu_coop_check_variant(mode, snapshot);
 }
 
+enum hcu_coop_status hcu_coop_check_team_indices(unsigned human_team, unsigned bot_team)
+{
+	if (human_team != HCU_COOP_HUMAN_TEAM || bot_team != HCU_COOP_BOT_TEAM)
+		return HCU_COOP_ERR_TEAM;
+	return HCU_COOP_OK;
+}
+
 enum hcu_coop_status hcu_coop_assign_teams(enum hcu_coop_mode mode, const struct hcu_coop_roster *roster,
                                            unsigned char *human_teams, unsigned char *bot_teams)
 {

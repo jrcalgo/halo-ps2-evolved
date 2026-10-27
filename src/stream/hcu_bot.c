@@ -574,7 +574,8 @@ void hcu_bot_think(hcu_bot_state *state, const hcu_bot_world *world, hcu_bot_act
 {
 	uint32_t i;
 	state->tick++;
-	for (i = 0; i < HCU_BOT_MAX; i++) {
+	/* Only the roster's entries are written (out[i] for i < count); the rest of out is left alone. */
+	for (i = 0; i < state->count; i++) {
 		bot_action_idle(&out[i]);
 	}
 	if (!state->valid) {

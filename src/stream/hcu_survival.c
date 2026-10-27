@@ -3,38 +3,37 @@
 
 #include <stddef.h>
 
-#define HCU_SURVIVAL_QUAL_SEED_0 0x5EED0001u
-#define HCU_SURVIVAL_QUAL_SEED_1 0x5EED0002u
-#define HCU_SURVIVAL_QUAL_SEED_2 0x5EED0003u
-
 static const uint32_t g_qual_seeds[HCU_SURVIVAL_QUAL_SEED_COUNT] = {
     HCU_SURVIVAL_QUAL_SEED_0, HCU_SURVIVAL_QUAL_SEED_1, HCU_SURVIVAL_QUAL_SEED_2};
 
-/* Built-in cycle used when a config passes no templates. */
-static const hcu_survival_template g_default_templates[4] = {
-    {2u, 1u, 1u, 0u, 0u}, /* worst unit 2 */
-    {3u, 1u, 0u, 2u, 0u}, /* worst unit 3 */
-    {2u, 2u, 1u, 1u, 1u}, /* worst unit 4 */
-    {4u, 1u, 0u, 0u, 2u}, /* worst unit 3 */
+/* Built-in cycle used when a config passes no templates. The worst unit of each row is the
+ * documented constant (survival report, section 6 table), checked by the host test:
+ *   row 0: 1 + 1 mounted            = 2
+ *   row 1: 1 + 2 swarm members      = 3
+ *   row 2: 1 + 1 + 1 + 1            = 4 (mounted, swarm, secondary)
+ *   row 3: 1 + 2 secondary          = 3
+ * Rows 1 and 2 carry a swarm, so the default cycle is limited to HCU_SURVIVAL_SWARM_ACTIVE_LIMIT_MAX
+ * (12) enemies per batch. */
+static const hcu_survival_template g_default_templates[HCU_SURVIVAL_DEFAULT_TEMPLATE_COUNT] = {
+    {2u, 1u, 1u, 0u, 0u},
+    {3u, 1u, 0u, 2u, 0u},
+    {2u, 2u, 1u, 1u, 1u},
+    {4u, 1u, 0u, 0u, 2u},
 };
 
-#define HCU_SURVIVAL_DEFAULT_TEMPLATE_COUNT 4u
 #define HCU_SURVIVAL_GROWTH_CAP_CYCLES HCU_SURVIVAL_CYCLE_CAP
 
-static unsigned int worst_unit(const hcu_survival_template *t)
+unsigned int hcu_survival_template_worst_unit(const hcu_survival_template *t)
 {
+    if (t == NULL) {
+        return 0u;
+    }
     return 1u + t->max_mounted + t->max_swarm + t->max_secondary;
 }
 
-static int template_valid(const hcu_survival_template *t, unsigned int active_limit)
+static unsigned int worst_unit(const hcu_survival_template *t)
 {
-    if (t->base_enemies < 1u) {
-        return 0;
-    }
-    if (worst_unit(t) > active_limit) {
-        return 0;
-    }
-    return 1;
+    return hcu_survival_template_worst_unit(t);
 }
 
 static int qualified_seed(unsigned int seed)
@@ -92,7 +91,6 @@ static hcu_survival_status admit_wave(hcu_survival *s)
     unsigned int idx;
     unsigned int cycle;
     unsigned int worst;
-    unsigned int fit;
     unsigned int count;
     unsigned int growth_cycles;
     unsigned int slot;
@@ -102,16 +100,13 @@ static hcu_survival_status admit_wave(hcu_survival *s)
     cycle = (s->wave_number - 1u) / s->template_count;
     t = &s->tmpl[idx];
     worst = worst_unit(t);
-    fit = s->active_limit / worst;
-    if (fit == 0u) {
-        return HCU_SURVIVAL_ERR_LIMIT;
-    }
     growth_cycles = cycle < HCU_SURVIVAL_GROWTH_CAP_CYCLES ? cycle : HCU_SURVIVAL_GROWTH_CAP_CYCLES;
     count = t->base_enemies + t->growth_per_cycle * growth_cycles;
-    if (count > fit) {
-        count = fit;
+    if (count > s->active_limit) {
+        count = s->active_limit;
     }
-    if (count * worst > s->active_limit) {
+    if (count * worst > HCU_SURVIVAL_RESERVE_MAX) {
+        /* Validation makes this unreachable; fail closed if it is not. */
         return HCU_SURVIVAL_ERR_LIMIT;
     }
 
@@ -167,6 +162,8 @@ hcu_survival_status hcu_survival_validate(const hcu_survival_config *cfg)
 {
     unsigned int i;
     unsigned int tc;
+    unsigned int worst;
+    int swarm_present = 0;
     const hcu_survival_template *tmpl;
 
     if (cfg == NULL) {
@@ -195,9 +192,24 @@ hcu_survival_status hcu_survival_validate(const hcu_survival_config *cfg)
         return HCU_SURVIVAL_ERR_ARG;
     }
     for (i = 0u; i < tc; i++) {
-        if (!template_valid(&tmpl[i], cfg->active_limit)) {
+        if (tmpl[i].base_enemies < 1u) {
+            return HCU_SURVIVAL_ERR_ARG;
+        }
+        if (tmpl[i].max_swarm > HCU_SURVIVAL_SWARM_EXTRA_MAX) {
+            return HCU_SURVIVAL_ERR_LIMIT; /* a swarm is at most 16 units in total */
+        }
+        if (tmpl[i].max_swarm > 0u) {
+            swarm_present = 1;
+        }
+        /* The worst batch of this template is the whole active limit at its worst unit. */
+        worst = worst_unit(&tmpl[i]);
+        if (cfg->active_limit * worst > HCU_SURVIVAL_RESERVE_MAX) {
             return HCU_SURVIVAL_ERR_LIMIT;
         }
+    }
+    /* With a swarm present, 12 enemies x 16 units = 192 actors is the most the PS2 pool can carry. */
+    if (swarm_present && cfg->active_limit > HCU_SURVIVAL_SWARM_ACTIVE_LIMIT_MAX) {
+        return HCU_SURVIVAL_ERR_LIMIT;
     }
     return HCU_SURVIVAL_OK;
 }

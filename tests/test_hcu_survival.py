@@ -18,6 +18,6 @@ def test_survival_host_contract():
 			capture_output=True, text=True)
 	for needle in ("validation: ok", "repeated mixed waves: ok", "storage reuse: ok",
 		"same-tick elimination: ok", "no active-wave respawn: ok", "intermission length: ok",
-		"expansion reservation: ok", "budgets: ok", "refusal: ok",
+		"expansion reservation: ok", "swarm bound: ok", "budgets: ok", "refusal: ok",
 		"hcu_survival tests passed"):
 		assert needle in result.stdout, needle

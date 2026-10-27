@@ -17,9 +17,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "hcu_c5_limits.h"
+
 #define HCU_LOCAL_MAP_NAME_BYTES 32u
-#define HCU_LOCAL_HUMAN_SLOTS 4u   /* local controller/view slots */
-#define HCU_LOCAL_BOT_SLOTS 4u     /* Spartan bot slots, separate from human slots */
+/* Slot counts come from hcu_c5_limits.h. Bots are 12 seats (16 - 4 humans), not the four local slots. */
+#define HCU_LOCAL_HUMAN_SLOTS HCU_C5_LOCAL_HUMAN_SLOTS /* local controller/view slots */
+#define HCU_LOCAL_BOT_SLOTS HCU_C5_BOT_SEATS_MAX       /* Spartan bot seats, separate from human slots */
 
 typedef enum hcu_local_mode {
 	HCU_LOCAL_MODE_NONE = 0,
@@ -45,6 +48,12 @@ typedef enum hcu_local_difficulty {
 	HCU_LOCAL_DIFFICULTY_LEGENDARY
 } hcu_local_difficulty;
 
+/* Team switch (CE universal_variant.teams). Cooperative modes need ON, survival needs OFF, and CTF is always ON. */
+typedef enum hcu_local_teams {
+	HCU_LOCAL_TEAMS_OFF = 0,
+	HCU_LOCAL_TEAMS_ON
+} hcu_local_teams;
+
 /* Reason codes. HCU_LOCAL_SETUP_OK is the only accepting value. */
 typedef enum hcu_local_setup_reason {
 	HCU_LOCAL_SETUP_OK = 0,
@@ -60,13 +69,15 @@ typedef enum hcu_local_setup_reason {
 	HCU_LOCAL_SETUP_MAP_NOT_QUALIFIED,      /* no qualification row for map and mode */
 	HCU_LOCAL_SETUP_DIFFICULTY_NOT_QUALIFIED,
 	HCU_LOCAL_SETUP_POPULATION_ABOVE_QUALIFIED,
-	HCU_LOCAL_SETUP_TEARDOWN_FAILED         /* accepted, but the teardown callback failed */
+	HCU_LOCAL_SETUP_TEARDOWN_FAILED,        /* accepted, but the teardown callback failed */
+	HCU_LOCAL_SETUP_TEAM_MISMATCH           /* team switch disagrees with mode or variant */
 } hcu_local_setup_reason;
 
 /* Requested profile. Bot slots are never part of human_mask. */
 typedef struct hcu_local_setup {
 	hcu_local_mode mode;
 	hcu_local_variant variant;
+	hcu_local_teams teams;       /* team switch: ON splits local humans (team 0) from bots (team 1) */
 	hcu_local_difficulty difficulty;
 	uint32_t human_mask;   /* bit n = local controller/view slot n (0..3) */
 	uint32_t bot_count;    /* Spartan bots, 0..HCU_LOCAL_BOT_SLOTS */
@@ -91,6 +102,10 @@ typedef struct hcu_local_setup_result {
 	uint32_t human_count;
 	uint32_t bot_count;
 	uint32_t qualified_population;
+	/* Team index written to every human and bot when teams is ON (hcu_c5_limits.h). Both are HCU_C5_TEAM_NONE
+	 * when teams is OFF; the adapter must then give each player its own team index. */
+	uint8_t human_team;
+	uint8_t bot_team;
 } hcu_local_setup_result;
 
 /* Pure validator. Writes `out` only when it returns HCU_LOCAL_SETUP_OK.

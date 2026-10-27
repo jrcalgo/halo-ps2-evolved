@@ -8,6 +8,7 @@
 #include "stream/ctag_resource_index.h"
 #include "stream/sha256.h"
 #include "stream/hcu_load_trace.h"
+#include "stream/hcu_local_setup.h"
 #include "world/section.h"
 #ifdef HALO_PS2_M2_ANIMATION_TRACE
 #include "ps2_animation_trace.h"
@@ -473,6 +474,17 @@ static int profile_quiesce_renderer(hcu_map_service *service,
 static int profile_owner_live(const hcu_map_service *service)
 {
 	return service->profile_mount.active || service->profile_mount.backend_mounted;
+}
+
+int hcu_map_service_set_local_setup(hcu_map_service *service,
+	const hcu_local_setup *setup, const hcu_local_qualified_row *rows,
+	size_t row_count)
+{
+	if (!service || service != s_service || !service->initialized) return 0;
+	service->local_setup = setup;
+	service->local_rows = rows;
+	service->local_row_count = row_count;
+	return 1;
 }
 
 int hcu_map_service_latch_successor_preflight_failure(hcu_map_service *service,
@@ -1282,6 +1294,24 @@ static int hcu_map_service_preflight_impl(const char *map_name)
 	if (!service || !service->initialized ||
 		!(entry = hcu_map_catalog_find(map_name)))
 		return 0;
+	/* C5 local setup gate: decided before any staging, source open, arena mark,
+	 * successor latch or teardown. The validator writes only to its local result,
+	 * so a rejected setup leaves the loaded owner exactly as it was. */
+	if (service->local_setup) {
+		hcu_local_setup request = *service->local_setup;
+		hcu_local_setup_result accepted;
+		hcu_local_setup_reason reason;
+		if (strcmp(request.map_name, entry->identity.map_name) != 0)
+			reason = HCU_LOCAL_SETUP_BAD_MAP_NAME;
+		else
+			reason = hcu_local_setup_validate(&request, service->local_rows,
+				service->local_row_count, &accepted);
+		if (reason != HCU_LOCAL_SETUP_OK) {
+			printf("HALO_PS2_LOCAL map-preflight rejected map=%s reason=local-setup-%s\n",
+				entry->identity.map_name, hcu_local_setup_reason_name(reason));
+			return 0;
+		}
+	}
 	/* C3/C2 rendered-successor diagnostic only: the exact candidate was already
 	 * fully checked and rejected once while the old renderer was live. Reuse
 	 * that result for CE's immediate transaction call, so fault injection and

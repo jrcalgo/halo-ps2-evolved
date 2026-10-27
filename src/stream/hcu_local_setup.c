@@ -82,6 +82,9 @@ hcu_local_setup_reason hcu_local_setup_validate(const hcu_local_setup *request,
 		if (request->variant != HCU_LOCAL_VARIANT_NONE) {
 			return HCU_LOCAL_SETUP_VARIANT_NOT_APPLICABLE;
 		}
+		if (request->teams != HCU_LOCAL_TEAMS_OFF) {
+			return HCU_LOCAL_SETUP_TEAM_MISMATCH;
+		}
 	} else {
 		if (request->variant == HCU_LOCAL_VARIANT_NONE) {
 			return HCU_LOCAL_SETUP_VARIANT_NOT_APPLICABLE;
@@ -89,6 +92,14 @@ hcu_local_setup_reason hcu_local_setup_validate(const hcu_local_setup *request,
 		if (!variant_known(request->variant)) {
 			return HCU_LOCAL_SETUP_UNKNOWN_VARIANT;
 		}
+		/* Cooperative humans share a team against bots, so the switch must be ON. CTF has no non-team
+		 * variant in CE (game_engine_ctf.c), so it must be ON too. */
+		if (request->teams != HCU_LOCAL_TEAMS_ON) {
+			return HCU_LOCAL_SETUP_TEAM_MISMATCH;
+		}
+	}
+	if (request->teams != HCU_LOCAL_TEAMS_OFF && request->teams != HCU_LOCAL_TEAMS_ON) {
+		return HCU_LOCAL_SETUP_TEAM_MISMATCH;
 	}
 	if (!difficulty_known(request->difficulty)) {
 		return HCU_LOCAL_SETUP_UNKNOWN_DIFFICULTY;
@@ -129,6 +140,8 @@ hcu_local_setup_reason hcu_local_setup_validate(const hcu_local_setup *request,
 	out->human_count = humans;
 	out->bot_count = request->bot_count;
 	out->qualified_population = row->max_humans + row->max_bots;
+	out->human_team = request->teams == HCU_LOCAL_TEAMS_ON ? HCU_C5_HUMAN_TEAM : HCU_C5_TEAM_NONE;
+	out->bot_team = request->teams == HCU_LOCAL_TEAMS_ON ? HCU_C5_BOT_TEAM : HCU_C5_TEAM_NONE;
 	return HCU_LOCAL_SETUP_OK;
 }
 
@@ -163,6 +176,7 @@ const char *hcu_local_setup_reason_name(hcu_local_setup_reason reason)
 	case HCU_LOCAL_SETUP_DIFFICULTY_NOT_QUALIFIED: return "difficulty-not-qualified";
 	case HCU_LOCAL_SETUP_POPULATION_ABOVE_QUALIFIED: return "population-above-qualified";
 	case HCU_LOCAL_SETUP_TEARDOWN_FAILED: return "teardown-failed";
+	case HCU_LOCAL_SETUP_TEAM_MISMATCH: return "team-mismatch";
 	}
 	return "unknown";
 }

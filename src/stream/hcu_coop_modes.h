@@ -15,15 +15,18 @@
 
 #include <stddef.h>
 
+#include "hcu_c5_limits.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define HCU_COOP_MAX_HUMANS 4u        /* local controller/view slots */
-#define HCU_COOP_MAX_BOTS 12u         /* Spartan bots; bot slots are separate from the local slots */
-#define HCU_COOP_MAX_PLAYERS 16u      /* CE player cap: humans + bots */
-#define HCU_COOP_HUMAN_TEAM 0          /* cooperative team for every local human */
-#define HCU_COOP_BOT_TEAM 1            /* opposing team for every Spartan bot */
+/* Limits and team indices come from hcu_c5_limits.h; these names only alias them. */
+#define HCU_COOP_MAX_HUMANS HCU_C5_LOCAL_HUMAN_SLOTS /* local controller/view slots */
+#define HCU_COOP_MAX_BOTS HCU_C5_BOT_SEATS_MAX       /* Spartan bots; separate from the local slots */
+#define HCU_COOP_MAX_PLAYERS HCU_C5_PLAYER_SEATS     /* CE player cap: humans + bots */
+#define HCU_COOP_HUMAN_TEAM HCU_C5_HUMAN_TEAM        /* cooperative team for every local human */
+#define HCU_COOP_BOT_TEAM HCU_C5_BOT_TEAM            /* opposing team for every Spartan bot */
 
 /* CE game_engine_type values (game_engine.h); kept numerically identical. */
 enum hcu_coop_engine
@@ -87,6 +90,7 @@ enum hcu_coop_status
 	HCU_COOP_ERR_UNSUPPORTED = 3,    /* mode is not cooperative; cannot host humans-vs-bots team split */
 	HCU_COOP_ERR_VARIANT = 4,        /* runtime CE variant disagrees with the qualified row */
 	HCU_COOP_ERR_ARGUMENT = 5,
+	HCU_COOP_ERR_TEAM = 6,           /* team indices do not split humans (team 0) from bots (team 1) */
 };
 
 /* Returns the row for a mode, or NULL. Table is static and read-only. */
@@ -106,6 +110,11 @@ enum hcu_coop_status hcu_coop_check_variant(enum hcu_coop_mode mode, const struc
  * cooperative_eligible. Returns HCU_COOP_OK when the mode/roster may be admitted. */
 enum hcu_coop_status hcu_coop_admit(enum hcu_coop_mode mode, const struct hcu_coop_roster *roster,
                                     const struct hcu_coop_variant_snapshot *snapshot, int humans_share_team);
+
+/* Checks the team index written to a human and to a bot (both team fields, set explicitly by the adapter).
+ * CE defaults a new player to team 1 (players.c:1265), so a bot left at the default is not evidence of a split:
+ * the humans must be exactly HCU_COOP_HUMAN_TEAM and the bots exactly HCU_COOP_BOT_TEAM. */
+enum hcu_coop_status hcu_coop_check_team_indices(unsigned human_team, unsigned bot_team);
 
 /* Team assignment for the roster in a cooperative mode. Writes one team index per participant:
  * human_teams[0..humans-1] = HCU_COOP_HUMAN_TEAM, bot_teams[0..bots-1] = HCU_COOP_BOT_TEAM.

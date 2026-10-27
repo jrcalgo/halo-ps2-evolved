@@ -1,0 +1,2873 @@
+{
+  "format": "c5-retail-actor-lifecycle-v1",
+  "ledger": [
+    {
+      "actor": "characters\\captain\\captain",
+      "ranged_weapon": "weapons\\needler\\needler",
+      "source_aliases": [
+        "a50"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\captain_ingame\\captain_ingame",
+      "variant": "characters\\captain_ingame\\captain_ingame"
+    },
+    {
+      "actor": "characters\\crewman\\crewman",
+      "ranged_weapon": "weapons\\pistol\\pistol",
+      "source_aliases": [
+        "a30"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\crewman\\crewman",
+      "variant": "characters\\crewman\\crewman pistol"
+    },
+    {
+      "actor": "characters\\crewman\\crewman",
+      "ranged_weapon": "weapons\\pistol\\pistol",
+      "source_aliases": [
+        "a10"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\crewman\\crewman",
+      "variant": "characters\\crewman\\crewman security pistol"
+    },
+    {
+      "actor": "characters\\elite\\elite commander\\elite commander",
+      "ranged_weapon": "weapons\\energy sword\\energy sword",
+      "source_aliases": [
+        "a50",
+        "b30",
+        "b40",
+        "c40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\elite\\elite special",
+      "variant": "characters\\elite\\elite commander\\elite commander energy sword"
+    },
+    {
+      "actor": "characters\\elite\\elite commander\\elite commander",
+      "ranged_weapon": "weapons\\plasma rifle\\plasma rifle",
+      "source_aliases": [
+        "a50",
+        "b40",
+        "c40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\elite\\elite special",
+      "variant": "characters\\elite\\elite commander\\elite commander plasma rifle"
+    },
+    {
+      "actor": "characters\\elite\\elite major\\elite major",
+      "ranged_weapon": "weapons\\needler\\needler",
+      "source_aliases": [
+        "a50",
+        "b40",
+        "d20"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\elite\\elite",
+      "variant": "characters\\elite\\elite major\\elite major needler"
+    },
+    {
+      "actor": "characters\\elite\\elite major\\elite major",
+      "ranged_weapon": "weapons\\plasma rifle\\plasma rifle",
+      "source_aliases": [
+        "a10",
+        "a30",
+        "a50",
+        "b30",
+        "b40",
+        "c40",
+        "d20"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\elite\\elite",
+      "variant": "characters\\elite\\elite major\\elite major plasma rifle"
+    },
+    {
+      "actor": "characters\\elite\\elite minor\\elite minor",
+      "ranged_weapon": "weapons\\plasma rifle\\plasma rifle",
+      "source_aliases": [
+        "a10"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\elite\\elite",
+      "variant": "characters\\elite\\elite minor\\elite minor plasma rifle ranged"
+    },
+    {
+      "actor": "characters\\elite\\elite minor\\elite minor",
+      "ranged_weapon": "weapons\\needler\\needler",
+      "source_aliases": [
+        "a30",
+        "a50",
+        "b30",
+        "b40",
+        "c40",
+        "d20"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\elite\\elite",
+      "variant": "characters\\elite\\elite minor\\elite minor needler"
+    },
+    {
+      "actor": "characters\\elite\\elite minor\\elite minor",
+      "ranged_weapon": "weapons\\plasma rifle\\plasma rifle",
+      "source_aliases": [
+        "a10",
+        "a30",
+        "a50",
+        "b30",
+        "b40",
+        "c40",
+        "d20"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\elite\\elite",
+      "variant": "characters\\elite\\elite minor\\elite minor plasma rifle"
+    },
+    {
+      "actor": "characters\\elite\\elite specops\\elite specops",
+      "ranged_weapon": "weapons\\needler\\needler",
+      "source_aliases": [
+        "d20",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\elite\\elite special",
+      "variant": "characters\\elite\\elite specops\\elite specops needler"
+    },
+    {
+      "actor": "characters\\elite\\elite specops\\elite specops",
+      "ranged_weapon": "weapons\\plasma rifle\\plasma rifle",
+      "source_aliases": [
+        "d20",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\elite\\elite special",
+      "variant": "characters\\elite\\elite specops\\elite specops plasma rifle"
+    },
+    {
+      "actor": "characters\\elite\\elite stealth\\stealth elite energy sword",
+      "ranged_weapon": "weapons\\energy sword\\energy sword",
+      "source_aliases": [
+        "a50",
+        "b40",
+        "c40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\elite\\elite special",
+      "variant": "characters\\elite\\elite stealth\\stealth elite major energy sword"
+    },
+    {
+      "actor": "characters\\elite\\elite stealth\\stealth elite",
+      "ranged_weapon": "weapons\\plasma rifle\\plasma rifle",
+      "source_aliases": [
+        "a50",
+        "b30",
+        "b40",
+        "c40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\elite\\elite special",
+      "variant": "characters\\elite\\elite stealth\\stealth elite major plasma rifle"
+    },
+    {
+      "actor": "characters\\elite\\elite stealth\\stealth elite",
+      "ranged_weapon": "weapons\\plasma rifle\\plasma rifle",
+      "source_aliases": [
+        "a50",
+        "b30",
+        "b40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\elite\\elite special",
+      "variant": "characters\\elite\\elite stealth\\stealth elite plasma rifle"
+    },
+    {
+      "actor": "characters\\engineer\\engineer",
+      "ranged_weapon": "weapons\\plasma pistol\\plasma pistol",
+      "source_aliases": [
+        "b30"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\engineer\\engineer",
+      "variant": "characters\\engineer\\engineer major plasma pistol"
+    },
+    {
+      "actor": "characters\\floodcombat elite\\floodcombat elite",
+      "ranged_weapon": "weapons\\assault rifle\\assault rifle",
+      "source_aliases": [
+        "c10",
+        "c20",
+        "c40",
+        "d20",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\floodcombat elite\\floodcombat elite",
+      "variant": "characters\\floodcombat elite\\floodcombat elite assault rifle"
+    },
+    {
+      "actor": "characters\\floodcombat elite\\floodcombat elite",
+      "ranged_weapon": "weapons\\flamethrower\\flamethrower",
+      "source_aliases": [
+        "c20",
+        "d20"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\floodcombat elite\\floodcombat elite",
+      "variant": "characters\\floodcombat elite\\floodcombat elite flame thrower"
+    },
+    {
+      "actor": "characters\\floodcombat elite\\floodcombat elite",
+      "ranged_weapon": "weapons\\needler\\needler",
+      "source_aliases": [
+        "c10",
+        "c20",
+        "c40",
+        "d20",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\floodcombat elite\\floodcombat elite",
+      "variant": "characters\\floodcombat elite\\floodcombat elite needler"
+    },
+    {
+      "actor": "characters\\floodcombat elite\\floodcombat elite",
+      "ranged_weapon": "weapons\\pistol\\pistol",
+      "source_aliases": [
+        "c10",
+        "c20",
+        "c40",
+        "d20",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\floodcombat elite\\floodcombat elite",
+      "variant": "characters\\floodcombat elite\\floodcombat elite pistol"
+    },
+    {
+      "actor": "characters\\floodcombat elite\\floodcombat elite",
+      "ranged_weapon": "weapons\\plasma pistol\\plasma pistol",
+      "source_aliases": [
+        "c10",
+        "c20",
+        "c40",
+        "d20",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\floodcombat elite\\floodcombat elite",
+      "variant": "characters\\floodcombat elite\\floodcombat elite plasma pistol"
+    },
+    {
+      "actor": "characters\\floodcombat elite\\floodcombat elite",
+      "ranged_weapon": "weapons\\plasma rifle\\plasma rifle",
+      "source_aliases": [
+        "c10",
+        "c20",
+        "c40",
+        "d20",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\floodcombat elite\\floodcombat elite",
+      "variant": "characters\\floodcombat elite\\floodcombat elite plasma rifle"
+    },
+    {
+      "actor": "characters\\floodcombat elite\\floodcombat elite",
+      "ranged_weapon": "weapons\\rocket launcher\\rocket launcher",
+      "source_aliases": [
+        "c20",
+        "c40",
+        "d20",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\floodcombat elite\\floodcombat elite",
+      "variant": "characters\\floodcombat elite\\floodcombat elite rocket launcher"
+    },
+    {
+      "actor": "characters\\floodcombat elite\\floodcombat elite",
+      "ranged_weapon": "weapons\\shotgun\\shotgun",
+      "source_aliases": [
+        "c10",
+        "c20",
+        "c40",
+        "d20",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\floodcombat elite\\floodcombat elite",
+      "variant": "characters\\floodcombat elite\\floodcombat elite shotgun"
+    },
+    {
+      "actor": "characters\\floodcombat elite\\floodcombat elite",
+      "ranged_weapon": "weapons\\sniper rifle\\sniper rifle",
+      "source_aliases": [
+        "c40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\floodcombat elite\\floodcombat elite",
+      "variant": "characters\\floodcombat elite\\floodcombat elite sniper rifle"
+    },
+    {
+      "actor": "characters\\floodcombat_human\\floodcombat_human",
+      "ranged_weapon": "weapons\\assault rifle\\assault rifle",
+      "source_aliases": [
+        "c10",
+        "c20",
+        "c40",
+        "d20",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\floodcombat_human\\floodcombat_human",
+      "variant": "characters\\floodcombat_human\\floodcombat_human assault rifle"
+    },
+    {
+      "actor": "characters\\floodcombat_human\\floodcombat_human",
+      "ranged_weapon": "weapons\\flamethrower\\flamethrower",
+      "source_aliases": [
+        "c20",
+        "d20"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\floodcombat_human\\floodcombat_human",
+      "variant": "characters\\floodcombat_human\\floodcombat_human flame thrower"
+    },
+    {
+      "actor": "characters\\floodcombat_human\\floodcombat_human",
+      "ranged_weapon": "weapons\\needler\\needler",
+      "source_aliases": [
+        "c10",
+        "c20",
+        "c40",
+        "d20",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\floodcombat_human\\floodcombat_human",
+      "variant": "characters\\floodcombat_human\\floodcombat_human needler"
+    },
+    {
+      "actor": "characters\\floodcombat_human\\floodcombat_human",
+      "ranged_weapon": "weapons\\pistol\\pistol",
+      "source_aliases": [
+        "c10",
+        "c20",
+        "c40",
+        "d20",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\floodcombat_human\\floodcombat_human",
+      "variant": "characters\\floodcombat_human\\floodcombat_human pistol"
+    },
+    {
+      "actor": "characters\\floodcombat_human\\floodcombat_human",
+      "ranged_weapon": "weapons\\plasma pistol\\plasma pistol",
+      "source_aliases": [
+        "c10",
+        "c20",
+        "c40",
+        "d20",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\floodcombat_human\\floodcombat_human",
+      "variant": "characters\\floodcombat_human\\floodcombat_human plasma pistol"
+    },
+    {
+      "actor": "characters\\floodcombat_human\\floodcombat_human",
+      "ranged_weapon": "weapons\\plasma rifle\\plasma rifle",
+      "source_aliases": [
+        "c10",
+        "c20",
+        "c40",
+        "d20",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\floodcombat_human\\floodcombat_human",
+      "variant": "characters\\floodcombat_human\\floodcombat_human plasma rifle"
+    },
+    {
+      "actor": "characters\\floodcombat_human\\floodcombat_human",
+      "ranged_weapon": "weapons\\rocket launcher\\rocket launcher",
+      "source_aliases": [
+        "c10",
+        "c20",
+        "c40",
+        "d20"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\floodcombat_human\\floodcombat_human",
+      "variant": "characters\\floodcombat_human\\floodcombat_human rocket launcher"
+    },
+    {
+      "actor": "characters\\floodcombat_human\\floodcombat_human",
+      "ranged_weapon": "weapons\\shotgun\\shotgun",
+      "source_aliases": [
+        "c10",
+        "c20",
+        "c40",
+        "d20",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\floodcombat_human\\floodcombat_human",
+      "variant": "characters\\floodcombat_human\\floodcombat_human shotgun"
+    },
+    {
+      "actor": "characters\\grunt\\grunt flee major",
+      "ranged_weapon": "weapons\\needler\\needler",
+      "source_aliases": [
+        "c10"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\grunt\\grunt",
+      "variant": "characters\\grunt\\grunt flee major needler"
+    },
+    {
+      "actor": "characters\\grunt\\grunt flee major",
+      "ranged_weapon": "weapons\\plasma pistol\\plasma pistol",
+      "source_aliases": [
+        "c10"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\grunt\\grunt",
+      "variant": "characters\\grunt\\grunt flee major plasma pistol"
+    },
+    {
+      "actor": "characters\\grunt\\grunt flee minor",
+      "ranged_weapon": "weapons\\needler\\needler",
+      "source_aliases": [
+        "c10"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\grunt\\grunt",
+      "variant": "characters\\grunt\\grunt flee minor needler"
+    },
+    {
+      "actor": "characters\\grunt\\grunt flee minor",
+      "ranged_weapon": "weapons\\plasma pistol\\plasma pistol",
+      "source_aliases": [
+        "c10"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\grunt\\grunt",
+      "variant": "characters\\grunt\\grunt flee minor plasma pistol"
+    },
+    {
+      "actor": "characters\\grunt\\grunt major",
+      "ranged_weapon": "weapons\\needler\\needler",
+      "source_aliases": [
+        "a30",
+        "a50",
+        "b30",
+        "b40",
+        "c10",
+        "c40",
+        "d20"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\grunt\\grunt",
+      "variant": "characters\\grunt\\grunt major needler"
+    },
+    {
+      "actor": "characters\\grunt\\grunt major",
+      "ranged_weapon": "weapons\\plasma pistol\\plasma pistol",
+      "source_aliases": [
+        "a10",
+        "a30",
+        "a50",
+        "b30",
+        "b40",
+        "c10",
+        "c40",
+        "d20"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\grunt\\grunt",
+      "variant": "characters\\grunt\\grunt major plasma pistol"
+    },
+    {
+      "actor": "characters\\grunt\\grunt minor",
+      "ranged_weapon": "weapons\\needler\\needler",
+      "source_aliases": [
+        "a30",
+        "a50",
+        "b30",
+        "b40",
+        "c40",
+        "d20"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\grunt\\grunt",
+      "variant": "characters\\grunt\\grunt minor needler"
+    },
+    {
+      "actor": "characters\\grunt\\grunt minor",
+      "ranged_weapon": "weapons\\plasma pistol\\plasma pistol",
+      "source_aliases": [
+        "a10",
+        "a30",
+        "a50",
+        "b30",
+        "b40",
+        "c40",
+        "d20"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\grunt\\grunt",
+      "variant": "characters\\grunt\\grunt minor plasma pistol"
+    },
+    {
+      "actor": "characters\\grunt\\grunt specops",
+      "ranged_weapon": "weapons\\fuel rod gun\\fuel rod",
+      "source_aliases": [
+        "c40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\grunt\\grunt specops",
+      "variant": "characters\\grunt\\grunt specops fuel rod airdef"
+    },
+    {
+      "actor": "characters\\grunt\\grunt specops",
+      "ranged_weapon": "weapons\\fuel rod gun\\fuel rod",
+      "source_aliases": [
+        "c40",
+        "d20",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\grunt\\grunt specops",
+      "variant": "characters\\grunt\\grunt specops fuel rod"
+    },
+    {
+      "actor": "characters\\grunt\\grunt specops",
+      "ranged_weapon": "weapons\\needler\\needler",
+      "source_aliases": [
+        "d20",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\grunt\\grunt specops",
+      "variant": "characters\\grunt\\grunt specops needler"
+    },
+    {
+      "actor": "characters\\hunter\\hunter",
+      "ranged_weapon": "weapons\\fuel rod gun\\hunter fuel rod",
+      "source_aliases": [
+        "a50",
+        "b30",
+        "b40",
+        "c40",
+        "d20",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\hunter\\hunter",
+      "variant": "characters\\hunter\\hunter major"
+    },
+    {
+      "actor": "characters\\hunter\\hunter",
+      "ranged_weapon": "weapons\\fuel rod gun\\hunter fuel rod",
+      "source_aliases": [
+        "a50",
+        "b30",
+        "b40",
+        "c40",
+        "d20",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\hunter\\hunter",
+      "variant": "characters\\hunter\\hunter"
+    },
+    {
+      "actor": "characters\\jackal\\jackal major",
+      "ranged_weapon": "weapons\\plasma pistol\\plasma pistol",
+      "source_aliases": [
+        "a30",
+        "a50",
+        "b30",
+        "b40",
+        "c10",
+        "c40",
+        "d20"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\jackal\\jackal major",
+      "variant": "characters\\jackal\\jackal major plasma pistol"
+    },
+    {
+      "actor": "characters\\jackal\\jackal minor",
+      "ranged_weapon": "weapons\\plasma pistol\\plasma pistol",
+      "source_aliases": [
+        "a30",
+        "a50",
+        "b30",
+        "b40",
+        "c10",
+        "c40",
+        "d20"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\jackal\\jackal",
+      "variant": "characters\\jackal\\jackal minor plasma pistol"
+    },
+    {
+      "actor": "characters\\marine\\marine major",
+      "ranged_weapon": "weapons\\assault rifle\\assault rifle",
+      "source_aliases": [
+        "a30",
+        "c10"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\marine\\marine",
+      "variant": "characters\\marine\\marine assault rifle major"
+    },
+    {
+      "actor": "characters\\marine\\marine",
+      "ranged_weapon": "weapons\\pistol\\pistol",
+      "source_aliases": [
+        "c10"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\marine_suicidal\\marine_suicidal",
+      "variant": "characters\\marine_suicidal\\marine_suicidal"
+    },
+    {
+      "actor": "characters\\marine\\marine",
+      "ranged_weapon": "weapons\\plasma rifle\\plasma rifle",
+      "source_aliases": [
+        "a50",
+        "c10"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\marine\\marine",
+      "variant": "characters\\marine\\marine plasma rifle"
+    },
+    {
+      "actor": "characters\\marine\\marine",
+      "ranged_weapon": "weapons\\assault rifle\\assault rifle",
+      "source_aliases": [
+        "a30",
+        "c10"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\marine\\marine",
+      "variant": "characters\\marine\\marine assault rifle"
+    },
+    {
+      "actor": "characters\\marine\\marine",
+      "ranged_weapon": "weapons\\needler\\needler",
+      "source_aliases": [
+        "c10"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\marine\\marine",
+      "variant": "characters\\marine\\marine needler"
+    },
+    {
+      "actor": "characters\\marine_armored\\marine_armored major",
+      "ranged_weapon": "weapons\\assault rifle\\assault rifle",
+      "source_aliases": [
+        "a10",
+        "a30",
+        "a50",
+        "b30",
+        "b40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\marine_armored\\marine_armored",
+      "variant": "characters\\marine_armored\\marine_armored assault rifle major"
+    },
+    {
+      "actor": "characters\\marine_armored\\marine_armored major",
+      "ranged_weapon": "weapons\\plasma rifle\\plasma rifle",
+      "source_aliases": [
+        "b40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\marine_armored\\marine_armored",
+      "variant": "characters\\marine_armored\\marine_armored plasma rifle major"
+    },
+    {
+      "actor": "characters\\marine_armored\\marine_armored major",
+      "ranged_weapon": "weapons\\shotgun\\shotgun",
+      "source_aliases": [
+        "c10"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\marine_armored\\marine_armored",
+      "variant": "characters\\marine_armored\\marine_armored shotgun major"
+    },
+    {
+      "actor": "characters\\marine_armored\\marine_armored major",
+      "ranged_weapon": "weapons\\sniper rifle\\sniper rifle",
+      "source_aliases": [
+        "a30",
+        "b40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\marine_armored\\marine_armored_sniper",
+      "variant": "characters\\marine_armored\\marine_armored sniper rifle major"
+    },
+    {
+      "actor": "characters\\marine_armored\\marine_armored",
+      "ranged_weapon": "weapons\\needler\\needler",
+      "source_aliases": [
+        "b40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\marine_armored\\marine_armored",
+      "variant": "characters\\marine_armored\\marine_armored needler"
+    },
+    {
+      "actor": "characters\\marine_armored\\marine_armored",
+      "ranged_weapon": "weapons\\assault rifle\\assault rifle",
+      "source_aliases": [
+        "a10",
+        "a30",
+        "a50",
+        "b30",
+        "b40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\marine_armored\\marine_armored",
+      "variant": "characters\\marine_armored\\marine_armored assault rifle"
+    },
+    {
+      "actor": "characters\\marine_armored\\marine_armored",
+      "ranged_weapon": "weapons\\plasma rifle\\plasma rifle",
+      "source_aliases": [
+        "b40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\marine_armored\\marine_armored",
+      "variant": "characters\\marine_armored\\marine_armored plasma rifle"
+    },
+    {
+      "actor": "characters\\marine_armored\\marine_armored",
+      "ranged_weapon": "weapons\\shotgun\\shotgun",
+      "source_aliases": [
+        "c10"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\marine\\marine",
+      "variant": "characters\\marine\\marine shotgun"
+    },
+    {
+      "actor": "characters\\marine_armored\\marine_armored",
+      "ranged_weapon": "weapons\\sniper rifle\\sniper rifle",
+      "source_aliases": [
+        "a30",
+        "b40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\marine_armored\\marine_armored_sniper",
+      "variant": "characters\\marine_armored\\marine_armored sniper rifle"
+    },
+    {
+      "actor": "characters\\marine_wounded\\marine_wounded",
+      "ranged_weapon": "weapons\\assault rifle\\assault rifle",
+      "source_aliases": [
+        "a30"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\marine_wounded\\sitting_1\\sitting_1",
+      "variant": "characters\\marine_wounded\\sitting_1\\marine_wounded_sitting_1 assault rifle"
+    },
+    {
+      "actor": "characters\\sentinel\\sentinel",
+      "ranged_weapon": "characters\\sentinel\\sentinel",
+      "source_aliases": [
+        "c10",
+        "c20",
+        "c40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\sentinel\\sentinel",
+      "variant": "characters\\sentinel\\sentinel"
+    },
+    {
+      "actor": "characters\\sentinel\\sentinel_defensive",
+      "ranged_weapon": "characters\\sentinel\\sentinel",
+      "source_aliases": [
+        "c10",
+        "c20",
+        "c40",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\sentinel\\sentinel",
+      "variant": "characters\\sentinel\\sentinel major"
+    },
+    {
+      "actor": "characters\\sentinel\\sentinel_defensive",
+      "ranged_weapon": "characters\\sentinel\\sentinel",
+      "source_aliases": [
+        "c40",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\sentinel\\sentinel",
+      "variant": "characters\\sentinel\\sentinel_shielded major"
+    },
+    {
+      "actor": "characters\\sentinel\\sentinel_defensive",
+      "ranged_weapon": "characters\\sentinel\\sentinel",
+      "source_aliases": [
+        "c20",
+        "c40",
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\sentinel\\sentinel",
+      "variant": "characters\\sentinel\\sentinel_defensive"
+    },
+    {
+      "actor": "characters\\sentinel\\sentinel_defensive",
+      "ranged_weapon": "characters\\sentinel\\sentinel",
+      "source_aliases": [
+        "d40"
+      ],
+      "stages": {
+        "activation": {
+          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "status": "blocked"
+        },
+        "attachment": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "status": "blocked"
+        },
+        "cleanup": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "status": "blocked"
+        },
+        "combat": {
+          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "status": "blocked"
+        },
+        "death": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "status": "blocked"
+        },
+        "placement": {
+          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "status": "blocked"
+        },
+        "update": {
+          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "status": "blocked"
+        }
+      },
+      "unit": "characters\\sentinel\\sentinel",
+      "variant": "characters\\sentinel\\sentinel_shielded"
+    }
+  ],
+  "maps_dir_present": true,
+  "note": "Spartan bot and retail record counts come from src/stream/hcu_actor_metrics.c, not this ledger.",
+  "per_stage": {
+    "activation": {
+      "blocked": 68,
+      "failed": 0,
+      "not-executed": 0,
+      "passed": 0
+    },
+    "attachment": {
+      "blocked": 68,
+      "failed": 0,
+      "not-executed": 0,
+      "passed": 0
+    },
+    "cleanup": {
+      "blocked": 68,
+      "failed": 0,
+      "not-executed": 0,
+      "passed": 0
+    },
+    "combat": {
+      "blocked": 68,
+      "failed": 0,
+      "not-executed": 0,
+      "passed": 0
+    },
+    "death": {
+      "blocked": 68,
+      "failed": 0,
+      "not-executed": 0,
+      "passed": 0
+    },
+    "placement": {
+      "blocked": 68,
+      "failed": 0,
+      "not-executed": 0,
+      "passed": 0
+    },
+    "update": {
+      "blocked": 68,
+      "failed": 0,
+      "not-executed": 0,
+      "passed": 0
+    }
+  },
+  "recipes": 68,
+  "recipes_fully_passed": 0,
+  "retail_actor_records": null,
+  "roster": "docs/reports/m2-c1-actor-roster-2026-10-23.json",
+  "roster_sha256": "85cfecaaf351a1fddec0d0179f3437eb3344e1394ceadcc04eba80d4590da300",
+  "spartan_bots": null,
+  "stages_blocked": 476,
+  "stages_failed": 0,
+  "stages_passed": 0,
+  "stages_required": 476,
+  "status": "incomplete"
+}

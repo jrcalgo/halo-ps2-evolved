@@ -86,34 +86,55 @@ def new_ledger(recipes: list[dict]) -> list[dict]:
 
 
 def apply_evidence(ledger: list[dict], evidence: dict, roster_sha: str) -> dict:
+    """Gate each stage on its own kind. A stage registers as passed or failed only when its kind is
+    "retail" (the stage's own kind, else its record's). A synthetic stage is ignored. A blocked stage
+    stays blocked and carries its blocker, so a recipe with some passed stages keeps them."""
     if evidence.get("format") != EVIDENCE_FORMAT:
         raise LifecycleError("evidence format mismatch")
     if evidence.get("roster_sha256") != roster_sha:
         raise LifecycleError("evidence was not produced from this roster")
     index = {row["variant"]: row for row in ledger}
-    applied = ignored_synthetic = 0
+    applied = ignored_synthetic = blocked = 0
     for rec in evidence.get("records", []):
         row = index.get(rec.get("variant"))
         if row is None:
             raise LifecycleError(f"evidence names a recipe outside the roster: {rec.get('variant')}")
-        real = rec.get("kind") == "retail"
         for stage, result in rec.get("stages", {}).items():
             if stage not in STAGES:
                 raise LifecycleError(f"unknown stage {stage}")
-            if not real:
+            status = result.get("status")
+            kind = result.get("kind", rec.get("kind"))
+            if status == "blocked":
+                row["stages"][stage] = {"status": "blocked", "blocker": result.get("blocker", "")}
+                blocked += 1
+                continue
+            if status not in ("passed", "failed"):
+                raise LifecycleError(f"invalid status for {stage}")
+            if kind != "retail":
                 ignored_synthetic += 1
                 continue
-            if result.get("status") not in ("passed", "failed"):
-                raise LifecycleError(f"invalid status for {stage}")
-            row["stages"][stage] = {"status": result["status"], "source": result.get("source", "")}
+            row["stages"][stage] = {"status": status, "source": result.get("source", "")}
             applied += 1
-    return {"stages_applied": applied, "synthetic_stages_ignored": ignored_synthetic}
+    return {"stages_applied": applied, "synthetic_stages_ignored": ignored_synthetic,
+            "stages_blocked": blocked}
+
+
+def per_stage(ledger: list[dict]) -> dict:
+    """For each stage, how many recipes it passed for, failed for, or left blocked."""
+    out = {}
+    for name in STAGES:
+        counts = {"passed": 0, "failed": 0, "blocked": 0, "not-executed": 0}
+        for row in ledger:
+            counts[row["stages"][name]["status"]] += 1
+        out[name] = counts
+    return out
 
 
 def summarize(ledger: list[dict], roster_path: Path, maps_dir: Path) -> dict:
     total = len(ledger) * len(STAGES)
     passed = sum(1 for row in ledger for s in row["stages"].values() if s["status"] == "passed")
     failed = sum(1 for row in ledger for s in row["stages"].values() if s["status"] == "failed")
+    blocked = sum(1 for row in ledger for s in row["stages"].values() if s["status"] == "blocked")
     complete = total > 0 and passed == total
     return {
         "format": FORMAT,
@@ -124,6 +145,9 @@ def summarize(ledger: list[dict], roster_path: Path, maps_dir: Path) -> dict:
         "stages_required": total,
         "stages_passed": passed,
         "stages_failed": failed,
+        "stages_blocked": blocked,
+        "recipes_fully_passed": sum(1 for row in ledger if all(s["status"] == "passed" for s in row["stages"].values())),
+        "per_stage": per_stage(ledger),
         "status": "complete" if complete else ("failed" if failed else "incomplete"),
         "retail_actor_records": None,
         "spartan_bots": None,

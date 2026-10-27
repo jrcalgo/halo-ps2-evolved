@@ -22,15 +22,18 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "hcu_c5_limits.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Local controller/view slots (CE player indices 0..3). Bots start after them. */
-#define HCU_BOT_LOCAL_SLOTS 4u
+#define HCU_BOT_LOCAL_SLOTS HCU_C5_LOCAL_HUMAN_SLOTS
 #define HCU_BOT_PLAYER_SLOT_BASE HCU_BOT_LOCAL_SLOTS
-/* Fixed storage bound of the roster (bot i is CE player HCU_BOT_PLAYER_SLOT_BASE + i). */
-#define HCU_BOT_MAX 8u
+/* Fixed storage bound of the roster (bot i is CE player HCU_BOT_PLAYER_SLOT_BASE + i). Seats = 16 - 4 humans
+ * (hcu_c5_limits.h); bots take machines 1-3. */
+#define HCU_BOT_MAX HCU_C5_BOT_SEATS_MAX
 #define HCU_BOT_PLAYER_SLOTS (HCU_BOT_LOCAL_SLOTS + HCU_BOT_MAX)
 #define HCU_BOT_NAME_COUNT 40u
 #define HCU_BOT_PICKUP_MAX 16u

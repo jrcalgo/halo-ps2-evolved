@@ -88,6 +88,8 @@ int main(void)
 	CHECK(hcu_coop_check_roster(&bad) == HCU_COOP_ERR_ROSTER);
 	bad.humans = 4u; bad.bots = 12u;
 	CHECK(hcu_coop_check_roster(&bad) == HCU_COOP_OK);   /* 16 = CE cap */
+	CHECK(HCU_COOP_MAX_BOTS == 12u && HCU_COOP_MAX_BOTS == HCU_C5_BOT_SEATS_MAX);
+	CHECK(HCU_COOP_MAX_PLAYERS == 16u && HCU_COOP_MAX_HUMANS == 4u);
 	CHECK(hcu_coop_check_roster(NULL) == HCU_COOP_ERR_ARGUMENT);
 
 	/* admission gate */
@@ -107,6 +109,14 @@ int main(void)
 	for (i = 0; i < roster.bots; ++i)
 		CHECK(bot_teams[i] == HCU_COOP_BOT_TEAM);
 	CHECK(HCU_COOP_HUMAN_TEAM != HCU_COOP_BOT_TEAM);
+	CHECK(HCU_COOP_HUMAN_TEAM == HCU_C5_HUMAN_TEAM && HCU_COOP_BOT_TEAM == HCU_C5_BOT_TEAM);
+
+	/* explicit team indices for both sides: humans team 0, bots team 1 (CE default 1 is not evidence) */
+	CHECK(hcu_coop_check_team_indices(0u, 1u) == HCU_COOP_OK);
+	CHECK(hcu_coop_check_team_indices(1u, 1u) == HCU_COOP_ERR_TEAM);   /* humans left at CE default */
+	CHECK(hcu_coop_check_team_indices(0u, 0u) == HCU_COOP_ERR_TEAM);   /* bots merged with humans */
+	CHECK(hcu_coop_check_team_indices(0u, 2u) == HCU_COOP_ERR_TEAM);
+	CHECK(hcu_coop_check_team_indices(0xffu, 1u) == HCU_COOP_ERR_TEAM); /* no team set */
 	CHECK(hcu_coop_assign_teams(HCU_COOP_MODE_SLAYER_FFA, &roster, human_teams, bot_teams) == HCU_COOP_ERR_UNSUPPORTED);
 	CHECK(hcu_coop_assign_teams(HCU_COOP_MODE_TEAM_RACE, &roster, NULL, bot_teams) == HCU_COOP_ERR_ARGUMENT);
 	roster.humans = 1u; roster.bots = 0u;

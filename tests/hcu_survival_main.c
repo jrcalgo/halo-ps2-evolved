@@ -34,7 +34,7 @@ static void check_invariants(const hcu_survival *s, const char *where)
 
 	CHECK(hcu_survival_active_units(s) == hcu_survival_recount_active_units(s), where);
 	CHECK(hcu_survival_batch_size(s) <= s->active_limit, where);
-	CHECK(hcu_survival_reserved_units(s) <= s->active_limit, where);
+	CHECK(hcu_survival_reserved_units(s) <= HCU_SURVIVAL_RESERVE_MAX, where);
 	CHECK(hcu_survival_active_units(s) <= hcu_survival_reserved_units(s), where);
 	for (i = 0u; i < hcu_survival_batch_size(s); i++) {
 		const hcu_survival_enemy *e = hcu_survival_enemy_at(s, i);
@@ -64,11 +64,14 @@ static unsigned int kill_all_enemies_two_ticks(hcu_survival *s)
 
 static void test_validation(void)
 {
-	hcu_survival_config cfg = default_config(2u, 16u);
-	hcu_survival_template big = {1u, 0u, 20u, 0u, 0u}; /* worst unit 21 > limit 16 */
+	hcu_survival_config cfg = default_config(2u, 12u);
+	hcu_survival_template big = {1u, 0u, 20u, 0u, 0u}; /* worst unit 21, 16 x 21 = 336 > 192 */
 	hcu_survival_template ok = {1u, 0u, 0u, 0u, 0u};
 
-	CHECK(hcu_survival_validate(&cfg) == HCU_SURVIVAL_OK, "default config valid");
+	CHECK(hcu_survival_validate(&cfg) == HCU_SURVIVAL_OK, "default config valid at swarm limit");
+	cfg.active_limit = 13u;
+	CHECK(hcu_survival_validate(&cfg) == HCU_SURVIVAL_ERR_LIMIT, "default cycle with swarms refuses 13");
+	cfg.active_limit = 12u;
 	cfg.difficulty = HCU_SURVIVAL_DIFFICULTY_LEGENDARY;
 	CHECK(hcu_survival_validate(&cfg) == HCU_SURVIVAL_ERR_UNSUPPORTED, "legendary refused");
 	cfg.difficulty = HCU_SURVIVAL_DIFFICULTY_NORMAL;
@@ -86,13 +89,13 @@ static void test_validation(void)
 	cfg.template_count = 1u;
 	CHECK(hcu_survival_validate(&cfg) == HCU_SURVIVAL_ERR_LIMIT, "oversized template refused");
 	cfg.templates = &ok;
-	CHECK(hcu_survival_validate(&cfg) == HCU_SURVIVAL_OK, "single template accepted");
+	CHECK(hcu_survival_validate(&cfg) == HCU_SURVIVAL_OK, "single template accepted at limit 16");
 	printf("validation: ok\n");
 }
 
 static void test_repeated_mixed_waves(void)
 {
-	hcu_survival_config cfg = default_config(2u, 16u);
+	hcu_survival_config cfg = default_config(2u, 12u);
 	hcu_survival s;
 	unsigned int wave;
 	unsigned int n;
@@ -137,7 +140,7 @@ static void test_repeated_mixed_waves(void)
 		}
 	}
 	CHECK(idx >= 3u, "mixed batch sizes cycle through several values");
-	CHECK(distinct_batches_seen[16] == 0u, "no batch exceeds the limit");
+	CHECK(distinct_batches_seen[13] == 0u, "no batch exceeds the swarm limit");
 	CHECK(s.enemies_admitted > 1000u, "many enemies admitted");
 	CHECK(hcu_survival_get_state(&s) != HCU_SURVIVAL_STATE_GAME_OVER, "mixed run survives");
 	printf("repeated mixed waves: ok (%u waves, %u enemies admitted)\n", hcu_survival_wave_number(&s), s.enemies_admitted);
@@ -145,7 +148,7 @@ static void test_repeated_mixed_waves(void)
 
 static void test_storage_reuse(void)
 {
-	hcu_survival_config cfg = default_config(2u, 20u);
+	hcu_survival_config cfg = default_config(2u, 12u);
 	hcu_survival s;
 	const void *enemy_base;
 	const void *human_base;
@@ -256,7 +259,7 @@ static void test_intermission_length(void)
 
 static void test_expansion_reservation(void)
 {
-	hcu_survival_config cfg = default_config(2u, 9u);
+	hcu_survival_config cfg = default_config(2u, 12u);
 	hcu_survival s;
 	unsigned int wave;
 	unsigned int max_reserved = 0u;
@@ -269,7 +272,7 @@ static void test_expansion_reservation(void)
 		if (reserved > max_reserved) {
 			max_reserved = reserved;
 		}
-		CHECK(reserved <= 9u, "reservation fits active limit");
+		CHECK(reserved <= HCU_SURVIVAL_RESERVE_MAX, "reservation fits the actor reserve");
 		CHECK(actual <= reserved, "actual units within reservation");
 		CHECK(actual == hcu_survival_recount_active_units(&s), "active accounting equals recount");
 		(void)kill_all_enemies_two_ticks(&s);
@@ -280,9 +283,68 @@ static void test_expansion_reservation(void)
 			}
 		}
 	}
-	CHECK(max_reserved <= 9u, "maximum reservation within limit");
+	CHECK(max_reserved <= HCU_SURVIVAL_RESERVE_MAX, "maximum reservation within the actor reserve");
 	CHECK(max_reserved >= 6u, "reservation actually reached expansion");
-	printf("expansion reservation: ok (max reserved %u of 9)\n", max_reserved);
+	printf("expansion reservation: ok (max reserved %u of %u)\n", max_reserved, HCU_SURVIVAL_RESERVE_MAX);
+}
+
+/* Swarm bound (survival report, section 6): worst swarm 16 units, 12 enemies, 192 actors of the 256 pool. */
+static void test_swarm_bound(void)
+{
+	hcu_survival_template swarm16 = {12u, 0u, 0u, 15u, 0u}; /* worst unit 16 */
+	hcu_survival_template swarm_over = {1u, 0u, 0u, 16u, 0u}; /* 17 units: over the 16-member swarm */
+	hcu_survival_config cfg;
+	hcu_survival s;
+	unsigned int i;
+	unsigned int wave;
+	unsigned int worst_expected[HCU_SURVIVAL_DEFAULT_TEMPLATE_COUNT] = {2u, 3u, 4u, 3u};
+
+	CHECK(HCU_SURVIVAL_SWARM_MEMBERS_MAX == 16u, "worst swarm is 16 members");
+	CHECK(HCU_SURVIVAL_RESERVE_MAX == 192u, "reserve is 256 minus the 64-actor margin");
+	CHECK(HCU_SURVIVAL_SWARM_ACTIVE_LIMIT_MAX * HCU_SURVIVAL_SWARM_MEMBERS_MAX == HCU_SURVIVAL_RESERVE_MAX,
+		"12 x 16 fills the reserve exactly");
+
+	/* Default cycle worst units are the documented constants. */
+	memset(&cfg, 0, sizeof cfg);
+	cfg.difficulty = HCU_SURVIVAL_DIFFICULTY_NORMAL;
+	cfg.humans = 2u;
+	cfg.active_limit = 12u;
+	cfg.seed = 0u;
+	CHECK(hcu_survival_init(&s, &cfg) == HCU_SURVIVAL_OK, "init default cycle");
+	for (i = 0u; i < s.template_count; i++) {
+		CHECK(hcu_survival_template_worst_unit(&s.tmpl[i]) == worst_expected[i], "default worst unit");
+	}
+
+	/* Validation: swarms cap the limit at 12; 16 members is the most a swarm can have. */
+	cfg.templates = &swarm16;
+	cfg.template_count = 1u;
+	CHECK(hcu_survival_validate(&cfg) == HCU_SURVIVAL_OK, "12 swarms of 16 accepted");
+	cfg.active_limit = 13u;
+	CHECK(hcu_survival_validate(&cfg) == HCU_SURVIVAL_ERR_LIMIT, "13 swarms of 16 refused");
+	cfg.active_limit = 12u;
+	cfg.templates = &swarm_over;
+	CHECK(hcu_survival_validate(&cfg) == HCU_SURVIVAL_ERR_LIMIT, "swarm above 16 members refused");
+	cfg.templates = NULL;
+	cfg.template_count = 0u;
+	CHECK(hcu_survival_validate(&cfg) == HCU_SURVIVAL_OK, "default cycle accepted at 12");
+
+	/* Run the worst swarm profile: reservation is exactly 192 and never exceeded. */
+	cfg.templates = &swarm16;
+	cfg.template_count = 1u;
+	CHECK(hcu_survival_init(&s, &cfg) == HCU_SURVIVAL_OK, "init swarm profile");
+	CHECK(hcu_survival_begin(&s) == HCU_SURVIVAL_OK, "begin swarm profile");
+	for (wave = 0u; wave < 300u; wave++) {
+		CHECK(hcu_survival_reserved_units(&s) == 192u, "worst swarm reservation is 192 actors");
+		CHECK(hcu_survival_active_units(&s) <= 192u, "active swarm units within 192 actors");
+		CHECK(hcu_survival_batch_size(&s) <= 12u, "swarm batch within 12 enemies");
+		check_invariants(&s, "swarm profile");
+		(void)kill_all_enemies_two_ticks(&s);
+		for (i = 0u; i < HCU_SURVIVAL_INTERMISSION_TICKS; i++) {
+			hcu_survival_tick(&s);
+		}
+	}
+	CHECK(hcu_survival_get_state(&s) == HCU_SURVIVAL_STATE_ACTIVE_WAVE, "swarm profile stays active");
+	printf("swarm bound: ok (12 x 16 = 192 of %u actors)\n", HCU_SURVIVAL_RESERVE_MAX);
 }
 
 static void test_budgets(void)
@@ -351,6 +413,7 @@ int main(void)
 	test_no_active_wave_respawn();
 	test_intermission_length();
 	test_expansion_reservation();
+	test_swarm_bound();
 	test_budgets();
 	test_refusal_leaves_match_untouched();
 	if (failures != 0) {

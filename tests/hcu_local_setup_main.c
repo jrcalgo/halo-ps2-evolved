@@ -37,12 +37,14 @@ static const hcu_local_qualified_row rows[] = {
 	{ "a10", HCU_LOCAL_MODE_SURVIVAL, 1u << HCU_LOCAL_DIFFICULTY_NORMAL, 2u, 2u },
 };
 
+/* Team switch follows the mode: cooperative needs ON, survival needs OFF. Tests override it where needed. */
 static void make_request(hcu_local_setup *r, hcu_local_mode mode, hcu_local_variant variant,
 	hcu_local_difficulty difficulty, uint32_t humans, uint32_t bots, const char *map)
 {
 	memset(r, 0, sizeof *r);
 	r->mode = mode;
 	r->variant = variant;
+	r->teams = mode == HCU_LOCAL_MODE_STOCK_COOP ? HCU_LOCAL_TEAMS_ON : HCU_LOCAL_TEAMS_OFF;
 	r->difficulty = difficulty;
 	r->human_mask = humans;
 	r->bot_count = bots;
@@ -70,6 +72,7 @@ int main(void)
 {
 	fake_map_state state;
 	hcu_local_setup req;
+	hcu_local_setup alt;
 	hcu_local_setup_result out;
 	hcu_local_setup_reason r;
 	size_t nrows = sizeof rows / sizeof rows[0];
@@ -89,8 +92,22 @@ int main(void)
 	expect_reject("bad-human-mask", &req, HCU_LOCAL_SETUP_BAD_HUMAN_MASK, &state);
 	make_request(&req, HCU_LOCAL_MODE_STOCK_COOP, HCU_LOCAL_VARIANT_SLAYER, HCU_LOCAL_DIFFICULTY_NORMAL, 0u, 4u, "bloodgulch");
 	expect_reject("no-humans", &req, HCU_LOCAL_SETUP_NO_HUMANS, &state);
-	make_request(&req, HCU_LOCAL_MODE_STOCK_COOP, HCU_LOCAL_VARIANT_SLAYER, HCU_LOCAL_DIFFICULTY_NORMAL, 0x3u, 5u, "bloodgulch");
+	make_request(&req, HCU_LOCAL_MODE_STOCK_COOP, HCU_LOCAL_VARIANT_SLAYER, HCU_LOCAL_DIFFICULTY_NORMAL, 0x3u, 13u, "bloodgulch");
 	expect_reject("too-many-bots", &req, HCU_LOCAL_SETUP_TOO_MANY_BOTS, &state);
+	make_request(&req, HCU_LOCAL_MODE_STOCK_COOP, HCU_LOCAL_VARIANT_SLAYER, HCU_LOCAL_DIFFICULTY_NORMAL, 0x3u, 12u, "bloodgulch");
+	expect_reject("bots-12-not-qualified-on-row", &req, HCU_LOCAL_SETUP_POPULATION_ABOVE_QUALIFIED, &state);
+	make_request(&req, HCU_LOCAL_MODE_STOCK_COOP, HCU_LOCAL_VARIANT_SLAYER, HCU_LOCAL_DIFFICULTY_NORMAL, 0x3u, 4u, "bloodgulch");
+	req.teams = HCU_LOCAL_TEAMS_OFF;
+	expect_reject("team-mismatch", &req, HCU_LOCAL_SETUP_TEAM_MISMATCH, &state);
+	make_request(&req, HCU_LOCAL_MODE_STOCK_COOP, HCU_LOCAL_VARIANT_CTF, HCU_LOCAL_DIFFICULTY_NORMAL, 0x3u, 4u, "bloodgulch");
+	req.teams = HCU_LOCAL_TEAMS_OFF;
+	expect_reject("ctf-needs-teams", &req, HCU_LOCAL_SETUP_TEAM_MISMATCH, &state);
+	make_request(&req, HCU_LOCAL_MODE_SURVIVAL, HCU_LOCAL_VARIANT_NONE, HCU_LOCAL_DIFFICULTY_NORMAL, 0x1u, 0u, "a10");
+	req.teams = HCU_LOCAL_TEAMS_ON;
+	expect_reject("survival-with-teams", &req, HCU_LOCAL_SETUP_TEAM_MISMATCH, &state);
+	make_request(&req, HCU_LOCAL_MODE_STOCK_COOP, HCU_LOCAL_VARIANT_SLAYER, HCU_LOCAL_DIFFICULTY_NORMAL, 0x3u, 4u, "bloodgulch");
+	req.teams = (hcu_local_teams)7;
+	expect_reject("bad-team-switch", &req, HCU_LOCAL_SETUP_TEAM_MISMATCH, &state);
 	make_request(&req, HCU_LOCAL_MODE_STOCK_COOP, HCU_LOCAL_VARIANT_NONE, HCU_LOCAL_DIFFICULTY_NORMAL, 0x3u, 0u, "bloodgulch");
 	expect_reject("coop-without-variant", &req, HCU_LOCAL_SETUP_VARIANT_NOT_APPLICABLE, &state);
 	make_request(&req, HCU_LOCAL_MODE_SURVIVAL, HCU_LOCAL_VARIANT_SLAYER, HCU_LOCAL_DIFFICULTY_NORMAL, 0x1u, 0u, "a10");
@@ -131,7 +148,17 @@ int main(void)
 	assert(out.qualified_population == 8u);
 	assert(out.setup.seed == 0x5eedu);
 	assert(out.setup.variant == HCU_LOCAL_VARIANT_CTF);
+	assert(out.setup.teams == HCU_LOCAL_TEAMS_ON);
+	assert(out.human_team == 0u);   /* humans explicit team 0 */
+	assert(out.bot_team == 1u);     /* bots explicit team 1, not left at the CE default */
 	printf("accept coop: humans=%u bots=%u qualified=%u\n", out.human_count, out.bot_count, out.qualified_population);
+	printf("accept teams: human team %u, bot team %u\n", out.human_team, out.bot_team);
+
+	/* Individual survival: no team split, so both team fields are NONE. */
+	make_request(&alt, HCU_LOCAL_MODE_SURVIVAL, HCU_LOCAL_VARIANT_NONE, HCU_LOCAL_DIFFICULTY_NORMAL, 0x1u, 1u, "a10");
+	r = hcu_local_setup_validate(&alt, rows, nrows, &out);
+	assert(r == HCU_LOCAL_SETUP_OK);
+	assert(out.human_team == HCU_C5_TEAM_NONE && out.bot_team == HCU_C5_TEAM_NONE);
 
 	/* Accepted profile runs teardown exactly once, with the map mutated. */
 	memset(&state, 0, sizeof state);

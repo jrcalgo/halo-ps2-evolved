@@ -201,6 +201,7 @@ class HcuCeMapLifecycleTests(unittest.TestCase):
                 str(ROOT / "src/stream/hcu_profile_mount.c"),
                 str(ROOT / "src/stream/hcu_profile_metadata.c"),
                 str(ROOT / "src/stream/hcu_map_catalog.c"),
+                str(ROOT / "src/stream/hcu_local_setup.c"),
                 str(ROOT / "src/stream/ctag_mount.c"),
                 str(ROOT / "src/stream/ctag_ps2_backend.c"),
                 str(ROOT / "src/stream/cbsp_catalog.c"),

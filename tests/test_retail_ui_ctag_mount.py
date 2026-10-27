@@ -42,6 +42,7 @@ class RetailUICtagMountTests(unittest.TestCase):
             str(root / "src/stream/hcu_profile_mount.c"),
             str(root / "src/stream/hcu_profile_metadata.c"),
             str(root / "src/stream/hcu_map_catalog.c"),
+            str(root / "src/stream/hcu_local_setup.c"),
             str(engine / "world/section.c"), str(engine / "stream/hp2.c"),
             str(engine / "stream/file.c"), str(engine / "core/mem.c"),
             str(hcu / "src/ps2_cache.c"), str(hcu / "src/ps2_ctag.c"),

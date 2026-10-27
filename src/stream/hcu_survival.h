@@ -16,9 +16,17 @@
  *                ends the match, even if the last enemy also died that tick.
  *
  * Accounting: an admitted enemy occupies units = 1 + mounted occupants +
- * swarm members + secondary spawns. Admission reserves the worst case for the
- * whole batch (batch * worst_unit of the template) and never admits past the
- * active limit. The reserved worst case is always >= the actual active units.
+ * extra swarm members + secondary spawns. The active limit caps the number of
+ * admitted enemies in a batch. Admission reserves the worst case for the whole
+ * batch (batch * worst_unit of the template), and that reservation must fit the
+ * PS2 actor reserve (HCU_SURVIVAL_RESERVE_MAX). The reserved worst case is
+ * always >= the actual active units.
+ *
+ * Swarms: a template with any swarm member needs active_limit <= 12
+ * (HCU_SURVIVAL_SWARM_ACTIVE_LIMIT_MAX). The worst swarm is 16 units, so
+ * 12 x 16 = 192 actors fits the 256-actor PS2 pool with a 64-actor margin.
+ * Sources: docs/reports/m4-c5-research-survival-2026-10-26.md, sections 2, 6
+ * and 7; numbers in src/stream/hcu_c5_limits.h.
  *
  * Only CE Normal is qualified. Seed 0 selects the first qualification seed.
  * No floating point. Single-threaded, called from the tick lane only. */
@@ -27,12 +35,27 @@
 
 #include <stdint.h>
 
+#include "hcu_c5_limits.h"
+
 #define HCU_SURVIVAL_TICK_HZ 30u
 #define HCU_SURVIVAL_INTERMISSION_TICKS (5u * HCU_SURVIVAL_TICK_HZ)
+/* Enemy slot array size (the ceiling for any active limit, non-swarm only). */
 #define HCU_SURVIVAL_ACTIVE_LIMIT_MAX 32u
+/* Active limit while a swarm template is present (survival report, section 6). */
+#define HCU_SURVIVAL_SWARM_ACTIVE_LIMIT_MAX HCU_C5_SWARM_ACTIVE_LIMIT_MAX
+/* Worst units of one swarm, and the extra members beyond its base unit (16 - 1 = 15). */
+#define HCU_SURVIVAL_SWARM_MEMBERS_MAX HCU_C5_SWARM_MEMBERS_MAX
+#define HCU_SURVIVAL_SWARM_EXTRA_MAX (HCU_SURVIVAL_SWARM_MEMBERS_MAX - 1u)
+/* Largest batch reservation in actors: 256-actor PS2 pool minus the 64-actor margin (192). */
+#define HCU_SURVIVAL_RESERVE_MAX HCU_C5_ACTOR_RESERVE_MAX
+/* Qualification seeds (survival report, section 5: fixed seeds per map, plan C6). Seed 0 means the first. */
+#define HCU_SURVIVAL_QUAL_SEED_0 0x5EED0001u
+#define HCU_SURVIVAL_QUAL_SEED_1 0x5EED0002u
+#define HCU_SURVIVAL_QUAL_SEED_2 0x5EED0003u
 #define HCU_SURVIVAL_HUMANS_MAX 4u
 #define HCU_SURVIVAL_TEMPLATES_MAX 8u
 #define HCU_SURVIVAL_QUAL_SEED_COUNT 3u
+#define HCU_SURVIVAL_DEFAULT_TEMPLATE_COUNT 4u
 #define HCU_SURVIVAL_CYCLE_CAP 1000u
 #define HCU_SURVIVAL_BUDGET_CAP 64u
 
@@ -72,7 +95,7 @@ typedef struct hcu_survival_template {
   unsigned int base_enemies;   /* batch size in wave 1 of the cycle, >= 1 */
   unsigned int growth_per_cycle;
   unsigned int max_mounted;    /* worst-case mounted occupants per enemy */
-  unsigned int max_swarm;      /* worst-case swarm members per enemy */
+  unsigned int max_swarm;      /* worst-case extra swarm members per enemy, 0..HCU_SURVIVAL_SWARM_EXTRA_MAX */
   unsigned int max_secondary;  /* worst-case secondary spawns per enemy */
 } hcu_survival_template;
 
@@ -80,7 +103,7 @@ typedef struct hcu_survival_config {
   hcu_survival_difficulty difficulty;
   unsigned int seed;                       /* 0 or a qualification seed */
   unsigned int humans;                     /* 1..HCU_SURVIVAL_HUMANS_MAX */
-  unsigned int active_limit;               /* 1..HCU_SURVIVAL_ACTIVE_LIMIT_MAX */
+  unsigned int active_limit;               /* enemies per batch, 1..HCU_SURVIVAL_ACTIVE_LIMIT_MAX (<= 12 with swarms) */
   const hcu_survival_template *templates;  /* NULL selects the built-in table */
   unsigned int template_count;             /* 1..HCU_SURVIVAL_TEMPLATES_MAX */
 } hcu_survival_config;
@@ -136,7 +159,13 @@ typedef struct hcu_survival {
   hcu_survival_budget budgets[HCU_SURVIVAL_BUDGET_KIND_COUNT];
 } hcu_survival;
 
+/* Worst units of one enemy of the template: 1 + max_mounted + max_swarm + max_secondary. */
+unsigned int hcu_survival_template_worst_unit(const hcu_survival_template *t);
+
 /* Checks a config against the qualified profiles without touching state.
+ * Refuses swarm templates with an active limit above 12, any template whose
+ * worst batch (active_limit x worst unit) exceeds HCU_SURVIVAL_RESERVE_MAX,
+ * and swarms above HCU_SURVIVAL_SWARM_EXTRA_MAX extra members.
  * Call before map teardown; a refusal leaves a running match untouched. */
 hcu_survival_status hcu_survival_validate(const hcu_survival_config *cfg);
 

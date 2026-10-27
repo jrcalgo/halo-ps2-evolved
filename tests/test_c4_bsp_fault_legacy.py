@@ -55,7 +55,7 @@ SOURCES = [
     "submodules/halo-ce-universal/port/linux/game/tag_schema_render.c",
     "submodules/halo-ce-universal/port/linux/game/tag_schema_effects.c",
     "submodules/halo-ce-universal/port/linux/game/tag_schema_scenario.c",
-    "src/stream/hcu_map_service.c", "src/stream/hcu_map_catalog.c",
+    "src/stream/hcu_map_service.c", "src/stream/hcu_map_catalog.c", "src/stream/hcu_local_setup.c",
     "src/stream/ctag_mount.c", "src/stream/ctag_ps2_backend.c",
     "src/stream/cbsp_catalog.c", "src/stream/ctag_resource_index.c",
     "src/stream/ctag_map_source.c", "src/stream/sha256.c", "src/stream/hmap.c",

@@ -40,6 +40,41 @@ def test_real_roster_has_eligible_recipes_and_seven_stages():
     assert result["retail_actor_records"] is None and result["spartan_bots"] is None
 
 
+def test_partial_pass_registers_and_blocked_stage_stays_blocked(tmp_path):
+    roster = _tiny_roster(tmp_path, [_recipe("elite")])
+    ledger = c5.new_ledger(c5.eligible_recipes(json.loads(roster.read_text())))
+    sha = c5.sha256_file(roster)
+    stages = {"placement": {"status": "passed", "kind": "retail", "source": "checked"},
+              "cleanup": {"status": "passed", "kind": "retail", "source": "checked"},
+              "death": {"status": "blocked", "kind": "blocked", "blocker": "no check"}}
+    # a record whose other stages are blocked still registers its passed stages
+    evidence = {"format": c5.EVIDENCE_FORMAT, "roster_sha256": sha,
+                "records": [{"variant": ledger[0]["variant"], "kind": "blocked", "stages": stages}]}
+    info = c5.apply_evidence(ledger, evidence, sha)
+    assert info["stages_applied"] == 2 and info["stages_blocked"] == 1
+    row = ledger[0]["stages"]
+    assert row["placement"]["status"] == "passed" and row["cleanup"]["status"] == "passed"
+    assert row["death"] == {"status": "blocked", "blocker": "no check"}
+    assert row["update"]["status"] == "not-executed"
+    summary = c5.summarize(ledger, roster, tmp_path)
+    assert summary["stages_passed"] == 2 and summary["stages_blocked"] == 1
+    assert summary["recipes_fully_passed"] == 0
+    assert summary["per_stage"]["placement"] == {"passed": 1, "failed": 0, "blocked": 0, "not-executed": 0}
+    assert summary["per_stage"]["death"]["blocked"] == 1
+    assert summary["status"] == "incomplete"
+
+
+def test_blocked_stage_in_retail_record_is_not_a_pass(tmp_path):
+    roster = _tiny_roster(tmp_path, [_recipe("elite")])
+    ledger = c5.new_ledger(c5.eligible_recipes(json.loads(roster.read_text())))
+    sha = c5.sha256_file(roster)
+    evidence = {"format": c5.EVIDENCE_FORMAT, "roster_sha256": sha,
+                "records": [{"variant": ledger[0]["variant"], "kind": "retail",
+                             "stages": {"combat": {"status": "blocked", "blocker": "stub"}}}]}
+    c5.apply_evidence(ledger, evidence, sha)
+    assert ledger[0]["stages"]["combat"]["status"] == "blocked"
+
+
 def test_zero_recipes_is_refused():
     with pytest.raises(c5.LifecycleError, match="no eligible"):
         c5.build(FIXTURE, ROOT / "build/retail-maps/decompressed", None, None)
@@ -52,7 +87,7 @@ def test_synthetic_evidence_never_completes_a_stage(tmp_path):
                 "records": [{"variant": ledger[0]["variant"], "kind": "synthetic",
                              "stages": {s: {"status": "passed"} for s in c5.STAGES}}]}
     info = c5.apply_evidence(ledger, evidence, c5.sha256_file(roster))
-    assert info == {"stages_applied": 0, "synthetic_stages_ignored": 7}
+    assert info == {"stages_applied": 0, "synthetic_stages_ignored": 7, "stages_blocked": 0}
     assert all(v["status"] == "not-executed" for v in ledger[0]["stages"].values())
 
 

@@ -5,6 +5,7 @@
 #include "stream/ctag_mount.h"
 #include "stream/ctag_map_source.h"
 #include "stream/hcu_map_catalog.h"
+#include "stream/hcu_local_setup.h"
 #include "stream/hcu_asset_profile.h"
 #include "stream/hcu_bitmap_frame.h"
 #include "stream/hcu_profile_metadata.h"
@@ -136,6 +137,11 @@ typedef struct {
 	int reload_pending;
 	int initialized;
 	int profile_requested;
+	/* C5 local setup gate (hcu_map_service_set_local_setup). NULL leaves preflight
+	 * unchanged; set, preflight refuses any map the setup does not validate for. */
+	const hcu_local_setup *local_setup;
+	const hcu_local_qualified_row *local_rows;
+	size_t local_row_count;
 	uint32_t expected_profile_id;
 	uint32_t profile_image_size;
 	uint8_t expected_profile_sha256[32];
@@ -247,6 +253,13 @@ int hcu_map_service_register_successor_runtime(hcu_map_service *service,
  * validation runs again for all other calls. */
 int hcu_map_service_latch_successor_preflight_failure(hcu_map_service *service,
 	const char *map_name);
+/* C5 local setup gate. The validator runs in every preflight: a map other than
+ * setup->map_name, or a setup that fails hcu_local_setup_validate() against
+ * `rows`, is refused before any teardown. Pass NULL to clear the gate. The
+ * caller keeps `setup` and `rows` alive while the gate is set. */
+int hcu_map_service_set_local_setup(hcu_map_service *service,
+	const hcu_local_setup *setup, const hcu_local_qualified_row *rows,
+	size_t row_count);
 /* Returns zero with the service and storage ownership intact while readers or
  * callbacks remain live. The caller must drain and retry before freeing backing. */
 int hcu_map_service_shutdown(hcu_map_service *service);

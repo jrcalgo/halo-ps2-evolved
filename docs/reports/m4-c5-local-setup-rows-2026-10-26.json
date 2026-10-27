@@ -1,0 +1,407 @@
+{
+  "format": "hcu-c5-local-setup-rows-v1",
+  "date": "2026-10-26",
+  "generator": "tools/c5_local_setup_rows.py",
+  "inputs": {
+    "src/stream/hcu_memory_profile.c": "c32e74a1eb805a9058735b6af63fedb03989b0ed4cf78cdc36dc5f16fe3f42bd",
+    "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json": "1b5f98b49ab7129897893aa23721622d085a959247a1bc6e543c3e93ebf0457c",
+    "docs/reports/m2-c2-profile-matrix-2026-10-24.json": "1846e2d7fc80c5fa04fa1e5499aad3449b397ca8fd0b3a08938e80a9cdc753dc"
+  },
+  "output": {
+    "src/stream/hcu_local_setup_rows.inc": "d6d0ea8835b773f44328a88b209bf714f2abb86ec306bdd7fed3017de89e75f8"
+  },
+  "qualified_row_count": 0,
+  "summary": "No row is qualified for a local setup. The C2 evidence is a load-and-release fit. It has no population or difficulty dimension, so humans, bots and difficulty stay at zero.",
+  "partition_profiles": [
+    {
+      "profile": "beavercreek_marine_shotgun_4p4bot",
+      "map": "beavercreek",
+      "role": "marine_shotgun_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "beavercreek_mounted_gunner_4p4bot",
+      "map": "beavercreek",
+      "role": "mounted_gunner_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "bloodgulch_marine_shotgun_4p4bot",
+      "map": "bloodgulch",
+      "role": "marine_shotgun_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "bloodgulch_mounted_gunner_4p4bot",
+      "map": "bloodgulch",
+      "role": "mounted_gunner_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "boardingaction_marine_shotgun_4p4bot",
+      "map": "boardingaction",
+      "role": "marine_shotgun_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "boardingaction_mounted_gunner_4p4bot",
+      "map": "boardingaction",
+      "role": "mounted_gunner_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "carousel_marine_shotgun_4p4bot",
+      "map": "carousel",
+      "role": "marine_shotgun_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "carousel_mounted_gunner_4p4bot",
+      "map": "carousel",
+      "role": "mounted_gunner_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "chillout_marine_shotgun_4p4bot",
+      "map": "chillout",
+      "role": "marine_shotgun_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "chillout_mounted_gunner_4p4bot",
+      "map": "chillout",
+      "role": "mounted_gunner_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "damnation_marine_shotgun_4p4bot",
+      "map": "damnation",
+      "role": "marine_shotgun_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "damnation_mounted_gunner_4p4bot",
+      "map": "damnation",
+      "role": "mounted_gunner_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "hangemhigh_marine_shotgun_4p4bot",
+      "map": "hangemhigh",
+      "role": "marine_shotgun_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "hangemhigh_mounted_gunner_4p4bot",
+      "map": "hangemhigh",
+      "role": "mounted_gunner_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "longest_marine_shotgun_4p4bot",
+      "map": "longest",
+      "role": "marine_shotgun_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "longest_mounted_gunner_4p4bot",
+      "map": "longest",
+      "role": "mounted_gunner_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "prisoner_marine_shotgun_4p4bot",
+      "map": "prisoner",
+      "role": "marine_shotgun_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "prisoner_mounted_gunner_4p4bot",
+      "map": "prisoner",
+      "role": "mounted_gunner_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "putput_marine_shotgun_4p4bot",
+      "map": "putput",
+      "role": "marine_shotgun_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "putput_mounted_gunner_4p4bot",
+      "map": "putput",
+      "role": "mounted_gunner_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "ratrace_marine_shotgun_4p4bot",
+      "map": "ratrace",
+      "role": "marine_shotgun_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "ratrace_mounted_gunner_4p4bot",
+      "map": "ratrace",
+      "role": "mounted_gunner_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "sidewinder_marine_shotgun_4p4bot",
+      "map": "sidewinder",
+      "role": "marine_shotgun_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "sidewinder_mounted_gunner_4p4bot",
+      "map": "sidewinder",
+      "role": "mounted_gunner_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "bots_sidewinder",
+      "map": "bots_sidewinder",
+      "role": null,
+      "load_fit_measured": false,
+      "reasons": [
+        "no guarded fit record for this profile",
+        "static package-derived candidate, no measured fit"
+      ]
+    },
+    {
+      "profile": "wizard_marine_shotgun_4p4bot",
+      "map": "wizard",
+      "role": "marine_shotgun_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "wizard_mounted_gunner_4p4bot",
+      "map": "wizard",
+      "role": "mounted_gunner_4p4bot",
+      "load_fit_measured": true,
+      "reasons": []
+    },
+    {
+      "profile": "ui",
+      "map": "ui",
+      "role": null,
+      "load_fit_measured": false,
+      "reasons": [
+        "menu package, not a gameplay setup target"
+      ]
+    }
+  ],
+  "setup_rows": [
+    {
+      "map": "beavercreek",
+      "mode": "HCU_LOCAL_MODE_STOCK_COOP",
+      "load_fit_measured": true,
+      "qualified": false,
+      "difficulty_mask": 0,
+      "max_humans": 0,
+      "max_bots": 0,
+      "reasons": [
+        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
+        "bots were never exercised (workload runs record bots=not-exercised)",
+        "no difficulty dimension was measured"
+      ]
+    },
+    {
+      "map": "bloodgulch",
+      "mode": "HCU_LOCAL_MODE_STOCK_COOP",
+      "load_fit_measured": true,
+      "qualified": false,
+      "difficulty_mask": 0,
+      "max_humans": 0,
+      "max_bots": 0,
+      "reasons": [
+        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
+        "bots were never exercised (workload runs record bots=not-exercised)",
+        "no difficulty dimension was measured"
+      ]
+    },
+    {
+      "map": "boardingaction",
+      "mode": "HCU_LOCAL_MODE_STOCK_COOP",
+      "load_fit_measured": true,
+      "qualified": false,
+      "difficulty_mask": 0,
+      "max_humans": 0,
+      "max_bots": 0,
+      "reasons": [
+        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
+        "bots were never exercised (workload runs record bots=not-exercised)",
+        "no difficulty dimension was measured"
+      ]
+    },
+    {
+      "map": "carousel",
+      "mode": "HCU_LOCAL_MODE_STOCK_COOP",
+      "load_fit_measured": true,
+      "qualified": false,
+      "difficulty_mask": 0,
+      "max_humans": 0,
+      "max_bots": 0,
+      "reasons": [
+        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
+        "bots were never exercised (workload runs record bots=not-exercised)",
+        "no difficulty dimension was measured"
+      ]
+    },
+    {
+      "map": "chillout",
+      "mode": "HCU_LOCAL_MODE_STOCK_COOP",
+      "load_fit_measured": true,
+      "qualified": false,
+      "difficulty_mask": 0,
+      "max_humans": 0,
+      "max_bots": 0,
+      "reasons": [
+        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
+        "bots were never exercised (workload runs record bots=not-exercised)",
+        "no difficulty dimension was measured"
+      ]
+    },
+    {
+      "map": "damnation",
+      "mode": "HCU_LOCAL_MODE_STOCK_COOP",
+      "load_fit_measured": true,
+      "qualified": false,
+      "difficulty_mask": 0,
+      "max_humans": 0,
+      "max_bots": 0,
+      "reasons": [
+        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
+        "bots were never exercised (workload runs record bots=not-exercised)",
+        "no difficulty dimension was measured"
+      ]
+    },
+    {
+      "map": "hangemhigh",
+      "mode": "HCU_LOCAL_MODE_STOCK_COOP",
+      "load_fit_measured": true,
+      "qualified": false,
+      "difficulty_mask": 0,
+      "max_humans": 0,
+      "max_bots": 0,
+      "reasons": [
+        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
+        "bots were never exercised (workload runs record bots=not-exercised)",
+        "no difficulty dimension was measured"
+      ]
+    },
+    {
+      "map": "longest",
+      "mode": "HCU_LOCAL_MODE_STOCK_COOP",
+      "load_fit_measured": true,
+      "qualified": false,
+      "difficulty_mask": 0,
+      "max_humans": 0,
+      "max_bots": 0,
+      "reasons": [
+        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
+        "bots were never exercised (workload runs record bots=not-exercised)",
+        "no difficulty dimension was measured"
+      ]
+    },
+    {
+      "map": "prisoner",
+      "mode": "HCU_LOCAL_MODE_STOCK_COOP",
+      "load_fit_measured": true,
+      "qualified": false,
+      "difficulty_mask": 0,
+      "max_humans": 0,
+      "max_bots": 0,
+      "reasons": [
+        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
+        "bots were never exercised (workload runs record bots=not-exercised)",
+        "no difficulty dimension was measured"
+      ]
+    },
+    {
+      "map": "putput",
+      "mode": "HCU_LOCAL_MODE_STOCK_COOP",
+      "load_fit_measured": true,
+      "qualified": false,
+      "difficulty_mask": 0,
+      "max_humans": 0,
+      "max_bots": 0,
+      "reasons": [
+        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
+        "bots were never exercised (workload runs record bots=not-exercised)",
+        "no difficulty dimension was measured"
+      ]
+    },
+    {
+      "map": "ratrace",
+      "mode": "HCU_LOCAL_MODE_STOCK_COOP",
+      "load_fit_measured": true,
+      "qualified": false,
+      "difficulty_mask": 0,
+      "max_humans": 0,
+      "max_bots": 0,
+      "reasons": [
+        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
+        "bots were never exercised (workload runs record bots=not-exercised)",
+        "no difficulty dimension was measured"
+      ]
+    },
+    {
+      "map": "sidewinder",
+      "mode": "HCU_LOCAL_MODE_STOCK_COOP",
+      "load_fit_measured": true,
+      "qualified": false,
+      "difficulty_mask": 0,
+      "max_humans": 0,
+      "max_bots": 0,
+      "reasons": [
+        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
+        "bots were never exercised (workload runs record bots=not-exercised)",
+        "no difficulty dimension was measured"
+      ]
+    },
+    {
+      "map": "wizard",
+      "mode": "HCU_LOCAL_MODE_STOCK_COOP",
+      "load_fit_measured": true,
+      "qualified": false,
+      "difficulty_mask": 0,
+      "max_humans": 0,
+      "max_bots": 0,
+      "reasons": [
+        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
+        "bots were never exercised (workload runs record bots=not-exercised)",
+        "no difficulty dimension was measured"
+      ]
+    }
+  ],
+  "gaps": [
+    "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
+    "bots were never exercised (workload runs record bots=not-exercised)",
+    "no difficulty dimension was measured"
+  ]
+}

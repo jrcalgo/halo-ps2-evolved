@@ -57,6 +57,7 @@ class MapServiceProfileLifecycleTest(unittest.TestCase):
             str(ROOT / "src/stream/hcu_asset_profile.c"),
             str(ROOT / "src/stream/hmap.c"),
             str(ROOT / "src/stream/hcu_map_catalog.c"),
+            str(ROOT / "src/stream/hcu_local_setup.c"),
             str(ROOT / "src/stream/hcu_profile_metadata.c"),
             str(ENGINE / "world/section.c"), str(ENGINE / "stream/hp2.c"),
             str(ENGINE / "stream/file.c"),

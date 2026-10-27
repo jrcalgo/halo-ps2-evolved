@@ -103,8 +103,8 @@ static int weapon_index(const char *name)
 static void test_config(void)
 {
 	hcu_bot_state state;
-	hcu_bot_config c = config(1234u, 9, HCU_BOT_SKILL_NORMAL);
-	assert(hcu_bot_init(&state, &c) == -1);
+	hcu_bot_config c = config(1234u, HCU_BOT_MAX + 1u, HCU_BOT_SKILL_NORMAL);
+	assert(hcu_bot_init(&state, &c) == -1);   /* one above the seat cap is refused, not truncated */
 	c.count = HCU_BOT_MAX;
 	c.skill = HCU_BOT_SKILL_COUNT;
 	assert(hcu_bot_init(&state, &c) == -1);
@@ -408,7 +408,7 @@ static void test_determinism(void)
 		world.pickups[0].pos[0] = 4.f;
 		hcu_bot_think(&a, &world, out);
 		hcu_bot_think(&b, &world, outb);
-		assert(memcmp(out, outb, sizeof out) == 0);
+		assert(memcmp(out, outb, sizeof out[0] * a.count) == 0); /* entries past the roster are not written */
 		assert(hcu_bot_hash(&a) == hcu_bot_hash(&b));
 	}
 	assert(hcu_bot_hash(&a) != hcu_bot_hash(&other));
@@ -438,6 +438,28 @@ static void test_slots_and_no_bots(void)
 	printf("slots: ok\n");
 }
 
+static void test_think_writes_roster_only(void)
+{
+	hcu_bot_state state;
+	hcu_bot_config c = config(9u, 2, HCU_BOT_SKILL_NORMAL);
+	hcu_bot_world world;
+	test_world tw;
+	hcu_bot_action out[HCU_BOT_MAX];
+	uint32_t i;
+	assert(hcu_bot_init(&state, &c) == 0);
+	world_init(&world, &tw);
+	for (i = 0; i < HCU_BOT_MAX; i++) {
+		memset(&out[i], 0x5a, sizeof out[i]);
+	}
+	hcu_bot_think(&state, &world, out);
+	for (i = state.count; i < HCU_BOT_MAX; i++) {
+		hcu_bot_action sentinel;
+		memset(&sentinel, 0x5a, sizeof sentinel);
+		assert(memcmp(&out[i], &sentinel, sizeof sentinel) == 0);
+	}
+	printf("roster writes: ok\n");
+}
+
 int main(void)
 {
 	test_config();
@@ -449,6 +471,7 @@ int main(void)
 	test_lifecycle();
 	test_determinism();
 	test_slots_and_no_bots();
+	test_think_writes_roster_only();
 	printf("hcu_bot tests passed\n");
 	return 0;
 }
