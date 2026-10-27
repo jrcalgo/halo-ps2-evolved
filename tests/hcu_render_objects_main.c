@@ -493,6 +493,26 @@ static int test_residency_policy(void)
 	return 0;
 }
 
+static int test_fp_switch_cache_admission(void)
+{
+	uint32_t refused = 0;
+	/* Full pool: old gun/hands plus lower-priority world/effect models. */
+	CHECK(!hcu_render_objects_pool_request_fits(1u, 0u));
+	CHECK(hcu_render_objects_residency_pre_admit_allowed(0u, 0, 1, 20u, 4u));
+	/* A prior reader or pending fence blocks pre-admission and eviction. */
+	CHECK(!hcu_render_objects_residency_pre_admit_allowed(1u, 0, 0, 20u, 4u));
+	CHECK(!hcu_render_objects_residency_rank_victim_ok(1, 3u, 0u, 0, 0u, &refused));
+	CHECK(!hcu_render_objects_residency_rank_victim_ok(1, 3u, 0u, 1, 1u, &refused));
+	/* Once readers and the chain retire, the switched FP resource may displace
+	 * lower-priority entries, while equal-rank FP assets remain protected. */
+	CHECK(hcu_render_objects_residency_pre_admit_allowed(0u, 0, 1, 21u, 4u));
+	CHECK(hcu_render_objects_residency_pre_admit_matches(21u, 4u, 21u, 4u));
+	CHECK(hcu_render_objects_residency_rank_victim_ok(1, 3u, 0u, 1, 0u, &refused));
+	CHECK(!hcu_render_objects_residency_rank_victim_ok(1, 0u, 0u, 1, 0u, &refused));
+	CHECK(!hcu_render_objects_residency_pre_admit_matches(21u, 4u, 22u, 4u));
+	return 0;
+}
+
 static int test_pin(void)
 {
 	static unsigned char storage[1u << 20] __attribute__((aligned(16)));
@@ -977,6 +997,7 @@ int main(void)
 	if (test_first_person_select()) return 3;
 	if (test_parity()) return 4;
 	if (test_residency_policy()) return 5;
+	if (test_fp_switch_cache_admission()) return 5;
 	if (test_pin()) return 6;
 	if (test_c3_6()) return 7;
 	if (test_fx_quads()) return 8;

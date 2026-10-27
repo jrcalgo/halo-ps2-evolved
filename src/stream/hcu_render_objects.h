@@ -284,6 +284,12 @@ int hcu_render_objects_residency_victim_ok(int loaded, int referenced_this_frame
 #define HCU_OBJECTS_RANK_UNUSED 4u
 int hcu_render_objects_residency_rank_victim_ok(int loaded, uint32_t victim_rank, uint32_t requester_rank,
 	int fence_observed, uint32_t pins, uint32_t *evict_refused_pinned);
+/* Pre-admission requires no snapshot readers and a completed previous cache-use fence.
+ * Sequence + map generation are rechecked after acquiring the immutable render pin. */
+int hcu_render_objects_residency_pre_admit_allowed(uint32_t active_readers, int own_reader_pinned,
+	int previous_fence_clear, uint32_t latest_sequence, uint32_t latest_generation);
+int hcu_render_objects_residency_pre_admit_matches(uint32_t planned_sequence, uint32_t planned_generation,
+	uint32_t pinned_sequence, uint32_t pinned_generation);
 int hcu_render_objects_pool_request_fits(uint32_t need, uint32_t capacity);
 
 /* C3.objects shared texture pages. A page is one OTEX texture payload (CLUT + mips) identified by a 32-byte

@@ -1916,7 +1916,7 @@ static int hcu_c3_views_hund(float v)
 	return (int)(v >= 0.0f ? v * 100.0f + 0.5f : v * 100.0f - 0.5f);
 }
 
-static void hcu_c3_views_begin(void)
+static void hcu_c3_views_begin(const halo_ps2_frame_snapshot *borrowed_snapshot)
 {
 	if (s_c3r.frames == 0u) {
 		/* The map generation lock is set by hcu_c3_snapshot_map_loaded before this map's first frame. Clearing
@@ -1929,11 +1929,14 @@ static void hcu_c3_views_begin(void)
 		memset(s_c3v.ever_active, 0, sizeof s_c3v.ever_active);
 	}
 	s_c3v.stats.frames++;
-	s_c3v.snap = NULL;
+	s_c3v.snap = borrowed_snapshot;
 	s_c3v.pinned = 0;
 #if defined(HCU_C3_FRAME_SNAPSHOT)
-	s_c3v.snap = hcu_snapshot_bank_begin_read(&s_c3v.reader);
-	s_c3v.pinned = s_c3v.snap != NULL;
+	/* Share the object renderer's immutable pin when available. */
+	if (!s_c3v.snap) {
+		s_c3v.snap = hcu_snapshot_bank_begin_read(&s_c3v.reader);
+		s_c3v.pinned = s_c3v.snap != NULL;
+	}
 #endif
 }
 
@@ -2214,9 +2217,10 @@ static void hcu_c3_objects_map_selected(const char *map_name)
 #endif
 }
 
-static void hcu_c3_objects_frame_begin(void)
+static const halo_ps2_frame_snapshot *hcu_c3_objects_frame_begin(void)
 {
 	halo_ps2_snapshot_camera cams[HALO_PS2_FRAME_MAX_VIEWS];
+	const halo_ps2_frame_snapshot *frame_snapshot;
 	uint32_t views = 0;
 #if defined(HCU_C3_OBJECTS_SYNTHETIC)
 	uint32_t v;
@@ -2256,6 +2260,7 @@ static void hcu_c3_objects_frame_begin(void)
 	{
 		const halo_ps2_frame_snapshot *fx_snap =
 			hcu_render_objects_frame_begin(s_c3r.frames, views, cams);
+		frame_snapshot = fx_snap;
 #if HCU_C3_TELEMETRY_ENABLED
 		hcu_c3_fx_kind_telemetry(fx_snap, s_c3r.frames);
 #else
@@ -2269,6 +2274,7 @@ static void hcu_c3_objects_frame_begin(void)
 		if (HALO_PS2_C3_FENCE_LAG_KICKS) bsp_render_cache_fence_lag(HALO_PS2_C3_FENCE_LAG_KICKS);
 		s_c3o_installed = 1;
 	}
+	return frame_snapshot;
 }
 
 static void hcu_c3_objects_view_begin(uint32_t view, int32_t view_w, int32_t view_h)
@@ -2393,7 +2399,7 @@ static int hcu_c3_objects_final(void)
 	return 1;
 }
 #else
-#define hcu_c3_objects_frame_begin() ((void)0)
+#define hcu_c3_objects_frame_begin() ((const halo_ps2_frame_snapshot *)0)
 #define hcu_c3_objects_view_begin(v, w, h) ((void)(v), (void)(w), (void)(h))
 #define hcu_c3_objects_view_end(v) ((void)(v))
 #define hcu_c3_objects_frame_end() ((void)0)
@@ -2642,6 +2648,7 @@ void hcu_c3_render_tick(int tick)
 	hcu_render_layout layout;
 	bsp_viewport vp;
 	camera_t cam;
+	const halo_ps2_frame_snapshot *frame_snapshot;
 	const text_batch_t *overlay;
 	unsigned v;
 	/* C3 timing is compile-time gated. COP0 Count
@@ -2684,12 +2691,13 @@ void hcu_c3_render_tick(int tick)
 #if HCU_C3_TIMING_ENABLED
 	c3_view_t0 = timer_cycles();
 #endif
-	/* C3:views begin */
-	hcu_c3_views_begin();
-	/* C3:views end */
 	/* C3:objects begin */
-	hcu_c3_objects_frame_begin();
+	frame_snapshot = hcu_c3_objects_frame_begin();
 	/* C3:objects end */
+	/* C3:views begin */
+	/* Borrow the exact immutable bank pinned by object admission. */
+	hcu_c3_views_begin(frame_snapshot);
+	/* C3:views end */
 	for (v = 0; v < layout.view_count; ++v) {
 		memset(&vp, 0, sizeof vp);
 		vp.x = layout.views[v].x; vp.y = layout.views[v].y;

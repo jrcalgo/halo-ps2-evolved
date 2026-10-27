@@ -37,7 +37,17 @@ def test_views_block_is_wired_into_c3_render_and_build():
 	assert "src/stream/hcu_render_views.c" in mk
 	# the per-view call sits in the C3:render loop, after the fixed camera it replaces, before the present
 	render = main[main.index("void hcu_c3_render_tick(int tick)"):main.index("/* Order: drain GS/DMA")]
-	assert render.index("hcu_c3_views_begin();") < render.index("overlay = hcu_c3_views_camera(v, &cam, &vp);")
+	assert render.index("hcu_c3_objects_frame_begin()") < render.index("hcu_c3_views_begin(frame_snapshot)")
+	assert render.index("hcu_c3_views_begin(frame_snapshot)") < render.index("overlay = hcu_c3_views_camera(v, &cam, &vp);")
+	views_begin = main[main.index("static void hcu_c3_views_begin("):main.index("/* text_batch_emit")]
+	assert "if (!s_c3v.snap)" in views_begin and "hcu_snapshot_bank_begin_read(&s_c3v.reader)" in views_begin
+	objects_begin = main[main.index("static const halo_ps2_frame_snapshot *hcu_c3_objects_frame_begin"):main.index("static void hcu_c3_objects_view_begin")]
+	assert "frame_snapshot = fx_snap" in objects_begin and "return frame_snapshot" in objects_begin
+	views_end = main[main.index("static void hcu_c3_views_end(unsigned"):main.index("/* C3:views end */", main.index("static void hcu_c3_views_end(unsigned"))]
+	assert "if (s_c3v.pinned)" in views_end  # borrowed object pin is never released by views_end
+	assert "hcu_snapshot_bank_end_read(&s_c3v.reader)" in views_end
+	objects_end = main[main.index("static void hcu_c3_objects_frame_end"):main.index("static int hcu_c3_objects_final")]
+	assert "hcu_render_objects_frame_end()" in objects_end  # renderer owns borrowed bank through GS kick
 	# an active view with no usable snapshot camera is skipped (counted), never drawn from a fixed camera
 	assert render.index("overlay = hcu_c3_views_camera(v, &cam, &vp);") < render.index("if (!overlay) continue;")
 	assert render.index("if (!overlay) continue;") < render.index("bsp_render_view(&cam, overlay, &vp)")

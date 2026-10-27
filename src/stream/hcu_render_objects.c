@@ -195,6 +195,20 @@ int hcu_render_objects_residency_rank_victim_ok(int loaded, uint32_t victim_rank
 	return 0;
 }
 
+int hcu_render_objects_residency_pre_admit_allowed(uint32_t active_readers, int own_reader_pinned,
+	int previous_fence_clear, uint32_t latest_sequence, uint32_t latest_generation)
+{
+	return active_readers == 0u && !own_reader_pinned && previous_fence_clear == 1 &&
+		latest_sequence != 0u && latest_generation != 0u;
+}
+
+int hcu_render_objects_residency_pre_admit_matches(uint32_t planned_sequence, uint32_t planned_generation,
+	uint32_t pinned_sequence, uint32_t pinned_generation)
+{
+	return planned_sequence != 0u && planned_generation != 0u &&
+		planned_sequence == pinned_sequence && planned_generation == pinned_generation;
+}
+
 int hcu_render_objects_pool_request_fits(uint32_t need, uint32_t capacity)
 {
 	return need != 0 && need <= capacity;
@@ -1251,6 +1265,9 @@ static void pool_free(uint32_t off)
 static int pool_fence_safe(void)
 {
 	uint32_t k = bsp_render_kick_seq();
+	hcu_snapshot_bank_stats bank_stats;
+	hcu_snapshot_bank_get_stats(&bank_stats);
+	if (bank_stats.read_pins_active != 0u) return 0;
 	if (k == 0u) return 1;
 	return bsp_render_fence_observed(k) == 1;
 }
@@ -2377,6 +2394,10 @@ static int publish_synthetic(uint32_t frame, uint32_t views, const halo_ps2_snap
 const halo_ps2_frame_snapshot *hcu_render_objects_frame_begin(uint32_t frame, uint32_t synthetic_views,
 	const halo_ps2_snapshot_camera *synthetic_cameras)
 {
+	const halo_ps2_frame_snapshot *pre_admit_snapshot = NULL;
+	hcu_snapshot_bank_stats bank_stats;
+	uint32_t pre_admit_sequence = 0u, pre_admit_generation = 0u;
+	int pre_admitted = 0;
 	s_frame = frame;
 	memset(&s_view_counters, 0, sizeof s_view_counters);
 	if (s_pin.pinned && s_pending_seq && bsp_render_fence_observed(s_pending_seq) == 1 &&
@@ -2387,12 +2408,35 @@ const halo_ps2_frame_snapshot *hcu_render_objects_frame_begin(uint32_t frame, ui
 	if (synthetic_views) {
 		if (publish_synthetic(frame, synthetic_views, synthetic_cameras) != 0) s_totals.failures++;
 	}
+	/* Admit from an unpinned latest snapshot before acquiring our reader. This permits
+	 * safe reclamation only after all readers and the prior GS chain have retired. */
+	if (!s_pin.pinned) {
+		hcu_snapshot_bank_get_stats(&bank_stats);
+		pre_admit_snapshot = hcu_snapshot_bank_latest();
+		if (pre_admit_snapshot && hcu_render_objects_residency_pre_admit_allowed(
+			bank_stats.read_pins_active, s_pin.pinned, pool_fence_safe(),
+			pre_admit_snapshot->sequence, pre_admit_snapshot->map_generation)) {
+			pre_admit_sequence = pre_admit_snapshot->sequence;
+			pre_admit_generation = pre_admit_snapshot->map_generation;
+			residency_frame(pre_admit_snapshot, frame);
+			if (s_sky_index < s_slot_count && !s_slots[s_sky_index].refused) {
+				entry_request(s_profile, s_sky_index, frame, 0u);
+				if (s_slots[s_sky_index].loaded && !s_sky_pinned) {
+					s_slot_pins[s_sky_index]++;
+					s_sky_pinned = 1;
+				}
+			}
+			pre_admitted = 1;
+		}
+	}
 	if (!s_pin.pinned) {
 		hcu_render_objects_pin(&s_pin, &s_totals);
 		if (s_pin.pinned) slot_pins_apply(s_pin.snapshot, 1);
 	}
 	s_snapshot = s_pin.pinned ? s_pin.snapshot : NULL;
-	residency_frame(s_snapshot, frame);
+	if (s_snapshot && (!pre_admitted || !hcu_render_objects_residency_pre_admit_matches(
+		pre_admit_sequence, pre_admit_generation, s_snapshot->sequence, s_snapshot->map_generation)))
+		residency_frame(s_snapshot, frame);
 	hcu_render_parity_frame_reset(&s_frame_parity);
 	if (s_sky_index < s_slot_count && !s_slots[s_sky_index].refused) {
 		entry_request(s_profile, s_sky_index, frame, 0u);   /* the sky is requested with the top rank (it is pinned once loaded) */
