@@ -23,5 +23,10 @@ unsigned char custom_edition_vehicle_placement_allowed(struct scenario_object_da
 typedef struct _EXCEPTION_POINTERS *PEXCEPTION_POINTERS;
 typedef struct _CONTEXT CONTEXT;
 void render_interpolation_tick(void);
+float render_interpolation_fraction(void);
+
+/* Win32 performance counter (the PS2 build's timers: port/ps2); the host gives them clock_gettime */
+int QueryPerformanceFrequency(void *frequency);
+int QueryPerformanceCounter(void *count);
 void render_interpolation_frame_begin(void);
 void render_interpolation_frame_end(void);

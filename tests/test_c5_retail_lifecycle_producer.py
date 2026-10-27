@@ -61,7 +61,8 @@ class ProducerRunTest(unittest.TestCase):
             placement = record["stages"]["placement"]
             self.assertEqual(placement["status"], "blocked")
             self.assertEqual(placement["blocker"],
-                             "not reached: setup stopped at game_state_allocate_buffer before the placement stage")
+                             "not reached: the harness stopped at scenario_structure_bsp_load in the "
+                             "structure_bsp stage before the placement stage")
             self.assertEqual(record["harness_exit"], 3)
             self.assertNotIn("without a blocker record", placement["blocker"])
 

@@ -1,5 +1,5 @@
 {
-  "format": "hcu-c5-local-setup-rows-v1",
+  "format": "hcu-c5-local-setup-rows-v2",
   "date": "2026-10-26",
   "generator": "tools/c5_local_setup_rows.py",
   "inputs": {
@@ -7,11 +7,12 @@
     "docs/reports/m2-c2-profile-guarded-fit-2026-10-24.json": "1b5f98b49ab7129897893aa23721622d085a959247a1bc6e543c3e93ebf0457c",
     "docs/reports/m2-c2-profile-matrix-2026-10-24.json": "1846e2d7fc80c5fa04fa1e5499aad3449b397ca8fd0b3a08938e80a9cdc753dc"
   },
+  "evidence": [],
   "output": {
-    "src/stream/hcu_local_setup_rows.inc": "d6d0ea8835b773f44328a88b209bf714f2abb86ec306bdd7fed3017de89e75f8"
+    "src/stream/hcu_local_setup_rows.inc": "53a0cd5121949c578b5a1284848f01961a353ad9fd182159457ca4f284cd2fe8"
   },
   "qualified_row_count": 0,
-  "summary": "No row is qualified for a local setup. The C2 evidence is a load-and-release fit. It has no population or difficulty dimension, so humans, bots and difficulty stay at zero.",
+  "summary": "No row is qualified for a local setup: no qualifying guest evidence is recorded. The C2 evidence is a load-and-release fit with no population or difficulty dimension.",
   "partition_profiles": [
     {
       "profile": "beavercreek_marine_shotgun_4p4bot",
@@ -224,10 +225,9 @@
       "difficulty_mask": 0,
       "max_humans": 0,
       "max_bots": 0,
+      "difficulties": [],
       "reasons": [
-        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
-        "bots were never exercised (workload runs record bots=not-exercised)",
-        "no difficulty dimension was measured"
+        "no qualifying guest evidence recorded for this map (docs/reports/c5-guest-*.json)"
       ]
     },
     {
@@ -238,10 +238,9 @@
       "difficulty_mask": 0,
       "max_humans": 0,
       "max_bots": 0,
+      "difficulties": [],
       "reasons": [
-        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
-        "bots were never exercised (workload runs record bots=not-exercised)",
-        "no difficulty dimension was measured"
+        "no qualifying guest evidence recorded for this map (docs/reports/c5-guest-*.json)"
       ]
     },
     {
@@ -252,10 +251,9 @@
       "difficulty_mask": 0,
       "max_humans": 0,
       "max_bots": 0,
+      "difficulties": [],
       "reasons": [
-        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
-        "bots were never exercised (workload runs record bots=not-exercised)",
-        "no difficulty dimension was measured"
+        "no qualifying guest evidence recorded for this map (docs/reports/c5-guest-*.json)"
       ]
     },
     {
@@ -266,10 +264,9 @@
       "difficulty_mask": 0,
       "max_humans": 0,
       "max_bots": 0,
+      "difficulties": [],
       "reasons": [
-        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
-        "bots were never exercised (workload runs record bots=not-exercised)",
-        "no difficulty dimension was measured"
+        "no qualifying guest evidence recorded for this map (docs/reports/c5-guest-*.json)"
       ]
     },
     {
@@ -280,10 +277,9 @@
       "difficulty_mask": 0,
       "max_humans": 0,
       "max_bots": 0,
+      "difficulties": [],
       "reasons": [
-        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
-        "bots were never exercised (workload runs record bots=not-exercised)",
-        "no difficulty dimension was measured"
+        "no qualifying guest evidence recorded for this map (docs/reports/c5-guest-*.json)"
       ]
     },
     {
@@ -294,10 +290,9 @@
       "difficulty_mask": 0,
       "max_humans": 0,
       "max_bots": 0,
+      "difficulties": [],
       "reasons": [
-        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
-        "bots were never exercised (workload runs record bots=not-exercised)",
-        "no difficulty dimension was measured"
+        "no qualifying guest evidence recorded for this map (docs/reports/c5-guest-*.json)"
       ]
     },
     {
@@ -308,10 +303,9 @@
       "difficulty_mask": 0,
       "max_humans": 0,
       "max_bots": 0,
+      "difficulties": [],
       "reasons": [
-        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
-        "bots were never exercised (workload runs record bots=not-exercised)",
-        "no difficulty dimension was measured"
+        "no qualifying guest evidence recorded for this map (docs/reports/c5-guest-*.json)"
       ]
     },
     {
@@ -322,10 +316,9 @@
       "difficulty_mask": 0,
       "max_humans": 0,
       "max_bots": 0,
+      "difficulties": [],
       "reasons": [
-        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
-        "bots were never exercised (workload runs record bots=not-exercised)",
-        "no difficulty dimension was measured"
+        "no qualifying guest evidence recorded for this map (docs/reports/c5-guest-*.json)"
       ]
     },
     {
@@ -336,10 +329,9 @@
       "difficulty_mask": 0,
       "max_humans": 0,
       "max_bots": 0,
+      "difficulties": [],
       "reasons": [
-        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
-        "bots were never exercised (workload runs record bots=not-exercised)",
-        "no difficulty dimension was measured"
+        "no qualifying guest evidence recorded for this map (docs/reports/c5-guest-*.json)"
       ]
     },
     {
@@ -350,10 +342,9 @@
       "difficulty_mask": 0,
       "max_humans": 0,
       "max_bots": 0,
+      "difficulties": [],
       "reasons": [
-        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
-        "bots were never exercised (workload runs record bots=not-exercised)",
-        "no difficulty dimension was measured"
+        "no qualifying guest evidence recorded for this map (docs/reports/c5-guest-*.json)"
       ]
     },
     {
@@ -364,10 +355,9 @@
       "difficulty_mask": 0,
       "max_humans": 0,
       "max_bots": 0,
+      "difficulties": [],
       "reasons": [
-        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
-        "bots were never exercised (workload runs record bots=not-exercised)",
-        "no difficulty dimension was measured"
+        "no qualifying guest evidence recorded for this map (docs/reports/c5-guest-*.json)"
       ]
     },
     {
@@ -378,10 +368,9 @@
       "difficulty_mask": 0,
       "max_humans": 0,
       "max_bots": 0,
+      "difficulties": [],
       "reasons": [
-        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
-        "bots were never exercised (workload runs record bots=not-exercised)",
-        "no difficulty dimension was measured"
+        "no qualifying guest evidence recorded for this map (docs/reports/c5-guest-*.json)"
       ]
     },
     {
@@ -392,16 +381,13 @@
       "difficulty_mask": 0,
       "max_humans": 0,
       "max_bots": 0,
+      "difficulties": [],
       "reasons": [
-        "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
-        "bots were never exercised (workload runs record bots=not-exercised)",
-        "no difficulty dimension was measured"
+        "no qualifying guest evidence recorded for this map (docs/reports/c5-guest-*.json)"
       ]
     }
   ],
   "gaps": [
-    "no completed 4-player or bot gameplay workload is a profile fit (diagnostic only)",
-    "bots were never exercised (workload runs record bots=not-exercised)",
-    "no difficulty dimension was measured"
+    "no qualifying guest evidence recorded for this map (docs/reports/c5-guest-*.json)"
   ]
 }

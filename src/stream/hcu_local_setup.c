@@ -8,6 +8,18 @@
 #include <ctype.h>
 #include <string.h>
 
+/* The generated row table (tools/c5_local_setup_rows.py). Static here: only the accessor and the validator read it. */
+#include "stream/hcu_local_setup_rows.inc"
+
+const hcu_local_qualified_row *hcu_local_setup_rows(size_t *count)
+{
+	if (count == NULL) {
+		return NULL;
+	}
+	*count = HCU_LOCAL_GENERATED_ROW_COUNT;
+	return hcu_local_generated_rows;
+}
+
 static int name_is_valid(const char *name)
 {
 	size_t i;
@@ -75,6 +87,9 @@ hcu_local_setup_reason hcu_local_setup_validate(const hcu_local_setup *request,
 	if (!request || !out || (!rows && row_count != 0u)) {
 		return HCU_LOCAL_SETUP_BAD_ARGUMENT;
 	}
+	if (request->intent != HCU_LOCAL_INTENT_PLAY && request->intent != HCU_LOCAL_INTENT_MEASURE) {
+		return HCU_LOCAL_SETUP_BAD_ARGUMENT;
+	}
 	if (!mode_known(request->mode)) {
 		return HCU_LOCAL_SETUP_UNKNOWN_MODE;
 	}
@@ -124,22 +139,33 @@ hcu_local_setup_reason hcu_local_setup_validate(const hcu_local_setup *request,
 			break;
 		}
 	}
+	/* A row must exist for the map and mode under both intents: the table is the list of maps a run may name. */
 	if (!row) {
 		return HCU_LOCAL_SETUP_MAP_NOT_QUALIFIED;
 	}
-	if (!(row->difficulty_mask & (1u << (unsigned)request->difficulty))) {
-		return HCU_LOCAL_SETUP_DIFFICULTY_NOT_QUALIFIED;
-	}
 	humans = popcount4(request->human_mask);
-	if (humans > row->max_humans || request->bot_count > row->max_bots) {
-		return HCU_LOCAL_SETUP_POPULATION_ABOVE_QUALIFIED;
+	if (request->intent == HCU_LOCAL_INTENT_PLAY) {
+		if (!(row->difficulty_mask & (1u << (unsigned)request->difficulty))) {
+			return HCU_LOCAL_SETUP_DIFFICULTY_NOT_QUALIFIED;
+		}
+		if (humans > row->max_humans || request->bot_count > row->max_bots) {
+			return HCU_LOCAL_SETUP_POPULATION_ABOVE_QUALIFIED;
+		}
 	}
+	/* MEASURE skips the difficulty bit and the population cap, and nothing else: the seat, team, name and
+	 * mode checks above and below still refuse. */
 
 	memset(out, 0, sizeof *out);
 	out->setup = *request;
 	out->human_count = humans;
 	out->bot_count = request->bot_count;
-	out->qualified_population = row->max_humans + row->max_bots;
+	if (request->intent == HCU_LOCAL_INTENT_PLAY) {
+		out->status = HCU_LOCAL_STATUS_QUALIFIED;
+		out->qualified_population = row->max_humans + row->max_bots;
+	} else {
+		out->status = HCU_LOCAL_STATUS_MEASURING;
+		out->qualified_population = 0u;
+	}
 	out->human_team = request->teams == HCU_LOCAL_TEAMS_ON ? HCU_C5_HUMAN_TEAM : HCU_C5_TEAM_NONE;
 	out->bot_team = request->teams == HCU_LOCAL_TEAMS_ON ? HCU_C5_BOT_TEAM : HCU_C5_TEAM_NONE;
 	return HCU_LOCAL_SETUP_OK;
@@ -157,6 +183,25 @@ hcu_local_setup_reason hcu_local_setup_admit(const hcu_local_setup *request,
 		return HCU_LOCAL_SETUP_TEARDOWN_FAILED;
 	}
 	return HCU_LOCAL_SETUP_OK;
+}
+
+const char *hcu_local_setup_intent_name(hcu_local_intent intent)
+{
+	switch (intent) {
+	case HCU_LOCAL_INTENT_PLAY: return "play";
+	case HCU_LOCAL_INTENT_MEASURE: return "measure";
+	}
+	return "unknown";
+}
+
+const char *hcu_local_setup_status_name(hcu_local_status status)
+{
+	switch (status) {
+	case HCU_LOCAL_STATUS_NONE: return "none";
+	case HCU_LOCAL_STATUS_QUALIFIED: return "qualified";
+	case HCU_LOCAL_STATUS_MEASURING: return "measuring";
+	}
+	return "unknown";
 }
 
 const char *hcu_local_setup_reason_name(hcu_local_setup_reason reason)

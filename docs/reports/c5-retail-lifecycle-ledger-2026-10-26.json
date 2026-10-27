@@ -9,31 +9,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -48,31 +48,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -87,31 +87,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -129,31 +129,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -170,31 +170,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -211,31 +211,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -256,31 +256,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -295,31 +295,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -339,31 +339,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -384,31 +384,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -424,31 +424,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -464,31 +464,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -505,31 +505,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -547,31 +547,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -588,31 +588,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -627,31 +627,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -670,31 +670,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -710,31 +710,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -753,31 +753,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -796,31 +796,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -839,31 +839,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -882,31 +882,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -924,31 +924,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -967,31 +967,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1006,31 +1006,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1049,31 +1049,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1089,31 +1089,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1132,31 +1132,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1175,31 +1175,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1218,31 +1218,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1261,31 +1261,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1303,31 +1303,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1346,31 +1346,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1385,31 +1385,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1424,31 +1424,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1463,31 +1463,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1502,31 +1502,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1547,31 +1547,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1593,31 +1593,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1637,31 +1637,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1682,31 +1682,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1721,31 +1721,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1762,31 +1762,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1802,31 +1802,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1846,31 +1846,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1890,31 +1890,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1935,31 +1935,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -1980,31 +1980,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2020,31 +2020,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2059,31 +2059,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2099,31 +2099,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2139,31 +2139,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2178,31 +2178,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2221,31 +2221,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2260,31 +2260,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2299,31 +2299,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2339,31 +2339,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2378,31 +2378,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2421,31 +2421,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2460,31 +2460,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2499,31 +2499,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2539,31 +2539,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2578,31 +2578,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2619,31 +2619,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2661,31 +2661,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2701,31 +2701,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2742,31 +2742,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },
@@ -2781,31 +2781,31 @@
       ],
       "stages": {
         "activation": {
-          "blocker": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the activation stage",
           "status": "blocked"
         },
         "attachment": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the attachment stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the attachment stage",
           "status": "blocked"
         },
         "cleanup": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the cleanup stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the cleanup stage",
           "status": "blocked"
         },
         "combat": {
-          "blocker": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the combat stage",
           "status": "blocked"
         },
         "death": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the death stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the death stage",
           "status": "blocked"
         },
         "placement": {
-          "blocker": "not reached: setup stopped at game_state_allocate_buffer before the placement stage",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the placement stage",
           "status": "blocked"
         },
         "update": {
-          "blocker": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
+          "blocker": "not reached: the harness stopped at scenario_structure_bsp_load in the structure_bsp stage before the update stage",
           "status": "blocked"
         }
       },

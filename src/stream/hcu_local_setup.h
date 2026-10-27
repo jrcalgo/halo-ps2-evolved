@@ -73,6 +73,23 @@ typedef enum hcu_local_setup_reason {
 	HCU_LOCAL_SETUP_TEAM_MISMATCH           /* team switch disagrees with mode or variant */
 } hcu_local_setup_reason;
 
+/* What the run is for. PLAY admits a setup only when its row is qualified (the normal path). MEASURE admits an
+ * otherwise-unqualified row, so a measurement run can produce the evidence the rows are built from. MEASURE keeps
+ * every hard check (seats, limits, team switch, map name, a row for the map and mode, and refusal before teardown);
+ * it only skips the qualification checks (difficulty bit and population cap). Its result is tagged
+ * HCU_LOCAL_STATUS_MEASURING, which never claims a qualification. */
+typedef enum hcu_local_intent {
+	HCU_LOCAL_INTENT_PLAY = 0,
+	HCU_LOCAL_INTENT_MEASURE
+} hcu_local_intent;
+
+/* Status of an accepted setup. Only a PLAY setup that passed the qualification checks is QUALIFIED. */
+typedef enum hcu_local_status {
+	HCU_LOCAL_STATUS_NONE = 0,
+	HCU_LOCAL_STATUS_QUALIFIED,
+	HCU_LOCAL_STATUS_MEASURING
+} hcu_local_status;
+
 /* Requested profile. Bot slots are never part of human_mask. */
 typedef struct hcu_local_setup {
 	hcu_local_mode mode;
@@ -83,6 +100,7 @@ typedef struct hcu_local_setup {
 	uint32_t bot_count;    /* Spartan bots, 0..HCU_LOCAL_BOT_SLOTS */
 	uint32_t seed;         /* fixed qualification seed */
 	char map_name[HCU_LOCAL_MAP_NAME_BYTES]; /* NUL-terminated map file name */
+	hcu_local_intent intent;     /* PLAY (zero) unless a measurement run asks for MEASURE */
 } hcu_local_setup;
 
 /* One qualified population row. A map and mode with no row is refused. The
@@ -99,14 +117,19 @@ typedef struct hcu_local_qualified_row {
  * matched row's humans + bots capacity (the highest admitted total). */
 typedef struct hcu_local_setup_result {
 	hcu_local_setup setup;
+	hcu_local_status status;     /* QUALIFIED for a qualified PLAY setup, MEASURING for every MEASURE setup */
 	uint32_t human_count;
 	uint32_t bot_count;
-	uint32_t qualified_population;
+	uint32_t qualified_population; /* 0 for a MEASURING setup: nothing is qualified by a measurement */
 	/* Team index written to every human and bot when teams is ON (hcu_c5_limits.h). Both are HCU_C5_TEAM_NONE
 	 * when teams is OFF; the adapter must then give each player its own team index. */
 	uint8_t human_team;
 	uint8_t bot_team;
 } hcu_local_setup_result;
+
+/* The qualified-row table this build carries (generated from the measured evidence; see tools/c5_local_setup_rows.py).
+ * Returns the table and writes its length to *count. Every row is qualified=0 until guest evidence supports it. */
+const hcu_local_qualified_row *hcu_local_setup_rows(size_t *count);
 
 /* Pure validator. Writes `out` only when it returns HCU_LOCAL_SETUP_OK.
  * Performs no allocation and touches no global state. */
@@ -128,5 +151,9 @@ hcu_local_setup_reason hcu_local_setup_admit(const hcu_local_setup *request,
 
 /* Stable diagnostic name for a reason code. */
 const char *hcu_local_setup_reason_name(hcu_local_setup_reason reason);
+
+/* Stable name for an intent and for a status ("play", "measure"; "qualified", "measuring"). */
+const char *hcu_local_setup_intent_name(hcu_local_intent intent);
+const char *hcu_local_setup_status_name(hcu_local_status status);
 
 #endif /* HCU_LOCAL_SETUP_H */

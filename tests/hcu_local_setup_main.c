@@ -171,6 +171,98 @@ int main(void)
 	assert(strcmp(state.map_name, "bloodgulch") == 0);
 	assert(state.bots_spawned == 4u);
 
+	/* MEASURE: an unqualified row is admitted with status "measuring" and no population claim. Every hard check still
+	 * refuses before teardown. The fixture table holds one unqualified row (difficulty mask 0, population 0). */
+	{
+		static const hcu_local_qualified_row mrows[] = {
+			{ "beavercreek", HCU_LOCAL_MODE_STOCK_COOP, 0u, 0u, 0u },
+		};
+		size_t mn = sizeof mrows / sizeof mrows[0];
+		fake_map_state ms;
+		hcu_local_setup m;
+		hcu_local_setup_result mo;
+
+		memset(&ms, 0, sizeof ms);
+		strcpy(ms.map_name, "a10");
+		ms.generation = 3u;
+		make_request(&m, HCU_LOCAL_MODE_STOCK_COOP, HCU_LOCAL_VARIANT_SLAYER, HCU_LOCAL_DIFFICULTY_NORMAL, 0xfu, 12u,
+			"beavercreek");
+		m.intent = HCU_LOCAL_INTENT_MEASURE;
+		r = hcu_local_setup_admit(&m, mrows, mn, fake_teardown, &ms, &mo);
+		assert(r == HCU_LOCAL_SETUP_OK);
+		assert(mo.status == HCU_LOCAL_STATUS_MEASURING);
+		assert(mo.qualified_population == 0u);
+		assert(mo.human_count == 4u && mo.bot_count == 12u);
+		assert(ms.teardowns == 1u);
+		assert(strcmp(hcu_local_setup_status_name(mo.status), "measuring") == 0);
+		printf("accept measure: status=%s humans=%u bots=%u\n", hcu_local_setup_status_name(mo.status),
+			mo.human_count, mo.bot_count);
+
+		/* The same row under PLAY is refused: no qualification, no teardown. */
+		m.intent = HCU_LOCAL_INTENT_PLAY;
+		r = hcu_local_setup_admit(&m, mrows, mn, fake_teardown, &ms, &mo);
+		assert(r == HCU_LOCAL_SETUP_DIFFICULTY_NOT_QUALIFIED);
+		assert(ms.teardowns == 1u);
+		printf("reject play-unqualified-row: %s\n", hcu_local_setup_reason_name(r));
+
+		/* Each hard check still refuses under MEASURE, with the loaded map untouched. */
+		{
+			struct measure_case {
+				const char *label;
+				hcu_local_setup_reason want;
+				hcu_local_setup req;
+			};
+			hcu_local_setup base;
+			struct measure_case cases[8];
+			size_t i;
+
+			make_request(&base, HCU_LOCAL_MODE_STOCK_COOP, HCU_LOCAL_VARIANT_SLAYER, HCU_LOCAL_DIFFICULTY_NORMAL,
+				0x3u, 4u, "beavercreek");
+			base.intent = HCU_LOCAL_INTENT_MEASURE;
+			cases[0].label = "measure-team-mismatch"; cases[0].want = HCU_LOCAL_SETUP_TEAM_MISMATCH;
+			cases[0].req = base; cases[0].req.teams = HCU_LOCAL_TEAMS_OFF;
+			cases[1].label = "measure-too-many-bots"; cases[1].want = HCU_LOCAL_SETUP_TOO_MANY_BOTS;
+			cases[1].req = base; cases[1].req.bot_count = 13u;
+			cases[2].label = "measure-bad-human-mask"; cases[2].want = HCU_LOCAL_SETUP_BAD_HUMAN_MASK;
+			cases[2].req = base; cases[2].req.human_mask = 0x1fu;
+			cases[3].label = "measure-no-humans"; cases[3].want = HCU_LOCAL_SETUP_NO_HUMANS;
+			cases[3].req = base; cases[3].req.human_mask = 0u;
+			cases[4].label = "measure-bad-map-name"; cases[4].want = HCU_LOCAL_SETUP_BAD_MAP_NAME;
+			cases[4].req = base; memset(cases[4].req.map_name, 0, sizeof cases[4].req.map_name);
+			cases[5].label = "measure-map-without-row"; cases[5].want = HCU_LOCAL_SETUP_MAP_NOT_QUALIFIED;
+			cases[5].req = base; strcpy(cases[5].req.map_name, "a30");
+			cases[6].label = "measure-unknown-intent"; cases[6].want = HCU_LOCAL_SETUP_BAD_ARGUMENT;
+			cases[6].req = base; cases[6].req.intent = (hcu_local_intent)9;
+			cases[7].label = "measure-unknown-difficulty"; cases[7].want = HCU_LOCAL_SETUP_UNKNOWN_DIFFICULTY;
+			cases[7].req = base; cases[7].req.difficulty = HCU_LOCAL_DIFFICULTY_NONE;
+			for (i = 0; i < sizeof cases / sizeof cases[0]; i++) {
+				fake_map_state before = ms;
+				r = hcu_local_setup_admit(&cases[i].req, mrows, mn, fake_teardown, &ms, &mo);
+				if (r != cases[i].want) {
+					fprintf(stderr, "%s: got %s want %s\n", cases[i].label, hcu_local_setup_reason_name(r),
+						hcu_local_setup_reason_name(cases[i].want));
+				}
+				assert(r == cases[i].want);
+				assert(memcmp(&before, &ms, sizeof ms) == 0);
+				printf("reject %s: %s, state unchanged\n", cases[i].label, hcu_local_setup_reason_name(r));
+			}
+		}
+		assert(strcmp(hcu_local_setup_intent_name(HCU_LOCAL_INTENT_MEASURE), "measure") == 0);
+	}
+
+	/* The committed table: every row is unqualified until guest evidence is recorded. */
+	{
+		size_t n = 0u;
+		size_t i;
+		const hcu_local_qualified_row *table = hcu_local_setup_rows(&n);
+		assert(table != NULL && n == 13u);
+		assert(hcu_local_setup_rows(NULL) == NULL);
+		for (i = 0; i < n; i++) {
+			assert(table[i].difficulty_mask == 0u && table[i].max_humans == 0u && table[i].max_bots == 0u);
+		}
+		printf("rows table: %u rows, all unqualified\n", (unsigned)n);
+	}
+
 	puts("hcu_local_setup tests passed");
 	return 0;
 }

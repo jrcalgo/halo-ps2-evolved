@@ -38,11 +38,29 @@ HARNESS = ROOT / "tests/c5_retail_lifecycle_main.c"
 HOST = ROOT / "tests/c5_retail_lifecycle_host.c"
 METRICS = ROOT / "src/stream/hcu_actor_metrics.c"
 PREFIX = ROOT / "tests/c5_lifecycle_prefix.h"
-REAL_UNITS = (SOURCE / "ai/actors.c", SOURCE / "memory/data.c", SOURCE / "objects/objects.c",
-              SOURCE / "objects/damage.c", SOURCE / "objects/widgets/widgets.c",
-              SOURCE / "objects/object_types.c", SOURCE / "objects/object_lights.c",
-              SOURCE / "saved games/game_state.c", SOURCE / "memory/crc.c", SOURCE / "game/game_time.c",
-              METRICS)
+# The CE units the harness compiles whole. objects/widgets/flags.c and the others listed in
+# CLOSURE_UNITS_FILE were each added because the harness reached a stub defined in them.
+REAL_UNITS_BASE = (SOURCE / "ai/actors.c", SOURCE / "memory/data.c", SOURCE / "objects/objects.c",
+                   SOURCE / "objects/damage.c", SOURCE / "objects/widgets/widgets.c",
+                   SOURCE / "objects/object_types.c", SOURCE / "objects/object_lights.c",
+                   SOURCE / "saved games/game_state.c", SOURCE / "memory/crc.c",
+                   SOURCE / "game/game_time.c", METRICS)
+CLOSURE_UNITS_FILE = ROOT / "tests/c5_closure_units.txt"
+
+
+def closure_units() -> tuple[Path, ...]:
+    lines = CLOSURE_UNITS_FILE.read_text().split() if CLOSURE_UNITS_FILE.is_file() else []
+    return tuple(HCU / line for line in lines if line.strip())
+
+
+REAL_UNITS = REAL_UNITS_BASE + closure_units()
+
+
+# saved games/game_state_xbox.c is not compiled whole on the host (its file-system half needs the
+# Win32 file API, which the PS2 build provides and the host does not): game_state_allocate_buffer
+# and its globals are extracted verbatim instead (write_game_state_closure), compiled with HALO_PS2,
+# the define the PS2 build gives this file: its buffer is the physical_memory arena, with no Xbox
+# virtual mapping and no XPhysicalProtect.
 PRELUDE = ["-std=gnu99", "-m32", "-fms-extensions", "-fshort-wchar", "-fwrapv",
            "-fno-strict-aliasing", "-w", "-include", str(ROOT / "tests/soundreq_host_prefix.h"),
            "-include", str(ROOT / "tests/c5_lifecycle_prefix.h")]
@@ -56,9 +74,9 @@ DEFAULT_OUT = ROOT / "docs/reports/c5-retail-lifecycle-evidence-2026-10-26.json"
 # (actor_handle_damage, actors.c:1275) reads units through unit_get, which is not in the closure.
 # attachment is reached inside actor_place (actor_create_for_unit -> actor_attach_unit, actors.c:2709).
 UNDRIVEN_REASONS = {
-    "activation": "not driven: no public activation entry; actor_verify_activation (actors.c:749) needs the unit datum",
-    "update": "not driven: actor_update (actors.c:4247) is static and runs only in the game tick, which is not in the closure",
-    "combat": "not driven: actor_handle_damage (actors.c:1275) reads the unit datum through unit_get, which is not in the closure",
+    "activation": "not driven yet: the harness has no activation step; actor_set_active (actors.c:3599) is public and runs after placement",
+    "update": "not driven yet: the harness has no update step; actors_update (actors.c:4290) is the public tick that calls the static actor_update (actors.c:4247)",
+    "combat": "not driven yet: the harness has no damage step; actor_handle_damage (actors.c:1275) runs after placement and attachment",
 }
 TRACE = [
     "C1 roster unique_recipes[i]: variant (actv) -> actor (actr), unit (bipd), ranged_weapon (weap); source_map_sha256 pins the map.",
@@ -83,10 +101,12 @@ def clang_path() -> str:
     return cc
 
 
-def compile_obj(cc: str, source: Path, out: Path, includes: list[str], prelude: bool = True) -> None:
+def compile_obj(cc: str, source: Path, out: Path, includes: list[str], prelude: bool = True,
+                extra: list[str] | None = None) -> None:
     flags = PRELUDE if prelude else ["-m32", "-w"]
     if prelude and STRUCT_TAGS is not None:
         flags = [*flags[:-2], "-include", str(STRUCT_TAGS), *flags[-2:]]
+    flags = [*flags, *(extra or [])]
     result = subprocess.run([cc, *flags, *includes, "-c", str(source), "-o", str(out)],
                             capture_output=True, text=True)
     if result.returncode != 0:
@@ -118,7 +138,10 @@ def nm_undefined(path: Path) -> set[str]:
 
 
 def nm_defined(path: Path) -> set[str]:
-    out = subprocess.run(["nm", "--defined-only", str(path)], capture_output=True, text=True).stdout
+    # external definitions only: a header's static inline function (real_math.h __inline) is local
+    # to every unit that includes it, and cannot satisfy another unit's external reference
+    out = subprocess.run(["nm", "--extern-only", "--defined-only", str(path)], capture_output=True,
+                         text=True).stdout
     return {line.split()[-1] for line in out.splitlines() if line.strip()}
 
 
@@ -146,7 +169,8 @@ def data_symbols(names: set[str]) -> set[str]:
 
 CACHE_SOURCE = SOURCE / "cache/cache_files.c"
 CACHE_STRUCTS = ("cache_file_tag_instance", "cache_file_tag_header", "cache_file_header", "cache_file_globals")
-CACHE_FUNCTIONS = ("cache_get_tag_instance", "cache_empty_tag_instance", "tag_get")
+CACHE_FUNCTIONS = ("cache_get_tag_instance", "cache_empty_tag_instance", "tag_get", "tag_get_group_tag",
+                   "tag_iterator_new", "tag_iterator_next")
 CACHE_GLOBALS = ("static struct cache_file_globals cache_file_globals = { 0 };",
                  "static long global_tag_count;",
                  "extern struct cache_file_tag_instance *global_tag_instances;",
@@ -187,7 +211,8 @@ def extract_struct(source: str, name: str) -> str:
 
 def extract_function(source: str, name: str) -> str:
     """The verbatim definition of a function (one match, braces balanced)."""
-    pattern = re.compile(r"^[^;{}\n]*\b" + re.escape(name) + r"\s*\([^;{}]*\)\s*\{", re.M | re.S)
+    # a definition starts at the first column (the prefix): calls inside bodies are indented
+    pattern = re.compile(r"^[A-Za-z_][^;{}\n]*\b" + re.escape(name) + r"\s*\([^;{}]*\)\s*\{", re.M)
     found = list(pattern.finditer(source))
     if len(found) != 1:
         raise c5.LifecycleError(f"expected one definition of {name}, found {len(found)}")
@@ -221,6 +246,106 @@ def write_cache_closure(work: Path) -> Path:
     return out
 
 
+GAME_STATE_SOURCE = SOURCE / "saved games/game_state_xbox.c"
+GAME_STATE_GLOBALS = "static struct xbox_game_state_globals_prefix xbox_game_state_globals = { 0 };"
+
+
+def write_game_state_closure(work: Path) -> Path:
+    """game_state_allocate_buffer, game_state_create_or_open_file (game_state_xbox.c:155, :84) and the
+    enum, structure and globals they use, verbatim. The Win32 file calls they make are declared
+    here with their public Win32 values; the host definitions of those calls are in
+    tests/c5_retail_lifecycle_host.c (the PS2 behaviour: no persistent image, see the source)."""
+    text = GAME_STATE_SOURCE.read_text(errors="replace")
+    if GAME_STATE_GLOBALS not in text:
+        raise c5.LifecycleError("game_state_xbox.c globals changed: update the closure")
+    enum = re.search(r"^enum\n\{\n\tCPU_PAGE_SIZE.*?\n\};", text, re.M | re.S)
+    if enum is None:
+        raise c5.LifecycleError("game_state_xbox.c enum not found")
+    parts = ['/* generated by tools/c5_retail_lifecycle_producer.py from saved games/game_state_xbox.c:',
+             ' * game_state_allocate_buffer and game_state_create_or_open_file, their enum, structure and',
+             ' * globals, verbatim. The Win32 names are the public values; the calls are host definitions. */',
+             '#include "cseries/cseries.h"', '#include "cseries/errors.h"', '#include "saved games/game_state.h"',
+             '#include "cache/physical_memory_map.h"', '#include <stddef.h>', '',
+             'typedef void *HANDLE;',
+             '#define GENERIC_READ 0x80000000u', '#define GENERIC_WRITE 0x40000000u',
+             '#define OPEN_ALWAYS 4', '#define FILE_FLAG_NO_BUFFERING 0x20000000u',
+             '#define FILE_FLAG_SEQUENTIAL_SCAN 0x08000000u', '#define FILE_BEGIN 0',
+             '#define INVALID_HANDLE_VALUE ((HANDLE)-1)', '#define INVALID_SET_FILE_POINTER 0xFFFFFFFFu',
+             'HANDLE CreateFileA(const char *name, unsigned long access, unsigned long share, void *security,',
+             '\tunsigned long disposition, unsigned long flags, HANDLE template_file);',
+             'long SetFilePointer(HANDLE file, long distance, long *high, unsigned long method);',
+             'long SetEndOfFile(HANDLE file);', 'long CloseHandle(HANDLE file);', 'unsigned long GetLastError(void);',
+             '', enum.group(0), "", extract_struct(text, "xbox_game_state_globals_prefix"), "", GAME_STATE_GLOBALS, "",
+             extract_function(text, "game_state_allocate_buffer"), "",
+             extract_function(text, "game_state_create_or_open_file"), ""]
+    out = work / "c5_game_state_closure.c"
+    out.write_text("\n".join(parts))
+    return out
+
+
+CSERIES_SOURCE = SOURCE / "cseries/cseries.c"
+
+
+def write_cseries_colour_closure(work: Path) -> Path:
+    """The colour table and the global_real_argb_* / global_real_rgb_* pointers, verbatim from
+    cseries/cseries.c (lines 170-227). cseries.c as a whole does not compile under this prelude (see
+    host.c); these pointers are read by the object code (objects.c, object_placement_data_new reads
+    *global_real_rgb_white), so a placeholder would make them null."""
+    text = CSERIES_SOURCE.read_text(errors="replace")
+    start = text.index("static const real_argb_color global_real_argb_color_table[17] =")
+    end_marker = "const real_rgb_color *global_real_rgb_violet"
+    end = text.index(end_marker)
+    end = text.index("\n", end) + 1
+    body = text[start:end]
+    if body.count("global_real_rgb_white") != 1 or body.count("global_real_argb_violet") != 1:
+        raise c5.LifecycleError("cseries.c colour globals changed: update the closure")
+    head = ['/* generated by tools/c5_retail_lifecycle_producer.py from cseries/cseries.c lines 170-227:',
+            ' * the colour table and its pointers, verbatim. */',
+            '#include "cseries/cseries.h"', '#include "math/real_math.h"', '']
+    out = work / "c5_cseries_colour_closure.c"
+    out.write_text("\n".join(head) + "char temporary[256];\n" + body)
+    return out
+
+
+GAME_ENGINE_SOURCE = SOURCE / "game/game_engine.c"
+
+
+def write_game_engine_closure(work: Path) -> Path:
+    """game_engine_running (game/game_engine.c:4133) verbatim, with the game_engine global it reads.
+    The global is declared here with its initial value from game_engine.c:920 (NULL: no game type is
+    running). The rest of game_engine.c needs the whole game engine (halo UI, scoreboard), which this
+    host closure does not compile; a placeholder would make the pointer non-null."""
+    text = GAME_ENGINE_SOURCE.read_text(errors="replace")
+    initial = "struct game_engine *game_engine = NULL;"
+    if initial not in text:
+        raise c5.LifecycleError("game_engine.c global changed: update the closure")
+    parts = ['/* generated by tools/c5_retail_lifecycle_producer.py from game/game_engine.c:',
+             ' * game_engine_running, verbatim, and the game_engine global (its initial value). */',
+             '#include "cseries/cseries.h"', '#include "game/game_engine.h"', '',
+             initial, "", extract_function(text, "game_engine_running"), ""]
+    out = work / "c5_game_engine_closure.c"
+    out.write_text("\n".join(parts))
+    return out
+
+
+PS2_TEXTURE_SOURCE = HCU / "port/ps2/src/ps2_sound_cache.c"
+
+
+def write_port_answer_closure(work: Path) -> Path:
+    """Port functions the closure calls, taken verbatim from the PS2 port (the answer the PS2 build
+    gives on a machine without its texture hardware). _texture_cache_bitmap_get_hardware_format
+    (port/ps2/src/ps2_sound_cache.c:77) returns the bitmap; the CE texture cache it replaces needs the
+    Xbox Direct3D headers, which the host closure does not have."""
+    text = PS2_TEXTURE_SOURCE.read_text(errors="replace")
+    parts = ['/* generated by tools/c5_retail_lifecycle_producer.py from port/ps2/src/ps2_sound_cache.c:',
+             ' * the PS2 port\'s answers for the texture cache query, verbatim. */',
+             '#include "cseries/cseries.h"', '#include "cache/texture_cache.h"', '',
+             extract_function(text, "_texture_cache_bitmap_get_hardware_format"), ""]
+    out = work / "c5_port_answer_closure.c"
+    out.write_text("\n".join(parts))
+    return out
+
+
 def build_harness(work: Path) -> tuple[Path, dict]:
     global STRUCT_TAGS
     cc = clang_path()
@@ -234,6 +359,18 @@ def build_harness(work: Path) -> tuple[Path, dict]:
     cache_obj = work / "c5_cache_tag_closure.o"
     compile_obj(cc, write_cache_closure(work), cache_obj, includes)
     objects.append(cache_obj)
+    port_obj = work / "c5_port_answer_closure.o"
+    compile_obj(cc, write_port_answer_closure(work), port_obj, includes)
+    objects.append(port_obj)
+    engine_obj = work / "c5_game_engine_closure.o"
+    compile_obj(cc, write_game_engine_closure(work), engine_obj, includes)
+    objects.append(engine_obj)
+    colour_obj = work / "c5_cseries_colour_closure.o"
+    compile_obj(cc, write_cseries_colour_closure(work), colour_obj, includes)
+    objects.append(colour_obj)
+    game_state_obj = work / "c5_game_state_closure.o"
+    compile_obj(cc, write_game_state_closure(work), game_state_obj, includes, extra=["-DHALO_PS2"])
+    objects.append(game_state_obj)
     for source, name in ((HARNESS, "harness"), (HOST, "host")):
         obj = work / f"{name}.o"
         compile_obj(cc, source, obj, includes)
@@ -353,7 +490,10 @@ def stage_rows(parsed: dict, run: dict) -> tuple[dict, str]:
             stages[name] = blocked(name, parsed, run,
                                    reason=f"{name} call ran but no observable-state check is implemented")
         elif name in UNDRIVEN_REASONS:
-            stages[name] = blocked(name, parsed, run, reason=UNDRIVEN_REASONS[name])
+            # an earlier stop is the reason the stage did not run; an undriven stage of a run that got
+            # through setup and placement is recorded with its missing driver
+            stages[name] = blocked(name, parsed, run,
+                                   reason=None if parsed["blocker"] else UNDRIVEN_REASONS[name])
         else:
             reason = "not reached: placement did not produce an actor" if placement is not None and not placed else None
             stages[name] = blocked(name, parsed, run, reason=reason)
@@ -363,10 +503,13 @@ def stage_rows(parsed: dict, run: dict) -> tuple[dict, str]:
 
 def blocked(name: str, parsed: dict, run: dict, reason: str | None = None) -> dict:
     if reason is None:
-        if parsed["blocker"] and parsed["open_stage"] == "setup":
-            reason = f"not reached: setup stopped at {parsed['blocker']} before the {name} stage"
+        if parsed["blocker"] and parsed["open_stage"] == name:
+            reason = f"stub reached: {parsed['blocker']} during the {name} stage"
+        elif parsed["blocker"] and parsed["open_stage"]:
+            reason = (f"not reached: the harness stopped at {parsed['blocker']} in the "
+                      f"{parsed['open_stage']} stage before the {name} stage")
         elif parsed["blocker"]:
-            reason = f"stub reached: {parsed['blocker']} during the {parsed['open_stage'] or name} stage"
+            reason = f"stub reached: {parsed['blocker']} before the {name} stage"
         elif run.get("no_map"):
             reason = "no source map on disk for this recipe"
         elif run["timeout"]:

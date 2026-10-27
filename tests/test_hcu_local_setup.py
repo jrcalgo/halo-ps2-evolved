@@ -28,6 +28,17 @@ def test_local_setup_validator_rejects_before_teardown_and_accepts_qualified_pro
 		"teardown-failure: teardown-failed",
 		"accept coop: humans=4 bots=4 qualified=8",
 		"accept teams: human team 0, bot team 1",
+		"accept measure: status=measuring humans=4 bots=12",
+		"reject play-unqualified-row: difficulty-not-qualified",
+		"reject measure-team-mismatch: team-mismatch, state unchanged",
+		"reject measure-too-many-bots: too-many-bots, state unchanged",
+		"reject measure-bad-human-mask: bad-human-mask, state unchanged",
+		"reject measure-no-humans: no-humans, state unchanged",
+		"reject measure-bad-map-name: bad-map-name, state unchanged",
+		"reject measure-map-without-row: map-not-qualified, state unchanged",
+		"reject measure-unknown-intent: bad-argument, state unchanged",
+		"reject measure-unknown-difficulty: unknown-difficulty, state unchanged",
+		"rows table: 13 rows, all unqualified",
 		"hcu_local_setup tests passed",
 	):
 		assert needle in result.stdout, needle

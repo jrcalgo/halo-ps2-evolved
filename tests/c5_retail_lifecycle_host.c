@@ -58,6 +58,11 @@ long c5_map_load(const char *path)
 	return count;
 }
 
+/* cseries.h maps the heap names onto the debug heap: the libc calls below must not be remapped */
+#undef malloc
+#undef free
+#undef realloc
+
 /* cseries.h maps these names onto the cs* wrappers below: undo that for the libc calls */
 #undef memcmp
 #undef memmove
@@ -71,6 +76,99 @@ long c5_map_load(const char *path)
 #undef strlen
 #undef strcpy
 #undef strtok
+
+/* The game-state arena, as physical_memory_allocate gives it on the PS2 build (ps2_memory.c): a
+ * host data buffer of the CPU and GPU sizes (halo_ps2_limits.h). Nothing reads its contents here;
+ * game_state_initialize and the object pool only need the address. */
+#define C5_GAME_STATE_BYTES (0x305000u + 0x40000u)
+static unsigned char c5_game_state_arena[C5_GAME_STATE_BYTES] __attribute__((aligned(4096)));
+
+void *physical_memory_get_game_state_base_address(void)
+{
+	return c5_game_state_arena;
+}
+
+/* The debug heap (cseries/debug_memory.c) is Windows-only (GlobalMemoryStatus); the host heap is
+ * libc. The same size, clear and file/line arguments, which the host does not record. */
+void *debug_malloc(unsigned int size, boolean clear, const char *file, long line)
+{
+	void *result;
+
+	(void)file; (void)line;
+	result = malloc(size ? size : 1);
+	if (result && clear)
+		memset(result, 0, size);
+	return result;
+}
+
+void debug_free(void *pointer, const char *file, long line)
+{
+	(void)file; (void)line;
+	free(pointer);
+}
+
+void *debug_realloc(void *pointer, unsigned int size, const char *file, long line)
+{
+	(void)file; (void)line;
+	return realloc(pointer, size ? size : 1);
+}
+
+/* The saved-game file (z:\savegame.bin, an Xbox disk path) does not exist on the host. The PS2
+ * build's answer is the one this returns: the open fails, and game_state_create_or_open_file
+ * continues with no persistent image (game_state_xbox.c, the HALO_PS2 branch). */
+void *CreateFileA(const char *name, unsigned long access, unsigned long share, void *security,
+	unsigned long disposition, unsigned long flags, void *template_file)
+{
+	(void)name; (void)access; (void)share; (void)security; (void)disposition; (void)flags;
+	(void)template_file;
+	return (void *)-1;
+}
+
+/* A new object's network index. On a single-player game the answer is NONE: this is the PS2
+ * build's answer (port/ps2/game/ps2_local.c), not the netgame one (port/linux/game/network_objects.c). */
+long network_objects_new_object_index(void)
+{
+	return NONE;
+}
+
+/* port/linux/game/first_person_legs.c, new-map reset of the first-person legs' waist cache and of the
+ * object mesh cache, both written only by rendering (the harness renders nothing). Its definition
+ * needs the Direct3D headers, so the host closure takes this empty reset: nothing it clears is set
+ * on the actor path. */
+void first_person_legs_reset(void)
+{
+}
+
+/* whether this machine is creating a networked object: no, on a single-player game (the PS2 answer,
+ * port/ps2/game/ps2_local.c) */
+boolean network_objects_creating_host_object(void)
+{
+	return FALSE;
+}
+
+/* main/main.c's frame-time measurement, stopped around a map's structure bsp load (scenario.c). The
+ * main loop is not in the closure; the host has no frame timer, so both calls are empty. */
+void main_stop_time(void)
+{
+}
+
+/* The performance counter, in nanoseconds (the frequency is 10^9 per second). The LARGE_INTEGER
+ * argument has a 64-bit QuadPart at offset 0. */
+#include <time.h>
+int QueryPerformanceFrequency(void *frequency)
+{
+	*(long long *)frequency = 1000000000LL;
+	return 1;
+}
+
+int QueryPerformanceCounter(void *count)
+{
+	struct timespec now;
+
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	*(long long *)count = (long long)now.tv_sec * 1000000000LL + now.tv_nsec;
+	return 1;
+}
 
 /* port: no netgame on the host: the actors are the local game's own (actor_new's client check) */
 boolean network_game_distributed_client(void)

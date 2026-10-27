@@ -11,6 +11,10 @@
 #include "ai/actors.h"
 #include "ai/actor_placement.h"
 #include "ai/ai_scenario_definitions.h"
+#include "cache/cache_files.h"
+#include "game/game.h"
+#include "scenario/scenario.h"
+#include "scenario/scenario_definitions.h"
 #include "memory/data.h"
 #include "objects/objects.h"
 #include "saved games/game_state.h"
@@ -20,6 +24,10 @@
 #include <string.h>
 
 long c5_map_load(const char *path);
+
+/* the loaded scenario's globals (scenario/scenario.c, in the harness's scenario closure) */
+extern long global_scenario_index;
+extern struct scenario *global_scenario;
 
 /* The actor pool, laid out as game_state_data_new lays it out (header, then elements). */
 static unsigned long c5_pool_storage[(sizeof(struct data_array) + MAXIMUM_ACTORS * sizeof(struct actor_datum)) / sizeof(unsigned long) + 2];
@@ -68,8 +76,40 @@ int main(int argc, char **argv)
 
 	begin("setup");
 	game_state_initialize();
+	game_time_initialize();
 	objects_initialize();
 	end("setup", 0);
+
+	/* the scenario selection scenario_load makes after its tag load (scenario/scenario.c): the
+	map's scenario tag, read by a tag iteration over the loaded cache, becomes the global scenario.
+	scenario_load's structure BSP switch is not run (its renderer and collision closure is not in
+	the harness). */
+	begin("scenario");
+	{
+		struct tag_iterator iterator;
+		long scenario_index;
+
+		tag_iterator_new(&iterator, SCENARIO_TAG);
+		scenario_index = tag_iterator_next(&iterator);
+		check("scenario", scenario_index != NONE, "the map has a scenario tag");
+		if (scenario_index != NONE)
+		{
+			global_scenario_index = scenario_index;
+			global_scenario = scenario_definition_get(scenario_index);
+		}
+		end("scenario", scenario_index);
+		/* scenario_load's structure BSP switch (the first bsp, scenario_load: scenario.c) */
+		begin("structure_bsp");
+		end("structure_bsp", scenario_switch_structure_bsp(0));
+	}
+
+	/* the map load's object step, after the scenario is selected (main.c new map order:
+	scenario_load, then objects_initialize_for_new_map, which makes the object header pool valid
+	and reads the scenario's device groups) */
+	begin("new_map");
+	game_time_initialize_for_new_map();
+	objects_initialize_for_new_map();
+	end("new_map", 0);
 
 	begin("placement");
 	placed = actor_place(variant, NONE, NONE, &location, FALSE, NONE);
