@@ -34,14 +34,15 @@ static uint32_t build_image(uint32_t count, const uint32_t *hashes, const uint16
 	uint32_t data_off = 32 + 32 * count, i, total;
 	memset(image, 0, sizeof(image));
 	memcpy(image, "HSB1", 4);
-	w32(image + 4, 1); w32(image + 8, count); w32(image + 12, 32); w32(image + 16, data_off);
+	w32(image + 4, 2); w32(image + 8, count); w32(image + 12, 32); w32(image + 16, data_off);
 	for (i = 0; i < count; ++i) {
 		uint8_t *e = image + 32 + 32 * i;
 		float gain = 1.0f;
 		w32(e, hashes[i]); e[4] = perms[i]; e[6] = perm_counts[i];
 		w32(e + 8, 22050); w32(e + 12, 22050); /* one second */
 		w32(e + 16, data_off + i * sample_bytes); w32(e + 20, sample_bytes);
-		memcpy(e + 24, &gain, 4); w32(e + 28, 100 + i);
+		memcpy(e + 24, &gain, 4);
+		if (i == 1) { e[28] = (4 * 64) & 255; e[29] = (4 * 64) >> 8; e[30] = (12 * 64) & 255; e[31] = (12 * 64) >> 8; } /* tag near 4 / far 12 */
 	}
 	total = data_off + count * sample_bytes + 32;
 	w32(image + 20, total);
@@ -172,6 +173,17 @@ int main(void)
 		CHECK(nops == 0);
 		hcu_spu_get_stats(&st);
 		CHECK(st.inaudible == 1);
+		/* a sound tag's own distances replace the defaults: hashes[1] carries near 4 / far 12 */
+		CHECK(samples[1].near_dist == 4.0f && samples[1].far_dist == 12.0f && samples[0].far_dist == 0.0f);
+		nops = 0;
+		r.position[0] = 15.0f;
+		hcu_spu_request(&r, hashes[1]);
+		CHECK(nops == 0);
+		hcu_spu_get_stats(&st);
+		CHECK(st.inaudible == 2);
+		r.position[0] = 8.0f;
+		hcu_spu_request(&r, hashes[1]);
+		CHECK(nops == 7);
 		hcu_spu_set_listener(0, 0, 0);
 	}
 

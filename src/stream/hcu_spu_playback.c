@@ -6,7 +6,7 @@
 #include "stream/hcu_spu_hw.h"
 
 #define HSB_MAGIC 0x31425348u /* 'HSB1' */
-#define HSB_VERSION 1u
+#define HSB_VERSION 2u
 #define HSB_HEADER_BYTES 32u
 #define HSB_ENTRY_BYTES 32u
 #define HCU_SPU_TICKS_PER_SECOND 30u
@@ -116,7 +116,8 @@ int hcu_spu_bank_parse(const uint8_t *image, uint32_t size, hcu_spu_sample *out,
 		s->bank_offset = rd32(e + 16);
 		s->bytes = rd32(e + 20);
 		s->gain = rdf(e + 24);
-		s->datum = rd32(e + 28);
+		s->near_dist = (float)(e[28] | e[29] << 8) / 64.0f;
+		s->far_dist = (float)(e[30] | e[31] << 8) / 64.0f;
 		if (!s->perm_count || s->perm >= s->perm_count || !s->rate || !s->bytes || (s->bytes & 15u) ||
 			(s->bank_offset & 15u) || s->bank_offset < data_off || s->bank_offset > size - 32u ||
 			s->bytes > size - 32u - s->bank_offset)
@@ -230,16 +231,16 @@ void hcu_spu_set_listener(const float position[3], const float forward[3], const
 	s_listener_valid = 1;
 }
 
-float hcu_spu_spatial(const float listener[3], const float forward[3], const float up[3],
-	const float source[3], float *left, float *right)
+float hcu_spu_spatial_range(const float listener[3], const float forward[3], const float up[3],
+	const float source[3], float near_dist, float far_dist, float *left, float *right)
 {
 	float d[3], rx, ry, rz, dist, att, pan, rlen;
 	uint32_t i;
 	for (i = 0; i < 3; ++i) d[i] = source[i] - listener[i];
 	dist = sqrtf(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
-	if (!(dist > HCU_SPU_NEAR)) att = 1.0f;
-	else if (dist >= HCU_SPU_FAR) att = 0.0f;
-	else att = 1.0f - (dist - HCU_SPU_NEAR) / (HCU_SPU_FAR - HCU_SPU_NEAR);
+	if (!(dist > near_dist)) att = 1.0f;
+	else if (dist >= far_dist) att = 0.0f;
+	else att = 1.0f - (dist - near_dist) / (far_dist - near_dist);
 	/* right = forward x up (CE is right-handed with +z up) */
 	rx = forward[1] * up[2] - forward[2] * up[1];
 	ry = forward[2] * up[0] - forward[0] * up[2];
@@ -311,13 +312,23 @@ static int page_in(hcu_spu_sample *sample)
 	return 0;
 }
 
+float hcu_spu_spatial(const float listener[3], const float forward[3], const float up[3],
+	const float source[3], float *left, float *right)
+{
+	return hcu_spu_spatial_range(listener, forward, up, source, HCU_SPU_NEAR, HCU_SPU_FAR, left, right);
+}
+
 /* Left/right volumes for a request: sample and request gain, then distance and pan when positioned. */
 static int request_volumes(const hcu_sound_request *r, const hcu_spu_sample *sample, uint32_t *vol_l, uint32_t *vol_r)
 {
 	uint32_t volume = hcu_spu_volume_for(r->gain, sample->gain);
 	*vol_l = *vol_r = volume;
 	if (r->has_position && s_listener_valid) {
-		float l, rt, att = hcu_spu_spatial(s_listener, s_listener_forward, s_listener_up, r->position, &l, &rt);
+		float l, rt, att;
+		float near_d = sample->near_dist, far_d = sample->far_dist;
+		/* Tag distances when the sound tag sets a valid pair; otherwise the fixed class-agnostic defaults. */
+		if (!(near_d > 0.0f && far_d > near_d)) { near_d = HCU_SPU_NEAR; far_d = HCU_SPU_FAR; }
+		att = hcu_spu_spatial_range(s_listener, s_listener_forward, s_listener_up, r->position, near_d, far_d, &l, &rt);
 		*vol_l = (uint32_t)((float)volume * att * l);
 		*vol_r = (uint32_t)((float)volume * att * rt);
 	}

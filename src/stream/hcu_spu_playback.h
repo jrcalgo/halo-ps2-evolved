@@ -18,7 +18,8 @@ extern "C" {
  * no voice is playing. Positioned sounds are attenuated by distance
  * (full volume inside HCU_SPU_NEAR, linear to silence at HCU_SPU_FAR world units)
  * and panned with a constant-power law against the listener's right vector. The
- * bank carries no per-sound min/max distance, so these are fixed approximations
+ * bank carries the sound tag's min/max distance where the tag sets one; every
+ * other sound (the tag defers to its sound class) uses these fixed approximations
  * of CE's distance model, not retail values. */
 
 #define HCU_SPU_VOICES 24u
@@ -33,7 +34,7 @@ typedef struct {
 	uint16_t perm, perm_count;
 	uint32_t rate, samples, bank_offset, bytes;
 	float gain;
-	uint32_t datum;
+	float near_dist, far_dist; /* sound tag min/max distance in world units; 0 = use HCU_SPU_NEAR/FAR */
 	uint32_t spu_addr;       /* SPU2 RAM byte address while resident */
 	uint8_t resident;        /* uploaded to SPU2 RAM */
 	uint32_t last_used;      /* CE tick of the latest start, for eviction */
@@ -75,6 +76,8 @@ int hcu_spu_ready(void);
 /* Listener pose (the first view's camera). Without one, sounds are centred at full distance gain. */
 void hcu_spu_set_listener(const float position[3], const float forward[3], const float up[3]);
 /* Distance gain and left/right gains (constant power) for a source; returns the distance gain. */
+float hcu_spu_spatial_range(const float listener[3], const float forward[3], const float up[3],
+	const float source[3], float near_dist, float far_dist, float *left, float *right);
 float hcu_spu_spatial(const float listener[3], const float forward[3], const float up[3],
 	const float source[3], float *left, float *right);
 

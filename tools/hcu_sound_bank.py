@@ -8,9 +8,10 @@ decoded-then-encoded samples only; it is derived data and must never be committe
 
 Layout (little endian, every offset 16-byte aligned):
   header  32 B: magic 'HSB1', version, count, entries_off, data_off, total_bytes, spu_bytes, reserved
-  entry   32 B: name_hash, perm_index u16, perm_count u16, rate, samples, offset, vag_bytes, gain f32, source_datum
+  entry   32 B: name_hash, perm_index u16, perm_count u16, rate, samples, offset, vag_bytes, gain f32, near u16, far u16
   data        : per entry the raw VAG blocks (last block carries the end flag)
   trailer 32 B: SHA-256 of every preceding byte
+near/far are the sound tag's minimum/maximum distance in 1/64 world unit (0 = tag left it to the sound class).
 name_hash is FNV-1a over the lower-cased tag path with path separators removed, so the runtime can
 derive it from tag_get_name() whichever separator the build prints.
 """
@@ -27,9 +28,9 @@ sys.path.insert(0, str(ROOT / "submodules/halo-ps2/tools"))
 from halo2ps2.tagcache import CacheMap  # noqa: E402
 
 MAGIC = b"HSB1"
-VERSION = 1
+VERSION = 2
 HEADER = struct.Struct("<4s7I")
-ENTRY = struct.Struct("<IHHIIIIfI")
+ENTRY = struct.Struct("<IHHIIIIfHH")
 ENTRY_SIZE = 32
 SPU_RAM_BYTES = 2 * 1024 * 1024
 SPU_RESERVED_BYTES = 0x5010
@@ -204,7 +205,16 @@ def sound_permutations(cache: CacheMap, tag) -> tuple[dict, list[dict]]:
             size, _flags, offset = struct.unpack_from("<III", buf, base + 64)
             if size and offset + size <= len(buf):
                 perms.append({"gain": gain, "compression": perm_compression, "offset": offset, "size": size})
-    return {"rate": rate, "channels": 2 if encoding == 1 else 1, "compression": compression}, perms
+    near, far = struct.unpack_from("<ff", buf, d + 8)
+    return {"rate": rate, "channels": 2 if encoding == 1 else 1, "compression": compression,
+            "near": near, "far": far}, perms
+
+
+def _dist_units(distance: float) -> int:
+    """World units -> 1/64 unit u16; zero, negative or non-finite means 'use the class default'."""
+    if not distance > 0.0 or distance != distance:
+        return 0
+    return min(65535, round(distance * 64))
 
 
 def build_bank(map_path: Path, budget: int = DEFAULT_BUDGET, max_perms: int = 2) -> tuple[bytes, list[dict]]:
@@ -244,14 +254,14 @@ def build_bank(map_path: Path, budget: int = DEFAULT_BUDGET, max_perms: int = 2)
             data += b"\0" * (-len(data) % 16)
             entries.append({"path": path, "hash": name_hash(path), "perm": index, "perm_count": len(encoded),
                             "rate": info["rate"], "samples": len(pcm), "offset": offset, "bytes": len(vag),
-                            "gain": perm["gain"] if perm["gain"] > 0 else 1.0, "datum": tag.tag_id, "tier": tier})
+                            "gain": perm["gain"] if perm["gain"] > 0 else 1.0, "near": info["near"], "far": info["far"], "tier": tier})
     entries_off = HEADER.size
     data_off = entries_off + ENTRY_SIZE * len(entries)
     data_off += -data_off % 16
     out = bytearray(HEADER.pack(MAGIC, VERSION, len(entries), entries_off, data_off, 0, used, 0))
     for e in entries:
         out += ENTRY.pack(e["hash"], e["perm"], e["perm_count"], e["rate"], e["samples"],
-                          data_off + e["offset"], e["bytes"], e["gain"], e["datum"])
+                          data_off + e["offset"], e["bytes"], e["gain"], _dist_units(e["near"]), _dist_units(e["far"]))
     out += b"\0" * (data_off - len(out))
     out += data
     struct.pack_into("<I", out, 20, len(out) + 32)
@@ -266,11 +276,11 @@ def verify_bank(blob: bytes) -> dict:
         raise ValueError("bad bank header")
     rows = []
     for i in range(count):
-        h, perm, perm_count, rate, samples, off, nbytes, gain, datum = ENTRY.unpack_from(blob, entries_off + ENTRY_SIZE * i)
+        h, perm, perm_count, rate, samples, off, nbytes, gain, near, far = ENTRY.unpack_from(blob, entries_off + ENTRY_SIZE * i)
         if off % 16 or nbytes % 16 or off + nbytes > len(blob) - 32 or blob[off + nbytes - 15] & 1 == 0:
             raise ValueError(f"bad bank entry {i}")
         rows.append({"hash": h, "perm": perm, "perm_count": perm_count, "rate": rate, "samples": samples,
-                     "offset": off, "bytes": nbytes, "gain": gain, "datum": datum})
+                     "offset": off, "bytes": nbytes, "gain": gain, "near": near, "far": far})
     return {"count": count, "spu_bytes": spu_bytes, "entries": rows}
 
 
