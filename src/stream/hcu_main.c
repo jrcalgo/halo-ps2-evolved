@@ -2064,7 +2064,6 @@ static const text_batch_t *hcu_c3_views_camera(unsigned v, camera_t *cam, const 
 	char lines[HCU_RENDER_VIEWS_HUD_LINES][HCU_RENDER_VIEWS_HUD_CHARS];
 	unsigned i, n = 0;
 	uint32_t first_person_palettes = 0;
-	int gap, cx, cy;
 
 	s_c3v.vp[v] = *vp;
 	s_c3v.hud_lines[v] = 0;
@@ -2171,15 +2170,9 @@ static const text_batch_t *hcu_c3_views_camera(unsigned v, camera_t *cam, const 
 		s_c3v.fp_nodes[v] = first_person_palettes;
 		s_c3v.stats.fp_nodes_seen += first_person_palettes;
 	}
-	/* Crosshair: two dashes either side of the centre, spread from the snapshot (4 px when there is none). */
-	gap = view ? hcu_views_crosshair_gap(view->hud_values) : hcu_views_crosshair_gap(NULL);
-	cx = vp->w / 2;
-	cy = vp->h / 2;
-	hcu_c3_views_text(tb, vp, cx - gap - 6, cy - 4, HCU_C3_VIEWS_RGB_CROSS, "-");
-	hcu_c3_views_text(tb, vp, cx + gap, cy - 4, HCU_C3_VIEWS_RGB_CROSS, "-");
+	/* No placeholder crosshair: the per-weapon bitmap reticles are the only reticle. */
 	if (!view && s_c3v.snap && v < s_c3v.snap->view_count)
 		hcu_c3_views_text(tb, vp, 4, 4, HCU_C3_VIEWS_RGB_FP, "RESPAWNING");
-	s_c3v.stats.crosshairs++;
 #if HCU_C3_VIEWS_FP_PLACEHOLDER
 	if (view && (view->flags & HALO_PS2_FRAME_VIEW_FIRST_PERSON) && first_person_palettes) {
 		char fp[HCU_RENDER_VIEWS_HUD_CHARS];

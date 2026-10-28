@@ -48,7 +48,7 @@ typedef struct {
 	uint32_t refused_views;     /* snapshot views refused (camera, flags or generation) */
 	uint32_t generation_refusals;
 	uint32_t hud_lines;         /* health/shield/ammo lines drawn */
-	uint32_t crosshairs;        /* crosshairs drawn */
+	uint32_t crosshairs;        /* unused: the placeholder crosshair was removed */
 	uint32_t fp_nodes_seen;     /* first-person nodes the snapshot lists (not drawn) */
 	uint32_t fp_drawn;          /* first-person nodes drawn through the object path */
 	uint32_t generation;        /* map generation the snapshot views are accepted for */
