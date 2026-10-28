@@ -17,6 +17,7 @@
 
 #include "halo_ps2_frame_snapshot.h"
 #include "stream/hcu_render_content.h"
+#include "stream/hcu_render_bounds.h"
 #include "stream/hcu_snapshot_bank.h"
 
 #ifdef __cplusplus
@@ -37,6 +38,7 @@ extern "C" {
 #define HCU_OBJECTS_TYPE_VEHICLE 1
 #define HCU_OBJECTS_TYPE_WEAPON 2
 #define HCU_OBJECTS_TYPE_EFFECT 3
+#define HCU_OBJECTS_TYPE_SCENERY 6
 
 /* Object flags. Bit 0 means the object is skinned: its palette is used, one matrix per model node. */
 #define HCU_OBJECTS_FLAG_SKINNED 0x0001u
@@ -78,9 +80,18 @@ typedef struct {
 	uint16_t flags;
 	uint16_t palette_first;
 	uint16_t palette_count;
+	uint8_t ground_weapon_lod;
+	uint8_t reserved_lod;
 	uint32_t pose_hash;                  /* FNV-1a over the object's palette matrices (0 when unskinned) */
 	halo_ps2_snapshot_matrix4x3 world;
 } hcu_render_object_draw;
+
+/* Six inward unit planes prepared once per snapshot view and shared by residency and selection. */
+typedef struct hcu_render_objects_frustum {
+	float plane[6][4]; /* normal xyz, signed plane offset */
+	uint8_t valid;
+	uint8_t pad[3];
+} hcu_render_objects_frustum;
 
 /* C3.6 pose tracker: one entry per snapshot object index. A change in the palette hash between two
  * frames of the same generation is the evidence that a vehicle or weapon node palette moved. */
@@ -106,6 +117,23 @@ typedef struct {
 	float forward[3];
 	float scale;
 	float age_sec;
+	uint16_t particle_flags;
+	uint16_t particle_shader_flags;
+	uint16_t bitmap_width;
+	uint16_t bitmap_height;
+	uint8_t framebuffer_blend_function;
+	uint8_t framebuffer_fade_mode;
+	uint8_t local_player_index;
+	uint8_t sprite_orientation;
+	uint16_t native_surface_id;
+	const halo_ps2_frame_fx_geometry_vertex *native_geometry;
+	int16_t sequence_index, frame_index;
+	float rotation, lifespan_sec, fade_in_sec, fade_out_sec;
+	float minimum_pixels, lod_cutoff, runtime_oo_width;
+	float color_argb[4], sprite_uv[4], registration[2];
+	float decal_intensity;
+	float segment_end_color_argb[4], segment_end_width;
+	float particle_scale_adjust;
 } hcu_render_effect_draw;
 
 typedef struct {
@@ -163,10 +191,12 @@ typedef struct {
 	uint32_t fx_drawn;                   /* C3.6(c): fx quads admitted to the view's GS packet */
 	uint32_t fx_skipped_space;           /* C3.6(c): fx quads refused by chain_has_space and skipped */
 	uint32_t fx_textured;                /* C3.6(c): fx quads drawn with a resident texture */
-	uint32_t fx_flat;                    /* C3.6(c): fx quads drawn flat-shaded (no resident texture) */
+	uint32_t fx_flat;                    /* fx quads withheld for lack of a resident texture (drawn flat only with textures off) */
 	uint32_t fx_no_binding;              /* C3.6(c): flat: no bitmap binding, or no usable source for it */
 	uint32_t fx_budget_deferred;         /* C3.6(c): flat: texture refused by the frame upload budget or ring */
 	uint32_t fx_cache_full;              /* C3.6(c): flat: texture window cannot hold the bitmap */
+	uint32_t fx_blend_unsupported;        /* CE blend modes without an exact GS mapping: min/max (5, 6) draw approximated, multiply modes without a composite path draw as alpha */
+	uint32_t fx_source_calls, fx_source_read_bytes, fx_resident_hits, fx_resident_misses;
 	uint32_t sky_drawn;                  /* C3.6: sky model passes drawn (loaded model, per view) */
 	uint32_t sky_misses;                 /* C3.6: sky model configured but not resident this view */
 } hcu_render_objects_counters;
@@ -195,6 +225,15 @@ int hcu_render_objects_select(const halo_ps2_frame_snapshot *snap, uint32_t view
  * displace models that this view can actually draw. */
 int hcu_render_objects_object_visible_in_view(const halo_ps2_frame_snapshot *snap,
 	const halo_ps2_frame_view *view, uint32_t object_index);
+int hcu_render_objects_frustum_build(const halo_ps2_frame_view *view,
+	hcu_render_objects_frustum *out);
+int hcu_render_objects_frustum_build_aspect(const halo_ps2_frame_view *view, float aspect,
+	hcu_render_objects_frustum *out);
+int hcu_render_objects_object_visible_with_frustum(const halo_ps2_frame_snapshot *snap,
+	const halo_ps2_frame_view *view, uint32_t object_index,
+	const hcu_render_objects_frustum *frustum);
+int hcu_render_objects_bound_in_frustum(const float position[3], float radius,
+	const hcu_render_objects_frustum *frustum);
 /* Optional fixed arena cache. Bind once during renderer setup; cache contents are keyed by pinned snapshot
  * sequence/map generation and slot residency epoch. A failed bind disables the optimization. */
 size_t hcu_render_objects_prepare_cache_bytes(void);
@@ -256,6 +295,14 @@ int hcu_render_first_person_world(const halo_ps2_snapshot_camera *cam, const hal
  * (HALO_PS2_FRAME_FX_LIGHT). A decal with a zero or non-finite forward falls back to a billboard. */
 int hcu_render_fx_build_quad(const hcu_render_effect_draw *e, const float right[3], const float up[3],
 	hcu_render_fx_quad *q);
+/* CE live-particle sprite builder: exact selected atlas subrect, registration point,
+ * orientation/rotation and authored pixel LOD. Returns 1 for CE LOD/lifetime rejection. */
+int hcu_render_fx_particle_build_quad(const hcu_render_effect_draw *e,
+	const halo_ps2_snapshot_camera *camera, int viewport_h, hcu_render_fx_quad *q);
+/* CE contrail segment strip builder: forward stores the second endpoint;
+ * scale and segment_end_width are the CE widths at each endpoint. */
+int hcu_render_fx_contrail_build_quad(const hcu_render_effect_draw *e,
+	const halo_ps2_snapshot_camera *camera, hcu_render_fx_quad *q);
 /* Flat colour per kind as RGBA, with alpha on the GS scale (0x80 = opaque). Returns 0, or E_ARGUMENT. */
 int hcu_render_fx_flat_colour(uint16_t kind, uint8_t rgba[4]);
 /* C3.6(c) textured quad ST for corner c (v[c] order of hcu_render_fx_quad), normalized (PRIM FST = 0).
@@ -284,8 +331,8 @@ int hcu_render_objects_residency_victim_ok(int loaded, int referenced_this_frame
 #define HCU_OBJECTS_RANK_UNUSED 4u
 int hcu_render_objects_residency_rank_victim_ok(int loaded, uint32_t victim_rank, uint32_t requester_rank,
 	int fence_observed, uint32_t pins, uint32_t *evict_refused_pinned);
-/* Pre-admission requires no snapshot readers and a completed previous cache-use fence.
- * Sequence + map generation are rechecked after acquiring the immutable render pin. */
+/* Pre-admission is allowed only with no bank readers/owned pin and a completed prior cache-use fence.
+ * Sequence + map generation must still match after the render pin is acquired. */
 int hcu_render_objects_residency_pre_admit_allowed(uint32_t active_readers, int own_reader_pinned,
 	int previous_fence_clear, uint32_t latest_sequence, uint32_t latest_generation);
 int hcu_render_objects_residency_pre_admit_matches(uint32_t planned_sequence, uint32_t planned_generation,
@@ -377,6 +424,12 @@ uint32_t hcu_render_objects_fp_lod(int32_t view_w, int32_t view_h, int32_t scree
 /* As view_begin, with the view's rectangle: picks the first-person level for this view. */
 void hcu_render_objects_view_begin_rect(uint32_t view, int32_t view_w, int32_t view_h,
 	int32_t screen_w, int32_t screen_h);
+/* Fixed-size PINE-readable timing snapshot. Accessor returns NULL in quiet builds. */
+typedef struct {
+	uint32_t version, frame, view;
+	uint32_t world_render_cycles, first_person_overhead_cycles, first_person_render_cycles;
+	uint32_t drawn, triangles, skinned_nodes, failures;
+} hcu_render_objects_timing_probe;
 #ifdef HCU_RENDER_OBJECTS_EE
 #include "core/mem.h"
 #include "stream/hcu_asset_profile.h"
@@ -388,8 +441,10 @@ typedef struct {
 	uint32_t model_chunk;
 	uint32_t texture_chunk;
 	uint32_t source_datum;
+	uint32_t tag_datum;
 	uint8_t model_sha256[32];
 	uint8_t texture_sha256[32];
+	hcu_render_model_bound bounds;
 	const char *path;
 } hcu_render_objects_table_entry;
 
@@ -421,6 +476,8 @@ typedef struct {
 	uint32_t parts_logged, effects_selected, effects_refused;
 	uint32_t fx_drawn, fx_skipped_space, fx_textured, fx_flat, fx_no_binding;
 	uint32_t fx_budget_deferred, fx_cache_full;
+	uint32_t fx_blend_unsupported;
+	uint32_t fx_source_calls, fx_source_read_bytes, fx_resident_hits, fx_resident_misses;
 	uint32_t sky_drawn, sky_misses;
 	uint32_t first_person_map_generation;
 	uint16_t first_person_weapon_resource_slot, first_person_hands_resource_slot;
@@ -437,6 +494,8 @@ int hcu_render_objects_load(const hcu_asset_profile_view *view, arena_t *arena,
  * once after the bitmap profile is prepared; without it every decal is counted fx-no-binding. */
 void hcu_render_objects_set_fx_bindings(const hcu_bitmap_binding *bindings, uint32_t count,
 	const hcu_asset_profile_view *profile, void *staging, uint32_t staging_bytes);
+/* Binds the fixed, pointer-free verified FX metadata cache from frame_scratch. */
+int hcu_render_objects_bind_fx_descriptor_cache(void *storage, uint32_t storage_bytes);
 /* C3.6: table index of the scenario sky model (generated as HCU_C3_OBJECTS_SKY_INDEX). The entry stays
  * resident and pinned once loaded and is drawn as the sky pass before each view's BSP. HCU_RENDER_OBJECTS_SKY_NONE
  * or an out-of-range index draws no sky. */
@@ -454,7 +513,8 @@ int hcu_render_objects_parity_summary(hcu_render_parity_summary *out);
  * synthetic snapshot (synthetic_views > 0, HCU_C3_OBJECTS_SYNTHETIC) and pins the latest published
  * snapshot; end records the kick sequence. release drops any pin (GPU already drained). */
 const halo_ps2_frame_snapshot *hcu_render_objects_frame_begin(uint32_t frame, uint32_t synthetic_views,
-	const halo_ps2_snapshot_camera *synthetic_cameras);
+	const halo_ps2_snapshot_camera *synthetic_cameras, uint32_t layout_view_count,
+	int32_t screen_w, int32_t screen_h);
 void hcu_render_objects_view_begin(uint32_t view);
 void hcu_render_objects_view_end(uint32_t view, hcu_render_objects_view_stats *out);
 void hcu_render_objects_frame_end(void);
@@ -463,6 +523,8 @@ int hcu_render_objects_release(void);
 void hcu_render_objects_totals(hcu_render_objects_counters *out);
 void hcu_render_objects_residency_stats(hcu_render_objects_residency *out);
 #endif
+
+const hcu_render_objects_timing_probe *hcu_render_objects_timing_probe_get(void);
 
 #ifdef __cplusplus
 }

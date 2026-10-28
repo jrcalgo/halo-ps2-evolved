@@ -61,12 +61,39 @@ static int rawread(const hcu_asset_profile_view *v,uint32_t at,void *dst,uint32_
 static int zeroes(const hcu_asset_profile_view *v,uint32_t at,uint32_t n)
 { uint8_t b[HCP_SCRATCH]; while(n) { uint32_t k=n<sizeof(b)?n:(uint32_t)sizeof(b),i; if(!rawread(v,at,b,k)) return 0; for(i=0;i<k;i++) if(b[i]) return 0; at+=k; n-=k; } return 1; }
 
+/* Preflight walks the directory rows, padding and segment bytes strictly in order. Each file-bridge read is an
+ * RPC, so two read-ahead windows (directory, data) replace ~3 RPCs per chunk with one per window. */
+#define PF_DIR_WIN 3840u
+#define PF_DATA_WIN 8192u
+typedef struct {
+	hcu_asset_profile_read_at reader; void *context;
+	uint32_t image_size, dir_end, off[2], len[2];
+	uint8_t dir[PF_DIR_WIN], data[PF_DATA_WIN];
+} pf_window;
+static pf_window s_pf_window;
+static int pf_read(void *c, uint32_t at, void *dst, uint32_t n)
+{
+	pf_window *w=(pf_window *)c;
+	uint32_t k=at<w->dir_end?0u:1u, cap=k?PF_DATA_WIN:PF_DIR_WIN, end=k?w->image_size:w->dir_end, fill;
+	uint8_t *win=k?w->data:w->dir;
+	if(n>cap||at>end||n>end-at) return w->reader(w->context,at,dst,n);
+	if(!(w->len[k]&&at>=w->off[k]&&at-w->off[k]<=w->len[k]&&n<=w->len[k]-(at-w->off[k]))) {
+		fill=end-at<cap?end-at:cap;
+		w->len[k]=0;
+		if(w->reader(w->context,at,win,fill)!=0) return -1;
+		w->off[k]=at; w->len[k]=fill;
+	}
+	memcpy(dst,win+(at-w->off[k]),n);
+	return 0;
+}
+
 /* Preflight with caller-owned read scratch of at least HCP_SCRATCH bytes. A larger
  * scratch means fewer, larger reads of the same bytes; the checks are unchanged. */
 int hcu_asset_profile_preflight_reader_scratch(hcu_asset_profile_read_at reader,void *context,uint32_t image_size,uint32_t expected,hcu_asset_profile_view *view,uint8_t *buf,uint32_t buf_bytes)
 {
 	uint8_t h[32],row[96],dig[32],expected_logical[32]; uint32_t ver,rs,profile,count,doff,dsize,total,last_end,i,pt=0,pi=0,prev_index=0,logical_off=0,logical_size=0,seg_count=0; uint64_t expect;
 	sha256_context logical_sha; int in_logical=0;
+	hcu_asset_profile_read_at raw_reader=reader; void *raw_context=context;
 	if(!reader||!view) return HCU_ASSET_PROFILE_E_ARGUMENT;
 	if(!buf||buf_bytes<HCP_SCRATCH) return HCU_ASSET_PROFILE_E_ARGUMENT;
 	if(image_size<32||!rd(reader,context,0,h,32)) return HCU_ASSET_PROFILE_E_BOUNDS;
@@ -77,6 +104,9 @@ int hcu_asset_profile_preflight_reader_scratch(hcu_asset_profile_read_at reader,
 	if(!profile||!count||count>HCU_ASSET_PROFILE_MAX_CHUNKS||doff!=32||expect!=dsize||total!=image_size||dsize>total-doff) return HCU_ASSET_PROFILE_E_FORMAT;
 	if(profile!=expected) return HCU_ASSET_PROFILE_E_PROFILE;
 	last_end=doff+dsize;
+	memset(&s_pf_window,0,sizeof(s_pf_window));
+	s_pf_window.reader=raw_reader; s_pf_window.context=raw_context; s_pf_window.image_size=total; s_pf_window.dir_end=last_end;
+	reader=pf_read; context=&s_pf_window;
 	for(i=0;i<count;i++) {
 		uint32_t type,id,off,n,lo=0,ls=0,idx=0,nseg=1,at,rem; sha256_context segsha;
 		if(!rd(reader,context,doff+i*rs,row,rs)) return HCU_ASSET_PROFILE_E_BOUNDS; /* preflight-row */
@@ -111,7 +141,7 @@ int hcu_asset_profile_preflight_reader_scratch(hcu_asset_profile_read_at reader,
 	if(in_logical||last_end!=total) return HCU_ASSET_PROFILE_E_FORMAT;
 	{
 		hcu_asset_profile_view v; hcu_asset_chunk_view e;
-		memset(&v,0,sizeof(v)); v.profile_id=profile; v.total_bytes=total; v.chunk_count=count; v.directory_bytes=doff+dsize; v.version=ver; v.record_bytes=rs; v.read_at=reader; v.reader_context=context;
+		memset(&v,0,sizeof(v)); v.profile_id=profile; v.total_bytes=total; v.chunk_count=count; v.directory_bytes=doff+dsize; v.version=ver; v.record_bytes=rs; v.read_at=raw_reader; v.reader_context=raw_context;
 		if(hcu_asset_profile_lookup(&v,1,0,&e)||hcu_asset_profile_lookup(&v,3,0,&e)) return HCU_ASSET_PROFILE_E_FORMAT;
 		*view=v;
 	}
