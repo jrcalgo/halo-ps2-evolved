@@ -1622,6 +1622,12 @@ int hcu_c3_bitmap_map_bind(void)
 		const hcu_asset_profile_view *profile, void *staging, uint32_t staging_bytes);
 	hcu_render_objects_set_fx_bindings(s_c3_bitmap_metadata.bitmap_bindings, s_c3_bitmap_metadata.bitmap_count,
 		&s_map_service.profile_view, staging, staging_bytes);
+	/* Verified FX source chunks live in the top megabyte of the uncommitted EE reserve (the 1 MiB static budget has no
+	 * room): the boot checks keep the boot backing below HCU_RESERVE_START and the stack above HCU_RESERVE_END. */
+	{
+		void hcu_render_objects_set_fx_source_pool(void *base, uint32_t bytes);
+		hcu_render_objects_set_fx_source_pool((void *)(uintptr_t)(HCU_RESERVE_END - 0x100000u), 0x100000u);
+	}
 #endif
 	/* C3:fx end */
 	s_c3_bitmap_dispatch.leases = (hcu_bitmap_lease *)leases;

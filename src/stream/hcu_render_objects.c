@@ -2365,6 +2365,111 @@ static void fx_chain_restore_bounds(chain_t *c, uint32_t limit, uint32_t hud_lim
 	c->limit = limit; c->hud_limit = hud_limit; c->scope = scope;
 }
 
+/* Verified FX source chunks kept in EE RAM. A first-use read costs about 6 ms of host file latency whatever its size
+ * (an FX bitmap is a few KB), so each weapon's first shots stalled frames and a texture the GS cache evicted was read
+ * again. A chunk is verified once on the way in; a hit is a memcpy. Entries are replaced oldest first. */
+#define FX_SRC_SLOTS 128u
+#define FX_SRC_PREWARM_MAX_BYTES 12288u
+#define FX_SRC_PREWARM_PERIOD 4u
+static uint8_t *s_fx_src_pool;   /* caller-owned; NULL disables the cache */
+static uint32_t s_fx_src_pool_bytes;
+
+static struct { uint32_t chunk_id, size, offset; uint8_t sha[32]; uint8_t used; } s_fx_src_slot[FX_SRC_SLOTS];
+static uint32_t s_fx_src_head, s_fx_src_tail, s_fx_src_used, s_fx_src_count;   /* ring over the pool, oldest at tail */
+static uint32_t s_fx_prewarm_cursor, s_fx_prewarm_frame;
+static const void *s_fx_src_profile;
+
+void hcu_render_objects_set_fx_source_pool(void *base, uint32_t bytes)
+{
+	s_fx_src_pool = (uint8_t *)base;
+	s_fx_src_pool_bytes = base ? bytes : 0u;
+	s_fx_src_head = 0;
+	memset(s_fx_src_slot, 0, sizeof s_fx_src_slot);
+}
+
+static int fx_src_find(uint32_t chunk_id, const uint8_t sha[32], uint32_t size)
+{
+	uint32_t i;
+	for (i = 0; i < FX_SRC_SLOTS; i++)
+		if (s_fx_src_slot[i].used && s_fx_src_slot[i].chunk_id == chunk_id && s_fx_src_slot[i].size == size &&
+			!memcmp(s_fx_src_slot[i].sha, sha, 32)) return (int)i;
+	return -1;
+}
+
+static void fx_src_drop_oldest(void)
+{
+	uint32_t i, best = FX_SRC_SLOTS, oldest = 0;
+	for (i = 0; i < FX_SRC_SLOTS; i++)
+		if (s_fx_src_slot[i].used && (best == FX_SRC_SLOTS || s_fx_src_slot[i].offset < oldest)) {
+			best = i; oldest = s_fx_src_slot[i].offset;
+		}
+	(void)oldest;
+	if (best != FX_SRC_SLOTS) s_fx_src_slot[best].used = 0;
+}
+
+/* Copies a verified chunk (still in s_fx_staging) into the pool. Pool space is a plain bump allocator that restarts at
+ * zero once it is full, dropping every entry the restart would overwrite. */
+static void fx_src_store(uint32_t chunk_id, const uint8_t sha[32], uint32_t size)
+{
+	uint32_t i, at, slot = FX_SRC_SLOTS;
+	if (!s_fx_src_pool || size > s_fx_src_pool_bytes) return;
+	at = (s_fx_src_head + 63u) & ~63u;
+	if (at + size > s_fx_src_pool_bytes) at = 0;
+	for (i = 0; i < FX_SRC_SLOTS; i++) {
+		if (!s_fx_src_slot[i].used) { if (slot == FX_SRC_SLOTS) slot = i; continue; }
+		if (s_fx_src_slot[i].offset < at + size && at < s_fx_src_slot[i].offset + s_fx_src_slot[i].size)
+			s_fx_src_slot[i].used = 0;
+	}
+	for (i = 0; i < FX_SRC_SLOTS && slot == FX_SRC_SLOTS; i++) if (!s_fx_src_slot[i].used) slot = i;
+	if (slot == FX_SRC_SLOTS) return;
+	memcpy(s_fx_src_pool + at, s_fx_staging, size);
+	s_fx_src_slot[slot].chunk_id = chunk_id; s_fx_src_slot[slot].size = size; s_fx_src_slot[slot].offset = at;
+	memcpy(s_fx_src_slot[slot].sha, sha, 32); s_fx_src_slot[slot].used = 1;
+	s_fx_src_head = at + size;
+	(void)fx_src_drop_oldest; (void)s_fx_src_tail; (void)s_fx_src_used; (void)s_fx_src_count;
+}
+
+/* Fills s_fx_staging with the verified chunk: from the pool when held, else one file read that is then kept. */
+static int fx_src_fill(uint32_t chunk_id, const uint8_t sha[32], uint32_t size)
+{
+	int slot;
+	if (s_fx_src_profile != (const void *)s_fx_profile) {
+		memset(s_fx_src_slot, 0, sizeof s_fx_src_slot);
+		s_fx_src_head = 0; s_fx_prewarm_cursor = 0;
+		s_fx_src_profile = (const void *)s_fx_profile;
+	}
+	slot = s_fx_src_pool ? fx_src_find(chunk_id, sha, size) : -1;
+	if (slot >= 0) {
+		memcpy(s_fx_staging, s_fx_src_pool + s_fx_src_slot[slot].offset, size);
+		return 0;
+	}
+	if (hcu_asset_profile_read_chunk_staged(s_fx_profile, HCU_ASSET_CHUNK_MEDIA, chunk_id,
+		s_fx_staging, s_fx_staging_bytes) != HCU_ASSET_PROFILE_OK) return -1;
+	fx_src_store(chunk_id, sha, size);
+	return 0;
+}
+
+/* Background warm-up: every FX_SRC_PREWARM_PERIOD-th frame with no demand read, read the next small bitmap chunk of
+ * the binding table into the pool until the pool is three quarters full. */
+static void fx_src_prewarm_step(uint32_t previous_frame_read_bytes)
+{
+	hcu_asset_chunk_view cv;
+	if (!s_fx_src_pool || !s_fx_profile || !s_fx_staging || !s_fx_bind || s_fx_prewarm_cursor >= s_fx_bind_count) return;
+	if (s_frame == s_fx_prewarm_frame || s_frame % FX_SRC_PREWARM_PERIOD) return;
+	if (previous_frame_read_bytes) return;
+	s_fx_prewarm_frame = s_frame;
+	if (s_fx_src_head > s_fx_src_pool_bytes / 4u * 3u) { s_fx_prewarm_cursor = s_fx_bind_count; return; }
+	{
+		const hcu_bitmap_binding *b = &s_fx_bind[s_fx_prewarm_cursor++];
+		if (b->image_index != 0u ||
+			hcu_asset_profile_lookup(s_fx_profile, HCU_ASSET_CHUNK_MEDIA, b->chunk_id, &cv) != HCU_ASSET_PROFILE_OK ||
+			cv.size > FX_SRC_PREWARM_MAX_BYTES || cv.size > s_fx_staging_bytes ||
+			memcmp(cv.sha256, b->expected_chunk_sha256, 32) || fx_src_find(b->chunk_id, cv.sha256, cv.size) >= 0) return;
+		s_view_counters.fx_source_read_bytes += cv.size;
+		(void)fx_src_fill(b->chunk_id, cv.sha256, cv.size);
+	}
+}
+
 /* Reads one binding's BITM image. The bytes point into the staging buffer and are valid until the next call.
  * Same checks as hcu_bitmap_dispatch_request: identity, chunk digest, format, power-of-two size, mip 0. */
 static int fx_source(const hcu_bitmap_binding *b, bsp_fx_tex_src *out)
@@ -2378,8 +2483,7 @@ static int fx_source(const hcu_bitmap_binding *b, bsp_fx_tex_src *out)
 		cv.size > s_fx_staging_bytes || memcmp(cv.sha256, b->expected_chunk_sha256, 32)) return -1;
 	s_view_counters.fx_source_read_bytes += cv.size;
 	/* s_fx_staging is disposable, so the single-pass staged read applies (one read and one hash per byte). */
-	if (hcu_asset_profile_read_chunk_staged(s_fx_profile, HCU_ASSET_CHUNK_MEDIA, b->chunk_id,
-		s_fx_staging, s_fx_staging_bytes) != HCU_ASSET_PROFILE_OK) return -1;
+	if (fx_src_fill(b->chunk_id, cv.sha256, cv.size) != 0) return -1;
 	if (tex_open(&section, (const uint8_t *)s_fx_staging, cv.size) != TEX_OK ||
 		b->image_index >= section.texture_count) return -1;
 	image = tex_get(&section, b->image_index);
@@ -3710,7 +3814,11 @@ const halo_ps2_frame_snapshot *hcu_render_objects_frame_begin(uint32_t frame, ui
 	uint32_t pre_admit_sequence = 0u, pre_admit_generation = 0u;
 	int pre_admitted = 0;
 	s_frame = frame;
-	memset(&s_view_counters, 0, sizeof s_view_counters);
+	{
+		uint32_t previous_reads = s_view_counters.fx_source_read_bytes;
+		memset(&s_view_counters, 0, sizeof s_view_counters);
+		fx_src_prewarm_step(previous_reads);
+	}
 	if (s_pin.pinned && s_pending_seq && bsp_render_fence_observed(s_pending_seq) == 1 &&
 		bsp_render_source_release(BSP_SRC_OBJECT_PIN, s_pending_seq) == 1) {
 		pin_drop();
