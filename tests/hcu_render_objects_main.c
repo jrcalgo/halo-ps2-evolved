@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "stream/hcu_render_objects.h"
+#include "stream/hcu_render_frame.h"
 
 static int fail(const char *what, int line)
 {
@@ -36,7 +37,27 @@ static void models_table(hcu_render_objects_model *m)
 static const halo_ps2_snapshot_camera kcam = {
 	.position = {0, 0, 0}, .forward = {1, 0, 0}, .up = {0, 0, 1},
 	.vertical_field_of_view = 1.0f, .z_near = 0.1f, .z_far = 100.0f,
+	.viewport_bounds = {0, 0, 640, 480},
 };
+
+static int test_actual_boulder_bound_frustum(void)
+{
+	hcu_render_objects_frustum f;
+	float center[3] = { 0.0013619661f, 0.0002609193f, -0.194211185f };
+	float position[3] = { 0.0f, 0.0f, 0.0f };
+	float expanded = hcu_render_bounds_root_radius(1.4762f, 1.0f, center, 1.534398675f);
+	memset(&f, 0, sizeof f);
+	f.valid = 1;
+	/* RMD 1124 visible-vertex witness: one parent plane is 1.60 units from
+	 * the root, between CE's radius and the exact packed MODL sphere extent. */
+	f.plane[0][0] = 1.0f;
+	f.plane[0][3] = -1.60f;
+	CHECK(!hcu_render_objects_bound_in_frustum(position, 1.4762f, &f));
+	CHECK(hcu_render_objects_bound_in_frustum(position, expanded, &f));
+	f.plane[0][3] = -2.0f;
+	CHECK(!hcu_render_objects_bound_in_frustum(position, expanded, &f));
+	return 0;
+}
 
 /* Two views; object 0 (skinned, 3 palette nodes) is shared, view 1 adds object 1 (static, resource 200). */
 static int build_two_views(halo_ps2_frame_snapshot *s, halo_ps2_snapshot_matrix4x3 *pal)
@@ -95,7 +116,23 @@ static int test_select(void)
 	CHECK(hcu_render_objects_select(&s, 1, models, 2, draw, HCU_OBJECTS_MAX_DRAW, &n, &c) == 0);
 	CHECK(n == 2 && draw[0].object_index == 0 && draw[1].object_index == 1 && draw[1].slot == 1);
 	CHECK(draw[1].world.position[0] == 4.0f && draw[1].resource_id == 200);
-	CHECK(c.views_seen == 2 && c.model_hits == 3 && c.failures == 0);
+	CHECK(draw[1].ground_weapon_lod == 1u); /* weapon with valid empty parent range is loose */
+	/* A published parent link makes the same weapon attached; a malformed range
+	 * is conservative and must not opt it into coarse LOD either. */
+	s.attachment_count = 1u;
+	s.objects[1].attachment_first = 0u;
+	s.objects[1].attachment_count = 1u;
+	s.attachments[0].kind = HALO_PS2_FRAME_ATTACHMENT_PARENT_LINK;
+	s.attachments[0].parent_object = 0u;
+	s.attachments[0].child_object = 1u;
+	CHECK(hcu_render_objects_select(&s, 1, models, 2, draw, HCU_OBJECTS_MAX_DRAW, &n, &c) == 0);
+	CHECK(n == 2u && draw[1].ground_weapon_lod == 0u);
+	s.objects[1].attachment_first = (uint16_t)(s.attachment_count + 1u);
+	CHECK(hcu_render_objects_select(&s, 1, models, 2, draw, HCU_OBJECTS_MAX_DRAW, &n, &c) == 0);
+	CHECK(n == 2u && draw[1].ground_weapon_lod == 0u);
+	s.objects[1].attachment_first = 0u;
+	s.objects[1].attachment_count = 0u;
+	CHECK(c.views_seen == 4 && c.model_hits == 7 && c.failures == 0);
 	/* Refusals: view out of range, unknown resource, palette range past the table, bad refs. */
 	CHECK(hcu_render_objects_select(&s, 2, models, 2, draw, HCU_OBJECTS_MAX_DRAW, &n, &c) == HCU_RENDER_CONTENT_E_ARGUMENT);
 	s.resources[1].id = 999;                                  /* object 1 now unknown */
@@ -285,22 +322,115 @@ static int test_first_person_camera_without_models_and_ce_invisibility(void)
 	s.views[0].unit_object = 0u;
 	s.views[0].flags |= HALO_PS2_FRAME_VIEW_FIRST_PERSON_CAMERA;
 	s.views[1].unit_object = 3u; /* another player's visible biped */
+	CHECK(!hcu_render_objects_object_visible_in_view(&s, &s.views[0], 0u));
+	CHECK(!hcu_render_objects_object_visible_in_view(&s, &s.views[0], 1u));
+	CHECK(!hcu_render_objects_object_visible_in_view(&s, &s.views[0], 2u));
+	CHECK(hcu_render_objects_object_visible_in_view(&s, &s.views[0], 3u));
+	CHECK(hcu_render_objects_object_visible_in_view(&s, &s.views[0], 4u));
+	CHECK(hcu_render_objects_object_visible_in_view(&s, &s.views[1], 0u));
+	CHECK(hcu_render_objects_object_visible_in_view(&s, &s.views[1], 3u));
+	/* CE render spheres let residency and selection skip objects wholly outside
+	 * the view. Unknown bounds remain visible so malformed/missing metadata can
+	 * never hide world content. */
+	s.objects[3].world.position[0] = 10.0f;
+	s.objects[3].world.position[1] = 0.0f;
+	s.objects[3].world.position[2] = 0.0f;
+	s.objects[3].render_radius = 1.0f;
+	s.objects[4].world.position[0] = -10.0f;
+	s.objects[4].world.position[1] = 0.0f;
+	s.objects[4].world.position[2] = 0.0f;
+	s.objects[4].render_radius = 1.0f;
+	CHECK(hcu_render_objects_object_visible_in_view(&s, &s.views[0], 3u));
+	CHECK(!hcu_render_objects_object_visible_in_view(&s, &s.views[0], 4u));
+	s.objects[4].world.position[0] = 200.0f;
+	CHECK(!hcu_render_objects_object_visible_in_view(&s, &s.views[0], 4u));
+	s.objects[4].render_radius = 0.0f;
+	CHECK(hcu_render_objects_object_visible_in_view(&s, &s.views[0], 4u));
+	s.objects[4].render_radius = 1.0f;
+	/* Boundary spheres intersect the native frustum; fully outside side and
+	 * near planes are rejected. The renderer ignores camera roll, and invalid
+	 * viewport metadata leaves the object visible. */
+	s.objects[4].world.position[0] = 10.0f;
+	s.objects[4].world.position[1] = 7.25f;
+	s.objects[4].world.position[2] = 0.0f;
+	s.objects[4].render_radius = 0.05f;
+	CHECK(hcu_render_objects_object_visible_in_view(&s, &s.views[0], 4u));
+	s.objects[4].world.position[1] = 7.8f;
+	CHECK(!hcu_render_objects_object_visible_in_view(&s, &s.views[0], 4u));
+	s.objects[4].world.position[1] = 0.0f;
+	s.objects[4].world.position[0] = 0.01f;
+	CHECK(!hcu_render_objects_object_visible_in_view(&s, &s.views[0], 4u));
+	s.objects[4].world.position[0] = 0.08f;
+	s.objects[4].render_radius = 0.05f;
+	CHECK(hcu_render_objects_object_visible_in_view(&s, &s.views[0], 4u));
+	/* C3's three-view top rectangle is twice as wide as the single-view
+	 * rectangle. Verify an admission frustum uses the chosen output layout: a
+	 * wide pre-admission frustum admits this point, but the single-view output
+	 * frustum correctly excludes it. */
+	{
+		hcu_render_layout layout;
+		hcu_render_objects_frustum frustum;
+		halo_ps2_frame_view layout_view = s.views[0];
+		s.objects[4].world.position[0] = 10.0f;
+		s.objects[4].world.position[1] = 9.0f;
+		s.objects[4].world.position[2] = 0.0f;
+		s.objects[4].render_radius = 0.05f;
+		CHECK(hcu_render_layout_compute(1u, 512, 448, &layout) == 0);
+		CHECK(hcu_render_objects_frustum_build_aspect(&layout_view,
+			(float)layout.views[0].w / (float)layout.views[0].h, &frustum));
+		CHECK(!hcu_render_objects_object_visible_with_frustum(&s, &layout_view, 4u, &frustum));
+		/* Same snapshot and object under the three-view top aspect: the old
+		 * widened all-views admission path would retain this otherwise offscreen object. */
+		CHECK(hcu_render_layout_compute(3u, 512, 448, &layout) == 0);
+		CHECK(hcu_render_objects_frustum_build_aspect(&layout_view,
+			(float)layout.views[0].w / (float)layout.views[0].h, &frustum));
+		CHECK(hcu_render_objects_object_visible_with_frustum(&s, &layout_view, 4u, &frustum));
+		/* For every supported layout, test the actual rectangle aspect for each
+		 * view. This guards the asymmetric three-view top/bottom geometry. */
+		{
+			uint32_t views, v;
+			for (views = 1u; views <= 4u; ++views) {
+				CHECK(hcu_render_layout_compute(views, 512, 448, &layout) == 0);
+				for (v = 0; v < views; ++v) {
+					float aspect = (float)layout.views[v].w / (float)layout.views[v].h;
+					CHECK(aspect > 1.0f && aspect <= 2.3f);
+				}
+			}
+		}
+		/* A point comfortably inside the single-view frustum remains admitted. */
+		s.objects[4].world.position[1] = 5.0f;
+		CHECK(hcu_render_objects_frustum_build_aspect(&layout_view, 512.0f / 448.0f, &frustum));
+		CHECK(hcu_render_objects_object_visible_with_frustum(&s, &layout_view, 4u, &frustum));
+	}
+	{
+		halo_ps2_frame_view rolled = s.views[0];
+		hcu_render_objects_frustum frustum;
+		rolled.camera.up[0] = 0.0f; rolled.camera.up[1] = 1.0f; rolled.camera.up[2] = 0.0f;
+		s.objects[4].world.position[0] = 10.0f;
+		s.objects[4].world.position[2] = 8.0f;
+		s.objects[4].render_radius = 0.1f;
+		CHECK(hcu_render_objects_frustum_build(&rolled, &frustum));
+		CHECK(!hcu_render_objects_object_visible_in_view(&s, &rolled, 4u));
+		rolled.camera.viewport_bounds[2] = rolled.camera.viewport_bounds[0];
+		CHECK(!hcu_render_objects_frustum_build(&rolled, &frustum));
+		CHECK(hcu_render_objects_object_visible_in_view(&s, &rolled, 4u));
+	}
 	models_table(models);
 	memset(&counters, 0, sizeof counters);
 	memset(found, 0, sizeof found);
 	CHECK(hcu_render_objects_select(&s, 0u, models, 2u, draw,
 		HCU_OBJECTS_MAX_DRAW, &count, &counters) == 0);
-	CHECK(count == 2u); /* opponents and loose weapons survive */
+	CHECK(count == 1u); /* visible opponents survive; the rear weapon is frustum culled */
 	for (oi = 0; oi < count; ++oi) found[draw[oi].object_index] = 1u;
-	CHECK(!found[0] && !found[1] && !found[2] && found[3] && found[4]);
+	CHECK(!found[0] && !found[1] && !found[2] && found[3] && !found[4]);
 	/* Third-person keeps both biped subtrees, but CE-hidden inventory stays hidden. */
 	memset(&counters, 0, sizeof counters);
 	memset(found, 0, sizeof found);
 	CHECK(hcu_render_objects_select(&s, 1u, models, 2u, draw,
 		HCU_OBJECTS_MAX_DRAW, &count, &counters) == 0);
-	CHECK(count == 4u);
+	CHECK(count == 3u);
 	for (oi = 0; oi < count; ++oi) found[draw[oi].object_index] = 1u;
-	CHECK(found[0] && found[1] && !found[2] && found[3] && found[4]);
+	CHECK(found[0] && found[1] && !found[2] && found[3] && !found[4]);
 	return 0;
 }
 
@@ -490,21 +620,34 @@ static int test_residency_policy(void)
 	CHECK(hcu_render_objects_pool_request_fits(1024, 2048));
 	CHECK(!hcu_render_objects_pool_request_fits(2049, 2048));
 	CHECK(!hcu_render_objects_pool_request_fits(0, 2048));
+	CHECK(hcu_render_objects_residency_pre_admit_allowed(0u, 0, 1, 10u, 3u));
+	CHECK(!hcu_render_objects_residency_pre_admit_allowed(1u, 0, 1, 10u, 3u));
+	CHECK(!hcu_render_objects_residency_pre_admit_allowed(0u, 1, 1, 10u, 3u));
+	CHECK(!hcu_render_objects_residency_pre_admit_allowed(0u, 0, 0, 10u, 3u));
+	CHECK(!hcu_render_objects_residency_pre_admit_allowed(0u, 0, 1, 0u, 3u));
+	CHECK(!hcu_render_objects_residency_pre_admit_allowed(0u, 0, 1, 10u, 0u));
+	CHECK(hcu_render_objects_residency_pre_admit_matches(10u, 3u, 10u, 3u));
+	CHECK(!hcu_render_objects_residency_pre_admit_matches(10u, 3u, 11u, 3u));
+	CHECK(!hcu_render_objects_residency_pre_admit_matches(10u, 3u, 10u, 4u));
 	return 0;
 }
 
+/* Regression for a first-person asset switch while the previous view still owns
+ * its snapshot read pin and GS chain. Admission must wait for both to retire;
+ * once clear, the selected FP weapon outranks world/effect entries. Exercise
+ * the production admission and victim predicates used by residency_frame(). */
 static int test_fp_switch_cache_admission(void)
 {
 	uint32_t refused = 0;
-	/* Full pool: old gun/hands plus lower-priority world/effect models. */
+	/* Full pool: old FP gun, hands, plus lower priority world/effect occupants. */
 	CHECK(!hcu_render_objects_pool_request_fits(1u, 0u));
 	CHECK(hcu_render_objects_residency_pre_admit_allowed(0u, 0, 1, 20u, 4u));
-	/* A prior reader or pending fence blocks pre-admission and eviction. */
+	/* Old reader/fence still active: must neither pre-admit nor evict. */
 	CHECK(!hcu_render_objects_residency_pre_admit_allowed(1u, 0, 0, 20u, 4u));
 	CHECK(!hcu_render_objects_residency_rank_victim_ok(1, 3u, 0u, 0, 0u, &refused));
 	CHECK(!hcu_render_objects_residency_rank_victim_ok(1, 3u, 0u, 1, 1u, &refused));
-	/* Once readers and the chain retire, the switched FP resource may displace
-	 * lower-priority entries, while equal-rank FP assets remain protected. */
+	/* After prior readers and kick retire, sequence/generation match allows
+	 * admission; lower priority occupants are legal victims, old FP/hands are not. */
 	CHECK(hcu_render_objects_residency_pre_admit_allowed(0u, 0, 1, 21u, 4u));
 	CHECK(hcu_render_objects_residency_pre_admit_matches(21u, 4u, 21u, 4u));
 	CHECK(hcu_render_objects_residency_rank_victim_ok(1, 3u, 0u, 1, 0u, &refused));
@@ -600,23 +743,65 @@ static int test_c3_6(void)
 	CHECK(hcu_render_objects_track_poses(&s, &tr, &c) == 0);
 	CHECK(c.pose_changes == 1);                              /* generation 1 object 0 now has h1 -> h0 change */
 
-	/* effects (v4 fx table): owner in view 0 and visible to view 0 is selected; a request whose view_mask
+	/* FX table: owner in view 0 and visible to view 0 is selected; a request whose view_mask
 	 * excludes view 0, an owner outside the view, or a NaN position is not */
-	s.fx_request_count = 3;
+	s.fx_request_count = 5;
 	s.fx_requests[0].kind = HALO_PS2_FRAME_FX_PARTICLE_SYSTEM; s.fx_requests[0].owner_object = 0;
 	s.fx_requests[0].view_mask = 0x1; s.fx_requests[0].permutation = 4; s.fx_requests[0].scale = 2.0f;
+	s.fx_requests[0].flags = HALO_PS2_FRAME_FX_NATIVE_GEOMETRY;
+	s.fx_requests[0].decal_geometry_vertex_count = 4u;
 	s.fx_requests[0].position[0] = 1.0f; s.fx_requests[0].position[1] = 2.0f; s.fx_requests[0].position[2] = 3.0f;
 	s.fx_requests[1].kind = HALO_PS2_FRAME_FX_DECAL; s.fx_requests[1].owner_object = 0;
 	s.fx_requests[1].view_mask = 0x2; s.fx_requests[1].position[0] = 1.0f;
 	s.fx_requests[2].kind = HALO_PS2_FRAME_FX_DECAL; s.fx_requests[2].owner_object = 0;
-	s.fx_requests[2].view_mask = 0x1; s.fx_requests[2].position[0] = 0.0f / 0.0f;
+	s.fx_requests[2].view_mask = 0x1; s.fx_requests[2].position[0] = 1.0f;
+	s.fx_requests[2].flags = HALO_PS2_FRAME_FX_NATIVE_GEOMETRY;
+	s.fx_requests[2].decal_geometry_vertex_count = 4u;
+	s.fx_requests[2].decal_surface_id = 0x341u;
+	s.fx_requests[2].decal_intensity = 0.75f;
+	s.fx_requests[2].decal_color_argb[0] = 0.8f; s.fx_requests[2].decal_color_argb[1] = 0.4f;
+	s.fx_requests[2].decal_color_argb[2] = 0.2f; s.fx_requests[2].decal_color_argb[3] = 1.0f;
+	HALO_PS2_FRAME_FX_DECAL_SET_SHADER(s.fx_requests[2].flags, 2u, 1u);
+	for (unsigned vertex = 0; vertex < 4u; ++vertex) {
+		s.fx_requests[2].decal_geometry[vertex].position[0] = (float)vertex;
+		s.fx_requests[2].decal_geometry[vertex].position[1] = 2.0f;
+		s.fx_requests[2].decal_geometry[vertex].position[2] = 3.0f;
+		s.fx_requests[2].decal_geometry[vertex].uv[0] = (float)vertex / 4.0f;
+		s.fx_requests[2].decal_geometry[vertex].uv[1] = 0.5f;
+	}
+	s.fx_requests[3].kind = HALO_PS2_FRAME_FX_PARTICLE; s.fx_requests[3].owner_object = HALO_PS2_FRAME_NONE_U16;
+	s.fx_requests[3].view_mask = 0x1; s.fx_requests[3].resource_id = 77; s.fx_requests[3].permutation = 3;
+	s.fx_requests[3].particle_flags = HALO_PS2_FRAME_PARTICLE_ATTACHED_TO_LOCAL_PLAYER;
+	s.fx_requests[3].flags |= HALO_PS2_FRAME_FX_FIRST_PERSON;
+	s.fx_requests[3].lifespan_sec = 1.0f;
+	s.fx_requests[3].sequence_index = 2; s.fx_requests[3].frame_index = 5;
+	s.fx_requests[3].bitmap_width = 256; s.fx_requests[3].bitmap_height = 128; s.fx_requests[3].sprite_uv[0] = 0.25f;
+	s.fx_requests[3].sprite_uv[1] = 0.75f; s.fx_requests[3].sprite_uv[2] = 0.125f;
+	s.fx_requests[3].sprite_uv[3] = 0.875f; s.fx_requests[3].color_argb[0] = 0.5f;
+	s.fx_requests[4].kind = HALO_PS2_FRAME_FX_CONTRAIL;
+	s.fx_requests[4].owner_object = HALO_PS2_FRAME_NONE_U16; s.fx_requests[4].view_mask = 0x1;
+	s.fx_requests[4].scale = 0.4f; s.fx_requests[4].segment_end_width = 0.2f;
+	s.fx_requests[4].segment_end_color_argb[0] = 0.75f;
 	memset(&c, 0, sizeof c);
 	CHECK(hcu_render_effects_select(&s, 0, fx, 4, &count, &c) == 0);
-	CHECK(count == 1 && fx[0].kind == HALO_PS2_FRAME_FX_PARTICLE_SYSTEM && fx[0].permutation == 4);
+	CHECK(count == 4 && fx[0].kind == HALO_PS2_FRAME_FX_PARTICLE_SYSTEM && fx[0].permutation == 4);
 	CHECK(fx[0].owner_object == 0 && fx[0].scale == 2.0f);
-	CHECK(c.effects_selected == 1 && c.effects_refused == 1);
+	CHECK(fx[0].native_geometry == s.fx_requests[0].decal_geometry &&
+		(fx[0].flags & HALO_PS2_FRAME_FX_NATIVE_GEOMETRY));
+	CHECK(fx[1].kind == HALO_PS2_FRAME_FX_DECAL && fx[1].native_surface_id == s.fx_requests[2].decal_surface_id);
+	CHECK(fx[1].native_geometry == s.fx_requests[2].decal_geometry && fx[1].decal_intensity == 0.75f);
+	CHECK(fx[1].color_argb[0] == 0.8f && fx[1].color_argb[2] == 0.2f &&
+		fx[1].framebuffer_blend_function == 2u && fx[1].framebuffer_fade_mode == 1u);
+	CHECK(fx[2].kind == HALO_PS2_FRAME_FX_PARTICLE && fx[2].resource_id == 77 && fx[2].permutation == 3);
+	CHECK(fx[2].particle_flags == HALO_PS2_FRAME_PARTICLE_ATTACHED_TO_LOCAL_PLAYER &&
+		(fx[2].flags & HALO_PS2_FRAME_FX_FIRST_PERSON) && fx[2].sequence_index == 2 &&
+		fx[2].frame_index == 5 && fx[2].bitmap_width == 256 && fx[2].bitmap_height == 128);
+	CHECK(fx[2].sprite_uv[0] == 0.25f && fx[2].sprite_uv[3] == 0.875f && fx[2].color_argb[0] == 0.5f);
+	CHECK(fx[3].kind == HALO_PS2_FRAME_FX_CONTRAIL && fx[3].segment_end_width == 0.2f &&
+		fx[3].segment_end_color_argb[0] == 0.75f);
+	CHECK(c.effects_selected == 4 && c.effects_refused == 0);
 	CHECK(hcu_render_effects_select(&s, 0, fx, 0, &count, &c) == 0 && count == 0);
-	CHECK(c.effects_refused == 2 && c.fx_budget_deferred == 1); /* invalid request refused; no room is deferred */
+	CHECK(c.effects_refused == 0 && c.fx_budget_deferred == 4); /* valid requests defer when output capacity is zero */
 
 	/* parity summary: per-kind counts, known materials, and a hash that moves with the identity */
 	memset(recs, 0, sizeof recs);
@@ -719,6 +904,64 @@ static int test_fx_quads(void)
 	CHECK(hcu_render_fx_build_quad(&e, right, up, &q) == HCU_RENDER_CONTENT_E_ARGUMENT);
 	e.scale = 0.0f / 0.0f;
 	CHECK(hcu_render_fx_build_quad(&e, right, up, &q) == HCU_RENDER_CONTENT_E_ARGUMENT);
+
+	/* Live particle sprite uses the selected atlas subrect, registration point, and CE size thresholds. */
+	memset(&e, 0, sizeof e);
+	e.kind = HALO_PS2_FRAME_FX_PARTICLE; e.position[0] = 10.0f; e.scale = 0.5f;
+	e.runtime_oo_width = 0.01f; e.bitmap_width = 256; e.bitmap_height = 128; e.lifespan_sec = 1.0f;
+	e.sprite_uv[0] = 0.25f; e.sprite_uv[1] = 0.75f; e.sprite_uv[2] = 0.25f; e.sprite_uv[3] = 0.75f;
+	e.registration[0] = 0.25f; e.registration[1] = 0.25f;
+	CHECK(hcu_render_fx_particle_build_quad(&e, &kcam, 448, &q) == 0);
+	CHECK(fabsf(q.v[0][0] - 10.0f) < 1e-4f && fabsf(q.v[0][1] - 0.64f) < 1e-4f &&
+		fabsf(q.v[0][2] + 0.64f) < 1e-4f);
+	CHECK(fabsf(q.v[2][1] + 0.64f) < 1e-4f && fabsf(q.v[2][2] - 0.64f) < 1e-4f);
+	/* CE applies bitmap width to both normalized UV offsets, even for this
+	 * 256x128 selected sprite bitmap. */
+	CHECK(fabsf((q.v[2][1] - q.v[0][1]) + 1.28f) < 1e-4f);
+	e.sprite_orientation = 2u;
+	e.forward[0] = 0.0f; e.forward[1] = 1.0f; e.forward[2] = 0.0f;
+	CHECK(hcu_render_fx_particle_build_quad(&e, &kcam, 448, &q) == 0);
+	{
+		float ux = q.v[1][0] - q.v[0][0], uy = q.v[1][1] - q.v[0][1], uz = q.v[1][2] - q.v[0][2];
+		float vx = q.v[3][0] - q.v[0][0], vy = q.v[3][1] - q.v[0][1], vz = q.v[3][2] - q.v[0][2];
+		float cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx;
+		CHECK(sqrtf(cx * cx + cy * cy + cz * cz) > 1e-3f);
+		CHECK(fabsf(ux * e.forward[0] + uy * e.forward[1] + uz * e.forward[2]) < 1e-4f);
+		CHECK(fabsf(vx * e.forward[0] + vy * e.forward[1] + vz * e.forward[2]) < 1e-4f);
+	}
+	e.forward[0] = 0.0f; e.forward[1] = 0.0f; e.forward[2] = 1.0f;
+	CHECK(hcu_render_fx_particle_build_quad(&e, &kcam, 448, &q) == 0); /* CE global-left fallback */
+	e.sprite_orientation = 0u;
+	e.forward[0] = e.forward[1] = e.forward[2] = 0.0f;
+	{
+		float particle_base = dist3(q.v[0], e.position);
+		/* A viewer-facing CE contrail segment is a bounded strip between its two
+		 * published endpoints, with independent start/end widths. */
+	{
+		hcu_render_effect_draw contrail;
+		memset(&contrail, 0, sizeof contrail);
+		contrail.kind = HALO_PS2_FRAME_FX_CONTRAIL;
+		contrail.position[0] = 1.0f; contrail.position[2] = 1.0f;
+		contrail.forward[0] = 2.0f; contrail.forward[2] = 1.0f;
+		contrail.scale = 0.4f; contrail.segment_end_width = 0.2f;
+		contrail.sprite_orientation = 4u;
+		CHECK(hcu_render_fx_contrail_build_quad(&contrail, &kcam, &q) == 0);
+			CHECK(fabsf((q.v[0][0] + q.v[1][0]) * 0.5f - 1.0f) < 1e-4f &&
+				fabsf((q.v[2][0] + q.v[3][0]) * 0.5f - 2.0f) < 1e-4f);
+			CHECK(fabsf(dist3(q.v[0], q.v[1]) - 0.4f) < 1e-4f &&
+				fabsf(dist3(q.v[2], q.v[3]) - 0.2f) < 1e-4f);
+		contrail.sprite_orientation = 3u;
+		CHECK(hcu_render_fx_contrail_build_quad(&contrail, &kcam, &q) == 1); /* ground path is not a camera strip */
+	}
+		e.minimum_pixels = 100.0f;
+		CHECK(hcu_render_fx_particle_build_quad(&e, &kcam, 448, &q) == 0);
+		CHECK(dist3(q.v[0], e.position) > particle_base);
+		e.age_sec = 1.0f;
+		CHECK(hcu_render_fx_particle_build_quad(&e, &kcam, 448, &q) == 1);
+		e.flags = HALO_PS2_FRAME_FX_PARTICLE_FINAL_SEQUENCE;
+		e.age_sec = 1.2f;
+		CHECK(hcu_render_fx_particle_build_quad(&e, &kcam, 448, &q) == 0);
+	}
 
 	/* flat colour per kind: the four drawn kinds differ, LIGHT is refused */
 	CHECK(hcu_render_fx_flat_colour(HALO_PS2_FRAME_FX_EFFECT, rgba_a) == 0);
@@ -987,6 +1230,11 @@ static int test_fp_lod_per_view(void)
 
 int main(void)
 {
+#if defined(HCU_RENDER_OBJECTS_EE) && ((defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE) || (defined(HALO_PS2_C3_PERF_PROBE) && HALO_PS2_C3_PERF_PROBE))
+	if (!hcu_render_objects_timing_probe_get() || hcu_render_objects_timing_probe_get()->version != 0u) return 18;
+#else
+	if (hcu_render_objects_timing_probe_get() != NULL) return 18;
+#endif
 	if (test_builder()) return 1;
 	if (test_select()) return 2;
 	if (test_first_person_hides_only_own_unit()) return 15;
@@ -1006,6 +1254,7 @@ int main(void)
 	if (test_tex_pages()) return 12;
 	if (test_first_person_world()) return 13;
 	if (test_fp_lod_per_view()) return 14;
+	if (test_actual_boulder_bound_frustum()) return 19;
 	printf("hcu_render_objects tests passed\n");
 	return 0;
 }

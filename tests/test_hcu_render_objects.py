@@ -12,19 +12,27 @@ def test_render_objects_host_contract(tmp_path):
     compiler = shutil.which("cc") or shutil.which("gcc")
     if not compiler:
         pytest.skip("C compiler unavailable")
-    exe = tmp_path / "hcu_render_objects_test"
-    subprocess.run([
-        compiler, "-std=c11", "-Wall", "-Wextra", "-Werror", "-Wno-unused-parameter",
-        "-Isrc", "-I" + str(ROOT / "submodules/halo-ce-universal/port/ps2/include"),
-        "tests/hcu_render_objects_main.c",
-        "src/stream/hcu_render_objects.c",
-        "src/stream/hcu_render_content.c",
-        "src/stream/hcu_snapshot_bank.c",
-        "-lm", "-o", str(exe),
-    ], cwd=ROOT, check=True, capture_output=True, text=True)
-    result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=60)
-    assert result.returncode == 0, result.stdout + result.stderr
-    assert "hcu_render_objects tests passed" in result.stdout
+    variants = (("quiet", []), ("timing", ["-DHALO_PS2_C3_LAG_TRACE=1"]),
+                ("perf", ["-DHALO_PS2_C3_PERF_PROBE=1"]))
+    for suffix, trace_flag in variants:
+        exe = tmp_path / ("hcu_render_objects_" + suffix)
+        subprocess.run([
+            compiler, "-std=c11", "-Wall", "-Wextra", "-Werror", "-Wno-unused-parameter",
+            *( ["-Wno-unused-variable"] if trace_flag else [] ),
+            *trace_flag, "-Isrc", "-Itests/obj_render_shim",
+            "-I" + str(ROOT / "submodules/halo-ce-universal/port/ps2/include"),
+            "tests/hcu_render_objects_main.c",
+            "src/stream/hcu_render_objects.c",
+            "src/stream/hcu_render_bounds.c",
+            "src/stream/hcu_render_content.c",
+            "src/stream/hcu_render_views.c",
+            "src/stream/hcu_render_frame.c",
+            "src/stream/hcu_snapshot_bank.c",
+            "-lm", "-o", str(exe),
+        ], cwd=ROOT, check=True, capture_output=True, text=True)
+        result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=60)
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "hcu_render_objects tests passed" in result.stdout
 
 
 def test_objects_table_generator_is_exact(tmp_path):

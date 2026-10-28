@@ -279,12 +279,16 @@ def main() -> None:
             closure_suffix += "-telemetry"
         if os.environ.get("HCU_C3_TIMING") == "1" or os.environ.get("HCU_C3_TELEMETRY") == "1":
             closure_suffix += "-timing"
+        if os.environ.get("HCU_C3_LAG_TRACE") == "1":
+            closure_suffix += "-lag-trace"
         if os.environ.get("HCU_C3_REALTIME_SCHEDULER") == "1":
             closure_suffix += "-realtime"
         if os.environ.get("HCU_C3_SNAPSHOT_INDEX") == "1":
             closure_suffix += "-snapshot-index"
         if os.environ.get("HCU_C3_MOVEMENT_TRACE") == "1":
             closure_suffix += "-movement-trace"
+        if os.environ.get("HCU_C3_SESSION_TRACE") == "1":
+            closure_suffix += "-session-trace"
         fence_lag = (os.environ.get("HCU_C3_FENCE_LAG_KICKS") or "0").strip()
         if fence_lag not in ("", "0"):
             closure_suffix += f"-fence-lag{fence_lag}"
@@ -437,7 +441,7 @@ def main() -> None:
         "-L" + str(prefix / "ps2sdk/ee/lib"), "-o", str(gameplay_elf),
         *[str(path) for path in gameplay_objects], *[str(path) for path in hcu_objects],
         "-ldraw", "-lgraph", "-lpacket2", "-ldma", "-ldebug", "-lpad",
-        "-lmtap", "-lfileXio", "-lpatches", "-lm",
+        "-lmtap", "-lfileXio", "-lpatches", "-lsdr", "-lm",
     ]
     run(gameplay_command, env=env)
     c3_batch_profile_binding = None

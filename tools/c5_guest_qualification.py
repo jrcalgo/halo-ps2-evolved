@@ -97,13 +97,24 @@ def sha256(path: Path) -> str:
 
 
 def evaluate_log(text: str, terminated_ok: bool) -> dict:
-    """Decide the rows one run's log supports. Only a normally terminated run with the boot line can claim."""
+    """Decide the rows one run's log supports. Only a normally terminated run with the boot line can claim.
+
+    A log whose sessions are measuring (status=measuring) claims nothing; a row whose markers are in such a log is
+    reported as "measuring" with its marker evidence, so a measurement can be published without a qualification.
+    """
     result = {row: {"status": "not-claimed", "evidence": []} for row in ROW_NAMES}
     sessions = [parse_session_line(m.group(1)) for m in SESSION_LINE.finditer(text)]
     if any(session.get("status") != "qualified" for session in sessions):
+        measuring = ("measuring" in [session.get("status") for session in sessions] and
+                     all(session.get("status") in ("measuring", None) for session in sessions))
         for row in ROW_NAMES:
             result[row]["status"] = "refused"
             result[row]["evidence"].append("a session is not status=qualified (measuring or unlabelled): no claims")
+        if measuring and terminated_ok and BOOT_MARKER in text:
+            for row, marker_ok, note in measuring_rows(text):
+                if marker_ok:
+                    result[row]["status"] = "measuring"
+                    result[row]["evidence"].append(note)
         return result
     if not terminated_ok:
         for row in ROW_NAMES:
@@ -144,6 +155,27 @@ def evaluate_log(text: str, terminated_ok: bool) -> dict:
         if result[row]["status"] == "not-claimed":
             result[row]["evidence"].append("marker missing from this log")
     return result
+
+
+def measuring_rows(text: str):
+    """(row, markers present, note) for a measurement log: the same marker rules as evaluate_log, no claim."""
+    hashes = SESSION_HASH.findall(text)
+    coop_starts = [(int(m.group(2)), int(m.group(4))) for m in SESSION_START.finditer(text)
+                   if m.group(1) == "coop"]
+    survival_starts = [m for m in SESSION_START.finditer(text) if m.group(1) == "survival"]
+    kinds = set(m.group(1) for m in BOT_EVENT.finditer(text)) if any(b >= 1 for _, b in coop_starts) else set()
+    waves = [int(m.group(1)) for m in SURVIVAL_WAVE.finditer(text)]
+    rows = []
+    for kind, row in (("nav", "bots-navigate"), ("fight", "bots-fight"), ("death", "bots-die"),
+                      ("respawn", "bots-respawn")):
+        rows.append((row, kind in kinds and bool(hashes), "bot-event kind=" + kind + " (measuring)"))
+    rows.append(("bots-score", bool({"score", "kill"} & kinds) and bool(hashes), "bot-event kind=score or kill (measuring)"))
+    for name, number in COOP_MODES.items():
+        rows.append(("coop-" + name, any(c == number for c, _ in coop_starts) and bool(hashes),
+                     "session-start coop=%d (measuring)" % number))
+    rows.append(("survival-waves", bool(survival_starts) and any(w >= 2 for w in waves) and
+                 bool(SURVIVAL_OVER.search(text)) and bool(hashes), "survival-wave wave>=2 (measuring)"))
+    return rows
 
 
 def parse_session_line(fields: str) -> dict:
@@ -213,7 +245,7 @@ RETAIL_MAPS = ROOT / "build/retail-maps"
 LEVEL_PACKAGE_DIR = ROOT / "data/retail/convert"
 
 
-def stage_host(elf: Path, run_dir: Path, level: str) -> Path:
+def stage_host(elf: Path, run_dir: Path, level: str, package_tree: Path | None = None) -> Path:
     """Build the run's host: root: the ELF, maps/ui.{map,hp2}, maps/<level>.{hp2,map}, build/retail-maps.
 
     Every file is copied or linked from a pinned source; nothing is generated or edited here. A missing input is an
@@ -229,14 +261,21 @@ def stage_host(elf: Path, run_dir: Path, level: str) -> Path:
         if not source.is_file():
             raise RuntimeError(f"missing UI map input: {source}")
         (host / "maps" / name).symlink_to(source.resolve())
+    (host / "build").mkdir()
+    (host / "build" / "retail-maps").symlink_to(RETAIL_MAPS.resolve())
+    if package_tree is not None:
+        # Runtime-row mode (the C2 headless guest): the selected package tree is mounted at the path the guest opens,
+        # as tools/c2_guest_run.py mount_guest_package_tree does. The level converter output is not used here.
+        if not (package_tree / "pkg").is_dir():
+            raise RuntimeError(f"package tree has no pkg/: {package_tree}")
+        (host / "build" / "m2-c2-r3-selected-packages").symlink_to(package_tree.resolve())
+        return host / elf.name
     level_hp2 = LEVEL_PACKAGE_DIR / level / "run-a" / f"{level}.hp2"
     level_map = RETAIL_MAPS / "decompressed" / f"{level}.map"
     for source in (level_hp2, level_map):
         if not source.is_file():
             raise RuntimeError(f"missing level input: {source} (run tools/convert_map.py with MAP={level})")
         (host / "maps" / source.name).symlink_to(source.resolve())
-    (host / "build").mkdir()
-    (host / "build" / "retail-maps").symlink_to(RETAIL_MAPS.resolve())
     return host / elf.name
 
 
@@ -304,7 +343,8 @@ def run_once(args) -> dict:
     elf = args.elf.resolve()
     run_dir = OUT / args.run_name
     run_dir.mkdir(parents=True, exist_ok=True)
-    record = {"run": args.run_name, "elf": str(elf), "elf_sha256": sha256(elf), "dry_run": args.dry_run}
+    record = {"run": args.run_name, "elf": str(elf), "elf_sha256": sha256(elf), "dry_run": args.dry_run,
+              "package_tree": str(args.package_tree) if args.package_tree else None}
     if args.dry_run:
         record["rows"] = {row: {"status": "not-run", "evidence": ["dry run: PCSX2 not started"]}
                           for row in ROW_NAMES}
@@ -312,7 +352,7 @@ def run_once(args) -> dict:
         return record
     log = run_dir / "pcsx2.log"
     data = prepare_run(args.data_template, run_dir)
-    guest_elf = stage_host(elf, run_dir, args.level)
+    guest_elf = stage_host(elf, run_dir, args.level, args.package_tree)
     record["host_elf"] = str(guest_elf)
     process = launch(guest_elf, data, log, args.display)
     record["pid"] = process.pid
@@ -337,11 +377,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--elf", type=Path, help="HCU ELF built with the C5 modules")
     parser.add_argument("--data-template", type=Path, help="PCSX2 data directory copied for the run")
-    parser.add_argument("--display", default=os.environ.get("C5_GUEST_DISPLAY", ":98"),
+    parser.add_argument("--display", default=os.environ.get("C5_GUEST_DISPLAY", ":111"),
                         help="private Xvfb display (must be started by the operator; never the user's)")
     parser.add_argument("--timeout", type=float, default=300.0)
     parser.add_argument("--level", default="b30",
                         help="level whose package is staged at host:/maps (converted by tools/convert_map.py)")
+    parser.add_argument("--package-tree", type=Path,
+                        help="runtime-row mode: selected package tree (its pkg/) mounted at host:/build/"
+                             "m2-c2-r3-selected-packages; replaces the level package staging")
     parser.add_argument("--run-name", default="c5-run")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--evaluate-log", type=Path, help="evaluate an existing PCSX2 log instead of running")

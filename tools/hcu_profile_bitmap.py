@@ -31,12 +31,71 @@ OPTIONAL_FUELROD_REFLECTIONS = {
     r"characters\grunt\bitmaps\reflection grunt diffuse",
 }
 
+# These authored HUD strips are sampled at the weapon's native screen-space
+# resolution. Preserve Xbox mip 0 for the two exact sniper angle-ticks assets;
+# ordinary world/UI bitmap policy remains half-resolution and capped at 256.
+SOURCE_RESOLUTION_HUD_BITMAPS = {
+    r"weapons\sniper rifle\bitmaps\angle_ticks_mask",
+    r"weapons\sniper rifle\bitmaps\angle_ticks",
+    r"weapons\sniper rifle\bitmaps\angle_ticks2",
+    # The zoom-selected full and split scope masks are authored at 512×256
+    # and 256×256. Keep their mip 0 so the mask itself is not blurred by
+    # package-time reduction; runtime admission is separately datum-gated.
+    r"ui\hud\bitmaps\sniper\sniper_scope_mask2",
+    r"ui\hud\bitmaps\sniper\sniper_scope_mask_sm",
+}
+
+# The health/shield bar, ammo counters and motion sensor are drawn 1:1 on the
+# 640-wide frame, so the half-resolution world policy shows them upscaled 2x.
+# Keep Xbox mip 0 (all are power-of-two, 8..256) and drop the unused mip chain.
+# The colour depth stays on the converter's automatic PSMT4/PSMT8 choice.
+NATIVE_RESOLUTION_HUD_BITMAPS = {
+    r"ui\hud\bitmaps\combined\hud_unit_meters",
+    r"ui\hud\bitmaps\combined\hud_unit_backgrounds",
+    r"ui\hud\bitmaps\hud_health_base",
+    r"ui\hud\bitmaps\combined\hud_ammo_meters",
+    r"ui\hud\bitmaps\combined\hud_ammo_alphas",
+    r"ui\hud\bitmaps\combined\hud_ammo_outlines",
+    r"ui\hud\bitmaps\combined\hud_ammo_type_icons",
+    r"ui\hud\bitmaps\combined\hud_counter_numbers",
+    r"ui\hud\bitmaps\combined\hud_weapon_backgrounds",
+    r"ui\hud\bitmaps\hud_sweeper",
+    r"ui\hud\bitmaps\hud_sweeper_mask",
+    r"ui\hud\bitmaps\hud_sensor_blip",
+    r"ui\hud\bitmaps\hud_sensor_blip_custom",
+    # Per-weapon reticles, their warning overlays and the sniper scope reticle. The
+    # sniper crosshair strips stay on the default path: _sm has 4 px sides, below MIN_TEX.
+    r"ui\hud\bitmaps\combined\hud_reticles",
+    r"ui\hud\bitmaps\combined\hud_reticle_warnings",
+    r"ui\hud\bitmaps\sniper\hud_reticles_scope",
+}
+
 
 def _source_sha(path):
     digest=hashlib.sha256()
     with Path(path).open('rb') as stream:
         for block in iter(lambda:stream.read(1<<20),b''): digest.update(block)
     return digest.hexdigest()
+
+
+def _convert_scope_mask(m, img, source_id):
+    """Pack exact GS-normalized grayscale/alpha values into a PSMT8 CLUT."""
+    width, height, rgba = bitmaps.decode_level(img, m.pixels(img), 0)
+    pixels = [(rgba[i], rgba[i + 1], rgba[i + 2], texconv.ps2_alpha(rgba[i + 3]))
+              for i in range(0, len(rgba), 4)]
+    palette = sorted(set(pixels))
+    if not palette or len(palette) > 256:
+        raise BitmapProfileError("scope mask exceeds exact PSMT8 GS palette capacity")
+    palette_index = {color: index for index, color in enumerate(palette)}
+    indices = bytes(palette_index[color] for color in pixels)
+    words = [r | g << 8 | b << 16 | a << 24 for r, g, b, a in palette]
+    words += [words[-1]] * (256 - len(words))
+    clut = bytearray(1024)
+    for i, word in enumerate(words):
+        struct.pack_into("<I", clut, texconv.clut_swap(i) * 4, word)
+    return texconv.Ps2Texture(source_id, width, height, texconv.PSMT8,
+        texconv.TF_BLEND, bytes(clut), 256, [texconv._pad16(indices)],
+        texconv._average_rgba(rgba), len(palette), 0.0)
 
 
 def _engine_tex_reader():
@@ -195,7 +254,23 @@ def serialize_bitmap(sources: dict, owner: dict, schema: dict, *,
                 raise BitmapProfileError(f"unsupported required bitmap image {entry.path}[{img.index}] type={img.type}")
             continue
         try:
-            texture = texconv.convert_texture(m, img, datum, texconv.CLASS_BLEND)
+            path = entry.path.casefold()
+            is_scope_mask = path in {
+                r"ui\hud\bitmaps\sniper\sniper_scope_mask2",
+                r"ui\hud\bitmaps\sniper\sniper_scope_mask_sm",
+            }
+            native_hud = path in NATIVE_RESOLUTION_HUD_BITMAPS
+            preserve_source_resolution = path in SOURCE_RESOLUTION_HUD_BITMAPS or native_hud
+            texture = (_convert_scope_mask(m, img, datum) if is_scope_mask else
+                       texconv.convert_texture(m, img, datum, texconv.CLASS_BLEND,
+                           preserve_source_resolution=preserve_source_resolution))
+            if is_scope_mask:
+                # The parent consumes mip 0 only. Omit converter-generated
+                # lower levels so the native-resolution mask fits the measured
+                # one-chunk staging and fixed C3 owner budgets.
+                texture.mips = texture.mips[:1]
+            elif native_hud:
+                texture.mips = texture.mips[:1]
             payload = texconv.build_texs([texture], [])
         except (ValueError, IndexError, struct.error) as error:
             raise BitmapProfileError(f"bitmap image {entry.path}[{img.index}] decode failed: {error}") from error

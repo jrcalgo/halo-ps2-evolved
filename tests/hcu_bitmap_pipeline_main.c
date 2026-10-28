@@ -120,19 +120,19 @@ int main(int argc,char **argv)
 	state.blend=HCU_BITMAP_BLEND_PREMULTIPLIED;state.texture_layers=1;
 	state.point_sampled=reader.requests[0].point_sampled;
 	chain_mem=(uint8_t*)malloc(64*16);if(!chain_mem)return 15;memset(chain_mem,0xA5,64*16);chain_init(&chain,chain_mem,64);
-	if(hcu_bitmap_quad_emit(&chain,&textures,0,&state,vertices)!=HCU_BITMAP_QUAD_OK||chain_qwords(&chain)!=48) return 16;
+	if(hcu_bitmap_quad_emit(&chain,&textures,0,&state,vertices)!=HCU_BITMAP_QUAD_OK||chain_qwords(&chain)!=49) return 16;
 	{
 		uint32_t *packet=(uint32_t*)(chain_mem+16); uint64_t *q=(uint64_t*)(chain_mem+32);
-		if((packet[3]&0xFFFFu)!=46u||(((uint64_t*)chain_mem)[0]&0xFFFFu)!=47u||
+		if((packet[3]&0xFFFFu)!=47u||(((uint64_t*)chain_mem)[0]&0xFFFFu)!=48u||
 		   ((((uint64_t*)chain_mem)[0]>>28)&7u)!=DMA_ID_CNT) return 18;
-		if(q[6]!=GS_ALPHA(2,1,0,1,0)||q[12]!=GIF_TAG(6,1,1,GS_PRIM(GSX_PRIM_TRIANGLE,1,1,0,1,0,1,0,0),GIFX_FLG_PACKED,3)) return 19;
-		if((uint32_t)q[14]!=128u||(uint32_t)(q[14]>>32)!=128u||(uint32_t)q[15]!=128u||(uint32_t)(q[15]>>32)!=64u) return 20;
-		if((uint32_t)q[16]!=(uint32_t)((0.5f+0.125f*((float)image.width-1.0f))*16.0f+0.5f)||
-		   (uint32_t)(q[16]>>32)!=(uint32_t)((0.5f+0.125f*((float)image.height-1.0f))*16.0f+0.5f)) return 23;
-		if((uint32_t)q[18]!=(uint32_t)((2048.0f-320.0f+reader.requests[0].vertices[0].x)*16.0f+0.5f)||
-		   (uint32_t)(q[18]>>32)!=(uint32_t)((2048.0f-224.0f+reader.requests[0].vertices[0].y)*16.0f+0.5f)) return 24;
-		if(q[50]!=GIF_TAG(1,1,0,0,GIFX_FLG_PACKED,1)||q[52]!=GS_ALPHA(0,2,2,1,128)||q[53]!=GS_A_ALPHA_1) return 21;
-		if(q[54]!=GIF_TAG(6,1,1,GS_PRIM(GSX_PRIM_TRIANGLE,1,1,0,1,0,1,0,0),GIFX_FLG_PACKED,3)) return 22;
+		if(q[8]!=GS_ALPHA(2,1,0,1,0)||q[14]!=GIF_TAG(6,1,1,GS_PRIM(GSX_PRIM_TRIANGLE,1,1,0,1,0,1,0,0),GIFX_FLG_PACKED,3)) return 19;
+		if((uint32_t)q[16]!=128u||(uint32_t)(q[16]>>32)!=128u||(uint32_t)q[17]!=128u||(uint32_t)(q[17]>>32)!=64u) return 20;
+		if((uint32_t)q[18]!=(uint32_t)((0.5f+0.125f*((float)image.width-1.0f))*16.0f+0.5f)||
+		   (uint32_t)(q[18]>>32)!=(uint32_t)((0.5f+0.125f*((float)image.height-1.0f))*16.0f+0.5f)) return 23;
+		if((uint32_t)q[20]!=(uint32_t)((2048.0f-320.0f+reader.requests[0].vertices[0].x)*16.0f+0.5f)||
+		   (uint32_t)(q[20]>>32)!=(uint32_t)((2048.0f-224.0f+reader.requests[0].vertices[0].y)*16.0f+0.5f)) return 24;
+		if(q[52]!=GIF_TAG(1,1,0,0,GIFX_FLG_PACKED,1)||q[54]!=GS_ALPHA(0,2,2,1,128)||q[55]!=GS_A_ALPHA_1) return 21;
+		if(q[56]!=GIF_TAG(6,1,1,GS_PRIM(GSX_PRIM_TRIANGLE,1,1,0,1,0,1,0,0),GIFX_FLG_PACKED,3)) return 22;
 	}
 	printf("pipeline-ok source_datum=%u image_index=%u request=%u:%u vertices=4 gs_alpha=%u emitted_qw=%u gs_mode=triangle tex_width=%u tex_height=%u interface_sha256=%s\n",
 	       image.source_id,image_index,(uint32_t)reader.requests[0].bitmap_tag_index,

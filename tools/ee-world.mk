@@ -55,6 +55,7 @@ WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS ?= 2
 # header is built in. Empty keeps the bootstrap partition.
 WORLD_HCU_PARTITION_PROFILE ?=
 WORLD_HCU_HEADLESS_RUNTIME_GUEST ?=0
+WORLD_HCU_MAIN_MENU ?= 1
 WORLD_HCU_PROFILE_PACKAGE_ROOT ?=build/m2-c2-r3-selected-packages/pkg
 ifeq ($(WORLD_HCU_GAMEPLAY),1)
 # Optional CE machine path; the regular measured viewer remains the default.
@@ -66,6 +67,7 @@ EE_LDFLAGS += -Wl,--wrap,malloc -Wl,--wrap,free -Wl,--wrap,calloc -Wl,--wrap,rea
 EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_main.o \
 	$(WORLD_OUTPUT)/stream/hcu_file_bridge.o \
 	$(WORLD_OUTPUT)/stream/hcu_input_bridge.o \
+	$(WORLD_OUTPUT)/stream/hcu_main_menu.o \
 	$(WORLD_OUTPUT)/stream/hcu_render_snapshot.o \
 	$(WORLD_OUTPUT)/stream/hcu_storage_boot.o \
 	$(WORLD_OUTPUT)/stream/hcu_map_service.o \
@@ -79,17 +81,23 @@ EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_main.o \
 	$(WORLD_OUTPUT)/stream/hcu_bitmap_frame.o \
 	$(WORLD_OUTPUT)/stream/hcu_bitmap_renderer.o \
 	$(WORLD_OUTPUT)/stream/hcu_bitmap_attach.o \
+	$(WORLD_OUTPUT)/stream/hcu_bitmap_screen_effect.o \
 	$(WORLD_OUTPUT)/stream/hcu_owner_telemetry.o \
 	$(WORLD_OUTPUT)/stream/hcu_render_telemetry.o \
 	$(WORLD_OUTPUT)/stream/hcu_map_catalog.o \
+	$(WORLD_OUTPUT)/stream/hcu_local_setup.o \
 	$(WORLD_OUTPUT)/stream/hcu_filexio_irx.o \
 	$(WORLD_OUTPUT)/stream/ctag_ps2_backend.o \
 	$(WORLD_OUTPUT)/stream/hcu_c3_tz.o
+EE_OBJS += $(WORLD_OUTPUT)/render/hud_effect.o
 WORLD_FILEXIO := 1
 # C3 (opt-in HCU_C3=1): snapshot bank, sound-request recorder, render content and frame layout.
 ifeq ($(HCU_C3),1)
 EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_snapshot_bank.o \
 	$(WORLD_OUTPUT)/stream/hcu_sound_requests.o \
+	$(WORLD_OUTPUT)/stream/hcu_spu_playback.o \
+	$(WORLD_OUTPUT)/stream/hcu_spu_hw_ps2.o \
+	$(WORLD_OUTPUT)/stream/hcu_spu_irx.o \
 	$(WORLD_OUTPUT)/stream/hcu_render_content.o \
 	$(WORLD_OUTPUT)/stream/hcu_render_frame.o \
 	$(WORLD_OUTPUT)/stream/hcu_render_media.o \
@@ -173,7 +181,7 @@ $(WORLD_OUTPUT)/c2/%.h: tools/c2_profile_image_header.py
 	python3 -I tools/c2_profile_image_header.py --row $* \
 		--package-root "$(WORLD_HCU_PROFILE_PACKAGE_ROOT)" --output $@
 
-$(WORLD_OUTPUT)/stream/hcu_main.o: src/stream/hcu_main.c hcu-profile-force \
+$(WORLD_OUTPUT)/stream/hcu_main.o: src/stream/hcu_main.c src/stream/hcu_main_menu.h hcu-profile-force \
 	$(if $(WORLD_HCU_PARTITION_PROFILE),$(WORLD_OUTPUT)/c2/$(WORLD_HCU_PARTITION_PROFILE).h)
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
@@ -188,8 +196,13 @@ $(WORLD_OUTPUT)/stream/hcu_main.o: src/stream/hcu_main.c hcu-profile-force \
 		$(if $(filter 1,$(WORLD_HCU_STEP8_MP_CAPACITY_DIAGNOSTIC)),-DHALO_PS2_STEP8_MP_CAPACITY_DIAGNOSTIC=1,) \
 		$(if $(filter 2 4,$(WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS)),-DHALO_PS2_STEP8_MP_WORKLOAD_PLAYERS=$(WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS),) \
 		$(if $(filter 1,$(WORLD_HCU_ANIMATION_TRACE_TEST)),-DHALO_PS2_M2_ANIMATION_TRACE=1,) \
+		$(if $(filter 1,$(WORLD_HCU_MAIN_MENU)),-DHALO_PS2_MAIN_MENU=1,) \
 		-include $(HCU_ROOT)/port/ps2/include/halo_ps2_prefix.h \
 		-c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_main_menu.o: src/stream/hcu_main_menu.c src/stream/hcu_main_menu.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
 
 $(WORLD_OUTPUT)/stream/hcu_c3_tz.o: src/stream/hcu_c3_tz.c
 	@mkdir -p $(@D)
@@ -275,6 +288,11 @@ $(WORLD_OUTPUT)/stream/hcu_bitmap_attach.o: src/stream/hcu_bitmap_attach.c src/s
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
 		-I$(HCU_ROOT)/port/ps2/include -c $< -o $@
 
+$(WORLD_OUTPUT)/stream/hcu_bitmap_screen_effect.o: src/stream/hcu_bitmap_screen_effect.c src/stream/hcu_bitmap_screen_effect.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
+		-I$(HCU_ROOT)/port/ps2/include -c $< -o $@
+
 $(WORLD_OUTPUT)/stream/hcu_owner_telemetry.o: src/stream/hcu_owner_telemetry.c src/stream/hcu_owner_telemetry.h
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
@@ -284,6 +302,10 @@ $(WORLD_OUTPUT)/stream/hcu_render_telemetry.o: src/stream/hcu_render_telemetry.c
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
 
 $(WORLD_OUTPUT)/stream/hcu_map_catalog.o: src/stream/hcu_map_catalog.c
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_local_setup.o: src/stream/hcu_local_setup.c src/stream/hcu_local_setup.h
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
 
@@ -322,6 +344,22 @@ $(WORLD_OUTPUT)/stream/hcu_snapshot_bank.o: src/stream/hcu_snapshot_bank.c src/s
 $(WORLD_OUTPUT)/stream/hcu_sound_requests.o: src/stream/hcu_sound_requests.c src/stream/hcu_sound_requests.h
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_spu_playback.o: src/stream/hcu_spu_playback.c src/stream/hcu_spu_playback.h src/stream/hcu_spu_hw.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_spu_hw_ps2.o: src/stream/hcu_spu_hw_ps2.c src/stream/hcu_spu_hw.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_spu_irx.o: src/stream/hcu_spu_irx.S \
+	$(PS2SDK)/iop/irx/libsd.irx $(PS2SDK)/iop/irx/sdrdrv.irx
+	@mkdir -p $(@D)
+	$(EE_CC) -G0 -x assembler-with-cpp \
+		-DHALO_PS2_LIBSD_IRX=\"$(PS2SDK)/iop/irx/libsd.irx\" \
+		-DHALO_PS2_SDRDRV_IRX=\"$(PS2SDK)/iop/irx/sdrdrv.irx\" \
+		-c $< -o $@
 
 $(WORLD_OUTPUT)/stream/hcu_render_content.o: src/stream/hcu_render_content.c src/stream/hcu_render_content.h
 	@mkdir -p $(@D)
@@ -390,6 +428,8 @@ EE_CFLAGS += $(EE_OPTFLAGS)
 HCU_C3 ?= 0
 HCU_C3_TELEMETRY ?= 0
 HCU_C3_TIMING ?= 0
+HCU_C3_LAG_TRACE ?= 0
+HCU_C3_SESSION_TRACE ?= 0
 HCU_C3_BITMAP_RESIDENT ?= 1
 HCU_C3_BUILD_PRESET ?= quiet
 # Preset values are canonical in tools/c3_build_presets.json. The Python
@@ -408,6 +448,12 @@ HCU_C3_TIMING ?= $(word 8,$(HCU_C3_PRESET_VALUES))
 HCU_C3_MOVEMENT_TRACE ?= $(word 9,$(HCU_C3_PRESET_VALUES))
 else
 $(error unknown HCU_C3_BUILD_PRESET '$(HCU_C3_BUILD_PRESET)' (choose quiet or diagnostic))
+endif
+ifeq ($(HCU_C3_LAG_TRACE),1)
+EE_CFLAGS += -DHALO_PS2_C3_LAG_TRACE=1
+endif
+ifeq ($(HCU_C3_SESSION_TRACE),1)
+EE_CFLAGS += -DHALO_PS2_C3_SESSION_TRACE=1
 endif
 endif
 # C3.7 stress only: texture-cache fence lag in kicks. Unset/0 adds no define (every other build is unchanged).
@@ -448,13 +494,18 @@ EE_CFLAGS += -DHCU_C3_OBJECTS=1 -DHCU_RENDER_OBJECTS_EE=1 -I$(HCU_C3_OBJECTS_GEN
 ifeq ($(HCU_C3_OBJECTS_SYNTHETIC),1)
 EE_CFLAGS += -DHCU_C3_OBJECTS_SYNTHETIC=1
 endif
-EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_render_objects.o $(WORLD_OUTPUT)/stream/hcu_fx_bitmap.o
+EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_render_objects.o $(WORLD_OUTPUT)/stream/hcu_render_bounds.o $(WORLD_OUTPUT)/stream/hcu_fx_bitmap.o
 $(WORLD_OUTPUT)/stream/hcu_fx_bitmap.o: src/stream/hcu_fx_bitmap.c src/stream/hcu_fx_bitmap.h
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) -D_EE $(EE_INCS) -I$(ENGINE)/src -Isrc \
 		-I$(PS2SDK)/ee/include -I$(PS2SDK)/common/include \
 		-I$(HCU_ROOT)/port/ps2/include -c $< -o $@
-$(WORLD_OUTPUT)/stream/hcu_render_objects.o: src/stream/hcu_render_objects.c src/stream/hcu_render_objects.h
+$(WORLD_OUTPUT)/stream/hcu_render_bounds.o: src/stream/hcu_render_bounds.c src/stream/hcu_render_bounds.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) -D_EE $(EE_INCS) -I$(ENGINE)/src -Isrc \
+		-I$(PS2SDK)/ee/include -I$(PS2SDK)/common/include \
+		-I$(HCU_ROOT)/port/ps2/include -c $< -o $@
+$(WORLD_OUTPUT)/stream/hcu_render_objects.o: src/stream/hcu_render_objects.c src/stream/hcu_render_objects.h src/stream/hcu_render_bounds.h
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) -D_EE $(EE_INCS) -I$(ENGINE)/src -Isrc \
 		-I$(PS2SDK)/ee/include -I$(PS2SDK)/common/include \
@@ -479,6 +530,7 @@ EE_CFLAGS += -DHALO_FILE_USE_FILEXIO
 EE_INCS += -I$(PS2SDK)/ee/rpc/filexio/include
 EE_LIBS += -lfileXio
 EE_LIBS += -lpatches
+EE_LIBS += -lsdr
 endif
 EE_DVP = dvp-as
 

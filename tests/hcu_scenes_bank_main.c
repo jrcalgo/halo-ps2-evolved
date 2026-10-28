@@ -12,8 +12,8 @@ static uint8_t s_storage[HCU_SNAPSHOT_BANK_BYTES] __attribute__((aligned(16)));
 /* C3.3 frame_scratch layout: 3 banks + 16-byte guard + 64-byte-aligned renderer workspace (5,632 B,
  * BSP_RENDER_WORKSPACE_BYTES in engine/src/render/storage.h) + guard, worst case with 63 bytes of
  * alignment padding, must fit the 393,216-byte frame_scratch owner (engine/src/core/mem.c). */
-_Static_assert(sizeof(halo_ps2_frame_snapshot) == 82912u, "halo_ps2_frame_snapshot v5 size changed");
-_Static_assert(HCU_SNAPSHOT_BANK_BYTES == 248736u, "three snapshot banks must be 248,736 B");
+_Static_assert(sizeof(halo_ps2_frame_snapshot) == 90592u, "halo_ps2_frame_snapshot v11 size changed");
+_Static_assert(HCU_SNAPSHOT_BANK_BYTES == 271776u, "three snapshot banks must be 271,776 B");
 _Static_assert(HCU_SNAPSHOT_BANK_BYTES + 16u + 63u + 5632u + 16u <= HCU_C3_FRAME_SCRATCH_BYTES,
 	"banks plus renderer workspace exceed frame_scratch");
 

@@ -1,4 +1,4 @@
-/* Triple-bank store for halo_ps2_frame_snapshot (wire version 5).
+/* Triple-bank store for halo_ps2_frame_snapshot (wire version 11).
  *
  * Contract for the frame lane (renderer) and the CE publisher:
  *
@@ -98,8 +98,27 @@ typedef struct hcu_snapshot_bank_stats {
 	uint32_t read_pins_taken;
 	uint32_t object_dedupe_hits;
 	uint32_t object_overflows;
+	uint32_t particle_lifetime_rejects;
 } hcu_snapshot_bank_stats;
 
 void hcu_snapshot_bank_get_stats(hcu_snapshot_bank_stats *out);
+
+/* Opt-in lag-trace diagnostic. Present in DWARF only when
+ * HALO_PS2_C3_LAG_TRACE is enabled; values are raw IEEE/integer bit patterns. */
+#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
+typedef struct hcu_snapshot_bank_rejection {
+	uint32_t reason;
+	uint32_t index;
+	uint32_t kind;
+	uint32_t value0_bits;
+	uint32_t value1_bits;
+	uint32_t map_generation;
+	uint32_t resource_id;
+	uint32_t has_fx_request;
+	halo_ps2_frame_fx_request fx_request;
+} hcu_snapshot_bank_rejection;
+extern hcu_snapshot_bank_rejection hcu_snapshot_bank_last_rejection;
+void hcu_snapshot_bank_get_last_rejection(hcu_snapshot_bank_rejection *out);
+#endif
 
 #endif

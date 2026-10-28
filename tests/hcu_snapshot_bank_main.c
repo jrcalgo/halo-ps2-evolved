@@ -91,14 +91,14 @@ static void test_bind_and_version(void)
 	s = hcu_snapshot_bank_begin_write();
 	assert(s);
 	assert(s->version == HALO_PS2_FRAME_SNAPSHOT_VERSION);
-	assert(s->version == 5u);
+	assert(s->version == HALO_PS2_FRAME_SNAPSHOT_VERSION);
 	/* Wrong version must not publish. */
 	s->version = 1u;
 	assert(hcu_snapshot_bank_commit(s) == -1);
 	assert(hcu_snapshot_bank_latest() == NULL);
 	/* The rejected commit released the write slot. */
 	s = hcu_snapshot_bank_begin_write();
-	assert(s && s->version == 5u);
+	assert(s && s->version == HALO_PS2_FRAME_SNAPSHOT_VERSION);
 	hcu_snapshot_bank_set_map_generation(41u);
 	assert(hcu_snapshot_bank_commit(s) == 0);
 	assert(hcu_snapshot_bank_latest()->map_generation == 41u);
@@ -433,6 +433,7 @@ static void test_bounds(void)
 
 	s = hcu_snapshot_bank_begin_write();
 	add_object(s, 3u);
+	s->objects[0].resource_slot = HALO_PS2_FRAME_NONE_U16;
 	s->fx_request_count = 1u;
 	s->effect_count = 1u;
 	s->fx_requests[0].kind = HALO_PS2_FRAME_FX_EFFECT;
@@ -448,6 +449,56 @@ static void test_bounds(void)
 	s->fx_requests[0].age_sec = -1.0f;
 	assert(hcu_snapshot_bank_commit(s) == -1);
 
+	/* Native decal quads require four finite vertices in the snapshot's bounded geometry table. */
+	s = hcu_snapshot_bank_begin_write();
+	add_object(s, 3u);
+	s->objects[0].resource_slot = HALO_PS2_FRAME_NONE_U16;
+	s->fx_request_count = 1u;
+	s->decal_count = 1u;
+	memset(&s->fx_requests[0], 0, sizeof s->fx_requests[0]);
+	s->fx_requests[0].kind = HALO_PS2_FRAME_FX_DECAL;
+	s->fx_requests[0].owner_object = HALO_PS2_FRAME_NONE_U16;
+	s->fx_requests[0].view_mask = 1u;
+	s->fx_requests[0].flags = HALO_PS2_FRAME_FX_NATIVE_GEOMETRY;
+	HALO_PS2_FRAME_FX_DECAL_SET_SHADER(s->fx_requests[0].flags, 2u, 1u);
+	s->fx_requests[0].decal_geometry_vertex_count = 4u;
+	s->fx_requests[0].decal_intensity = 0.75f;
+	s->fx_requests[0].decal_color_argb[0] = 0.8f;
+	s->fx_requests[0].decal_color_argb[1] = 0.4f;
+	s->fx_requests[0].decal_color_argb[2] = 0.2f;
+	s->fx_requests[0].decal_color_argb[3] = 1.0f;
+	s->fx_requests[0].decal_geometry[0].position[0] = -1.0f; s->fx_requests[0].decal_geometry[0].position[1] = -1.0f;
+	s->fx_requests[0].decal_geometry[1].position[0] =  1.0f; s->fx_requests[0].decal_geometry[1].position[1] = -1.0f;
+	s->fx_requests[0].decal_geometry[2].position[0] =  1.0f; s->fx_requests[0].decal_geometry[2].position[1] =  1.0f;
+	s->fx_requests[0].decal_geometry[3].position[0] = -1.0f; s->fx_requests[0].decal_geometry[3].position[1] =  1.0f;
+	s->fx_requests[0].decal_geometry[0].uv[0] = 0.0f; s->fx_requests[0].decal_geometry[0].uv[1] = 0.0f;
+	s->fx_requests[0].decal_geometry[1].uv[0] = 1.0f; s->fx_requests[0].decal_geometry[1].uv[1] = 0.0f;
+	s->fx_requests[0].decal_geometry[2].uv[0] = 1.0f; s->fx_requests[0].decal_geometry[2].uv[1] = 1.0f;
+	s->fx_requests[0].decal_geometry[3].uv[0] = 0.0f; s->fx_requests[0].decal_geometry[3].uv[1] = 1.0f;
+	assert(hcu_snapshot_bank_commit(s) == 0);
+	{
+		const halo_ps2_frame_snapshot *published = hcu_snapshot_bank_latest();
+		assert(published && published->fx_request_count == 1u);
+		assert(published->fx_requests[0].kind == HALO_PS2_FRAME_FX_DECAL);
+		assert(published->fx_requests[0].decal_geometry_vertex_count == 4u);
+		assert(HALO_PS2_FRAME_FX_DECAL_BLEND(published->fx_requests[0].flags) == 2u);
+		assert(HALO_PS2_FRAME_FX_DECAL_FADE(published->fx_requests[0].flags) == 1u);
+		assert(published->fx_requests[0].decal_intensity == 0.75f);
+		assert(published->fx_requests[0].decal_color_argb[0] == 0.8f);
+		assert(published->fx_requests[0].decal_geometry[2].uv[0] == 1.0f);
+	}
+
+	s = hcu_snapshot_bank_begin_write();
+	add_object(s, 4u);
+	s->objects[0].resource_slot = HALO_PS2_FRAME_NONE_U16;
+	s->fx_request_count = 1u;
+	s->decal_count = 1u;
+	memset(&s->fx_requests[0], 0, sizeof s->fx_requests[0]);
+	s->fx_requests[0].kind = HALO_PS2_FRAME_FX_DECAL;
+	s->fx_requests[0].flags = HALO_PS2_FRAME_FX_NATIVE_GEOMETRY;
+	s->fx_requests[0].decal_geometry_vertex_count = 3u;
+	assert(hcu_snapshot_bank_commit(s) == -1);
+
 	/* Unknown kind, and a count that disagrees with the kind split. */
 	s = hcu_snapshot_bank_begin_write();
 	add_object(s, 3u);
@@ -455,6 +506,82 @@ static void test_bounds(void)
 	s->effect_count = 1u;
 	s->fx_requests[0].kind = 9u;
 	assert(hcu_snapshot_bank_commit(s) == -1);
+
+	s = hcu_snapshot_bank_begin_write();
+	add_object(s, 3u);
+	s->fx_request_count = 1u;
+	s->effect_count = 1u;
+	s->fx_requests[0].kind = HALO_PS2_FRAME_FX_PARTICLE;
+	s->fx_requests[0].owner_object = HALO_PS2_FRAME_NONE_U16;
+	s->fx_requests[0].bitmap_width = 128u;
+	s->fx_requests[0].bitmap_height = 128u;
+	s->fx_requests[0].sequence_index = 0;
+	s->fx_requests[0].frame_index = 0;
+	assert(hcu_snapshot_bank_commit(s) == -1); /* live particle payload must be complete */
+
+	/* CE retains a live final-sequence particle after nominal lifespan. The
+	 * validator rejects the same record without the explicit lifecycle flag. */
+	s = hcu_snapshot_bank_begin_write();
+	add_object(s, 3u);
+	s->fx_request_count = 1u;
+	s->effect_count = 1u;
+	memset(&s->fx_requests[0], 0, sizeof s->fx_requests[0]);
+	s->fx_requests[0].kind = HALO_PS2_FRAME_FX_PARTICLE;
+	s->fx_requests[0].owner_object = HALO_PS2_FRAME_NONE_U16;
+	s->fx_requests[0].view_mask = 1u;
+	s->fx_requests[0].bitmap_width = 128u;
+	s->fx_requests[0].bitmap_height = 128u;
+	s->fx_requests[0].sequence_index = 1;
+	s->fx_requests[0].frame_index = 0;
+	s->fx_requests[0].age_sec = 0.2f;
+	s->fx_requests[0].lifespan_sec = 0.1f;
+	s->fx_requests[0].runtime_oo_width = 1.0f;
+	assert(hcu_snapshot_bank_commit(s) == -1);
+	hcu_snapshot_bank_get_stats(&stats);
+	assert(stats.particle_lifetime_rejects == 1u);
+
+	/* With the CE final-sequence flag, expired age is valid only when all other
+	 * finite/lifespan constraints remain valid. */
+	s = hcu_snapshot_bank_begin_write();
+	add_object(s, 3u);
+	s->fx_request_count = 1u;
+	s->effect_count = 1u;
+	memset(&s->fx_requests[0], 0, sizeof s->fx_requests[0]);
+	s->fx_requests[0].kind = HALO_PS2_FRAME_FX_PARTICLE;
+	s->fx_requests[0].owner_object = HALO_PS2_FRAME_NONE_U16;
+	s->fx_requests[0].view_mask = 1u;
+	s->fx_requests[0].flags = HALO_PS2_FRAME_FX_PARTICLE_FINAL_SEQUENCE;
+	s->fx_requests[0].bitmap_width = 128u;
+	s->fx_requests[0].bitmap_height = 128u;
+	s->fx_requests[0].sequence_index = 1;
+	s->fx_requests[0].frame_index = 0;
+	s->fx_requests[0].age_sec = 0.2f;
+	s->fx_requests[0].lifespan_sec = 0.1f;
+	s->fx_requests[0].runtime_oo_width = 1.0f;
+	assert(hcu_snapshot_bank_commit(s) == 0);
+	assert(hcu_snapshot_bank_latest()->fx_requests[0].flags & HALO_PS2_FRAME_FX_PARTICLE_FINAL_SEQUENCE);
+	s = hcu_snapshot_bank_begin_write();
+	add_object(s, 3u);
+	s->fx_request_count = 1u; s->effect_count = 1u;
+	memset(&s->fx_requests[0], 0, sizeof s->fx_requests[0]);
+	s->fx_requests[0].kind = HALO_PS2_FRAME_FX_PARTICLE;
+	s->fx_requests[0].flags = HALO_PS2_FRAME_FX_PARTICLE_FINAL_SEQUENCE;
+	s->fx_requests[0].owner_object = HALO_PS2_FRAME_NONE_U16;
+	s->fx_requests[0].bitmap_width = 128u; s->fx_requests[0].bitmap_height = 128u;
+	s->fx_requests[0].sequence_index = 0; s->fx_requests[0].frame_index = 0;
+	s->fx_requests[0].age_sec = 0.2f; s->fx_requests[0].lifespan_sec = 0.0f;
+	assert(hcu_snapshot_bank_commit(s) == -1); /* final-sequence flag cannot excuse an invalid lifespan */
+	s = hcu_snapshot_bank_begin_write();
+	add_object(s, 3u);
+	s->fx_request_count = 1u; s->effect_count = 1u;
+	memset(&s->fx_requests[0], 0, sizeof s->fx_requests[0]);
+	s->fx_requests[0].kind = HALO_PS2_FRAME_FX_PARTICLE;
+	s->fx_requests[0].flags = HALO_PS2_FRAME_FX_PARTICLE_FINAL_SEQUENCE;
+	s->fx_requests[0].owner_object = HALO_PS2_FRAME_NONE_U16;
+	s->fx_requests[0].bitmap_width = 128u; s->fx_requests[0].bitmap_height = 128u;
+	s->fx_requests[0].sequence_index = 0; s->fx_requests[0].frame_index = 0;
+	s->fx_requests[0].age_sec = NAN; s->fx_requests[0].lifespan_sec = 0.1f;
+	assert(hcu_snapshot_bank_commit(s) == -1); /* final-sequence flag cannot excuse non-finite age */
 
 	s = hcu_snapshot_bank_begin_write();
 	add_object(s, 3u);
@@ -484,6 +611,28 @@ static void test_bounds(void)
 	s->fx_requests[1].view_mask = 0x1u;
 	s->fx_requests[1].age_sec = 2.0f;
 	s->fx_requests[1].scale = 0.5f;
+	s->fx_request_count = 4u;
+	s->effect_count = 3u;
+	s->fx_requests[2].kind = HALO_PS2_FRAME_FX_PARTICLE;
+	s->fx_requests[2].owner_object = HALO_PS2_FRAME_NONE_U16;
+	s->fx_requests[2].view_mask = 0x1u;
+	s->fx_requests[2].bitmap_width = 128u;
+	s->fx_requests[2].bitmap_height = 128u;
+	s->fx_requests[2].sequence_index = 0;
+	s->fx_requests[2].frame_index = 0;
+	s->fx_requests[2].lifespan_sec = 0.075f;
+	s->fx_requests[2].scale = 1.0f;
+	s->fx_requests[3].kind = HALO_PS2_FRAME_FX_CONTRAIL;
+	s->fx_requests[3].owner_object = HALO_PS2_FRAME_NONE_U16;
+	s->fx_requests[3].view_mask = 0x1u;
+	s->fx_requests[3].bitmap_width = 256u;
+	s->fx_requests[3].bitmap_height = 128u;
+	s->fx_requests[3].scale = 0.1f;
+	s->fx_requests[3].segment_end_width = 0.08f;
+	s->fx_requests[3].sprite_orientation = 4u;
+	s->fx_requests[3].framebuffer_fade_mode = 1u;
+	s->fx_requests[3].color_argb[0] = 1.0f;
+	s->fx_requests[3].segment_end_color_argb[0] = 0.8f;
 	assert(hcu_snapshot_bank_commit(s) == 0);
 
 	/* v4 first-person resources and model-order palettes accept exact bounded
@@ -576,7 +725,7 @@ static void test_fits_frame_scratch(void)
 	size_t bank = hcu_snapshot_bank_storage_required();
 	size_t frame_scratch = 393216u;
 	/* Pinned C2 owner: the v1 double bank must not be bound alongside. */
-	printf("bytes: v5 bank=%zu (3 slots, frame_scratch owner=%zu, share=%.1f%%)\n",
+	printf("bytes: v10 bank=%zu (3 slots, frame_scratch owner=%zu, share=%.1f%%)\n",
 		bank, frame_scratch, 100.0 * (double)bank / (double)frame_scratch);
 	assert(bank < frame_scratch);
 }

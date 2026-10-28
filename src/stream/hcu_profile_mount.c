@@ -12,6 +12,10 @@
 typedef struct {
 	const hcu_asset_profile_view *profile;
 	hcu_asset_chunk_view chunk;
+	/* Optional read-ahead window: the CE tag validator reads in 256-byte steps and every
+	 * read_range is a directory lookup plus file-bridge RPCs. */
+	uint8_t *window;
+	size_t window_cap, window_off, window_len;
 } profile_chunk_reader_context;
 
 static int add_size_ok(size_t left, size_t right, size_t *sum)
@@ -40,6 +44,21 @@ static int chunk_reader(void *context, size_t offset,
 	if (!reader || !reader->profile || !add_size_ok(offset, size, &end) ||
 		end > reader->chunk.size || offset > UINT32_MAX || size > UINT32_MAX)
 		return -1;
+	if (reader->window && size <= reader->window_cap) {
+		if (!(reader->window_len && offset >= reader->window_off &&
+			end <= reader->window_off + reader->window_len)) {
+			size_t fill = reader->chunk.size - offset;
+			if (fill > reader->window_cap) fill = reader->window_cap;
+			reader->window_len = 0;
+			if (hcu_asset_profile_read_range(reader->profile, reader->chunk.type,
+				reader->chunk.chunk_id, (uint32_t)offset, reader->window, (uint32_t)fill) !=
+				HCU_ASSET_PROFILE_OK) return -1;
+			reader->window_off = offset;
+			reader->window_len = fill;
+		}
+		memcpy(destination, reader->window + (offset - reader->window_off), size);
+		return 0;
+	}
 	return hcu_asset_profile_read_range(reader->profile, reader->chunk.type,
 		reader->chunk.chunk_id, (uint32_t)offset, destination, (uint32_t)size) ==
 		HCU_ASSET_PROFILE_OK ? 0 : -1;
@@ -347,8 +366,12 @@ int hcu_profile_mount_prepare(hcu_profile_mount *mount,
 		UINT32_MAX : (uint32_t)(relocation_storage_bytes / 4u);
 	memset(&ctag_info, 0, sizeof(ctag_info));
 	memset(&ps2_info, 0, sizeof(ps2_info));
+	memset(&ce_reader, 0, sizeof(ce_reader));
 	ce_reader.profile = profile;
 	ce_reader.chunk = ce_chunk;
+	ce_reader.window = (uint8_t *)stream_scratch;
+	ce_reader.window_cap = stream_scratch_bytes < HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES ?
+		stream_scratch_bytes : HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES;
 	if (ce_chunk.size < sizeof(ctag_header) ||
 		chunk_reader(&ce_reader, 0, ctag_header, sizeof(ctag_header)) != 0)
 		return HCU_PROFILE_MOUNT_E_CTAG;

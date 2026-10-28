@@ -24,6 +24,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "submodules/halo-ps2/tools"))  # halo2ps2.skyconv (scenario sky reference)
+sys.path.insert(0, str(ROOT / "tools"))
 
 # The synthetic publisher finds its entries by path; it is the only user of a path subset.
 SYNTHETIC_PATHS = [
@@ -77,6 +78,41 @@ def c_bytes(hex_digest: str) -> str:
     if len(raw) != 32:
         raise SystemExit("sha256 must be 32 bytes")
     return "{" + ", ".join(f"0x{b:02x}" for b in raw) + "}"
+
+
+def c_float(value: float) -> str:
+    text = format(value, ".9g")
+    if "." not in text and "e" not in text.lower():
+        text += ".0"
+    return text + "f"
+
+
+def add_model_bounds(rows: list[dict], manifest: dict, package_json: Path) -> None:
+    """Attach the exact packed MODL sphere to each row, bound to HCP/profile/chunk identity."""
+    from halo2ps2 import modelconv
+    import hcu_profile_validate as pv
+
+    package_path = package_json.with_suffix(".hcp")
+    if not package_path.is_file():
+        raise SystemExit(f"profile package missing beside manifest: {package_path}")
+    package = pv.parse_package(package_path.read_bytes(),
+        expected_package_sha256=manifest["package_sha256"],
+        expected_profile_id=int(manifest["profile"]["id"]))
+    for row in rows:
+        key = (2, row["model_chunk"])
+        raw = package["chunks"].get(key)
+        if raw is None or hashlib.sha256(raw).hexdigest() != row["model_sha256"]:
+            raise SystemExit(f"{row['path']}: MODL chunk/hash mismatch in HCP")
+        section = modelconv.parse_section(raw)
+        matches = [m for m in section.models if m["tag_id"] == row["tag_datum"]]
+        if len(matches) != 1:
+            raise SystemExit(f"{row['path']}: tag datum {row['tag_datum']} matches {len(matches)} MODL models")
+        model = matches[0]
+        row["bound_profile_id"] = int(manifest["profile"]["id"])
+        row["bound_source_datum"] = row["source_datum"]
+        row["bound_tag_datum"] = row["tag_datum"]
+        row["bound_center"] = tuple(float(x) for x in model["centre"])
+        row["bound_radius"] = float(model["radius"])
 
 
 def sky_index(rows: list[dict], sky_model_datum: int) -> int:
@@ -133,9 +169,12 @@ def render(rows: list[dict], package_json: Path, sky: int | None = None, prefix:
     for r in rows:
         path_c = r["path"].replace("\\", "\\\\")
         lines.append(
-            f"\t{{ {r['model_chunk']}u, {r['texture_chunk']}u, {r['source_datum']}u,\n"
+            f"\t{{ {r['model_chunk']}u, {r['texture_chunk']}u, {r['source_datum']}u, {r['tag_datum']}u,\n"
             f"\t  {c_bytes(r['model_sha256'])},\n"
             f"\t  {c_bytes(r['texture_sha256'])},\n"
+            f"\t  {{ {r.get('bound_profile_id', 0)}u, {r['model_chunk']}u, {r['source_datum']}u, {r.get('bound_tag_datum', 0)}u, "
+            f"{c_bytes(r['model_sha256'])}, {{ {c_float(r.get('bound_center', (0.0, 0.0, 0.0))[0])}, {c_float(r.get('bound_center', (0.0, 0.0, 0.0))[1])}, {c_float(r.get('bound_center', (0.0, 0.0, 0.0))[2])} }}, "
+            f"{c_float(r.get('bound_radius', 0.0))}, {1 if 'bound_radius' in r else 0}u }},\n"
             f"\t  \"{path_c}\" }},")
     lines += ["};", "", f"#endif /* {guard} */", ""]
     return "\n".join(lines)
@@ -162,6 +201,7 @@ def main(argv=None) -> int:
     if args.sky_from_scenario:
         datum = scenario_sky_datum(manifest, args.package_json)
     sky = sky_index(rows, datum) if datum is not None else None
+    add_model_bounds(rows, manifest, args.package_json)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     prefix = "succ_" if args.successor else ""
     map_name = manifest["profile"]["map"] if args.successor else None

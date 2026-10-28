@@ -40,7 +40,8 @@ SUCCESSOR_FIRST_FRAME_AFTER = "production-ce-successor-loaded result=1 "
 # still on screen there, and it is logged after the held line and about 1 s before the usable line.
 PREFLIGHT_ATTEMPT = "production-ce-successor-attempt "
 EARLY_CAPTURES = (SUCCESSOR_FIRST_FRAME,)
-IMMEDIATE_CAPTURES = (PREFLIGHT_ATTEMPT,)
+IMMEDIATE_CAPTURES = (PREFLIGHT_ATTEMPT, "c3-gun-pickup-phase ",
+                      "c3-gun-pickup-capture ")
 
 
 def marker_seen(log_text: str, marker: str) -> bool:
@@ -161,6 +162,89 @@ def apply_emu_mode(data_dir: Path, mode: str) -> None:
     ini.write_text("".join(lines))
 
 
+def apply_gs_options(data_dir: Path) -> None:
+    """Apply explicit per-run GS settings used to match a reviewed manual run."""
+    overrides = {}
+    if os.environ.get("C2_GS_RENDERER") is not None:
+        overrides["Renderer"] = os.environ["C2_GS_RENDERER"]
+    for key in ("OsdShowFPS", "OsdShowVPS", "OsdShowSpeed"):
+        value = os.environ.get("C2_GS_" + key.upper())
+        if value is not None:
+            overrides[key] = value.lower()
+    if not overrides:
+        return
+    ini = data_dir / "PCSX2/inis/PCSX2.ini"
+    lines = ini.read_text(errors="replace").splitlines(keepends=True)
+    section, seen = None, set()
+    for index, raw in enumerate(lines):
+        line = raw.strip()
+        if line.startswith("[") and line.endswith("]"):
+            section = line[1:-1]
+            continue
+        if section != "EmuCore/GS" or "=" not in line:
+            continue
+        key = line.split("=", 1)[0].strip()
+        if key in overrides:
+            newline = "\n" if raw.endswith("\n") else ""
+            lines[index] = f"{key} = {overrides[key]}{newline}"
+            seen.add(key)
+    missing = set(overrides) - seen
+    if missing:
+        raise RuntimeError(f"PCSX2.ini [EmuCore/GS] is missing {sorted(missing)}")
+    ini.write_text("".join(lines))
+
+
+def apply_spu2_backend(data_dir: Path) -> None:
+    """Apply an optional output backend override to this private config copy."""
+    backend = os.environ.get("C2_SPU2_BACKEND")
+    if backend is None:
+        return
+    ini = data_dir / "PCSX2/inis/PCSX2.ini"
+    lines = ini.read_text(errors="replace").splitlines(keepends=True)
+    section, found = None, False
+    for index, raw in enumerate(lines):
+        line = raw.strip()
+        if line.startswith("[") and line.endswith("]"):
+            section = line[1:-1]
+            continue
+        if section == "SPU2/Output" and line.startswith("Backend") and "=" in line:
+            newline = "\n" if raw.endswith("\n") else ""
+            lines[index] = f"Backend = {backend}{newline}"
+            found = True
+    if not found:
+        raise RuntimeError("PCSX2.ini [SPU2/Output] has no Backend setting")
+    ini.write_text("".join(lines))
+
+
+def apply_pine_slot(data_dir: Path, pine_slot: int | None) -> None:
+    """Enable PINE and set its slot in this launch's private config copy."""
+    if pine_slot is None:
+        return
+    ini = data_dir / "PCSX2/inis/PCSX2.ini"
+    lines = ini.read_text(errors="replace").splitlines(keepends=True)
+    section = None
+    seen = set()
+    for index, raw in enumerate(lines):
+        stripped = raw.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            section = stripped[1:-1]
+            continue
+        if section != "EmuCore":
+            continue
+        if stripped.startswith("EnablePINE") and "=" in stripped:
+            newline = "\n" if raw.endswith("\n") else ""
+            lines[index] = f"EnablePINE = true{newline}"
+            seen.add("EnablePINE")
+        elif stripped.startswith("PINESlot") and "=" in stripped:
+            newline = "\n" if raw.endswith("\n") else ""
+            lines[index] = f"PINESlot = {pine_slot}{newline}"
+            seen.add("PINESlot")
+    missing = {"EnablePINE", "PINESlot"} - seen
+    if missing:
+        raise RuntimeError(f"PCSX2.ini [EmuCore] is missing {sorted(missing)}")
+    ini.write_text("".join(lines))
+
+
 def pcsx2_config_identity(data_dir: Path) -> dict:
     """Describe the exact copied PCSX2 config and selected BIOS bytes."""
     ini = data_dir / "PCSX2/inis/PCSX2.ini"
@@ -170,11 +254,19 @@ def pcsx2_config_identity(data_dir: Path) -> dict:
         line = raw.strip()
         if line.startswith("[") and line.endswith("]"):
             section = line[1:-1]
-        elif "=" in line and section in ("EmuCore/CPU/Recompiler", "Filenames"):
+        elif "=" in line and section in ("EmuCore", "EmuCore/CPU/Recompiler",
+                                          "EmuCore/GS", "Filenames", "SPU2/Output"):
             key, value = (part.strip() for part in line.split("=", 1))
             values[(section, key)] = value
     switches = {key: values.get(("EmuCore/CPU/Recompiler", key)) for key in
                 ("EnableEE", "EnableIOP", "EnableVU0", "EnableVU1")}
+    pine_slot = next((line.split("=", 1)[1].strip() for line in text.splitlines()
+                      if line.strip().startswith("PINESlot") and "=" in line), None)
+    pine_enabled = values.get(("EmuCore", "EnablePINE"))
+    gs_renderer = values.get(("EmuCore/GS", "Renderer"))
+    gs_osd = {key: values.get(("EmuCore/GS", key)) for key in
+              ("OsdShowFPS", "OsdShowVPS", "OsdShowSpeed")}
+    spu2_backend = values.get(("SPU2/Output", "Backend"))
     selected_bios = values.get(("Filenames", "BIOS"))
     bios_files = data_dir / "PCSX2/bios"
     bios_identity = []
@@ -189,6 +281,11 @@ def pcsx2_config_identity(data_dir: Path) -> dict:
                                       "sha256": sha256(path), "selected": path.name == selected_bios})
     return {"config_path": str(ini), "config_sha256": sha256(ini) if ini.is_file() else None,
             "recompiler_switches": switches,
+            "pine_slot": pine_slot,
+            "pine_enabled": pine_enabled,
+            "gs_renderer": gs_renderer,
+            "gs_osd": gs_osd,
+            "spu2_backend": spu2_backend,
             "execution_backend": ("recompiler-enabled" if any(value == "true" for value in switches.values())
                                  else "interpreter-configured" if switches and
                                  all(value == "false" for value in switches.values())
@@ -743,7 +840,8 @@ def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
               maps_dir=PROBE / "maps", production_tuple=None,
               guest_package_root="build/m2-c2-r3-selected-packages", stage_paths=(),
               capture_dir=None, capture_markers=(), emu_mode="interpreter",
-              invocation_id=None):
+              invocation_id=None, pine_slot=None, completion_marker=None,
+              failure_marker=None, defer_guest_errors=False):
     launch_id = uuid.uuid4().hex
     launch_started_unix_ns = time.time_ns()
     lane_run = out_dir / "runs" / which
@@ -753,14 +851,25 @@ def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
     data = lane_run / "data"
     shutil.copytree(PROFILE_TEMPLATE, data)
     apply_emu_mode(data, emu_mode)
+    apply_pine_slot(data, pine_slot)
+    apply_gs_options(data)
+    apply_spu2_backend(data)
     config_identity = pcsx2_config_identity(data)
     config_identity["emu_mode"] = emu_mode
+    config_identity["xdg_runtime_dir"] = os.environ.get("XDG_RUNTIME_DIR")
+    requested_renderer = os.environ.get("C2_GS_RENDERER")
+    if requested_renderer is not None and config_identity["gs_renderer"] != requested_renderer:
+        raise RuntimeError("private PCSX2 config did not apply requested GS renderer")
+    if pine_slot is not None and (config_identity["pine_slot"] != str(pine_slot) or
+                                  config_identity["pine_enabled"] != "true"):
+        raise RuntimeError("private PCSX2 config did not enable the requested PINE slot")
     elf_copy = lane_run / Path(elf_info["path"]).name
     shutil.copy2(elf_info["path"], elf_copy)
     # PCSX2's host: root is the ELF's directory, which must hold the probe's maps/.
     (lane_run / "maps").symlink_to(Path(maps_dir).resolve())
     if package_tree:
         mount_guest_package_tree(lane_run, package_tree, guest_package_root)
+        (lane_run / "build").mkdir(parents=True, exist_ok=True)
         (lane_run / "build/retail-maps").symlink_to((ROOT / "build/retail-maps").resolve())
         stage_host_paths(lane_run, stage_paths)
     log = lane_run / "emu.txt"
@@ -823,7 +932,15 @@ def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
                         time.sleep(1.0)
                     waiting.remove(item)
                     captures.append(take(marker, len(captures) + 1))
-            guest_terminal = _run_terminal(which, log)
+            current_text = log.read_text(errors="replace") if log.exists() else ""
+            if completion_marker and completion_marker in current_text:
+                guest_terminal = "completion-marker"
+            elif failure_marker and failure_marker in current_text:
+                guest_terminal = "failure-marker"
+            elif defer_guest_errors and which == "partition-selected":
+                guest_terminal = None
+            else:
+                guest_terminal = _run_terminal(which, log)
             if guest_terminal:
                 # Let PCSX2 flush the CE teardown tail before stopping it; flush held captures now.
                 for marker, _seen, _since in waiting:
@@ -923,6 +1040,14 @@ def main():
                         help="C3: save an `xwd -root` PNG of the guest display here when a --capture-marker appears in the log")
     parser.add_argument("--capture-marker", action="append", default=[],
                         help="log substring that triggers one capture (repeatable)")
+    parser.add_argument("--pine-slot", type=int,
+                        help="override the PINE socket slot in this run's copied PCSX2.ini")
+    parser.add_argument("--completion-marker",
+                        help="stop a production run when this private log marker appears")
+    parser.add_argument("--failure-marker",
+                        help="stop a production run when this private failure marker appears")
+    parser.add_argument("--defer-guest-errors", action="store_true",
+                        help="keep a production guest alive for external live diagnostics")
     parser.add_argument("--emu-mode", choices=EMU_MODES, default="interpreter",
                         help="PCSX2 execution: interpreter (default, template config) or "
                              "recompiler (EE, IOP, VU0, VU1 recompilers enabled in this run's PCSX2.ini)")
@@ -1051,7 +1176,11 @@ def main():
                                                    args.guest_package_root, args.stage_path,
                                                    args.capture_dir, args.capture_marker,
                                                    emu_mode=args.emu_mode,
-                                                   invocation_id=invocation_id))
+                                                   invocation_id=invocation_id,
+                                                   pine_slot=args.pine_slot,
+                                                   completion_marker=args.completion_marker,
+                                                   failure_marker=args.failure_marker,
+                                                   defer_guest_errors=args.defer_guest_errors))
             except Exception as error:  # record the failure and keep the partial manifest
                 manifest["runs"].append({"run": which, "error": f"{type(error).__name__}: {error}"})
             write_manifest(manifest_path, manifest)

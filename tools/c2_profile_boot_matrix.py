@@ -814,7 +814,8 @@ def link_row(row: str, package_root: Path, out: Path, cycles: int = 1, ticks: in
              workload_autofire: bool = True,
              render_hold_vsyncs: int | None = None,
              perf_capture_tick: int = 0,
-             perf_replay: bool = False) -> tuple[Path | None, str]:
+             perf_replay: bool = False,
+             extra_include_dirs=()) -> tuple[Path | None, str]:
     """Link the row's runtime-guest ELF under out/link, holding the shared link lock.
 
     include_dir (the --successor headers) is added to C_INCLUDE_PATH for every compile."""
@@ -869,6 +870,7 @@ def link_row(row: str, package_root: Path, out: Path, cycles: int = 1, ticks: in
         include_dirs.append(str(workload_dir))
     if include_dir is not None:
         include_dirs.append(str(include_dir))
+    include_dirs.extend(str(path) for path in extra_include_dirs)
     # C3.6b begin: the objects table is generated per row from its own scenario map (sky reference) and the
     # EE build reads it through HCU_C3_OBJECTS_GEN (tools/ee-world.mk), so a row never links another map's table.
     if os.environ.get("HCU_C3_OBJECTS") == "1":
@@ -903,7 +905,10 @@ EMU_MODE = "interpreter"
 
 def guest_row(row: str, elf: Path, plan: dict, out: Path, timeout: int = GUEST_TIMEOUT,
               process_timeout: int = GUEST_PROCESS_TIMEOUT, extra_stage_paths=(),
-              released_map: str | None = None, capture_markers=()) -> tuple[bool, str]:
+              released_map: str | None = None, capture_markers=(),
+              pine_slot: int | None = None, completion_marker: str | None = None,
+              failure_marker: str | None = None,
+              defer_guest_errors: bool = False) -> tuple[bool, str]:
     # These directories are owned exclusively by this row attempt. Remove them before
     # invoking the runner so a display/launch failure cannot leave prior logs, captures,
     # or a manifest available to the result parser.
@@ -921,6 +926,14 @@ def guest_row(row: str, elf: Path, plan: dict, out: Path, timeout: int = GUEST_T
                "--emu-mode", EMU_MODE]
     if released_map:
         command += ["--production-release-map", released_map]
+    if pine_slot is not None:
+        command += ["--pine-slot", str(pine_slot)]
+    if completion_marker:
+        command += ["--completion-marker", completion_marker]
+    if failure_marker:
+        command += ["--failure-marker", failure_marker]
+    if defer_guest_errors:
+        command += ["--defer-guest-errors"]
     if capture_markers:
         command += ["--capture-dir", str(out / "captures")]
         for marker in capture_markers:

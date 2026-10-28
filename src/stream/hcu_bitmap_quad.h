@@ -21,6 +21,7 @@ typedef struct {
 
 typedef struct {
 	uint64_t tex0;          /* caller-owned resident GS TEX0, including TBP/CBP */
+	uint64_t clamp;         /* GS CLAMP; zero selects clamp to the validated image bounds */
 	uint16_t screen_w, screen_h;
 	uint16_t clip_x, clip_y, clip_w, clip_h;
 	uint32_t z;             /* GS 24-bit depth */

@@ -76,11 +76,11 @@ static int emit_for_window(const hcu_bitmap_view *views, uint32_t view_count, in
 	if (hcu_bitmap_quad_place(&state, &rect, ce_quad, placed) != 0) return -3;
 	if (hcu_bitmap_quad_emit(&chain, &textures, 0, &state, placed) != HCU_BITMAP_QUAD_OK) return -4;
 	q = (uint64_t *)((uint8_t *)memory + 32);
-	if (q[11] != GS_A_SCISSOR_1_ADDR) return -5;
-	if (scissor_out) *scissor_out = q[10];
-	/* Vertex 0 of the two-triangle packet starts at q[14]; its position is the packed pair at q[18]. */
-	if (vx_out) *vx_out = (uint32_t)q[18];
-	if (vy_out) *vy_out = (uint32_t)(q[18] >> 32);
+	if (q[13] != GS_A_SCISSOR_1_ADDR) return -5;
+	if (scissor_out) *scissor_out = q[12];
+	/* Vertex 0 of the two-triangle packet starts at q[16]; its position is q[20]. */
+	if (vx_out) *vx_out = (uint32_t)q[20];
+	if (vy_out) *vy_out = (uint32_t)(q[20] >> 32);
 	return 0;
 }
 

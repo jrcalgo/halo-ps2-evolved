@@ -2921,6 +2921,7 @@ static void fx_contrail_colour(const hcu_render_effect_draw *e,
 	}
 }
 
+#define FX_DECAL_MAX_PER_FRAME 6u
 static void fx_pass(render_ctx_t *rc, int first_person_pass)
 {
 	const halo_ps2_snapshot_camera *cam;
@@ -2990,6 +2991,26 @@ static void fx_pass(render_ctx_t *rc, int first_person_pass)
 		s_fxn[i] = nv;
 		verts += nv;
 		admitted++;
+	}
+	/* Each decal costs a palette compose and a tile composite on the GS: sixty-four of them take a frame. Keep the
+	 * newest FX_DECAL_MAX_PER_FRAME; the older ones are not drawn this frame (they are not deleted). */
+	{
+		static uint16_t decal_cand[HCU_FX_MAX_PER_VIEW];
+		uint32_t nd = 0, ci, oi;
+		for (i = 0; i < s_fx_count; i++)
+			if (s_fxn[i] && s_fx[i].kind == HALO_PS2_FRAME_FX_DECAL) decal_cand[nd++] = (uint16_t)i;
+		if (nd > FX_DECAL_MAX_PER_FRAME) {
+			for (ci = 0; ci < nd; ci++) {
+				uint32_t newer = 0;
+				for (oi = 0; oi < nd; oi++)
+					if (s_fx[decal_cand[oi]].age_sec < s_fx[decal_cand[ci]].age_sec ||
+						(s_fx[decal_cand[oi]].age_sec == s_fx[decal_cand[ci]].age_sec && oi < ci)) newer++;
+				if (newer >= FX_DECAL_MAX_PER_FRAME) {
+					s_fxn[decal_cand[ci]] = 0;
+					admitted--;
+				}
+			}
+		}
 	}
 	if (!admitted) {
 		fx_chain_restore_bounds(c, saved_limit, saved_hud_limit, saved_scope);

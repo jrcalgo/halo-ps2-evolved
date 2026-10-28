@@ -9,6 +9,19 @@
 extern "C" {
 #endif
 
+/* Optional native GS implementation of captured CE screen effects. Installed
+ * only when it can perform the operation; a positive return means every
+ * captured mask request was consumed by native GS packets, zero means no
+ * effect, and a negative return means failure. The adapter has already
+ * atomically prepared each captured mask upload; query its TEX0/CLAMP by view
+ * with hcu_bitmap_dispatch_screen_effect_mask_get().
+ * `video` is the parent video_t for its active color target. The reader and
+ * captured value snapshot are valid only for this callback. */
+typedef int32_t (*hcu_bitmap_screen_effect_backend_fn)(void *backend_user,
+	const halo_ps2_bitmap_request_reader *reader,
+	hcu_bitmap_dispatch_context *dispatch, const void *video,
+	chain_t *geometry, chain_t *upload, tc_t *cache);
+
 /* Adapter between the parent BSP renderer's frame hooks and the HCU bitmap
  * dispatcher. Chains are NOT stored here: the renderer alternates two static
  * chain pairs per build, so the live pair is handed in through the emit hook
@@ -37,6 +50,8 @@ typedef struct {
 	hcu_bitmap_frame_owner *owner;   /* port: frame owner whose sealed batch drains in emit; NULL = no HCU owner */
 	int32_t emit_status;             /* port: result of the last emit hook (HCU_BITMAP_FRAME_OK = drained) */
 	uint32_t emit_failures;          /* port: emit hooks that returned a failure (E_QUEUE/E_DISPATCH/...) */
+	hcu_bitmap_screen_effect_backend_fn screen_effect_backend;
+	void *screen_effect_backend_user;
 	uint8_t bound;
 	uint8_t frame_open;
 	uint8_t submitted;
@@ -82,6 +97,10 @@ int32_t hcu_bitmap_renderer_submit_frame(hcu_bitmap_renderer *renderer, uint32_t
  * fence_context = the renderer. Detach refuses while a kick's leases are pending. */
 int32_t hcu_bitmap_renderer_attach_frame(hcu_bitmap_renderer *renderer, hcu_bitmap_frame_owner *owner);
 int32_t hcu_bitmap_renderer_detach_frame(hcu_bitmap_renderer *renderer);
+/* Quiescent setup before attach. NULL removes the backend, leaving the native
+ * effect hook unregistered and its GS source-copy pages unreserved. */
+int32_t hcu_bitmap_renderer_set_screen_effect_backend(hcu_bitmap_renderer *renderer,
+	hcu_bitmap_screen_effect_backend_fn backend, void *backend_user);
 /* Number of active EE frame-hook attachments; used by explicit headless
  * lifetime checks to fail closed if a bitmap consumer is attached. */
 uint32_t hcu_bitmap_renderer_attachment_count(void);

@@ -23,7 +23,7 @@ def test_bitmap_request_capture_and_frame_lifetime(tmp_path):
     ]
     exe = tmp_path / "bitmap-requests-fixture"
     cmd = [compiler, "-m32", "-std=gnu99", "-fms-extensions", "-fshort-wchar",
-           "-fwrapv", "-fno-strict-aliasing", "-w", "-ffunction-sections",
+           "-fwrapv", "-fno-strict-aliasing", "-w", "-DHALO_PS2_C3_MOVEMENT_TRACE=1", "-ffunction-sections",
            "-fdata-sections", "-include", str(ROOT / "tests/soundreq_host_prefix.h")]
     for directory in include_dirs:
         cmd.extend(["-I", str(directory)])

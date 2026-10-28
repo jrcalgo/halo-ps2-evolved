@@ -22,6 +22,10 @@ COMMENT = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
 PREPROC = re.compile(r"^\s*#.*?(?<!\\)$", re.M | re.S)
 SKIP = {
 	"halo_ps2_render_snapshot_begin", "halo_ps2_render_snapshot_commit",
+	# The PS2 bitmap-request port implements the public entry and forwards to
+	# its bounded `_rasterizer_screen_effect` handler. Do not satisfy this with
+	# the generated no-op platform shim.
+	"rasterizer_screen_effect",
 	# The dedicated provider object is linked into both CE and combined parent links.
 	"halo_ps2_sound_playback_note", "halo_ps2_sound_playback_bind_sink",
 	# C3: weak writer hooks; the parent snapshot bank (src/stream/hcu_snapshot_bank.c) implements them.
@@ -79,7 +83,7 @@ SKIP = {
     "render_location_visible", "D3D__RenderState",
     "rasterizer_widget_set_texture",
     "render", "render_contrails_enabled", "render_dispose", "render_dispose_from_old_map",
-    "render_effects", "render_fov_vertical", "render_frame", "render_frame_pregame",
+    "render_effects", "render_fov_vertical", "render_fov_reticle_scale", "render_frame", "render_frame_pregame",
     "render_initialize", "render_initialize_for_new_map",
     "render_interpolation_camera", "render_interpolation_fraction",
     "render_interpolation_frame_begin", "render_interpolation_frame_end",
@@ -455,12 +459,16 @@ def main() -> None:
             OUT = OUT.with_name(OUT.name + "-telemetry")
         if os.environ.get("HCU_C3_TIMING") == "1" or os.environ.get("HCU_C3_TELEMETRY") == "1":
             OUT = OUT.with_name(OUT.name + "-timing")
+        if os.environ.get("HCU_C3_LAG_TRACE") == "1":
+            OUT = OUT.with_name(OUT.name + "-lag-trace")
         if os.environ.get("HCU_C3_REALTIME_SCHEDULER") == "1":
             OUT = OUT.with_name(OUT.name + "-realtime")
         if os.environ.get("HCU_C3_SNAPSHOT_INDEX") == "1":
             OUT = OUT.with_name(OUT.name + "-snapshot-index")
         if os.environ.get("HCU_C3_MOVEMENT_TRACE") == "1":
             OUT = OUT.with_name(OUT.name + "-movement-trace")
+        if os.environ.get("HCU_C3_SESSION_TRACE") == "1":
+            OUT = OUT.with_name(OUT.name + "-session-trace")
         fence_lag = (os.environ.get("HCU_C3_FENCE_LAG_KICKS") or "0").strip()
         if fence_lag not in ("", "0"):
             OUT = OUT.with_name(OUT.name + f"-fence-lag{fence_lag}")

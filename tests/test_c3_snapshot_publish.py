@@ -35,6 +35,11 @@ def test_publisher_fills_units_palettes_attachments_and_views():
     assert "HALO_PS2_FRAME_ATTACHMENT_PARENT_LINK" in body
     # resources: model tag per object definition
     assert "definition->object.model.index" in body
+    # bounds: source CE render sphere, conservatively re-centered on the
+    # published object transform before the parent uses it for frustum tests.
+    assert "object_get_render_bounding_sphere(iterator.index" in body
+    assert "entry->render_radius = radius;" in body
+    assert "ps2_c3_real_finite(render_sphere_radius)" in body
     # views: the player's unit from CE player state, and HUD values from the unit
     assert "local_player_get_player_index(window->local_player_index)" in body
     assert "player_try_and_get(player_index)" in body
@@ -131,25 +136,26 @@ def test_bank_host_contract_with_intern_and_pins():
     normalize = lambda output: "\n".join(line for line in output.splitlines()
                                              if not line.startswith("bytes:"))
     assert normalize(outputs[0]) == normalize(outputs[1])
-    assert "v5 bank=" in outputs[0] and "v5 bank=" in outputs[1]
+    assert "v10 bank=" in outputs[0] and "v10 bank=" in outputs[1]
 
 
 def test_publisher_fills_bounded_fx_requests_with_counted_drops():
     root = Path(__file__).resolve().parents[1]
     source = (root / "submodules/halo-ce-universal/port/ps2/src/ps2_render.c").read_text()
-    body = source[source.index("static void ps2_c3_publish_fx_requests("):]
+    body = source[source.index("static void ps2_c3_fx_run_streams("):]
     body = body[:body.index("\n}\n") + 3]
-    # Effect and decal records come from read-only iterators defined in CE's own
+    # Live particles and the other records come from read-only iterators defined in CE's own
     # effects sources, so the publisher never mirrors CE datum layouts.
-    for needle in ("halo_ps2_fx_particle_systems_each", "halo_ps2_fx_contrails_each",
+    for needle in ("halo_ps2_fx_particle_systems_each", "halo_ps2_fx_particles_each", "halo_ps2_fx_contrails_each",
                    "halo_ps2_fx_effects_each", "halo_ps2_fx_decals_each",
                    "HALO_PS2_FRAME_FX_EFFECT", "HALO_PS2_FRAME_FX_PARTICLE_SYSTEM",
-                   "HALO_PS2_FRAME_FX_CONTRAIL", "HALO_PS2_FRAME_FX_DECAL"):
+                   "HALO_PS2_FRAME_FX_PARTICLE", "HALO_PS2_FRAME_FX_CONTRAIL", "HALO_PS2_FRAME_FX_DECAL"):
         assert needle in body, needle
     assert "_mirror" not in source and "struct ps2_c3_decal" not in source
     effects_dir = root / "submodules/halo-ce-universal/source/effects"
     owners = {
         "effects.c": ("halo_ps2_fx_effects_each", "effect_data", "effect_location_data"),
+        "particles.c": ("halo_ps2_fx_particles_each", "particle_data", "sequence_index", "frame_index"),
         "particle_systems.c": ("halo_ps2_fx_particle_systems_each", "particle_systems"),
         "contrails.c": ("halo_ps2_fx_contrails_each", "contrail_data"),
         "decals.c": ("halo_ps2_fx_decals_each", "global_decal_data", "game_time_get"),
@@ -165,6 +171,8 @@ def test_publisher_fills_bounded_fx_requests_with_counted_drops():
     visitor = source[source.index("static int ps2_c3_fx_visit("):]
     visitor = visitor[:visitor.index("\n}\n") + 3]
     assert "source_generation" in visitor and "source_index" in visitor
+    assert "halo_ps2_fx_copy_particle_payload(&request, record);" in visitor
+    assert "halo_ps2_fx_copy_decal_payload(&request, record);" in visitor
     fx_add = source[source.index("static void ps2_c3_fx_add("):]
     fx_add = fx_add[:fx_add.index("\n}\n") + 3]
     assert "fx_dropped++" in fx_add
@@ -173,6 +181,19 @@ def test_publisher_fills_bounded_fx_requests_with_counted_drops():
     publish = source[source.index("static void ps2_c3_publish_frame_snapshot("):]
     assert publish.index("ps2_c3_publish_fx_requests(snapshot") < publish.index(
         "halo_ps2_frame_snapshot_commit(snapshot)")
+
+
+def test_fx_payload_converters_roundtrip_particle_contrail_and_decal():
+    source = ROOT / "tests/c3_fx_payload_roundtrip_main.c"
+    include = CE / "port/ps2/include"
+    with tempfile.TemporaryDirectory(prefix="c3-fx-payload-") as tmp:
+        exe = Path(tmp) / "fx-payload-roundtrip"
+        subprocess.run([
+            "cc", "-std=c99", "-Wall", "-Wextra", "-Werror",
+            "-DHALO_PS2_C3_FRAME_SNAPSHOT", "-I", str(include),
+            str(source), "-o", str(exe),
+        ], check=True, capture_output=True, text=True)
+        subprocess.run([str(exe)], check=True, capture_output=True, text=True)
 
 
 def test_c3_snapshot_line_reports_fx_counters():

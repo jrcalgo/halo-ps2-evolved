@@ -30,7 +30,31 @@ typedef struct {
 	uint16_t readers;
 	uint8_t valid;
 	uint8_t reserved8;
+	uint16_t gs_page_first, gs_page_count;
+	uint16_t compose_clut_slot, reserved16;
 } hcu_bitmap_source_slot;
+
+/* The retail sniper's two-map overlays retain four indexed source images and
+ * compose into a bounded PSMT4 pool until the exact parent fence. */
+#define HCU_BITMAP_COMPOSE_SOURCE_COUNT 4u
+#define HCU_BITMAP_COMPOSE_SOURCE_BYTES 6144u
+#define HCU_BITMAP_COMPOSE_OUTPUT_REQUESTS 8u
+#define HCU_BITMAP_COMPOSE_OUTPUT_COUNT 16u /* two parent frames may own all eight request slots */
+/* Retail angle-ticks overlays cover 8×512 native pixels. Sixteen physical
+ * slots (two frames × eight requests) need 33,792 bytes plus alignment. */
+#define HCU_BITMAP_COMPOSE_OUTPUT_POOL_BYTES (40u * 1024u)
+#define HCU_BITMAP_COMPOSE_RESERVED_BYTES \
+	(HCU_BITMAP_COMPOSE_SOURCE_COUNT * HCU_BITMAP_COMPOSE_SOURCE_BYTES + \
+	 HCU_BITMAP_COMPOSE_OUTPUT_POOL_BYTES)
+
+typedef struct {
+	uint32_t generation;
+	uint32_t bitmap_output_datum, chunk_id, expected_source_datum, expected_profile_id;
+	uint32_t storage_offset, index_bytes, clut_bytes;
+	uint16_t bitmap_index, image_index, width, height, clut_entries;
+	uint8_t psm, valid;
+	uint8_t chunk_sha256[32];
+} hcu_bitmap_compose_source;
 
 typedef struct {
 	uint16_t slot;
@@ -133,7 +157,51 @@ typedef struct {
 	uint32_t resident_generation;
 	hcu_asset_profile_view resident_profile;
 	hcu_bitmap_dispatch_counters counters;
+	uint32_t compose_cache_generation;
+	uint32_t compose_source_cursor;
+	hcu_bitmap_compose_source compose_sources[HCU_BITMAP_COMPOSE_SOURCE_COUNT];
+	/* Native CE screen-effect inputs are copied from the sealed request queue
+	 * during the existing bitmap drain. They remain valid for exactly this
+	 * captured generation/frame and do not retain queue or tag pointers. */
+	halo_ps2_screen_effect_state screen_effects[HALO_PS2_BITMAP_MAX_VIEWS];
+	uint64_t screen_effect_mask_tex0[HALO_PS2_BITMAP_MAX_VIEWS];
+	uint64_t screen_effect_mask_clamp[HALO_PS2_BITMAP_MAX_VIEWS];
+	uint32_t screen_effect_generation, screen_effect_frame_index;
+	uint32_t screen_effect_valid_mask;
+	uint32_t screen_effect_mask_texture_valid_mask;
+	uint32_t screen_effect_masks_deferred;
+	uint32_t screen_effect_prepared_request_mask[HALO_PS2_BITMAP_REQUEST_CAPACITY / 32u];
+	uint32_t screen_effect_prepared_count;
+	uint8_t screen_effect_snapshot_valid;
+	uint8_t screen_effect_backend_active;
 } hcu_bitmap_dispatch_context;
+
+/* Snapshot the native parameter block from a sealed CE queue. The current PS2
+ * backend has no native warp/filter implementation, so captured masks remain
+ * inactive and the ordinary bitmap dispatcher will not draw them as overlays. */
+int32_t hcu_bitmap_dispatch_capture_screen_effects(hcu_bitmap_dispatch_context *context,
+	const halo_ps2_bitmap_request_queue *queue);
+void hcu_bitmap_dispatch_screen_effect_reset(hcu_bitmap_dispatch_context *context);
+/* Returns 1 for a matching per-view snapshot, 0 when absent, and -1 for stale
+ * or invalid arguments. The returned struct contains values only, no CE pointers. */
+int32_t hcu_bitmap_dispatch_screen_effect_get(const hcu_bitmap_dispatch_context *context,
+	uint32_t generation, uint32_t frame_index, uint16_t view_index,
+	halo_ps2_screen_effect_state *state);
+int32_t hcu_bitmap_dispatch_screen_effect_mask_get(const hcu_bitmap_dispatch_context *context,
+	uint32_t generation, uint32_t frame_index, uint16_t view_index,
+	uint64_t *tex0, uint64_t *clamp);
+/* Pre-HUD callback path: transactionally acquire the real CE mask bitmap,
+ * append only its upload if needed, pin it through the carrying kick, and
+ * return the resident GS texture state without emitting an ordinary quad. */
+int32_t hcu_bitmap_dispatch_prepare_screen_effect_mask(hcu_bitmap_dispatch_context *context,
+	const halo_ps2_bitmap_request_reader *reader, uint32_t request_index,
+	uint64_t *tex0, uint64_t *clamp);
+/* Return a full PSMT8 CLUT copy for the native inverse-mask GS pass. Indices
+ * and RGB bytes are unchanged; the 0..128 GS alpha byte is complemented. */
+int32_t hcu_bitmap_dispatch_screen_effect_mask_complement_clut(
+	hcu_bitmap_dispatch_context *context,
+	const halo_ps2_bitmap_request_reader *reader, uint32_t request_index,
+	uint8_t clut_rgba32[1024]);
 
 /* Opt in to resident descriptor mode. Bind/reset only at a map/profile lifecycle
  * boundary after all outstanding leases have completed. */

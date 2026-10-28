@@ -19,6 +19,40 @@ static int s_writing = BANK_NONE;
 static uint32_t s_map_generation;
 static uint32_t s_next_sequence = 1u;
 static hcu_snapshot_bank_stats s_stats;
+#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
+hcu_snapshot_bank_rejection hcu_snapshot_bank_last_rejection;
+void hcu_snapshot_bank_get_last_rejection(hcu_snapshot_bank_rejection *out)
+{ if (out) *out = hcu_snapshot_bank_last_rejection; }
+static uint32_t float_bits(float value)
+{ uint32_t bits; memcpy(&bits, &value, sizeof bits); return bits; }
+#define TRACE_REJECT(code, idx, k, a, b) do { \
+	hcu_snapshot_bank_last_rejection.reason = (code); \
+	hcu_snapshot_bank_last_rejection.index = (idx); \
+	hcu_snapshot_bank_last_rejection.kind = (k); \
+	hcu_snapshot_bank_last_rejection.value0_bits = (a); \
+	hcu_snapshot_bank_last_rejection.value1_bits = (b); \
+	hcu_snapshot_bank_last_rejection.map_generation = s->map_generation; \
+	hcu_snapshot_bank_last_rejection.resource_id = (idx) < s->resource_count ? s->resources[(idx)].id : 0u; \
+	hcu_snapshot_bank_last_rejection.has_fx_request = 0u; \
+} while (0)
+#define TRACE_FX_REJECT(code, idx, request) do { \
+	TRACE_REJECT((code), (idx), (request)->kind, float_bits((request)->age_sec), \
+		float_bits((request)->lifespan_sec)); \
+	hcu_snapshot_bank_last_rejection.resource_id = (request)->resource_id; \
+	hcu_snapshot_bank_last_rejection.has_fx_request = 1u; \
+	hcu_snapshot_bank_last_rejection.fx_request = *(request); \
+} while (0)
+#else
+#define TRACE_REJECT(code, idx, k, a, b) ((void)0)
+#define TRACE_FX_REJECT(code, idx, request) ((void)0)
+#endif
+
+enum { REJECT_VERSION=1, REJECT_COUNTS=2, REJECT_TIME=3, REJECT_RESOURCE=4,
+	REJECT_VIEW=5, REJECT_VIEW_REF=6, REJECT_PALETTE=7, REJECT_OBJECT=8,
+	REJECT_ATTACHMENT=9, REJECT_FX_KIND=10, REJECT_FX_OWNER=11,
+	REJECT_FX_VIEW_MASK=12, REJECT_DECAL=13, REJECT_FX_COMMON=14,
+	REJECT_PARTICLE=15, REJECT_PARTICLE_AGE=16, REJECT_PARTICLE_FINITE=17,
+	REJECT_CONTRAIL=18, REJECT_FX_GEOMETRY=19 };
 
 static size_t align16_size(size_t value)
 {
@@ -248,9 +282,9 @@ static int validate_camera(const halo_ps2_snapshot_camera *camera)
 
 static int validate_snapshot(const halo_ps2_frame_snapshot *s)
 {
-	unsigned i;
+	unsigned i = 0, j = 0;
 	if (s->version != HALO_PS2_FRAME_SNAPSHOT_VERSION)
-		return 0;
+		{ TRACE_REJECT(__LINE__, i, 0u, 0u, 0u); return 0; }
 	if (s->view_count > HALO_PS2_FRAME_MAX_VIEWS ||
 		s->object_count > HALO_PS2_FRAME_MAX_OBJECTS ||
 		s->view_ref_count > HALO_PS2_FRAME_MAX_VIEW_REFS ||
@@ -259,13 +293,13 @@ static int validate_snapshot(const halo_ps2_frame_snapshot *s)
 		s->attachment_count > HALO_PS2_FRAME_MAX_ATTACHMENTS ||
 		s->fx_request_count > HALO_PS2_FRAME_MAX_FX_REQUESTS ||
 		s->effect_count + s->decal_count != s->fx_request_count)
-		return 0;
+		{ TRACE_REJECT(__LINE__, i, 0u, 0u, 0u); return 0; }
 	if (!isfinite(s->time_delta_since_tick_sec) ||
 		s->time_delta_since_tick_sec < 0.0f)
-		return 0;
+		{ TRACE_REJECT(__LINE__, i, 0u, 0u, 0u); return 0; }
 	for (i = 0; i < s->resource_count; ++i)
 		if (s->resources[i].generation != s->map_generation)
-			return 0;
+			{ TRACE_REJECT(__LINE__, i, 0u, 0u, 0u); return 0; }
 	for (i = 0; i < s->view_count; ++i) {
 		const halo_ps2_frame_view *v = &s->views[i];
 		if (!(v->flags & HALO_PS2_FRAME_VIEW_ACTIVE))
@@ -277,7 +311,7 @@ static int validate_snapshot(const halo_ps2_frame_snapshot *s)
 				v->first_person_weapon_palette_count, s->palette_count) ||
 			!range_ok(v->first_person_hands_palette_first,
 				v->first_person_hands_palette_count, s->palette_count))
-			return 0;
+			{ TRACE_REJECT(__LINE__, i, 0u, 0u, 0u); return 0; }
 		if ((v->flags & HALO_PS2_FRAME_VIEW_FIRST_PERSON) &&
 			((v->first_person_weapon_resource_slot == HALO_PS2_FRAME_NONE_U16 &&
 			  v->first_person_hands_resource_slot == HALO_PS2_FRAME_NONE_U16) ||
@@ -285,14 +319,14 @@ static int validate_snapshot(const halo_ps2_frame_snapshot *s)
 				s->resource_count) ||
 			 !resource_slot_ok(v->first_person_hands_resource_slot,
 				s->resource_count)))
-			return 0;
+			{ TRACE_REJECT(__LINE__, i, 0u, 0u, 0u); return 0; }
 	}
 	for (i = 0; i < s->view_ref_count; ++i)
 		if (s->view_refs[i] >= s->object_count)
-			return 0;
+			{ TRACE_REJECT(__LINE__, i, 0u, 0u, 0u); return 0; }
 	for (i = 0; i < s->palette_count; ++i)
 		if (!finite_matrix(&s->palette[i]))
-			return 0;
+			{ TRACE_REJECT(__LINE__, i, 0u, 0u, 0u); return 0; }
 	for (i = 0; i < s->object_count; ++i) {
 		const halo_ps2_frame_object *o = &s->objects[i];
 		unsigned j;
@@ -300,21 +334,22 @@ static int validate_snapshot(const halo_ps2_frame_snapshot *s)
 		for (j = 0; j < i; ++j)
 			if (s->objects[j].id.index == o->id.index &&
 				s->objects[j].id.generation == o->id.generation)
-				return 0;
+				{ TRACE_REJECT(__LINE__, i, 0u, 0u, 0u); return 0; }
 		if (!range_ok(o->palette_first, o->palette_count, s->palette_count) ||
 			!range_ok(o->attachment_first, o->attachment_count,
 				s->attachment_count) ||
-			!finite_matrix(&o->world))
-			return 0;
+			!finite_matrix(&o->world) || !isfinite(o->render_radius) ||
+			o->render_radius < 0.0f)
+			{ TRACE_REJECT(__LINE__, i, 0u, 0u, 0u); return 0; }
 		if (o->resource_slot != HALO_PS2_FRAME_NONE_U16 &&
 			o->resource_slot >= s->resource_count)
-			return 0;
+			{ TRACE_REJECT(__LINE__, i, 0u, 0u, 0u); return 0; }
 	}
 	for (i = 0; i < s->attachment_count; ++i) {
 		const halo_ps2_frame_attachment *a = &s->attachments[i];
 		if (a->parent_object >= s->object_count ||
 			a->child_object >= s->object_count)
-			return 0;
+			{ TRACE_REJECT(__LINE__, i, 0u, 0u, 0u); return 0; }
 	}
 	for (i = 0; i < s->fx_request_count; ++i) {
 		const halo_ps2_frame_fx_request *r = &s->fx_requests[i];
@@ -322,18 +357,68 @@ static int validate_snapshot(const halo_ps2_frame_snapshot *s)
 			r->kind == HALO_PS2_FRAME_FX_PARTICLE_SYSTEM ||
 			r->kind == HALO_PS2_FRAME_FX_CONTRAIL ||
 			r->kind == HALO_PS2_FRAME_FX_LIGHT ||
-			r->kind == HALO_PS2_FRAME_FX_DECAL;
+			r->kind == HALO_PS2_FRAME_FX_DECAL ||
+			r->kind == HALO_PS2_FRAME_FX_PARTICLE;
 		if (!kind_ok)
-			return 0;
+			{ TRACE_FX_REJECT(__LINE__, i, r); return 0; }
 		if (r->owner_object != HALO_PS2_FRAME_NONE_U16 &&
 			r->owner_object >= s->object_count)
-			return 0;
+			{ TRACE_FX_REJECT(__LINE__, i, r); return 0; }
 		if ((r->view_mask >> HALO_PS2_FRAME_MAX_VIEWS) != 0u)
-			return 0;
+			{ TRACE_FX_REJECT(__LINE__, i, r); return 0; }
+		if (r->flags & HALO_PS2_FRAME_FX_NATIVE_GEOMETRY) {
+			if (r->kind != HALO_PS2_FRAME_FX_DECAL || r->decal_geometry_vertex_count != 4u)
+				{ TRACE_FX_REJECT(__LINE__, i, r); return 0; }
+			if (!isfinite(r->decal_intensity) || r->decal_intensity < 0.0f || r->decal_intensity > 1.0f)
+				{ TRACE_FX_REJECT(__LINE__, i, r); return 0; }
+			for (j = 0; j < 4u; ++j)
+				if (!isfinite(r->decal_color_argb[j]) || r->decal_color_argb[j] < 0.0f ||
+					r->decal_color_argb[j] > 1.0f) { TRACE_FX_REJECT(__LINE__, i, r); return 0; }
+		} else if (r->kind == HALO_PS2_FRAME_FX_DECAL &&
+			r->decal_geometry_vertex_count != 0u) { TRACE_FX_REJECT(__LINE__, i, r); return 0; }
 		if (!finite3(r->position) || !finite3(r->forward) ||
 			!isfinite(r->scale) || r->scale < 0.0f ||
 			!isfinite(r->age_sec) || r->age_sec < 0.0f)
-			return 0;
+			{ TRACE_FX_REJECT(__LINE__, i, r); return 0; }
+		if (r->kind == HALO_PS2_FRAME_FX_PARTICLE) {
+			unsigned j;
+			if (!r->bitmap_width || !r->bitmap_height || r->sequence_index < 0 || r->frame_index < 0 ||
+				r->sprite_orientation > 2u || !isfinite(r->rotation) ||
+				!isfinite(r->lifespan_sec) || !(r->lifespan_sec > 0.0f) ||
+				!isfinite(r->fade_in_sec) || !isfinite(r->fade_out_sec) || !isfinite(r->minimum_pixels) ||
+				r->framebuffer_blend_function > 7u || r->framebuffer_fade_mode > 2u ||
+				!isfinite(r->lod_cutoff) || !isfinite(r->runtime_oo_width)) { TRACE_FX_REJECT(__LINE__, i, r); return 0; }
+			if (r->age_sec >= r->lifespan_sec &&
+				!(r->flags & HALO_PS2_FRAME_FX_PARTICLE_FINAL_SEQUENCE)) {
+				s_stats.particle_lifetime_rejects++;
+				{ TRACE_FX_REJECT(__LINE__, i, r); return 0; }
+			}
+			for (j = 0; j < 4; ++j)
+				if (!isfinite(r->color_argb[j]) || !isfinite(r->sprite_uv[j])) { TRACE_FX_REJECT(__LINE__, i, r); return 0; }
+			for (j = 0; j < 2; ++j)
+				if (!isfinite(r->registration[j])) { TRACE_FX_REJECT(__LINE__, i, r); return 0; }
+		}
+		if (r->kind == HALO_PS2_FRAME_FX_CONTRAIL) {
+			unsigned j;
+			if (!r->bitmap_width || !r->bitmap_height ||
+				r->sprite_orientation > 4u || r->framebuffer_blend_function > 7u ||
+				r->framebuffer_fade_mode > 2u ||
+				!isfinite(r->segment_end_width) || r->scale < 0.0f ||
+				r->segment_end_width < 0.0f) { TRACE_FX_REJECT(__LINE__, i, r); return 0; }
+			for (j = 0; j < 4; ++j)
+				if (!isfinite(r->color_argb[j]) ||
+					!isfinite(r->segment_end_color_argb[j]) || !isfinite(r->sprite_uv[j]))
+					{ TRACE_FX_REJECT(__LINE__, i, r); return 0; }
+		}
+		if (r->flags & HALO_PS2_FRAME_FX_NATIVE_GEOMETRY) {
+			unsigned v, j;
+			for (v = 0; v < 4u; v++) {
+				for (j = 0; j < 3u; j++)
+					if (!isfinite(r->decal_geometry[v].position[j])) { TRACE_FX_REJECT(__LINE__, i, r); return 0; }
+				for (j = 0; j < 2u; j++)
+					if (!isfinite(r->decal_geometry[v].uv[j])) { TRACE_FX_REJECT(__LINE__, i, r); return 0; }
+			}
+		}
 	}
 	return 1;
 }

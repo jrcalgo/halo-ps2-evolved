@@ -393,12 +393,16 @@ def main() -> None:
         c3_timing = os.environ.get("HCU_C3_TIMING") == "1" or os.environ.get("HCU_C3_TELEMETRY") == "1"
         if c3_timing:
             profile += "-timing"
+        if os.environ.get("HCU_C3_LAG_TRACE") == "1":
+            profile += "-lag-trace"
         if os.environ.get("HCU_C3_REALTIME_SCHEDULER") == "1":
             profile += "-realtime"
         if os.environ.get("HCU_C3_SNAPSHOT_INDEX") == "1":
             profile += "-snapshot-index"
         if os.environ.get("HCU_C3_MOVEMENT_TRACE") == "1":
             profile += "-movement-trace"
+        if os.environ.get("HCU_C3_SESSION_TRACE") == "1":
+            profile += "-session-trace"
         fence_lag = (os.environ.get("HCU_C3_FENCE_LAG_KICKS") or "0").strip()
         if fence_lag not in ("", "0"):
             profile += f"-fence-lag{fence_lag}"
@@ -425,12 +429,16 @@ def main() -> None:
                             os.environ.get("HCU_C3_TELEMETRY") == "1")
     if c3_timing:
         source_flags.append("-DHALO_PS2_C3_TIMING=1")
+    if hcu_c3 and os.environ.get("HCU_C3_LAG_TRACE") == "1":
+        source_flags.append("-DHALO_PS2_C3_LAG_TRACE=1")
     if hcu_c3 and os.environ.get("HCU_C3_REALTIME_SCHEDULER") == "1":
         source_flags.append("-DHALO_PS2_C3_REALTIME_SCHEDULER=1")
     if hcu_c3 and os.environ.get("HCU_C3_SNAPSHOT_INDEX") == "1":
         source_flags.append("-DHALO_PS2_C3_SNAPSHOT_INDEX=1")
     if hcu_c3 and os.environ.get("HCU_C3_MOVEMENT_TRACE") == "1":
         source_flags.append("-DHALO_PS2_C3_MOVEMENT_TRACE=1")
+    if hcu_c3 and os.environ.get("HCU_C3_SESSION_TRACE") == "1":
+        source_flags.append("-DHALO_PS2_C3_SESSION_TRACE=1")
     fence_lag = (os.environ.get("HCU_C3_FENCE_LAG_KICKS") or "0").strip()
     if hcu_c3 and fence_lag not in ("", "0"):
         source_flags.append(f"-DHALO_PS2_C3_FENCE_LAG_KICKS={int(fence_lag)}")
@@ -470,6 +478,8 @@ def main() -> None:
                              if hcu_c3 and os.environ.get("HCU_C3_SNAPSHOT_INDEX") == "1" else []) +
                             (["HALO_PS2_C3_MOVEMENT_TRACE"]
                              if hcu_c3 and os.environ.get("HCU_C3_MOVEMENT_TRACE") == "1" else []) +
+                            (["HALO_PS2_C3_SESSION_TRACE"]
+                             if hcu_c3 and os.environ.get("HCU_C3_SESSION_TRACE") == "1" else []) +
                             ([f"HALO_PS2_STEP8_MP_WORKLOAD_PLAYERS={args.step8_mp_workload_players}"]
                              if args.step8_mp_workload_only else []) +
                             (["HALO_PS2_M2_ANIMATION_TRACE"]

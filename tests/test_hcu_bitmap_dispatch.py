@@ -15,6 +15,11 @@ ROOT = Path(__file__).resolve().parents[1]
 HCU = ROOT / "submodules/halo-ce-universal"
 ENGINE = ROOT / "submodules/halo-ps2/engine"
 
+# Pytest may import this file with only tests/ on sys.path. Make repository
+# tools imports independent of the caller's working directory and pytest mode.
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 
 def _upgrade_hcp1_fixture_to_hcp2(source: Path, manifest: Path, destination: Path,
                                  destination_manifest: Path):
@@ -84,7 +89,8 @@ def _compile(tmp_path):
         HCU / "port/ps2/src/ps2_bitmap_requests.c", ROOT / "src/stream/hcu_bitmap_dispatch.c",
         ROOT / "src/stream/hcu_bitmap_quad.c", ROOT / "src/stream/hcu_asset_profile.c",
         ENGINE / "src/render/chain.c", ENGINE / "src/render/texcache.c",
-        ENGINE / "src/render/upload.c", ENGINE / "src/world/tex.c", ROOT / "src/util/sha256.c"]
+        ENGINE / "src/render/upload.c", ENGINE / "src/render/hud_effect.c",
+        ENGINE / "src/world/tex.c", ROOT / "src/util/sha256.c"]
     # Keep sources in-tree; locate SHA implementation if this checkout uses the alternate path.
     if not sources[-1].is_file():
         candidates = list((ROOT / "src").rglob("sha256.c"))
@@ -157,7 +163,7 @@ def test_actual_ce_ui_request_runs_through_final_profile_and_real_upload_pipelin
     assert result.returncode == 0, result.stdout + result.stderr
     assert "bitmap-dispatch-ok" in result.stdout
     assert "ctag_reader=end-hook" in result.stdout
-    assert "leases=held" in result.stdout and "upload_qw=16" in result.stdout and "geometry_qw=102" in result.stdout
+    assert "leases=held" in result.stdout and "upload_qw=16" in result.stdout and "geometry_qw=105" in result.stdout
     assert bindings["package"]["sha256"] == hashlib.sha256(package.read_bytes()).hexdigest()
     durable_exe = artifact_dir / "hcu-bitmap-dispatch-fixture"
     durable_compile = artifact_dir / "compile.json"
@@ -235,7 +241,7 @@ def test_actual_ce_ui_request_runs_through_final_profile_and_real_upload_pipelin
                 "CE interface_draw_bitmap_modulated screen quads"],
             "not_covered": ["HUD atlas/material OTEX consumers", "render_sprite/effect-world consumers",
                 "production ps2_render.render_frame binding"],
-            "host_packets": {"requests": 3, "upload_qwords": 16, "geometry_qwords": 102,
+        "host_packets": {"requests": 3, "upload_qwords": 16, "geometry_qwords": 105,
                 "cache_hits": 2, "cache_misses": 1,
                 "fail_closed": ["profile id", "request generation", "source datum", "chunk SHA-256", "mutated chunk"],
                 "atomic_rollback": ["geometry capacity", "upload-chain capacity"]}},
@@ -256,3 +262,49 @@ def test_actual_ce_ui_request_runs_through_final_profile_and_real_upload_pipelin
     out = artifact_dir / "result.json"
     out.write_text(json.dumps(result_record, sort_keys=True, indent=2) + "\n")
     assert result_record["returncode"] == 0
+
+
+def test_real_c3_scope_mask_texs_passes_p8_guard_upload_budget_and_complement(tmp_path):
+    """Exercise the production C mask guard with both real candidate chunks."""
+    candidate = ROOT / "build/c3/native-scope-lossless-research/scope-mask-p8-candidate"
+    report_path = candidate / "candidate-report.json"
+    if not report_path.is_file():
+        pytest.skip("isolated P8 scope-mask candidate has not been built")
+    report = json.loads(report_path.read_text())
+    manifest_path = ROOT / report["candidate_manifest"]
+    package_path = ROOT / report["candidate_package"]
+    manifest = json.loads(manifest_path.read_text())
+    exe, _extracted, _commands, _compile_record = _compile(tmp_path)
+    expected = {
+        3861513398: (324, 401, 512, 256),
+        3861578935: (325, 245, 256, 256),
+    }
+    results = []
+    for source_datum, (output_datum, chunk_id, width, height) in expected.items():
+        binding = next(row for row in report["mask_bindings"]
+                       if row["source_datum"] == source_datum)
+        assert binding["bitmap_output_datum"] == output_datum
+        assert binding["chunk_id"] == chunk_id and binding["expected_profile_id"] == manifest["profile"]["id"]
+        run = [str(exe), str(package_path), str(output_datum), "0", str(chunk_id),
+               str(binding["cache_key"]), str(width), str(height), "0", "0",
+               str(source_datum), binding["chunk_sha256"], "scope-mask",
+               str(manifest["profile"]["id"])]
+        result = subprocess.run(run, capture_output=True, text=True)
+        if result.returncode == -signal.SIGSYS:
+            pytest.skip("sandbox blocks native ILP32 execution with SIGSYS")
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert f"scope-mask-p8-ok dim={width}x{height} psm=19 clut=256" in result.stdout
+        assert "complement=256 profile=16" in result.stdout
+        results.append({"source_datum": source_datum, "path": binding["path"],
+                        "output_datum": output_datum, "chunk_id": chunk_id,
+                        "chunk_sha256": binding["chunk_sha256"],
+                        "dimensions": [width, height], "returncode": result.returncode,
+                        "stdout": result.stdout.strip()})
+    evidence = {"format": "scope-mask-p8-host-c-dispatch-v1", "runtime_admitted": False,
+        "actual_ce_frame_bound": False,
+        "limitation": "Host ILP32 dispatch exercised the production TEXS parser, P8 shape guard, indexed upload, GS CLUT address, and complementary CLUT; no EE/GS execution or real CE frame was run.",
+        "package_sha256": hashlib.sha256(package_path.read_bytes()).hexdigest(),
+        "profile_id": manifest["profile"]["id"], "results": results,
+        "dispatcher_sha256": hashlib.sha256((ROOT / "src/stream/hcu_bitmap_dispatch.c").read_bytes()).hexdigest(),
+        "harness_sha256": hashlib.sha256((ROOT / "tests/hcu_bitmap_dispatch_main.c").read_bytes()).hexdigest()}
+    (candidate / "c-runtime-probe.json").write_text(json.dumps(evidence, sort_keys=True, indent=2) + "\n")

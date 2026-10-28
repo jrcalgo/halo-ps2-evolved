@@ -6,7 +6,7 @@
 
 #define GS_A_SCISSOR_1 0x40u
 /* One VIF qword, six GIF state qwords, one draw tag, 6 * 3 vertex qwords. */
-#define HCU_QUAD_DATA_QW (1u + 6u + 1u + 6u * 3u)
+#define HCU_QUAD_DATA_QW (1u + 7u + 1u + 6u * 3u)
 
 static int finitef(float x) { return isfinite(x); }
 static int log2_exact(uint32_t x) { int n=0; if (!x || (x & (x-1u))) return -1; while (x>1u) {x>>=1;n++;} return n; }
@@ -103,16 +103,17 @@ hcu_bitmap_quad_status hcu_bitmap_quad_emit_validated(chain_t *c,const tex_info 
 	w=(uint32_t*)chain_cnt(c,data_qw,0); if(!w) return HCU_BITMAP_QUAD_CAPACITY;
 	w[0]=VIF_CODE(VIF_NOP,0,0); w[1]=VIF_CODE(VIF_NOP,0,0); w[2]=VIF_CODE(VIF_FLUSHA,0,0); w[3]=VIF_CODE(VIF_DIRECT,0,data_qw-1u);
 	q=(uint64_t*)(w+4);
-	q[0]=GIF_TAG(5,1,0,0,GIFX_FLG_PACKED,1); q[1]=GIF_REGS_AD;
+	q[0]=GIF_TAG(6,1,0,0,GIFX_FLG_PACKED,1); q[1]=GIF_REGS_AD;
 	q[2]=s->tex0; q[3]=GS_A_TEX0_1;
 	q[4]=GS_TEX1(1,0,s->point_sampled?0:1,s->point_sampled?0:1,0,0,0); q[5]=GS_A_TEX1_1;
-	q[6]=alpha; q[7]=GS_A_ALPHA_1;
+	q[6]=s->clamp ? s->clamp : GS_CLAMP(1,1,0,image.width-1u,0,image.height-1u); q[7]=GS_A_CLAMP_1;
+	q[8]=alpha; q[9]=GS_A_ALPHA_1;
 	/* Meter passes use the GS alpha test; every other quad writes TEST off, as before. */
-	q[8]=s->alpha_test?GS_TEST(1,s->alpha_test==HCU_BITMAP_ALPHA_TEST_FILL?5:2,s->alpha_ref,0,0,0,1,1)
+	q[10]=s->alpha_test?GS_TEST(1,s->alpha_test==HCU_BITMAP_ALPHA_TEST_FILL?5:2,s->alpha_ref,0,0,0,1,1)
 		:GS_TEST(0,1,0,0,0,0,1,1);
-	q[9]=GS_A_TEST_1;
-	q[10]=scissor_value(s); q[11]=GS_A_SCISSOR_1;
-	q[12]=GIF_TAG(6,1,1,prim,GIFX_FLG_PACKED,3); q[13]=0x531; q+=14;
+	q[11]=GS_A_TEST_1;
+	q[12]=scissor_value(s); q[13]=GS_A_SCISSOR_1;
+	q[14]=GIF_TAG(6,1,1,prim,GIFX_FLG_PACKED,3); q[15]=0x531; q+=16;
 	for(i=0;i<6;i++,q+=6) put_vertex(q,&vertices[order[i]],s,&image);
 	if(s->blend==HCU_BITMAP_BLEND_PREMULTIPLIED) {
 		q[0]=GIF_TAG(1,1,0,0,GIFX_FLG_PACKED,1); q[1]=GIF_REGS_AD;

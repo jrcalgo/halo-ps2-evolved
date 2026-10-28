@@ -1446,6 +1446,8 @@ static int hcu_map_service_preflight_impl(const char *map_name)
 			service->reload_pending = 1;
 			return 1;
 		}
+		printf("HALO_PS2_LOCAL map-preflight rejected map=%s reason=live-owner-mounted\n",
+			entry->identity.map_name);
 		fail_preflight_for_entry(service, entry);
 		return 0;
 	}

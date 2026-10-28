@@ -23,10 +23,54 @@ int32_t bsp_render_source_release(uint32_t kind, uint32_t kick_seq)
 int main(void)
 {
 	hcu_bitmap_dispatch_context ctx;
+	halo_ps2_bitmap_request_queue queue;
+	halo_ps2_screen_effect_state state;
+	uint64_t screen_mask_tex0, screen_mask_clamp;
 	hcu_bitmap_source_slot slots[1];
 	hcu_bitmap_lease leases[1];
 	uint16_t readers[1];
 	memset(&ctx, 0, sizeof(ctx));
+	memset(&queue, 0, sizeof(queue));
+	ctx.expected_generation = 91u;
+	queue.closed = 1; queue.generation = 91u; queue.frame_index = 44u; queue.readers = 1u;
+	queue.screen_effects[1].valid = 1u;
+	queue.screen_effects[1].convolution_type = 2;
+	queue.screen_effects[1].convolution_radius = 0.375f;
+	queue.screen_effects[1].convolution_extra_passes = 4;
+	queue.screen_effects[1].light_enhancement_intensity = 0.75f;
+	queue.screen_effects[1].desaturation_intensity = 0.25f;
+	queue.screen_effects[1].desaturation_tint[0] = 0.125f;
+	queue.screen_effects[1].desaturation_tint[1] = 0.5f;
+	queue.screen_effects[1].desaturation_tint[2] = 0.875f;
+	queue.screen_effects[1].desaturation_is_additive = 1u;
+	queue.screen_effects[1].light_uses_mask = 1u;
+	queue.screen_effects[1].desaturation_uses_mask = 1u;
+	queue.screen_effects[1].video_on = 1u;
+	queue.screen_effects[1].mask_request_index = 3u;
+	if (hcu_bitmap_dispatch_capture_screen_effects(&ctx, &queue) != HCU_BITMAP_DISPATCH_OK ||
+		ctx.screen_effect_backend_active ||
+		hcu_bitmap_dispatch_screen_effect_get(&ctx, 91u, 44u, 1u, &state) != 1 ||
+		state.convolution_type != 2 || state.convolution_radius != 0.375f ||
+		state.convolution_extra_passes != 4 || state.light_enhancement_intensity != 0.75f ||
+		state.desaturation_intensity != 0.25f || state.desaturation_tint[0] != 0.125f ||
+		state.desaturation_tint[1] != 0.5f || state.desaturation_tint[2] != 0.875f ||
+		!state.desaturation_is_additive || !state.light_uses_mask ||
+		!state.desaturation_uses_mask || !state.video_on || state.mask_request_index != 3u ||
+		hcu_bitmap_dispatch_screen_effect_mask_get(&ctx, 91u, 44u, 1u,
+			&screen_mask_tex0, &screen_mask_clamp) != 0 ||
+		hcu_bitmap_dispatch_screen_effect_get(&ctx, 91u, 45u, 1u, &state) != HCU_BITMAP_DISPATCH_E_VIEW)
+		return 5;
+	/* Model the pre-HUD native hook marking work applied. The later queue drain
+	 * sees the same frame and must not clear that result or replace its inputs. */
+	ctx.screen_effect_backend_active = 1u;
+	if (hcu_bitmap_dispatch_capture_screen_effects(&ctx, &queue) != HCU_BITMAP_DISPATCH_OK ||
+		!ctx.screen_effect_backend_active ||
+		hcu_bitmap_dispatch_screen_effect_get(&ctx, 91u, 44u, 1u, &state) != 1 ||
+		state.mask_request_index != 3u) return 6;
+	hcu_bitmap_dispatch_screen_effect_reset(&ctx);
+	if (hcu_bitmap_dispatch_screen_effect_get(&ctx, 91u, 44u, 1u, &state) != HCU_BITMAP_DISPATCH_E_VIEW ||
+		hcu_bitmap_dispatch_capture_screen_effects(&ctx, &queue) != HCU_BITMAP_DISPATCH_OK)
+		return 7;
 	memset(slots, 0, sizeof(slots));
 	memset(leases, 0, sizeof(leases));
 	memset(readers, 0, sizeof(readers));

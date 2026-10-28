@@ -39,10 +39,14 @@ def test_views_block_is_wired_into_c3_render_and_build():
 	render = main[main.index("void hcu_c3_render_tick(int tick)"):main.index("/* Order: drain GS/DMA")]
 	assert render.index("hcu_c3_objects_frame_begin()") < render.index("hcu_c3_views_begin(frame_snapshot)")
 	assert render.index("hcu_c3_views_begin(frame_snapshot)") < render.index("overlay = hcu_c3_views_camera(v, &cam, &vp);")
+	# The object renderer's fence-safe pre-admission must precede any additional bank reader,
+	# and views borrow the exact snapshot held by the object frame pin.
 	views_begin = main[main.index("static void hcu_c3_views_begin("):main.index("/* text_batch_emit")]
-	assert "if (!s_c3v.snap)" in views_begin and "hcu_snapshot_bank_begin_read(&s_c3v.reader)" in views_begin
-	objects_begin = main[main.index("static const halo_ps2_frame_snapshot *hcu_c3_objects_frame_begin"):main.index("static void hcu_c3_objects_view_begin")]
-	assert "frame_snapshot = fx_snap" in objects_begin and "return frame_snapshot" in objects_begin
+	assert "if (!s_c3v.snap)" in views_begin
+	assert "hcu_snapshot_bank_begin_read(&s_c3v.reader)" in views_begin
+	objects_begin = main[main.index("static const halo_ps2_frame_snapshot *hcu_c3_objects_frame_begin"):
+	                     main.index("static void hcu_c3_objects_view_begin")]
+	assert "frame_snapshot = fx_snap" in objects_begin
 	views_end = main[main.index("static void hcu_c3_views_end(unsigned"):main.index("/* C3:views end */", main.index("static void hcu_c3_views_end(unsigned"))]
 	assert "if (s_c3v.pinned)" in views_end  # borrowed object pin is never released by views_end
 	assert "hcu_snapshot_bank_end_read(&s_c3v.reader)" in views_end

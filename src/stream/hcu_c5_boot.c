@@ -356,7 +356,13 @@ static int hcu_c5_boot_map_mounted(long *tag_count)
 	void *tags;
 
 	*tag_count = 0;
+#ifdef HCU_C5_BOOT_HEADLESS
+	/* The headless runtime guest mounts the row's map through CE main_setup_connection and the production load,
+	 * which name the map by its short name (main.c production-ce-map-loaded). */
+	if (!game_map_loaded() || !cache_files_precache_map_loaded(HCU_C5_BOOT_MAP)) {
+#else
 	if (!game_map_loaded() || !cache_files_precache_map_loaded(HCU_C5_BOOT_MAP_PATH)) {
+#endif
 		return 0;
 	}
 	if (!global_scenario_try_and_get()) {
@@ -429,6 +435,16 @@ static int hcu_c5_boot_await_map(void)
 	if (hcu_c5_boot_map_ready) {
 		return 1;
 	}
+#ifdef HCU_C5_BOOT_HEADLESS
+	/* The runtime guest mounts the boot map before the first tick; no menu request is made. The map is only
+	 * waited for here, then the variant is installed on the mounted map (a late install: the production load has
+	 * already run with CE's default variant). */
+	if (!hcu_c5_boot_map_requested) {
+		hcu_c5_boot_map_requested = 1;
+		printf("C5 map-request ok=1 detail=runtime-guest mount (no menu request) map=%s\n", HCU_C5_BOOT_MAP);
+		fflush(stdout);
+	}
+#else
 	if (!hcu_c5_boot_map_requested) {
 		hcu_c5_boot_map_requested = 1;
 		printf("C5 game-state in_progress=%d before-request\n", (int)game_in_progress());
@@ -442,8 +458,12 @@ static int hcu_c5_boot_await_map(void)
 			HCU_C5_BOOT_MAP_PATH);
 		return 0;
 	}
+#endif
 	if (hcu_c5_boot_map_mounted(&tag_count)) {
 		hcu_c5_boot_map_ready = 1;
+#ifdef HCU_C5_BOOT_HEADLESS
+		hcu_c5_boot_variant_install();
+#endif
 		hcu_c5_boot_print_name("HALO_PS2_C5 map-loaded name=", HCU_C5_BOOT_MAP_PATH);
 		printf("HALO_PS2_C5 map-loaded tags=%ld ticks=%u scenario=%s\n", tag_count, hcu_c5_boot_map_wait,
 			HCU_C5_BOOT_SCENARIO_PATH[0] ? "set" : "none");

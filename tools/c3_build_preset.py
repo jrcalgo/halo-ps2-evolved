@@ -53,8 +53,13 @@ def apply_c3_build_preset(env: MutableMapping[str, str]) -> dict[str, str] | Non
         raise ValueError(f"unknown HCU_C3_BUILD_PRESET {preset!r}; choose quiet or diagnostic") from exc
     for key, value in defaults.items():
         env.setdefault(key, value)
+    # A trace is an explicit per-build diagnostic and is intentionally outside
+    # the quiet/diagnostic preset matrix.
+    env.setdefault("HCU_C3_LAG_TRACE", "0")
+    flags = {key: env[key] for key in defaults}
+    flags["HCU_C3_LAG_TRACE"] = env["HCU_C3_LAG_TRACE"]
     return {"name": preset,
-            "flags": {key: env[key] for key in defaults},
+            "flags": flags,
             "preset_config_sha256": hashlib.sha256(_PRESET_BYTES).hexdigest()}
 
 
