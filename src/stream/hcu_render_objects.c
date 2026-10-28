@@ -2368,9 +2368,9 @@ static void fx_chain_restore_bounds(chain_t *c, uint32_t limit, uint32_t hud_lim
 /* Verified FX source chunks kept in EE RAM. A first-use read costs about 6 ms of host file latency whatever its size
  * (an FX bitmap is a few KB), so each weapon's first shots stalled frames and a texture the GS cache evicted was read
  * again. A chunk is verified once on the way in; a hit is a memcpy. Entries are replaced oldest first. */
-#define FX_SRC_SLOTS 128u
-#define FX_SRC_PREWARM_MAX_BYTES 12288u
-#define FX_SRC_PREWARM_PERIOD 4u
+#define FX_SRC_SLOTS 640u
+#define FX_SRC_PREWARM_MAX_BYTES 24576u
+#define FX_SRC_PREWARM_PERIOD 2u
 static uint8_t *s_fx_src_pool;   /* caller-owned; NULL disables the cache */
 static uint32_t s_fx_src_pool_bytes;
 
@@ -2449,7 +2449,7 @@ static int fx_src_fill(uint32_t chunk_id, const uint8_t sha[32], uint32_t size)
 	return 0;
 }
 
-/* Background warm-up: every FX_SRC_PREWARM_PERIOD-th frame with no demand read, read the next small bitmap chunk of
+/* Background warm-up: every second frame with no demand read, read the next small bitmap chunk of
  * the binding table into the pool until the pool is three quarters full. */
 static void fx_src_prewarm_step(uint32_t previous_frame_read_bytes)
 {
@@ -2460,7 +2460,11 @@ static void fx_src_prewarm_step(uint32_t previous_frame_read_bytes)
 	s_fx_prewarm_frame = s_frame;
 	if (s_fx_src_head > s_fx_src_pool_bytes / 4u * 3u) { s_fx_prewarm_cursor = s_fx_bind_count; return; }
 	{
-		const hcu_bitmap_binding *b = &s_fx_bind[s_fx_prewarm_cursor++];
+		const hcu_bitmap_binding *b;
+		uint32_t free_slot, any = 0;
+		for (free_slot = 0; free_slot < FX_SRC_SLOTS; free_slot++) if (!s_fx_src_slot[free_slot].used) { any = 1; break; }
+		if (!any) { s_fx_prewarm_cursor = s_fx_bind_count; return; }
+		b = &s_fx_bind[s_fx_prewarm_cursor++];
 		if (b->image_index != 0u ||
 			hcu_asset_profile_lookup(s_fx_profile, HCU_ASSET_CHUNK_MEDIA, b->chunk_id, &cv) != HCU_ASSET_PROFILE_OK ||
 			cv.size > FX_SRC_PREWARM_MAX_BYTES || cv.size > s_fx_staging_bytes ||
