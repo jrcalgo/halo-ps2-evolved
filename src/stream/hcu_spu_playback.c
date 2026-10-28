@@ -9,7 +9,6 @@
 #define HSB_VERSION 1u
 #define HSB_HEADER_BYTES 32u
 #define HSB_ENTRY_BYTES 32u
-#define HCU_SPU_MAX_SAMPLES 160u
 #define HCU_SPU_TICKS_PER_SECOND 30u
 #define HCU_SPU_VOLUME_MAX 0x3FFFu
 #define HCU_SPU_VOLUME_SCALE 0.7f /* headroom for the eight overlapping weapon voices */
@@ -122,9 +121,12 @@ int hcu_spu_bank_parse(const uint8_t *image, uint32_t size, hcu_spu_sample *out,
 			(s->bank_offset & 15u) || s->bank_offset < data_off || s->bank_offset > size - 32u ||
 			s->bytes > size - 32u - s->bank_offset)
 			return -4;
-		/* SPU2 RAM mirrors the data region, shifted to HCU_SPU_RAM_BASE. */
-		s->spu_addr = HCU_SPU_RAM_BASE + (s->bank_offset - data_off);
-		if (s->spu_addr + s->bytes > HCU_SPU_RAM_END) return -5;
+		/* The load uploads the data region from HCU_SPU_RAM_BASE until SPU2 RAM is full: a sample is resident
+		 * when it fits entirely, any other is paged in on first use. */
+		if (HCU_SPU_RAM_BASE + (s->bank_offset - data_off) + s->bytes <= HCU_SPU_RAM_END) {
+			s->spu_addr = HCU_SPU_RAM_BASE + (s->bank_offset - data_off);
+			s->resident = 1;
+		}
 	}
 	*count_out = count;
 	if (data_off_out) *data_off_out = data_off;
@@ -258,6 +260,57 @@ float hcu_spu_spatial(const float listener[3], const float forward[3], const flo
 	return att;
 }
 
+static int sample_in_use(const hcu_spu_sample *sample)
+{
+	uint32_t i;
+	for (i = 0; i < HCU_SPU_VOICES; ++i)
+		if (s_voice[i].active && s_voice[i].sample == sample) return 1;
+	return 0;
+}
+
+/* Lowest 64-byte aligned address where `padded` bytes fit between the resident samples, or 0 when none does. */
+static uint32_t find_gap(uint32_t padded)
+{
+	uint32_t i, c, best = 0;
+	for (c = 0; c <= s_sample_count; ++c) {
+		uint32_t start = c == 0 ? HCU_SPU_RAM_BASE : (s_samples[c - 1].resident ? s_samples[c - 1].spu_addr + s_samples[c - 1].bytes : 0);
+		int fits = 1;
+		if (c && !s_samples[c - 1].resident) continue;
+		start = (start + 63u) & ~63u;
+		if (start + padded > HCU_SPU_RAM_END) continue;
+		for (i = 0; i < s_sample_count && fits; ++i)
+			if (s_samples[i].resident && s_samples[i].spu_addr < start + padded &&
+				start < s_samples[i].spu_addr + s_samples[i].bytes) fits = 0;
+		if (fits && (!best || start < best)) best = start;
+	}
+	return best;
+}
+
+/* Makes `sample` resident, evicting least recently used samples that no voice plays. 0 on success. */
+static int page_in(hcu_spu_sample *sample)
+{
+	uint32_t padded = (sample->bytes + 63u) & ~63u, addr;
+	if (sample->resident) return 0;
+	if (!s_hw->upload) return -1;
+	for (;;) {
+		uint32_t i, victim = HCU_SPU_MAX_SAMPLES;
+		addr = find_gap(padded);
+		if (addr) break;
+		for (i = 0; i < s_sample_count; ++i)
+			if (s_samples[i].resident && !sample_in_use(&s_samples[i]) &&
+				(victim == HCU_SPU_MAX_SAMPLES || (int32_t)(s_samples[victim].last_used - s_samples[i].last_used) > 0))
+				victim = i;
+		if (victim == HCU_SPU_MAX_SAMPLES) return -2;
+		s_samples[victim].resident = 0;
+		s_stats.evictions++;
+	}
+	if (s_hw->upload(sample, addr) != 0) return -3;
+	sample->spu_addr = addr;
+	sample->resident = 1;
+	s_stats.page_ins++;
+	return 0;
+}
+
 /* Left/right volumes for a request: sample and request gain, then distance and pan when positioned. */
 static int request_volumes(const hcu_sound_request *r, const hcu_spu_sample *sample, uint32_t *vol_l, uint32_t *vol_r)
 {
@@ -292,6 +345,11 @@ static void start_sound(const hcu_sound_request *r, uint32_t hash, int looping)
 	if (!request_volumes(r, sample, &vol_l, &vol_r) && r->has_position && s_listener_valid) {
 		s_stats.inaudible++;
 		return;
+	}
+	{
+		hcu_spu_sample *paged = (hcu_spu_sample *)sample;
+		paged->last_used = r->game_time;
+		if (page_in(paged) != 0) { s_stats.page_fails++; return; }
 	}
 	voice = pick_voice(priority, r->game_time, &stolen);
 	if (voice < 0) { s_stats.dropped_busy++; return; }

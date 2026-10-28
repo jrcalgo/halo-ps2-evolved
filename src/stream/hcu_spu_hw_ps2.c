@@ -15,7 +15,6 @@
 #include "stream/sha256.h"
 
 #define HCU_SPU_STAGE_BYTES 16384u
-#define HCU_SPU_MAX_SAMPLES 160u
 #define HCU_SPU_HEADER_BYTES (32u + 32u * HCU_SPU_MAX_SAMPLES)
 #define HCU_SPU_SD_INIT_COLD 0
 #define HCU_SPU_CORE1 1u
@@ -37,6 +36,7 @@ static uint8_t s_header[HCU_SPU_HEADER_BYTES] __attribute__((aligned(16)));
 static hcu_spu_sample s_parsed[HCU_SPU_MAX_SAMPLES];
 static void *s_iop_stage;
 static int s_hw_ready;
+static int s_bank_token = -1; /* the verified bank stays open for on-demand sample reads */
 
 static void hw_set_param(uint16_t entry, uint16_t value)
 {
@@ -58,7 +58,8 @@ static uint32_t hw_get_switch(uint16_t entry)
 	return (uint32_t)sceSdRemote(1, rSdGetSwitch, entry);
 }
 
-static const hcu_spu_hw s_hw = { hw_set_param, hw_set_addr, hw_set_switch, hw_get_switch };
+static int hw_upload(const hcu_spu_sample *sample, uint32_t spu_addr);
+static const hcu_spu_hw s_hw = { hw_set_param, hw_set_addr, hw_set_switch, hw_get_switch, hw_upload };
 
 static int load_irx(const char *name, const unsigned char *image, uint32_t size)
 {
@@ -124,6 +125,21 @@ static int read_exact(int token, void *dst, uint32_t bytes)
 	return hcu_file_bridge_read(token, dst, bytes, &got) && got == bytes;
 }
 
+/* Reads one sample from the verified bank file and uploads it to SPU2 RAM. */
+static int hw_upload(const hcu_spu_sample *sample, uint32_t spu_addr)
+{
+	uint32_t done = 0;
+	if (s_bank_token < 0) return -1;
+	if (hcu_file_bridge_seek(s_bank_token, (long)sample->bank_offset, 0) != (long)sample->bank_offset) return -2;
+	while (done < sample->bytes) {
+		uint32_t n = sample->bytes - done < HCU_SPU_STAGE_BYTES ? sample->bytes - done : HCU_SPU_STAGE_BYTES;
+		if (!read_exact(s_bank_token, s_stage, n)) return -3;
+		if (upload_chunk(s_stage, n, spu_addr + done) != 0) return -4;
+		done += n;
+	}
+	return 0;
+}
+
 int hcu_spu_load_bank(const char *path)
 {
 	unsigned long size = 0;
@@ -154,10 +170,14 @@ int hcu_spu_load_bank(const char *path)
 		uint32_t n = remaining < HCU_SPU_STAGE_BYTES ? remaining : HCU_SPU_STAGE_BYTES;
 		if (!read_exact(token, s_stage, n)) goto fail_read;
 		sha256_update(&sha, s_stage, n);
-		if (upload_chunk(s_stage, n, spu_addr) != 0) goto fail_read;
+		/* The whole file is read to verify it; only the leading part that fits SPU2 RAM is uploaded now. */
+		if (spu_addr < HCU_SPU_RAM_END) {
+			uint32_t up = n < HCU_SPU_RAM_END - spu_addr ? n : HCU_SPU_RAM_END - spu_addr;
+			if (upload_chunk(s_stage, up, spu_addr) != 0) goto fail_read;
+			uploaded += up;
+		}
 		spu_addr += n;
 		remaining -= n;
-		uploaded += n;
 	}
 	sha256_final(&sha, digest);
 	if (!read_exact(token, trailer, 32) || memcmp(digest, trailer, 32) != 0) {
@@ -166,7 +186,8 @@ int hcu_spu_load_bank(const char *path)
 		hcu_file_bridge_close(token);
 		return -4;
 	}
-	hcu_file_bridge_close(token);
+	if (s_bank_token >= 0) hcu_file_bridge_close(s_bank_token);
+	s_bank_token = token;
 	hcu_spu_attach(&s_hw, s_parsed, count);
 	hcu_spu_note_uploaded(uploaded);
 	printf("HALO_PS2_LOCAL spu-bank-ready samples=%u uploaded=%u spu-end=0x%x\n",

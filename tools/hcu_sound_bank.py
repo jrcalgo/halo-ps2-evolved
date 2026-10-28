@@ -34,6 +34,7 @@ ENTRY_SIZE = 32
 SPU_RAM_BYTES = 2 * 1024 * 1024
 SPU_RESERVED_BYTES = 0x5010
 DEFAULT_BUDGET = 1_500_000
+PAGED_BUDGET_LIMIT = 24 * 1024 * 1024
 
 STEP = [7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 21, 23, 25, 28, 31, 34, 37, 41, 45, 50, 55, 60, 66,
         73, 80, 88, 97, 107, 118, 130, 143, 157, 173, 190, 209, 230, 253, 279, 307, 337, 371, 408,
@@ -283,9 +284,11 @@ def main() -> int:
     ap.add_argument("output", type=Path)
     ap.add_argument("--budget", type=int, default=DEFAULT_BUDGET, help="SPU2 RAM bytes for samples")
     ap.add_argument("--max-perms", type=int, default=2)
+    ap.add_argument("--paged", action="store_true",
+                    help="allow a bank larger than SPU2 RAM; the player pages samples in on first use")
     args = ap.parse_args()
-    if args.budget > SPU_RAM_BYTES - SPU_RESERVED_BYTES:
-        ap.error("budget exceeds SPU2 RAM")
+    if args.budget > (PAGED_BUDGET_LIMIT if args.paged else SPU_RAM_BYTES - SPU_RESERVED_BYTES):
+        ap.error("budget exceeds SPU2 RAM (use --paged for a larger bank)")
     blob, entries = build_bank(args.map, args.budget, args.max_perms)
     verify_bank(blob)
     args.output.write_bytes(blob)

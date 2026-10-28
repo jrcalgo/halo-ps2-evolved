@@ -13,11 +13,21 @@ static void h_param(uint16_t e, uint16_t v) { ops[nops++] = (op_t){ 0, e, v }; }
 static void h_addr(uint16_t e, uint32_t v) { ops[nops++] = (op_t){ 1, e, v }; }
 static void h_switch(uint16_t e, uint32_t v) { ops[nops++] = (op_t){ 2, e, v }; }
 static uint32_t h_get(uint16_t e) { (void)e; return 0; }
-static const hcu_spu_hw hw = { h_param, h_addr, h_switch, h_get };
+static unsigned uploads, upload_fail;
+static uint32_t upload_addr[16];
+static int h_upload(const hcu_spu_sample *sample, uint32_t addr)
+{
+	(void)sample;
+	if (upload_fail) return -1;
+	if (uploads < 16) upload_addr[uploads] = addr;
+	uploads++;
+	return 0;
+}
+static const hcu_spu_hw hw = { h_param, h_addr, h_switch, h_get, h_upload };
 
 static void w32(uint8_t *p, uint32_t v) { p[0] = v; p[1] = v >> 8; p[2] = v >> 16; p[3] = v >> 24; }
 
-static uint8_t image[4096];
+static uint8_t image[4u * 1024u * 1024u];
 static uint32_t build_image(uint32_t count, const uint32_t *hashes, const uint16_t *perms,
 	const uint16_t *perm_counts, uint32_t sample_bytes)
 {
@@ -197,6 +207,47 @@ int main(void)
 	hcu_spu_request(&r, hashes[0]);
 	hcu_spu_get_stats(&st);
 	CHECK(st.voices_active == 0);
+
+	/* paging: three 900 KB samples; two are resident after the load, the third is uploaded on first use */
+	{
+		const uint32_t ph[3] = { 0x1001, 0x1002, 0x1003 };
+		const uint16_t pp[3] = { 0, 0, 0 }, pc[3] = { 1, 1, 1 };
+		uint32_t ptotal = build_image(3, ph, pp, pc, 900000u);
+		hcu_spu_sample ps[4];
+		uint32_t pcount = 0;
+		CHECK(hcu_spu_bank_parse(image, ptotal, ps, 4, &pcount, 0, 0) == 0 && pcount == 3);
+		CHECK(ps[0].resident && ps[1].resident && !ps[2].resident);
+		hcu_spu_attach(&hw, ps, pcount);
+		uploads = 0;
+		r = req(HCU_SOUND_EVENT_IMPULSE, 1, 3, 1000, 1.0f);
+		hcu_spu_request(&r, ph[0]);
+		CHECK(uploads == 0); /* resident */
+		/* the third does not fit: sample 1 is the least recently used one no voice plays (0 is playing) */
+		r = req(HCU_SOUND_EVENT_IMPULSE, 2, 3, 1001, 1.0f);
+		hcu_spu_request(&r, ph[2]);
+		hcu_spu_get_stats(&st);
+		CHECK(uploads == 1 && st.page_ins == 1 && st.evictions == 1 && st.page_fails == 0);
+		CHECK(upload_addr[0] % 64u == 0 && upload_addr[0] >= HCU_SPU_RAM_BASE &&
+			upload_addr[0] + 900000u <= HCU_SPU_RAM_END);
+		CHECK(upload_addr[0] != ps[0].spu_addr); /* never over the playing sample */
+		/* requesting the evicted one now evicts again (sample 0 and 2 both play: nothing is evictable) */
+		uploads = 0;
+		r = req(HCU_SOUND_EVENT_IMPULSE, 3, 3, 1002, 1.0f);
+		hcu_spu_request(&r, ph[1]);
+		hcu_spu_get_stats(&st);
+		CHECK(uploads == 0 && st.page_fails == 1);
+		/* after the voices end the evicted sample pages back in; a failing upload is counted */
+		upload_fail = 1;
+		r = req(HCU_SOUND_EVENT_IMPULSE, 4, 3, 1100, 1.0f);
+		hcu_spu_request(&r, ph[1]);
+		hcu_spu_get_stats(&st);
+		CHECK(st.page_fails == 2 && uploads == 0);
+		upload_fail = 0;
+		r = req(HCU_SOUND_EVENT_IMPULSE, 4, 3, 1100, 1.0f);
+		hcu_spu_request(&r, ph[1]);
+		hcu_spu_get_stats(&st);
+		CHECK(uploads == 1 && st.page_ins == 2);
+	}
 	printf("spu-playback-ok started=%u stopped=%u loops=%u fades=%u\n", st.started, st.stopped, st.loops_started, st.fades);
 	return 0;
 }

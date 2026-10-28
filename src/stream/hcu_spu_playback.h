@@ -12,13 +12,17 @@ extern "C" {
 /* SPU2 playback backend for the drained C3.8 sound requests (CE sound manager
  * -> bounded request queue -> here). Samples come from an HSB1 bank
  * (tools/hcu_sound_bank.py) uploaded once into SPU2 RAM through libsd/sdrdrv;
- * voices are CORE1 voices 0..23. Positioned sounds are attenuated by distance
+ * voices are CORE1 voices 0..23. A bank larger than SPU2 RAM is paged: the leading
+ * samples that fit are resident after the load, any other sample is uploaded on its
+ * first request through hcu_spu_hw.upload, evicting the least recently used samples
+ * no voice is playing. Positioned sounds are attenuated by distance
  * (full volume inside HCU_SPU_NEAR, linear to silence at HCU_SPU_FAR world units)
  * and panned with a constant-power law against the listener's right vector. The
  * bank carries no per-sound min/max distance, so these are fixed approximations
  * of CE's distance model, not retail values. */
 
 #define HCU_SPU_VOICES 24u
+#define HCU_SPU_MAX_SAMPLES 1024u
 #define HCU_SPU_RAM_BASE 0x5010u
 #define HCU_SPU_RAM_END 0x200000u
 #define HCU_SPU_NEAR 2.0f
@@ -30,7 +34,9 @@ typedef struct {
 	uint32_t rate, samples, bank_offset, bytes;
 	float gain;
 	uint32_t datum;
-	uint32_t spu_addr;
+	uint32_t spu_addr;       /* SPU2 RAM byte address while resident */
+	uint8_t resident;        /* uploaded to SPU2 RAM */
+	uint32_t last_used;      /* CE tick of the latest start, for eviction */
 } hcu_spu_sample;
 
 typedef struct {
@@ -46,6 +52,9 @@ typedef struct {
 	uint32_t fades;          /* volume updates applied to a playing voice */
 	uint32_t hw_errors;      /* failed libsd remote call */
 	uint32_t uploaded_bytes;
+	uint32_t page_ins;       /* samples uploaded on demand */
+	uint32_t evictions;      /* resident samples dropped to make room */
+	uint32_t page_fails;     /* no room (every candidate in use) or upload failed */
 	uint32_t samples;
 	uint32_t voices_active;
 	uint32_t active_high;

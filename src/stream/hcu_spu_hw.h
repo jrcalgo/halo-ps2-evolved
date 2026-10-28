@@ -16,6 +16,9 @@ typedef struct {
 	void (*set_addr)(uint16_t entry, uint32_t value);
 	void (*set_switch)(uint16_t entry, uint32_t value);
 	uint32_t (*get_switch)(uint16_t entry);
+	/* Uploads one sample's VAG bytes to `spu_addr` (64-byte aligned, padded length reserved); NULL when the
+	 * whole bank is resident. Returns 0 on success. */
+	int (*upload)(const hcu_spu_sample *sample, uint32_t spu_addr);
 } hcu_spu_hw;
 
 void hcu_spu_attach(const hcu_spu_hw *hw, const hcu_spu_sample *samples, uint32_t count);
