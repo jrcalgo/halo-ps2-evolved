@@ -2042,7 +2042,11 @@ static int slot_binding(void *user, uint32_t shader_id, mat_binding_t *out)
 	if (b.flags & TEX_B_TWO_SIDED) out->flags |= MAT_TWO_SIDED;
 	out->uv_scale[0] = b.uv_scale[0];
 	out->uv_scale[1] = b.uv_scale[1];
-	if (out->tex < 0) s_view_counters.texture_misses++;
+	if (out->tex < 0) {
+		/* Converter-exported texture-less shader (plasma/glass): positive = deliberately untextured, not a cache miss. */
+		if (b.texture == TEX_NONE) return 1;
+		s_view_counters.texture_misses++;
+	}
 	return out->tex < 0 ? -1 : 0;
 }
 
