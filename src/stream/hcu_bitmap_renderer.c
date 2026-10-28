@@ -6,6 +6,10 @@
  * definition is in engine/src/render/bsp_render.c. */
 int32_t bsp_render_fence_observed(uint32_t kick_seq);
 
+/* Pages/CLUT slots kept free of non-HUD claims: ~13 resident HUD bitmaps, one to two pages each. */
+#define HCU_BITMAP_HUD_RESERVE_PAGES 36u
+#define HCU_BITMAP_HUD_RESERVE_CLUT 16u
+
 static int aligned16(const void *p)
 {
 	return p && (((uintptr_t)p & 15u) == 0);
@@ -122,6 +126,9 @@ int32_t hcu_bitmap_renderer_hook_emit(void *user, uint32_t frame, chain_t *geome
 	} else if (cache != r->cache || r->dispatch->cache != cache) {
 		return HCU_BITMAP_FRAME_E_ARGUMENT;
 	}
+	/* HUD bitmaps are claimed after the world and FX passes; without a reserve those passes hold every page and
+	 * CLUT slot and the HUD is deferred forever (NO_VICTIM). Applied every emit because tc_init clears it. */
+	tc_set_reserve(cache, HCU_BITMAP_HUD_RESERVE_PAGES, HCU_BITMAP_HUD_RESERVE_CLUT);
 	/* Idle capacity is what remains after the BSP packets; the dispatcher checks
 	 * each append and rolls back on overflow (fail-closed). */
 	r->dispatch->upload_chain = upload;
