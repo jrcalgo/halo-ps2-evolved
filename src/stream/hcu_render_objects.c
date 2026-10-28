@@ -2992,20 +2992,29 @@ static void fx_pass(render_ctx_t *rc, int first_person_pass)
 		verts += nv;
 		admitted++;
 	}
-	/* Each decal costs a palette compose and a tile composite on the GS: sixty-four of them take a frame. Keep the
-	 * newest FX_DECAL_MAX_PER_FRAME; the older ones are not drawn this frame (they are not deleted). */
+	/* Each decal costs a palette compose and a tile composite on the GS: sixty-four of them take a frame. Keep
+	 * the FX_DECAL_MAX_PER_FRAME nearest to the camera (decals carry no age; impact holes the player just made
+	 * are near it); the others are not drawn this frame, not deleted. */
 	{
 		static uint16_t decal_cand[HCU_FX_MAX_PER_VIEW];
+		static float decal_dist[HCU_FX_MAX_PER_VIEW];
 		uint32_t nd = 0, ci, oi;
+		const float *eye = s_snapshot && s_cur_view < s_snapshot->view_count ?
+			s_snapshot->views[s_cur_view].camera.position : NULL;
 		for (i = 0; i < s_fx_count; i++)
-			if (s_fxn[i] && s_fx[i].kind == HALO_PS2_FRAME_FX_DECAL) decal_cand[nd++] = (uint16_t)i;
+			if (s_fxn[i] && s_fx[i].kind == HALO_PS2_FRAME_FX_DECAL) {
+				float dx = eye ? s_fx[i].position[0] - eye[0] : 0.0f;
+				float dy = eye ? s_fx[i].position[1] - eye[1] : 0.0f;
+				float dz = eye ? s_fx[i].position[2] - eye[2] : 0.0f;
+				decal_dist[nd] = dx * dx + dy * dy + dz * dz;
+				decal_cand[nd++] = (uint16_t)i;
+			}
 		if (nd > FX_DECAL_MAX_PER_FRAME) {
 			for (ci = 0; ci < nd; ci++) {
-				uint32_t newer = 0;
+				uint32_t nearer = 0;
 				for (oi = 0; oi < nd; oi++)
-					if (s_fx[decal_cand[oi]].age_sec < s_fx[decal_cand[ci]].age_sec ||
-						(s_fx[decal_cand[oi]].age_sec == s_fx[decal_cand[ci]].age_sec && oi < ci)) newer++;
-				if (newer >= FX_DECAL_MAX_PER_FRAME) {
+					if (decal_dist[oi] < decal_dist[ci] || (decal_dist[oi] == decal_dist[ci] && oi < ci)) nearer++;
+				if (nearer >= FX_DECAL_MAX_PER_FRAME) {
 					s_fxn[decal_cand[ci]] = 0;
 					admitted--;
 				}
