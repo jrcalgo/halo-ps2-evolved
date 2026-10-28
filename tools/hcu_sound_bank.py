@@ -57,6 +57,10 @@ TIERS = [
     ("weapons\\", ("charge", "melee", "ammo", "pickup")),
     ("weapons\\", ("",)),
     ("impulse\\", ("",)),
+    ("vehicles\\", ("",)),
+    ("\\ui\\", ("",)),
+    ("ambience\\", ("",)),
+    ("dialog\\", ("",)),
 ]
 
 
