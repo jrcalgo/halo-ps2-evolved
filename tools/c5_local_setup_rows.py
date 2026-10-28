@@ -12,8 +12,9 @@ Outputs:
   docs/reports/m4-c5-local-setup-rows-2026-10-26.json       evidence and per-row reasons
 
 A row is qualified only from recorded guest evidence. A guest record qualifies a map row when all of these hold:
-  - format hcu-c5-guest-evidence-v1, the run exited with status 0, the HALO_PS2_LOCAL boot line was seen,
-    and a session-hash line was seen;
+  - format hcu-c5-guest-evidence-v1, the run exited with status 0 (a run stopped by the runner has a signal
+    returncode and never qualifies), the HALO_PS2_LOCAL boot line and the terminal marker
+    'HALO_PS2_C5 boot done' were seen, and a session-hash line was seen;
   - the session is a stock coop session whose start line says status=qualified (a MEASURE run says
     status=measuring and never qualifies; neither does a session with no status);
   - the session's map is the row's map, its difficulty is one of the four names, and its coop mode's row is
@@ -113,6 +114,8 @@ def is_qualifying(record: dict, load_ok: bool):
         return False, "run did not exit with status 0"
     if record.get("boot_line") is not True:
         return False, "no HALO_PS2_LOCAL boot line"
+    if record.get("terminal_marker") is not True:
+        return False, "no terminal marker (HALO_PS2_C5 boot done)"
     if not isinstance(record.get("session_hash"), str) or not HEX16.match(record["session_hash"]):
         return False, "no session-hash line"
     if not isinstance(record.get("elf_sha256"), str) or not HEX64.match(record["elf_sha256"]):
@@ -180,6 +183,15 @@ def build(root: Path) -> tuple:
             entry["session_status"] = (record.get("session") or {}).get("status") \
                 if isinstance(record, dict) and isinstance(record.get("session"), dict) else None
             map_name = (record.get("session") or {}).get("map") if isinstance(record, dict) else None
+            claimed_rows = [name for name, row in ((record.get("rows") or {}) if isinstance(record, dict) else {}).items()
+                            if isinstance(row, dict) and row.get("status") == "claimed"]
+            if not claimed_rows:
+                # A refusal-only record (measuring, unterminated, no boot or no session) claims nothing and is
+                # reported as such. This never widens a row: only the qualification checks below can qualify one.
+                entry.update({"decision": "ignored", "reason": "record claims no rows",
+                              "map": map_name if map_name in MAPS else None})
+                evidence_report.append(entry)
+                continue
             ok = is_qualifying(record, fit["by_map"].get(map_name, False))
             if ok[0]:
                 _, difficulty, humans, bots, _map = ok

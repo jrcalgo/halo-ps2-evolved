@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """C5 guest qualification runner (skeleton): bots, coop modes and survival waves in PCSX2.
 
-The runner launches one PCSX2 instance per run with its own copied data directory and its own Xvfb display, waits
-for it with a bounded timeout, and then reads the log it wrote. It never kills a process: no kill, pkill, SIGTERM or
-SIGKILL is sent to anything, including PCSX2 processes that were already running (the user's window is never
-touched). A run that does not exit inside the timeout is recorded as unterminated, and its rows are refused.
+The runner launches one PCSX2 instance per run with its own copied data directory and its own Xvfb display, and
+supervises it. The run ends when the process exits on its own, when the terminal marker 'HALO_PS2_C5 boot done' is
+logged, or when the bounded timeout passes. In the last two cases the runner stops ONLY its own child, through the
+child's process group (SIGTERM, then SIGKILL after a grace period). No other PID, no name-based kill and no
+pkill/killall is used, and the user's window and other PCSX2 processes are never touched. A run stopped by the
+runner counts as terminated_ok only when the terminal marker was logged before the stop (stopped_by_runner=true in
+the manifest and the evidence). A run without the marker, stopped by the timeout, is refused.
 
 A row is claimed only when the log of a run that exited normally contains the row's marker lines, in the
 session the marker belongs to. Nothing is claimed from the manifest, from a dry run or from a log that was not
@@ -44,6 +47,7 @@ import json
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -56,6 +60,8 @@ PCSX2 = Path(os.environ.get("PCSX2_BIN", "/home/ai/.local/bin/pcsx2"))
 PROTECTED_PIDS = frozenset({183707})
 MARKER = "HALO_PS2_C5 "
 BOOT_MARKER = "HALO_PS2_LOCAL "
+TERMINAL_MARKER = "HALO_PS2_C5 boot done"
+STOP_GRACE_SECONDS = 10.0
 
 COOP_MODES = {
     "team-slayer": 1,
@@ -157,7 +163,7 @@ def parse_session_line(fields: str) -> dict:
 
 
 def evidence_record(run_name: str, elf_sha256: str, log_sha256: str, text: str, exited: bool,
-                    returncode, rows: dict) -> dict:
+                    returncode, rows: dict, stopped_by_runner: bool = False, terminated_ok: bool = False) -> dict:
     """The record tools/c5_local_setup_rows.py reads. It states what the log showed; the generator decides."""
     sessions = [parse_session_line(m.group(1)) for m in SESSION_LINE.finditer(text)]
     last = sessions[-1] if sessions else {}
@@ -178,9 +184,11 @@ def evidence_record(run_name: str, elf_sha256: str, log_sha256: str, text: str, 
         "run": run_name,
         "elf_sha256": elf_sha256,
         "log_sha256": log_sha256,
-        "terminated_ok": bool(exited and returncode == 0),
+        "terminated_ok": bool(terminated_ok),
+        "stopped_by_runner": bool(stopped_by_runner),
         "returncode": returncode,
         "boot_line": BOOT_MARKER in text,
+        "terminal_marker": TERMINAL_MARKER in text,
         "session_hash": hashes[-1] if hashes else None,
         "session": session,
         "sessions_in_log": len(sessions),
@@ -197,6 +205,41 @@ def prepare_run(template: Path, run_dir: Path) -> Path:
     return data
 
 
+# The PCSX2 host: root is the ELF's directory (the probe and C2 lanes stage the same way). The UI map comes from the
+# parent-link probe package; the level map package comes from the existing converter (tools/convert_map.py writes
+# data/retail/convert/<level>/run-a/<level>.hp2) and the decompressed source maps from build/retail-maps.
+UI_PACKAGE_DIR = ROOT / "build/hcu-parent-link-probe/maps"
+RETAIL_MAPS = ROOT / "build/retail-maps"
+LEVEL_PACKAGE_DIR = ROOT / "data/retail/convert"
+
+
+def stage_host(elf: Path, run_dir: Path, level: str) -> Path:
+    """Build the run's host: root: the ELF, maps/ui.{map,hp2}, maps/<level>.{hp2,map}, build/retail-maps.
+
+    Every file is copied or linked from a pinned source; nothing is generated or edited here. A missing input is an
+    error, so a run never starts with a partial host root.
+    """
+    host = run_dir / "host"
+    if host.exists():
+        raise RuntimeError(f"run directory already has a host root: {host}")
+    (host / "maps").mkdir(parents=True)
+    shutil.copy2(elf, host / elf.name)
+    for name in ("ui.map", "ui.hp2"):
+        source = UI_PACKAGE_DIR / name
+        if not source.is_file():
+            raise RuntimeError(f"missing UI map input: {source}")
+        (host / "maps" / name).symlink_to(source.resolve())
+    level_hp2 = LEVEL_PACKAGE_DIR / level / "run-a" / f"{level}.hp2"
+    level_map = RETAIL_MAPS / "decompressed" / f"{level}.map"
+    for source in (level_hp2, level_map):
+        if not source.is_file():
+            raise RuntimeError(f"missing level input: {source} (run tools/convert_map.py with MAP={level})")
+        (host / "maps" / source.name).symlink_to(source.resolve())
+    (host / "build").mkdir()
+    (host / "build" / "retail-maps").symlink_to(RETAIL_MAPS.resolve())
+    return host / elf.name
+
+
 def launch(elf: Path, data: Path, log: Path, display: str) -> subprocess.Popen:
     env = {**os.environ, "DISPLAY": display}
     command = [str(PCSX2), "-batch", "-nogui", "-datapath", str(data),
@@ -208,14 +251,53 @@ def launch(elf: Path, data: Path, log: Path, display: str) -> subprocess.Popen:
     return process
 
 
-def wait_bounded(process: subprocess.Popen, timeout: float) -> bool:
-    """Waits for the run to exit on its own. Returns True when it exited. Never signals the process."""
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        if process.poll() is not None:
-            return True
+def marker_logged(log: Path) -> bool:
+    try:
+        return TERMINAL_MARKER in log.read_text(errors="replace")
+    except OSError:
+        return False
+
+
+def stop_own_child(process: subprocess.Popen, grace: float) -> None:
+    """SIGTERM, then SIGKILL after the grace period, to the process group of this run's own child only.
+
+    launch() starts the child with start_new_session=True, so the child leads its own process group and the group
+    holds nothing else. No other PID, name or group is ever signalled here.
+    """
+    group = process.pid
+    try:
+        os.killpg(group, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+    deadline = time.monotonic() + grace
+    while process.poll() is None and time.monotonic() < deadline:
         time.sleep(0.5)
-    return process.poll() is not None
+    try:
+        os.killpg(group, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    process.wait(timeout=30)
+
+
+def supervise(process: subprocess.Popen, log: Path, timeout: float, grace: float) -> dict:
+    """Waits for the run. It ends when the process exits on its own, when the terminal marker is logged, or when the
+    bounded timeout passes. In the last two cases the runner stops its own child (stop_own_child).
+
+    terminated_ok: the process exited on its own with returncode 0, or the terminal marker was logged before the
+    runner stopped it. A run stopped without the marker is never terminated_ok.
+    """
+    deadline = time.monotonic() + timeout
+    while process.poll() is None:
+        if marker_logged(log) or time.monotonic() >= deadline:
+            break
+        time.sleep(0.5)
+    if process.poll() is not None:
+        return {"exited": True, "stopped_by_runner": False, "terminal_marker_seen": marker_logged(log),
+                "terminated_ok": process.returncode == 0}
+    marker_before_stop = marker_logged(log)
+    stop_own_child(process, grace)
+    return {"exited": True, "stopped_by_runner": True, "terminal_marker_seen": marker_before_stop,
+            "terminated_ok": marker_before_stop}
 
 
 def run_once(args) -> dict:
@@ -230,17 +312,24 @@ def run_once(args) -> dict:
         return record
     log = run_dir / "pcsx2.log"
     data = prepare_run(args.data_template, run_dir)
-    process = launch(elf, data, log, args.display)
+    guest_elf = stage_host(elf, run_dir, args.level)
+    record["host_elf"] = str(guest_elf)
+    process = launch(guest_elf, data, log, args.display)
     record["pid"] = process.pid
-    exited = wait_bounded(process, args.timeout)
+    state = supervise(process, log, args.timeout, STOP_GRACE_SECONDS)
+    exited = state["exited"]
     record["exited"] = exited
+    record["stopped_by_runner"] = state["stopped_by_runner"]
+    record["terminal_marker_seen"] = state["terminal_marker_seen"]
     record["returncode"] = process.returncode if exited else None
     text = log.read_text(errors="replace") if log.exists() else ""
     record["log_bytes"] = len(text)
-    record["rows"] = evaluate_log(text, terminated_ok=exited and process.returncode == 0)
+    record["rows"] = evaluate_log(text, terminated_ok=state["terminated_ok"])
     if log.exists():
         record["evidence"] = evidence_record(args.run_name, record["elf_sha256"], sha256(log), text, exited,
-                                             record["returncode"], record["rows"])
+                                             record["returncode"], record["rows"],
+                                             stopped_by_runner=state["stopped_by_runner"],
+                                             terminated_ok=state["terminated_ok"])
     return record
 
 
@@ -250,7 +339,9 @@ def main() -> int:
     parser.add_argument("--data-template", type=Path, help="PCSX2 data directory copied for the run")
     parser.add_argument("--display", default=os.environ.get("C5_GUEST_DISPLAY", ":98"),
                         help="private Xvfb display (must be started by the operator; never the user's)")
-    parser.add_argument("--timeout", type=float, default=600.0)
+    parser.add_argument("--timeout", type=float, default=300.0)
+    parser.add_argument("--level", default="b30",
+                        help="level whose package is staged at host:/maps (converted by tools/convert_map.py)")
     parser.add_argument("--run-name", default="c5-run")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--evaluate-log", type=Path, help="evaluate an existing PCSX2 log instead of running")

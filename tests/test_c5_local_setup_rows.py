@@ -62,6 +62,7 @@ def good_record(**overrides):
         "terminated_ok": True,
         "returncode": 0,
         "boot_line": True,
+        "terminal_marker": True,
         "session_hash": "0123456789abcdef",
         "session": {"mode": "coop", "coop": 1, "humans": 4, "bots": 0, "map": "bloodgulch",
                     "difficulty": "normal", "status": "qualified"},
@@ -125,6 +126,7 @@ def test_a_qualified_record_qualifies_its_map(tmp_path):
     ("not terminated", good_record(terminated_ok=False)),
     ("no boot line", good_record(boot_line=False)),
     ("no session hash", good_record(session_hash=None)),
+    ("no terminal marker", good_record(terminal_marker=False)),
     ("coop row not claimed", good_record(rows={"coop-team-slayer": {"status": "refused"}})),
     ("survival run", good_record(session={"mode": "survival", "coop": -1, "humans": 1, "bots": 0,
                                           "map": "bloodgulch", "difficulty": "normal", "status": "qualified"})),
@@ -192,19 +194,60 @@ def test_the_guest_runner_cannot_claim_from_a_measuring_log(tmp_path):
     assert all(rows[name]["status"] == "refused" for name in guest_tool.ROW_NAMES)
 
 
-def test_the_full_chain_from_a_qualified_log_to_a_qualified_row(tmp_path):
-    text = ("HALO_PS2_LOCAL boot\n"
+GOOD_LOG = ("HALO_PS2_LOCAL boot\n"
             "HALO_PS2_C5 session-start mode=coop coop=1 humans=4 bots=0 qualified=8 map=bloodgulch "
             "difficulty=normal status=qualified\n"
-            "HALO_PS2_C5 session-hash tick=9 hash=0123456789abcdef\n")
-    rows = guest_tool.evaluate_log(text, terminated_ok=True)
-    assert rows["coop-team-slayer"]["status"] == "claimed"
-    record = guest_tool.evidence_record("chain", SHA, SHA, text, True, 0, rows)
+            "HALO_PS2_C5 session-hash tick=9 hash=0123456789abcdef\n"
+            "HALO_PS2_C5 boot done\n")
+
+
+def chain_record(text: str, run: str, returncode: int = 0, terminated_ok: bool = True,
+                 stopped_by_runner: bool = False) -> dict:
+    """The record --publish-evidence writes for a run whose log is text (evaluate_log, then evidence_record)."""
+    rows = guest_tool.evaluate_log(text, terminated_ok=terminated_ok)
+    return guest_tool.evidence_record(run, SHA, SHA, text, True, returncode, rows,
+                                      stopped_by_runner=stopped_by_runner, terminated_ok=terminated_ok)
+
+
+def test_the_full_chain_from_a_qualified_log_to_a_qualified_row(tmp_path):
+    record = chain_record(GOOD_LOG, "chain")
+    assert record["terminated_ok"] is True and record["stopped_by_runner"] is False
+    assert record["rows"]["coop-team-slayer"]["status"] == "claimed"
     root = fixture_root(tmp_path)
     write_evidence(root, "chain", record)
     inc, report = rows_tool.build(root)
     assert qualified_maps(report) == {"bloodgulch"}
     assert row_for(inc, "bloodgulch").startswith('\t{ "bloodgulch", HCU_LOCAL_MODE_STOCK_COOP, 0x4u, 4u, 0u }')
+
+
+@pytest.mark.parametrize("label,text,kwargs", [
+    ("runner-stopped run", GOOD_LOG, {"returncode": -15, "terminated_ok": False, "stopped_by_runner": True}),
+    ("nonzero exit", GOOD_LOG, {"returncode": 1, "terminated_ok": False}),
+    ("no boot line", GOOD_LOG.replace("HALO_PS2_LOCAL boot\n", ""), {}),
+    ("no session hash", GOOD_LOG.replace("HALO_PS2_C5 session-hash tick=9 hash=0123456789abcdef\n", ""), {}),
+    ("measuring log", GOOD_LOG.replace("status=qualified", "status=measuring"), {}),
+    ("natural exit without terminal marker", GOOD_LOG.replace("HALO_PS2_C5 boot done\n", ""), {}),
+])
+def test_the_full_chain_refuses_a_log_that_lacks_its_evidence(tmp_path, label, text, kwargs):
+    record = chain_record(text, "chain-neg", **kwargs)
+    root = fixture_root(tmp_path)
+    write_evidence(root, "chain-neg", record)
+    _, report = rows_tool.build(root)
+    assert qualified_maps(report) == set(), label
+    assert report["qualified_row_count"] == 0, label
+
+
+def test_a_refusal_only_record_is_ignored_and_qualifies_nothing(tmp_path):
+    text = GOOD_LOG.replace("status=qualified", "status=measuring")
+    record = chain_record(text, "refusal-only")
+    assert all(row["status"] != "claimed" for row in record["rows"].values())
+    root = fixture_root(tmp_path)
+    write_evidence(root, "refusal-only", record)
+    _, report = rows_tool.build(root)
+    entry = report["evidence"][0]
+    assert entry["decision"] == "ignored"
+    assert "claims no rows" in entry["reason"]
+    assert report["qualified_row_count"] == 0
 
 
 def test_the_full_chain_from_a_measuring_log_qualifies_nothing(tmp_path):
