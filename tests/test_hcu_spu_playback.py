@@ -17,7 +17,7 @@ class HcuSpuPlaybackTest(unittest.TestCase):
         subprocess.run(
             ["gcc", "-std=c11", "-Wall", "-Wextra", "-Werror", "-I" + str(ROOT / "src"),
              "-o", str(exe), str(ROOT / "tests/hcu_spu_playback_main.c"),
-             str(ROOT / "src/stream/hcu_spu_playback.c")],
+             str(ROOT / "src/stream/hcu_spu_playback.c"), "-lm"],
             check=True)
         result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=60)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

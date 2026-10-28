@@ -12,12 +12,17 @@ extern "C" {
 /* SPU2 playback backend for the drained C3.8 sound requests (CE sound manager
  * -> bounded request queue -> here). Samples come from an HSB1 bank
  * (tools/hcu_sound_bank.py) uploaded once into SPU2 RAM through libsd/sdrdrv;
- * voices are CORE1 voices 0..23. Spatialisation is gain only: the listener is
- * the unit camera, so no pan or distance model is applied. */
+ * voices are CORE1 voices 0..23. Positioned sounds are attenuated by distance
+ * (full volume inside HCU_SPU_NEAR, linear to silence at HCU_SPU_FAR world units)
+ * and panned with a constant-power law against the listener's right vector. The
+ * bank carries no per-sound min/max distance, so these are fixed approximations
+ * of CE's distance model, not retail values. */
 
 #define HCU_SPU_VOICES 24u
 #define HCU_SPU_RAM_BASE 0x5010u
 #define HCU_SPU_RAM_END 0x200000u
+#define HCU_SPU_NEAR 2.0f
+#define HCU_SPU_FAR 60.0f
 
 typedef struct {
 	uint32_t hash;
@@ -35,7 +40,10 @@ typedef struct {
 	uint32_t no_sample;      /* sound not in the bank */
 	uint32_t stolen;         /* voice taken from an equal or lower priority sound (oldest first) */
 	uint32_t dropped_busy;   /* every voice busy with a higher-priority sound */
-	uint32_t ignored;        /* looping/fade events, not played */
+	uint32_t inaudible;      /* positioned sound beyond HCU_SPU_FAR, not started */
+	uint32_t loops_started;  /* looping voices started */
+	uint32_t loop_restarts;  /* looping voice retriggered at the end of its sample */
+	uint32_t fades;          /* volume updates applied to a playing voice */
 	uint32_t hw_errors;      /* failed libsd remote call */
 	uint32_t uploaded_bytes;
 	uint32_t samples;
@@ -51,8 +59,15 @@ int hcu_spu_load_bank(const char *path);
 uint32_t hcu_spu_name_hash(const char *path);
 /* Offer a drained record. `name_hash` identifies the sound definition. */
 void hcu_spu_request(const hcu_sound_request *request, uint32_t name_hash);
+/* Once per game tick with the current CE tick: retriggers looping voices. */
+void hcu_spu_tick(uint32_t now);
 void hcu_spu_get_stats(hcu_spu_stats *out);
 int hcu_spu_ready(void);
+/* Listener pose (the first view's camera). Without one, sounds are centred at full distance gain. */
+void hcu_spu_set_listener(const float position[3], const float forward[3], const float up[3]);
+/* Distance gain and left/right gains (constant power) for a source; returns the distance gain. */
+float hcu_spu_spatial(const float listener[3], const float forward[3], const float up[3],
+	const float source[3], float *left, float *right);
 
 /* Host-testable pieces (no libsd): parse/validate a bank image and pick a sample. */
 int hcu_spu_bank_parse(const uint8_t *image, uint32_t size, hcu_spu_sample *out,

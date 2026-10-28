@@ -991,6 +991,8 @@ static void hcu_c3_sound_request_sink(void *context, const void *sound,
 #define HCU_SPU_BANK_PATH "packages/pkg/bloodgulch_mounted_gunner_4p4bot/bloodgulch.hsb"
 #endif
 static uint32_t s_spu_cycles, s_spu_max_cycles;
+/* CE game time of the latest drained record plus the ticks drained since: the clock for looping voices. */
+static uint32_t s_spu_base_tick, s_spu_ticks_since;
 /* Hands one drained record to the SPU2 player; the sound definition is named by its tag path. */
 static void hcu_c3_spu_feed(void *context, const hcu_sound_request *request)
 {
@@ -1001,6 +1003,8 @@ static void hcu_c3_spu_feed(void *context, const hcu_sound_request *request)
 	if (request->event != HCU_SOUND_EVENT_IMPULSE && request->event != HCU_SOUND_EVENT_STOP &&
 		request->event != HCU_SOUND_EVENT_LOOPING_START && request->event != HCU_SOUND_EVENT_LOOPING_STOP &&
 		request->event != HCU_SOUND_EVENT_FADE) return;
+	s_spu_base_tick = request->game_time;
+	s_spu_ticks_since = 0;
 	t0 = timer_cycles();
 	hash = hcu_spu_name_hash(request->sound_index == UINT32_MAX ? NULL : tag_get_name((long)request->sound_index));
 	hcu_spu_request(request, hash);
@@ -1013,11 +1017,12 @@ static void hcu_c3_sound_tick(void)
 	static unsigned ticks;
 	(void)hcu_sound_requests_drain_each(&s_c3_sound_queue, hcu_c3_spu_feed, NULL,
 		HCU_SOUND_REQUEST_CAPACITY);
+	hcu_spu_tick(s_spu_base_tick + ++s_spu_ticks_since);
 	if (ticks % 90u == 89u && hcu_spu_ready()) {
 		hcu_spu_stats st;
 		hcu_spu_get_stats(&st);
-		printf("HALO_PS2_LOCAL spu-stats req=%u started=%u stopped=%u nosample=%u stolen=%u dropped=%u ignored=%u active=%u high=%u spu-ms=%.3f spu-max-ms=%.3f\n",
-			st.requests, st.started, st.stopped, st.no_sample, st.stolen, st.dropped_busy, st.ignored,
+		printf("HALO_PS2_LOCAL spu-stats req=%u started=%u stopped=%u nosample=%u stolen=%u dropped=%u inaudible=%u loops=%u loop-restarts=%u fades=%u active=%u high=%u spu-ms=%.3f spu-max-ms=%.3f\n",
+			st.requests, st.started, st.stopped, st.no_sample, st.stolen, st.dropped_busy, st.inaudible, st.loops_started, st.loop_restarts, st.fades,
 			st.voices_active, st.active_high, timer_ms(0, s_spu_cycles), timer_ms(0, s_spu_max_cycles));
 		s_spu_cycles = s_spu_max_cycles = 0;
 	}
@@ -2022,6 +2027,11 @@ static void hcu_c3_views_begin(const halo_ps2_frame_snapshot *borrowed_snapshot)
 	}
 	s_c3v.stats.frames++;
 	s_c3v.snap = borrowed_snapshot;
+#if defined(HCU_C3_FRAME_SNAPSHOT)
+	if (borrowed_snapshot && borrowed_snapshot->view_count > 0u)
+		hcu_spu_set_listener(borrowed_snapshot->views[0].camera.position,
+			borrowed_snapshot->views[0].camera.forward, borrowed_snapshot->views[0].camera.up);
+#endif
 	s_c3v.pinned = 0;
 #if defined(HCU_C3_FRAME_SNAPSHOT)
 	/* When object residency owns the immutable frame pin, share that exact bank.

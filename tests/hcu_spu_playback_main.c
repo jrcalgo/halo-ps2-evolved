@@ -131,10 +131,72 @@ int main(void)
 	hcu_spu_get_stats(&st);
 	CHECK(st.voices_active < HCU_SPU_VOICES || st.started > 24);
 
-	r = req(HCU_SOUND_EVENT_LOOPING_START, 1, 3, 300, 1.0f);
+	/* free every voice: all earlier ones are over by tick 400 */
+	hcu_spu_attach(&hw, samples, count);
+	{
+		const float lp[3] = { 0, 0, 0 }, lf[3] = { 1, 0, 0 }, lu[3] = { 0, 0, 1 };
+		float lg, rg, att;
+		/* source on the listener's right (-y is right for forward +x, up +z: forward x up = (0,-1,0)) */
+		const float right_src[3] = { 0, -10, 0 }, left_src[3] = { 0, 10, 0 }, ahead[3] = { 10, 0, 0 };
+		const float near_src[3] = { 1, 0, 0 }, far_src[3] = { 100, 0, 0 };
+		att = hcu_spu_spatial(lp, lf, lu, right_src, &lg, &rg);
+		CHECK(rg > 0.99f && lg < 0.05f && att > 0.8f && att < 0.9f);
+		att = hcu_spu_spatial(lp, lf, lu, left_src, &lg, &rg);
+		CHECK(lg > 0.99f && rg < 0.05f);
+		att = hcu_spu_spatial(lp, lf, lu, ahead, &lg, &rg);
+		CHECK(lg > 0.99f && rg > 0.99f);
+		att = hcu_spu_spatial(lp, lf, lu, near_src, &lg, &rg);
+		CHECK(att == 1.0f && lg > 0.99f && rg > 0.99f);
+		att = hcu_spu_spatial(lp, lf, lu, far_src, &lg, &rg);
+		CHECK(att == 0.0f);
+
+		hcu_spu_set_listener(lp, lf, lu);
+		nops = 0;
+		r = req(HCU_SOUND_EVENT_IMPULSE, 1, 3, 500, 1.0f);
+		r.has_position = 1; r.position[1] = -10.0f;
+		hcu_spu_request(&r, hashes[0]);
+		CHECK(nops == 7 && ops[0].value < ops[1].value && ops[1].value > 0);
+		nops = 0;
+		r.position[1] = 0.0f; r.position[0] = 100.0f;
+		hcu_spu_request(&r, hashes[0]);
+		CHECK(nops == 0);
+		hcu_spu_get_stats(&st);
+		CHECK(st.inaudible == 1);
+		hcu_spu_set_listener(0, 0, 0);
+	}
+
+	/* loops: start once, a repeated start updates instead, restart at the end of the sample, stop releases */
+	hcu_spu_attach(&hw, samples, count);
+	nops = 0;
+	r = req(HCU_SOUND_EVENT_LOOPING_START, 9, 3, 600, 1.0f);
+	hcu_spu_request(&r, hashes[0]);
+	CHECK(nops == 7);
+	nops = 0;
 	hcu_spu_request(&r, hashes[0]);
 	hcu_spu_get_stats(&st);
-	CHECK(st.ignored == 1);
-	printf("spu-playback-ok started=%u stopped=%u stolen=%u dropped=%u\n", st.started, st.stopped, st.stolen, st.dropped_busy);
+	CHECK(st.loops_started == 1 && st.voices_active == 1);
+	nops = 0;
+	hcu_spu_tick(610);
+	CHECK(nops == 0);
+	hcu_spu_tick(640);
+	CHECK(nops == 8); /* key-off, then the seven key-on operations */
+	hcu_spu_get_stats(&st);
+	CHECK(st.loop_restarts == 1 && st.voices_active == 1);
+	r = req(HCU_SOUND_EVENT_FADE, 9, 3, 641, 0.5f);
+	nops = 0;
+	hcu_spu_request(&r, hashes[0]);
+	CHECK(nops == 2 && ops[0].value == hcu_spu_volume_for(0.5f, 1.0f));
+	r = req(HCU_SOUND_EVENT_FADE, 9, 3, 642, 0.0f);
+	nops = 0;
+	hcu_spu_request(&r, hashes[0]);
+	hcu_spu_get_stats(&st);
+	CHECK(st.voices_active == 0);
+	r = req(HCU_SOUND_EVENT_LOOPING_START, 9, 3, 650, 1.0f);
+	hcu_spu_request(&r, hashes[0]);
+	r = req(HCU_SOUND_EVENT_STOP, 9, 3, 651, 0.0f);
+	hcu_spu_request(&r, hashes[0]);
+	hcu_spu_get_stats(&st);
+	CHECK(st.voices_active == 0);
+	printf("spu-playback-ok started=%u stopped=%u loops=%u fades=%u\n", st.started, st.stopped, st.loops_started, st.fades);
 	return 0;
 }
