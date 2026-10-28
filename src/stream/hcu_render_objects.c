@@ -3412,7 +3412,9 @@ static void object_pass(void *user, render_ctx_t *rc)
 			(defined(HALO_PS2_C3_PERF_PROBE) && HALO_PS2_C3_PERF_PROBE)
 			uint32_t pass_start = timer_cycles();
 #endif
+			bsp_render_set_object_claim_priority(1);
 			obj_render_pass(&s_objr, &viewmodel_rc);
+			bsp_render_set_object_claim_priority(0);
 		#if (defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE) || \
 			(defined(HALO_PS2_C3_PERF_PROBE) && HALO_PS2_C3_PERF_PROBE)
 			s_fp_render_cycles += timer_cycles() - pass_start;
