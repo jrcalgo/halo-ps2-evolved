@@ -2726,16 +2726,25 @@ static int fx_decal_one_tile(const render_ctx_t *rc, const hcu_render_fx_quad *q
 	return 1;
 }
 
-static int fx_decal_emit_poly(render_ctx_t *rc, const hcu_render_fx_quad *quad,
-	const hcu_render_effect_draw *effect, const clip_gs *g, uint64_t tex0,
-	uint16_t tex_w, uint16_t tex_h, int scratch_uv, int tile_x, int tile_y, u64 pending)
+/* Largest clipped quad: two triangles of CLIP_MAX_VERTS - 2 triangles each, three vertices of twelve words. */
+#define FX_DECAL_POLY_WORDS (2u * (CLIP_MAX_VERTS - 2u) * 3u * 12u)
+
+/* The decal polygon's vertices for one tile and uv mode. Every channel pass of a tile draws the same polygon, so a
+ * tile builds each of its two polygons once (the clip and projection were repeated 13 times per tile). */
+static uint32_t fx_decal_poly_build(const render_ctx_t *rc, const hcu_render_fx_quad *quad,
+	const hcu_render_effect_draw *effect, const clip_gs *g, int scratch_uv, int tile_x, int tile_y,
+	uint32_t *buf)
 {
 	static const uint8_t white[4] = { 255, 255, 255, 128 };
-	uint32_t nv, *w, *pw;
+	return fx_quad_clip(rc, quad, effect, white, NULL, g, 1, scratch_uv, tile_x, tile_y, buf);
+}
+
+static int fx_decal_emit_poly(render_ctx_t *rc, uint64_t tex0, uint32_t nv, const uint32_t *verts, u64 pending)
+{
+	uint32_t *w;
 	u64 *q;
-	if (!rc || !quad || !effect || !g || !tex0) return 0;
-	nv = fx_quad_clip(rc, quad, effect, white, NULL, g, 1, scratch_uv, tile_x, tile_y, NULL);
-	if (!nv || !chain_has_space(rc->chain, FX_PACKET_HDR_QW + 3u * nv)) return 0;
+	if (!rc || !tex0 || !nv) return 0;
+	if (!chain_has_space(rc->chain, FX_PACKET_HDR_QW + 3u * nv)) return 0;
 	w = chain_cnt(rc->chain, FX_PACKET_HDR_QW + 3u * nv, pending);
 	if (!w) return 0;
 	w[0] = VIF_CODE(VIF_NOP, 0, 0); w[1] = VIF_CODE(VIF_NOP, 0, 0);
@@ -2743,10 +2752,7 @@ static int fx_decal_emit_poly(render_ctx_t *rc, const hcu_render_fx_quad *quad,
 	q = (u64 *)(w + 4);
 	q[0] = GIF_TAG(nv, 1, 1, GS_PRIM(GSX_PRIM_TRIANGLE, 1, 1, 0, 0, 0, 0, 0, 0), GIFX_FLG_PACKED, 3);
 	q[1] = 0x412u;
-	pw = (uint32_t *)(q + 2);
-	if (fx_quad_clip(rc, quad, effect, white, NULL, g, 1, scratch_uv, tile_x, tile_y, pw) != nv)
-		return 0;
-	(void)tex_w; (void)tex_h;
+	memcpy(q + 2, verts, (size_t)nv * 12u * sizeof(uint32_t));
 	return 1;
 }
 
@@ -2821,14 +2827,15 @@ static int fx_decal_composite_tile(render_ctx_t *rc, const hcu_render_effect_dra
 {
 	gs_ad zcopy[5], copy_state[12], restore[11];
 	uint64_t copy_sprite[14], sample_tex0;
-	uint32_t nv, fbw, tex_tbp;
+	static uint32_t poly_base[FX_DECAL_POLY_WORDS], poly_tile[FX_DECAL_POLY_WORDS];
+	uint32_t nv, nv_tile, fbw, tex_tbp;
 	unsigned channel;
 	if (!rc || !effect || !quad || !g || rc->framebuffer_psm != GS_PSMCT16S ||
 		rc->framebuffer_width != VIDEO_WIDTH || rc->framebuffer_height != VIDEO_HEIGHT ||
 		!rc->decal_color_page || !rc->decal_z_page) return 0;
-	nv = fx_quad_clip(rc, quad, effect, (const uint8_t[4]){255,255,255,128}, NULL,
-		g, 1, 0, 0, 0, NULL);
+	nv = fx_decal_poly_build(rc, quad, effect, g, 0, 0, 0, poly_base);
 	if (!nv || !chain_has_space(rc->chain, 151u + 18u * nv)) return 0;
+	nv_tile = fx_decal_poly_build(rc, quad, effect, g, 1, (int)tile_x, (int)tile_y, poly_tile);
 	/* Copy the matching 24-bit reverse-Z tile into its one-page scratch target. */
 	if (decal_compose_copy_packet(zcopy, rc->zbuffer_page * 32u, rc->decal_z_page * 32u,
 		rc->framebuffer_width / 64u, 1u, GS_PSMZ24, GS_PSMZ24,
@@ -2849,12 +2856,10 @@ static int fx_decal_composite_tile(render_ctx_t *rc, const hcu_render_effect_dra
 	for (channel = 0; channel < 3u; ++channel) {
 		if (!fx_decal_state(rc, effect, g, (int)tile_x, (int)tile_y, 1, channel,
 			variants[channel], decal_w, decal_h) ||
-			!fx_decal_emit_poly(rc, quad, effect, g, variants[channel], decal_w, decal_h,
-				0, (int)tile_x, (int)tile_y, 0u)) return 0;
+			!fx_decal_emit_poly(rc, variants[channel], nv, poly_base, 0u)) return 0;
 		if (!fx_decal_state(rc, effect, g, (int)tile_x, (int)tile_y, 0, channel,
 			sample_tex0, DECAL_COMPOSE_W, DECAL_COMPOSE_H) ||
-			!fx_decal_emit_poly(rc, quad, effect, g, sample_tex0, DECAL_COMPOSE_W,
-				DECAL_COMPOSE_H, 1, (int)tile_x, (int)tile_y, 0u)) return 0;
+			!fx_decal_emit_poly(rc, sample_tex0, nv_tile, poly_tile, 0u)) return 0;
 	}
 	/* Canonical state restore for subsequent FX/overlay draws; texture state has no CPU shadow in BSP. */
 	fbw = rc->framebuffer_width / 64u;
