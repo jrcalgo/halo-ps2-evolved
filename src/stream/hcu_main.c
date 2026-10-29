@@ -3644,14 +3644,14 @@ static int hcu_step8_mp_candidate_recarve(mem_layout_v2_t *layout)
 	arena_t *bsp = mem_layout_v2_get(layout, MEM_LAYOUT_V2_CURRENT_BSP);
 	arena_t *texture = mem_layout_v2_get(layout, MEM_LAYOUT_V2_TEXTURE_CACHE);
 	const size_t map_bytes = 6470832u;
-	/* Budget v5 texture_cache is 4718592; the candidate still borrows 179376 from it. */
-	const size_t texture_bytes = 4539216u;
+	/* Budget v6 texture_cache is 6815744; the candidate still borrows 179376 from it. */
+	const size_t texture_bytes = 6636368u;
 	uint8_t *combined_end;
 	if (!bsp || !texture || !bsp->base || !texture->base ||
-		bsp->cap != 6291456u || texture->cap != 4718592u ||
+		bsp->cap != 6291456u || texture->cap != 6815744u ||
 		((uintptr_t)bsp->base & 15u) ||
 		texture->base != layout->guards[2] + MEM_LAYOUT_V2_GUARD_BYTES ||
-		map_bytes + texture_bytes != 11010048u)
+		map_bytes + texture_bytes != 13107200u)
 		return -1;
 	combined_end = bsp->base + map_bytes + texture_bytes;
 	if (combined_end > texture->base + texture->cap - MEM_LAYOUT_V2_GUARD_BYTES ||

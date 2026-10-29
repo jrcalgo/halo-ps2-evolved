@@ -1,22 +1,22 @@
 {
-  "version": 5,
+  "version": 6,
   "unit": "byte",
-  "committed_bytes": 28704768,
-  "reserve_bytes": 4849664,
+  "committed_bytes": 30801920,
+  "reserve_bytes": 2752512,
   "total_bytes": 33554432,
-  "notes": "Version 2 moved 131072 bytes from frame_scratch to dma_commands after the stream viewer measured two 4096-qword upload chains (1179648 bytes total). Version 3 (user-approved 2026-10-24) moves 262144 bytes from the uncommitted reserve to elf_static after production gameplay ELF file-backed bytes measured 2193924 B against 2097152 B. Version 4 (user-approved 2026-10-24) moves 131072 bytes more from the uncommitted reserve to elf_static after the C3 production gameplay ELF measured 2361604 file-backed B against 2359296 B; the C3.11 successor link is 12036 B over. elf_static charges file-backed PT_LOAD bytes only; PT_LOAD NOBITS is charged to resident_gameplay. Non-ELF staging allocations remain charged to their runtime owner. Version 5 (user-approved 2026-10-25) moves 524288 bytes from the uncommitted reserve to texture_cache (the boot backing grows by that amount, MEM_LAYOUT_V2_BYTES 24641536) so the C3 object residency pool grows from 1547648 to 2071936 bytes: C3 object residency +512 KiB from reserve, user decision 2026-10-25. See docs/memory.md, docs/reports/m2-c2-budget-v3-2026-10-24.md, docs/reports/m3-c3-budget-v4-2026-10-24.md and docs/reports/m3-c3-budget-v5-2026-10-25.md.",
+  "notes": "Version 2 moved 131072 bytes from frame_scratch to dma_commands after the stream viewer measured two 4096-qword upload chains (1179648 bytes total). Version 3 (user-approved 2026-10-24) moves 262144 bytes from the uncommitted reserve to elf_static after production gameplay ELF file-backed bytes measured 2193924 B against 2097152 B. Version 4 (user-approved 2026-10-24) moves 131072 bytes more from the uncommitted reserve to elf_static after the C3 production gameplay ELF measured 2361604 file-backed B against 2359296 B; the C3.11 successor link is 12036 B over. elf_static charges file-backed PT_LOAD bytes only; PT_LOAD NOBITS is charged to resident_gameplay. Non-ELF staging allocations remain charged to their runtime owner. Version 5 (user-approved 2026-10-25) moves 524288 bytes from the uncommitted reserve to texture_cache, growing the C3 object pool from 1547648 to 2071936 bytes. Version 6 (user-approved 2026-10-27) moves 2097152 bytes from reserve to texture_cache; its C3 model-cache arena is 4169088 bytes, committed total 30801920, reserve 2752512. Physical EE total remains 33554432 bytes; bitmap owner and fixed C2/C5 regions are unchanged. Version 6 was adopted into the main lineage on 2026-10-29 after the user approved a ~2 MiB object pool for vehicles; the bots_sidewinder candidate row and its fixture move with it.",
   "regions": [
     {"name": "system_kernel", "role": "reservation", "bytes": 1572864, "accounts": ["kernel", "stacks", "iop_ee_buffers"]},
     {"name": "elf_static", "role": "reservation", "bytes": 2490368, "accounts": ["executable_sections", "constants", "static_tables"]},
     {"name": "resident_gameplay", "role": "permanent", "bytes": 6815744, "accounts": ["permanent_data"]},
     {"name": "current_bsp", "role": "map", "bytes": 6291456, "accounts": ["map_data"]},
-    {"name": "texture_cache", "role": "reservation", "bytes": 4718592, "accounts": ["ram_textures", "lightmaps"]},
+    {"name": "texture_cache", "role": "reservation", "bytes": 6815744, "accounts": ["ram_textures", "lightmaps", "C3_model_cache"]},
     {"name": "dynamic_simulation", "role": "dynamic", "bytes": 2621440, "accounts": ["dynamic_pool"]},
     {"name": "dma_commands", "role": "reservation", "bytes": 1179648, "accounts": ["dma_buffers"]},
     {"name": "streaming", "role": "streaming", "bytes": 1572864, "accounts": ["streaming_pool"]},
     {"name": "checkpoint", "role": "reservation", "bytes": 524288, "accounts": ["checkpoint_storage"]},
     {"name": "audio", "role": "reservation", "bytes": 524288, "accounts": ["audio_staging"]},
     {"name": "frame_scratch", "role": "frame_scratch", "bytes": 393216, "accounts": ["frame_scratch"]},
-    {"name": "uncommitted_reserve", "role": "reserve", "bytes": 4849664, "accounts": ["reserve"]}
+    {"name": "uncommitted_reserve", "role": "reserve", "bytes": 2752512, "accounts": ["reserve"]}
   ]
 }

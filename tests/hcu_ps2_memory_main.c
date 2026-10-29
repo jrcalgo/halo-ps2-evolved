@@ -142,7 +142,7 @@ static void bind_parent_layout_regions(void)
 	assert(mem_layout_v2_get(&layout, MEM_LAYOUT_V2_CURRENT_BSP)->used ==
 		2u * 1024u * 1024u);
 	assert(physical_memory_get_texture_cache_base_address() != NULL);
-	assert(physical_memory_get_texture_cache_size() == 4718592u);
+	assert(physical_memory_get_texture_cache_size() == 6815744u);
 	assert(physical_memory_get_sound_cache_base_address() != NULL);
 	assert(physical_memory_get_sound_cache_size() == 524288u);
 	assert(physical_memory_get_malloc_arena_size() == 2621440u);

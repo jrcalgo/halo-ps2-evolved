@@ -22,7 +22,7 @@ import audit_hcu_c2_budget_elf_owners as owners  # noqa: E402
 
 PROBE = ROOT / "build/m2-c2-resume-budget-v3/hcu-gameplay-machine-partition-sidewinder_marine_shotgun_4p4bot.elf"
 TABLE_C = ROOT / "src/stream/hcu_memory_profile.c"
-MAP_RENDER = 6291456 + 4718592  # budget v5
+MAP_RENDER = 6291456 + 6815744  # budget v6
 RESERVE_PER_OUTER_GUARD = 16
 _REGIONS = {r["name"]: r["bytes"] for r in json.loads((ROOT / "config/memory-budget.json").read_text())["regions"]}
 COMMITTED = json.loads((ROOT / "config/memory-budget.json").read_text())["committed_bytes"]

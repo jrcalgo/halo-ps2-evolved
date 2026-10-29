@@ -55,10 +55,10 @@ def main() -> int:
 
     required = (
         "production-binder-default tag=4477120 bsp=1814336 "
-        "required_bsp=1993712 bsp_shortfall=179376 texture=4718592 "
+        "required_bsp=1993712 bsp_shortfall=179376 texture=6815744 "
         "gap=16 ready=1 candidate_fit=0",
         "production-binder-recarved tag=4477120 bsp=1993712 "
-        "map=6470832 texture=4539216 total=11010048 "
+        "map=6470832 texture=6636368 total=13107200 "
         "contiguous_views=1 parent_bytes_unchanged=1 guards=1 ready=1",
         "profile-v1 tag=4685920 bsp=1993744 map_parent=6679680 internal_guard=16 texture=4330368 render_parent=4330368 claims=834960 bsp_alignment=0 texture_alignment=0",
         "profile-v1-invalid version=1 alignment=1 bounds=1 used=1 adjacency=1 plan_atomic=1",
@@ -114,12 +114,12 @@ def main() -> int:
         "status": "passed-host-runtime-and-source-audit",
         "profile": {
             "default_current_bsp_bytes": 6291456,
-            "default_texture_bytes": 4718592,
+            "default_texture_bytes": 6815744,
             "candidate_tag_bytes": 4477120,
             "candidate_bsp_bytes": 1993712,
             "candidate_map_bytes": 6470832,
-            "candidate_texture_bytes": 4539216,
-            "candidate_total_bytes": 11010048,
+            "candidate_texture_bytes": 6636368,
+            "candidate_total_bytes": 13107200,
         },
         "host_ilp32_runtime": True,
         "ee_or_pcsx2_qualification": False,

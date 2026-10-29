@@ -13,10 +13,10 @@ P = "HALO_PS2_LOCAL "
 def good_log(row=ROW, map_name="sidewinder"):
     return [
         P + "machine entry",
-        P + "kernel-reservation low=0x0 low_bytes=1048576 high=0x1f80000 high_bytes=524288 reserve=0x1ae0000 reserve_bytes=4849664",
+        P + "kernel-reservation low=0x0 low_bytes=1048576 high=0x1f80000 high_bytes=524288 reserve=0x1ce0000 reserve_bytes=2752512",
         P + f"partition-selected name={row} version=1 tag=6913936 bsp=1993744 texture=529472 residency=1048576 qualified=1",
         P + "arena name=resident_gameplay base=0x48c1e0 cap=5059028 used=4541812 high=4541812 alloc_failures=0 resets=0 releases=0 invalid_releases=0",
-        P + "memory-physical elf_end=0x48bfac boot=0x48c1d0 boot_end=0x19df4da reserve=0x1ae0000 allocator_gap=548",
+        P + "memory-physical elf_end=0x48bfac boot=0x48c1d0 boot_end=0x19df4da reserve=0x1ce0000 allocator_gap=548",
         P + "memory-ready canaries=10",
         P + f"owner-telemetry phase=bound name=game_state kind=backing parent=- bound=0 cap=0 used=3000 high=3107656 failures=0 resets=0",
         P + f"profile-runtime row={row} map={map_name} profile=26 package-bytes=29531846 metadata-bytes=51124",
@@ -47,13 +47,13 @@ def test_complete_log_passes_and_records_values_and_peaks():
 
 def test_boot_end_at_or_above_reserve_fails():
     lines = good_log()
-    lines[4] = lines[4].replace("boot_end=0x19df4da", "boot_end=0x1ae0000")
+    lines[4] = lines[4].replace("boot_end=0x19df4da", "boot_end=0x1ce0000")
     assert "boot_end_below_reserve" in parse(lines)["failing_checks"]
 
 
 def test_wrong_reserve_and_canaries_fail():
     lines = good_log()
-    lines[1] = lines[1].replace("reserve=0x1ae0000", "reserve=0x1a00000")
+    lines[1] = lines[1].replace("reserve=0x1ce0000", "reserve=0x1a00000")
     lines[5] = P + "memory-ready canaries=9"
     failing = parse(lines)["failing_checks"]
     assert "kernel_reservation" in failing and "memory_ready" in failing

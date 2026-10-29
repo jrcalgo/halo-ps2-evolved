@@ -43,7 +43,7 @@ static collide_pill_stats s_last;
 #define PLAY_FLY 16
 #define PLAY_GRENADE_CAPACITY GRENADE_CARRY_MAX
 #define PLAY_WEAPON_SLOTS 32
-#define PLAY_EE_COMMITTED_BYTES 28704768u /* config/memory-budget.json v5 */
+#define PLAY_EE_COMMITTED_BYTES 30801920u /* config/memory-budget.json v5 */
 
 static gun s_gun;
 static gun_trigger_pair s_trigger_pair;

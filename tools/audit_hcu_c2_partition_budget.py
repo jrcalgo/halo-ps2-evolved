@@ -43,9 +43,9 @@ RENDER_TELEMETRY_H = ROOT / "src/stream/hcu_render_telemetry.h"
 PACKAGES = ROOT / "docs/reports/m2-c2-r3-selected-packages-2026-10-23.json"
 MEMORY_PROFILE_C = ROOT / "src/stream/hcu_memory_profile.c"
 
-# current_bsp + texture_cache backing. Budget v5 grows texture_cache by 524288 (4718592); the 2026-10-23
+# current_bsp + texture_cache backing. Budget v6 grows texture_cache by 2097152 to 6815744 (v5: +524288); the 2026-10-23
 # capacity report was measured on the v4 10 MiB basis, so its residuals are shifted by the difference.
-MAP_RENDER_BYTES = 6291456 + 4718592  # 11,010,048 (budget v5)
+MAP_RENDER_BYTES = 6291456 + 6815744  # 13,107,200 (budget v6)
 CAPACITY_REPORT_MAP_RENDER_BYTES = 6291456 + 4194304  # 10 MiB, basis of the 2026-10-23 capacity report
 GUARD = 16
 # Residency span: 16 whole 64 KiB slots carved after the render span, behind one guard
@@ -60,7 +60,7 @@ COMMITTED = _BUDGET_CONFIG["committed_bytes"]
 RESERVE = _BUDGET_CONFIG["reserve_bytes"]
 LOW_KERNEL_BYTES = 0x00100000
 HIGH_KERNEL_START = 0x01f80000
-BOOT_BACKING_BYTES = 24641536  # MEM_LAYOUT_V2_BYTES (budget v5), submodules/halo-ps2/engine/src/core/mem.h
+BOOT_BACKING_BYTES = 26738688  # MEM_LAYOUT_V2_BYTES (budget v6), submodules/halo-ps2/engine/src/core/mem.h
 MAX_PROFILE_VERSION = 2
 RESIDENT_CAP = next(r["bytes"] for r in _BUDGET_CONFIG["regions"] if r["name"] == "resident_gameplay")
 

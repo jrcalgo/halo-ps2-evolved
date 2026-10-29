@@ -30,7 +30,7 @@ static mem_layout_v2_t g_layout;
 static void test_memory_layout_v2(void)
 {
 	static const size_t expected[MEM_LAYOUT_V2_REGION_COUNT] = {
-		6815744u, 6291456u, 4718592u, 2621440u, 1179648u,
+		6815744u, 6291456u, 6815744u, 2621440u, 1179648u,
 		1572864u, 524288u, 524288u, 393216u
 	};
 	static const char *names[MEM_LAYOUT_V2_REGION_COUNT] = {

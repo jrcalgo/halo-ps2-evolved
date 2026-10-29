@@ -1,6 +1,6 @@
 # Memory record
 
-M11's memory acceptance is met by the measurements below. The versioned split is `config/memory-budget.json` version 5. A byte counted in two regions is a failed account. Version 3 spent 262,144 bytes of the reserve on `elf_static`; version 4 spent a further 131,072 bytes (both user-approved 2026-10-24). Version 5 moved 524,288 bytes from the reserve to `texture_cache` (user-approved 2026-10-25) so the C3 object residency pool grows from 1,547,648 to 2,071,936 bytes. The reserve is now 4,849,664 bytes.
+M11's memory acceptance is met by the measurements below. The versioned split is `config/memory-budget.json` version 6. A byte counted in two regions is a failed account. Version 3 spent 262,144 bytes of the reserve on `elf_static`; version 4 spent a further 131,072 bytes (both user-approved 2026-10-24). Version 5 moved 524,288 bytes from the reserve to `texture_cache` (user-approved 2026-10-25) so the C3 object residency pool grows from 1,547,648 to 2,071,936 bytes. Version 6 moved a further 2,097,152 bytes from the reserve to `texture_cache` (user-approved 2026-10-27 for the frozen lineage, adopted into the main lineage 2026-10-29) so the C3 object model-cache arena grows from 2,071,936 to 4,169,088 bytes. The reserve is now 2,752,512 bytes. See `docs/reports/m3-c3-budget-v6-2026-10-29.md`.
 
 ## Budget
 
@@ -12,14 +12,14 @@ The contract is 28,704,768 bytes committed plus a 4,849,664-byte reserve, 32 MiB
 | elf_static | 2,490,368 | executable sections, constants, static tables |
 | resident_gameplay | 6,815,744 | permanent data |
 | current_bsp | 6,291,456 | map data |
-| texture_cache | 4,718,592 | EE RAM for textures and lightmaps (v5: +524,288) |
+| texture_cache | 6,815,744 | EE RAM for textures and lightmaps (v5: +524,288, v6: +2,097,152) |
 | dynamic_simulation | 2,621,440 | dynamic pool |
 | dma_commands | 1,179,648 | DMA buffers |
 | streaming | 1,572,864 | streaming pool |
 | checkpoint | 524,288 | checkpoint storage |
 | audio | 524,288 | audio staging |
 | frame_scratch | 393,216 | frame scratch |
-| uncommitted_reserve | 4,849,664 | reserve |
+| uncommitted_reserve | 2,752,512 | reserve |
 
 `elf_static` holds only the file-backed ELF bytes (PROGBITS, allocated). ELF NOBITS (`_end - _fbss`) is charged to `resident_gameplay` at boot, not to `elf_static`. Physically the file-backed sections must end by 0x00360000 (1 MiB low kernel plus `elf_static`), the boot backing must end by the reserve start 0x01ae0000 (v5), and the reserve is [0x01ae0000, 0x01f80000). The top 512 KiB [0x01f80000, 0x02000000) holds the kernel stack. The version 3 note: 262,144 B moved from the uncommitted reserve to `elf_static` after the production gameplay ELF's file-backed bytes measured 2,193,924 B against 2,097,152 B. See `docs/reports/m2-c2-budget-v3-2026-10-24.md`. The version 4 note: 131,072 B more moved after the C3 production gameplay ELF measured 2,361,604 file-backed bytes against 2,359,296 B (2,308 B over). See `docs/reports/m3-c3-budget-v4-2026-10-24.md`.
 
