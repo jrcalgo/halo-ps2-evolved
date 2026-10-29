@@ -306,6 +306,15 @@ int main(void)
 	hcu_spu_request(&r, hashes[0]);
 	hcu_spu_get_stats(&st);
 	CHECK(st.voices_active == 1);
+	/* a half-pitch sound plays twice as long: it still holds its voice 1.5 s in */
+	hcu_spu_attach(&hw, samples, count);
+	r = req(HCU_SOUND_EVENT_IMPULSE, 1, 3, 0, 1.0f);
+	r.game_time = 60000u; r.pitch = 0.5f;
+	hcu_spu_request(&r, hashes[0]);
+	r.owner_datum = 2; r.pitch = 1.0f; r.game_time = 61500u;
+	hcu_spu_request(&r, hashes[0]);
+	hcu_spu_get_stats(&st);
+	CHECK(st.voices_active == 2);
 	printf("spu-playback-ok started=%u stopped=%u loops=%u fades=%u\n", st.started, st.stopped, st.loops_started, st.fades);
 	return 0;
 }
