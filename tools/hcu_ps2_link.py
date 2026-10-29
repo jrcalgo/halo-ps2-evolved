@@ -362,8 +362,16 @@ def emit(names: list[str], weak_names: set[str] | None = None) -> tuple[str, lis
             # NaN and out-of-range inputs (including values that round to
             # 2^31 or -2^31-1) return the x87 integer indefinite 0x80000000.
             # The range test happens before any (long) cast, so no UB.
+            # Inputs under 2^23 round in float (exact: the truncation and the
+            # difference to it are), as the EE has no double hardware and
+            # the HUD rounds hundreds of values a frame.
             lines.append(
-                "long fast_ftol_C(real x) { double d = (double)x; long i; double r;"
+                "long fast_ftol_C(real x) {"
+                " if (x > -8388608.0f && x < 8388608.0f) { long t = (long)x; real f = x - (real)t;"
+                " if (f > 0.5f || (f == 0.5f && (t & 1))) t++;"
+                " else if (f < -0.5f || (f == -0.5f && (t & 1))) t--;"
+                " return t; }"
+                " double d = (double)x; long i; double r;"
                 " if (!(d > -2147483649.0 && d < 2147483648.0)) return (long)0x80000000UL;"
                 " i = (long)d; r = d - (double)i;"
                 " if (r > 0.5 || (r == 0.5 && (i & 1))) {"
