@@ -67,6 +67,32 @@ class XboxAdpcmTests(unittest.TestCase):
         self.assertLess(mono_r[-1], -1000)
 
 
+class RateAndTierTests(unittest.TestCase):
+    def test_resample_keeps_duration_and_passes_in_band_tone(self):
+        pcm = [round(8000 * math.sin(2 * math.pi * 1000 * n / 22050)) for n in range(4410)]
+        out = sb.resample(pcm, 22050, 11025)
+        self.assertEqual(len(out), 2205)
+        ref = [round(8000 * math.sin(2 * math.pi * 1000 * n / 11025)) for n in range(2205)]
+        self.assertGreater(snr_db(ref[100:-100], out[100:-100]), 25)
+
+    def test_resample_removes_content_above_the_new_nyquist(self):
+        pcm = [round(8000 * math.sin(2 * math.pi * 9000 * n / 22050)) for n in range(4410)]
+        out = sb.resample(pcm, 22050, 11025)
+        self.assertLess(max(abs(x) for x in out[100:-100]), 800)
+
+    def test_required_categories_outrank_minor_sounds(self):
+        order = [sb._tier(p) for p in (
+            "sound\\sfx\\weapons\\assault rifle\\fire", "sound\\sfx\\weapons\\frag grenade\\expl",
+            "sound\\sfx\\impulse\\impacts\\dirt_burst", "sound\\sfx\\weapons\\weapon_anims\\ar_reload",
+            "sound\\sfx\\impulse\\footsteps\\walk", "sound\\sfx\\vehicles\\warthog_engine",
+            "sound\\sfx\\ui\\shield_hit", "sound\\dialog\\multiplayer1\\slayer")]
+        self.assertEqual(order, sorted(order))
+        self.assertEqual(len(set(order)), len(order))
+
+    def test_cut_flamethrower_is_last(self):
+        self.assertEqual(sb._tier("sound\\sfx\\weapons\\flamethrower\\fire"), len(sb.TIERS) - 1)
+
+
 @unittest.skipUnless(MAP.is_file(), "retail map not present")
 class BankTests(unittest.TestCase):
     def test_small_bank_verifies_and_detects_corruption(self):

@@ -51,18 +51,28 @@ SPU_BASE_RATE = 48000
 
 # Selection tiers: lower is kept first when the SPU2 RAM budget is tight.
 TIERS = [
-    ("weapons\\", ("fire", "eject", "dryfire", "ready", "reload", "overheat")),
+    ("weapons\\", ("fire", "eject", "dryfire", "overheat", "projectile")),
+    ("weapons\\", ("expl",)),
     ("impulse\\impacts\\", ("",)),
     ("impulse\\explosion", ("",)),
     ("impulse\\weapon_drops", ("",)),
+    ("weapons\\", ("ready", "reload")),
+    ("impulse\\footsteps", ("",)),
+    ("vehicles\\", ("",)),
+    ("impulse\\", ("shellcasings", "melee", "bodyfalls", "glass", "material_effects", "coolant")),
     ("weapons\\", ("charge", "melee", "ammo", "pickup")),
+    ("\\ui\\", ("",)),
     ("weapons\\", ("",)),
     ("impulse\\", ("",)),
-    ("vehicles\\", ("",)),
-    ("\\ui\\", ("",)),
     ("ambience\\", ("",)),
     ("dialog\\", ("",)),
 ]
+
+
+# Sample-rate ceiling per TIERS index when a bank is built with low_rate: gunshots, explosions, impacts and drops
+# (tiers before this index) keep full rate; reloads, footsteps, vehicles and the rest are band-limited to low_rate.
+FULL_RATE_TIERS = 5
+TAIL_RATE_TIERS = 8  # shell casings, melee, ui, zoom, ambience, dialogue: the quietest, least critical sounds
 
 
 def name_hash(path: str) -> int:
@@ -132,6 +142,23 @@ def decode_pcm16(raw: bytes, channels: int = 1, big_endian: bool = True) -> list
     if channels == 1:
         return list(values)
     return [sum(values[i:i + channels]) // channels for i in range(0, len(values) - channels + 1, channels)]
+
+
+def resample(pcm: list[int], src: int, dst: int) -> list[int]:
+    """Band-limited down-sampling from src to dst Hz (windowed-sinc low-pass at 0.45 of dst, then linear interpolation)."""
+    if dst >= src or len(pcm) < 64:
+        return pcm
+    import numpy as np
+    x = np.asarray(pcm, dtype=np.float64)
+    cutoff = 0.45 * dst / src
+    taps = np.arange(-32, 33)
+    kernel = np.sinc(2 * cutoff * taps) * np.hamming(65)
+    kernel /= kernel.sum()
+    x = np.convolve(x, kernel, mode="same")
+    count = int(len(pcm) * dst / src)
+    pos = np.arange(count) * (src / dst)
+    out = np.interp(pos, np.arange(len(pcm)), x)
+    return np.clip(np.rint(out), -32768, 32767).astype(int).tolist()
 
 
 def _vag_block(chunk: list[int], h1: int, h2: int, filt: int, shift: int):
@@ -216,8 +243,14 @@ PIN_TIERS = [
 ]
 
 
+# Cut content no retail multiplayer map can reach: kept only after everything else.
+UNREACHABLE = ("flamethrower",)
+
+
 def _tier(path: str) -> int:
     lowered = path.lower()
+    if any(word in lowered for word in UNREACHABLE):
+        return len(TIERS) - 1
     for tier, (prefix, words) in enumerate(TIERS):
         if prefix in lowered and any(word in lowered for word in words):
             return tier
@@ -234,7 +267,10 @@ def sound_permutations(cache: CacheMap, tag) -> tuple[dict, list[dict]]:
     ranges, first = cache.reflexive(d, 0x98)
     for r in range(ranges):
         count, pfirst = cache.reflexive(first + 72 * r, 0x3C)
-        for p in range(count):
+        # permutations past the range's "actual permutation count" continue a long sound (chained by next-permutation index)
+        # and are not sounds of their own: playing one by itself is a clipped fragment
+        actual = struct.unpack_from("<H", buf, first + 72 * r + 44)[0]
+        for p in range(min(count, actual) if actual else count):
             base = pfirst + 124 * p
             gain = struct.unpack_from("<f", buf, base + 36)[0]
             perm_compression = struct.unpack_from("<h", buf, base + 40)[0]
@@ -262,10 +298,14 @@ def _pin_tier(path: str) -> int | None:
 
 
 def build_bank(map_path: Path, budget: int = DEFAULT_BUDGET, max_perms: int = 2,
-               pin_bytes: int = 0, pin_perms: int = 2) -> tuple[bytes, list[dict]]:
+               pin_bytes: int = 0, pin_perms: int = 2, usage: dict[int, int] | None = None,
+               fill_perms: int = 1, low_rate: int = 0, tail_rate: int = 0) -> tuple[bytes, list[dict]]:
     """With pin_bytes, the bank opens with a pinned prefix of at most pin_bytes (the PIN_TIERS sounds, pin_perms
     permutations each): header spu_bytes is that prefix's size, the player uploads only it at load and never
-    evicts it; everything after is paged through the rest of SPU2 RAM. Without it spu_bytes is the data size."""
+    evicts it; everything after is paged through the rest of SPU2 RAM. Without it spu_bytes is the data size.
+    With usage (name_hash -> requests measured in play), the sounds the game really asks for come first, most requested
+    first, with max_perms permutations each; the rest of the budget is filled by TIERS with fill_perms permutations
+    each. A bank within SPU2 RAM is uploaded once at load and never written during play."""
     cache = CacheMap(map_path.read_bytes())
     candidates = []
     for tag in cache.tags:
@@ -278,11 +318,19 @@ def build_bank(map_path: Path, budget: int = DEFAULT_BUDGET, max_perms: int = 2,
     entries, data = [], bytearray()
     used = 0
 
+    def tier_rate(tier, rate):
+        if tail_rate and tier >= TAIL_RATE_TIERS:
+            return min(rate, tail_rate)
+        if low_rate and tier >= FULL_RATE_TIERS:
+            return min(rate, low_rate)
+        return rate
+
     def add(tier, path, tag, info, perms, cap, limit):
         """Encodes up to `cap` permutations and appends them when the total stays within `limit`; True when added."""
         nonlocal used
         # Xbox ADPCM and VAG are both ~0.56 byte/sample, so the raw size bounds the encoded cost.
-        if used + sum(perm["size"] for perm in perms[:cap]) * 9 // 10 > limit:
+        scale = min(1.0, tier_rate(tier, info["rate"]) / info["rate"])
+        if used + int(sum(perm["size"] for perm in perms[:cap]) * 9 // 10 * scale) > limit:
             return False
         encoded = []
         for perm in perms[:cap]:
@@ -291,19 +339,22 @@ def build_bank(map_path: Path, budget: int = DEFAULT_BUDGET, max_perms: int = 2,
                 pcm = decode_xbox_adpcm(raw, info["channels"])
             else:
                 pcm = decode_pcm16(raw, info["channels"])
+            rate = tier_rate(tier, info["rate"])
+            if rate < info["rate"]:
+                pcm = resample(pcm, info["rate"], rate)
             if len(pcm) < 28:
                 continue
-            encoded.append((pcm, encode_vag(pcm), perm))
-        cost = sum(len(vag) for _pcm, vag, _perm in encoded)
+            encoded.append((pcm, encode_vag(pcm), perm, rate))
+        cost = sum(len(vag) for _pcm, vag, _perm, _rate in encoded)
         if not encoded or used + cost > limit:
             return False
         used += cost
-        for index, (pcm, vag, perm) in enumerate(encoded):
+        for index, (pcm, vag, perm, rate) in enumerate(encoded):
             offset = len(data)
             data.extend(vag)
             data.extend(b"\0" * (-len(data) % 16))
             entries.append({"path": path, "hash": name_hash(path), "perm": index, "perm_count": len(encoded),
-                            "rate": info["rate"], "samples": len(pcm), "offset": offset, "bytes": len(vag),
+                            "rate": rate, "samples": len(pcm), "offset": offset, "bytes": len(vag),
                             "gain": perm["gain"] if perm["gain"] > 0 else 1.0, "near": info["near"], "far": info["far"], "tier": tier})
         return True
 
@@ -315,10 +366,15 @@ def build_bank(map_path: Path, budget: int = DEFAULT_BUDGET, max_perms: int = 2,
             if add(tier, path, tag, info, perms, pin_perms, pin_bytes):
                 pinned_paths.add(path)
         spu_bytes = used
+    if usage:
+        for tier, path, tag, info, perms in sorted((c for c in candidates if name_hash(c[1]) in usage and c[1] not in pinned_paths),
+                                                   key=lambda c: (-usage[name_hash(c[1])], c[1])):
+            if add(tier, path, tag, info, perms, max_perms, budget):
+                pinned_paths.add(path)
     for tier, path, tag, info, perms in candidates:
         if tier >= len(TIERS) or path in pinned_paths:
             continue
-        add(tier, path, tag, info, perms, max_perms, budget)
+        add(tier, path, tag, info, perms, fill_perms if usage else max_perms, budget)
     if spu_bytes is None:
         spu_bytes = used
     entries_off = HEADER.size
@@ -363,6 +419,12 @@ def main() -> int:
     ap.add_argument("--pin-bytes", type=int, default=0,
                     help="paged bank: bytes of PIN_TIERS sounds kept resident and never evicted (header spu_bytes)")
     ap.add_argument("--pin-perms", type=int, default=2, help="permutations per pinned sound")
+    ap.add_argument("--usage", type=Path, help="measured requests, one '<sound path or 8-hex name hash> <count>' per line: those sounds go first with every permutation")
+    ap.add_argument("--fill-perms", type=int, default=1, help="permutations per sound for the TIERS fill after the usage list")
+    ap.add_argument("--low-rate", type=int, default=0,
+                    help="band-limit sounds after the gunshot/impact/explosion/drop tiers to this sample rate (e.g. 16000)")
+    ap.add_argument("--tail-rate", type=int, default=0,
+                    help="sample rate for the least critical tiers (shell casings, melee, ui, ambience, dialogue), e.g. 11025")
     ap.add_argument("--paged", action="store_true",
                     help="allow a bank larger than SPU2 RAM; the player pages samples in on first use")
     args = ap.parse_args()
@@ -370,7 +432,16 @@ def main() -> int:
         ap.error("--pin-bytes needs --paged and must leave a paging pool in SPU2 RAM")
     if args.budget > (PAGED_BUDGET_LIMIT if args.paged else SPU_RAM_BYTES - SPU_RESERVED_BYTES):
         ap.error("budget exceeds SPU2 RAM (use --paged for a larger bank)")
-    blob, entries = build_bank(args.map, args.budget, args.max_perms, args.pin_bytes, args.pin_perms)
+    usage = None
+    if args.usage:
+        usage = {}
+        for line in args.usage.read_text().splitlines():
+            parts = line.rsplit(None, 1)
+            if len(parts) == 2 and parts[1].isdigit():
+                key = parts[0].strip()
+                h = int(key, 16) if len(key) == 8 and all(c in "0123456789abcdef" for c in key.lower()) else name_hash(key)
+                usage[h] = usage.get(h, 0) + int(parts[1])
+    blob, entries = build_bank(args.map, args.budget, args.max_perms, args.pin_bytes, args.pin_perms, usage, args.fill_perms, args.low_rate, args.tail_rate)
     verify_bank(blob)
     args.output.write_bytes(blob)
     print(f"{args.output}: {len(entries)} entries, {sum(e['bytes'] for e in entries)} VAG bytes, "
