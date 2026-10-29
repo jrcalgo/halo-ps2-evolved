@@ -28,6 +28,7 @@ extern "C" {
 #define HCU_SPU_RAM_END 0x200000u
 #define HCU_SPU_NEAR 2.0f
 #define HCU_SPU_FAR 60.0f
+#define HCU_SPU_MIN_POOL 0x40000u /* SPU2 RAM left for paging when a bank pins a resident prefix */
 #define HCU_SPU_UPLOAD_PART 16384u /* most bytes of one sample uploaded in a single call or game tick */
 
 typedef struct {
@@ -38,6 +39,7 @@ typedef struct {
 	float near_dist, far_dist; /* sound tag min/max distance in world units; 0 = use HCU_SPU_NEAR/FAR */
 	uint32_t spu_addr;       /* SPU2 RAM byte address while resident */
 	uint8_t resident;        /* uploaded to SPU2 RAM (or its range reserved while `loading`) */
+	uint8_t pinned;          /* in the bank's pinned prefix: uploaded at load, never evicted */
 	uint8_t loading;         /* paged in over several ticks: the first `loaded` bytes are uploaded */
 	uint32_t loaded;
 	uint32_t last_used;      /* CE tick of the latest start, for eviction */
@@ -58,6 +60,7 @@ typedef struct {
 	uint32_t uploaded_bytes;
 	uint32_t page_ins;       /* samples uploaded on demand */
 	uint32_t evictions;      /* resident samples dropped to make room */
+	uint32_t expiry_koffs;   /* ticks that keyed off voices whose sample had finished */
 	uint32_t muted_before_evict; /* evictions that had to key off a voice the lifetime bookkeeping had already freed */
 	uint32_t page_fails;     /* no room (every candidate in use) or upload failed */
 	uint32_t samples;
@@ -65,6 +68,9 @@ typedef struct {
 	uint32_t active_high;
 } hcu_spu_stats;
 
+/* Bytes of the bank's data region the load uploads and keeps resident: the header's pinned prefix (spu_bytes) when it
+ * leaves HCU_SPU_MIN_POOL of SPU2 RAM for paging, otherwise all that fits SPU2 RAM. `image` holds the 32-byte header. */
+uint32_t hcu_spu_bank_resident_limit(const uint8_t *image);
 /* Load libsd/sdrdrv IRX images, bind the remote and initialise CORE1. 0 on success. */
 int hcu_spu_init(void);
 /* Read, verify (SHA-256 trailer) and upload a bank. 0 on success. */

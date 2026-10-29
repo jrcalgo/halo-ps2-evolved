@@ -14,12 +14,13 @@ static void h_addr(uint16_t e, uint32_t v) { ops[nops++] = (op_t){ 1, e, v }; }
 static void h_switch(uint16_t e, uint32_t v) { ops[nops++] = (op_t){ 2, e, v }; }
 static uint32_t h_get(uint16_t e) { (void)e; return 0; }
 static unsigned uploads, upload_fail;
-static uint32_t upload_addr[16];
+static uint32_t upload_addr[16], upload_min_addr = 0xffffffffu;
 static int h_upload(const hcu_spu_sample *sample, uint32_t addr)
 {
 	(void)sample;
 	if (upload_fail) return -1;
 	if (uploads < 16) upload_addr[uploads] = addr;
+	if (addr < upload_min_addr) upload_min_addr = addr;
 	uploads++;
 	return 0;
 }
@@ -300,6 +301,18 @@ int main(void)
 		hcu_spu_get_stats(&st);
 		CHECK(part_calls == 3 && part_offset[2] == 32768u && part_bytes[2] == 40000u - 32768u);
 		CHECK(st.page_ins == 1 && st.started == 1 && st.voices_active == 1 && st.page_fails == 0);
+		/* a finished one-shot is keyed off explicitly (once), not left to the end flag */
+		hcu_spu_tick(2000 * TEST_MS_PER_TICK + 66u + 500u);
+		hcu_spu_get_stats(&st);
+		CHECK(st.expiry_koffs == 0 && st.voices_active == 1);
+		nops = 0;
+		hcu_spu_tick(2000 * TEST_MS_PER_TICK + 66u + 1200u);
+		hcu_spu_get_stats(&st);
+		CHECK(st.expiry_koffs == 1 && st.voices_active == 0);
+		CHECK(nops == 1 && ops[0].kind == 2 && ops[0].entry == (1u | 0x1600u) && ops[0].value == 1u);
+		hcu_spu_tick(2000 * TEST_MS_PER_TICK + 66u + 1300u);
+		hcu_spu_get_stats(&st);
+		CHECK(st.expiry_koffs == 1);
 		/* a failing slice drops the reservation and is counted; the sample pages in again later */
 		part_calls = 0;
 		r = req(HCU_SOUND_EVENT_IMPULSE, 2, 3, 2100, 1.0f);
@@ -313,6 +326,33 @@ int main(void)
 		r = req(HCU_SOUND_EVENT_IMPULSE, 2, 3, 2200, 1.0f);
 		hcu_spu_request(&r, bh[62]);
 		CHECK(part_calls == 1); /* the sample pages in again */
+	}
+	/* a bank with a pinned prefix: its samples are resident from the load and never evicted; paging uses the pool above */
+	{
+		uint32_t qh[64], i, qt, pinned_end;
+		uint16_t qp[64], qc[64];
+		hcu_spu_sample qs[64];
+		uint32_t qcount = 0;
+		for (i = 0; i < 64; ++i) { qh[i] = 0x4000 + i; qp[i] = 0; qc[i] = 1; }
+		qt = build_image(64, qh, qp, qc, 40000u);
+		w32(image + 24, 30u * 40000u); /* header spu_bytes: the first 30 samples are pinned */
+		CHECK(hcu_spu_bank_resident_limit(image) == 30u * 40000u);
+		CHECK(hcu_spu_bank_parse(image, qt, qs, 64, &qcount, 0, 0) == 0 && qcount == 64);
+		for (i = 0; i < 64; ++i) CHECK(qs[i].resident == (i < 30u) && qs[i].pinned == (i < 30u));
+		pinned_end = qs[29].spu_addr + qs[29].bytes;
+		hcu_spu_attach(&hw, qs, qcount);
+		uploads = 0; upload_min_addr = 0xffffffffu;
+		/* far more distinct paged samples than the pool holds, each after the last has ended */
+		for (i = 30; i < 64; ++i) {
+			r = req(HCU_SOUND_EVENT_IMPULSE, 1, 3, 3000 + (i - 30) * 100, 1.0f);
+			hcu_spu_request(&r, qh[i]);
+		}
+		hcu_spu_get_stats(&st);
+		CHECK(uploads == 34 && st.page_fails == 0 && st.evictions > 0);
+		CHECK(upload_min_addr >= pinned_end); /* nothing ever uploaded over the pinned prefix */
+		/* a legacy bank (spu_bytes 0 or beyond the pool limit) pins nothing */
+		w32(image + 24, 0);
+		CHECK(hcu_spu_bank_parse(image, qt, qs, 64, &qcount, 0, 0) == 0 && !qs[0].pinned && qs[0].resident);
 	}
 	/* two new sounds in one tick: the first pages in at once, the second waits for the next tick */
 	{

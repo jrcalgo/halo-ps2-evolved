@@ -30,6 +30,7 @@ typedef struct {
 	uint8_t active;
 	uint8_t priority;
 	uint8_t looping;
+	uint8_t hw_live;     /* key-on issued and no key-off since: the hardware may still be playing it */
 	uint32_t hash, owner;
 	uint32_t start_tick, end_tick;
 	const hcu_spu_sample *sample;
@@ -110,12 +111,19 @@ uint32_t hcu_spu_volume_for(float gain, float sample_gain)
 	return v >= (float)HCU_SPU_VOLUME_MAX ? HCU_SPU_VOLUME_MAX : (uint32_t)v;
 }
 
+uint32_t hcu_spu_bank_resident_limit(const uint8_t *image)
+{
+	uint32_t capacity = HCU_SPU_RAM_END - HCU_SPU_RAM_BASE, spu_bytes = rd32(image + 24);
+	return spu_bytes && spu_bytes <= capacity - HCU_SPU_MIN_POOL ? spu_bytes : capacity;
+}
+
 int hcu_spu_bank_parse(const uint8_t *image, uint32_t size, hcu_spu_sample *out,
 	uint32_t capacity, uint32_t *count_out, uint32_t *data_off_out, uint32_t *data_end_out)
 {
-	uint32_t count, entries_off, data_off, total, i;
+	uint32_t count, entries_off, data_off, total, i, limit;
 	if (!image || size < HSB_HEADER_BYTES + 32u || !out || !count_out) return -1;
 	if (rd32(image) != HSB_MAGIC || rd32(image + 4) != HSB_VERSION) return -2;
+	limit = hcu_spu_bank_resident_limit(image);
 	count = rd32(image + 8);
 	entries_off = rd32(image + 12);
 	data_off = rd32(image + 16);
@@ -141,11 +149,13 @@ int hcu_spu_bank_parse(const uint8_t *image, uint32_t size, hcu_spu_sample *out,
 			(s->bank_offset & 15u) || s->bank_offset < data_off || s->bank_offset > size - 32u ||
 			s->bytes > size - 32u - s->bank_offset)
 			return -4;
-		/* The load uploads the data region from HCU_SPU_RAM_BASE until SPU2 RAM is full: a sample is resident
-		 * when it fits entirely, any other is paged in on first use. */
-		if (HCU_SPU_RAM_BASE + (s->bank_offset - data_off) + s->bytes <= HCU_SPU_RAM_END) {
+		/* The load uploads the data region from HCU_SPU_RAM_BASE up to the resident limit: a sample is resident
+		 * when it fits entirely, any other is paged in on first use. A bank with a pinned prefix keeps its
+		 * resident samples for good; the rest of SPU2 RAM is the paging pool. */
+		if ((s->bank_offset - data_off) + s->bytes <= limit) {
 			s->spu_addr = HCU_SPU_RAM_BASE + (s->bank_offset - data_off);
 			s->resident = 1;
+			s->pinned = limit != HCU_SPU_RAM_END - HCU_SPU_RAM_BASE;
 		}
 	}
 	*count_out = count;
@@ -237,6 +247,7 @@ static void key_off(uint32_t voice)
 	s_hw->set_switch((uint16_t)(SD_CORE1 | SD_SWITCH_KOFF_ENTRY), 1u << voice);
 	s_stats.stopped++;
 	s_voice[voice].active = 0;
+	s_voice[voice].hw_live = 0;
 }
 
 void hcu_spu_set_listener(const float position[3], const float forward[3], const float up[3])
@@ -319,6 +330,7 @@ static void silence_voices_of(const hcu_spu_sample *sample)
 		s_hw->set_param(voice_entry(i, SD_VOICE_PARAM_VOLR), 0u);
 		s_voice[i].sample = NULL;
 		s_voice[i].active = 0;
+		s_voice[i].hw_live = 0;
 		mask |= 1u << i;
 	}
 	if (mask) {
@@ -338,7 +350,7 @@ static int page_in(hcu_spu_sample *sample)
 		addr = find_gap(padded);
 		if (addr) break;
 		for (i = 0; i < s_sample_count; ++i)
-			if (s_samples[i].resident && !s_samples[i].loading && !sample_in_use(&s_samples[i]) &&
+			if (s_samples[i].resident && !s_samples[i].pinned && !s_samples[i].loading && !sample_in_use(&s_samples[i]) &&
 				(victim == HCU_SPU_MAX_SAMPLES || (int32_t)(s_samples[victim].last_used - s_samples[i].last_used) > 0))
 				victim = i;
 		if (victim == HCU_SPU_MAX_SAMPLES) return -2;
@@ -417,6 +429,7 @@ static void key_on(uint32_t voice, const hcu_sound_request *r, const hcu_spu_sam
 	s_hw->set_param(voice_entry(voice, SD_VOICE_PARAM_ADSR2), HCU_SPU_ADSR2);
 	s_hw->set_addr(voice_entry(voice, SD_VOICE_ADDR_SSA), sample->spu_addr);
 	s_hw->set_switch((uint16_t)(SD_CORE1 | SD_SWITCH_KON_ENTRY), 1u << voice);
+	s_voice[voice].hw_live = 1;
 }
 
 /* How long the voice plays, in game_time units (ms), at the request's pitch: a lowered pitch plays longer,
@@ -548,6 +561,23 @@ void hcu_spu_tick(uint32_t now)
 		s_draining_born = p.born;
 		start_sound(&p.request, p.hash, p.looping);
 		s_draining = 0;
+	}
+	/* A one-shot whose nominal end has passed is keyed off: the SPU2 does not always stop a voice at the end flag, and
+	 * one left running replays the first blocks of its sample as a steady tone until something reuses the voice. */
+	{
+		uint32_t mask = 0;
+		for (i = 0; i < HCU_SPU_VOICES; ++i) {
+			voice_state *v = &s_voice[i];
+			if (!v->hw_live || v->looping) continue;
+			if (v->active && (int32_t)(now - v->end_tick) < 0) continue;
+			v->hw_live = 0;
+			v->active = 0;
+			mask |= 1u << i;
+		}
+		if (mask) {
+			s_hw->set_switch((uint16_t)(SD_CORE1 | SD_SWITCH_KOFF_ENTRY), mask);
+			s_stats.expiry_koffs++;
+		}
 	}
 	for (i = 0; i < HCU_SPU_VOICES; ++i) {
 		voice_state *v = &s_voice[i];

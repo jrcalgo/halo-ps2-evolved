@@ -157,7 +157,7 @@ int hcu_spu_load_bank(const char *path)
 {
 	unsigned long size = 0;
 	int token;
-	uint32_t count = 0, data_off = 0, data_end = 0, header_bytes, remaining, spu_addr, uploaded = 0;
+	uint32_t count = 0, data_off = 0, data_end = 0, header_bytes, remaining, spu_addr, uploaded = 0, limit_end;
 	sha256_context sha;
 	uint8_t digest[32], trailer[32];
 	if (!s_hw_ready) return -1;
@@ -174,6 +174,7 @@ int hcu_spu_load_bank(const char *path)
 		hcu_file_bridge_close(token);
 		return -3;
 	}
+	limit_end = HCU_SPU_RAM_BASE + hcu_spu_bank_resident_limit(s_header);
 	sha256_init(&sha);
 	sha256_update(&sha, s_header, data_off);
 	if (hcu_file_bridge_seek(token, (long)data_off, 0) != (long)data_off) goto fail_read;
@@ -184,8 +185,8 @@ int hcu_spu_load_bank(const char *path)
 		if (!read_exact(token, s_stage, n)) goto fail_read;
 		sha256_update(&sha, s_stage, n);
 		/* The whole file is read to verify it; only the leading part that fits SPU2 RAM is uploaded now. */
-		if (spu_addr < HCU_SPU_RAM_END) {
-			uint32_t up = n < HCU_SPU_RAM_END - spu_addr ? n : HCU_SPU_RAM_END - spu_addr;
+		if (spu_addr < limit_end) {
+			uint32_t up = n < limit_end - spu_addr ? n : limit_end - spu_addr;
 			if (upload_chunk(s_stage, up, spu_addr) != 0) goto fail_read;
 			uploaded += up;
 		}
