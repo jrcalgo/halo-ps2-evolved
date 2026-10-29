@@ -74,8 +74,8 @@ int main(void)
 	CHECK(hcu_spu_pitch_for(22050, 2.0f) == 3763);
 	CHECK(hcu_spu_pitch_for(44100, 100.0f) == 0x3FFF);
 	CHECK(hcu_spu_volume_for(0.0f, 1.0f) == 0);
-	CHECK(hcu_spu_volume_for(1.0f, 1.0f) == 11468);
-	CHECK(hcu_spu_volume_for(5.0f, 1.0f) == 11468);
+	CHECK(hcu_spu_volume_for(1.0f, 1.0f) == 8191);
+	CHECK(hcu_spu_volume_for(5.0f, 1.0f) == 8191);
 
 	CHECK(hcu_spu_bank_parse(image, total, samples, 8, &count, &data_off, &data_end) == 0);
 	CHECK(count == 3 && data_off == 128 && data_end == total - 32);

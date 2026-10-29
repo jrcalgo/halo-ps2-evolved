@@ -11,7 +11,7 @@
 #define HSB_ENTRY_BYTES 32u
 #define HCU_SPU_TICKS_PER_SECOND 30u
 #define HCU_SPU_VOLUME_MAX 0x3FFFu
-#define HCU_SPU_VOLUME_SCALE 0.7f /* headroom for the eight overlapping weapon voices */
+#define HCU_SPU_VOLUME_SCALE 0.5f /* mixing headroom: nine overlapping full-gain voices clipped at 0.7 in the Blood Gulch capture */
 #define HCU_SPU_PITCH_MAX 0x3FFFu
 #define HCU_SPU_ADSR1 0x00FFu
 #define HCU_SPU_ADSR2 0x1FC0u
