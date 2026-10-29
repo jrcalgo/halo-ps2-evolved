@@ -9,7 +9,7 @@ decoded-then-encoded samples only; it is derived data and must never be committe
 Layout (little endian, every offset 16-byte aligned):
   header  32 B: magic 'HSB1', version, count, entries_off, data_off, total_bytes, spu_bytes, reserved
   entry   32 B: name_hash, perm_index u16, perm_count u16, rate, samples, offset, vag_bytes, gain f32, near u16, far u16
-  data        : per entry the raw VAG blocks (last block carries the end flag)
+  data        : per entry the raw VAG blocks (last block is a silent self-looping terminator, flags 7)
   trailer 32 B: SHA-256 of every preceding byte
 near/far are the sound tag's minimum/maximum distance in 1/64 world unit (0 = tag left it to the sound class).
 name_hash is FNV-1a over the lower-cased tag path with path separators removed, so the runtime can
@@ -151,8 +151,13 @@ def _vag_block(chunk: list[int], h1: int, h2: int, filt: int, shift: int):
     return nibbles, err, clipped, h1, h2
 
 
+VAG_TERMINATOR_FLAGS = 7  # loop start | repeat | end
+
+
 def encode_vag(pcm: list[int]) -> bytes:
-    """Encode mono PCM16 to SPU VAG blocks; the final block carries the end flag (one shot)."""
+    """Encode mono PCM16 to SPU VAG blocks (one shot). The SPU2 does not reliably stop at an end flag: a voice that
+    outlives its sample (the game tick that keys it off can be late) replays the sample from its start as a steady
+    tone. The audio therefore ends in a silent terminator block flagged loop-start|repeat|end, which loops on itself."""
     blocks = bytearray()
     h1 = h2 = 0
     total = (len(pcm) + 27) // 28
@@ -177,11 +182,12 @@ def encode_vag(pcm: list[int]) -> bytes:
                 if best is None or key < best[0]:
                     best = (key, filt, sh, nibbles, n1, n2)
         _key, filt, sh, nibbles, h1, h2 = best
-        flags = 1 if index == total - 1 else 0
+        flags = 0
         blocks.append((sh & 15) | (filt << 4))
         blocks.append(flags)
         for i in range(0, 28, 2):
             blocks.append(nibbles[i] | (nibbles[i + 1] << 4))
+    blocks += bytes([0, VAG_TERMINATOR_FLAGS]) + bytes(14)
     return bytes(blocks)
 
 

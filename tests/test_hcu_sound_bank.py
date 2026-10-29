@@ -21,14 +21,16 @@ class VagTests(unittest.TestCase):
     def test_round_trip_snr_and_end_flag(self):
         pcm = [int(12000 * math.sin(i * 0.07) + 3000 * math.sin(i * 0.31)) for i in range(28 * 40 + 5)]
         vag = sb.encode_vag(pcm)
-        self.assertEqual(len(vag), 16 * 41)
+        self.assertEqual(len(vag), 16 * 42)
         self.assertEqual(vag[1], 0)
-        self.assertEqual(vag[-15], 1)
+        self.assertEqual(vag[-31], 0)
+        self.assertEqual(vag[-15], 7)
+        self.assertTrue(all(b == 0 for b in vag[-14:]))
         self.assertGreater(snr_db(pcm, sb.decode_vag(vag)[:len(pcm)]), 25.0)
 
     def test_silence_encodes_to_zero_nibbles(self):
         vag = sb.encode_vag([0] * 56)
-        self.assertEqual(len(vag), 32)
+        self.assertEqual(len(vag), 48)
         self.assertTrue(all(b == 0 for b in vag[2:16]))
 
     def test_name_hash_ignores_separators_and_case(self):
