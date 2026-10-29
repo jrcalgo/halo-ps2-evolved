@@ -49,11 +49,14 @@ static uint32_t build_image(uint32_t count, const uint32_t *hashes, const uint16
 	return total;
 }
 
+/* the tests count in 30 Hz ticks; the player's clock is milliseconds */
+#define TEST_MS_PER_TICK 33u
+
 static hcu_sound_request req(uint16_t event, uint32_t owner, uint8_t prio, uint32_t tick, float gain)
 {
 	hcu_sound_request r;
 	memset(&r, 0, sizeof(r));
-	r.event = event; r.owner_datum = owner; r.priority = prio; r.game_time = tick;
+	r.event = event; r.owner_datum = owner; r.priority = prio; r.game_time = tick * TEST_MS_PER_TICK;
 	r.gain = gain; r.pitch = 1.0f;
 	return r;
 }
@@ -136,7 +139,7 @@ int main(void)
 	hcu_spu_get_stats(&st);
 	CHECK(st.stolen == 7);
 
-	/* voices expire by sample length (1 s = 30 ticks + 2) */
+	/* voices expire by sample length (1 s = 1002 ms) */
 	r = req(HCU_SOUND_EVENT_IMPULSE, 6000, 3, 240, 1.0f);
 	hcu_spu_request(&r, hashes[0]);
 	hcu_spu_get_stats(&st);
@@ -198,9 +201,9 @@ int main(void)
 	hcu_spu_get_stats(&st);
 	CHECK(st.loops_started == 1 && st.voices_active == 1);
 	nops = 0;
-	hcu_spu_tick(610);
+	hcu_spu_tick(610 * TEST_MS_PER_TICK);
 	CHECK(nops == 0);
-	hcu_spu_tick(640);
+	hcu_spu_tick(640 * TEST_MS_PER_TICK);
 	CHECK(nops == 8); /* key-off, then the seven key-on operations */
 	hcu_spu_get_stats(&st);
 	CHECK(st.loop_restarts == 1 && st.voices_active == 1);
@@ -280,16 +283,29 @@ int main(void)
 		hcu_spu_request(&dr, dh[second - 1u]);
 		hcu_spu_get_stats(&st);
 		CHECK(uploads == 1 && st.started == 1);
-		hcu_spu_tick(2001);
+		hcu_spu_tick(2001 * TEST_MS_PER_TICK);
 		hcu_spu_get_stats(&st);
 		CHECK(uploads == 2 && st.started == 2 && st.page_fails == 0);
 		/* a sound that waits longer than the queue allows is dropped, not started late */
 		dr = req(HCU_SOUND_EVENT_IMPULSE, 3, 3, 2010, 1.0f);
 		hcu_spu_request(&dr, dh[first - 1u]);
-		hcu_spu_tick(2200);
+		hcu_spu_tick(2200 * TEST_MS_PER_TICK);
 		hcu_spu_get_stats(&st);
 		CHECK(st.page_fails == 0);
 	}
+	/* game_time is milliseconds: a 1 s sound still holds its voice 100 ms in, and is over after 1 s */
+	hcu_spu_attach(&hw, samples, count);
+	r = req(HCU_SOUND_EVENT_IMPULSE, 1, 3, 0, 1.0f);
+	r.game_time = 50000u;
+	hcu_spu_request(&r, hashes[0]);
+	r.owner_datum = 2; r.game_time = 50100u;
+	hcu_spu_request(&r, hashes[0]);
+	hcu_spu_get_stats(&st);
+	CHECK(st.voices_active == 2);
+	r.owner_datum = 3; r.game_time = 51200u;
+	hcu_spu_request(&r, hashes[0]);
+	hcu_spu_get_stats(&st);
+	CHECK(st.voices_active == 1);
 	printf("spu-playback-ok started=%u stopped=%u loops=%u fades=%u\n", st.started, st.stopped, st.loops_started, st.fades);
 	return 0;
 }

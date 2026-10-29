@@ -991,8 +991,9 @@ static void hcu_c3_sound_request_sink(void *context, const void *sound,
 #define HCU_SPU_BANK_PATH "packages/pkg/bloodgulch_mounted_gunner_4p4bot/bloodgulch.hsb"
 #endif
 static uint32_t s_spu_cycles, s_spu_max_cycles;
-/* CE game time of the latest drained record plus the ticks drained since: the clock for looping voices. */
-static uint32_t s_spu_base_tick, s_spu_ticks_since;
+/* CE time (milliseconds) of the latest drained record plus the EE time elapsed since: the clock for voice
+ * lifetimes and looping voices. */
+static uint32_t s_spu_now_ms, s_spu_last_cycles, s_spu_cycle_rem;
 /* Hands one drained record to the SPU2 player; the sound definition is named by its tag path. */
 static void hcu_c3_spu_feed(void *context, const hcu_sound_request *request)
 {
@@ -1003,8 +1004,9 @@ static void hcu_c3_spu_feed(void *context, const hcu_sound_request *request)
 	if (request->event != HCU_SOUND_EVENT_IMPULSE && request->event != HCU_SOUND_EVENT_STOP &&
 		request->event != HCU_SOUND_EVENT_LOOPING_START && request->event != HCU_SOUND_EVENT_LOOPING_STOP &&
 		request->event != HCU_SOUND_EVENT_FADE) return;
-	s_spu_base_tick = request->game_time;
-	s_spu_ticks_since = 0;
+	s_spu_now_ms = request->game_time;
+	s_spu_last_cycles = timer_cycles();
+	s_spu_cycle_rem = 0;
 	t0 = timer_cycles();
 	hash = hcu_spu_name_hash(request->sound_index == UINT32_MAX ? NULL : tag_get_name((long)request->sound_index));
 	hcu_spu_request(request, hash);
@@ -1017,7 +1019,13 @@ static void hcu_c3_sound_tick(void)
 	static unsigned ticks;
 	(void)hcu_sound_requests_drain_each(&s_c3_sound_queue, hcu_c3_spu_feed, NULL,
 		HCU_SOUND_REQUEST_CAPACITY);
-	hcu_spu_tick(s_spu_base_tick + ++s_spu_ticks_since);
+	{
+		uint32_t cycles = timer_cycles(), rem = s_spu_cycle_rem + (cycles - s_spu_last_cycles);
+		s_spu_last_cycles = cycles;
+		s_spu_now_ms += rem / 294912u; /* EE cycles per millisecond */
+		s_spu_cycle_rem = rem % 294912u;
+	}
+	hcu_spu_tick(s_spu_now_ms);
 	if (ticks % 90u == 89u && hcu_spu_ready()) {
 		hcu_spu_stats st;
 		hcu_spu_get_stats(&st);

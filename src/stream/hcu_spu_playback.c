@@ -9,7 +9,7 @@
 #define HSB_VERSION 2u
 #define HSB_HEADER_BYTES 32u
 #define HSB_ENTRY_BYTES 32u
-#define HCU_SPU_TICKS_PER_SECOND 30u
+#define HCU_SPU_TICKS_PER_SECOND 1000u /* game_time is CE's system_milliseconds */
 #define HCU_SPU_VOLUME_MAX 0x3FFFu
 #define HCU_SPU_VOLUME_SCALE 0.5f /* mixing headroom: nine overlapping full-gain voices clipped at 0.7 in the Blood Gulch capture */
 #define HCU_SPU_PITCH_MAX 0x3FFFu
@@ -49,7 +49,7 @@ static int s_listener_valid;
  * so an explosion's burst of new sounds spreads over frames instead of costing one of them (a late sound is
  * 33 ms late; a dropped frame is the same 33 ms for everything on screen). */
 #define HCU_SPU_PENDING 16u
-#define HCU_SPU_PENDING_MAX_AGE 20u
+#define HCU_SPU_PENDING_MAX_AGE 700u /* ms */
 typedef struct {
 	hcu_sound_request request;
 	uint32_t hash, born;
