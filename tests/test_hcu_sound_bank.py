@@ -93,8 +93,20 @@ class RateAndTierTests(unittest.TestCase):
         for name in ("sniper_2x_zoom", "sniper_10x_zoom", "sniper_nightscope_on", "sniper_nightscope_off"):
             self.assertLess(sb._tier("sound\\sfx\\weapons\\sniper rifle\\" + name), sb.TAIL_RATE_TIERS)
 
-    def test_cut_flamethrower_is_last(self):
-        self.assertEqual(sb._tier("sound\\sfx\\weapons\\flamethrower\\fire"), len(sb.TIERS) - 1)
+    def test_every_pitch_range_keeps_its_own_recording(self):
+        perms = [{"range": 0, "flat": 0}, {"range": 0, "flat": 1}, {"range": 1, "flat": 2}, {"range": 1, "flat": 3},
+                 {"range": 2, "flat": 4}]
+        self.assertEqual([p["flat"] for p in sb.select_permutations(perms, 1)], [0, 2, 4])
+        self.assertEqual([p["flat"] for p in sb.select_permutations(perms, 4)], [0, 1, 2, 4])
+        self.assertEqual([p["flat"] for p in sb.select_permutations(perms[:2], 5)], [0, 1])
+
+    def test_flamethrower_comes_with_the_ambience_before_the_leftovers(self):
+        tier = sb._tier("sound\\sfx\\weapons\\flamethrower\\fire")
+        self.assertGreater(tier, sb._tier("sound\\sfx\\ui\\shield_hit"))
+        self.assertLess(tier, sb._tier("sound\\dialog\\multiplayer1\\slayer"))
+        self.assertLess(tier, sb._tier("sound\\sfx\\impulse\\animations\\cyborg\\w_driver_enter"))
+        self.assertLess(tier, sb._tier("sound\\sfx\\weapons\\weapon_anims\\rocket_posing"))
+        self.assertGreaterEqual(tier, sb.TAIL_RATE_TIERS)
 
 
 @unittest.skipUnless(MAP.is_file(), "retail map not present")

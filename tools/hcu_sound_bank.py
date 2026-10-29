@@ -56,6 +56,7 @@ TIERS = [
     ("impulse\\impacts\\", ("",)),
     ("impulse\\explosion", ("",)),
     ("impulse\\weapon_drops", ("",)),
+    ("weapons\\", ("hit", "spark", "granite", "bounce", "throwgren")),
     ("weapons\\", ("zoom", "nightscope")),
     ("weapons\\", ("ready", "reload")),
     ("impulse\\footsteps", ("",)),
@@ -63,9 +64,9 @@ TIERS = [
     ("impulse\\", ("shellcasings", "melee", "bodyfalls", "glass", "material_effects", "coolant")),
     ("weapons\\", ("charge", "melee", "ammo", "pickup")),
     ("\\ui\\", ("",)),
+    ("ambience\\", ("",)),
     ("weapons\\", ("",)),
     ("impulse\\", ("",)),
-    ("ambience\\", ("",)),
     ("dialog\\", ("",)),
 ]
 
@@ -73,7 +74,10 @@ TIERS = [
 # Sample-rate ceiling per TIERS index when a bank is built with low_rate: gunshots, explosions, impacts and drops
 # (tiers before this index) keep full rate; reloads, footsteps, vehicles and the rest are band-limited to low_rate.
 FULL_RATE_TIERS = 5
-TAIL_RATE_TIERS = 9  # shell casings, melee, ui, zoom, ambience, dialogue: the quietest, least critical sounds
+TAIL_RATE_TIERS = 10  # shell casings, melee, ui, ambience, dialogue: the quietest, least critical sounds
+TAIL_RATE_EXTRA_TIERS = (7, 8)  # reloads, readies and footsteps: short mechanical noises, clear at 11 kHz
+LOW_RATE_EXTRA_TIERS = (2,)  # surface impacts: noise-like, band-limited a little further than the rest
+IMPACT_RATE = 14000
 
 
 def name_hash(path: str) -> int:
@@ -244,14 +248,21 @@ PIN_TIERS = [
 ]
 
 
-# Cut content no retail multiplayer map can reach: kept only after everything else.
-UNREACHABLE = ("flamethrower",)
+# Content few maps use (the flamethrower, cut from retail multiplayer): added with the ambience, ahead of the pose
+# sounds, vehicle enter/exit animations and dialogue.
+UNREACHABLE = ("flamethrower",)  # after everything else but the dialogue, at the tail rate
+
+AMBIENCE_TIER = next(i for i, (prefix, _words) in enumerate(TIERS) if prefix == "ambience\\")
+
+AMBIENT_RATE = 7000  # the ambience and the flamethrower are wind and fire: broadband noise with nothing above 4 kHz worth keeping
 
 
 def _tier(path: str) -> int:
     lowered = path.lower()
+    if "flamethrower_" in lowered:  # its reload, ready and pose sounds: leftovers like the other weapons' pose sounds
+        return len(TIERS) - 2
     if any(word in lowered for word in UNREACHABLE):
-        return len(TIERS) - 1
+        return AMBIENCE_TIER
     for tier, (prefix, words) in enumerate(TIERS):
         if prefix in lowered and any(word in lowered for word in words):
             return tier
@@ -273,14 +284,33 @@ def sound_permutations(cache: CacheMap, tag) -> tuple[dict, list[dict]]:
         actual = struct.unpack_from("<H", buf, first + 72 * r + 44)[0]
         for p in range(min(count, actual) if actual else count):
             base = pfirst + 124 * p
+            flat = len(perms)
             gain = struct.unpack_from("<f", buf, base + 36)[0]
             perm_compression = struct.unpack_from("<h", buf, base + 40)[0]
             size, _flags, offset = struct.unpack_from("<III", buf, base + 64)
             if size and offset + size <= len(buf):
-                perms.append({"gain": gain, "compression": perm_compression, "offset": offset, "size": size})
+                perms.append({"gain": gain, "compression": perm_compression, "offset": offset, "size": size,
+                              "range": r, "flat": flat})
     near, far = struct.unpack_from("<ff", buf, d + 8)
     return {"rate": rate, "channels": 2 if encoding == 1 else 1, "compression": compression,
             "near": near, "far": far}, perms
+
+
+def select_permutations(perms: list[dict], cap: int) -> list[dict]:
+    """Up to `cap` permutations, but always the first of every pitch range: a range is a separate recording (an engine
+    at idle, at speed), which the game picks by pitch, so a bank holding only one range plays every pitch from the wrong
+    recording. The rest fill up to the cap in tag order."""
+    chosen, seen = [], set()
+    for perm in perms:
+        if perm["range"] not in seen:
+            seen.add(perm["range"])
+            chosen.append(perm)
+    for perm in perms:
+        if len(chosen) >= max(cap, len(seen)):
+            break
+        if perm not in chosen:
+            chosen.append(perm)
+    return sorted(chosen, key=lambda perm: perm["flat"])
 
 
 def _dist_units(distance: float) -> int:
@@ -317,11 +347,16 @@ def build_bank(map_path: Path, budget: int = DEFAULT_BUDGET, max_perms: int = 2,
             candidates.append((_tier(tag.path), tag.path, tag, info, perms))
     candidates.sort(key=lambda c: (c[0], c[1]))
     entries, data = [], bytearray()
+    stored: dict[bytes, int] = {}
     used = 0
 
     def tier_rate(tier, rate):
-        if tail_rate and tier >= TAIL_RATE_TIERS:
+        if tail_rate and tier == AMBIENCE_TIER:
+            return min(rate, AMBIENT_RATE)
+        if tail_rate and (tier >= TAIL_RATE_TIERS or tier in TAIL_RATE_EXTRA_TIERS):
             return min(rate, tail_rate)
+        if low_rate and tier in LOW_RATE_EXTRA_TIERS:
+            return min(rate, IMPACT_RATE)
         if low_rate and tier >= FULL_RATE_TIERS:
             return min(rate, low_rate)
         return rate
@@ -331,10 +366,11 @@ def build_bank(map_path: Path, budget: int = DEFAULT_BUDGET, max_perms: int = 2,
         nonlocal used
         # Xbox ADPCM and VAG are both ~0.56 byte/sample, so the raw size bounds the encoded cost.
         scale = min(1.0, tier_rate(tier, info["rate"]) / info["rate"])
-        if used + int(sum(perm["size"] for perm in perms[:cap]) * 9 // 10 * scale) > limit:
+        picked = select_permutations(perms, cap)
+        if used + int(sum(perm["size"] for perm in picked) * 9 // 10 * scale) > limit:
             return False
         encoded = []
-        for perm in perms[:cap]:
+        for perm in picked:
             raw = cache.buf[perm["offset"]: perm["offset"] + perm["size"]]
             if info["compression"] == 1:
                 pcm = decode_xbox_adpcm(raw, info["channels"])
@@ -346,15 +382,20 @@ def build_bank(map_path: Path, budget: int = DEFAULT_BUDGET, max_perms: int = 2,
             if len(pcm) < 28:
                 continue
             encoded.append((pcm, encode_vag(pcm), perm, rate))
-        cost = sum(len(vag) for _pcm, vag, _perm, _rate in encoded)
+        # identical blocks (the same recording under two tags) are stored once; their entries share the offset
+        fresh = {vag for _pcm, vag, _perm, _rate in encoded if vag not in stored}
+        cost = sum(len(vag) for vag in fresh)
         if not encoded or used + cost > limit:
             return False
         used += cost
         for index, (pcm, vag, perm, rate) in enumerate(encoded):
-            offset = len(data)
-            data.extend(vag)
-            data.extend(b"\0" * (-len(data) % 16))
-            entries.append({"path": path, "hash": name_hash(path), "perm": index, "perm_count": len(encoded),
+            if vag in stored:
+                offset = stored[vag]
+            else:
+                offset = stored[vag] = len(data)
+                data.extend(vag)
+                data.extend(b"\0" * (-len(data) % 16))
+            entries.append({"path": path, "hash": name_hash(path), "perm": perm["flat"], "perm_count": len(encoded),
                             "rate": rate, "samples": len(pcm), "offset": offset, "bytes": len(vag),
                             "gain": perm["gain"] if perm["gain"] > 0 else 1.0, "near": info["near"], "far": info["far"], "tier": tier})
         return True
