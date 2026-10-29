@@ -28,6 +28,7 @@ extern "C" {
 #define HCU_SPU_RAM_END 0x200000u
 #define HCU_SPU_NEAR 2.0f
 #define HCU_SPU_FAR 60.0f
+#define HCU_SPU_UPLOAD_PART 16384u /* most bytes of one sample uploaded in a single call or game tick */
 
 typedef struct {
 	uint32_t hash;
@@ -36,7 +37,9 @@ typedef struct {
 	float gain;
 	float near_dist, far_dist; /* sound tag min/max distance in world units; 0 = use HCU_SPU_NEAR/FAR */
 	uint32_t spu_addr;       /* SPU2 RAM byte address while resident */
-	uint8_t resident;        /* uploaded to SPU2 RAM */
+	uint8_t resident;        /* uploaded to SPU2 RAM (or its range reserved while `loading`) */
+	uint8_t loading;         /* paged in over several ticks: the first `loaded` bytes are uploaded */
+	uint32_t loaded;
 	uint32_t last_used;      /* CE tick of the latest start, for eviction */
 } hcu_spu_sample;
 
@@ -55,6 +58,7 @@ typedef struct {
 	uint32_t uploaded_bytes;
 	uint32_t page_ins;       /* samples uploaded on demand */
 	uint32_t evictions;      /* resident samples dropped to make room */
+	uint32_t muted_before_evict; /* evictions that had to key off a voice the lifetime bookkeeping had already freed */
 	uint32_t page_fails;     /* no room (every candidate in use) or upload failed */
 	uint32_t samples;
 	uint32_t voices_active;

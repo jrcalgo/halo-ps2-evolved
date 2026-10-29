@@ -23,7 +23,18 @@ static int h_upload(const hcu_spu_sample *sample, uint32_t addr)
 	uploads++;
 	return 0;
 }
-static const hcu_spu_hw hw = { h_param, h_addr, h_switch, h_get, h_upload };
+static const hcu_spu_hw hw = { h_param, h_addr, h_switch, h_get, h_upload, 0 };
+static unsigned part_calls, part_fail;
+static uint32_t part_offset[16], part_bytes[16];
+static int h_upload_part(const hcu_spu_sample *sample, uint32_t addr, uint32_t offset, uint32_t bytes)
+{
+	(void)sample; (void)addr;
+	if (part_fail) return -1;
+	if (part_calls < 16) { part_offset[part_calls] = offset; part_bytes[part_calls] = bytes; }
+	part_calls++;
+	return 0;
+}
+static const hcu_spu_hw hw_part = { h_param, h_addr, h_switch, h_get, h_upload, h_upload_part };
 
 static void w32(uint8_t *p, uint32_t v) { p[0] = v; p[1] = v >> 8; p[2] = v >> 16; p[3] = v >> 24; }
 
@@ -262,6 +273,46 @@ int main(void)
 		hcu_spu_request(&r, ph[1]);
 		hcu_spu_get_stats(&st);
 		CHECK(uploads == 1 && st.page_ins == 2);
+		/* the evicted sample's voice had expired in the bookkeeping but not on the hardware: it was muted and keyed off first */
+		CHECK(st.muted_before_evict >= 1);
+	}
+	/* a large page-in is spread over ticks: one 16 KB slice per call, the sound starts when the last slice is up */
+	{
+		uint32_t bh[64], i, bt;
+		uint16_t bp[64], bc[64];
+		hcu_spu_sample bs[64];
+		uint32_t bcount = 0;
+		for (i = 0; i < 64; ++i) { bh[i] = 0x3000 + i; bp[i] = 0; bc[i] = 1; }
+		bt = build_image(64, bh, bp, bc, 40000u);
+		CHECK(hcu_spu_bank_parse(image, bt, bs, 64, &bcount, 0, 0) == 0 && bcount == 64);
+		CHECK(!bs[63].resident);
+		hcu_spu_attach(&hw_part, bs, bcount);
+		uploads = 0; part_calls = 0;
+		r = req(HCU_SOUND_EVENT_IMPULSE, 1, 3, 2000, 1.0f);
+		hcu_spu_request(&r, bh[63]);
+		hcu_spu_get_stats(&st);
+		CHECK(part_calls == 1 && part_offset[0] == 0 && part_bytes[0] == 16384u && uploads == 0);
+		CHECK(st.started == 0 && st.page_ins == 0 && st.voices_active == 0);
+		hcu_spu_tick(2000 * TEST_MS_PER_TICK + 33u);
+		hcu_spu_get_stats(&st);
+		CHECK(part_calls == 2 && part_offset[1] == 16384u && part_bytes[1] == 16384u && st.started == 0);
+		hcu_spu_tick(2000 * TEST_MS_PER_TICK + 66u);
+		hcu_spu_get_stats(&st);
+		CHECK(part_calls == 3 && part_offset[2] == 32768u && part_bytes[2] == 40000u - 32768u);
+		CHECK(st.page_ins == 1 && st.started == 1 && st.voices_active == 1 && st.page_fails == 0);
+		/* a failing slice drops the reservation and is counted; the sample pages in again later */
+		part_calls = 0;
+		r = req(HCU_SOUND_EVENT_IMPULSE, 2, 3, 2100, 1.0f);
+		hcu_spu_request(&r, bh[62]);
+		part_fail = 1;
+		hcu_spu_tick(2100 * TEST_MS_PER_TICK + 33u);
+		part_fail = 0;
+		hcu_spu_get_stats(&st);
+		CHECK(st.page_fails == 2 && st.started == 1); /* the failed slice, then the queued start's own page-in */
+		part_calls = 0;
+		r = req(HCU_SOUND_EVENT_IMPULSE, 2, 3, 2200, 1.0f);
+		hcu_spu_request(&r, bh[62]);
+		CHECK(part_calls == 1); /* the sample pages in again */
 	}
 	/* two new sounds in one tick: the first pages in at once, the second waits for the next tick */
 	{

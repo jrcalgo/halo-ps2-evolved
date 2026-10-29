@@ -1029,8 +1029,8 @@ static void hcu_c3_sound_tick(void)
 	if (ticks % 90u == 89u && hcu_spu_ready()) {
 		hcu_spu_stats st;
 		hcu_spu_get_stats(&st);
-		printf("HALO_PS2_LOCAL spu-stats req=%u started=%u stopped=%u nosample=%u stolen=%u dropped=%u inaudible=%u loops=%u loop-restarts=%u fades=%u page-ins=%u evictions=%u page-fails=%u active=%u high=%u spu-ms=%.3f spu-max-ms=%.3f\n",
-			st.requests, st.started, st.stopped, st.no_sample, st.stolen, st.dropped_busy, st.inaudible, st.loops_started, st.loop_restarts, st.fades, st.page_ins, st.evictions, st.page_fails,
+		printf("HALO_PS2_LOCAL spu-stats req=%u started=%u stopped=%u nosample=%u stolen=%u dropped=%u inaudible=%u loops=%u loop-restarts=%u fades=%u page-ins=%u evictions=%u muted=%u page-fails=%u active=%u high=%u spu-ms=%.3f spu-max-ms=%.3f\n",
+			st.requests, st.started, st.stopped, st.no_sample, st.stolen, st.dropped_busy, st.inaudible, st.loops_started, st.loop_restarts, st.fades, st.page_ins, st.evictions, st.muted_before_evict, st.page_fails,
 			st.voices_active, st.active_high, timer_ms(0, s_spu_cycles), timer_ms(0, s_spu_max_cycles));
 		s_spu_cycles = s_spu_max_cycles = 0;
 	}

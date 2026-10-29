@@ -59,6 +59,7 @@ typedef struct {
 static pending_start s_pending[HCU_SPU_PENDING];
 static uint32_t s_pending_head, s_pending_count;
 static uint32_t s_page_in_time, s_page_ins_this_tick;
+static hcu_spu_sample *s_loading; /* the one sample being paged in over several ticks */
 static uint32_t s_draining_born;
 static int s_draining;
 
@@ -158,7 +159,8 @@ void hcu_spu_attach(const hcu_spu_hw *hw, const hcu_spu_sample *samples, uint32_
 	uint32_t i;
 	s_hw = hw;
 	s_sample_count = count > HCU_SPU_MAX_SAMPLES ? HCU_SPU_MAX_SAMPLES : count;
-	for (i = 0; i < s_sample_count; ++i) s_samples[i] = samples[i];
+	s_loading = NULL;
+	for (i = 0; i < s_sample_count; ++i) { s_samples[i] = samples[i]; s_samples[i].loading = 0; s_samples[i].loaded = 0; }
 	memset(s_perm_cursor, 0, sizeof(s_perm_cursor));
 	memset(s_voice, 0, sizeof(s_voice));
 	memset(&s_stats, 0, sizeof(s_stats));
@@ -305,6 +307,26 @@ static uint32_t find_gap(uint32_t padded)
 	return best;
 }
 
+/* A sample about to lose its SPU2 RAM: whatever voice last started it is muted and keyed off first, whatever the
+ * bookkeeping says about its lifetime. A voice that reads a region another sample was uploaded over plays that
+ * sample's ADPCM blocks out of step: the buzzing and beeping. */
+static void silence_voices_of(const hcu_spu_sample *sample)
+{
+	uint32_t i, mask = 0;
+	for (i = 0; i < HCU_SPU_VOICES; ++i) {
+		if (s_voice[i].sample != sample) continue;
+		s_hw->set_param(voice_entry(i, SD_VOICE_PARAM_VOLL), 0u);
+		s_hw->set_param(voice_entry(i, SD_VOICE_PARAM_VOLR), 0u);
+		s_voice[i].sample = NULL;
+		s_voice[i].active = 0;
+		mask |= 1u << i;
+	}
+	if (mask) {
+		s_hw->set_switch((uint16_t)(SD_CORE1 | SD_SWITCH_KOFF_ENTRY), mask);
+		s_stats.muted_before_evict++;
+	}
+}
+
 /* Makes `sample` resident, evicting least recently used samples that no voice plays. 0 on success. */
 static int page_in(hcu_spu_sample *sample)
 {
@@ -316,18 +338,51 @@ static int page_in(hcu_spu_sample *sample)
 		addr = find_gap(padded);
 		if (addr) break;
 		for (i = 0; i < s_sample_count; ++i)
-			if (s_samples[i].resident && !sample_in_use(&s_samples[i]) &&
+			if (s_samples[i].resident && !s_samples[i].loading && !sample_in_use(&s_samples[i]) &&
 				(victim == HCU_SPU_MAX_SAMPLES || (int32_t)(s_samples[victim].last_used - s_samples[i].last_used) > 0))
 				victim = i;
 		if (victim == HCU_SPU_MAX_SAMPLES) return -2;
+		silence_voices_of(&s_samples[victim]);
 		s_samples[victim].resident = 0;
 		s_stats.evictions++;
+	}
+	if (s_hw->upload_part && padded > HCU_SPU_UPLOAD_PART) {
+		/* the first slice now, the rest one slice per game tick (hcu_spu_tick); starts wait for `loading` to clear */
+		if (s_hw->upload_part(sample, addr, 0, HCU_SPU_UPLOAD_PART) != 0) return -3;
+		sample->spu_addr = addr;
+		sample->resident = 1;
+		sample->loading = 1;
+		sample->loaded = HCU_SPU_UPLOAD_PART;
+		s_loading = sample;
+		return 0;
 	}
 	if (s_hw->upload(sample, addr) != 0) return -3;
 	sample->spu_addr = addr;
 	sample->resident = 1;
 	s_stats.page_ins++;
 	return 0;
+}
+
+/* One more slice of the sample being paged in; the sample is playable once the last slice is up. */
+static void advance_loading(void)
+{
+	hcu_spu_sample *s = s_loading;
+	uint32_t n;
+	if (!s) return;
+	n = s->bytes - s->loaded < HCU_SPU_UPLOAD_PART ? s->bytes - s->loaded : HCU_SPU_UPLOAD_PART;
+	if (s_hw->upload_part(s, s->spu_addr, s->loaded, n) != 0) {
+		s->resident = 0;
+		s->loading = 0;
+		s_loading = NULL;
+		s_stats.page_fails++;
+		return;
+	}
+	s->loaded += n;
+	if (s->loaded >= s->bytes) {
+		s->loading = 0;
+		s_loading = NULL;
+		s_stats.page_ins++;
+	}
 }
 
 float hcu_spu_spatial(const float listener[3], const float forward[3], const float up[3],
@@ -373,6 +428,19 @@ static uint32_t voice_ticks(const hcu_spu_sample *sample, float pitch, uint32_t 
 	return (uint32_t)((uint64_t)sample->samples * HCU_SPU_TICKS_PER_SECOND * 1000u / ((uint64_t)sample->rate * pitch_milli)) + tail;
 }
 
+/* Queues a start that must wait for a page-in; 0 when the queue is full. */
+static int queue_start(const hcu_sound_request *r, uint32_t hash, int looping)
+{
+	pending_start *p;
+	if (s_pending_count >= HCU_SPU_PENDING) return 0;
+	p = &s_pending[(s_pending_head + s_pending_count++) % HCU_SPU_PENDING];
+	p->request = *r;
+	p->hash = hash;
+	p->born = s_draining ? s_draining_born : r->game_time;
+	p->looping = (uint8_t)looping;
+	return 1;
+}
+
 static void start_sound(const hcu_sound_request *r, uint32_t hash, int looping)
 {
 	const hcu_spu_sample *sample = choose_sample(hash);
@@ -387,21 +455,23 @@ static void start_sound(const hcu_sound_request *r, uint32_t hash, int looping)
 	{
 		hcu_spu_sample *paged = (hcu_spu_sample *)sample;
 		paged->last_used = r->game_time;
+		/* a sample still being paged in, or a second page-in while one is under way: the start waits for a later tick */
+		if (paged->loading || (!paged->resident && s_loading)) {
+			if (!queue_start(r, hash, looping)) s_stats.dropped_busy++;
+			return;
+		}
 		if (!paged->resident) {
 			if (s_page_in_time != r->game_time) { s_page_in_time = r->game_time; s_page_ins_this_tick = 0; }
-			if (s_page_ins_this_tick >= 1u && s_pending_count < HCU_SPU_PENDING) {
-				pending_start *p = &s_pending[(s_pending_head + s_pending_count++) % HCU_SPU_PENDING];
-				p->request = *r;
-				p->hash = hash;
-				p->born = s_draining ? s_draining_born : r->game_time;
-				p->looping = (uint8_t)looping;
-				return;
-			}
+			if (s_page_ins_this_tick >= 1u && queue_start(r, hash, looping)) return;
 		}
 		{
 			int was_resident = paged->resident;
 			if (page_in(paged) != 0) { s_stats.page_fails++; return; }
 			if (!was_resident) s_page_ins_this_tick++;
+			if (paged->loading) {
+				if (!queue_start(r, hash, looping)) s_stats.dropped_busy++;
+				return;
+			}
 		}
 	}
 	voice = pick_voice(priority, r->game_time, &stolen);
@@ -465,6 +535,7 @@ void hcu_spu_tick(uint32_t now)
 {
 	uint32_t i, vol_l, vol_r, ticks, queued;
 	if (!s_hw) return;
+	advance_loading();
 	/* Sounds that waited for a page-in: one new sample per tick; one that waited too long is dropped. A start
 	 * that must wait again is queued behind the rest (only the entries queued before this tick are visited). */
 	for (queued = s_pending_count; queued; --queued) {

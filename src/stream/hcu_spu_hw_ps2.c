@@ -59,7 +59,8 @@ static uint32_t hw_get_switch(uint16_t entry)
 }
 
 static int hw_upload(const hcu_spu_sample *sample, uint32_t spu_addr);
-static const hcu_spu_hw s_hw = { hw_set_param, hw_set_addr, hw_set_switch, hw_get_switch, hw_upload };
+static int hw_upload_part(const hcu_spu_sample *sample, uint32_t spu_addr, uint32_t offset, uint32_t bytes);
+static const hcu_spu_hw s_hw = { hw_set_param, hw_set_addr, hw_set_switch, hw_get_switch, hw_upload, hw_upload_part };
 
 static int load_irx(const char *name, const unsigned char *image, uint32_t size)
 {
@@ -117,6 +118,18 @@ static int upload_chunk(const uint8_t *data, uint32_t bytes, uint32_t spu_addr)
 	(void)sceSdRemote(1, rSdVoiceTransStatus, 0, 1);
 	(void)data;
 	return 0;
+}
+
+static int read_exact(int token, void *dst, uint32_t bytes);
+
+/* One slice of a sample: the slices are read and uploaded on separate game ticks. */
+static int hw_upload_part(const hcu_spu_sample *sample, uint32_t spu_addr, uint32_t offset, uint32_t bytes)
+{
+	uint32_t at = sample->bank_offset + offset;
+	if (s_bank_token < 0 || bytes > HCU_SPU_STAGE_BYTES) return -1;
+	if (hcu_file_bridge_seek(s_bank_token, (long)at, 0) != (long)at) return -2;
+	if (!read_exact(s_bank_token, s_stage, bytes)) return -3;
+	return upload_chunk(s_stage, bytes, spu_addr + offset);
 }
 
 static int read_exact(int token, void *dst, uint32_t bytes)

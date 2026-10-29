@@ -19,6 +19,9 @@ typedef struct {
 	/* Uploads one sample's VAG bytes to `spu_addr` (64-byte aligned, padded length reserved); NULL when the
 	 * whole bank is resident. Returns 0 on success. */
 	int (*upload)(const hcu_spu_sample *sample, uint32_t spu_addr);
+	/* Optional: uploads `bytes` of the sample from `offset` (a multiple of HCU_SPU_UPLOAD_PART) to `spu_addr + offset`,
+	 * so a large page-in is spread over game ticks instead of stalling one frame. NULL: `upload` is used whole. */
+	int (*upload_part)(const hcu_spu_sample *sample, uint32_t spu_addr, uint32_t offset, uint32_t bytes);
 } hcu_spu_hw;
 
 void hcu_spu_attach(const hcu_spu_hw *hw, const hcu_spu_sample *samples, uint32_t count);
