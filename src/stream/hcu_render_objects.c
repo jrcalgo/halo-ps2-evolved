@@ -2522,10 +2522,51 @@ static int fx_resident_query(void *context, uint32_t cache_key, uint16_t width,
 	return st == BSP_FX_TEX_MISS ? HCU_FX_RESIDENT_MISS : st;
 }
 
+#define FX_DECAL_MAX_PER_FRAME 6u
+/* Frame-time governor. The renderer shares the EE with the 30 Hz simulation, so a frame that spends its time on a
+ * burst of optional effects (a dozen impact decals, first-use effect textures) makes the scheduler drop renders:
+ * a frame that misses its 33 ms slot waits for the next vsync, so the pace falls to 20 Hz, not a little below 30.
+ * s_gov_pressure rises by FX_GOV_LATE_STEP when the time between two rendered frames passes 40 ms and falls by one
+ * for each frame under 35 ms, so one stray late frame (a sound paging in) barely registers and a run of them
+ * raises s_gov_level. While raised, fewer decals composite per frame and first-use texture loads wait: both only
+ * delay or thin decoration, and level 0 (the normal case) draws everything as before. */
+#define FX_GOV_LATE_CYCLES (40u * 294912u)
+#define FX_GOV_OK_CYCLES (35u * 294912u)
+#define FX_GOV_LATE_STEP 12u
+#define FX_GOV_PRESSURE_MAX 48u
+#define FX_GOV_LEVEL1 12u
+#define FX_GOV_LEVEL2 30u
+static uint32_t s_gov_last, s_gov_frame = 0xffffffffu, s_gov_pressure;
+static unsigned s_gov_level;
+
+static void fx_governor_update(void)
+{
+	uint32_t now, dt;
+	if (s_gov_frame == s_frame) return;
+	s_gov_frame = s_frame;
+	now = timer_cycles();
+	dt = now - s_gov_last;
+	s_gov_last = now;
+	if (s_gov_frame == 0u) return;                  /* the first interval spans the map load */
+	if (dt > FX_GOV_LATE_CYCLES) {
+		s_gov_pressure += FX_GOV_LATE_STEP;
+		if (s_gov_pressure > FX_GOV_PRESSURE_MAX) s_gov_pressure = FX_GOV_PRESSURE_MAX;
+	} else if (dt < FX_GOV_OK_CYCLES && s_gov_pressure) {
+		s_gov_pressure--;
+	}
+	s_gov_level = s_gov_pressure >= FX_GOV_LEVEL2 ? 2u : s_gov_pressure >= FX_GOV_LEVEL1 ? 1u : 0u;
+}
+
+static uint32_t fx_decal_cap(void)
+{
+	return s_gov_level == 0u ? FX_DECAL_MAX_PER_FRAME : s_gov_level == 1u ? FX_DECAL_MAX_PER_FRAME / 2u : 1u;
+}
+
 static int fx_source_load(void *context, const hcu_bitmap_binding *binding,
 	uint16_t *width, uint16_t *height, uint8_t *psm)
 {
 	bsp_fx_tex_src *src = (bsp_fx_tex_src *)context;
+	if (s_gov_level) return BSP_FX_TEX_BUDGET;      /* governor: a first-use read waits for a frame on time */
 	if (!src || !width || !height || !psm || fx_source(binding, src) != 0) return BSP_FX_TEX_NO_SOURCE;
 	*width = src->w; *height = src->h; *psm = src->psm;
 	return 0;
@@ -3052,7 +3093,6 @@ static void fx_contrail_colour(const hcu_render_effect_draw *e,
 	}
 }
 
-#define FX_DECAL_MAX_PER_FRAME 6u
 static void fx_pass(render_ctx_t *rc, int first_person_pass)
 {
 	const halo_ps2_snapshot_camera *cam;
@@ -3064,6 +3104,7 @@ static void fx_pass(render_ctx_t *rc, int first_person_pass)
 	uint32_t *pw;
 	u64 *q;
 	u32 *w;
+	fx_governor_update();
 	if (!s_fx_count || !s_snapshot || s_cur_view >= s_snapshot->view_count) return;
 	if (s_fx_descriptors && s_fx_profile) {
 		if (!s_fx_descriptor_epoch_valid || s_fx_descriptor_profile_id != s_fx_profile->profile_id ||
@@ -3140,12 +3181,12 @@ static void fx_pass(render_ctx_t *rc, int first_person_pass)
 				decal_dist[nd] = dx * dx + dy * dy + dz * dz;
 				decal_cand[nd++] = (uint16_t)i;
 			}
-		if (nd > FX_DECAL_MAX_PER_FRAME) {
+		if (nd > fx_decal_cap()) {
 			for (ci = 0; ci < nd; ci++) {
 				uint32_t nearer = 0;
 				for (oi = 0; oi < nd; oi++)
 					if (decal_dist[oi] < decal_dist[ci] || (decal_dist[oi] == decal_dist[ci] && oi < ci)) nearer++;
-				if (nearer >= FX_DECAL_MAX_PER_FRAME) {
+				if (nearer >= fx_decal_cap()) {
 					s_fxn[decal_cand[ci]] = 0;
 					admitted--;
 				}
