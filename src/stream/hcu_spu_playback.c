@@ -10,6 +10,7 @@
 #define HSB_HEADER_BYTES 32u
 #define HSB_ENTRY_BYTES 32u
 #define HCU_SPU_TICKS_PER_SECOND 1000u /* game_time is CE's system_milliseconds */
+#define HCU_SPU_TAIL_MS 40u
 #define HCU_SPU_VOLUME_MAX 0x3FFFu
 #define HCU_SPU_VOLUME_SCALE 0.5f /* mixing headroom: nine overlapping full-gain voices clipped at 0.7 in the Blood Gulch capture */
 #define HCU_SPU_PITCH_MAX 0x3FFFu
@@ -365,11 +366,11 @@ static void key_on(uint32_t voice, const hcu_sound_request *r, const hcu_spu_sam
 
 /* How long the voice plays, in game_time units (ms), at the request's pitch: a lowered pitch plays longer,
  * and a voice must not be reused, nor its sample evicted, before the SPU2 is done with it. */
-static uint32_t voice_ticks(const hcu_spu_sample *sample, float pitch)
+static uint32_t voice_ticks(const hcu_spu_sample *sample, float pitch, uint32_t tail)
 {
 	uint32_t pitch_milli = !(pitch > 0.0f) ? 1000u : pitch > 4.0f ? 4000u : (uint32_t)(pitch * 1000.0f);
 	if (pitch_milli < 1u) pitch_milli = 1u;
-	return (uint32_t)((uint64_t)sample->samples * HCU_SPU_TICKS_PER_SECOND * 1000u / ((uint64_t)sample->rate * pitch_milli)) + 2u;
+	return (uint32_t)((uint64_t)sample->samples * HCU_SPU_TICKS_PER_SECOND * 1000u / ((uint64_t)sample->rate * pitch_milli)) + tail;
 }
 
 static void start_sound(const hcu_sound_request *r, uint32_t hash, int looping)
@@ -407,7 +408,8 @@ static void start_sound(const hcu_sound_request *r, uint32_t hash, int looping)
 	if (voice < 0) { s_stats.dropped_busy++; return; }
 	if (stolen) { key_off((uint32_t)voice); s_stats.stolen++; }
 	key_on((uint32_t)voice, r, sample, vol_l, vol_r);
-	ticks = voice_ticks(sample, r->pitch);
+	/* a one-shot keeps its voice and sample a little past the nominal end: the key-on goes through IOP RPCs */
+	ticks = voice_ticks(sample, r->pitch, looping ? 2u : HCU_SPU_TAIL_MS);
 	s_voice[voice].active = 1;
 	s_voice[voice].looping = (uint8_t)looping;
 	s_voice[voice].priority = priority;
@@ -482,7 +484,7 @@ void hcu_spu_tick(uint32_t now)
 		s_hw->set_switch((uint16_t)(SD_CORE1 | SD_SWITCH_KOFF_ENTRY), 1u << i);
 		(void)request_volumes(&v->request, v->sample, &vol_l, &vol_r);
 		key_on(i, &v->request, v->sample, vol_l, vol_r);
-		ticks = voice_ticks(v->sample, v->request.pitch);
+		ticks = voice_ticks(v->sample, v->request.pitch, 2u);
 		v->start_tick = now;
 		v->end_tick = now + ticks;
 		s_stats.loop_restarts++;
