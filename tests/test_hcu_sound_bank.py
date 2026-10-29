@@ -89,6 +89,10 @@ class RateAndTierTests(unittest.TestCase):
         self.assertEqual(order, sorted(order))
         self.assertEqual(len(set(order)), len(order))
 
+    def test_scope_sounds_are_kept_with_the_weapon_sounds(self):
+        for name in ("sniper_2x_zoom", "sniper_10x_zoom", "sniper_nightscope_on", "sniper_nightscope_off"):
+            self.assertLess(sb._tier("sound\\sfx\\weapons\\sniper rifle\\" + name), sb.TAIL_RATE_TIERS)
+
     def test_cut_flamethrower_is_last(self):
         self.assertEqual(sb._tier("sound\\sfx\\weapons\\flamethrower\\fire"), len(sb.TIERS) - 1)
 

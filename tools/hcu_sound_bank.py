@@ -56,6 +56,7 @@ TIERS = [
     ("impulse\\impacts\\", ("",)),
     ("impulse\\explosion", ("",)),
     ("impulse\\weapon_drops", ("",)),
+    ("weapons\\", ("zoom", "nightscope")),
     ("weapons\\", ("ready", "reload")),
     ("impulse\\footsteps", ("",)),
     ("vehicles\\", ("",)),
@@ -72,7 +73,7 @@ TIERS = [
 # Sample-rate ceiling per TIERS index when a bank is built with low_rate: gunshots, explosions, impacts and drops
 # (tiers before this index) keep full rate; reloads, footsteps, vehicles and the rest are band-limited to low_rate.
 FULL_RATE_TIERS = 5
-TAIL_RATE_TIERS = 8  # shell casings, melee, ui, zoom, ambience, dialogue: the quietest, least critical sounds
+TAIL_RATE_TIERS = 9  # shell casings, melee, ui, zoom, ambience, dialogue: the quietest, least critical sounds
 
 
 def name_hash(path: str) -> int:
