@@ -2375,6 +2375,8 @@ static void fx_chain_restore_bounds(chain_t *c, uint32_t limit, uint32_t hud_lim
 #define FX_SRC_SLOTS 640u
 #define FX_SRC_PREWARM_MAX_BYTES 24576u
 #define FX_SRC_PREWARM_PERIOD 2u
+#define FX_SRC_PREWARM_EARLY_FRAMES 600u   /* intro frames: warm several chunks per frame */
+#define FX_SRC_PREWARM_EARLY_STEPS 4u
 static uint8_t *s_fx_src_pool;   /* caller-owned; NULL disables the cache */
 static uint32_t s_fx_src_pool_bytes;
 
@@ -2458,21 +2460,23 @@ static int fx_src_fill(uint32_t chunk_id, const uint8_t sha[32], uint32_t size)
 static void fx_src_prewarm_step(uint32_t previous_frame_read_bytes)
 {
 	hcu_asset_chunk_view cv;
+	uint32_t steps = s_frame < FX_SRC_PREWARM_EARLY_FRAMES ? FX_SRC_PREWARM_EARLY_STEPS : 1u;
 	if (!s_fx_src_pool || !s_fx_profile || !s_fx_staging || !s_fx_bind || s_fx_prewarm_cursor >= s_fx_bind_count) return;
-	if (s_frame == s_fx_prewarm_frame || s_frame % FX_SRC_PREWARM_PERIOD) return;
+	if (s_frame == s_fx_prewarm_frame || (s_frame >= FX_SRC_PREWARM_EARLY_FRAMES && s_frame % FX_SRC_PREWARM_PERIOD)) return;
 	if (previous_frame_read_bytes) return;
 	s_fx_prewarm_frame = s_frame;
-	if (s_fx_src_head > s_fx_src_pool_bytes / 4u * 3u) { s_fx_prewarm_cursor = s_fx_bind_count; return; }
-	{
+	while (steps--) {
 		const hcu_bitmap_binding *b;
 		uint32_t free_slot, any = 0;
+		if (s_fx_prewarm_cursor >= s_fx_bind_count) return;
+		if (s_fx_src_head > s_fx_src_pool_bytes / 4u * 3u) { s_fx_prewarm_cursor = s_fx_bind_count; return; }
 		for (free_slot = 0; free_slot < FX_SRC_SLOTS; free_slot++) if (!s_fx_src_slot[free_slot].used) { any = 1; break; }
 		if (!any) { s_fx_prewarm_cursor = s_fx_bind_count; return; }
 		b = &s_fx_bind[s_fx_prewarm_cursor++];
 		if (b->image_index != 0u ||
 			hcu_asset_profile_lookup(s_fx_profile, HCU_ASSET_CHUNK_MEDIA, b->chunk_id, &cv) != HCU_ASSET_PROFILE_OK ||
 			cv.size > FX_SRC_PREWARM_MAX_BYTES || cv.size > s_fx_staging_bytes ||
-			memcmp(cv.sha256, b->expected_chunk_sha256, 32) || fx_src_find(b->chunk_id, cv.sha256, cv.size) >= 0) return;
+			memcmp(cv.sha256, b->expected_chunk_sha256, 32) || fx_src_find(b->chunk_id, cv.sha256, cv.size) >= 0) continue;
 		s_view_counters.fx_source_read_bytes += cv.size;
 		(void)fx_src_fill(b->chunk_id, cv.sha256, cv.size);
 	}
