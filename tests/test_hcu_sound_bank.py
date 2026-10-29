@@ -52,6 +52,18 @@ class XboxAdpcmTests(unittest.TestCase):
         block = struct.pack("<hBB", 100, 0, 0) + bytes(32)
         self.assertEqual(len(sb.decode_xbox_adpcm(block * 2, channels=2)), 64)
 
+    def test_stereo_is_the_interleaved_ima_layout(self):
+        # Both channel headers first, then 4-byte nibble groups alternating left, right. Left holds 0x07 nibbles
+        # (rising), right 0x0f nibbles (falling): a per-channel block layout would mix their data and blow up.
+        left, right = b"\x77" * 4, b"\xff" * 4
+        block = struct.pack("<hBB", 0, 20, 0) + struct.pack("<hBB", 0, 20, 0) + (left + right) * 8
+        out = sb.decode_xbox_adpcm(block, channels=2)
+        mono_l = sb.decode_xbox_adpcm(struct.pack("<hBB", 0, 20, 0) + left * 8)
+        mono_r = sb.decode_xbox_adpcm(struct.pack("<hBB", 0, 20, 0) + right * 8)
+        self.assertEqual(out, [(l + r) // 2 for l, r in zip(mono_l, mono_r)])
+        self.assertGreater(mono_l[-1], 1000)
+        self.assertLess(mono_r[-1], -1000)
+
 
 @unittest.skipUnless(MAP.is_file(), "retail map not present")
 class BankTests(unittest.TestCase):

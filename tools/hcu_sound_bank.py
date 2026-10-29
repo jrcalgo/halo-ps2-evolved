@@ -77,33 +77,49 @@ def clamp16(value: int) -> int:
     return -32768 if value < -32768 else 32767 if value > 32767 else value
 
 
+def _ima_nibble(pred: int, index: int, nib: int) -> tuple[int, int]:
+    step = STEP[index]
+    diff = step >> 3
+    if nib & 1:
+        diff += step >> 2
+    if nib & 2:
+        diff += step >> 1
+    if nib & 4:
+        diff += step
+    pred = clamp16(pred - diff if nib & 8 else pred + diff)
+    return pred, max(0, min(88, index + INDEX_ADJUST[nib & 7]))
+
+
 def decode_xbox_adpcm(raw: bytes, channels: int = 1) -> list[int]:
-    """Xbox ADPCM: per channel a 36-byte block (int16 predictor, step index, pad, 32 nibble bytes)."""
+    """Xbox ADPCM, 64 output samples per channel per block: the header sample plus the first 63 of 64 nibbles.
+
+    Mono is one 36-byte block (int16 predictor, step index, pad, 32 nibble bytes). Stereo is the standard IMA
+    layout: a 72-byte block with both 4-byte channel headers first, then the nibble data in alternating 4-byte
+    groups, left then right. Decoding stereo as two consecutive mono blocks produces loud noise."""
+    if channels not in (1, 2):
+        raise ValueError("Xbox ADPCM sounds have one or two channels")
     stride = 36 * channels
     out: list[list[int]] = [[] for _ in range(channels)]
     for base in range(0, len(raw) - stride + 1, stride):
+        block = raw[base: base + stride]
+        state = []
         for ch in range(channels):
-            block = raw[base + ch * 36: base + ch * 36 + 36]
-            pred, index = struct.unpack_from("<hB", block, 0)
-            index = min(index, 88)
+            pred, index = struct.unpack_from("<hB", block, ch * 4)
+            state.append([pred, min(index, 88)])
             out[ch].append(pred)
-            count = 1
-            for byte in block[4:]:
-                for nib in (byte & 15, byte >> 4):
-                    step = STEP[index]
-                    diff = step >> 3
-                    if nib & 1:
-                        diff += step >> 2
-                    if nib & 2:
-                        diff += step >> 1
-                    if nib & 4:
-                        diff += step
-                    pred = clamp16(pred - diff if nib & 8 else pred + diff)
-                    index = max(0, min(88, index + INDEX_ADJUST[nib & 7]))
-                    if count < 64:
-                        out[ch].append(pred)
-                    count += 1
-            # 64 output samples per block: the header sample plus 63 of the 64 nibbles.
+        data = block[4 * channels:]
+        count = [1] * channels
+        for group in range(len(data) // (4 * channels)):
+            for ch in range(channels):
+                chunk = data[(group * channels + ch) * 4: (group * channels + ch) * 4 + 4]
+                pred, index = state[ch]
+                for byte in chunk:
+                    for nib in (byte & 15, byte >> 4):
+                        pred, index = _ima_nibble(pred, index, nib)
+                        if count[ch] < 64:
+                            out[ch].append(pred)
+                        count[ch] += 1
+                state[ch] = [pred, index]
     if channels == 1:
         return out[0]
     return [sum(frame) // channels for frame in zip(*out)]
