@@ -2069,6 +2069,39 @@ static void hcu_c3_views_text(text_batch_t *tb, const bsp_viewport *vp, int xl, 
 
 /* Sets up view v: its camera (snapshot or fixed), its overlay batch and its bookkeeping. Returns the overlay
  * for bsp_render_view. */
+/* On-screen frame-rate counter. PCSX2's own FPS reads the nominal 29.97 whatever the game renders (it counts
+ * display fields), so a slow scene never shows there. This counts the renders this view actually completes per
+ * second of EE time and the longest gap between two of them in that second. */
+#ifndef HCU_C3_FPS_COUNTER
+#define HCU_C3_FPS_COUNTER 1
+#endif
+#if HCU_C3_FPS_COUNTER
+static void hcu_c3_fps_counter_text(text_batch_t *tb, const bsp_viewport *vp)
+{
+	static uint32_t s_window_start, s_last_frame, s_frames, s_worst;
+	static char s_line[40];
+	uint32_t now = timer_cycles(), gap;
+	if (s_last_frame) {
+		gap = now - s_last_frame;
+		if (gap > s_worst) s_worst = gap;
+	}
+	s_last_frame = now;
+	++s_frames;
+	if (!s_window_start) s_window_start = now;
+	if (now - s_window_start >= 294912u * 1000u) {
+		uint32_t span_ms = (now - s_window_start) / 294912u;
+		uint32_t fps_x10 = span_ms ? s_frames * 10000u / span_ms : 0;
+		snprintf(s_line, sizeof(s_line), "FPS %u.%u  WORST %ums", (unsigned)(fps_x10 / 10u), (unsigned)(fps_x10 % 10u),
+			(unsigned)(s_worst / 294912u));
+		s_window_start = now;
+		s_frames = 0;
+		s_worst = 0;
+	}
+	if (s_line[0])
+		hcu_c3_views_text(tb, vp, 4, vp->h - 12, HCU_C3_VIEWS_RGB_FP, s_line);
+}
+#endif
+
 static const text_batch_t *hcu_c3_views_camera(unsigned v, camera_t *cam, const bsp_viewport *vp)
 {
 	hcu_view_camera hc;
@@ -2184,6 +2217,9 @@ static const text_batch_t *hcu_c3_views_camera(unsigned v, camera_t *cam, const 
 		s_c3v.fp_nodes[v] = first_person_palettes;
 		s_c3v.stats.fp_nodes_seen += first_person_palettes;
 	}
+#if HCU_C3_FPS_COUNTER
+	if (v == 0) hcu_c3_fps_counter_text(tb, vp);
+#endif
 	/* No placeholder crosshair: the per-weapon bitmap reticles are the only reticle. */
 	if (!view && s_c3v.snap && v < s_c3v.snap->view_count)
 		hcu_c3_views_text(tb, vp, 4, 4, HCU_C3_VIEWS_RGB_FP, "RESPAWNING");
