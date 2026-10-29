@@ -62,6 +62,8 @@ static int src_binding(void *user, uint32_t shader_id, mat_binding_t *out)
 	return out->tex < 0 ? -1 : 0;
 }
 
+#define HCU_MEDIA_WORLD_MIP1_SIZE 256u
+
 static int src_texture(void *user, int tex, tex_image_t *out)
 {
 	const hcu_render_media *m = user;
@@ -69,13 +71,16 @@ static int src_texture(void *user, int tex, tex_image_t *out)
 	tex_mip_view mv;
 	if (!m || !m->has_tex || tex < 0 || (uint32_t)tex >= m->tex.texture_count) return -1;
 	t = tex_get(&m->tex, (uint32_t)tex);
-	if (!tex_mip(&m->tex, &t, 0, &mv)) return -1;
+	/* A 256-px world texture takes 8 GS pages and a 128-px one 2; the visible world alone fills the cache, so the
+	 * first-person model and effect textures cannot be admitted. Textures that large use mip 1. */
+	if (!(t.mip_count > 1u && (t.width >= HCU_MEDIA_WORLD_MIP1_SIZE || t.height >= HCU_MEDIA_WORLD_MIP1_SIZE) &&
+		tex_mip(&m->tex, &t, 1, &mv)) && !tex_mip(&m->tex, &t, 0, &mv)) return -1;
 	out->pixels = mv.pixels;
 	out->pixel_bytes = mv.bytes;
 	out->clut = tex_clut(&m->tex, &t);
 	out->clut_bytes = (uint32_t)t.clut_entries * 4u;
-	out->w = t.width;
-	out->h = t.height;
+	out->w = mv.width;
+	out->h = mv.height;
 	out->psm = t.psm;
 	return 0;
 }
