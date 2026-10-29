@@ -260,6 +260,36 @@ int main(void)
 		hcu_spu_get_stats(&st);
 		CHECK(uploads == 1 && st.page_ins == 2);
 	}
+	/* two new sounds in one tick: the first pages in at once, the second waits for the next tick */
+	{
+		const uint32_t dh[7] = { 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2007 };
+		const uint16_t dp[7] = { 0, 0, 0, 0, 0, 0, 0 }, dc[7] = { 1, 1, 1, 1, 1, 1, 1 };
+		uint32_t dtotal = build_image(7, dh, dp, dc, 500000u);
+		hcu_spu_sample ds[8];
+		uint32_t dcount = 0, first = 0, second = 0, i;
+		hcu_sound_request dr;
+		CHECK(hcu_spu_bank_parse(image, dtotal, ds, 8, &dcount, 0, 0) == 0 && dcount == 7);
+		for (i = 0; i < 7; ++i)
+			if (!ds[i].resident) { if (!first) first = i + 1u; else if (!second) second = i + 1u; }
+		CHECK(first && second);
+		hcu_spu_attach(&hw, ds, dcount);
+		uploads = 0;
+		dr = req(HCU_SOUND_EVENT_IMPULSE, 1, 3, 2000, 1.0f);
+		hcu_spu_request(&dr, dh[first - 1u]);
+		dr = req(HCU_SOUND_EVENT_IMPULSE, 2, 3, 2000, 1.0f);
+		hcu_spu_request(&dr, dh[second - 1u]);
+		hcu_spu_get_stats(&st);
+		CHECK(uploads == 1 && st.started == 1);
+		hcu_spu_tick(2001);
+		hcu_spu_get_stats(&st);
+		CHECK(uploads == 2 && st.started == 2 && st.page_fails == 0);
+		/* a sound that waits longer than the queue allows is dropped, not started late */
+		dr = req(HCU_SOUND_EVENT_IMPULSE, 3, 3, 2010, 1.0f);
+		hcu_spu_request(&dr, dh[first - 1u]);
+		hcu_spu_tick(2200);
+		hcu_spu_get_stats(&st);
+		CHECK(st.page_fails == 0);
+	}
 	printf("spu-playback-ok started=%u stopped=%u loops=%u fades=%u\n", st.started, st.stopped, st.loops_started, st.fades);
 	return 0;
 }

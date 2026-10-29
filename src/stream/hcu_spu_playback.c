@@ -44,6 +44,23 @@ static hcu_spu_stats s_stats;
 static float s_listener[3], s_listener_forward[3], s_listener_up[3];
 static int s_listener_valid;
 
+/* A page-in reads the sample from the bank and waits for the SPU2 transfer: up to ~12 ms for one sample on the EE.
+ * The first of a tick is taken at once; a second new sound in the same tick waits in a short queue for a later tick,
+ * so an explosion's burst of new sounds spreads over frames instead of costing one of them (a late sound is
+ * 33 ms late; a dropped frame is the same 33 ms for everything on screen). */
+#define HCU_SPU_PENDING 16u
+#define HCU_SPU_PENDING_MAX_AGE 20u
+typedef struct {
+	hcu_sound_request request;
+	uint32_t hash, born;
+	uint8_t looping;
+} pending_start;
+static pending_start s_pending[HCU_SPU_PENDING];
+static uint32_t s_pending_head, s_pending_count;
+static uint32_t s_page_in_time, s_page_ins_this_tick;
+static uint32_t s_draining_born;
+static int s_draining;
+
 static uint32_t rd32(const uint8_t *p)
 {
 	return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24;
@@ -360,7 +377,22 @@ static void start_sound(const hcu_sound_request *r, uint32_t hash, int looping)
 	{
 		hcu_spu_sample *paged = (hcu_spu_sample *)sample;
 		paged->last_used = r->game_time;
-		if (page_in(paged) != 0) { s_stats.page_fails++; return; }
+		if (!paged->resident) {
+			if (s_page_in_time != r->game_time) { s_page_in_time = r->game_time; s_page_ins_this_tick = 0; }
+			if (s_page_ins_this_tick >= 1u && s_pending_count < HCU_SPU_PENDING) {
+				pending_start *p = &s_pending[(s_pending_head + s_pending_count++) % HCU_SPU_PENDING];
+				p->request = *r;
+				p->hash = hash;
+				p->born = s_draining ? s_draining_born : r->game_time;
+				p->looping = (uint8_t)looping;
+				return;
+			}
+		}
+		{
+			int was_resident = paged->resident;
+			if (page_in(paged) != 0) { s_stats.page_fails++; return; }
+			if (!was_resident) s_page_ins_this_tick++;
+		}
 	}
 	voice = pick_voice(priority, r->game_time, &stolen);
 	if (voice < 0) { s_stats.dropped_busy++; return; }
@@ -420,8 +452,21 @@ static void fade_sound(const hcu_sound_request *r, uint32_t hash)
 /* Once per game tick: restart looping voices whose sample ended (the bank's VAG data has no loop flag). */
 void hcu_spu_tick(uint32_t now)
 {
-	uint32_t i, vol_l, vol_r, ticks;
+	uint32_t i, vol_l, vol_r, ticks, queued;
 	if (!s_hw) return;
+	/* Sounds that waited for a page-in: one new sample per tick; one that waited too long is dropped. A start
+	 * that must wait again is queued behind the rest (only the entries queued before this tick are visited). */
+	for (queued = s_pending_count; queued; --queued) {
+		pending_start p = s_pending[s_pending_head];
+		s_pending_head = (s_pending_head + 1u) % HCU_SPU_PENDING;
+		s_pending_count--;
+		if ((int32_t)(now - p.born) > (int32_t)HCU_SPU_PENDING_MAX_AGE) { s_stats.dropped_busy++; continue; }
+		p.request.game_time = now;
+		s_draining = 1;
+		s_draining_born = p.born;
+		start_sound(&p.request, p.hash, p.looping);
+		s_draining = 0;
+	}
 	for (i = 0; i < HCU_SPU_VOICES; ++i) {
 		voice_state *v = &s_voice[i];
 		if (!v->active || !v->looping || (int32_t)(now - v->end_tick) < 0) continue;
