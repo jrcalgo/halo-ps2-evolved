@@ -2763,11 +2763,21 @@ static uint64_t fx_decal_xyoffset(const render_ctx_t *rc, int tile_local, int ti
 	return (uint64_t)(uint16_t)x | (uint64_t)(uint16_t)y << 32;
 }
 
-static uint64_t fx_decal_scissor(const render_ctx_t *rc, int tile_local)
+/* tile_x < 0 selects the whole viewport. The framebuffer pass is scissored to its own tile: the quad spans every
+ * tile it covers, and an unscissored pass would clamp-sample this tile's scratch over its neighbours, which the
+ * next tile then copies as its destination (a flat square the size of the later tiles). */
+static uint64_t fx_decal_scissor(const render_ctx_t *rc, int tile_local, int tile_x, int tile_y)
 {
+	int x0 = rc->viewport_x, x1 = rc->viewport_x + rc->viewport_w - 1;
+	int y0 = rc->viewport_y, y1 = rc->viewport_y + rc->viewport_h - 1;
 	if (tile_local) return (63ull << 16) | (31ull << 48);
-	return (uint64_t)rc->viewport_x | (uint64_t)(rc->viewport_x + rc->viewport_w - 1) << 16 |
-		(uint64_t)rc->viewport_y << 32 | (uint64_t)(rc->viewport_y + rc->viewport_h - 1) << 48;
+	if (tile_x >= 0) {
+		if (tile_x > x0) x0 = tile_x;
+		if (tile_y > y0) y0 = tile_y;
+		if (tile_x + (int)DECAL_COMPOSE_W - 1 < x1) x1 = tile_x + (int)DECAL_COMPOSE_W - 1;
+		if (tile_y + (int)DECAL_COMPOSE_H - 1 < y1) y1 = tile_y + (int)DECAL_COMPOSE_H - 1;
+	}
+	return (uint64_t)x0 | (uint64_t)x1 << 16 | (uint64_t)y0 << 32 | (uint64_t)y1 << 48;
 }
 
 static int fx_decal_state(render_ctx_t *rc, const hcu_render_effect_draw *effect,
@@ -2795,7 +2805,7 @@ static int fx_decal_state(render_ctx_t *rc, const hcu_render_effect_draw *effect
 	ad[n++] = (gs_ad){ scratch_target ? GS_ALPHA(0u, 1u, 0u, 1u, 0u) :
 		GS_ALPHA(0u, 2u, 0u, 2u, 0u), DECAL_GS_A_ALPHA_1 };
 	ad[n++] = (gs_ad){ fx_decal_xyoffset(rc, tile_local, tile_x, tile_y), DECAL_GS_A_XYOFFSET_1 };
-	ad[n++] = (gs_ad){ fx_decal_scissor(rc, tile_local), DECAL_GS_A_SCISSOR_1 };
+	ad[n++] = (gs_ad){ fx_decal_scissor(rc, tile_local, tile_x, tile_y), DECAL_GS_A_SCISSOR_1 };
 	ad[n++] = (gs_ad){ 0u, DECAL_GS_A_TEXFLUSH };
 	ad[n++] = (gs_ad){ tex0, DECAL_GS_A_TEX0_1 };
 	ad[n++] = (gs_ad){ GS_TEX1(1u, 0u, 0u, 0u, 0u, 0u, 0u), 0x14u };
@@ -2852,7 +2862,7 @@ static int fx_decal_composite_tile(render_ctx_t *rc, const hcu_render_effect_dra
 		fx_decal_frame(rc->framebuffer_page, fbw, GS_PSMCT16S, 0u), 1u,
 		GS_ZBUF(rc->zbuffer_page, GS_PSMZ24, 1u),
 		GS_TEST(0u, 6u, 0x40u, 0u, 0u, 0u, 1u, 2u), GS_ALPHA(0u, 1u, 0u, 1u, 0u),
-		fx_decal_xyoffset(rc, 0, 0, 0), fx_decal_scissor(rc, 0),
+		fx_decal_xyoffset(rc, 0, 0, 0), fx_decal_scissor(rc, 0, -1, 0),
 		0x80ull | (0x80ull << 32), GS_CLAMP(1u, 1u, 0u, 0u, 0u, 0u), 0u,
 		GS_TEX1(1u, 0u, 0u, 0u, 0u, 0u, 0u)) != 0 ||
 		!decal_compose_emit_ad(rc->chain, restore, 11u, 0u)) return 0;
