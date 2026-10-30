@@ -185,10 +185,11 @@ void hcu_loading_screen_end(void)
 	if (!s_active) return;
 	s_progress = 1.f;
 	/* Match CE's easing tail: continue presenting until the sweep reaches the
-	 * right edge instead of stopping on the first final-progress update. */
+	 * right edge instead of stopping on the first final-progress update. The
+	 * visible progress is capped at 0.98 so the sweep doesn't leave the screen. */
 	do {
 		present(1.f);
-	} while (++frames < 40u && s_last_progress < 0.995f);
+	} while (++frames < 40u && s_last_progress < 0.975f);
 	s_active = 0;
 }
 
