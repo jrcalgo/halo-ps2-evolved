@@ -1,4 +1,5 @@
 #include "stream/ctag_map_source.h"
+#include "stream/hcu_loading_screen.h"
 #include "stream/hmap.h"
 #include "stream/sha256.h"
 
@@ -231,7 +232,10 @@ int ctag_map_source_read(void *context, int32_t tag_index,
 	(void)tag_index;
 	(void)blocking;
 	if (!source || !source->active) return 0;
-	return file_reader_read_at(&source->reader, file_offset, buffer, size) == 0;
+	if (file_reader_read_at(&source->reader, file_offset, buffer, size) != 0)
+		return 0;
+	hcu_loading_screen_file_read(size);
+	return 1;
 }
 
 void ctag_map_source_close(ctag_map_source *source)
@@ -264,6 +268,7 @@ int ctag_map_source_sha256_with_buffer(ctag_map_source *source,
 		if (file_reader_read_at(&source->reader, offset, buffer, count) != 0)
 			return 0;
 		sha256_update(&hash, buffer, count);
+		hcu_loading_screen_file_read((uint32_t)count);
 		offset += (uint32_t)count;
 	}
 	sha256_final(&hash, digest);

@@ -1,10 +1,34 @@
 #include "stream/hcu_file_bridge.h"
+#include "stream/hcu_loading_screen.h"
 
 #include "stream/file.h"
 
+#include <errno.h>
+#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
+
+/* CE fopen("d:\\...") reaches newlib _open and the IOP rejects device d.
+ * Fail those on the EE. --wrap,_open supplies __real__open. */
+int __real__open(const char *path, int flags, ...);
+
+int __wrap__open(const char *path, int flags, ...)
+{
+	int mode;
+	va_list args;
+	va_start(args, flags);
+	mode = va_arg(args, int);
+	va_end(args);
+	if (path && path[0] && path[1] == ':' &&
+		(path[0] == 'd' || path[0] == 'D' || path[0] == 'z' || path[0] == 'Z')) {
+		printf("HALO_PS2_LOCAL open-skip %s\n", path);
+		errno = ENOENT;
+		return -1;
+	}
+	return __real__open(path, flags, mode);
+}
 
 enum { HCU_FILE_SLOT_COUNT = 16 };
 
@@ -44,7 +68,10 @@ int hcu_file_bridge_open(const char *path, unsigned long *size_out)
 	if (index == HCU_FILE_SLOT_COUNT) return -1;
 	s_slots[index].reader.descriptor = -1;
 	s_slots[index].reader.size = 0;
-	if (file_reader_open(&s_slots[index].reader, relative) != 0) return -1;
+	if (file_reader_open(&s_slots[index].reader, relative) != 0) {
+		printf("HALO_PS2_LOCAL bridge-open-miss %s\n", relative);
+		return -1;
+	}
 	s_slots[index].position = 0;
 	s_slots[index].active = 1;
 	if (size_out) *size_out = s_slots[index].reader.size;
@@ -72,9 +99,18 @@ int hcu_file_bridge_read(int token, void *buffer, unsigned long count,
 	if (slot->position >= slot->reader.size) return 1;
 	remaining = slot->reader.size - slot->position;
 	amount = count < remaining ? (size_t)count : remaining;
-	if (file_reader_read_at(&slot->reader, slot->position, buffer, amount) != 0)
-		return 0;
-	slot->position += (uint32_t)amount;
+	{
+		size_t done = 0;
+		while (done < amount) {
+			size_t chunk = amount - done;
+			if (chunk > 32768u) chunk = 32768u;
+			if (file_reader_read_at(&slot->reader, slot->position, (uint8_t *)buffer + done, chunk) != 0)
+				return 0;
+			slot->position += (uint32_t)chunk;
+			done += chunk;
+			hcu_loading_screen_file_read((uint32_t)chunk);
+		}
+	}
 	if (read_out) *read_out = (unsigned long)amount;
 	return 1;
 }

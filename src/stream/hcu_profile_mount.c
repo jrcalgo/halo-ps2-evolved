@@ -5,6 +5,8 @@
 #include "ps2_ctag.h"
 #include "stream/sha256.h"
 
+#include <stdio.h>
+
 #define HCU_PROFILE_MOUNT_SCRATCH_MIN 512u
 #define HCU_PROFILE_MOUNT_MAX_BSPS 64u
 #define HCU_PROFILE_MOUNT_MAX_RESOURCES 65536u
@@ -643,9 +645,13 @@ static int visit_ctag(void *context, ctag_ctag_sink_fn sink,
 	int result;
 	if (!mount || !mount->active || mount->callbacks_active || !sink || !raw_size ||
 		!prepared_inputs_match(mount)) return 0;
+	printf("HALO_PS2_LOCAL visit-ctag begin chunk=%u\n",
+		(unsigned)mount->ce_chunk.size);
 	mount->callbacks_active++;
 	result = stream_chunk(mount, &mount->ce_chunk, sink, sink_context, raw_size);
 	mount->callbacks_active--;
+	printf("HALO_PS2_LOCAL visit-ctag result=%d raw=%u\n", result,
+		raw_size ? (unsigned)*raw_size : 0u);
 	return result;
 }
 
@@ -669,9 +675,13 @@ static int visit_cbsp(void *context, uint32_t file_offset,
 		HCU_ASSET_CHUNK_MEDIA, binding->media_chunk_id, &chunk) !=
 		HCU_ASSET_PROFILE_OK || memcmp(chunk.sha256,
 		binding->expected_chunk_sha256, sizeof(chunk.sha256))) return 0;
+	printf("HALO_PS2_LOCAL visit-cbsp begin offset=%u size=%u\n",
+		(unsigned)file_offset, (unsigned)file_size);
 	mount->callbacks_active++;
 	result = stream_chunk(mount, &chunk, sink, sink_context, raw_size);
 	mount->callbacks_active--;
+	printf("HALO_PS2_LOCAL visit-cbsp result=%d raw=%u\n", result,
+		raw_size ? (unsigned)*raw_size : 0u);
 	return result;
 }
 

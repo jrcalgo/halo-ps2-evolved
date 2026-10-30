@@ -68,6 +68,7 @@ EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_main.o \
 	$(WORLD_OUTPUT)/stream/hcu_file_bridge.o \
 	$(WORLD_OUTPUT)/stream/hcu_input_bridge.o \
 	$(WORLD_OUTPUT)/stream/hcu_main_menu.o \
+	$(WORLD_OUTPUT)/stream/hcu_loading_screen.o \
 	$(WORLD_OUTPUT)/stream/hcu_render_snapshot.o \
 	$(WORLD_OUTPUT)/stream/hcu_storage_boot.o \
 	$(WORLD_OUTPUT)/stream/hcu_map_service.o \
@@ -209,6 +210,10 @@ $(WORLD_OUTPUT)/stream/hcu_c3_tz.o: src/stream/hcu_c3_tz.c
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
 
 $(WORLD_OUTPUT)/stream/hcu_file_bridge.o: src/stream/hcu_file_bridge.c
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_loading_screen.o: src/stream/hcu_loading_screen.c src/stream/hcu_loading_screen.h
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
 

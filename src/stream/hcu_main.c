@@ -23,6 +23,7 @@
 #include "stream/hcu_bitmap_owner_layout.h"
 #include "stream/hcu_batch_profile.h"
 #include "stream/hcu_main_menu.h"
+#include "stream/hcu_loading_screen.h"
 
 #include <kernel.h>
 #include <dma.h>
@@ -4198,8 +4199,12 @@ int main(int argc, char **argv)
 	/* The title borrows the idle renderer chain and section scratch. Both are
 	 * restored before CE starts loading the selected mode's UI scenario. */
 	hcu_video_ensure();
+	hcu_loading_screen_bind(&s_hcu_video, renderer_dma_storage,
+		bsp_render_dma_storage_required());
+	hcu_loading_screen_begin();
 	(void)hcu_main_menu_run(&s_hcu_video, renderer_dma_storage,
 		bsp_render_dma_storage_required(), &render_section_scratch);
+	hcu_loading_screen_end();
 #endif
 #ifdef HALO_PS2_STEP8_MP_CAPACITY_DIAGNOSTIC
 	s_step8_candidate_layout = &layout;
