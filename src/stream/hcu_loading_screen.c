@@ -5,20 +5,27 @@
 #include "render/gs.h"
 #include "render/upload.h"
 #include "stream/hcu_file_bridge.h"
+#include "platform/timer.h"
 
 #include <dma.h>
 #include <draw.h>
 #include <packet2.h>
+#include <stdio.h>
 #include <kernel.h>
 #include <malloc.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <math.h>
 
 enum {
-	LOAD_W = 512, LOAD_H = 256, LOAD_BYTES = LOAD_W * LOAD_H * 2,
+	LOAD_W = 512, LOAD_H = 448, LOAD_BYTES = LOAD_W * LOAD_H * 2,
 	MASK_W = 128, MASK_H = 16, MASK_BYTES = MASK_W * MASK_H * 4,
-	LOAD_PAGE = 110, LOAD_PAGES = 32, MASK_PAGE = 142, MASK_PAGES = 1,
+	/* Loading temporarily reuses menu texture pages. The synchronous CE map
+	 * precache reads sources into EE memory and returns before BSP texture
+	 * uploads begin, so the shared GS range is idle while these frames render. */
+	LOAD_PAGE = 0, LOAD_PAGES = 64, MASK_PAGE = LOAD_PAGE + LOAD_PAGES,
+	MASK_PAGES = 1,
 	LOAD_CHAIN_QW = 16, FRAME_PACKET_QW = 128
 };
 
@@ -28,6 +35,8 @@ static size_t s_dma_bytes;
 static uint64_t s_upload_chain[LOAD_CHAIN_QW] __attribute__((aligned(64)));
 static packet2_t s_packet;
 static unsigned s_frame;
+static uint64_t s_bytes_read;
+static uint32_t s_last_present_cycles;
 static float s_progress, s_last_progress, s_wobble;
 static int s_ready, s_active, s_rendering;
 
@@ -111,41 +120,56 @@ static uint16_t *load_background(void)
 
 void hcu_loading_screen_bind(void *video_ptr, void *dma_storage, size_t dma_bytes)
 {
-	chain_t chain;
 	video_t *video = (video_t *)video_ptr;
+	s_ready = 0;
+	s_active = 0;
+	if (!video || !dma_storage || dma_bytes < FRAME_PACKET_QW * 16u) return;
+	if ((video->tex_base & 2047u) != 0u ||
+		video->tex_base > VIDEO_VRAM_WORDS ||
+		(LOAD_PAGE + LOAD_PAGES + MASK_PAGES) * 2048u >
+			VIDEO_VRAM_WORDS - video->tex_base) return;
+	s_video = video; s_dma = (uint8_t *)dma_storage; s_dma_bytes = dma_bytes;
+	s_ready = 1;
+}
+
+static int upload_assets(void)
+{
+	chain_t chain;
 	uint16_t *background;
 	uint32_t *mask;
-	if (!video || !dma_storage || dma_bytes < FRAME_PACKET_QW * 16u) return;
-	s_video = video; s_dma = (uint8_t *)dma_storage; s_dma_bytes = dma_bytes;
+	if (!s_video || !s_dma || !s_ready) return 0;
 	background = load_background();
 	mask = (uint32_t *)memalign(64u, MASK_BYTES);
-	if (!background || !mask) { free(background); free(mask); return; }
+	if (!background || !mask) { free(background); free(mask); return 0; }
 	make_mask(mask);
 	SyncDCache(background, (uint8_t *)background + LOAD_BYTES);
 	SyncDCache(mask, (uint8_t *)mask + MASK_BYTES);
 	chain_init(&chain, s_upload_chain, LOAD_CHAIN_QW);
 	if (gs_upload(&chain, background, LOAD_BYTES,
-		(video->tex_base + LOAD_PAGE * 2048u) / 64u, LOAD_W / 64u,
+		(s_video->tex_base + LOAD_PAGE * 2048u) / 64u, LOAD_W / 64u,
 		GS_PSMCT16S, LOAD_W, LOAD_H) ||
 		gs_upload(&chain, mask, MASK_BYTES,
-		(video->tex_base + MASK_PAGE * 2048u) / 64u, MASK_W / 64u,
-		GS_PSMCT32, MASK_W, MASK_H)) { free(background); free(mask); return; }
+		(s_video->tex_base + MASK_PAGE * 2048u) / 64u, MASK_W / 64u,
+		GS_PSMCT32, MASK_W, MASK_H)) { free(background); free(mask); return 0; }
 	chain_end(&chain, 0);
 	SyncDCache(s_upload_chain, s_upload_chain + chain_qwords(&chain));
 	dma_channel_send_chain(DMA_CHANNEL_GIF, s_upload_chain, 0, 0, 0);
-	dma_wait_fast(); free(background); free(mask); s_ready = 1;
+	dma_wait_fast(); free(background); free(mask);
+	return 1;
 }
 
 static void present(float progress)
 {
 	unsigned char *storage = s_dma;
 	int x;
+	float glow;
+	unsigned tint;
 	if (!s_ready || !s_video || !storage || s_rendering || s_dma_bytes < FRAME_PACKET_QW * 16u)
 		return;
 	s_rendering = 1;
 	s_wobble += 0.01f;
 	progress = (float)((sin(s_wobble) * 0.05 + progress - s_last_progress) * 0.2 + s_last_progress);
-	if (progress > 0.98f) progress = 0.98f;
+	if (progress > 1.f) progress = 1.f;
 	if (progress < 0.f) progress = 0.f;
 	s_last_progress = progress;
 	packet2_reset(&s_packet, 0);
@@ -153,28 +177,38 @@ static void present(float progress)
 	s_packet.mode = P2_MODE_NORMAL; s_packet.base = s_packet.next = (qword_t *)storage;
 	video_add_setup_env(s_video, &s_packet);
 	video_add_clear(s_video, &s_packet, 0, 0, 0);
-	/* The CE backplate is a 320x240 retail composition scaled to the PS2 field. */
+	/* CE modulates the loading image with a sin(progress*pi)^0.9 pulse. */
+	glow = powf(fmaxf(0.f, sinf(progress * 3.14159f)), 0.9f);
+	tint = (unsigned)(glow * 255.f);
+	/* The 512x448 backplate matches the PS2 field without aspect distortion. */
 	sprite(&s_packet, LOAD_PAGE, GS_PSMCT16S, LOAD_W, LOAD_H,
-		0, 0, VIDEO_WIDTH, VIDEO_HEIGHT, 128, 128, 128, 0x80, 0);
-	/* Retail progress_bar.c moves its 128-pixel sine mask across a 640-pixel
-	 * logical field, with a sinusoidal ease and a blue brightness envelope. */
-	x = (int)(progress * 768.f) - 128;
+		0, 0, VIDEO_WIDTH, VIDEO_HEIGHT, tint, tint, tint, 0x80, 0);
+	/* Retail progress_bar.c moves its 128-pixel sine mask from just left of the
+	 * field to just beyond the right edge. Scale the travel to this 512-pixel
+	 * PS2 frame, retaining the CE easing and blue brightness envelope. */
+	x = (int)(progress * (VIDEO_WIDTH + MASK_W)) - MASK_W;
 	{
-		float glow = powf(fmaxf(0.f, sinf(progress * 3.14159f)), 0.9f);
-		unsigned tint = (unsigned)(glow * 255.f);
 		sprite(&s_packet, MASK_PAGE, GS_PSMCT32, MASK_W, MASK_H,
-			x, 120, x + 128, 136, 40, 112, 255, tint, 1);
+			x, VIDEO_HEIGHT / 2 - MASK_H / 2,
+			x + MASK_W, VIDEO_HEIGHT / 2 + MASK_H / 2,
+			40, 112, 255, tint, 1);
 	}
 	packet2_update(&s_packet, draw_finish(s_packet.next));
 	SyncDCache(storage, storage + (s_packet.next - s_packet.base) * 16u);
 	dma_channel_send_packet2(&s_packet, DMA_CHANNEL_GIF, 1);
 	dma_wait_fast(); draw_wait_finish(); video_present(s_video);
+	s_last_present_cycles = timer_cycles();
 	++s_frame; s_rendering = 0;
 }
 
 void hcu_loading_screen_begin(void)
 {
-	if (!s_ready) return;
+	/* The main menu and BSP renderer share the GS texture window. Reload into
+	 * page zero when a loading interval begins: menu textures can be replaced
+	 * after selection, and BSP cache uploads begin at page 17 only after the
+	 * synchronous precache callback returns. */
+	if (!s_ready || !upload_assets()) return;
+	s_bytes_read = 0;
 	s_progress = 0.f; s_last_progress = 0.f; s_wobble = 0.f;
 	s_active = 1; present(0.01f);
 }
@@ -182,22 +216,40 @@ void hcu_loading_screen_begin(void)
 void hcu_loading_screen_end(void)
 {
 	unsigned frames = 0;
-	if (!s_active) return;
-	s_progress = 1.f;
-	/* Match CE's easing tail: continue presenting until the sweep reaches the
-	 * right edge instead of stopping on the first final-progress update. The
-	 * visible progress is capped at 0.98 so the sweep doesn't leave the screen. */
-	do {
-		present(1.f);
-	} while (++frames < 40u && s_last_progress < 0.975f);
-	s_active = 0;
+	packet2_t *finish;
+	if (s_active) {
+		s_progress = 1.f;
+		/* Match CE's easing tail: continue presenting until the sweep passes the
+		 * right edge and its backdrop pulse fades toward black. */
+		do {
+			present(1.f);
+		} while (++frames < 40u && s_last_progress < 0.995f);
+		s_active = 0;
+	}
+	/* The menu and any loading present wait for GS FINISH and clear it.
+	 * CE's first draw_wait_finish needs one still pending, or it spins on
+	 * the last menu frame and never reaches gameplay. */
+	finish = packet2_create(2, P2_TYPE_NORMAL, P2_MODE_NORMAL, 0);
+	if (!finish) return;
+	packet2_update(finish, draw_finish(finish->next));
+	dma_channel_send_packet2(finish, DMA_CHANNEL_GIF, 1);
+	dma_wait_fast();
+	packet2_free(finish);
+	printf("HALO_PS2_LOCAL gs-finish-primed\n");
 }
 
 void hcu_loading_screen_file_read(uint32_t bytes)
 {
+	const uint64_t byte_budget = 32u * 1024u * 1024u;
 	if (!s_active || !bytes) return;
-	/* Reads are not a byte-perfect measure of remaining CE work. Advance
-	 * monotonically with a soft asymptote; CE's renderer likewise eases updates. */
-	s_progress += (1.f - s_progress) * (bytes > 65536u ? 0.075f : 0.018f);
-	if ((s_frame & 1u) == 0u) present(s_progress);
+	/* Reads may revisit bytes, so use them as a coarse indicator and leave the
+	 * final tenth for CE's end callback. A byte budget avoids reaching the end
+	 * of the sweep early during a long source scan. */
+	s_bytes_read += bytes;
+	s_progress = s_bytes_read >= byte_budget ? 0.9f :
+		(float)s_bytes_read * (0.9f / (float)byte_budget);
+	/* Optical/tag reads can arrive in 16 KiB chunks. A 30 Hz cap keeps each
+	 * synchronization useful without turning every small read into a vblank. */
+	if (timer_ms(s_last_present_cycles, timer_cycles()) >= (1000.f / 30.f))
+		present(s_progress);
 }

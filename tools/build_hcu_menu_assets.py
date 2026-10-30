@@ -107,9 +107,9 @@ def write_loading_backplate(ui_map: Path, destination: Path) -> None:
     is absent from the supplied Xbox XISO. Keep the bitmap art source-authentic
     and let the PS2 progress renderer reproduce the retail blue sweep.
     """
-    canvas = Image.new("RGBA", (512, 256), (2, 5, 16, 255))
+    canvas = Image.new("RGBA", (512, 448), (2, 5, 16, 255))
     pixels = canvas.load()
-    for y in range(256):
+    for y in range(448):
         shade = max(0, 16 - y // 24)
         for x in range(512):
             pixels[x, y] = (2, 4 + shade // 3, 15 + shade, 255)
@@ -121,19 +121,20 @@ def write_loading_backplate(ui_map: Path, destination: Path) -> None:
     alpha = Image.new("L", (230, 230), 0)
     ImageDraw.Draw(alpha).ellipse((3, 3, 227, 227), fill=255)
     px.putalpha(Image.composite(px.getchannel("A"), Image.new("L", (230, 230), 0), alpha))
-    canvas.alpha_composite(px, (300, 10))
+    canvas.alpha_composite(px, (270, 32))
 
     outer = decode_group(ui_map, RING_OUTER_BITMAP)[0].convert("RGBA")
     inner = decode_group(ui_map, RING_INNER_BITMAP)[0].convert("RGBA")
     # The loading silhouette is a broad ring across the planet field. CE's
     # outer/inner material maps remain distinct, matching the retail model.
-    for source, box, color in ((outer, (8, 65, 504, 220), (170, 190, 210)),
-                               (inner, (20, 78, 492, 207), (135, 170, 205))):
-        texture = source.resize((496, 155), Image.Resampling.LANCZOS)
-        mask = Image.new("L", (496, 155), 0)
+    for source, box, color in ((outer, (8, 132, 504, 330), (170, 190, 210)),
+                               (inner, (20, 148, 492, 314), (135, 170, 205))):
+        width, height = box[2] - box[0], box[3] - box[1]
+        texture = source.resize((width, height), Image.Resampling.LANCZOS)
+        mask = Image.new("L", (width, height), 0)
         draw = ImageDraw.Draw(mask)
-        draw.ellipse((0, 0, 495, 154), fill=155)
-        draw.ellipse((22, 26, 473, 128), fill=0)
+        draw.ellipse((0, 0, width - 1, height - 1), fill=155)
+        draw.ellipse((22, 26, width - 23, height - 26), fill=0)
         # Preserve material luminance while tinting toward CE's cold space light.
         tint = Image.new("RGBA", texture.size, (*color, 255))
         texture = Image.blend(texture, tint, 0.45)
@@ -142,9 +143,9 @@ def write_loading_backplate(ui_map: Path, destination: Path) -> None:
 
     # A soft star field uses the same dark blue palette as the UI scene.
     draw = ImageDraw.Draw(canvas)
-    for i in range(95):
+    for i in range(168):
         x = (i * 167 + 31) % 512
-        y = (i * 83 + 17) % 256
+        y = (i * 83 + 17) % 448
         level = 40 + ((i * 37) % 100)
         draw.point((x, y), fill=(level // 2, level // 2, level, 180))
     canvas.convert("RGB").save(destination / "halo_ce_loading_backplate.png")
