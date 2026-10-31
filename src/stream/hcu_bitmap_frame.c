@@ -62,18 +62,26 @@ static int producer_descriptor_has(uint32_t capabilities)
 		(d->capabilities & capabilities) == capabilities;
 }
 
-/* Fault bits for the sealed batch of the current frame (0 = batch is clean). */
+/* Fatal fault bits for the sealed batch of the current frame (0 = batch is usable). */
 static uint32_t batch_fault(const hcu_bitmap_frame_owner *owner)
 {
-	const halo_ps2_bitmap_request_queue *q = owner->queue;
 	uint32_t fault = 0;
 	if (owner->frame_abort) fault |= 1u;
-	if (q->unsupported_count) fault |= 2u;
-	if (q->missing_texture_count) fault |= 4u;
-	if (q->invalid_identity_count) fault |= 8u;
-	if (q->full_count) fault |= 16u;
 	if (owner->view_call_count != owner->active_window_count) fault |= 32u;
 	return fault;
+}
+
+/* Requests the CE seam could not capture. They are never queued, so the rest of the batch is intact:
+ * dropping the whole frame for one of them blanked the entire HUD for that frame. */
+static uint32_t batch_partial(const hcu_bitmap_frame_owner *owner)
+{
+	const halo_ps2_bitmap_request_queue *q = owner->queue;
+	uint32_t partial = 0;
+	if (q->unsupported_count) partial |= 2u;
+	if (q->missing_texture_count) partial |= 4u;
+	if (q->invalid_identity_count) partial |= 8u;
+	if (q->full_count) partial |= 16u;
+	return partial;
 }
 
 /* Drop only this frame's batch: nothing is emitted, nothing stays pending, and the
@@ -87,8 +95,8 @@ static void drop_batch(hcu_bitmap_frame_owner *owner, uint32_t fault)
 	owner->drain_pending = 0;
 }
 
-/* Capture is all-or-nothing at frame granularity. If the bounded CE seam saw
- * an unsupported or malformed call, don't dispatch only the surviving subset. */
+/* A fatal fault (aborted CE call, window-count mismatch) drops the frame's batch. A request that
+ * could not be captured only costs that one request. */
 static int32_t frame_dispatch_reader(
 	halo_ps2_bitmap_request_reader const *reader, void *context)
 {
@@ -100,6 +108,18 @@ static int32_t frame_dispatch_reader(
 	if (fault) {
 		drop_batch(owner, fault);
 		return HCU_BITMAP_FRAME_OK;
+	}
+	{
+		uint32_t partial = batch_partial(owner);
+		if (partial) {
+			owner->stat_partial++;
+			owner->last_partial_cause = partial;
+			owner->partial_causes_seen |= partial;
+			owner->last_partial_reason = owner->queue->first_unsupported_valid ?
+				owner->queue->first_unsupported_reason : 0u;
+			owner->last_partial_flags = owner->queue->first_unsupported_flags;
+			owner->last_partial_frame = owner->queue->frame_index;
+		}
 	}
 	/* port: CE seals the batch outside the parent build; hold it until the emit window binds the chains. */
 	if (!owner->dispatch->geometry_chain || !owner->dispatch->upload_chain) {
@@ -365,7 +385,7 @@ int32_t hcu_bitmap_frame_end_callback(void *context, uint32_t frame_index,
 			status = owner->queue->last_consumer_status != 0
 				? owner->queue->last_consumer_status : HCU_BITMAP_FRAME_E_QUEUE;
 	}
-	/* A faulted batch is dropped whole and counted. The CE frame is not failed for it. */
+	/* A fatally faulted batch is dropped whole and counted. The CE frame is not failed for it. */
 	if (batch_fault(owner) && !owner->frame_dropped) drop_batch(owner, batch_fault(owner));
 	owner->in_frame = 0;
 	owner->gpu_pending = owner->dispatch && owner->dispatch->lease_count != 0;

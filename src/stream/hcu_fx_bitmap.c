@@ -77,6 +77,17 @@ int hcu_fx_texture_resolve(hcu_fx_descriptor_cache *cache,
 	hcu_fx_source_submit_fn source_submit, void *context, uint64_t *tex0_out,
 	int *source_attempted, int *source_loaded)
 {
+	return hcu_fx_texture_resolve_prechecked(cache, binding, profile_id, map_generation,
+		resident_query, NULL, source_load, source_submit, context, tex0_out,
+		source_attempted, source_loaded);
+}
+
+int hcu_fx_texture_resolve_prechecked(hcu_fx_descriptor_cache *cache,
+	const hcu_bitmap_binding *binding, uint32_t profile_id, uint32_t map_generation,
+	hcu_fx_resident_query_fn resident_query, hcu_fx_admission_defer_fn admission_defer,
+	hcu_fx_source_load_fn source_load, hcu_fx_source_submit_fn source_submit,
+	void *context, uint64_t *tex0_out, int *source_attempted, int *source_loaded)
+{
 	hcu_fx_descriptor d;
 	uint16_t width = 0, height = 0;
 	uint8_t psm = 0;
@@ -89,14 +100,18 @@ int hcu_fx_texture_resolve(hcu_fx_descriptor_cache *cache,
 		st = resident_query(context, binding->cache_key, d.width, d.height, d.psm, tex0_out);
 		if (st != HCU_FX_RESIDENT_MISS) return st;
 		width = d.width; height = d.height; psm = d.psm;
+		if (admission_defer) {
+			st = admission_defer(context, binding->cache_key, width, height, psm);
+			if (st != 0) return st;
+		}
 	}
 	if (source_attempted) *source_attempted = 1;
 	st = source_load(context, binding, &width, &height, &psm);
 	if (st != 0) return st;
 	if (source_loaded) *source_loaded = 1;
+	/* Validated pointer-free metadata survives admission deferral. */
+	if (cache) hcu_fx_descriptor_cache_store(cache, binding, profile_id, map_generation, width, height, psm);
 	st = source_submit(context, binding, width, height, psm, tex0_out);
-	if (st == 0 && cache)
-		hcu_fx_descriptor_cache_store(cache, binding, profile_id, map_generation, width, height, psm);
 	return st;
 }
 

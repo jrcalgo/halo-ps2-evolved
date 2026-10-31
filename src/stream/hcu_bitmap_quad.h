@@ -10,12 +10,13 @@ typedef enum {
 	HCU_BITMAP_BLEND_ALPHA = 1,
 	HCU_BITMAP_BLEND_ADD = 2, /* source RGB weighted by source alpha */
 	HCU_BITMAP_BLEND_PREMULTIPLIED = 3, /* Cs + Cd * (1 - As), two GS draws */
-	HCU_BITMAP_BLEND_RAW_ADD = 4 /* Cs + Cd */
+	HCU_BITMAP_BLEND_RAW_ADD = 4, /* Cs + Cd */
+	HCU_BITMAP_BLEND_SUBTRACT = 5 /* Cd - Cs */
 } hcu_bitmap_blend_t;
 
 typedef struct {
 	float x, y;             /* screen pixels, top-left origin */
-	float u, v;             /* normalized [0,1] image coordinates */
+	float u, v;             /* normalized image coordinates; [-8,8] when uv_extended */
 	uint32_t argb;          /* CE colour; alpha is converted to GS 0..128 */
 } hcu_bitmap_vertex_t;
 
@@ -33,6 +34,9 @@ typedef struct {
 	 * The pair partitions the meter exactly, so each pass is one quad. */
 	uint8_t alpha_test;     /* HCU_BITMAP_ALPHA_TEST_* */
 	uint8_t alpha_ref;
+	/* Wrapped HUD overlays (sweep, sliding shine) sample outside [0,1].
+	 * Left clear, UVs must stay in [0,1]. */
+	uint8_t uv_extended;
 } hcu_bitmap_quad_state_t;
 
 enum {
@@ -90,5 +94,30 @@ hcu_bitmap_quad_status hcu_bitmap_quad_emit(chain_t *chain,
 hcu_bitmap_quad_status hcu_bitmap_quad_emit_validated(chain_t *chain,
 	const tex_info *image, const hcu_bitmap_quad_state_t *state,
 	const hcu_bitmap_vertex_t vertices[4]);
+
+/* Screen flash: one untextured quad covering `rect`, scissored to it. `type` is
+ * CE's render_screen_flash type (1 lighten, 2 darken, 3 max, 4 min, 6 tint) and
+ * `argb` the flash colour with the intensity already applied. Lighten/max
+ * composite as Cs + Cd * (1 - As) (two draws), darken/min subtract Cs, tint is
+ * an ordinary alpha blend. Type 5 (invert) is not drawn and returns OK. */
+hcu_bitmap_quad_status hcu_bitmap_quad_emit_flash(chain_t *chain,
+	uint16_t screen_w, uint16_t screen_h, const hcu_bitmap_rect *rect,
+	uint32_t z, int16_t type, uint32_t argb);
+
+/* Untextured quad in the same virtual-frame space as other HUD vertices.
+ * `subtract` selects Cd - Cs (a hole punched out of a previous additive quad);
+ * otherwise the blend is Cs + Cd. The packet writes the full-framebuffer
+ * XYOFFSET, so it does not depend on the last split view's offset. */
+/* Radar sweep: a ring of `outer` radius centred on (cx, cy) in the same virtual
+ * frame as the HUD, with a transparent hole of `inner` radius, clipped to the
+ * outer circle so it stays inside the radar disc. `inner` 0 draws a filled
+ * disc. The centre and radii are scaled into `rect` the same way a HUD quad is. */
+hcu_bitmap_quad_status hcu_bitmap_quad_emit_ring(chain_t *chain,
+	uint16_t screen_w, uint16_t screen_h, const hcu_bitmap_rect *rect,
+	float cx, float cy, float outer, float inner, uint32_t argb);
+
+hcu_bitmap_quad_status hcu_bitmap_quad_emit_marker(chain_t *chain,
+	uint16_t screen_w, uint16_t screen_h, const hcu_bitmap_rect *rect,
+	const hcu_bitmap_vertex_t vertices[4], int subtract);
 
 #endif

@@ -33,7 +33,7 @@ int main(int argc,char **argv)
 	if(argc>1 && strcmp(argv[1],"premultiplied")==0) state.blend=HCU_BITMAP_BLEND_PREMULTIPLIED;
 	if(argc>1 && strcmp(argv[1],"raw_add")==0) state.blend=HCU_BITMAP_BLEND_RAW_ADD;
 	if(argc>1 && strcmp(argv[1],"premultiplied_overflow")==0){
-		state.blend=HCU_BITMAP_BLEND_PREMULTIPLIED; chain.cap_qw=47;
+		state.blend=HCU_BITMAP_BLEND_PREMULTIPLIED; chain.cap_qw=20;
 		status=hcu_bitmap_quad_emit(&chain,&textures,0,&state,v);
 		if(status!=HCU_BITMAP_QUAD_CAPACITY||chain.qw||chain.overflow||((uint8_t*)memory)[0]!=0xA5)return 16;
 		return 0;
@@ -43,13 +43,13 @@ int main(int argc,char **argv)
 		uint64_t *mq; uint8_t meter_test=strcmp(argv[1],"meter_fill")==0?HCU_BITMAP_ALPHA_TEST_FILL:HCU_BITMAP_ALPHA_TEST_EMPTY;
 		state.alpha_test=meter_test; state.alpha_ref=77;
 		status=hcu_bitmap_quad_emit(&chain,&textures,0,&state,v);
-		if(status!=HCU_BITMAP_QUAD_OK||chain.qw!=30u) return 20;
+		if(status!=HCU_BITMAP_QUAD_OK||chain.qw!=31u) return 20;
 		mq=(uint64_t*)((uint8_t*)memory+32);
 		/* TEST set: alpha test on, GEQUAL for fill, LESS for empty, AREF 77, KEEP on fail. */
 		if(mq[10]!=GS_TEST(1,meter_test==HCU_BITMAP_ALPHA_TEST_FILL?5:2,77,0,0,0,1,1)||mq[11]!=GS_A_TEST_1) return 21;
 		/* TEST restored to off by a packet after both triangles; the draw itself is unchanged. */
-		if(mq[52]!=GIF_TAG(1,1,0,0,GIFX_FLG_PACKED,1)||mq[54]!=GS_TEST(0,1,0,0,0,0,1,1)||mq[55]!=GS_A_TEST_1) return 22;
-		if(mq[14]!=GIF_TAG(6,1,1,GS_PRIM(GSX_PRIM_TRIANGLE,1,1,0,1,0,1,0,0),GIFX_FLG_PACKED,3)||mq[15]!=0x531) return 23;
+		if(mq[54]!=GIF_TAG(1,1,0,0,GIFX_FLG_PACKED,1)||mq[56]!=GS_TEST(0,1,0,0,0,0,1,1)||mq[57]!=GS_A_TEST_1) return 22;
+		if(mq[16]!=GIF_TAG(6,1,1,GS_PRIM(GSX_PRIM_TRIANGLE,1,1,0,1,0,1,0,0),GIFX_FLG_PACKED,3)||mq[17]!=0x531) return 23;
 		if(((uint8_t*)memory)[chain.qw*16u]!=0xA5) return 24;
 		return 0;
 	}
@@ -69,12 +69,13 @@ int main(int argc,char **argv)
 		if(status!=HCU_BITMAP_QUAD_INVALID||chain.qw!=0) return 12;
 		return 0;
 	}
-	if(status!=HCU_BITMAP_QUAD_OK||chain.qw!=(state.blend==HCU_BITMAP_BLEND_PREMULTIPLIED?49u:28u)) return 5;
+	if(status!=HCU_BITMAP_QUAD_OK||chain.qw!=29u) return 5;
 	if(((memory[0]>>28)&7u)!=DMA_ID_CNT||(memory[0]&0xFFFFu)!=chain.qw-1u) return 6;
 	words=(uint32_t*)((uint8_t*)memory+16); if((words[3]&0xFFFFu)!=chain.qw-2u) return 7;
 	q=(uint64_t*)((uint8_t*)memory+32);
-	if(q[0]!=GIF_TAG(6,1,0,0,GIFX_FLG_PACKED,1)||q[1]!=GIF_REGS_AD||q[3]!=GS_A_TEX0_1) return 8;
-	if(q[14]!=GIF_TAG(6,1,1,GS_PRIM(GSX_PRIM_TRIANGLE,1,1,0,state.blend==HCU_BITMAP_BLEND_OPAQUE?0:1,0,1,0,0),GIFX_FLG_PACKED,3)||q[15]!=0x531) return 9;
+	if(q[0]!=GIF_TAG(7,1,0,0,GIFX_FLG_PACKED,1)||q[1]!=GIF_REGS_AD||q[3]!=GS_A_TEX0_1) return 8;
+	if(q[13]!=0x18u) return 8;
+	if(q[16]!=GIF_TAG(6,1,1,GS_PRIM(GSX_PRIM_TRIANGLE,1,1,0,state.blend==HCU_BITMAP_BLEND_OPAQUE?0:1,0,1,0,0),GIFX_FLG_PACKED,3)||q[17]!=0x531) return 9;
 	/* Walk GIF NLOOP/NREG fields independently; DIRECT consumes initialized data exactly. */
 	{
 		unsigned consumed=0, direct=words[3]&0xFFFFu;
@@ -92,19 +93,14 @@ int main(int argc,char **argv)
 		uint64_t expected=GS_ALPHA(0,1,0,1,0);
 		if(state.blend==HCU_BITMAP_BLEND_ADD)expected=GS_ALPHA(0,2,0,1,0);
 		if(state.blend==HCU_BITMAP_BLEND_RAW_ADD)expected=GS_ALPHA(0,2,2,1,128);
-		if(state.blend==HCU_BITMAP_BLEND_PREMULTIPLIED)expected=GS_ALPHA(2,1,0,1,0);
 		if(q[8]!=expected)return 13;
-		if(state.blend==HCU_BITMAP_BLEND_PREMULTIPLIED){
-			if(q[54]!=GS_ALPHA(0,2,2,1,128))return 17;
-			if(memcmp(q+16,q+58,36u*sizeof(uint64_t)))return 18;
-		}
 	}
 	/* Modulation unity is 128: CE white must not double the texture brightness. */
-	if((uint32_t)q[16]!=128u||(uint32_t)(q[16]>>32)!=64u||(uint32_t)q[17]!=32u)return 19;
+	if((uint32_t)q[18]!=128u||(uint32_t)(q[18]>>32)!=64u||(uint32_t)q[19]!=32u)return 19;
 
 	/* First vertex gets half-texel UVs, 0x80 -> GS alpha 64, and preserved depth. */
-	if((uint32_t)q[18]!=8u||(uint32_t)(q[18]>>32)!=8u||(uint32_t)(q[17]>>32)!=64u||q[21]!=0x1234u) return 10;
+	if((uint32_t)q[20]!=8u||(uint32_t)(q[20]>>32)!=8u||(uint32_t)(q[19]>>32)!=64u||q[23]!=0x1234u) return 10;
 	/* Rotated second screen vertex is emitted next and has U=7.5 texels (120 in 10.4). */
-	if((uint32_t)q[24]!=120u) return 11;
+	if((uint32_t)q[26]!=120u) return 11;
 	return 0;
 }

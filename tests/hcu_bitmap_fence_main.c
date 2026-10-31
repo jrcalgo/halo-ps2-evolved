@@ -182,10 +182,10 @@ int main(void)
 	CHECK(hcu_bitmap_frame_owner_gpu_fence_complete(&s_owner, 7) == HCU_BITMAP_FRAME_E_FENCE);   /* no kick submitted yet */
 	CHECK(s_dispatch.lease_count == 1 && s_leases[0].active == 1);                                 /* still held */
 
-	/* H. a faulted sealed batch (unsupported request) is dropped whole and counted: the emit window reports OK so
+	/* H. a fatally faulted sealed batch (window-count mismatch) is dropped whole and counted: the emit window reports OK so
 	 * the CE frame keeps rendering, no emit failure is recorded, nothing stays pending and no lease is acquired. */
 	s_fail_dispatch = 0;
-	s_queue.unsupported_count = 1;
+	s_owner.view_call_count = s_owner.active_window_count + 1u;
 	s_owner.drain_pending = 1;
 	s_owner.gpu_pending = 0;
 	s_dispatch.lease_count = 0;
@@ -195,21 +195,21 @@ int main(void)
 		CHECK(hcu_bitmap_renderer_hook_emit(&s_r, 8, &geom, &upl, &s_cache) == HCU_BITMAP_FRAME_OK);
 		CHECK(hcu_bitmap_renderer_emit_status(&s_r) == HCU_BITMAP_FRAME_OK);
 		CHECK(s_owner.stat_drops == drops_before + 1);                 /* drop is counted */
-		CHECK(s_owner.last_drop_cause == 2u);                          /* bit 1: unsupported */
-		CHECK((s_owner.drop_causes_seen & 2u) != 0);
+		CHECK(s_owner.last_drop_cause == 32u);                         /* bit 5: view-count mismatch */
+		CHECK((s_owner.drop_causes_seen & 32u) != 0);
 		CHECK(s_owner.drain_pending == 0 && s_owner.gpu_pending == 0); /* nothing stays pending */
 		CHECK(s_dispatch.lease_count == 0 && s_leases[0].active == 0);
 		CHECK(s_dispatch.geometry_chain == 0 && s_dispatch.upload_chain == 0);
 		CHECK(hcu_bitmap_renderer_emit_failures(&s_r) == 1);           /* only the G failure */
 	}
-	s_queue.unsupported_count = 0;
+	s_owner.view_call_count = s_owner.active_window_count;
 	CHECK(hcu_bitmap_renderer_hook_emit(&s_r, 8, &geom, &upl, &s_cache) == HCU_BITMAP_FRAME_OK);
 	CHECK(hcu_bitmap_renderer_emit_status(&s_r) == HCU_BITMAP_FRAME_OK);
 	CHECK(hcu_bitmap_renderer_emit_failures(&s_r) == 1);
 	/* I. the following CE frame starts clean after the whole faulted batch was discarded. */
 	s_r.frame_open = 0; /* previous frame's parent submit boundary */
 	CHECK(hcu_bitmap_renderer_begin_frame(&s_r, 9) == HCU_BITMAP_FRAME_OK);
-	CHECK(s_owner.frame_dropped == 1 && s_owner.last_drop_cause == 2u);
+	CHECK(s_owner.frame_dropped == 1 && s_owner.last_drop_cause == 32u);
 	CHECK(!s_owner.in_frame && !s_owner.drain_pending && !s_owner.gpu_pending && !s_dispatch.lease_count);
 
 	printf("%s: %d failure(s), %d fence call(s)\n", failures ? "FAILED" : "PASSED", failures, s_fence_calls);

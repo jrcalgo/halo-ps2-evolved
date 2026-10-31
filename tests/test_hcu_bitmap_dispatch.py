@@ -163,7 +163,7 @@ def test_actual_ce_ui_request_runs_through_final_profile_and_real_upload_pipelin
     assert result.returncode == 0, result.stdout + result.stderr
     assert "bitmap-dispatch-ok" in result.stdout
     assert "ctag_reader=end-hook" in result.stdout
-    assert "leases=held" in result.stdout and "upload_qw=16" in result.stdout and "geometry_qw=105" in result.stdout
+    assert "leases=held" in result.stdout and "upload_qw=16" in result.stdout and "geometry_qw=87" in result.stdout
     assert bindings["package"]["sha256"] == hashlib.sha256(package.read_bytes()).hexdigest()
     durable_exe = artifact_dir / "hcu-bitmap-dispatch-fixture"
     durable_compile = artifact_dir / "compile.json"
@@ -241,7 +241,7 @@ def test_actual_ce_ui_request_runs_through_final_profile_and_real_upload_pipelin
                 "CE interface_draw_bitmap_modulated screen quads"],
             "not_covered": ["HUD atlas/material OTEX consumers", "render_sprite/effect-world consumers",
                 "production ps2_render.render_frame binding"],
-        "host_packets": {"requests": 3, "upload_qwords": 16, "geometry_qwords": 105,
+        "host_packets": {"requests": 3, "upload_qwords": 16, "geometry_qwords": 87,
                 "cache_hits": 2, "cache_misses": 1,
                 "fail_closed": ["profile id", "request generation", "source datum", "chunk SHA-256", "mutated chunk"],
                 "atomic_rollback": ["geometry capacity", "upload-chain capacity"]}},

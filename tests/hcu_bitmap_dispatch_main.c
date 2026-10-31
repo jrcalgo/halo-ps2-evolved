@@ -326,10 +326,12 @@ int main(int argc, char **argv)
 		/* Quad state now explicitly emits CLAMP, so packet offsets vary with
 		 * the supported blend path. Assert the real blend equations are present
 		 * without tying this fixture to a qword offset. */
-		if (s_geometry.qw != 105u ||
-			gs_alpha_count(geo, 2u * s_geometry.qw - 4u, GS_ALPHA(2,1,0,1,0)) != 1u ||
-			gs_alpha_count(geo, 2u * s_geometry.qw - 4u, GS_ALPHA(0,2,2,1,128)) != 2u ||
-			gs_alpha_count(geo, 2u * s_geometry.qw - 4u, GS_ALPHA(0,1,0,1,0)) != 1u) {
+		/* Sprite premult is one straight-alpha pass (29 qw). The old second
+		 * pass (21 qw, Cs+Cd) is only kept for alpha-tested meter fills. */
+		if (s_geometry.qw != 87u ||
+			gs_alpha_count(geo, 2u * s_geometry.qw - 4u, GS_ALPHA(2,1,0,1,0)) != 0u ||
+			gs_alpha_count(geo, 2u * s_geometry.qw - 4u, GS_ALPHA(0,2,2,1,128)) != 1u ||
+			gs_alpha_count(geo, 2u * s_geometry.qw - 4u, GS_ALPHA(0,1,0,1,0)) != 2u) {
 			fprintf(stderr,"alpha packet counts=%u,%u,%u geometry_qw=%u\n",
 				gs_alpha_count(geo,2u*s_geometry.qw-4u,GS_ALPHA(2,1,0,1,0)),
 				gs_alpha_count(geo,2u*s_geometry.qw-4u,GS_ALPHA(0,2,2,1,128)),
@@ -388,14 +390,14 @@ int main(int argc, char **argv)
 		uint32_t before_hashes = s_context.counters.hash_checks;
 		uint32_t before_parses = s_context.counters.parses;
 		uint32_t before_qw = s_geometry.qw;
-		uint8_t baseline[49 * 16];
+		uint8_t baseline[29 * 16];
 		hcu_bitmap_lease *strict_lease = &s_context.leases[1];
 		hcu_bitmap_resident_descriptor descriptor_before = s_resident_descriptors[0];
 		prepare_replay_reader(&reader, &req, s_context.expected_generation);
 		if (hcu_bitmap_dispatch_reader(&reader, &s_context) != HCU_BITMAP_DISPATCH_OK ||
 			s_context.counters.hits != 3 || s_context.counters.read_calls != before_reads ||
 			s_context.counters.hash_checks != before_hashes || s_context.counters.parses != before_parses ||
-			s_geometry.qw - before_qw != 49u) return 23;
+			s_geometry.qw - before_qw != 29u) return 23;
 		memcpy(baseline, s_geometry_memory + before_qw * 16u, sizeof(baseline));
 		/* Strict legacy API and resident hot path must emit the same command bytes. */
 		memset(strict_lease, 0, sizeof(*strict_lease));
@@ -406,7 +408,7 @@ int main(int argc, char **argv)
 			s_context.slot_stride, s_staging, sizeof(s_staging), &s_upload, &s_geometry,
 			s_context.texture_page_base_words, s_context.clut_base_words, 640, 448,
 			(hcu_bitmap_rect){0,0,640,448}, strict_lease) != HCU_BITMAP_DISPATCH_OK ||
-			s_geometry.qw - before_qw != 49u ||
+			s_geometry.qw - before_qw != 29u ||
 			memcmp(baseline, s_geometry_memory + before_qw * 16u, sizeof(baseline))) return 34;
 		strict_lease->kick_seq = 41u; s_context.lease_count = 2;
 		hcu_bitmap_dispatch_resident_reset(&s_context);
@@ -425,7 +427,7 @@ int main(int argc, char **argv)
 		if (hcu_bitmap_dispatch_reader(&reader, &s_context) != HCU_BITMAP_DISPATCH_OK ||
 			s_context.counters.hits != 4 || s_context.counters.read_calls != before_reads ||
 			s_context.counters.hash_checks != before_hashes || s_context.counters.parses != before_parses ||
-			s_geometry.qw - before_qw != 49u ||
+			s_geometry.qw - before_qw != 29u ||
 			memcmp(baseline, s_geometry_memory + before_qw * 16u, sizeof(baseline))) return 23;
 		{
 			halo_ps2_bitmap_request stale = req;
@@ -464,13 +466,13 @@ int main(int argc, char **argv)
 			before_qw = s_geometry.qw;
 			prepare_replay_reader(&reader, &view_req, s_context.expected_generation);
 			if (hcu_bitmap_dispatch_reader(&reader, &s_context) != HCU_BITMAP_DISPATCH_OK ||
-				s_context.counters.read_calls != reads || s_geometry.qw - before_qw != 49u) return 41;
-			memcpy(&left_scissor, s_geometry_memory + before_qw * 16u + 128u, sizeof(left_scissor));
+				s_context.counters.read_calls != reads || s_geometry.qw - before_qw != 29u) return 41;
+			memcpy(&left_scissor, s_geometry_memory + before_qw * 16u + 144u, sizeof(left_scissor));
 			view_req.view_index = 1; before_qw = s_geometry.qw;
 			prepare_replay_reader(&reader, &view_req, s_context.expected_generation);
 			if (hcu_bitmap_dispatch_reader(&reader, &s_context) != HCU_BITMAP_DISPATCH_OK ||
-				s_context.counters.read_calls != reads || s_geometry.qw - before_qw != 49u) return 42;
-			memcpy(&right_scissor, s_geometry_memory + before_qw * 16u + 128u, sizeof(right_scissor));
+				s_context.counters.read_calls != reads || s_geometry.qw - before_qw != 29u) return 42;
+			memcpy(&right_scissor, s_geometry_memory + before_qw * 16u + 144u, sizeof(right_scissor));
 			if (left_scissor != (((uint64_t)319u << 16) | ((uint64_t)223u << 48)) ||
 				right_scissor != (320u | ((uint64_t)639u << 16) | ((uint64_t)223u << 48))) return 43;
 		}
@@ -521,6 +523,26 @@ int main(int argc, char **argv)
 			sizeof(s_source_storage), s_context.slot_stride, s_staging, sizeof(s_staging), &s_upload,
 			&s_geometry, s_context.texture_page_base_words, s_context.clut_base_words, 640, 448,
 			(hcu_bitmap_rect){0,0,640,448}, &dlease) != HCU_BITMAP_DISPATCH_E_CAPACITY) return 64;
+	}
+	/* Meter references are on the GS alpha scale: a full CE value cannot exceed texel 0x80, and a
+	 * translucent EMPTY pass scales its reference by the modulating vertex alpha. */
+	if (hcu_bitmap_meter_alpha_ref(0, 255u) != 0u || hcu_bitmap_meter_alpha_ref(255, 255u) != 128u ||
+		hcu_bitmap_meter_alpha_ref(128, 255u) != 64u || hcu_bitmap_meter_alpha_ref(255, 128u) != 64u ||
+		hcu_bitmap_meter_alpha_ref(255, 0u) != 0u) return 71;
+	/* A screen flash needs no binding, texture lease or cache entry: one flat quad per view. */
+	{
+		halo_ps2_bitmap_request flash_req, scratch = s_queue.requests[0];
+		halo_ps2_bitmap_request_reader freader;
+		uint32_t before_leases = s_context.lease_count, before_geometry = s_geometry.qw;
+		uint32_t before_flashes = s_context.screen_flashes, before_upload = s_upload.qw;
+		memset(&flash_req, 0, sizeof(flash_req));
+		flash_req.generation = s_context.expected_generation; flash_req.frame_index = scratch.frame_index;
+		flash_req.bitmap_tag_index = -1; flash_req.screen_flash = 1u; flash_req.screen_flash_type = 2u;
+		flash_req.vertices[0].color = 0x80402010u;
+		prepare_replay_reader(&freader, &flash_req, s_context.expected_generation);
+		if (hcu_bitmap_dispatch_reader(&freader, &s_context) != HCU_BITMAP_DISPATCH_OK ||
+			s_context.screen_flashes != before_flashes + 1u || s_context.lease_count != before_leases ||
+			s_geometry.qw - before_geometry != 26u || s_upload.qw != before_upload) return 70;
 	}
 	return 0;
 }

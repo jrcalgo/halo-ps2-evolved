@@ -62,6 +62,24 @@ static struct render_globals render;
 static halo_ps2_bitmap_frame_consumer s_bitmap_frame_consumer;
 static int s_bitmap_frame_consumer_registered = 1;
 static int s_bitmap_frame_active;
+struct render_screen_flash { short type; float intensity; struct { float alpha, red, green, blue; } color; };
+static short stub_flash_type;
+static int flash_requests; static short flash_request_type; static float flash_request_rgba[4];
+static void player_effect_get_screen_flash(short player, struct render_screen_flash *flash) {
+  (void)player; flash->type = stub_flash_type; flash->intensity = 0.5f;
+  flash->color.red = 1.0f; flash->color.green = 0.5f; flash->color.blue = 0.25f; flash->color.alpha = 1.0f;
+}
+static void halo_ps2_bitmap_request_screen_flash(short type, float r, float g, float b, float a) {
+  flash_requests++; flash_request_type = type;
+  flash_request_rgba[0] = r; flash_request_rgba[1] = g; flash_request_rgba[2] = b; flash_request_rgba[3] = a;
+}
+static real hud_split_view_begin(struct render_camera *saved) {
+  if (saved) *saved = render.camera;
+  return 1.0f;
+}
+static void hud_split_view_end(struct render_camera *saved) {
+  if (saved) render.camera = *saved;
+}
 int events[32], event_count;
 static int view_count;
 static int fail_view;
@@ -118,6 +136,13 @@ int main(void) {
     events[6] == 2 && events[7] == 4 && events[8] == 5 && events[9] == 6);
   assert(!s_bitmap_frame_active && render.window_index == 0 &&
     render.local_player_index == 0);
+  assert(flash_requests == 0);
+  stub_flash_type = 1; event_count = view_count = 0;
+  assert(ps2_bitmap_frame_run(windows, 3) == HALO_PS2_BITMAP_FRAME_OK);
+  assert(flash_requests == 2 && flash_request_type == 1 &&
+    flash_request_rgba[0] == 0.5f && flash_request_rgba[1] == 0.25f &&
+    flash_request_rgba[2] == 0.125f && flash_request_rgba[3] == 0.5f);
+  stub_flash_type = 0; event_count = view_count = 0;
   {
     struct render_window four_players_and_console[5];
     int i;
