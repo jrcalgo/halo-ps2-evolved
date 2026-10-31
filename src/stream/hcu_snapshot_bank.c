@@ -19,7 +19,8 @@ static int s_writing = BANK_NONE;
 static uint32_t s_map_generation;
 static uint32_t s_next_sequence = 1u;
 static hcu_snapshot_bank_stats s_stats;
-#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
+#if (defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE) || \
+	(defined(HALO_PS2_C3_SESSION_TRACE) && HALO_PS2_C3_SESSION_TRACE)
 hcu_snapshot_bank_rejection hcu_snapshot_bank_last_rejection;
 void hcu_snapshot_bank_get_last_rejection(hcu_snapshot_bank_rejection *out)
 { if (out) *out = hcu_snapshot_bank_last_rejection; }
@@ -364,6 +365,9 @@ static int validate_snapshot(const halo_ps2_frame_snapshot *s)
 		if (r->owner_object != HALO_PS2_FRAME_NONE_U16 &&
 			r->owner_object >= s->object_count)
 			{ TRACE_FX_REJECT(__LINE__, i, r); return 0; }
+		if ((r->flags & HALO_PS2_FRAME_FX_PARTICLE_STATE_DRIVEN) &&
+			r->kind != HALO_PS2_FRAME_FX_PARTICLE)
+			{ TRACE_FX_REJECT(__LINE__, i, r); return 0; }
 		if ((r->view_mask >> HALO_PS2_FRAME_MAX_VIEWS) != 0u)
 			{ TRACE_FX_REJECT(__LINE__, i, r); return 0; }
 		if (r->flags & HALO_PS2_FRAME_FX_NATIVE_GEOMETRY) {
@@ -382,13 +386,24 @@ static int validate_snapshot(const halo_ps2_frame_snapshot *s)
 			{ TRACE_FX_REJECT(__LINE__, i, r); return 0; }
 		if (r->kind == HALO_PS2_FRAME_FX_PARTICLE) {
 			unsigned j;
+			int state_driven = (r->flags & HALO_PS2_FRAME_FX_PARTICLE_STATE_DRIVEN) != 0;
 			if (!r->bitmap_width || !r->bitmap_height || r->sequence_index < 0 || r->frame_index < 0 ||
 				r->sprite_orientation > 2u || !isfinite(r->rotation) ||
-				!isfinite(r->lifespan_sec) || !(r->lifespan_sec > 0.0f) ||
+				!isfinite(r->lifespan_sec) ||
 				!isfinite(r->fade_in_sec) || !isfinite(r->fade_out_sec) || !isfinite(r->minimum_pixels) ||
 				r->framebuffer_blend_function > 7u || r->framebuffer_fade_mode > 2u ||
 				!isfinite(r->lod_cutoff) || !isfinite(r->runtime_oo_width)) { TRACE_FX_REJECT(__LINE__, i, r); return 0; }
-			if (r->age_sec >= r->lifespan_sec &&
+			if (state_driven) {
+				if (r->age_sec != 0.0f || r->lifespan_sec != 0.0f ||
+					r->fade_in_sec != 0.0f || r->fade_out_sec != 0.0f ||
+					(r->flags & (uint16_t)~(HALO_PS2_FRAME_FX_PARTICLE_STATE_DRIVEN |
+						HALO_PS2_FRAME_FX_PASS_TRANSITION)) != 0u) {
+					TRACE_FX_REJECT(__LINE__, i, r); return 0;
+				}
+			} else if (!(r->lifespan_sec > 0.0f)) {
+				TRACE_FX_REJECT(__LINE__, i, r); return 0;
+			}
+			if (!state_driven && r->age_sec >= r->lifespan_sec &&
 				!(r->flags & HALO_PS2_FRAME_FX_PARTICLE_FINAL_SEQUENCE)) {
 				s_stats.particle_lifetime_rejects++;
 				{ TRACE_FX_REJECT(__LINE__, i, r); return 0; }
