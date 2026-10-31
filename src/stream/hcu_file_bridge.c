@@ -102,8 +102,10 @@ int hcu_file_bridge_read(int token, void *buffer, unsigned long count,
 	{
 		size_t done = 0;
 		while (done < amount) {
+			/* One fileXio read per 256 KiB. The loading-screen cap runs at each
+			 * return, including in the middle of a larger caller request. */
 			size_t chunk = amount - done;
-			if (chunk > 32768u) chunk = 32768u;
+			if (chunk > 262144u) chunk = 262144u;
 			if (file_reader_read_at(&slot->reader, slot->position, (uint8_t *)buffer + done, chunk) != 0)
 				return 0;
 			slot->position += (uint32_t)chunk;

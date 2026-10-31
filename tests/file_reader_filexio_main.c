@@ -100,7 +100,7 @@ int fileXioGetStat(const char *path, iox_stat_t *info)
 
 int main(void)
 {
-	file_reader_t reader = { -1, 0 };
+	file_reader_t reader = { .descriptor = -1 };
 	uint8_t actual[32];
 	int calls_before;
 	unsigned i;

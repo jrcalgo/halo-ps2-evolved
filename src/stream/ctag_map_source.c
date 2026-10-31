@@ -229,12 +229,21 @@ int ctag_map_source_read(void *context, int32_t tag_index,
 	uint32_t file_offset, uint32_t size, void *buffer, int blocking)
 {
 	ctag_map_source *source = (ctag_map_source *)context;
+	uint32_t offset = 0;
 	(void)tag_index;
 	(void)blocking;
 	if (!source || !source->active) return 0;
-	if (file_reader_read_at(&source->reader, file_offset, buffer, size) != 0)
-		return 0;
-	hcu_loading_screen_file_read(size);
+	/* Keep optical reads bounded so the progress presentation can yield between
+	 * IOP transactions instead of waiting for an entire large tag section. */
+	while (offset < size) {
+		size_t chunk = (size_t)(size - offset);
+		if (chunk > 32768u) chunk = 32768u;
+		if (file_reader_read_at(&source->reader, file_offset + offset,
+			(uint8_t *)buffer + offset, chunk) != 0)
+			return 0;
+		offset += (uint32_t)chunk;
+		hcu_loading_screen_file_read((uint32_t)chunk);
+	}
 	return 1;
 }
 
