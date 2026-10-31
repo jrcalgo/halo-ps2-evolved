@@ -1,3 +1,4 @@
+#define HCU_BITMAP_GS_RESTORE_IMPL
 #include "stream/hcu_bitmap_quad.h"
 #include "render/gs.h"
 
@@ -172,12 +173,49 @@ hcu_bitmap_quad_status hcu_bitmap_quad_emit(chain_t *c,const tex_section *textur
 /* One VIF qword, a GIF A+D tag with ALPHA/TEST/XYOFFSET/SCISSOR, one draw tag,
  * 6 * 3 vertex qwords. */
 #define HCU_FLASH_DATA_QW (1u + 5u + 1u + 6u * 3u)
+/* GS 128 is opaque. Stay under it so a flash cannot replace the frame. */
+#define HCU_FLASH_GS_CAP 96u
+#define HCU_FLASH_BLACK_GS 8u
+
+static int flash_near_black(uint32_t argb)
+{
+	uint32_t r=gs_channel((argb>>16)&255u), g=gs_channel((argb>>8)&255u), b=gs_channel(argb&255u);
+	return r<=HCU_FLASH_BLACK_GS && g<=HCU_FLASH_BLACK_GS && b<=HCU_FLASH_BLACK_GS;
+}
+
+static uint32_t flash_gs(uint32_t byte, uint32_t cap)
+{
+	uint32_t c=gs_channel(byte);
+	return c>cap?cap:c;
+}
+
+static void cap_flash_vertex(uint64_t *q, uint32_t argb, int cap_rgb)
+{
+	uint32_t a=flash_gs(argb>>24, HCU_FLASH_GS_CAP);
+	uint32_t r=cap_rgb?flash_gs((argb>>16)&255u, HCU_FLASH_GS_CAP):(uint32_t)q[0];
+	uint32_t g=cap_rgb?flash_gs((argb>>8)&255u, HCU_FLASH_GS_CAP):(uint32_t)(q[0]>>32);
+	uint32_t b=cap_rgb?flash_gs(argb&255u, HCU_FLASH_GS_CAP):(uint32_t)q[1];
+	q[0]=(uint64_t)r|(uint64_t)g<<32;
+	q[1]=(uint64_t)b|(uint64_t)a<<32;
+}
+
+static void emit_flash_verts(uint64_t *q, const hcu_bitmap_vertex_t v[4],
+	const hcu_bitmap_quad_state_t *s, const unsigned order[6], int cap_a, int cap_rgb)
+{
+	tex_info none; unsigned i;
+	memset(&none,0,sizeof(none)); none.width=1; none.height=1;
+	for(i=0;i<6;i++,q+=6){
+		put_vertex(q,&v[order[i]],s,&none);
+		if(cap_a) cap_flash_vertex(q,v[order[i]].argb,cap_rgb);
+	}
+}
 
 hcu_bitmap_quad_status hcu_bitmap_quad_emit_flash(chain_t *c,uint16_t screen_w,uint16_t screen_h,
 	const hcu_bitmap_rect *r,uint32_t z,int16_t type,uint32_t argb)
 {
 	hcu_bitmap_quad_state_t s; hcu_bitmap_vertex_t in[4],v[4];
 	uint64_t prim,alpha; uint32_t *w; uint64_t *q; unsigned i,pass2; uint32_t data_qw;
+	int cap_a, cap_rgb;
 	static const unsigned order[6]={0,1,2,0,2,3};
 	if(!c||!c->base||!r||type<=0||type>6||z>0xFFFFFFu) return HCU_BITMAP_QUAD_INVALID;
 	if(type==5) return HCU_BITMAP_QUAD_OK;
@@ -187,13 +225,17 @@ hcu_bitmap_quad_status hcu_bitmap_quad_emit_flash(chain_t *c,uint16_t screen_w,u
 		in[i].u=0.0f; in[i].v=0.0f; in[i].argb=argb;
 	}
 	if(hcu_bitmap_quad_place(&s,r,in,v)!=0) return HCU_BITMAP_QUAD_INVALID;
-	pass2=(type==1||type==3)?1u:0u;
+	/* Pass 1 scales Cd by (1-As). A near-black Cs would then add nothing, so skip it. */
+	pass2=(type==1||type==3) && !flash_near_black(argb) ? 1u : 0u;
+	cap_a=type==1||type==2||type==3;
+	cap_rgb=type==1||type==3;
 	data_qw=HCU_FLASH_DATA_QW+(pass2?21u:0u);
-	if(c->overflow||c->qw>c->cap_qw||data_qw+1u>c->cap_qw-c->qw) return HCU_BITMAP_QUAD_CAPACITY;
-	if(type==1||type==3) alpha=GS_ALPHA(2,1,0,1,0);          /* Cd * (1 - As), then + Cs */
-	else if(type==2||type==4) alpha=GS_ALPHA(1,0,2,2,128);   /* Cd - Cs */
-	else alpha=GS_ALPHA(0,1,0,1,0);                          /* Cs*As + Cd*(1-As) */
-	prim=GS_PRIM(GSX_PRIM_TRIANGLE,1,0,0,1,0,1,0,0);          /* untextured, alpha blended */
+	if(c->overflow||c->qw>c->cap_qw||
+		data_qw+1u+HCU_BITMAP_GS_RESTORE_QW(HCU_BITMAP_GS_RESTORE_DRAW_N)>c->cap_qw-c->qw)
+		return HCU_BITMAP_QUAD_CAPACITY;
+	if(type==1||type==3) alpha=GS_ALPHA(2,1,0,1,0); /* Cd * (1 - As), then + Cs */
+	else alpha=GS_ALPHA(0,1,0,1,0);                 /* darken, min, tint: bounded alpha tint */
+	prim=GS_PRIM(GSX_PRIM_TRIANGLE,1,0,0,1,0,1,0,0); /* untextured, alpha blended */
 	w=(uint32_t*)chain_cnt(c,data_qw,0); if(!w) return HCU_BITMAP_QUAD_CAPACITY;
 	w[0]=VIF_CODE(VIF_NOP,0,0); w[1]=VIF_CODE(VIF_NOP,0,0); w[2]=VIF_CODE(VIF_FLUSHA,0,0); w[3]=VIF_CODE(VIF_DIRECT,0,data_qw-1u);
 	q=(uint64_t*)(w+4);
@@ -203,15 +245,17 @@ hcu_bitmap_quad_status hcu_bitmap_quad_emit_flash(chain_t *c,uint16_t screen_w,u
 	q[6]=framebuffer_xyoffset(screen_w,screen_h); q[7]=GS_A_XYOFFSET_1;
 	q[8]=scissor_value(&s); q[9]=GS_A_SCISSOR_1;
 	q[10]=GIF_TAG(6,1,1,prim,GIFX_FLG_PACKED,3); q[11]=0x531; q+=12;
-	{ tex_info none; memset(&none,0,sizeof(none)); none.width=1; none.height=1;
-	  for(i=0;i<6;i++,q+=6) put_vertex(q,&v[order[i]],&s,&none); }
+	emit_flash_verts(q,v,&s,order,cap_a,cap_rgb);
+	q+=36;
 	if(pass2){
 		q[0]=GIF_TAG(1,1,0,0,GIFX_FLG_PACKED,1); q[1]=GIF_REGS_AD;
 		q[2]=GS_ALPHA(0,2,2,1,128); q[3]=GS_A_ALPHA_1;
 		q[4]=GIF_TAG(6,1,1,prim,GIFX_FLG_PACKED,3); q[5]=0x531; q+=6;
-		{ tex_info none; memset(&none,0,sizeof(none)); none.width=1; none.height=1;
-		  for(i=0;i<6;i++,q+=6) put_vertex(q,&v[order[i]],&s,&none); }
+		emit_flash_verts(q,v,&s,order,cap_a,cap_rgb);
 	}
+	if(!hcu_bitmap_restore_gs_draw_state(c,NULL,NULL,framebuffer_xyoffset(screen_w,screen_h),
+		(uint64_t)(screen_w-1u)<<16|(uint64_t)(screen_h-1u)<<48))
+		return HCU_BITMAP_QUAD_CAPACITY;
 	return HCU_BITMAP_QUAD_OK;
 }
 

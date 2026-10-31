@@ -125,8 +125,8 @@ def sky_index(rows: list[dict], sky_model_datum: int) -> int:
     return hits[0]
 
 
-def scenario_sky_datum(manifest: dict, package_json: Path) -> int | None:
-    """The CE model tag of the package's scenario sky, or None when the map has no sky.
+def scenario_sky_data(manifest: dict, package_json: Path) -> dict | None:
+    """Return scenario SKY0 data, or None when the map has no sky.
 
     The map is the manifest's profile.map source; its file must match the manifest sha256 before it is read."""
     from halo2ps2 import skyconv  # noqa: E402  (imported here so tools without the submodule still run the rest)
@@ -138,12 +138,11 @@ def scenario_sky_datum(manifest: dict, package_json: Path) -> int | None:
     if hashlib.sha256(map_path.read_bytes()).hexdigest() != entry["sha256"]:
         raise SystemExit(f"scenario map sha256 mismatch: {entry['path']}")
     sky = skyconv.read_sky(map_path)
-    if sky is None or not sky["model_tag"]:
-        return None
-    return int(sky["model_tag"])
+    return sky
 
 
 def render(rows: list[dict], package_json: Path, sky: int | None = None, prefix: str = "",
+           fog_rgb: tuple[int, int, int] | None = None,
            map_name: str | None = None) -> str:
     """prefix "" writes the selected row's table (hcu_c3_objects_table, HCU_C3_OBJECTS_*). prefix "succ_" writes the
     C3.11 successor's table (hcu_c3_succ_objects_table, HCU_C3_SUCC_OBJECTS_*, plus the map name it belongs to):
@@ -162,6 +161,8 @@ def render(rows: list[dict], package_json: Path, sky: int | None = None, prefix:
         "",
         f"#define HCU_C3_{upper}OBJECTS_TABLE_COUNT {len(rows)}u",
     ] + ([f"#define HCU_C3_{upper}OBJECTS_SKY_INDEX {sky}u"] if sky is not None else []) + (
+        [f"#define HCU_C3_{upper}OBJECTS_SKY_FOG_RGB {{ {fog_rgb[0]}u, {fog_rgb[1]}u, {fog_rgb[2]}u }}"]
+        if fog_rgb is not None else []) + (
         [f'#define HCU_C3_{upper}OBJECTS_MAP "{map_name}"'] if map_name else []) + [
         f"static const hcu_render_objects_table_entry hcu_c3_{prefix}objects_table"
         f"[HCU_C3_{upper}OBJECTS_TABLE_COUNT] = {{",
@@ -198,16 +199,22 @@ def main(argv=None) -> int:
     manifest = json.loads(args.package_json.read_text())
     rows = select(manifest, SYNTHETIC_PATHS if args.synthetic_paths else None)
     datum = args.sky_model_datum
+    fog_rgb = None
     if args.sky_from_scenario:
-        datum = scenario_sky_datum(manifest, args.package_json)
+        scenario_sky = scenario_sky_data(manifest, args.package_json)
+        datum = int(scenario_sky["model_tag"]) if scenario_sky and scenario_sky["model_tag"] else None
+        if scenario_sky and scenario_sky.get("fog_rgb") is not None:
+            fog_rgb = tuple(max(0, min(255, int(round(float(channel) * 255.0))))
+                            for channel in scenario_sky["fog_rgb"])
     sky = sky_index(rows, datum) if datum is not None else None
     add_model_bounds(rows, manifest, args.package_json)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     prefix = "succ_" if args.successor else ""
     map_name = manifest["profile"]["map"] if args.successor else None
-    args.output.write_text(render(rows, args.package_json, sky, prefix, map_name))
+    args.output.write_text(render(rows, args.package_json, sky, prefix, fog_rgb, map_name))
     print(f"entries {len(rows)} MODL {sum(1 for r in rows)} OTEX {sum(1 for r in rows if r['texture_chunk'])}")
     print(f"sky {'index ' + str(sky) if sky is not None else 'none (sky disabled)'}")
+    print(f"sky fog RGB {fog_rgb if fog_rgb is not None else 'unavailable (horizon fallback)'}")
     print(f"wrote {args.output} ({len(rows)} entries)")
     return 0
 

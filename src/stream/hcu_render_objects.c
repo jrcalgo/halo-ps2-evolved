@@ -21,6 +21,28 @@ static uint32_t s_lag_trace_events;
 static hcu_render_objects_frustum s_view_frustums[HALO_PS2_FRAME_MAX_VIEWS];
 static const halo_ps2_frame_snapshot *s_frustum_snapshot;
 static uint32_t s_frustum_sequence, s_frustum_generation;
+static uint8_t s_particle_density_percent = 100u;
+static float s_view_distance_scale = 1.0f;
+
+void hcu_render_objects_set_particle_density_percent(uint8_t percent)
+{
+	s_particle_density_percent = percent > 100u ? 100u : percent;
+}
+
+void hcu_render_objects_set_view_distance_scale(float scale)
+{
+	s_view_distance_scale = scale > 0.0f && scale <= 1.0f ? scale : 1.0f;
+}
+
+#ifdef HCU_RENDER_OBJECTS_EE
+static uint32_t particle_density_hash(const hcu_render_effect_draw *fx)
+{
+	uint32_t h = fx->source_index * 0x9E3779B1u ^ fx->source_generation * 0x85EBCA6Bu ^
+		fx->resource_id * 0xC2B2AE35u;
+	h ^= h >> 16; h *= 0x7FEB352Du; h ^= h >> 15; h *= 0x846CA68Bu; h ^= h >> 16;
+	return h % 100u;
+}
+#endif
 
 #ifndef HCU_C3_OBJECT_PREPARE_CACHE
 #define HCU_C3_OBJECT_PREPARE_CACHE 0
@@ -640,10 +662,20 @@ int hcu_render_objects_select_first_person(const halo_ps2_frame_snapshot *snap,
 			continue;
 		}
 		if (!models[slot].node_count ||
-			models[slot].node_count > HALO_PS2_FRAME_MAX_FIRST_PERSON_NODES ||
-			nodes != models[slot].node_count) {
+			models[slot].node_count > HALO_PS2_FRAME_MAX_FIRST_PERSON_NODES) {
 			counters->failures++;
 			continue;
+		}
+		/* A palette longer than the model can draw the model's nodes. A shorter
+		 * palette cannot: pose walks every model node, and that would read past
+		 * the published range. Either mismatch is a first-person model miss. */
+		if (nodes != models[slot].node_count) {
+			counters->first_person_model_misses++;
+			if (nodes < models[slot].node_count) {
+				counters->failures++;
+				continue;
+			}
+			nodes = models[slot].node_count;
 		}
 		out[emitted].resource_id = resource->id;
 		out[emitted].model_slot = (uint16_t)slot;
@@ -1364,20 +1396,38 @@ static uint32_t s_slot_count;
  * immutable snapshot, so the counts balance; refused slots still count so the drop cannot leave a residue. */
 static uint16_t s_slot_pins[HCU_OBJECTS_MAX_MODELS];
 static uint8_t s_slot_rank[HCU_OBJECTS_MAX_MODELS];   /* C3.objects: this frame's residency rank (HCU_OBJECTS_RANK_UNUSED = not referenced) */
+/* Slots the latest residency_frame marked needed, and the pin counts that apply added for them.
+ * Drop subtracts those counts so a later frustum rebuild cannot unbalance the pins. */
+static uint8_t s_need_pin[HCU_OBJECTS_MAX_MODELS];
+static uint16_t s_pin_applied[HCU_OBJECTS_MAX_MODELS];
+static uint32_t s_need_pin_seq, s_need_pin_gen;
+static uint8_t s_need_pin_valid;
+static uint32_t s_rank_frame = 0xffffffffu;
 static hcu_render_objects_counters s_totals;
 static hcu_render_drawn_identity_set s_drawn_identities;
 static hcu_render_objects_pin_t s_pin;
 
 static void slot_pins_apply(const halo_ps2_frame_snapshot *snap, int delta)
 {
-	uint32_t r, k;
+	uint32_t k;
 	if (!snap) return;
-	for (r = 0; r < snap->resource_count && r < HALO_PS2_FRAME_MAX_RESOURCES; r++)
-		for (k = 0; k < s_slot_count; k++)
-			if ((s_slots[k].entry->source_datum & 0xFFFFu) == snap->resources[r].id) {
-				if (delta > 0) s_slot_pins[k]++;
-				else if (s_slot_pins[k] > 0u) s_slot_pins[k]--;
-			}
+	if (delta > 0) {
+		memset(s_pin_applied, 0, sizeof s_pin_applied);
+		/* Only the slots residency marked visible this snapshot. The sky pin is separate. */
+		if (!s_need_pin_valid || snap->sequence != s_need_pin_seq ||
+			snap->map_generation != s_need_pin_gen) return;
+		for (k = 0; k < s_slot_count; k++) {
+			if (!s_need_pin[k]) continue;
+			s_slot_pins[k]++;
+			s_pin_applied[k] = 1u;
+		}
+		return;
+	}
+	for (k = 0; k < s_slot_count; k++) {
+		if (!s_pin_applied[k]) continue;
+		if (s_slot_pins[k] > 0u) s_slot_pins[k]--;
+		s_pin_applied[k] = 0u;
+	}
 }
 
 static void pin_drop(void)
@@ -1387,20 +1437,29 @@ static void pin_drop(void)
 	hcu_render_objects_unpin(&s_pin, &s_totals);
 }
 
-/* Residency pool: the render arena's rest, managed first-fit in 64-byte-aligned segments. Segments are kept
+/* Residency pool: the render arena's rest, managed best-fit in 64-byte-aligned segments. Segments are kept
  * in offset order and cover the pool exactly; adjacent free segments merge on free. */
 #define OBJ_SEG_MAX 256u
-typedef struct { uint32_t off, size; uint8_t used; } obj_seg;
+typedef hcu_render_objects_pool_segment obj_seg;
 static uint8_t *s_pool;
 static uint32_t s_pool_size;
 static obj_seg s_segs[OBJ_SEG_MAX];
 static uint32_t s_seg_count;
 static hcu_render_objects_residency s_res;
+static hcu_render_objects_pool_event s_last_pool_event;
 static const hcu_asset_profile_view *s_profile;
 static uint32_t s_bounds_map_generation;
 static uint32_t s_tex_total;
 static tex_source_t s_src_total;
 static int s_installed;
+
+static void pool_event_record(uint32_t event, const obj_slot *slot, uint32_t need, uint32_t reclaim)
+{
+	s_last_pool_event.event = event;
+	s_last_pool_event.resource_id = slot && slot->entry ? slot->entry->source_datum & 0xFFFFu : 0u;
+	s_last_pool_event.need_bytes = need;
+	s_last_pool_event.reclaimable_bytes = reclaim;
+}
 
 static float hcu_render_object_bound_radius(const halo_ps2_frame_snapshot *snap,
 	const halo_ps2_frame_object *object)
@@ -1643,6 +1702,7 @@ static int entry_need(const obj_slot *s, uint32_t *out)
 typedef struct {
 	uint32_t entry, off, stage, at, last_frame, pump_frame;
 	uint8_t tex_ok;
+	uint8_t rank;                /* residency rank that started this job */
 	uint32_t read_cycles;
 	sha256_context sha;
 } obj_load_job;
@@ -1661,13 +1721,10 @@ static void pool_init(uint8_t *base, uint32_t size)
 	s_res.pool_used = 0;
 }
 
-/* First free segment of at least n bytes, or -1. */
+/* Smallest free segment that fits, or -1. */
 static int pool_find(uint32_t n)
 {
-	uint32_t i;
-	for (i = 0; i < s_seg_count; i++)
-		if (!s_segs[i].used && s_segs[i].size >= n) return (int)i;
-	return -1;
+	return hcu_render_objects_pool_best_fit_index(s_segs, s_seg_count, n);
 }
 
 static uint32_t pool_alloc(uint32_t n)
@@ -1714,8 +1771,8 @@ static void pool_free(uint32_t off)
 	}
 }
 
-/* Fence: the latest kick is complete (or there is none), so no in-flight chain reads the pool. Anything
- * else (pending, or not yet observed) blocks eviction. */
+/* Strict fence for pre-admit: no snapshot reader, and the latest kick is complete (or there is none).
+ * Model eviction does not use this. A pipelined GS kick would otherwise freeze the whole pool. */
 static int pool_fence_safe(void)
 {
 	uint32_t k = bsp_render_kick_seq();
@@ -1724,6 +1781,40 @@ static int pool_fence_safe(void)
 	if (bank_stats.read_pins_active != 0u) return 0;
 	if (k == 0u) return 1;
 	return bsp_render_fence_observed(k) == 1;
+}
+
+/* Latest kick vs the newest kick whose VIF and GS were both observed. Refreshed once per frame. */
+static uint32_t s_kick_cache_frame = 0xffffffffu;
+static uint32_t s_kick_latest, s_kick_done;
+
+static void kick_cache_refresh(void)
+{
+	if (s_kick_cache_frame == s_frame) return;
+	s_kick_cache_frame = s_frame;
+	s_kick_latest = bsp_render_kick_seq();
+	s_kick_done = s_kick_latest ? bsp_render_completed_kick_seq() : 0u;
+}
+
+/* No per-slot kick id is stored. s_slot_open_kick is latched for the frame from last_used before
+ * this frame's refresh: those bytes may still be on the way to the GS. Anything else may be
+ * evicted once there is no kick, or once the kick before the latest has been observed. A slot
+ * this frame still references waits for the latest kick, so a higher rank cannot pull bytes out
+ * from under the chain that is drawing them. */
+static uint8_t s_slot_open_kick[HCU_OBJECTS_MAX_MODELS];
+static uint32_t s_residency_frame_seen = 0xffffffffu;
+static uint32_t s_residency_frame_prev;
+static uint32_t s_open_kick_frame = 0xffffffffu;
+
+static int slot_evict_fence_ok(uint32_t slot, int referenced)
+{
+	kick_cache_refresh();
+	if (slot < HCU_OBJECTS_MAX_MODELS && s_slot_open_kick[slot]) return 0;
+	if (s_kick_latest == 0u || s_kick_done >= s_kick_latest) return 1;
+	if (referenced) return 0;
+	/* No earlier kick, or the kick before the latest has been observed.
+	 * Slots not latched above are not part of the unobserved kick. */
+	if (s_kick_latest <= 1u) return 1;
+	return s_kick_done >= s_kick_latest - 1u;
 }
 
 /* Reads and checks one chunk's directory entry (size and hash) without reading its bytes. */
@@ -1741,11 +1832,15 @@ static int chunk_check(const hcu_asset_profile_view *view, uint32_t id, const ui
 static int job_pump(const hcu_asset_profile_view *view, const obj_slot *s, const hcu_render_objects_table_entry *e,
 	uint8_t *bytes, uint32_t model_span, uint32_t frame)
 {
-	uint32_t budget = OBJ_LOAD_SLICE_BYTES;
+	/* Rank 0 and 1 take two slice budgets in the one pump. Each read stays within one slice and
+	 * within the 64 KiB media staging limit. The SHA-256 context is updated once per byte. */
+	uint32_t slices = s_job.rank <= 1u ? 2u : 1u;
+	uint32_t budget = OBJ_LOAD_SLICE_BYTES * slices;
+	if (budget > 65536u) budget = 65536u;
 #if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
 	uint32_t slice_read = 0;
 #endif
-	if (s_job.pump_frame == frame + 1u) return 0;   /* one slice per frame, however often residency runs */
+	if (s_job.pump_frame == frame + 1u) return 0;   /* one pump per frame, however often residency runs */
 	s_job.pump_frame = frame + 1u;
 	s_job.last_frame = frame;
 	while (s_job.stage < 2u) {
@@ -1770,6 +1865,9 @@ static int job_pump(const hcu_asset_profile_view *view, const obj_slot *s, const
 				return 0;
 			}
 			if (n > budget) n = budget;
+			if (n > OBJ_LOAD_SLICE_BYTES) n = OBJ_LOAD_SLICE_BYTES;
+			if (n > 65536u) n = 65536u;
+			if (!n) return 0;
 			{
 #if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
 				uint32_t rt = timer_cycles();
@@ -1804,7 +1902,7 @@ static int job_pump(const hcu_asset_profile_view *view, const obj_slot *s, const
 /* Loads entry i into a fresh pool region, reading and verifying its bytes. Returns 0, or -1 when the pool
  * has no room (the caller may evict), -2 when the entry itself is refused, or -3 while a sliced load is still
  * reading (its pool region stays reserved) and -4 when another entry's sliced load is running. */
-static int entry_load(const hcu_asset_profile_view *view, uint32_t i, uint32_t frame)
+static int entry_load(const hcu_asset_profile_view *view, uint32_t i, uint32_t frame, uint32_t rank)
 {
 	obj_slot *s = &s_slots[i];
 	const hcu_render_objects_table_entry *e = s->entry;
@@ -1834,6 +1932,7 @@ static int entry_load(const hcu_asset_profile_view *view, uint32_t i, uint32_t f
 			s_job.at = 0u;
 			s_job.pump_frame = 0u;
 			s_job.tex_ok = 0u;
+			s_job.rank = (uint8_t)rank;
 			s_job.read_cycles = 0u;
 #if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
 			printf("HALO_PS2_LOCAL lag-job frame=%u entry=%u datum=%u model=%u texture=%u\n",
@@ -1843,6 +1942,7 @@ static int entry_load(const hcu_asset_profile_view *view, uint32_t i, uint32_t f
 		}
 		off = s_job.off;
 		bytes = s_pool + off;
+		if (rank < s_job.rank) s_job.rank = (uint8_t)rank;
 		rc = job_pump(view, s, e, bytes, model_span, frame);
 		if (rc == 0) return -3;
 		s_job.entry = OBJ_JOB_NONE;
@@ -1966,52 +2066,117 @@ static void entry_evict(uint32_t i)
 	s_res.resident--;
 }
 
+#define OBJ_EVICT_HYSTERESIS_FRAMES 8u
+
+/* An entry that left the visible set keeps its bytes for eight more frames. */
+static int slot_hysteresis_holds(const obj_slot *s, int referenced, uint32_t frame)
+{
+	if (referenced || !s || s->last_used == 0u) return 0;
+	return frame < s->last_used + OBJ_EVICT_HYSTERESIS_FRAMES;
+}
+
+/* Rank and pin rules match hcu_render_objects_residency_rank_victim_ok. The fence is per slot:
+ * bytes in the unobserved kick stay, and a slot that just left the visible set stays too. */
+static int slot_victim_ok(uint32_t v, uint32_t requester_rank, uint32_t frame, uint32_t *refused_pinned)
+{
+	int referenced;
+	if (v >= s_slot_count || !s_slots[v].loaded || s_slot_rank[v] <= requester_rank) return 0;
+	referenced = s_slot_rank[v] != HCU_OBJECTS_RANK_UNUSED;
+	if (slot_hysteresis_holds(&s_slots[v], referenced, frame)) return 0;
+	if (!slot_evict_fence_ok(v, referenced)) return 0;
+	if (s_slot_pins[v] == 0u) return 1;
+	if (refused_pinned) (*refused_pinned)++;
+	return 0;
+}
+
+static void job_abandon(void)
+{
+	if (s_job.entry == OBJ_JOB_NONE) return;
+	pool_free(s_job.off);
+	s_job.entry = OBJ_JOB_NONE;
+}
+
+/* True only after this frame's ranks are published. Synthetic loads run before that and must
+ * still be able to start. */
+static int rank01_pending(uint32_t frame)
+{
+	uint32_t i;
+	if (s_rank_frame != frame) return 0;
+	for (i = 0; i < s_slot_count; i++)
+		if (s_slot_rank[i] <= 1u && !s_slots[i].loaded && !s_slots[i].refused) return 1;
+	return 0;
+}
+
 /* Makes entry i resident for this frame: loads it when the pool has room, otherwise evicts the least recently
- * used entries that this frame does not reference, and only while the fence is clear. */
+ * used entries that this frame does not reference and that the open kick is not reading. One sliced job. */
 static void entry_request(const hcu_asset_profile_view *view, uint32_t i, uint32_t frame, uint32_t rank)
 {
 	obj_slot *s = &s_slots[i];
 	uint32_t need;
-	int safe = -1;
 	if (s->loaded) { s->last_used = frame + 1u; s_res.hits++; return; }
 	if (s->refused) { s_res.misses++; return; }
-	if (entry_need(s, &need) != 0) { s->refused = 1; s_res.entry_refusals++; s_res.misses++; return; }
+	if (entry_need(s, &need) != 0) { pool_event_record(1u, s, 0u, 0u); s->refused = 1; s_res.entry_refusals++; s_res.misses++; return; }
 	if (s_job.entry == i) {                       /* its sliced load already owns a pool region */
-		if (entry_load(view, i, frame) != 0) s_res.misses++;
+		if (entry_load(view, i, frame, rank) != 0) s_res.misses++;
 		return;
 	}
-	if (s_job.entry != OBJ_JOB_NONE && frame <= s_job.last_frame + 2u) { s_res.misses++; return; }   /* one sliced load at a time */
+	/* Do not start another rank-3 load while a rank 0 or 1 entry is still missing.
+	 * The in-flight rank-3 job is the branch above: its current slice may finish. */
+	if (rank >= 3u && rank01_pending(frame)) { s_res.misses++; return; }
+	if (s_job.entry != OBJ_JOB_NONE) {
+		/* Rank 0 preempts a rank-3 job between slices. A slice already pumped this frame
+		 * stands; the switch happens on the next pump. One job stays in flight. */
+		if (rank == 0u && s_job.rank >= 3u && s_job.pump_frame != frame + 1u) job_abandon();
+		else if (frame <= s_job.last_frame + 2u) { s_res.misses++; return; }
+		else job_abandon();
+	}
 	if (!hcu_render_objects_pool_request_fits(need, s_res.pool_bytes)) {
+		pool_event_record(2u, s, need, s_res.pool_bytes - s_res.pool_used);
 		s_res.pool_refusals++;
 		s_res.misses++;
 		return;
 	}
 	for (;;) {
+		int blocked_by_fence = 0;
+		uint32_t v, best, reclaim;
 		if (pool_find(need) >= 0) {
-			if (entry_load(view, i, frame) == 0) return;
+			if (entry_load(view, i, frame, rank) == 0) return;
 			break;
 		}
-		if (safe < 0) safe = pool_fence_safe();
-		if (!safe) { s_res.fence_blocked++; break; }
-		{
-			/* Evict only when the victims can make room: free bytes plus every eligible victim must cover the request,
-			 * so a request that cannot fit never costs a resident entry a reload. */
-			uint32_t v, reclaim = s_res.pool_bytes - s_res.pool_used, dummy = 0;
-			for (v = 0; v < s_slot_count; v++)
-				if (hcu_render_objects_residency_rank_victim_ok(s_slots[v].loaded, s_slot_rank[v], rank, safe,
-					s_slot_pins[v], &dummy)) reclaim += s_slots[v].pool_size;
-			if (reclaim < need) { s_res.pool_refusals++; break; }
+		/* Evict only when the victims can make room: free bytes plus every eligible victim must cover the request,
+		 * so a request that cannot fit never costs a resident entry a reload. */
+		reclaim = s_res.pool_bytes - s_res.pool_used;
+		for (v = 0; v < s_slot_count; v++) {
+			int referenced = s_slot_rank[v] != HCU_OBJECTS_RANK_UNUSED;
+			if (!s_slots[v].loaded || s_slot_rank[v] <= rank) continue;
+			if (slot_hysteresis_holds(&s_slots[v], referenced, frame)) continue;
+			if (!slot_evict_fence_ok(v, referenced)) { blocked_by_fence = 1; continue; }
+			if (s_slot_pins[v] != 0u) continue;
+			reclaim += s_slots[v].pool_size;
 		}
-		{
-			uint32_t v, best = OBJ_NONE;
-			for (v = 0; v < s_slot_count; v++)
-				if (hcu_render_objects_residency_rank_victim_ok(s_slots[v].loaded, s_slot_rank[v], rank, safe,
-					s_slot_pins[v], &s_res.evict_refused_pinned) &&
-					(best == OBJ_NONE || s_slot_rank[v] > s_slot_rank[best] ||
-					 (s_slot_rank[v] == s_slot_rank[best] && s_slots[v].last_used < s_slots[best].last_used))) best = v;
-			if (best == OBJ_NONE) { s_res.pool_refusals++; break; }
-			entry_evict(best);
+		if (reclaim < need) {
+			if (blocked_by_fence && reclaim == s_res.pool_bytes - s_res.pool_used) {
+				pool_event_record(3u, s, need, s_res.pool_bytes - s_res.pool_used);
+				s_res.fence_blocked++;
+			} else {
+				pool_event_record(4u, s, need, reclaim);
+				s_res.pool_refusals++;
+			}
+			break;
 		}
+		best = OBJ_NONE;
+		reclaim = s_res.pool_bytes - s_res.pool_used;
+		for (v = 0; v < s_slot_count; v++)
+			if (slot_victim_ok(v, rank, frame, &s_res.evict_refused_pinned) &&
+				(best == OBJ_NONE || s_slot_rank[v] > s_slot_rank[best] ||
+				 (s_slot_rank[v] == s_slot_rank[best] && s_slots[v].last_used < s_slots[best].last_used))) best = v;
+		if (best == OBJ_NONE) {
+			pool_event_record(blocked_by_fence ? 3u : 5u, s, need, reclaim);
+			if (blocked_by_fence) s_res.fence_blocked++;
+			else s_res.pool_refusals++;
+			break;
+		}
+		entry_evict(best);
 	}
 	s_res.misses++;
 }
@@ -2027,16 +2192,14 @@ static int path_is_fp_model(const char *path)
 	return memcmp(path + (n - (sizeof suf - 1u)), suf, sizeof suf - 1u) == 0;
 }
 
-/* One unloaded viewmodel per frame. While the visible set is still loading it waits, so scenery appears first;
- * after that it reserves a pool region of its own and the sliced read spreads the optical read and hash over
- * frames. Picking the weapon up later finds it resident. Once resident, residency_frame pins the slot at rank 0. */
+/* One unloaded viewmodel per frame, at rank 0, without waiting for the rest of the visible set.
+ * A rank 0-2 job already in flight is left alone. A rank-3 job is preempted between slices by
+ * entry_request. Once resident, residency_frame keeps the slot at rank 0. */
 static void fp_prewarm(uint32_t frame)
 {
 	uint32_t i;
-	if (!s_profile || s_job.entry != OBJ_JOB_NONE) return;
-	for (i = 0; i < s_slot_count; i++)
-		if (!s_slots[i].loaded && !s_slots[i].refused && s_slot_rank[i] != HCU_OBJECTS_RANK_UNUSED)
-			return;
+	if (!s_profile) return;
+	if (s_job.entry != OBJ_JOB_NONE && s_job.rank < 3u) return;
 	for (i = 0; i < s_slot_count; i++) {
 		obj_slot *s = &s_slots[i];
 		if (s->loaded || s->refused || !s->entry || !path_is_fp_model(s->entry->path)) continue;
@@ -2107,14 +2270,36 @@ static void residency_frame(const halo_ps2_frame_snapshot *snap, uint32_t frame,
 		if (s_slots[i].loaded && s_slots[i].entry && path_is_fp_model(s_slots[i].entry->path) &&
 			s_slot_rank[i] > 0u)
 			s_slot_rank[i] = 0u;
+	s_rank_frame = frame;
+	s_need_pin_seq = snap->sequence;
+	s_need_pin_gen = snap->map_generation;
+	s_need_pin_valid = 1u;
+	for (i = 0; i < s_slot_count; i++) s_need_pin[i] = need[i];
+	/* Latch which resident slots the still-open kick may be reading, before last_used moves. */
+	if (s_residency_frame_seen != frame) {
+		int latest_idle;
+		s_residency_frame_prev = s_residency_frame_seen;
+		s_residency_frame_seen = frame;
+		kick_cache_refresh();
+		latest_idle = s_kick_latest == 0u || s_kick_done >= s_kick_latest;
+		for (i = 0; i < s_slot_count; i++)
+			s_slot_open_kick[i] = (!latest_idle && s_slots[i].last_used != 0u &&
+				s_residency_frame_prev != 0xffffffffu &&
+				s_slots[i].last_used == s_residency_frame_prev + 1u) ? 1u : 0u;
+		for (; i < HCU_OBJECTS_MAX_MODELS; i++) s_slot_open_kick[i] = 0u;
+		s_open_kick_frame = frame;
+	}
 	/* Mark what this frame uses before any eviction, so a referenced entry is never the victim. */
 	for (i = 0; i < s_slot_count; i++)
 		if (need[i] && s_slots[i].loaded) s_slots[i].last_used = frame + 1u;
-	/* Resolve shared resources at their most important visible type, then admit by that priority. */
-	for (p = 0; p <= 3u; p++)
+	/* Rank 0 first (visible gun and hands), then viewmodel prewarm, then the lower ranks.
+	 * Prewarm can preempt a rank-3 job before that job takes this frame's slice. */
+	for (i = 0; i < s_slot_count; i++)
+		if (need[i] && priority[i] == 0u) entry_request(s_profile, i, frame, 0u);
+	fp_prewarm(frame);
+	for (p = 1u; p <= 3u; p++)
 		for (i = 0; i < s_slot_count; i++)
 			if (need[i] && priority[i] == p) entry_request(s_profile, i, frame, p);
-	fp_prewarm(frame);
 #if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
 	{
 		uint32_t dt = timer_cycles() - residency_t0;
@@ -2190,6 +2375,25 @@ static lodctl_t s_fp_lodctl;
 /* Level 2 is the first lodctl setting with a one-step model bias. Compensate
  * its distance scale so this detail change does not shorten weapon visibility. */
 static lodctl_t s_ground_weapon_lodctl = { 0.0f, 0.0f, 2, 0, 0, 0, 0u, 0u };
+
+/* Draw distance for world objects and loose weapons. Scale is 1 until the first tick. */
+static lodctl_t s_world_lod;
+static int s_world_lod_inited;
+
+void hcu_render_objects_lod_tick(float frame_ms)
+{
+	if (!s_world_lod_inited) {
+		lodctl_init(&s_world_lod, 33.3f, 30);
+		s_world_lod_inited = 1;
+	}
+	/* lodctl_frame already steps down when frame_ms exceeds the 33.3 ms budget. */
+	lodctl_frame(&s_world_lod, frame_ms, 0);
+}
+
+float hcu_render_objects_lod_distance_scale(void)
+{
+	return s_world_lod_inited ? lodctl_distance_scale(&s_world_lod) : 1.0f;
+}
 
 #if defined(HALO_PS2_C3_MOVEMENT_TRACE)
 static uint16_t s_fp_pose_diag_first[2];
@@ -2592,8 +2796,9 @@ static int fx_source(const hcu_bitmap_binding *b, bsp_fx_tex_src *out)
 	if (!s_fx_profile || !s_fx_staging || !b || b->image_index != 0u) return -1;
 	if (hcu_asset_profile_lookup(s_fx_profile, HCU_ASSET_CHUNK_MEDIA, b->chunk_id, &cv) != HCU_ASSET_PROFILE_OK ||
 		cv.size > s_fx_staging_bytes || memcmp(cv.sha256, b->expected_chunk_sha256, 32)) return -1;
-	s_view_counters.fx_source_read_bytes += cv.size;
-	/* s_fx_staging is disposable, so the single-pass staged read applies (one read and one hash per byte). */
+	/* A pool hit is a memcpy. Count bytes only when the chunk is actually read from the package. */
+	if (fx_src_find(b->chunk_id, cv.sha256, cv.size) < 0)
+		s_view_counters.fx_source_read_bytes += cv.size;
 	if (fx_src_fill(b->chunk_id, cv.sha256, cv.size) != 0) return -1;
 	if (tex_open(&section, (const uint8_t *)s_fx_staging, cv.size) != TEX_OK ||
 		b->image_index >= section.texture_count) return -1;
@@ -2643,7 +2848,8 @@ static int fx_admission_defer(void *context, uint32_t cache_key, uint16_t width,
 #define FX_GOV_LEVEL1 12u
 #define FX_GOV_LEVEL2 30u
 static uint32_t s_gov_last, s_gov_frame = 0xffffffffu, s_gov_pressure;
-static unsigned s_gov_level;
+static unsigned s_gov_level, s_gov_ok_streak;
+#define FX_GOV_RECOVER_CYCLES (33u * 294912u)
 
 static void fx_governor_update(void)
 {
@@ -2655,10 +2861,22 @@ static void fx_governor_update(void)
 	s_gov_last = now;
 	if (s_gov_frame == 0u) return;                  /* the first interval spans the map load */
 	if (dt > FX_GOV_LATE_CYCLES) {
+		s_gov_ok_streak = 0u;
 		s_gov_pressure += FX_GOV_LATE_STEP;
 		if (s_gov_pressure > FX_GOV_PRESSURE_MAX) s_gov_pressure = FX_GOV_PRESSURE_MAX;
+	} else if (dt < FX_GOV_RECOVER_CYCLES) {
+		/* Three frames under 33 ms drop one level. Subtracting a fixed
+		 * pressure step can leave the 1-decal band in place. */
+		if (++s_gov_ok_streak >= 3u) {
+			s_gov_ok_streak = 0u;
+			if (s_gov_pressure >= FX_GOV_LEVEL2) s_gov_pressure = FX_GOV_LEVEL1;
+			else s_gov_pressure = 0u;
+		}
 	} else if (dt < FX_GOV_OK_CYCLES && s_gov_pressure) {
+		s_gov_ok_streak = 0u;
 		s_gov_pressure--;
+	} else {
+		s_gov_ok_streak = 0u;
 	}
 	s_gov_level = s_gov_pressure >= FX_GOV_LEVEL2 ? 2u : s_gov_pressure >= FX_GOV_LEVEL1 ? 1u : 0u;
 }
@@ -3239,6 +3457,10 @@ static void fx_pass(render_ctx_t *rc, int first_person_pass)
 	g.near_z = rc->cam->near_z; g.zmax = 16777215.0f;
 	g.sx = (float)VIDEO_WIDTH * 0.5f; g.sy = (float)VIDEO_HEIGHT * 0.5f; g.ox = 2048.0f; g.oy = 2048.0f;
 	g.fog_k = 0.0f; g.fog_b = 4080.0f;
+	if (rc->opt && rc->opt->fog && rc->opt->fog_far > rc->opt->fog_near) {
+		g.fog_k = -4080.0f / (rc->opt->fog_far - rc->opt->fog_near);
+		g.fog_b = 4080.0f - rc->opt->fog_near * g.fog_k;
+	}
 	if (!fx_chain_reserve_blend_restore(c, &saved_limit, &saved_hud_limit, &saved_scope)) return;
 
 	for (i = 0; i < s_fx_count; i++) {
@@ -3601,7 +3823,15 @@ static void object_pass(void *user, render_ctx_t *rc)
 		s_objr.lod = d->ground_weapon_lod ? &s_ground_weapon_lodctl : NULL;
 		s_objr.bsp = NULL;
 		s_objr.bsp_index = 0;
-		s_objr.max_distance = d->ground_weapon_lod ? (4000.0f / lodctl_distance_scale(&s_ground_weapon_lodctl)) : 4000.0f;
+		{
+			/* Ground weapons keep their fixed lodctl bias. Divide its distance
+			 * scale back out, then apply the frame tick once. */
+			float distance_scale = hcu_render_objects_lod_distance_scale();
+			float weapon_scale = lodctl_distance_scale(&s_ground_weapon_lodctl);
+			s_objr.max_distance = 4000.0f * distance_scale;
+			if (d->ground_weapon_lod && weapon_scale > 0.0f)
+				s_objr.max_distance = (4000.0f / weapon_scale) * distance_scale;
+		}
 		s_objr.max_batches = OBJ_BUDGET;
 		s_objr.sky_model = -1;
 		s_objr.pose = pose_fn;
@@ -3652,6 +3882,7 @@ static void object_pass(void *user, render_ctx_t *rc)
 	 * snapshot's resource slots and palette ranges. */
 	{
 		camera_t viewmodel_cam;
+		camera_t viewmodel_source;
 		frustum_t viewmodel_frustum;
 		float viewmodel_clip[4][4];
 		render_ctx_t viewmodel_rc;
@@ -3661,7 +3892,16 @@ static void object_pass(void *user, render_ctx_t *rc)
 		uint32_t fp_total_start = timer_cycles();
 #endif
 		if (s_fp_draw_count > 0u && rc && rc->cam) {
-			if (camera_viewmodel_context(rc->cam, rc->viewport_w, rc->viewport_h,
+			viewmodel_source = *rc->cam;
+			if (s_snapshot && s_cur_view < s_snapshot->view_count) {
+				float authored_fov = s_snapshot->views[s_cur_view].viewmodel_vertical_field_of_view;
+				if (isfinite(authored_fov) && authored_fov > 0.019f && authored_fov < 2.8f &&
+					isfinite(viewmodel_source.aspect) && viewmodel_source.aspect > 0.05f &&
+					viewmodel_source.aspect < 20.0f)
+					viewmodel_source.hfov = 2.0f * atanf(
+						tanf(authored_fov * 0.5f) * viewmodel_source.aspect);
+			}
+			if (camera_viewmodel_context(&viewmodel_source, rc->viewport_w, rc->viewport_h,
 				VIDEO_WIDTH, VIDEO_HEIGHT, &viewmodel_cam, viewmodel_clip, &viewmodel_frustum) == 0) {
 				viewmodel_rc = *rc;
 				viewmodel_rc.cam = &viewmodel_cam;
@@ -3900,6 +4140,11 @@ void hcu_render_objects_residency_stats(hcu_render_objects_residency *out)
 	if (out) *out = s_res;
 }
 
+void hcu_render_objects_last_pool_event(hcu_render_objects_pool_event *out)
+{
+	if (out) *out = s_last_pool_event;
+}
+
 /* C3.6 sky: the scenario sky model, drawn by halo-ps2's obj_render_sky (camera-centred, Z test always, no Z write)
  * before each view's BSP. The sky entry is not a snapshot object, so frame begin requests it on its own. */
 void hcu_render_objects_set_sky_entry(uint32_t table_index)
@@ -4055,7 +4300,11 @@ const halo_ps2_frame_snapshot *hcu_render_objects_frame_begin(uint32_t frame, ui
 	hcu_snapshot_bank_stats bank_stats;
 	uint32_t pre_admit_sequence = 0u, pre_admit_generation = 0u;
 	int pre_admitted = 0;
+	int took_pin = 0;
 	s_frame = frame;
+	/* The probe reads this once after the complete frame's admission pass. Clear
+	 * it here so a frame with no refusal cannot inherit an older pool event. */
+	memset(&s_last_pool_event, 0, sizeof s_last_pool_event);
 	{
 		uint32_t previous_reads = s_view_counters.fx_source_read_bytes;
 		memset(&s_view_counters, 0, sizeof s_view_counters);
@@ -4094,13 +4343,16 @@ const halo_ps2_frame_snapshot *hcu_render_objects_frame_begin(uint32_t frame, ui
 	}
 	if (!s_pin.pinned) {
 		hcu_render_objects_pin(&s_pin, &s_totals);
-		if (s_pin.pinned) slot_pins_apply(s_pin.snapshot, 1);
+		took_pin = s_pin.pinned;
 	}
 	s_snapshot = s_pin.pinned ? s_pin.snapshot : NULL;
 	if (s_snapshot && (!pre_admitted || !hcu_render_objects_residency_pre_admit_matches(
 		pre_admit_sequence, pre_admit_generation, s_snapshot->sequence, s_snapshot->map_generation)))
 		residency_frame(s_snapshot, frame, layout_view_count, screen_w, screen_h,
 			display_aspect);
+	/* Need pins are published by residency_frame. Apply them after that pass
+	 * so a pre-admit skip cannot pin the previous snapshot's set. */
+	if (took_pin) slot_pins_apply(s_pin.snapshot, 1);
 	hcu_render_parity_frame_reset(&s_frame_parity);
 	if (s_sky_index < s_slot_count && !s_slots[s_sky_index].refused) {
 		entry_request(s_profile, s_sky_index, frame, 0u);   /* the sky is requested with the top rank (it is pinned once loaded) */
@@ -4123,9 +4375,12 @@ void hcu_render_objects_view_begin_rect(uint32_t view, int32_t view_w, int32_t v
 	/* Keep selection aligned with the parent view's exact projection. The same
 	 * layout aspect was used to admit residency before the snapshot was pinned. */
 	if (s_snapshot && view < s_snapshot->view_count && view < HALO_PS2_FRAME_MAX_VIEWS &&
-		view_w > 0 && view_h > 0)
-		hcu_render_objects_frustum_build_aspect(&s_snapshot->views[view],
-			camera_aspect, &s_view_frustums[view]);
+		view_w > 0 && view_h > 0 && hcu_render_objects_frustum_build_aspect(&s_snapshot->views[view],
+			camera_aspect, &s_view_frustums[view]) && s_view_distance_scale < 1.0f) {
+		float far_z = s_snapshot->views[view].camera.z_far;
+		if (isfinite(far_z) && far_z > 0.0f)
+			s_view_frustums[view].plane[1][3] -= far_z * (1.0f - s_view_distance_scale);
+	}
 	hcu_render_objects_view_begin(view);
 	s_view_fp_lod = hcu_render_objects_fp_lod(view_w, view_h, screen_w, screen_h);
 }
@@ -4155,6 +4410,19 @@ void hcu_render_objects_view_begin(uint32_t view)
 	s_fx_count = 0;
 	st = hcu_render_effects_select(s_snapshot, view, s_fx, HCU_FX_MAX_PER_VIEW, &s_fx_count, &s_view_counters);
 	if (st != 0) { s_view_counters.failures++; s_fx_count = 0; }
+	if (s_particle_density_percent < 100u && s_fx_count) {
+		uint32_t src, dst = 0u;
+		for (src = 0; src < s_fx_count; ++src) {
+			if (s_fx[src].kind == HALO_PS2_FRAME_FX_PARTICLE &&
+				particle_density_hash(&s_fx[src]) >= s_particle_density_percent) {
+				s_view_counters.fx_budget_deferred++;
+				continue;
+			}
+			if (dst != src) s_fx[dst] = s_fx[src];
+			++dst;
+		}
+		s_fx_count = dst;
+	}
 	if (s_frame == 0) {
 		if (!s_parity.records) hcu_render_parity_log_init(&s_parity, s_parity_store, HCU_OBJECTS_MAX_PARITY);
 		if (hcu_render_objects_parity(&s_parity, s_frame, s_draw, n, &s_view_counters) != HCU_RENDER_CONTENT_OK)

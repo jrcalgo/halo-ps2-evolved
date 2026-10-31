@@ -85,7 +85,9 @@ def prepare_map(name: str) -> str:
             shutil.copy2(CHAIN_INC / header, target)
     objects = dest / "objects-gen" / "hcu_c3_objects_table.h"
     objects.parent.mkdir(parents=True, exist_ok=True)
-    if not objects.is_file() or objects.stat().st_mtime < manifest_out.stat().st_mtime:
+    generator = ROOT / "tools/hcu_c3_objects_table.py"
+    newest_input = max(manifest_out.stat().st_mtime_ns, generator.stat().st_mtime_ns)
+    if not objects.is_file() or objects.stat().st_mtime_ns < newest_input:
         subprocess.run([
             sys.executable, "-I", "tools/hcu_c3_objects_table.py",
             "--package-json", str(manifest_out),

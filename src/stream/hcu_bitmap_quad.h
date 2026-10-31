@@ -97,9 +97,11 @@ hcu_bitmap_quad_status hcu_bitmap_quad_emit_validated(chain_t *chain,
 
 /* Screen flash: one untextured quad covering `rect`, scissored to it. `type` is
  * CE's render_screen_flash type (1 lighten, 2 darken, 3 max, 4 min, 6 tint) and
- * `argb` the flash colour with the intensity already applied. Lighten/max
- * composite as Cs + Cd * (1 - As) (two draws), darken/min subtract Cs, tint is
- * an ordinary alpha blend. Type 5 (invert) is not drawn and returns OK. */
+ * `argb` the flash colour with the intensity already applied. Lighten/max draw
+ * Cs + Cd*(1-As) in two passes, with colour and alpha capped below opaque; a
+ * near-black colour skips the add. Darken, min and tint are Cs*As+Cd*(1-As),
+ * and darken caps alpha so it cannot replace the frame. Type 5 (invert) is not
+ * drawn and returns OK. The draw is followed by a GS restore. */
 hcu_bitmap_quad_status hcu_bitmap_quad_emit_flash(chain_t *chain,
 	uint16_t screen_w, uint16_t screen_h, const hcu_bitmap_rect *rect,
 	uint32_t z, int16_t type, uint32_t argb);
@@ -119,5 +121,42 @@ hcu_bitmap_quad_status hcu_bitmap_quad_emit_ring(chain_t *chain,
 hcu_bitmap_quad_status hcu_bitmap_quad_emit_marker(chain_t *chain,
 	uint16_t screen_w, uint16_t screen_h, const hcu_bitmap_rect *rect,
 	const hcu_bitmap_vertex_t vertices[4], int subtract);
+
+/* Defined for the flash emitter and the screen-effect backend. Other includes
+ * of this header leave the helper out so they do not pull the compositor. */
+#ifdef HCU_BITMAP_GS_RESTORE_IMPL
+#include "render/decal_compose.h"
+
+#define HCU_BITMAP_GS_RESTORE_DRAW_N 4u
+#define HCU_BITMAP_GS_RESTORE_FULL_N 11u
+/* DMA tag plus chain_cnt(2+n): VIF qword, GIF tag, n A+D registers. */
+#define HCU_BITMAP_GS_RESTORE_QW(n) (3u + (n))
+
+/* NULL frame/zbuf restores TEST, ALPHA, XYOFFSET and SCISSOR. A resident target
+ * also restores FRAME (FBMSK clear), FBA, ZBUF, TEXA, CLAMP, TEX0 and TEX1. */
+static inline int hcu_bitmap_restore_gs_draw_state(chain_t *chain,
+	const uint64_t *frame, const uint64_t *zbuf, uint64_t xyoffset, uint64_t scissor)
+{
+	gs_ad ad[11];
+	unsigned n;
+	uint64_t test = GS_TEST(0u, 1u, 0u, 0u, 0u, 0u, 1u, 1u);
+	uint64_t alpha = GS_ALPHA(0u, 1u, 0u, 1u, 0u);
+	if (!chain) return 0;
+	if (frame && zbuf) {
+		if (decal_compose_restore_state(ad, *frame, 1u, *zbuf, test, alpha, xyoffset, scissor,
+			0x80ull | (0x80ull << 32), GS_CLAMP(1u, 1u, 0u, 0u, 0u, 0u), 0u,
+			GS_TEX1(1u, 0u, 0u, 0u, 0u, 0u, 0u)) != 0)
+			return 0;
+		n = HCU_BITMAP_GS_RESTORE_FULL_N;
+	} else {
+		ad[0].data = test; ad[0].addr = DECAL_GS_A_TEST_1;
+		ad[1].data = alpha; ad[1].addr = DECAL_GS_A_ALPHA_1;
+		ad[2].data = xyoffset; ad[2].addr = DECAL_GS_A_XYOFFSET_1;
+		ad[3].data = scissor; ad[3].addr = DECAL_GS_A_SCISSOR_1;
+		n = HCU_BITMAP_GS_RESTORE_DRAW_N;
+	}
+	return decal_compose_emit_ad(chain, ad, n, 0);
+}
+#endif
 
 #endif

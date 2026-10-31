@@ -444,13 +444,7 @@ static int request_volumes(const hcu_sound_request *r, const hcu_spu_sample *sam
 
 static void key_on(uint32_t voice, const hcu_sound_request *r, const hcu_spu_sample *sample, uint32_t vol_l, uint32_t vol_r)
 {
-#if defined(__mips__)
-	printf("HALO_PS2_LOCAL menu-sound key-on stage=begin voice=%u addr=%u\n", voice, sample->spu_addr);
-#endif
 	s_hw->set_param(voice_entry(voice, SD_VOICE_PARAM_VOLL), (uint16_t)vol_l);
-#if defined(__mips__)
-	printf("HALO_PS2_LOCAL menu-sound key-on stage=volume-left\n");
-#endif
 	s_hw->set_param(voice_entry(voice, SD_VOICE_PARAM_VOLR), (uint16_t)vol_r);
 	s_hw->set_param(voice_entry(voice, SD_VOICE_PARAM_PITCH), (uint16_t)hcu_spu_pitch_for(sample->rate, r->pitch));
 	s_hw->set_param(voice_entry(voice, SD_VOICE_PARAM_ADSR1), HCU_SPU_ADSR1);
@@ -460,9 +454,6 @@ static void key_on(uint32_t voice, const hcu_sound_request *r, const hcu_spu_sam
 	 * previous sound's) restarts or garbles this sample: point it at the sample's silent terminator block */
 	if (sample->bytes >= 16u) s_hw->set_addr(voice_entry(voice, SD_VOICE_ADDR_LSAX), sample->spu_addr + sample->bytes - 16u);
 	s_hw->set_switch((uint16_t)(SD_CORE1 | SD_SWITCH_KON_ENTRY), 1u << voice);
-#if defined(__mips__)
-	printf("HALO_PS2_LOCAL menu-sound key-on stage=complete\n");
-#endif
 	s_voice[voice].hw_live = 1;
 }
 
@@ -531,9 +522,14 @@ static const char *announcer_name(uint32_t hash)
 
 static void note_announcer(uint32_t hash, const char *why)
 {
+#if defined(HALO_PS2_C3_VERBOSE_PROFILING) && HALO_PS2_C3_VERBOSE_PROFILING
 	const char *name = announcer_name(hash);
 	if (!name) return;
 	printf("HALO_PS2_LOCAL spu-stats announcer=%s %s started=%u\n", name, why, s_stats.started);
+#else
+	(void)hash;
+	(void)why;
+#endif
 }
 
 /* Queues a start that must wait for a page-in; 0 when the queue is full. */
@@ -556,9 +552,6 @@ static void start_sound(const hcu_sound_request *r, uint32_t hash, int looping)
 	uint8_t priority = r->priority == 255u ? 0u : r->priority;
 	uint32_t vol_l, vol_r, ticks;
 	if (!sample) { s_stats.no_sample++; note_announcer(hash, "nosample"); return; }
-#if defined(__mips__)
-	printf("HALO_PS2_LOCAL menu-sound start sample-bytes=%u resident=%u\n", sample->bytes, sample->resident);
-#endif
 	if (!request_volumes(r, sample, &vol_l, &vol_r) && r->has_position && s_listener_valid) {
 		s_stats.inaudible++;
 		return;

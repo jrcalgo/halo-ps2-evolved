@@ -5,12 +5,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 from hcu_c3_phase_probe import (RING_BYTES, RING_CAPACITY, RING_MAGIC,
-                                RING_FIELDS, read_frame_ring)
+                                RING_FIELDS, RING_VERSION, read_frame_ring)
 
 
 def ring(frontier):
     raw = bytearray(RING_BYTES)
-    struct.pack_into("<6I", raw, 0, 2, RING_MAGIC, 1, RING_CAPACITY,
+    struct.pack_into("<6I", raw, 0, 2, RING_MAGIC, RING_VERSION, RING_CAPACITY,
                      frontier, max(0, frontier - RING_CAPACITY))
     for n in range(max(1, frontier - RING_CAPACITY + 1), frontier + 1):
         offset = 24 + ((n - 1) % RING_CAPACITY) * 4 * len(RING_FIELDS)
@@ -23,8 +23,10 @@ class FrameRingTests(unittest.TestCase):
     def test_wrap_reports_loss_and_keeps_each_retained_frame(self):
         raw = ring(150)
         result = read_frame_ring(lambda address, size: raw[address:address + size], 0, 10)
-        self.assertEqual(result["lost_since_last_read"], 12)
-        self.assertEqual([x["sequence"] for x in result["frames"]], list(range(23, 151)))
+        retained = min(140, RING_CAPACITY)
+        self.assertEqual(result["lost_since_last_read"], 140 - retained)
+        self.assertEqual([x["sequence"] for x in result["frames"]],
+                         list(range(151 - retained, 151)))
         self.assertEqual(result["frames"][-1]["view1_cycles"], 150)
 
     def test_torn_sequence_retries(self):
@@ -39,7 +41,8 @@ class FrameRingTests(unittest.TestCase):
             return raw[address:address + size]
 
         self.assertEqual(read_frame_ring(read, 0)["write_sequence"], 1)
-        self.assertEqual(calls, 4)
+        # Header, short body (retry), header, body, sequence word.
+        self.assertEqual(calls, 5)
 
 
 if __name__ == "__main__":

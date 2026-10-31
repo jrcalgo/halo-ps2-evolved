@@ -5,7 +5,7 @@ import argparse, datetime, hashlib, json, os, queue, signal, socket, struct, sub
 from collections import deque
 from pathlib import Path
 HERE=Path(__file__).resolve().parent
-VENDOR=Path(__file__).resolve().parents[7]/'build'/'c3'/'pine-probe-bridge-new'/'vendor'
+VENDOR=HERE.parent/'build'/'c3'/'pine-probe-bridge-new'/'vendor'
 sys.path.insert(0,str(VENDOR))
 from elftools.elf.elffile import ELFFile
 from elftools.dwarf.dwarf_expr import DWARFExprParser
@@ -375,7 +375,19 @@ def main():
         raise SystemExit('--abi-startup-wait must be in (0, 180]')
     startup_deadline=time.monotonic()+a.abi_startup_wait if a.abi_startup_wait else None
     while True:
-        live_code=p.read(tick_addr,len(tick_code))
+        try:
+            live_code=p.read(tick_addr,len(tick_code))
+        except (FileNotFoundError, ConnectionRefusedError, RuntimeError) as error:
+            # PINE reports status 255 for EE reads before the guest image is
+            # mapped. Only that startup condition is retryable.
+            if isinstance(error, RuntimeError) and str(error) != 'PINE status 255':
+                raise
+            p.close()
+            if startup_deadline is None or time.monotonic()>=startup_deadline:
+                stop.set(); wt.join(timeout=5)
+                raise SystemExit('PINE socket was unavailable during startup')
+            time.sleep(.05)
+            continue
         try: code_ready=tick_code_ready(live_code,tick_code)
         except ValueError as error:
             p.close(); stop.set(); wt.join(timeout=5); raise SystemExit(str(error))

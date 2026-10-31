@@ -1,3 +1,4 @@
+#define HCU_BITMAP_GS_RESTORE_IMPL
 #include "stream/hcu_bitmap_screen_effect.h"
 
 #include "platform/video.h"
@@ -223,9 +224,11 @@ int32_t hcu_bitmap_screen_effect_backend_native(void *backend_user,
 	screen_effect_view views[HALO_PS2_BITMAP_MAX_VIEWS];
 	u32 view_count = 0, tiles = 0, scratch_page, scratch_z_page, clut_block, i;
 	uint64_t screen_tex0, screen_clamp;
-	uint32_t framebuffer_page, framebuffer_width, zbuffer_page;
+	uint32_t framebuffer_page = 0, framebuffer_width = 0, zbuffer_page = 0;
 	uint32_t palette[256];
 	int32_t result = -1;
+	int gs_baseline_valid = 0;
+	uint32_t gs_qw = 0;
 #if HCU_SCREEN_EFFECT_PROBE
 	uint32_t valid_requests = 0u, capacity_refusal = 0u;
 	uint32_t probe_start = timer_cycles();
@@ -243,6 +246,11 @@ int32_t hcu_bitmap_screen_effect_backend_native(void *backend_user,
 	chain_valid = 1;
 	chain_qw_start = chain_qwords(geometry);
 #endif
+	gs_baseline_valid = 1;
+	gs_qw = chain_qwords(geometry);
+	framebuffer_page = video->fb[video->back].address / 2048u;
+	framebuffer_width = video->fb[video->back].width / 64u;
+	zbuffer_page = video->z.address / 2048u;
 	for (i = 0; i < HALO_PS2_BITMAP_MAX_VIEWS; ++i) {
 		int result = prepare_view(reader, dispatch, i, &views[view_count]);
 		if (result < 0) goto done; /* unsupported native inputs stay wholly inactive */
@@ -266,9 +274,6 @@ int32_t hcu_bitmap_screen_effect_backend_native(void *backend_user,
 		bsp_render_screen_effect_copy_framebuffer(video, geometry) != 0 ||
 		bsp_render_screen_effect_texture_state(&screen_tex0, &screen_clamp) != 0)
 		goto done;
-	framebuffer_page = video->fb[video->back].address / 2048u;
-	framebuffer_width = video->fb[video->back].width / 64u;
-	zbuffer_page = video->z.address / 2048u;
 	for (i = 0; i < view_count; ++i) {
 		uint8_t complement[1024];
 		uint32_t palette_index;
@@ -289,27 +294,20 @@ int32_t hcu_bitmap_screen_effect_backend_native(void *backend_user,
 				zbuffer_page, clut_block))
 			goto done;
 	}
-	/* Restore the full 512x448 target state expected by the following bitmap and
-	 * text passes. */
-	{
-		gs_ad restore[11];
+	result = 1;
+done:
+	/* Finished and failed exits share this restore once a packet changed GS state. */
+	if (gs_baseline_valid && chain_qwords(geometry) != gs_qw) {
+		uint64_t frame = frame_state(framebuffer_page, framebuffer_width, GS_PSMCT16S, 0u);
+		uint64_t zbuf = GS_ZBUF(zbuffer_page, GS_PSMZ24, 1u);
 		uint64_t xyoffset = (uint64_t)(2048u - VIDEO_WIDTH / 2u) * 16u |
 			(uint64_t)(2048u - VIDEO_HEIGHT / 2u) * 16u << 32;
 		uint64_t scissor = (uint64_t)(VIDEO_WIDTH - 1u) << 16 |
 			(uint64_t)(VIDEO_HEIGHT - 1u) << 48;
-		if (decal_compose_restore_state(restore,
-			frame_state(framebuffer_page, framebuffer_width, GS_PSMCT16S, 0u),
-			1u,
-			GS_ZBUF(zbuffer_page, GS_PSMZ24, 1u),
-			GS_TEST(0u, 1u, 0u, 0u, 0u, 0u, 1u, 1u), GS_ALPHA(0u, 1u, 0u, 1u, 0u),
-			xyoffset, scissor, 0x80ull | (0x80ull << 32),
-			GS_CLAMP(1u, 1u, 0u, 0u, 0u, 0u), 0u,
-			GS_TEX1(1u, 0u, 0u, 0u, 0u, 0u, 0u)) != 0 ||
-			!decal_compose_emit_ad(geometry, restore, 11u, 0u))
-			goto done;
+		if (!hcu_bitmap_restore_gs_draw_state(geometry, &frame, &zbuf, xyoffset, scissor) &&
+			result > 0)
+			result = -1;
 	}
-	result = 1;
-done:
 #if HCU_SCREEN_EFFECT_PROBE
 	{
 		uint32_t chain_qw_end = chain_valid ? chain_qwords(geometry) : chain_qw_start;

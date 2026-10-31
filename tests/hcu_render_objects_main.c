@@ -656,6 +656,22 @@ static int test_fp_switch_cache_admission(void)
 	return 0;
 }
 
+static int test_pool_best_fit(void)
+{
+	static const hcu_render_objects_pool_segment segments[] = {
+		{0u, 200u, 0u}, {200u, 150u, 0u}, {350u, 300u, 0u},
+		{650u, 512u, 1u}, {1162u, 150u, 0u}
+	};
+	/* A first-fit choice would consume the 200-byte hole. Best-fit uses the
+	 * 150-byte hole and leaves the larger contiguous run for a later request. */
+	CHECK(hcu_render_objects_pool_best_fit_index(segments, 5u, 140u) == 1);
+	CHECK(hcu_render_objects_pool_best_fit_index(segments, 5u, 250u) == 2);
+	CHECK(hcu_render_objects_pool_best_fit_index(segments, 5u, 513u) == -1);
+	CHECK(hcu_render_objects_pool_best_fit_index(segments, 5u, 0u) == -1);
+	CHECK(hcu_render_objects_pool_best_fit_index(NULL, 5u, 1u) == -1);
+	return 0;
+}
+
 static int test_pin(void)
 {
 	static unsigned char storage[1u << 20] __attribute__((aligned(16)));
@@ -1246,6 +1262,7 @@ int main(void)
 	if (test_parity()) return 4;
 	if (test_residency_policy()) return 5;
 	if (test_fp_switch_cache_admission()) return 5;
+	if (test_pool_best_fit()) return 5;
 	if (test_pin()) return 6;
 	if (test_c3_6()) return 7;
 	if (test_fx_quads()) return 8;

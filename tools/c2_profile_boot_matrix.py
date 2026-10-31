@@ -815,6 +815,7 @@ def link_row(row: str, package_root: Path, out: Path, cycles: int = 1, ticks: in
              render_hold_vsyncs: int | None = None,
              perf_capture_tick: int = 0,
              perf_replay: bool = False,
+             camera_mode: int = 0,
              extra_include_dirs=()) -> tuple[Path | None, str]:
     """Link the row's runtime-guest ELF under out/link, holding the shared link lock.
 
@@ -848,6 +849,7 @@ def link_row(row: str, package_root: Path, out: Path, cycles: int = 1, ticks: in
         (render_dir / "hcu_c3_render.h").write_text(
             f"#define HCU_C3_RENDER_VIEWS {render_views}\n"
             f"#define HCU_C3_RENDER_FRAMES {render_frames}\n"
+            f"#define HCU_C3_CAMERA_MODE {camera_mode}\n"
             f"#define HCU_C3_TEXFENCE_CAP_PAGES {TEXFENCE_CAP_PAGES}\n" +
             (f"#define HCU_C3_RENDER_HOLD_VSYNCS {render_hold_vsyncs}\n"
              if render_hold_vsyncs is not None else ""))
@@ -1510,7 +1512,8 @@ def c3_10_dma_checks(lines: list[str], views: int, frames: int, captures: list |
 
 
 def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1, ticks: int = 0,
-            render_views: int = 0, render_frames: int = 300, workload_players: int = 0) -> dict:
+            render_views: int = 0, render_frames: int = 300, workload_players: int = 0,
+            camera_mode: int = 0) -> dict:
     if OUTPUT_ROOT is not None:
         out = OUTPUT_ROOT / row
     elif render_views:
@@ -1535,7 +1538,7 @@ def run_row(row: str, package_root_override: Path | None = None, cycles: int = 1
         if header.returncode:
             raise RuntimeError(f"row header failed: {header.stderr.strip()}")
         elf, why = link_row(row, package_root, out, cycles, ticks, None, render_views, render_frames,
-                            workload_players=workload_players)
+                            workload_players=workload_players, camera_mode=camera_mode)
         if elf is None:
             raise RuntimeError(why)
         result["elf"] = str(elf.relative_to(ROOT))
@@ -1936,6 +1939,8 @@ def main(argv=None) -> int:
                               "PCSX2 with framebuffer captures; results go to build/c3/render-loop/v<N>/<row>/"))
     parser.add_argument("--render-frames", type=int, default=300,
                         help="frames the render loop draws with --render-views (default %(default)s; must be a multiple of 30)")
+    parser.add_argument("--camera-mode", type=int, choices=(0, 1), default=0,
+                        help="C3 fixed diagnostic camera: 0 valley-facing (default), 1 sharply down-looking")
     parser.add_argument("--texfence-cap-pages", type=int, default=0, metavar="N",
                         help="C3.7 debug: cap the texture cache at N pages to force slot reuse (default 0 = off)")
     parser.add_argument("--c3-fence-lag", type=int, default=0, metavar="N",
@@ -1981,8 +1986,12 @@ def main(argv=None) -> int:
         os.environ["HCU_C3_FENCE_LAG_KICKS"] = str(args.c3_fence_lag)
     if args.render_views and not args.c3:
         parser.error("--render-views needs --c3")
+    if args.camera_mode and not args.render_views:
+        parser.error("--camera-mode requires --render-views")
     if args.render_views and (args.render_frames < 30 or args.render_frames % 30):
         parser.error("--render-frames must be a positive multiple of 30")
+    if args.camera_mode and not args.render_views:
+        parser.error("--camera-mode requires --render-views")
     if args.c3_workload != "none" and not args.c3:
         parser.error("--c3-workload needs --c3")
     if args.c3_local_players is not None and (not args.c3 or args.c3_workload != "none"):
@@ -2053,7 +2062,8 @@ def main(argv=None) -> int:
         result = run_row(row, args.package_root, cycles=args.cycles,
                          workload_players=workload_players,
                          ticks=(args.render_frames + 5) if args.render_views else args.ticks,
-                         render_views=args.render_views, render_frames=args.render_frames)
+                         render_views=args.render_views, render_frames=args.render_frames,
+                         camera_mode=args.camera_mode)
         summary.append(result)
         print(f"{row}: {'PASS' if result['pass'] else 'FAIL'} {'; '.join(result['reasons'][:2])}", flush=True)
     if args.cycles != 1 or args.ticks or args.render_views:

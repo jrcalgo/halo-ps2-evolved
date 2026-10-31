@@ -73,3 +73,5 @@ def test_stock_hud_caller_never_receives_null_for_a_valid_source_bitmap():
         (HCU / "port/ps2/src/ps2_interface.c").read_text(),
         "hud_hires_sprite_bitmap",
     )
+
+

@@ -41,6 +41,7 @@ def test_successor_table_is_separate_and_names_its_map():
     manifest = json.loads(BEAVERCREEK.read_text())
     assert manifest["profile"]["map"] == "beavercreek"
     assert "#define HCU_C3_SUCC_OBJECTS_SKY_INDEX" in succ
+    assert "#define HCU_C3_SUCC_OBJECTS_SKY_FOG_RGB {" in succ
 
 
 def test_generator_default_names_are_unchanged():
@@ -58,6 +59,15 @@ def test_ee_source_selects_successor_table_by_map_name():
     assert "s_c3o_table," in frame and "s_c3o_count, &s_c3o_info" in frame
     assert "HCU_C3_OBJECTS_TABLE_COUNT, &s_c3o_info" not in frame
     assert "hcu_render_objects_set_sky_entry(s_c3o_sky)" in frame
+
+
+def test_authored_sky_fog_color_is_applied_to_reduced_profiles():
+    main = (ROOT / "src/stream/hcu_main.c").read_text()
+    bsp = (ROOT / "submodules/halo-ps2/engine/src/render/bsp_render.c").read_text()
+    assert "HCU_C3_OBJECTS_SKY_FOG_RGB" in main
+    assert "HCU_C3_SUCC_OBJECTS_SKY_FOG_RGB" in main
+    assert "options.profile_fog_rgb_valid = 1" in main
+    assert "if (!s_opt.profile_fog_rgb_valid)" in bsp
 
 
 def test_previous_kick_wait_is_bounded_to_unobserved_kicks():

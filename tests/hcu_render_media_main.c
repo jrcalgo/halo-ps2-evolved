@@ -96,9 +96,21 @@ int main(int argc, char **argv)
 	  for (i = 0; i < m.tex.binding_count; ++i) {
 		tex_binding b = tex_get_binding(&m.tex, i);
 		if (m.source.binding(m.source.user, b.shader_id, &mb) == 0) {
+			tex_info info;
+			tex_mip_view expected;
+			unsigned level;
 			CHECK(mb.tex >= 0 && (uint32_t)mb.tex < m.tex.texture_count);
+			info = tex_get(&m.tex, (uint32_t)mb.tex);
+			level = info.mip_count > 1u &&
+				(info.width >= 256u || info.height >= 256u) ? 1u : 0u;
+			if (!tex_mip(&m.tex, &info, level, &expected)) {
+				level = 0u;
+				CHECK(tex_mip(&m.tex, &info, level, &expected));
+			}
 			CHECK(m.source.texture(m.source.user, mb.tex, &img) == 0);
 			CHECK(img.pixels && img.clut && img.w >= 8 && img.pixel_bytes > 0);
+			CHECK(img.pixels == expected.pixels && img.pixel_bytes == expected.bytes);
+			CHECK(img.w == expected.width && img.h == expected.height);
 			textured++;
 		}
 	  }

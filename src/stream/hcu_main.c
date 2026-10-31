@@ -91,6 +91,12 @@ uint32_t hcu_bitmap_frame_ee_timer_read(void) { return timer_cycles(); }
 #else
 #define HCU_C3_TIMING_ENABLED 0
 #endif
+#if (defined(HALO_PS2_C3_TIMING) && HALO_PS2_C3_TIMING) || \
+	(defined(HALO_PS2_C3_PHASE_PROBE) && HALO_PS2_C3_PHASE_PROBE) || HCU_C3_TELEMETRY_ENABLED
+#define HCU_C3_TIMING_LOG_ENABLED 1
+#else
+#define HCU_C3_TIMING_LOG_ENABLED 0
+#endif
 
 /* Make the C3 renderer guard visible to the runtime initializer above the
  * map callbacks. This generated header exists only for the explicit --render
@@ -283,13 +289,13 @@ static void hcu_chain_rules_from_menu(const hcu_main_menu_variant *v, unsigned c
 
 static void hcu_chain_to_gameplay(void)
 {
-	char scenario[96], game[16], score[16], players[16], widescreen[8], rules_text[80];
+	char scenario[96], game[16], score[16], players[16], widescreen[8], rules_text[80], render_profile[8];
 	unsigned char rules[HCU_CHAIN_RULE_BYTES];
 	const hcu_main_menu_session *session = hcu_main_menu_selected_session();
 	const hcu_mp_map *chosen;
 	unsigned game_type = 0, game_score = 0;
 	short player_count = 1;
-	char *argv[7];
+	char *argv[8];
 	int probe;
 	if (!hcu_ps2_menu_launch(scenario, sizeof scenario, &game_type, &game_score, &player_count))
 		return;
@@ -306,6 +312,7 @@ static void hcu_chain_to_gameplay(void)
 	snprintf(score, sizeof score, "%u", game_score);
 	snprintf(players, sizeof players, "%d", (int)player_count);
 	snprintf(widescreen, sizeof widescreen, "%u", session->widescreen != 0);
+	snprintf(render_profile, sizeof render_profile, "%u", hcu_main_menu_selected_render_profile());
 	hcu_chain_rules_from_menu(&session->variant, rules);
 	if (rules[HCU_RULE_GAME] != (unsigned char)game_type)
 		rules[HCU_RULE_GAME] = (unsigned char)game_type;
@@ -313,16 +320,16 @@ static void hcu_chain_to_gameplay(void)
 		rules_text[0] = '\0';
 	argv[0] = (char *)chosen->elf;
 	argv[1] = scenario; argv[2] = game; argv[3] = score; argv[4] = players;
-	argv[5] = widescreen; argv[6] = rules_text;
-	printf("HALO_PS2_LOCAL chain-load %s map=%s game=%s score=%s players=%s widescreen=%s rules=%s\n",
-		chosen->elf, scenario, game, score, players, widescreen, rules_text);
+	argv[5] = widescreen; argv[6] = rules_text; argv[7] = render_profile;
+	printf("HALO_PS2_LOCAL chain-load %s map=%s game=%s score=%s players=%s widescreen=%s render-profile=%s rules=%s\n",
+		chosen->elf, scenario, game, score, players, widescreen, render_profile, rules_text);
 	fflush(stdout);
 	SifInitRpc(0);
 	SifIopReset("", 0);
 	while (!SifIopSync()) {}
 	SifInitRpc(0);
 	SifLoadFileInit();
-	LoadExecPS2(chosen->elf, 7, argv);
+	LoadExecPS2(chosen->elf, 8, argv);
 	printf("HALO_PS2_FAIL chain-load returned\n");
 }
 #endif
@@ -1240,14 +1247,8 @@ static void hcu_c3_sound_tick(void)
 		s_spu_cycle_rem = rem % 294912u;
 	}
 	hcu_spu_tick(s_spu_now_ms);
-	if (ticks % 90u == 89u && hcu_spu_ready()) {
-		hcu_spu_stats st;
-		hcu_spu_get_stats(&st);
-		printf("HALO_PS2_LOCAL spu-stats req=%u started=%u stopped=%u nosample=%u stolen=%u dropped=%u inaudible=%u loops=%u loop-restarts=%u fades=%u page-ins=%u evictions=%u muted=%u page-fails=%u active=%u high=%u spu-ms=%.3f spu-max-ms=%.3f\n",
-			st.requests, st.started, st.stopped, st.no_sample, st.stolen, st.dropped_busy, st.inaudible, st.loops_started, st.loop_restarts, st.fades, st.page_ins, st.evictions, st.muted_before_evict, st.page_fails,
-			st.voices_active, st.active_high, timer_ms(0, s_spu_cycles), timer_ms(0, s_spu_max_cycles));
+	if (ticks % 90u == 89u)
 		s_spu_cycles = s_spu_max_cycles = 0;
-	}
 	/* Counters only, once per 30 ticks to match the periodic c3-frame cadence. */
 	if (++ticks % 30u == 0u) {
 #if HCU_C3_TELEMETRY_ENABLED
@@ -1290,17 +1291,6 @@ static void hcu_c3_sound_playback_sink(void *context, const void *sound,
 		gain, pitch, game_time, captured_metadata_known);
 	request.permutation_hint = permutation_hint;
 	(void)hcu_sound_requests_submit(&s_c3_sound_queue, &request);
-	{ /* DIAG sound */
-		static unsigned s_sd_n;
-		extern char *tag_get_name(long tag_index);
-		if (s_sd_n < 400u) {
-			const char *nm = tag_get_name((long)sound_definition);
-			s_sd_n++;
-			printf("HALO_PS2_LOCAL snd-play n=%u ev=%u def=%u name=%s owner=%d/%08x pos=%d(%.1f,%.1f,%.1f) prio=%d gain=%.3f pitch=%.3f t=%u\n",
-				s_sd_n, event, sound_definition, nm ? nm : "?", owner_kind, owner_datum, has_position, x, y, z,
-				priority, gain, pitch, game_time);
-		}
-	}
 }
 #endif
 /* C3:replace end */
@@ -1395,6 +1385,7 @@ long halo_ps2_display_height(void) { return VIDEO_HEIGHT; }
  * title would overlap or exhaust eDRAM. */
 static video_t s_hcu_video;
 static int s_hcu_video_ready;
+static unsigned s_hcu_render_profile = VIDEO_PROFILE_HIGH_DETAIL;
 
 static void hcu_video_ensure(void)
 {
@@ -1403,6 +1394,7 @@ static void hcu_video_ensure(void)
 	dma_channel_fast_waits(DMA_CHANNEL_GIF);
 	video_set_widescreen(s_hcu_widescreen);
 	video_init(&s_hcu_video);
+	video_set_render_profile(&s_hcu_video, s_hcu_render_profile);
 	s_hcu_video_ready = 1;
 }
 
@@ -1560,6 +1552,9 @@ static uint32_t hcu_c3_view_count(void)
 #ifndef HCU_C3_RENDER_FRAMES
 #define HCU_C3_RENDER_FRAMES 300
 #endif
+#ifndef HCU_C3_CAMERA_MODE
+#define HCU_C3_CAMERA_MODE 0
+#endif
 #ifndef HCU_C3_RENDER_HOLD_VSYNCS
 #define HCU_C3_RENDER_HOLD_VSYNCS 240
 #endif
@@ -1624,7 +1619,7 @@ static void hcu_c3_frame_probe_publish(const hcu_c3_frame_probe *frame)
 	volatile hcu_c3_frame_probe *slot;
 	ring->seq++;
 	ring->magic = HCU_C3_FRAME_RING_MAGIC;
-	ring->version = 1u;
+	ring->version = HCU_C3_FRAME_RING_VERSION;
 	ring->capacity = HCU_C3_FRAME_RING_CAPACITY;
 	slot = &ring->frames[(sequence - 1u) % HCU_C3_FRAME_RING_CAPACITY];
 	slot->sequence = sequence;
@@ -1640,6 +1635,52 @@ static void hcu_c3_frame_probe_publish(const hcu_c3_frame_probe *frame)
 	slot->total_cycles = frame->total_cycles;
 	slot->frame_interval_cycles = frame->frame_interval_cycles;
 	slot->publication_cycles = frame->publication_cycles;
+	slot->cache_evictions = frame->cache_evictions;
+	slot->cache_pool_refusals = frame->cache_pool_refusals;
+	slot->cache_pool_used = frame->cache_pool_used;
+	slot->cache_pool_capacity = frame->cache_pool_capacity;
+	slot->cache_pool_high_water = frame->cache_pool_high_water;
+	slot->bitmap_read_calls = frame->bitmap_read_calls;
+	slot->bitmap_read_bytes = frame->bitmap_read_bytes;
+	slot->bitmap_source_reads = frame->bitmap_source_reads;
+	slot->bitmap_source_read_bytes = frame->bitmap_source_read_bytes;
+	slot->bitmap_deferred = frame->bitmap_deferred;
+	slot->bitmap_source_cycles = frame->bitmap_source_cycles;
+	slot->bitmap_cache_hits = frame->bitmap_cache_hits;
+	slot->bitmap_cache_misses = frame->bitmap_cache_misses;
+	slot->bitmap_source_read_cycles = frame->bitmap_source_read_cycles;
+	slot->view_visibility_cycles = frame->view_visibility_cycles;
+	slot->view_clip_gather_cycles = frame->view_clip_gather_cycles;
+	slot->view_material_sort_cycles = frame->view_material_sort_cycles;
+	slot->view_world_emit_cycles = frame->view_world_emit_cycles;
+	slot->view_object_hook_cycles = frame->view_object_hook_cycles;
+	slot->view_hud_cycles = frame->view_hud_cycles;
+	slot->view_overlay_cycles = frame->view_overlay_cycles;
+	slot->view_other_cycles = frame->view_other_cycles;
+	slot->gif_wait_cycles = frame->gif_wait_cycles;
+	slot->vif_submit_cycles = frame->vif_submit_cycles;
+	slot->upload_submit_cycles = frame->upload_submit_cycles;
+	slot->cache_loads = frame->cache_loads;
+	slot->cache_pool_misses = frame->cache_pool_misses;
+	slot->cache_loads_refused = frame->cache_loads_refused;
+	slot->last_pool_event = frame->last_pool_event;
+	slot->last_pool_event_resource = frame->last_pool_event_resource;
+	slot->last_pool_event_need = frame->last_pool_event_need;
+	slot->last_pool_event_reclaim = frame->last_pool_event_reclaim;
+	slot->fx_publish_cycles = frame->fx_publish_cycles;
+	slot->fx_source_calls = frame->fx_source_calls;
+	slot->fx_source_bytes = frame->fx_source_bytes;
+	slot->decal_lock_count = frame->decal_lock_count;
+	slot->fx_stream_drops = frame->fx_stream_drops;
+	slot->tc_defer_count = frame->tc_defer_count;
+	slot->first_person_model_misses = frame->first_person_model_misses;
+	slot->view_skipped = frame->view_skipped;
+	slot->chain_overflow = frame->chain_overflow;
+	slot->emit_failures = frame->emit_failures;
+	slot->scheduler_steps = frame->scheduler_steps;
+	slot->dropped_delta = frame->dropped_delta;
+	slot->flash_type = frame->flash_type;
+	slot->flash_argb = frame->flash_argb;
 	ring->overwrites += sequence > HCU_C3_FRAME_RING_CAPACITY;
 	ring->write_sequence = sequence;
 	ring->seq++;
@@ -1685,8 +1726,10 @@ static void hcu_c3_phase_probe_publish(const bsp_render_phase_timing *timing)
 #endif
 #if defined(HCU_C3_OBJECTS)
 static void hcu_c3_objects_map_selected(const char *map_name);
+static void hcu_c3_objects_apply_profile_fog(void);
 #else
 #define hcu_c3_objects_map_selected(map_name) ((void)(map_name))
+#define hcu_c3_objects_apply_profile_fog() ((void)0)
 #endif
 static qword_t s_c3_prime_packet[8] __attribute__((aligned(64)));
 static int s_c3_bitmap_detach_ok = 1;
@@ -1701,7 +1744,9 @@ static void hcu_c3_flush(void *base, size_t bytes)
  * reference valley view, the rest are other fixed Blood Gulch vantage points. They do not come from
  * the CE snapshot bank: the headless guest never runs CE render_frame, so no snapshot is published. */
 static const float s_c3_cameras[4][5] = {
-	{ 65.0f, -95.0f, 9.0f, -70.0f, -5.0f },
+	/* Camera mode 0 reproduces the valley view used to expose the distant-world stalls.
+	 * Mode 1 points the same spawn camera sharply down to minimize visible world geometry. */
+	{ 65.0f, -95.0f, 9.0f, -70.0f, HCU_C3_CAMERA_MODE == 1 ? -82.0f : -5.0f },
 	{ 98.49f, -157.64f, 3.10f, 76.1f, 0.0f },
 	{ 65.0f, -145.0f, 32.0f, 84.0f, -5.0f },
 	{ 118.0f, -105.0f, 32.0f, -167.0f, -5.0f }
@@ -2164,7 +2209,7 @@ void hcu_c3_render_map_loaded(const char *map_name)
 	if (!s_partition_selected || !s_partition.render_texture_base ||
 		s_partition.render_texture_bytes < 4096u) {
 		printf("HALO_PS2_FAIL c3-render partition render_texture owner unavailable\n");
-		return;
+		goto loading_complete;
 	}
 	/* C3:pack begin */
 	/* render_texture: BSPS at base, TEXS+LMn packed at align64(BSPS end), the level arena at
@@ -2175,13 +2220,13 @@ void hcu_c3_render_map_loaded(const char *map_name)
 	measure_rc = hcu_render_media_measure(&s_map_service.profile_view, 0, &bsps_need, &tex_need);
 	if (measure_rc != HCU_RENDER_MEDIA_OK) {
 		printf("HALO_PS2_FAIL c3-render media-absent rc=%d\n", measure_rc);
-		return;
+		goto loading_complete;
 	}
 	if (hcu_render_media_pack_plan(bytes, bsps_need, tex_need, &pack) != HCU_RENDER_MEDIA_OK ||
 		pack.arena_bytes == 0) {
 		printf("HALO_PS2_FAIL c3-render pack-overflow bsps=%u tex=%u owner=%u\n",
 			(unsigned)bsps_need, (unsigned)tex_need, (unsigned)bytes);
-		return;
+		goto loading_complete;
 	}
 	bsps.base = base + pack.bsps_off;  bsps.bytes = pack.bsps_bytes;
 	tex.base = base + pack.tex_off;    tex.bytes = pack.tex_bytes;
@@ -2190,12 +2235,13 @@ void hcu_c3_render_map_loaded(const char *map_name)
 	HCU_LOAD_TRACE_END("media-load");
 	if (rc != HCU_RENDER_MEDIA_OK) {
 		printf("HALO_PS2_FAIL c3-render media-load rc=%d map=%s\n", rc, map_name);
-		return;
+		goto loading_complete;
 	}
 	arena_init(&s_c3r.level, "c3_render_level", base + pack.arena_off, pack.arena_bytes);
 	/* C3:pack end */
 	hcu_c3_gs_init();
 	if (!s_c3r.gs_ready) goto fail;
+	hcu_c3_objects_apply_profile_fog();
 	/* Validate exact HCM keys and reserve the cache namespace before publishing
 	 * this world to the map service or installing BSP material bindings. */
 	HCU_LOAD_TRACE_BEGIN("bitmap-resident-prep");
@@ -2214,7 +2260,7 @@ void hcu_c3_render_map_loaded(const char *map_name)
 		printf("HALO_PS2_FAIL c3-render world-bind rc=%d\n", rc);
 		bsp_render_clear_world();
 		hcu_render_media_clear(&s_c3r.media);
-		return;
+		goto loading_complete;
 	}
 	world_touched = 1;
 	/* C3:content begin */
@@ -2245,7 +2291,8 @@ void hcu_c3_render_map_loaded(const char *map_name)
 	 * stale last-published bank from the preceding map as this map's views. */
 	s_c3r.bank_views = 0;
 	/* Views draw from the snapshot bank in a C3 snapshot build; a view that was never active keeps a fixed
-	 * pre-spawn camera (hcu_c3_views_camera), and an active view without a usable camera is skipped. */
+	 * pre-spawn camera (hcu_c3_views_camera). An active view without a usable camera reuses its last good
+	 * snapshot camera, or is skipped when none is stored. */
 #if defined(HCU_C3_FRAME_SNAPSHOT)
 #define HCU_C3_CAMERA_SOURCE_NAME "snapshot"
 #else
@@ -2268,11 +2315,15 @@ void hcu_c3_render_map_loaded(const char *map_name)
 		(unsigned)pack.bsps_off, (unsigned)pack.tex_off, (unsigned)pack.arena_off,
 		HCU_C3_CAMERA_SOURCE_NAME, (unsigned)s_c3r.bank_views,
 		(unsigned)hcu_map_service_reader_count(&s_map_service));
-	return;
+	goto loading_complete;
 fail:
 	if (world_touched) bsp_render_clear_world();
 	(void)hcu_render_world_unbind(&s_c3r.world, &s_map_service);
 	hcu_render_media_clear(&s_c3r.media);
+loading_complete:
+	/* Chained gameplay images hold the boot loading screen while CE mounts the
+	 * selected map. Release it after C3 setup so the first map frame is visible. */
+	hcu_loading_screen_release();
 }
 
 static void hcu_c3_print_frame(const char *kind)
@@ -2349,6 +2400,8 @@ typedef struct {
 } hcu_c3_views_state;
 
 static hcu_c3_views_state s_c3v;
+static camera_t s_c3_last_good_cam[HCU_RENDER_VIEWS_MAX];
+static uint8_t s_c3_last_good_valid[HCU_RENDER_VIEWS_MAX];
 
 static int hcu_c3_views_hund(float v)
 {
@@ -2366,6 +2419,7 @@ static void hcu_c3_views_begin(const halo_ps2_frame_snapshot *borrowed_snapshot)
 		s_c3v.stats.have_generation = have_generation;
 		s_c3v.stats.generation = generation;
 		memset(s_c3v.ever_active, 0, sizeof s_c3v.ever_active);
+		memset(s_c3_last_good_valid, 0, sizeof s_c3_last_good_valid);
 	}
 	s_c3v.stats.frames++;
 	s_c3v.snap = borrowed_snapshot;
@@ -2471,30 +2525,6 @@ static const text_batch_t *hcu_c3_views_camera(unsigned v, camera_t *cam, const 
 	}
 #endif
 #if defined(HCU_C3_FRAME_SNAPSHOT)
-	{
-		static unsigned s_zc_lines;
-		static unsigned s_zc_last_state = 99u;
-		unsigned zc = (view && view->camera.position[0] > -3.0f && view->camera.position[0] < 3.0f &&
-			view->camera.position[1] > -3.0f && view->camera.position[1] < 3.0f &&
-			view->camera.position[2] > -3.0f && view->camera.position[2] < 3.0f) ? 1u : 0u;
-		unsigned state = (zc ? 1u : 0u) | (from_snapshot ? 2u : 0u) | (view ? 4u : 0u);
-		if ((state != s_zc_last_state || (zc && (s_c3r.frames % 10u) == 0u)) && s_zc_lines < 400u) {
-			s_zc_lines++;
-			s_zc_last_state = state;
-			printf("HALO_PS2_LOCAL zero-cam frame=%u tick=%d view=%u has-view=%u flags=0x%x from-snapshot=%u zero-pos=%u pos=%.3f,%.3f,%.3f fwd=%.3f,%.3f,%.3f up=%.3f,%.3f,%.3f vfov=%.4f znear=%.3f zfar=%.1f unit=%u hud=0x%x snap-views=%u gen=%u ever-active=%u skipped=%u refused=%u\n",
-				(unsigned)s_c3r.frames, (int)(s_c3v.snap ? (int)s_c3v.snap->sequence : 0), v, view ? 1u : 0u, view ? (unsigned)view->flags : 0u,
-				(unsigned)from_snapshot, zc,
-				view ? view->camera.position[0] : 0.0f, view ? view->camera.position[1] : 0.0f, view ? view->camera.position[2] : 0.0f,
-				view ? view->camera.forward[0] : 0.0f, view ? view->camera.forward[1] : 0.0f, view ? view->camera.forward[2] : 0.0f,
-				view ? view->camera.up[0] : 0.0f, view ? view->camera.up[1] : 0.0f, view ? view->camera.up[2] : 0.0f,
-				view ? view->camera.vertical_field_of_view : 0.0f, view ? view->camera.z_near : 0.0f, view ? view->camera.z_far : 0.0f,
-				view ? (unsigned)view->unit_object : 0u, view ? (unsigned)view->hud_flags : 0u,
-				(unsigned)(s_c3v.snap ? s_c3v.snap->view_count : 0u), (unsigned)(s_c3v.snap ? s_c3v.snap->map_generation : 0u),
-				(unsigned)s_c3v.ever_active[v], (unsigned)s_c3v.stats.skipped_views, (unsigned)s_c3v.stats.refused_views);
-		}
-	}
-#endif
-#if defined(HCU_C3_FRAME_SNAPSHOT)
 	/* Unit position beside the camera position, for the spawn-cam versus conversion question. */
 	if ((s_c3r.frames == 0u || (s_c3r.frames % 30u) == 0u) && s_c3v.snap && view &&
 		view->unit_object < s_c3v.snap->object_count) {
@@ -2534,16 +2564,32 @@ static const text_batch_t *hcu_c3_views_camera(unsigned v, camera_t *cam, const 
 	camera_init(cam);
 	cam->aspect = projection_aspect;
 	if (from_snapshot) {
+		/* Controlled renderer diagnostic: preserve the live snapshot position and
+		 * yaw while forcing a steep down-look pitch for the low-world-load case. */
+		#if HCU_C3_CAMERA_MODE == 1
+		hc.pitch = -82.0f * HCU_C3_DEG;
+		#endif
 		cam->pos[0] = hc.pos[0]; cam->pos[1] = hc.pos[1]; cam->pos[2] = hc.pos[2];
 		cam->yaw = hc.yaw; cam->pitch = hc.pitch; cam->hfov = hc.hfov;
 		cam->near_z = hc.near_z; cam->far_z = hc.far_z;
 		s_c3v.source[v] = HCU_VIEW_CAMERA_SNAPSHOT;
 		s_c3v.stats.snapshot_views++;
+		if (v < HCU_RENDER_VIEWS_MAX) {
+			s_c3_last_good_cam[v] = *cam;
+			s_c3_last_good_valid[v] = 1u;
+		}
 	} else if (hcu_views_must_skip(s_c3v.ever_active[v])) {
-		/* Active (or active earlier on this map) without a usable snapshot camera: an invented camera would
-		 * draw the wrong view, so the view is skipped and counted. Only pre-spawn views keep the fixed camera. */
-		s_c3v.source[v] = HCU_VIEW_CAMERA_SKIPPED;
-		s_c3v.stats.skipped_views++;
+		if (v < HCU_RENDER_VIEWS_MAX && s_c3_last_good_valid[v]) {
+			float aspect = cam->aspect;
+			*cam = s_c3_last_good_cam[v];
+			cam->aspect = aspect;
+			s_c3v.source[v] = HCU_VIEW_CAMERA_SNAPSHOT;
+			s_c3v.stats.snapshot_views++;
+		} else {
+			/* Active without a usable snapshot camera and no stored one: not drawn. */
+			s_c3v.source[v] = HCU_VIEW_CAMERA_SKIPPED;
+			s_c3v.stats.skipped_views++;
+		}
 	} else {
 		hcu_c3_make_camera(cam, v);
 		s_c3v.source[v] = HCU_VIEW_CAMERA_FIXED;
@@ -2696,6 +2742,21 @@ static void hcu_c3_fx_kind_telemetry(const halo_ps2_frame_snapshot *snap, uint32
  * successor (beavercreek) draws from its own table; the selected row's table is the default. */
 static const hcu_render_objects_table_entry *s_c3o_table = hcu_c3_objects_table;
 static uint32_t s_c3o_count = HCU_C3_OBJECTS_TABLE_COUNT;
+#if defined(HCU_C3_OBJECTS_SKY_FOG_RGB)
+static const uint8_t s_c3o_default_sky_fog[3] = HCU_C3_OBJECTS_SKY_FOG_RGB;
+#define HCU_C3_DEFAULT_SKY_FOG_VALID 1
+#else
+static const uint8_t s_c3o_default_sky_fog[3] = { 0u, 0u, 0u };
+#define HCU_C3_DEFAULT_SKY_FOG_VALID 0
+#endif
+#if defined(HCU_C3_OBJECTS_SUCC_BUILT) && defined(HCU_C3_SUCC_OBJECTS_SKY_FOG_RGB)
+static const uint8_t s_c3o_successor_sky_fog[3] = HCU_C3_SUCC_OBJECTS_SKY_FOG_RGB;
+#define HCU_C3_SUCCESSOR_SKY_FOG_VALID 1
+#else
+static const uint8_t s_c3o_successor_sky_fog[3] = { 0u, 0u, 0u };
+#define HCU_C3_SUCCESSOR_SKY_FOG_VALID 0
+#endif
+static const uint8_t *s_c3o_sky_fog = HCU_C3_DEFAULT_SKY_FOG_VALID ? s_c3o_default_sky_fog : NULL;
 #if defined(HCU_C3_OBJECTS_SKY_INDEX)
 static uint32_t s_c3o_sky = HCU_C3_OBJECTS_SKY_INDEX;
 #else
@@ -2706,6 +2767,7 @@ static void hcu_c3_objects_map_selected(const char *map_name)
 {
 	s_c3o_table = hcu_c3_objects_table;
 	s_c3o_count = HCU_C3_OBJECTS_TABLE_COUNT;
+	s_c3o_sky_fog = HCU_C3_DEFAULT_SKY_FOG_VALID ? s_c3o_default_sky_fog : NULL;
 #if defined(HCU_C3_OBJECTS_SKY_INDEX)
 	s_c3o_sky = HCU_C3_OBJECTS_SKY_INDEX;
 #else
@@ -2715,6 +2777,7 @@ static void hcu_c3_objects_map_selected(const char *map_name)
 	if (map_name && strcmp(map_name, HCU_C3_SUCC_OBJECTS_MAP) == 0) {
 		s_c3o_table = hcu_c3_succ_objects_table;
 		s_c3o_count = HCU_C3_SUCC_OBJECTS_TABLE_COUNT;
+		s_c3o_sky_fog = HCU_C3_SUCCESSOR_SKY_FOG_VALID ? s_c3o_successor_sky_fog : NULL;
 #if defined(HCU_C3_SUCC_OBJECTS_SKY_INDEX)
 		s_c3o_sky = HCU_C3_SUCC_OBJECTS_SKY_INDEX;
 #else
@@ -2722,6 +2785,17 @@ static void hcu_c3_objects_map_selected(const char *map_name)
 #endif
 	}
 #endif
+}
+
+static void hcu_c3_objects_apply_profile_fog(void)
+{
+	render_options_t options;
+	bsp_render_options(&options);
+	if (s_c3o_sky_fog) {
+		memcpy(options.fog_rgb, s_c3o_sky_fog, sizeof(options.fog_rgb));
+		options.profile_fog_rgb_valid = 1;
+	}
+	bsp_render_set_options(&options);
 }
 
 static const halo_ps2_frame_snapshot *hcu_c3_objects_frame_begin(void)
@@ -2788,7 +2862,12 @@ static const halo_ps2_frame_snapshot *hcu_c3_objects_frame_begin(void)
 
 static void hcu_c3_objects_view_begin(uint32_t view, int32_t view_w, int32_t view_h)
 {
-	hcu_render_objects_view_begin_rect(view, view_w, view_h, VIDEO_WIDTH, VIDEO_HEIGHT,
+	unsigned profile = video_render_profile(&s_hcu_video);
+	int32_t render_w = video_render_profile_dimension(profile, view_w);
+	int32_t render_h = video_render_profile_dimension(profile, view_h);
+	hcu_render_objects_set_particle_density_percent((uint8_t)video_render_profile_particle_density_percent(profile));
+	hcu_render_objects_set_view_distance_scale((float)video_render_profile_scale_permille(profile) / 1000.0f);
+	hcu_render_objects_view_begin_rect(view, render_w, render_h, VIDEO_WIDTH, VIDEO_HEIGHT,
 		hcu_output_view_aspect(view_w, view_h));
 }
 
@@ -3172,6 +3251,23 @@ static void hcu_c3_wait_previous_kick(void)
 	if (kick != 0u && bsp_render_fence_observed(kick) != 1) video_wait_gpu();
 }
 
+static uint32_t s_c3_scheduler_steps;
+static uint32_t s_c3_scheduler_dropped;
+
+static int hcu_c3_fail_print_due(unsigned site)
+{
+	static uint32_t last_frame[3];
+	static uint8_t have_last[3];
+	uint32_t frame;
+
+	if (site >= 3u) return 1;
+	frame = s_c3r.frames;
+	if (have_last[site] && frame - last_frame[site] < 60u) return 0;
+	have_last[site] = 1u;
+	last_frame[site] = frame;
+	return 1;
+}
+
 void hcu_c3_render_tick(int tick)
 {
 	hcu_render_layout layout;
@@ -3185,6 +3281,7 @@ void hcu_c3_render_tick(int tick)
 	uint32_t view_probe_start = 0;
 	static uint32_t previous_probe_start;
 	uint32_t current_probe_start = timer_cycles();
+	uint32_t views_skipped = 0;
 	frame_probe.frame_interval_cycles = previous_probe_start ? current_probe_start - previous_probe_start : 0u;
 	previous_probe_start = current_probe_start;
 	#endif
@@ -3196,7 +3293,15 @@ void hcu_c3_render_tick(int tick)
 	u32 c3_view_t0, c3_view_t1, c3_wait_t0, c3_wait_t1;
 	u32 c3_video_wait_t0, c3_video_wait_t1, c3_present_t0, c3_present_t1;
 	u32 c3_submit_t0, c3_submit_t1;
+#endif
+#if HCU_C3_TIMING_LOG_ENABLED
 	hcu_bitmap_dispatch_counters c3_hud_before = s_c3_bitmap_dispatch.counters;
+#endif
+#if defined(HALO_PS2_C3_PHASE_PROBE) && HALO_PS2_C3_PHASE_PROBE && defined(HCU_C3_OBJECTS)
+	hcu_render_objects_residency c3_residency_before = {0};
+	hcu_render_objects_counters c3_fx_before = {0};
+	hcu_render_objects_residency_stats(&c3_residency_before);
+	hcu_render_objects_totals(&c3_fx_before);
 #endif
 	(void)tick;
 #if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
@@ -3210,8 +3315,7 @@ void hcu_c3_render_tick(int tick)
 	}
 #endif
 	/* C3:sound begin */
-#if defined(HCU_C3_FRAME_SNAPSHOT) && \
-	!(defined(HALO_PS2_C3_REALTIME_SCHEDULER) && HALO_PS2_C3_REALTIME_SCHEDULER)
+#if defined(HCU_C3_FRAME_SNAPSHOT)
 	hcu_c3_sound_tick();
 #endif
 	/* C3:sound end */
@@ -3224,7 +3328,8 @@ void hcu_c3_render_tick(int tick)
 	if (hcu_render_layout_compute(hcu_c3_view_count(), VIDEO_WIDTH, VIDEO_HEIGHT, &layout) != 0 ||
 		hcu_render_frame_begin(&s_c3r.state, hcu_c3_view_count()) != 0 ||
 		bsp_render_frame_begin(s_c3r.frames) != 0) {
-		printf("HALO_PS2_FAIL c3-render frame-begin frame=%u\n", (unsigned)s_c3r.frames);
+		if (hcu_c3_fail_print_due(0))
+			printf("HALO_PS2_FAIL c3-render frame-begin frame=%u\n", (unsigned)s_c3r.frames);
 		s_c3r.active = 0;
 		return;
 	}
@@ -3253,7 +3358,10 @@ void hcu_c3_render_tick(int tick)
 		vp.camera_aspect = hcu_output_view_aspect(vp.w, vp.h);
 		/* C3:views begin */
 		overlay = hcu_c3_views_camera(v, &cam, &vp);
-		if (!overlay) continue;  /* skipped: no usable snapshot camera for an active view (counted, not drawn) */
+#if defined(HALO_PS2_C3_PHASE_PROBE) && HALO_PS2_C3_PHASE_PROBE
+		if (!overlay) views_skipped++;
+#endif
+		if (!overlay) continue;  /* skipped: no last-good camera for an active view (counted, not drawn) */
 #if defined(HALO_PS2_C3_MOVEMENT_TRACE) && HALO_PS2_C3_MOVEMENT_TRACE
 		/* The parent consumes this camera directly. CE observer/render globals
 		 * can be unused in the headless publisher, so trace the actual draw view. */
@@ -3275,7 +3383,8 @@ void hcu_c3_render_tick(int tick)
 		if (bsp_render_view(&cam, overlay, &vp) != 0) {
 			hcu_c3_views_end(0u);
 		/* C3:views end */
-			printf("HALO_PS2_FAIL c3-render view=%u frame=%u\n", v, (unsigned)s_c3r.frames);
+			if (hcu_c3_fail_print_due(1))
+				printf("HALO_PS2_FAIL c3-render view=%u frame=%u\n", v, (unsigned)s_c3r.frames);
 			s_c3r.active = 0;
 			return;
 		}
@@ -3316,15 +3425,32 @@ void hcu_c3_render_tick(int tick)
 	c3_submit_t0 = timer_cycles();
 	#endif
 	if (bsp_render_frame_end(&s_hcu_video) != 0 || hcu_render_frame_end(&s_c3r.state) != 0) {
-		printf("HALO_PS2_FAIL c3-render frame-end frame=%u\n", (unsigned)s_c3r.frames);
+		if (hcu_c3_fail_print_due(2))
+			printf("HALO_PS2_FAIL c3-render frame-end frame=%u\n", (unsigned)s_c3r.frames);
 		s_c3r.active = 0;
 		return;
 	}
+#if defined(HCU_C3_OBJECTS)
+	{
+		static uint32_t lod_prev;
+		uint32_t lod_now = timer_cycles();
+		float lod_ms = lod_prev ? timer_ms(lod_prev, lod_now) : 16.0f;
+		lod_prev = lod_now;
+		hcu_render_objects_lod_tick(lod_ms);
+	}
+#endif
 	#if defined(HALO_PS2_C3_PHASE_PROBE) && HALO_PS2_C3_PHASE_PROBE
 	{
 		bsp_render_phase_timing phase_probe;
+		#if defined(HCU_C3_OBJECTS)
+		hcu_render_objects_residency residency = {0};
+		#endif
+		uint32_t probe_end_cycles = timer_cycles();
 		bsp_render_phase_timing_get(&phase_probe);
 		hcu_c3_phase_probe_publish(&phase_probe);
+		#if defined(HCU_C3_OBJECTS)
+		hcu_render_objects_residency_stats(&residency);
+		#endif
 		frame_probe.frame = s_c3r.frames;
 		frame_probe.tick = (uint32_t)tick;
 		frame_probe.view_count = layout.view_count;
@@ -3332,9 +3458,96 @@ void hcu_c3_render_tick(int tick)
 		frame_probe.gs_wait_cycles = c3_wait_t1 - c3_wait_t0;
 		frame_probe.video_wait_cycles = c3_video_wait_t1 - c3_video_wait_t0;
 		frame_probe.present_cycles = c3_present_t1 - c3_present_t0;
-		frame_probe.submit_cycles = timer_cycles() - c3_submit_t0;
-		frame_probe.total_cycles = timer_cycles() - c3_tick_t0;
+		frame_probe.submit_cycles = probe_end_cycles - c3_submit_t0;
+		frame_probe.total_cycles = probe_end_cycles - c3_tick_t0;
 		frame_probe.publication_cycles = s_c3_publication_cycles;
+		#if defined(HCU_C3_OBJECTS)
+		{
+			frame_probe.cache_evictions = residency.evictions - c3_residency_before.evictions;
+			frame_probe.cache_pool_refusals = residency.pool_refusals - c3_residency_before.pool_refusals;
+			frame_probe.cache_pool_used = residency.pool_used;
+			frame_probe.cache_pool_capacity = residency.pool_bytes;
+			frame_probe.cache_pool_high_water = residency.pool_used_peak;
+		}
+		#endif
+		frame_probe.bitmap_read_calls = s_c3_bitmap_dispatch.counters.read_calls - c3_hud_before.read_calls;
+		frame_probe.bitmap_read_bytes = s_c3_bitmap_dispatch.counters.read_bytes - c3_hud_before.read_bytes;
+		frame_probe.bitmap_source_reads = s_c3_bitmap_dispatch.counters.source_reads - c3_hud_before.source_reads;
+		frame_probe.bitmap_source_read_bytes = s_c3_bitmap_dispatch.counters.source_bytes - c3_hud_before.source_bytes;
+		frame_probe.bitmap_deferred = s_c3_bitmap_dispatch.counters.deferred - c3_hud_before.deferred;
+		frame_probe.bitmap_source_cycles = s_c3_bitmap_dispatch.counters.source_cycles - c3_hud_before.source_cycles;
+		frame_probe.bitmap_source_read_cycles = s_c3_bitmap_dispatch.counters.read_cycles - c3_hud_before.read_cycles;
+		frame_probe.bitmap_cache_hits = s_c3_bitmap_dispatch.counters.hits - c3_hud_before.hits;
+		frame_probe.bitmap_cache_misses = s_c3_bitmap_dispatch.counters.misses - c3_hud_before.misses;
+		frame_probe.view_visibility_cycles = phase_probe.view_visibility_cycles;
+		frame_probe.view_clip_gather_cycles = phase_probe.view_clip_gather_cycles;
+		frame_probe.view_material_sort_cycles = phase_probe.view_material_group_sort_cycles;
+		frame_probe.view_world_emit_cycles = phase_probe.view_world_emit_cycles;
+		frame_probe.view_object_hook_cycles = phase_probe.view_object_hook_cycles;
+		frame_probe.view_hud_cycles = phase_probe.hud_emit_cycles + phase_probe.view_inline_hud_cycles;
+		frame_probe.view_overlay_cycles = phase_probe.view_overlay_cycles;
+		frame_probe.view_other_cycles = phase_probe.view_other_cycles;
+		frame_probe.gif_wait_cycles = phase_probe.setup_gif_wait_cycles + phase_probe.upload_gif_wait_cycles;
+		frame_probe.vif_submit_cycles = phase_probe.vif_submit_cycles;
+		frame_probe.upload_submit_cycles = phase_probe.upload_submit_cycles;
+		#if defined(HCU_C3_OBJECTS)
+		frame_probe.cache_loads = residency.loads - c3_residency_before.loads;
+		frame_probe.cache_pool_misses = residency.pool_refusals - c3_residency_before.pool_refusals;
+		frame_probe.cache_loads_refused = (residency.entry_refusals - c3_residency_before.entry_refusals) +
+			(residency.pool_refusals - c3_residency_before.pool_refusals) +
+			(residency.fence_blocked - c3_residency_before.fence_blocked);
+		{
+			hcu_render_objects_pool_event event;
+			hcu_render_objects_last_pool_event(&event);
+			frame_probe.last_pool_event = event.event;
+			frame_probe.last_pool_event_resource = event.resource_id;
+			frame_probe.last_pool_event_need = event.need_bytes;
+			frame_probe.last_pool_event_reclaim = event.reclaimable_bytes;
+		}
+		#endif
+		frame_probe.view_skipped = views_skipped;
+		frame_probe.emit_failures = bsp_render_emit_failures();
+		frame_probe.scheduler_steps = s_c3_scheduler_steps;
+		frame_probe.dropped_delta = s_c3_scheduler_dropped;
+		frame_probe.fx_publish_cycles = 0;
+		frame_probe.fx_source_calls = 0;
+		frame_probe.fx_source_bytes = 0;
+		frame_probe.decal_lock_count = 0;
+		{
+			static uint32_t defer_before;
+			uint32_t defer_now = bsp_render_texcache_defer_count();
+			frame_probe.tc_defer_count = defer_now - defer_before;
+			defer_before = defer_now;
+		}
+		frame_probe.first_person_model_misses = 0;
+		frame_probe.flash_type = 0;
+		frame_probe.flash_argb = 0;
+		frame_probe.fx_stream_drops = 0;
+		frame_probe.chain_overflow = 0;
+#if defined(HALO_PS2_C3_FRAME_SNAPSHOT)
+		{
+			extern void halo_ps2_c3_fx_stream_drops(uint32_t out[6]);
+			uint32_t drops[6];
+			unsigned di;
+			memset(drops, 0, sizeof drops);
+			halo_ps2_c3_fx_stream_drops(drops);
+			for (di = 0; di < 6u; ++di) frame_probe.fx_stream_drops += drops[di];
+		}
+#endif
+		{
+			bsp_render_chain_probe chains;
+			unsigned ci;
+			bsp_render_chain_probe_get(&chains);
+			for (ci = 0; ci < 4u; ++ci) frame_probe.chain_overflow += chains.overflow[ci];
+		}
+#if defined(HCU_C3_OBJECTS)
+		{
+			hcu_render_objects_counters fx_now;
+			hcu_render_objects_totals(&fx_now);
+			frame_probe.fx_source_calls = fx_now.fx_source_calls - c3_fx_before.fx_source_calls;
+			frame_probe.fx_source_bytes = fx_now.fx_source_read_bytes - c3_fx_before.fx_source_read_bytes;
+		}
+#endif
 		hcu_c3_frame_probe_publish(&frame_probe);
 	}
 	#endif
@@ -3394,7 +3607,7 @@ void hcu_c3_render_tick(int tick)
 	hcu_c3_bitmap_print_tick(tick);
 	/* C3:bitmap end */
 	s_c3r.frames++;
-	#if HCU_C3_TIMING_ENABLED
+	#if HCU_C3_TIMING_LOG_ENABLED
 	if (s_c3r.frames == 1u || (s_c3r.frames % 30u) == 0u) {
 		bsp_render_phase_timing phases;
 		video_present_timing present_phases;
@@ -3819,11 +4032,8 @@ void hcu_c3_perf_capture(unsigned completed_ticks, unsigned before_render)
 void hcu_c3_scheduler_progress(unsigned completed_ticks, unsigned game_ticks,
 	unsigned dropped_ticks)
 {
-#if defined(HALO_PS2_C3_REALTIME_SCHEDULER) && HALO_PS2_C3_REALTIME_SCHEDULER
-	/* Drain queued events per sim step even when a render catches up multiple
-	 * ticks, so the bounded sound ring cannot fill between parent frames. */
-	hcu_c3_sound_tick();
-#endif
+	s_c3_scheduler_steps = completed_ticks;
+	s_c3_scheduler_dropped = dropped_ticks;
 #if HCU_C3_TIMING_ENABLED
 	static unsigned last_completed_ticks;
 	static unsigned last_game_ticks;
@@ -4252,12 +4462,12 @@ static int report_kernel_stack(void)
 
 #if defined(HALO_HCU_HEADLESS_RUNTIME_GUEST)
 /* port: LoadExecPS2 argv is [elf, scenario, gametype, score, players,
- * widescreen, V-rules]. The V token may sit anywhere after the scenario. */
+ * widescreen, V-rules, render-profile]. Older launches omit render-profile. */
 static void hcu_chain_capture_args(int argc, char **argv)
 {
 	int i, j;
 	char *end;
-	unsigned long game, score;
+	unsigned long game, score, render_profile = VIDEO_PROFILE_HIGH_DETAIL;
 	long players, widescreen = 1;
 
 	hcu_chain_launch_present = 0;
@@ -4283,9 +4493,15 @@ static void hcu_chain_capture_args(int argc, char **argv)
 			if (end != argv[i + 4] && *end == '\0') widescreen = parsed != 0;
 		}
 		for (j = i + 4; j < argc; ++j) {
-			if (argv[j] && hcu_chain_rules_parse(argv[j], hcu_chain_rules)) {
+			if (!argv[j]) continue;
+			if (j == i + 6) {
+				unsigned long parsed_profile = strtoul(argv[j], &end, 10);
+				if (end != argv[j] && *end == '\0' && parsed_profile < VIDEO_PROFILE_COUNT)
+					render_profile = parsed_profile;
+			}
+			if (hcu_chain_rules_parse(argv[j], hcu_chain_rules)) {
 				hcu_chain_rules_present = 1;
-				break;
+				continue;
 			}
 		}
 		strncpy(s_chain_scenario, argv[i], sizeof(s_chain_scenario) - 1);
@@ -4294,10 +4510,13 @@ static void hcu_chain_capture_args(int argc, char **argv)
 		hcu_chain_score = (unsigned)score;
 		hcu_chain_players = (short)players;
 		s_hcu_widescreen = widescreen != 0;
+		s_hcu_render_profile = (unsigned)render_profile;
+		if (s_hcu_video_ready)
+			video_set_render_profile(&s_hcu_video, s_hcu_render_profile);
 		hcu_chain_launch_present = 1;
-		printf("HALO_PS2_LOCAL chain-args map=%s game=%u score=%u players=%ld widescreen=%u rules=%d\n",
+		printf("HALO_PS2_LOCAL chain-args map=%s game=%u score=%u players=%ld widescreen=%u render-profile=%lu rules=%d\n",
 			s_chain_scenario, (unsigned)game, (unsigned)score, players,
-			(unsigned)s_hcu_widescreen, hcu_chain_rules_present);
+			(unsigned)s_hcu_widescreen, render_profile, hcu_chain_rules_present);
 		return;
 	}
 }

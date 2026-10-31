@@ -189,7 +189,7 @@ typedef struct {
 	uint32_t effects_refused;            /* out of range owner, non-finite or unknown kind */
 	uint32_t parts_logged;               /* per-part parity records (surface = part, material = shader) */
 	uint32_t fx_drawn;                   /* C3.6(c): fx quads admitted to the view's GS packet */
-	uint32_t fx_skipped_space;           /* C3.6(c): fx quads refused by chain_has_space and skipped */
+	uint32_t fx_skipped_space;           /* chain full, or the quad sits inside the camera near plane */
 	uint32_t fx_textured;                /* C3.6(c): fx quads drawn with a resident texture */
 	uint32_t fx_flat;                    /* fx quads withheld for lack of a resident texture (drawn flat only with textures off) */
 	uint32_t fx_no_binding;              /* C3.6(c): flat: no bitmap binding, or no usable source for it */
@@ -338,6 +338,25 @@ int hcu_render_objects_residency_pre_admit_allowed(uint32_t active_readers, int 
 int hcu_render_objects_residency_pre_admit_matches(uint32_t planned_sequence, uint32_t planned_generation,
 	uint32_t pinned_sequence, uint32_t pinned_generation);
 int hcu_render_objects_pool_request_fits(uint32_t need, uint32_t capacity);
+typedef struct {
+	uint32_t off, size;
+	uint8_t used;
+} hcu_render_objects_pool_segment;
+/* Select the smallest free segment that can satisfy a request. Ties keep
+ * segment order stable; preserving larger holes reduces external fragmentation. */
+static inline int hcu_render_objects_pool_best_fit_index(
+	const hcu_render_objects_pool_segment *segments, uint32_t count, uint32_t need)
+{
+	uint32_t i, waste = UINT32_MAX;
+	int best = -1;
+	if (!segments || !need) return -1;
+	for (i = 0; i < count; ++i)
+		if (!segments[i].used && segments[i].size >= need && segments[i].size - need < waste) {
+			best = (int)i;
+			waste = segments[i].size - need;
+		}
+	return best;
+}
 
 /* C3.objects shared texture pages. A page is one OTEX texture payload (CLUT + mips) identified by a 32-byte
  * content identity (tools/halo2ps2/objtex.py page_identity). The table is fixed-size and open-addressed on the
@@ -424,6 +443,8 @@ uint32_t hcu_render_objects_fp_lod(int32_t view_w, int32_t view_h, int32_t scree
 /* As view_begin, with the view's rectangle: picks the first-person level for this view. */
 void hcu_render_objects_view_begin_rect(uint32_t view, int32_t view_w, int32_t view_h,
 	int32_t screen_w, int32_t screen_h, float camera_aspect);
+void hcu_render_objects_set_particle_density_percent(uint8_t percent);
+void hcu_render_objects_set_view_distance_scale(float scale);
 /* Fixed-size PINE-readable timing snapshot. Accessor returns NULL in quiet builds. */
 typedef struct {
 	uint32_t version, frame, view;
@@ -464,6 +485,13 @@ typedef struct {
 	uint32_t keys_used, keys_refused;
 	uint32_t evict_refused_pinned;  /* C3.3: evictable-by-fence entries kept because a pinned bank holds them */
 } hcu_render_objects_residency;
+
+/* Last model-pool refusal for correlation with a frame-ring sample. Event
+ * codes: 1 invalid size, 2 request larger than pool, 3 fence blocked,
+ * 4 insufficient reclaimable bytes, 5 no eligible victim. */
+typedef struct {
+	uint32_t event, resource_id, need_bytes, reclaimable_bytes;
+} hcu_render_objects_pool_event;
 
 typedef struct {
 	uint32_t drawn, triangles, skinned_nodes, failures, pins_before;
@@ -509,6 +537,10 @@ int hcu_render_objects_frame_parity(hcu_render_parity_frame *out);
 int hcu_render_objects_install(void);
 /* C3.6: summary (counts per kind and identity hash) of this run's first-frame parity log. */
 int hcu_render_objects_parity_summary(hcu_render_parity_summary *out);
+/* Object/ground-weapon draw distance. The parent calls lod_tick once per frame with the
+ * measured frame time. lodctl budget is 33.3 ms at 30 fps. Scale is 1 until the first tick. */
+void hcu_render_objects_lod_tick(float frame_ms);
+float hcu_render_objects_lod_distance_scale(void);
 /* Frame lifetime: begin unpins the previous frame when its kick has completed, optionally publishes the
  * synthetic snapshot (synthetic_views > 0, HCU_C3_OBJECTS_SYNTHETIC) and pins the latest published
  * snapshot; end records the kick sequence. release drops any pin (GPU already drained). */
@@ -522,6 +554,7 @@ void hcu_render_objects_frame_end(void);
 int hcu_render_objects_release(void);
 void hcu_render_objects_totals(hcu_render_objects_counters *out);
 void hcu_render_objects_residency_stats(hcu_render_objects_residency *out);
+void hcu_render_objects_last_pool_event(hcu_render_objects_pool_event *out);
 #endif
 
 const hcu_render_objects_timing_probe *hcu_render_objects_timing_probe_get(void);

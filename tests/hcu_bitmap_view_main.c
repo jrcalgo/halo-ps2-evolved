@@ -196,6 +196,30 @@ int main(void)
 		CHECK(out[0].x == ce_quad[0].x && out[2].y == ce_quad[2].y);
 		CHECK(state.clip_x == 0 && state.clip_y == 0 && state.clip_w == SCREEN_W && state.clip_h == SCREEN_H);
 	}
+	/* A centered weapon reticle uses the same pane-relative bitmap transform:
+	 * its dimensions halve for a two-player horizontal split and its center
+	 * remains at the center of each owning pane. */
+	{
+		const hcu_bitmap_vertex_t reticle[4] = {
+			{300.0f, 225.0f, 0.0f, 0.0f, 0x80FFFFFFu}, {340.0f, 225.0f, 1.0f, 0.0f, 0x80FFFFFFu},
+			{340.0f, 255.0f, 1.0f, 1.0f, 0x80FFFFFFu}, {300.0f, 255.0f, 0.0f, 1.0f, 0x80FFFFFFu}
+		};
+		hcu_bitmap_rect top = { 0, 0, SCREEN_W, SCREEN_H / 2 };
+		CHECK(hcu_bitmap_quad_place(&state, &top, reticle, out) == 0);
+		CHECK(out[0].x == 150.0f && out[0].y == 112.5f);
+		CHECK(out[2].x - out[0].x == 20.0f && out[2].y - out[0].y == 15.0f);
+		CHECK((out[0].x + out[2].x) * 0.5f == SCREEN_W * 0.25f);
+		CHECK((out[0].y + out[2].y) * 0.5f == SCREEN_H * 0.25f);
+		{
+			hcu_bitmap_rect bottom_right = { SCREEN_W / 2, SCREEN_H / 2,
+				SCREEN_W / 2, SCREEN_H / 2 };
+			CHECK(hcu_bitmap_quad_place(&state, &bottom_right, reticle, out) == 0);
+			CHECK(out[0].x == SCREEN_W / 2 + 150.0f && out[0].y == SCREEN_H / 2 + 112.5f);
+			CHECK(out[2].x - out[0].x == 20.0f && out[2].y - out[0].y == 15.0f);
+			CHECK((out[0].x + out[2].x) * 0.5f == SCREEN_W * 0.75f);
+			CHECK((out[0].y + out[2].y) * 0.5f == SCREEN_H * 0.75f);
+		}
+	}
 
 	if (failures) {
 		fprintf(stderr, "hcu-bitmap-view failures=%d\n", failures);

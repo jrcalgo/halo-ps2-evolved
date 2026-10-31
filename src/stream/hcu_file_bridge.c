@@ -18,12 +18,16 @@ int __wrap__open(const char *path, int flags, ...)
 {
 	int mode;
 	va_list args;
+	static int open_skip_prints;
 	va_start(args, flags);
 	mode = va_arg(args, int);
 	va_end(args);
 	if (path && path[0] && path[1] == ':' &&
 		(path[0] == 'd' || path[0] == 'D' || path[0] == 'z' || path[0] == 'Z')) {
-		printf("HALO_PS2_LOCAL open-skip %s\n", path);
+		if (open_skip_prints < 8) {
+			printf("HALO_PS2_LOCAL open-skip %s\n", path);
+			open_skip_prints++;
+		}
 		errno = ENOENT;
 		return -1;
 	}

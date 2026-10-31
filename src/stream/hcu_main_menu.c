@@ -165,7 +165,7 @@ enum {
 	SETTING_TERRAIN, SETTING_WIDESCREEN, SETTING_HUD_INSET, SETTING_FPS,
 	SETTING_SUBTITLES, SETTING_BACK, SETTING_ROW_COUNT
 };
-enum { SETTINGS_PROFILES, SETTINGS_CONTROLS, SETTINGS_VIDEO, SETTINGS_BACK, SETTINGS_HUB_ROWS };
+enum { SETTINGS_PROFILES, SETTINGS_CONTROLS, SETTINGS_VIDEO, SETTINGS_SAVE, SETTINGS_BACK, SETTINGS_HUB_ROWS };
 
 static unsigned menu_wrap(unsigned value, int step, unsigned count)
 {
@@ -233,6 +233,7 @@ void hcu_main_menu_state_init(hcu_main_menu_state *state)
 	memset(state, 0, sizeof(*state));
 	state->particles = 1;
 	state->subtitles = 1;
+	state->resolution = 3u; /* saved menu index: High Detail */
 	state->view_model = 1;
 	state->widescreen = 1; /* ANAMORPHIC; menu_storage_load may override */
 	for (i = 0; i < HCU_MAIN_MENU_PROFILE_COUNT; ++i) {
@@ -633,6 +634,7 @@ enum hcu_main_menu_action hcu_main_menu_step(hcu_main_menu_state *state,
 			if (selection == SETTINGS_PROFILES) state->page = HCU_MAIN_MENU_PAGE_PROFILE_SELECT;
 			else if (selection == SETTINGS_CONTROLS) state->page = HCU_MAIN_MENU_PAGE_CONTROLS;
 			else if (selection == SETTINGS_VIDEO) state->page = HCU_MAIN_MENU_PAGE_VIDEO_SETTINGS;
+			else if (selection == SETTINGS_SAVE) return HCU_MAIN_MENU_ACTION_SAVE_SETTINGS;
 			else state->page = HCU_MAIN_MENU_PAGE_TITLE;
 			state->row = state->page == HCU_MAIN_MENU_PAGE_PROFILE_SELECT ? state->profile_index : 0;
 		}
@@ -1127,10 +1129,16 @@ static hcu_main_menu_variant s_kept_variants[HCU_MAIN_MENU_PROFILE_COUNT]
 static unsigned s_kept_ready;
 static hcu_main_menu_session s_selected_session;
 static int s_menu_widescreen = 1;
+static unsigned s_selected_render_profile = 3u;
 
 const hcu_main_menu_session *hcu_main_menu_selected_session(void)
 {
 	return &s_selected_session;
+}
+
+unsigned hcu_main_menu_selected_render_profile(void)
+{
+	return s_selected_render_profile < 4u ? s_selected_render_profile : 3u;
 }
 
 #define MENU_PROFILE_MAGIC 0x32525048u /* HPR2 */
@@ -1345,10 +1353,10 @@ static void menu_storage_save_profile(const hcu_main_menu_state *state, unsigned
 		written == (int)sizeof(s_menu_profile_save), (unsigned)sizeof(s_menu_profile_save));
 }
 
-static void menu_storage_save(const hcu_main_menu_state *state)
+static int menu_storage_save(const hcu_main_menu_state *state)
 {
 	unsigned p; int fd, written;
-	if (!menu_storage_ready()) return;
+	if (!menu_storage_ready()) return 0;
 	for (p = 0; p < HCU_MAIN_MENU_PROFILE_COUNT; ++p)
 		if (state->profile_present_mask & (1u << p))
 			menu_storage_save_profile(state, p);
@@ -1361,11 +1369,12 @@ static void menu_storage_save(const hcu_main_menu_state *state)
 	s_menu_system_save.settings[8] = state->subtitles;
 	s_menu_system_save.checksum = menu_save_checksum(&s_menu_system_save, sizeof(s_menu_system_save));
 	fd = menu_mc_sync_result(mcOpen(0, 0, "/HALOPS2/SYSTEM.DAT", O_WRONLY | O_CREAT | O_TRUNC));
-	if (fd < 0) return;
+	if (fd < 0) return 0;
 	written = menu_mc_sync_result(mcWrite(fd, &s_menu_system_save, sizeof(s_menu_system_save)));
 	(void)menu_mc_sync_result(mcFlush(fd)); (void)menu_mc_sync_result(mcClose(fd));
 	printf("HALO_PS2_LOCAL system-save result=%d bytes=%u\n",
 		written == (int)sizeof(s_menu_system_save), (unsigned)sizeof(s_menu_system_save));
+	return written == (int)sizeof(s_menu_system_save);
 }
 
 static uint32_t menu_hash(unsigned x, unsigned y)
@@ -2182,7 +2191,7 @@ static void menu_controls(packet2_t *packet, const video_t *video, const hcu_mai
 static void menu_settings(packet2_t *packet, const video_t *video, const hcu_main_menu_state *state)
 {
 	static const char *const labels[SETTINGS_HUB_ROWS] = {
-		"PLAYER PROFILES", "CONTROLLER SETTINGS", "VIDEO AND AUDIO", "BACK"
+		"PLAYER PROFILES", "CONTROLLER SETTINGS", "VIDEO AND AUDIO", "SAVE SETTINGS", "BACK"
 	};
 	unsigned row;
 	menu_page(packet, video, "SETTINGS", "CROSS SELECT   CIRCLE BACK");
@@ -2453,6 +2462,8 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 	free(texture_allocation);
 	hcu_main_menu_state_init(&state);
 	menu_storage_load(&state);
+	video_set_render_profile(video, state.resolution);
+	s_selected_render_profile = state.resolution;
 	s_menu_widescreen = state.widescreen != 0;
 	if (state.widescreen)
 		printf("HALO_PS2_LOCAL fov-default degrees=90 widescreen=anamorphic\n");
@@ -2471,6 +2482,10 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 	while (action == HCU_MAIN_MENU_ACTION_NONE) {
 		int up, down, left, right, confirm, back, start, suppress_confirm = 0, suppress_back = 0;
 		unsigned previous_page = state.page;
+		/* Keep the selected 3D profile attached to the shared renderer state so it takes
+		 * effect on the first gameplay frame after the menu exits. */
+		video_set_render_profile(video, state.resolution);
+		s_selected_render_profile = state.resolution;
 		if (frame == 0) printf("HALO_PS2_LOCAL main-menu-frame stage=input\n");
 		menu_read_input(&input, events, &up, &down, &left, &right, &confirm, &back, &start);
 #if defined(__mips__)
@@ -2523,6 +2538,10 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 			}
 		} else action = hcu_main_menu_step(&state, up, down, left, right,
 			confirm || start, back);
+		/* Keep this captured value current even when the user changes settings and
+		 * starts a game before the next menu frame. */
+		s_selected_render_profile = state.resolution;
+		video_set_render_profile(video, state.resolution);
 		if (state.page == HCU_MAIN_MENU_PAGE_PROFILE_SELECT &&
 			(events[0].edges & PAD_BTN_SQUARE) && hcu_main_menu_create_profile(&state)) {
 			menu_storage_save_profile(&state, state.profile_index);
@@ -2531,6 +2550,11 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 		if (previous_page == HCU_MAIN_MENU_PAGE_PROFILE_SELECT &&
 			state.page == HCU_MAIN_MENU_PAGE_PROFILE_EDIT)
 			(void)menu_storage_load_profile(&state, state.profile_index);
+		if (action == HCU_MAIN_MENU_ACTION_SAVE_SETTINGS) {
+			int saved = menu_storage_save(&state);
+			printf("HALO_PS2_LOCAL settings-save result=%d\n", saved);
+			action = HCU_MAIN_MENU_ACTION_NONE;
+		}
 		if (state.page != previous_page &&
 			(previous_page == HCU_MAIN_MENU_PAGE_PROFILE_EDIT ||
 			 previous_page == HCU_MAIN_MENU_PAGE_PROFILE_NAME))

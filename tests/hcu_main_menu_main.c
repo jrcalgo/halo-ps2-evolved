@@ -24,7 +24,8 @@ int main(void)
 	hcu_main_menu_state_init(&state);
 	if (state.item != HCU_MAIN_MENU_MULTIPLAYER ||
 		state.page != HCU_MAIN_MENU_PAGE_TITLE || !state.particles ||
-		!state.profiles[0].vibration || state.session.map != 9) return 1;
+		!state.profiles[0].vibration || state.session.map != 9 ||
+		state.resolution != 3u) return 1; /* High Detail is the new-save default. */
 	if (strcmp(hcu_main_menu_item_label(0), "MULTIPLAYER") ||
 		strcmp(hcu_main_menu_item_label(1), "SETTINGS") ||
 		*hcu_main_menu_item_label(2) ||
@@ -69,6 +70,12 @@ int main(void)
 	hcu_main_menu_state_init(&state);
 	state.item = HCU_MAIN_MENU_SETTINGS;
 	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0);
+	state.row = 3;
+	if (hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0) !=
+		HCU_MAIN_MENU_ACTION_SAVE_SETTINGS || state.page != HCU_MAIN_MENU_PAGE_SETTINGS)
+		return 41;
+	state.row = 0;
+	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0);
 	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0);
 	if (hcu_main_menu_create_profile(&state) != 1 ||
 		!(state.profile_present_mask & 1u)) return 26;
@@ -90,7 +97,7 @@ int main(void)
 	(void)hcu_main_menu_step(&state, 0, 1, 0, 0, 0, 0);
 	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0);
 	(void)hcu_main_menu_step(&state, 0, 0, 0, 1, 0, 0);
-	if (state.page != HCU_MAIN_MENU_PAGE_VIDEO_SETTINGS || state.resolution != 1) return 19;
+	if (state.page != HCU_MAIN_MENU_PAGE_VIDEO_SETTINGS || state.resolution != 0u) return 19;
 	if (hcu_main_menu_build_ring_texture(a, 128, 128) ||
 		hcu_main_menu_build_ring_texture(b, 128, 128) || memcmp(a, b, sizeof(a)) ||
 		!texture_hash(a, 128 * 128)) return 20;

@@ -1,4 +1,4 @@
-/* Triple-bank store for halo_ps2_frame_snapshot (wire version 11).
+/* Triple-bank store for halo_ps2_frame_snapshot (wire version 12).
  *
  * Contract for the frame lane (renderer) and the CE publisher:
  *

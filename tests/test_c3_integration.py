@@ -114,6 +114,15 @@ def test_c3_workload_selects_stock_slayer_before_ce_local_map_start():
     assert "game_set_game_variant(NULL)" not in successor
 
 
+def test_one_player_launch_overrides_split_screen_workload_default():
+    main = (ROOT / "submodules/halo-ce-universal/source/main/main.c").read_text()
+    setup = main[main.index("void main_loop("):]
+    workload = setup[setup.index("/* C3:workload begin */"):]
+    assert "if (chain_players_observed >= 1 &&" in workload
+    assert "#ifdef HALO_PS2_C2_PRODUCTION_RUNTIME_GUEST\n\t\tplayers = 1;" in workload
+    assert "if (menu_launch)\n\t\t{\n\t\t\tgame_type = menu_game_type;\n\t\t\tplayers = menu_players;" in workload
+
+
 def test_resume_skips_only_completed_runs(tmp_path):
     cases = ci.build_cases()
     state = {"cases": {}}

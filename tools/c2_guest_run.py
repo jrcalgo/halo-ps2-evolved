@@ -678,6 +678,12 @@ def mount_guest_package_tree(lane_run: Path, package_tree: Path, guest_package_r
     mount_path = lane_run / mount
     mount_path.parent.mkdir(parents=True, exist_ok=True)
     mount_path.symlink_to(Path(package_tree).resolve())
+    # The selected HCP is addressed through its pinned build/... path, while
+    # loading-screen and legacy audio assets use D:\\packages\\... . Expose
+    # the same immutable tree through both guest path conventions.
+    packages_alias = lane_run / "packages"
+    if mount != Path("packages") and not packages_alias.exists():
+        packages_alias.symlink_to(Path(package_tree).resolve())
 
 
 def stage_host_paths(lane_run: Path, relative_paths):
@@ -879,7 +885,15 @@ def run_guest(which, elf_info, timeout, out_dir=OUT, package_tree=None,
     start = time.monotonic()
     guest_terminal = None
     captures = []
-    private = PrivateDisplay() if capture_dir and capture_markers else None
+    display_range = os.environ.get("C2_GUEST_DISPLAY_RANGE", "100:200")
+    try:
+        first_text, last_text = display_range.split(":", 1)
+        first, last = int(first_text), int(last_text)
+        if first < 1 or last <= first:
+            raise ValueError
+    except ValueError:
+        raise RuntimeError(f"invalid C2_GUEST_DISPLAY_RANGE {display_range!r}; expected FIRST:LAST")
+    private = PrivateDisplay(first, last) if capture_dir and capture_markers else None
     if private:
         env["DISPLAY"] = private.start()
     capture_base = Path(capture_dir) if capture_dir else None

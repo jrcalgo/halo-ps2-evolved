@@ -25,7 +25,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import hcu_mp_map_table as mp  # noqa: E402
 
 SINGLE_LAYER_DVD_BYTES = 4_700_372_992
-TMP = Path("/home/ai/.cache/hbtmp")
+TMP = Path(os.environ.get("TMPDIR", "/tmp"))
 SECTOR = 2048
 # PCSX2's DoCDVDdetectDiskType treats an image of more than 453361 sectors as a
 # DVD. That driver's ISO search reads the path table from sector 257 and ignores
@@ -104,6 +104,29 @@ def publish_dvd_path_table(iso: Path) -> None:
             print(f"  {name} LBA {extent}")
 
 
+def ps2_logo_checksum(data: bytes) -> int:
+    """Return OPL's checksum for the scrambled first 12 PS2 disc sectors."""
+    if len(data) != 12 * SECTOR:
+        raise ValueError("PS2 logo data must be exactly 12 sectors")
+    key = data[0]
+    if key == 0:
+        raise ValueError("PS2 logo first byte must be nonzero")
+    return sum((((byte ^ key) << 3) | ((byte ^ key) >> 5)) & 0xff for byte in data)
+
+
+def publish_ps2_logo(iso: Path, source: Path) -> int:
+    """Copy a region-valid logo from a PS2 disc's first 12 sectors."""
+    with source.open("rb") as handle:
+        logo = handle.read(12 * SECTOR)
+    checksum = ps2_logo_checksum(logo)
+    if checksum not in (0x120519, 0x1555AB):
+        raise ValueError(f"unsupported PS2 logo checksum 0x{checksum:06X}")
+    with iso.open("r+b") as handle:
+        if handle.seek(0, os.SEEK_END) < len(logo):
+            raise ValueError("ISO is too short for PS2 logo sectors")
+        handle.seek(0)
+        handle.write(logo)
+    return checksum
 def _names_in_directory(handle, extent: int, size: int, first_sector_only: bool) -> set[str]:
     handle.seek(extent * SECTOR)
     blob = handle.read(size)
@@ -191,6 +214,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--elf", type=Path, required=True, help="menu ELF stored as /HPS2_000.01")
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--logo-source", type=Path,
+                        default=ROOT / "assets/ps2/boot-logo-ntsc.bin",
+                        help="12-sector PS2 logo source (default: bundled NTSC logo)")
     parser.add_argument("--retail-iso", type=Path,
                         help="optional Halo CE Xbox XISO; regenerates menu textures and audio")
     parser.add_argument("--menu-dir", type=Path,
@@ -205,6 +231,8 @@ def main() -> int:
     output = output.resolve()
     if not elf.is_file():
         parser.error(f"missing menu ELF: {elf}")
+    if not args.logo_source.is_file():
+        parser.error(f"missing PS2 logo source: {args.logo_source}")
     menu_dir = args.menu_dir if args.menu_dir.is_absolute() else ROOT / args.menu_dir
     texture_path = menu_dir / "menu_textures.bin"
     audio_path = menu_dir / "menu_audio.hsb"
@@ -266,9 +294,13 @@ def main() -> int:
         run("xorriso", "-as", "mkisofs", "-iso-level", "2", "--norock",
             "-graft-points", *weights, "-V", "HALO_PS2", "-o", str(output), *grafts)
     publish_dvd_path_table(output)
+    try:
+        logo_checksum = publish_ps2_logo(output, args.logo_source.resolve())
+    except (OSError, ValueError) as error:
+        parser.error(str(error))
     assert_bios_directory_window(output)
     size = output.stat().st_size
-    print(f"{output}: {size} bytes; payload {payload}; {len(sources)} bundled assets")
+    print(f"{output}: {size} bytes; payload {payload}; {len(sources)} bundled assets; PS2 logo checksum 0x{logo_checksum:06X}")
     if size > SINGLE_LAYER_DVD_BYTES:
         parser.error(f"ISO is {size} bytes, above the single-layer DVD limit {SINGLE_LAYER_DVD_BYTES}")
     return 0

@@ -542,7 +542,8 @@ int main(int argc, char **argv)
 		prepare_replay_reader(&freader, &flash_req, s_context.expected_generation);
 		if (hcu_bitmap_dispatch_reader(&freader, &s_context) != HCU_BITMAP_DISPATCH_OK ||
 			s_context.screen_flashes != before_flashes + 1u || s_context.lease_count != before_leases ||
-			s_geometry.qw - before_geometry != 26u || s_upload.qw != before_upload) return 70;
+			/* 26 flash qwords plus the 7-qword TEST/ALPHA/XYOFFSET/SCISSOR restore. */
+			s_geometry.qw - before_geometry != 33u || s_upload.qw != before_upload) return 70;
 	}
 	return 0;
 }

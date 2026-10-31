@@ -37,7 +37,8 @@ enum hcu_main_menu_page {
 enum hcu_main_menu_action {
 	HCU_MAIN_MENU_ACTION_NONE,
 	HCU_MAIN_MENU_ACTION_MULTIPLAYER,
-	HCU_MAIN_MENU_ACTION_FIREFIGHT
+	HCU_MAIN_MENU_ACTION_FIREFIGHT,
+	HCU_MAIN_MENU_ACTION_SAVE_SETTINGS
 };
 
 enum hcu_main_menu_game_type {
@@ -181,6 +182,7 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 	void *dma_storage, size_t dma_bytes, arena_t *scratch);
 /* Valid only after hcu_main_menu_run returns MULTIPLAYER. */
 const hcu_main_menu_session *hcu_main_menu_selected_session(void);
+unsigned hcu_main_menu_selected_render_profile(void);
 #endif
 
 #endif
