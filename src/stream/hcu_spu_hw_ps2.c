@@ -40,22 +40,22 @@ static int s_bank_token = -1; /* the verified bank stays open for on-demand samp
 
 static void hw_set_param(uint16_t entry, uint16_t value)
 {
-	(void)sceSdRemote(1, rSdSetParam, entry, value);
+	(void)sceSdRemote(1, rSdSetParam, entry, value, 0, 0, 0, 0);
 }
 
 static void hw_set_addr(uint16_t entry, uint32_t value)
 {
-	(void)sceSdRemote(1, rSdSetAddr, entry, value);
+	(void)sceSdRemote(1, rSdSetAddr, entry, value, 0, 0, 0, 0);
 }
 
 static void hw_set_switch(uint16_t entry, uint32_t value)
 {
-	(void)sceSdRemote(1, rSdSetSwitch, entry, value);
+	(void)sceSdRemote(1, rSdSetSwitch, entry, value, 0, 0, 0, 0);
 }
 
 static uint32_t hw_get_switch(uint16_t entry)
 {
-	return (uint32_t)sceSdRemote(1, rSdGetSwitch, entry);
+	return (uint32_t)sceSdRemote(1, rSdGetSwitch, entry, 0, 0, 0, 0, 0);
 }
 
 static int hw_upload(const hcu_spu_sample *sample, uint32_t spu_addr);
@@ -81,7 +81,7 @@ int hcu_spu_init(void)
 		printf("HALO_PS2_LOCAL spu-fail stage=remote-init\n");
 		return -2;
 	}
-	(void)sceSdRemote(1, rSdInit, HCU_SPU_SD_INIT_COLD);
+	(void)sceSdRemote(1, rSdInit, HCU_SPU_SD_INIT_COLD, 0, 0, 0, 0, 0);
 	/* CORE1 carries the effect voices to the output; CORE0 is muted like audsrv does. */
 	hw_set_param((uint16_t)(HCU_SPU_CORE0 | SD_PARAM_MVOLL), 0);
 	hw_set_param((uint16_t)(HCU_SPU_CORE0 | SD_PARAM_MVOLR), 0);
@@ -114,8 +114,8 @@ static int upload_chunk(const uint8_t *data, uint32_t bytes, uint32_t spu_addr)
 	if (padded > bytes) memset(s_stage + bytes, 0, padded - bytes);
 	if (sceSdTransToIOP(s_stage, s_iop_stage, padded, 1) < 0) return -1;
 	(void)sceSdRemote(1, rSdVoiceTrans, 0, SD_TRANS_WRITE | SD_TRANS_MODE_DMA,
-		(u8 *)s_iop_stage, spu_addr, padded);
-	(void)sceSdRemote(1, rSdVoiceTransStatus, 0, 1);
+		(u8 *)s_iop_stage, spu_addr, padded, 0);
+	(void)sceSdRemote(1, rSdVoiceTransStatus, 0, 1, 0, 0, 0, 0);
 	(void)data;
 	return 0;
 }

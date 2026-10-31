@@ -2,6 +2,7 @@
 
 #include <math.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "stream/hcu_spu_hw.h"
 
@@ -22,6 +23,7 @@
 #define SD_VOICE_PARAM_ADSR1 0x0300u
 #define SD_VOICE_PARAM_ADSR2 0x0400u
 #define SD_VOICE_ADDR_SSA 0x2000u
+#define SD_VOICE_ADDR_LSAX 0x2100u
 #define SD_SWITCH_KON_ENTRY 0x1500u
 #define SD_SWITCH_KOFF_ENTRY 0x1600u
 #define SD_CORE1 1u
@@ -61,6 +63,9 @@ static pending_start s_pending[HCU_SPU_PENDING];
 static uint32_t s_pending_head, s_pending_count;
 static uint32_t s_page_in_time, s_page_ins_this_tick;
 static hcu_spu_sample *s_loading; /* the one sample being paged in over several ticks */
+/* The sample whose last slice was transferred this tick. Its start waits until the next tick: a voice keyed on
+ * while the SPU2 DMA is still settling reads back unwritten blocks and loops them as a steady high tone. */
+static hcu_spu_sample *s_settling;
 static uint32_t s_draining_born;
 static int s_draining;
 
@@ -145,7 +150,8 @@ int hcu_spu_bank_parse(const uint8_t *image, uint32_t size, hcu_spu_sample *out,
 		s->gain = rdf(e + 24);
 		s->near_dist = (float)(e[28] | e[29] << 8) / 64.0f;
 		s->far_dist = (float)(e[30] | e[31] << 8) / 64.0f;
-		if (!s->perm_count || s->perm >= s->perm_count || !s->rate || !s->bytes || (s->bytes & 15u) ||
+		/* perm is the sound tag's own permutation index (a kept recording of a pitch range), so it may exceed perm_count */
+		if (!s->perm_count || !s->rate || !s->bytes || (s->bytes & 15u) ||
 			(s->bank_offset & 15u) || s->bank_offset < data_off || s->bank_offset > size - 32u ||
 			s->bytes > size - 32u - s->bank_offset)
 			return -4;
@@ -170,6 +176,9 @@ void hcu_spu_attach(const hcu_spu_hw *hw, const hcu_spu_sample *samples, uint32_
 	s_hw = hw;
 	s_sample_count = count > HCU_SPU_MAX_SAMPLES ? HCU_SPU_MAX_SAMPLES : count;
 	s_loading = NULL;
+	s_settling = NULL;
+	s_pending_head = s_pending_count = 0;
+	s_page_in_time = s_page_ins_this_tick = 0;
 	for (i = 0; i < s_sample_count; ++i) { s_samples[i] = samples[i]; s_samples[i].loading = 0; s_samples[i].loaded = 0; }
 	memset(s_perm_cursor, 0, sizeof(s_perm_cursor));
 	memset(s_voice, 0, sizeof(s_voice));
@@ -227,17 +236,28 @@ static int pick_voice(uint8_t priority, uint32_t now, int *stolen)
 	return victim;
 }
 
-static const hcu_spu_sample *choose_sample(uint32_t hash)
+/* The sample for a sound: the recording the game picked when it says so (hint = flat tag permutation index + 1, the
+ * nearest kept one at or below it, which is the first of its pitch range when only that was kept), else the next of
+ * the sound's permutations in turn. */
+static const hcu_spu_sample *choose_sample(uint32_t hash, uint32_t hint)
 {
 	uint32_t i, first = HCU_SPU_MAX_SAMPLES, perms = 0;
 	for (i = 0; i < s_sample_count; ++i)
 		if (s_samples[i].hash == hash) { first = i; perms = s_samples[i].perm_count; break; }
 	if (first == HCU_SPU_MAX_SAMPLES) return 0;
+	if (hint) {
+		const hcu_spu_sample *below = 0, *lowest = &s_samples[first];
+		for (i = first; i < s_sample_count && s_samples[i].hash == hash; ++i) {
+			if (s_samples[i].perm < lowest->perm) lowest = &s_samples[i];
+			if (s_samples[i].perm < hint && (!below || s_samples[i].perm > below->perm)) below = &s_samples[i];
+		}
+		return below ? below : lowest;
+	}
 	{
-		uint32_t pick = s_perm_cursor[first] % perms;
+		uint32_t pick = s_perm_cursor[first] % (perms ? perms : 1u);
 		s_perm_cursor[first] = (uint8_t)(s_perm_cursor[first] + 1u);
-		for (i = first; i < s_sample_count && s_samples[i].hash == hash; ++i)
-			if (s_samples[i].perm == pick) return &s_samples[i];
+		for (i = first; i < s_sample_count && s_samples[i].hash == hash; ++i, --pick)
+			if (pick == 0) return &s_samples[i];
 	}
 	return &s_samples[first];
 }
@@ -393,6 +413,8 @@ static void advance_loading(void)
 	if (s->loaded >= s->bytes) {
 		s->loading = 0;
 		s_loading = NULL;
+		/* the final slice's DMA was just issued; the sample is playable on the next tick, not this one */
+		s_settling = s;
 		s_stats.page_ins++;
 	}
 }
@@ -422,13 +444,25 @@ static int request_volumes(const hcu_sound_request *r, const hcu_spu_sample *sam
 
 static void key_on(uint32_t voice, const hcu_sound_request *r, const hcu_spu_sample *sample, uint32_t vol_l, uint32_t vol_r)
 {
+#if defined(__mips__)
+	printf("HALO_PS2_LOCAL menu-sound key-on stage=begin voice=%u addr=%u\n", voice, sample->spu_addr);
+#endif
 	s_hw->set_param(voice_entry(voice, SD_VOICE_PARAM_VOLL), (uint16_t)vol_l);
+#if defined(__mips__)
+	printf("HALO_PS2_LOCAL menu-sound key-on stage=volume-left\n");
+#endif
 	s_hw->set_param(voice_entry(voice, SD_VOICE_PARAM_VOLR), (uint16_t)vol_r);
 	s_hw->set_param(voice_entry(voice, SD_VOICE_PARAM_PITCH), (uint16_t)hcu_spu_pitch_for(sample->rate, r->pitch));
 	s_hw->set_param(voice_entry(voice, SD_VOICE_PARAM_ADSR1), HCU_SPU_ADSR1);
 	s_hw->set_param(voice_entry(voice, SD_VOICE_PARAM_ADSR2), HCU_SPU_ADSR2);
 	s_hw->set_addr(voice_entry(voice, SD_VOICE_ADDR_SSA), sample->spu_addr);
+	/* the SPU2 keeps a voice's loop address across key-ons and jumps to it at an end block, so a stale one (the
+	 * previous sound's) restarts or garbles this sample: point it at the sample's silent terminator block */
+	if (sample->bytes >= 16u) s_hw->set_addr(voice_entry(voice, SD_VOICE_ADDR_LSAX), sample->spu_addr + sample->bytes - 16u);
 	s_hw->set_switch((uint16_t)(SD_CORE1 | SD_SWITCH_KON_ENTRY), 1u << voice);
+#if defined(__mips__)
+	printf("HALO_PS2_LOCAL menu-sound key-on stage=complete\n");
+#endif
 	s_voice[voice].hw_live = 1;
 }
 
@@ -439,6 +473,67 @@ static uint32_t voice_ticks(const hcu_spu_sample *sample, float pitch, uint32_t 
 	uint32_t pitch_milli = !(pitch > 0.0f) ? 1000u : pitch > 4.0f ? 4000u : (uint32_t)(pitch * 1000.0f);
 	if (pitch_milli < 1u) pitch_milli = 1u;
 	return (uint32_t)((uint64_t)sample->samples * HCU_SPU_TICKS_PER_SECOND * 1000u / ((uint64_t)sample->rate * pitch_milli)) + tail;
+}
+
+/* globals\globals multiplayer_information speech. Logged only when one of these is offered, so weapon
+ * playback does not print. The UI ticks (countdown, respawn) are not in this list. */
+static const char *announcer_name(uint32_t hash)
+{
+	static const char *const names[] = {
+		"sound\\dialog\\multiplayer1\\play_ball",
+		"sound\\dialog\\multiplayer1\\game_over",
+		"sound\\dialog\\multiplayer1\\one_minute_to_win",
+		"sound\\dialog\\multiplayer1\\30_seconds_to_win",
+		"sound\\dialog\\multiplayer1\\red_team_minute_to_win",
+		"sound\\dialog\\multiplayer1\\red_team_30_to_win",
+		"sound\\dialog\\multiplayer1\\blue_team_minute_to_win",
+		"sound\\dialog\\multiplayer1\\blue_team_30_to_win",
+		"sound\\dialog\\multiplayer1\\blue_team_has_the_flag",
+		"sound\\dialog\\multiplayer1\\blue_team_flag_returned",
+		"sound\\dialog\\multiplayer1\\blue_team_score",
+		"sound\\dialog\\multiplayer1\\red_team_has_the_flag",
+		"sound\\dialog\\multiplayer1\\red_team_flag_returned",
+		"sound\\dialog\\multiplayer1\\red_team_score",
+		"sound\\dialog\\multiplayer1\\double_kill",
+		"sound\\dialog\\multiplayer1\\triple_kill",
+		"sound\\dialog\\multiplayer1\\killtacular",
+		"sound\\dialog\\multiplayer1\\running_riot",
+		"sound\\dialog\\multiplayer1\\killing_spree",
+		"sound\\dialog\\multiplayer1\\oddball",
+		"sound\\dialog\\multiplayer1\\race",
+		"sound\\dialog\\multiplayer1\\slayer",
+		"sound\\dialog\\multiplayer1\\capture_the_flag",
+		"sound\\dialog\\multiplayer1\\warthog",
+		"sound\\dialog\\multiplayer1\\ghost",
+		"sound\\dialog\\multiplayer1\\scorpion",
+		"sound\\dialog\\multiplayer1\\team_king_of_the_hill",
+		"sound\\dialog\\multiplayer1\\team_oddball",
+		"sound\\dialog\\multiplayer1\\team_race",
+		"sound\\dialog\\multiplayer1\\team_slayer",
+		"sound\\dialog\\multiplayer1\\king_of_the_hill",
+		"sound\\dialog\\multiplayer1\\blue_team_ctf",
+		"sound\\dialog\\multiplayer1\\red_team_ctf",
+		"sound\\dialog\\multiplayer1\\hill_contested",
+		"sound\\dialog\\multiplayer1\\hill_controlled",
+		"sound\\dialog\\multiplayer1\\hill_occupied",
+	};
+	static uint32_t hashes[sizeof names / sizeof names[0]];
+	static int ready;
+	uint32_t i, n = (uint32_t)(sizeof names / sizeof names[0]);
+	if (!ready) {
+		for (i = 0; i < n; ++i) hashes[i] = hcu_spu_name_hash(names[i]);
+		ready = 1;
+	}
+	for (i = 0; i < n; ++i)
+		if (hashes[i] == hash) return names[i];
+	return 0;
+}
+
+static void note_announcer(uint32_t hash, const char *why)
+{
+	const char *name = announcer_name(hash);
+	if (!name) return;
+	printf("HALO_PS2_LOCAL spu-stats announcer=%s %s started=%u\n", name, why, s_stats.started);
 }
 
 /* Queues a start that must wait for a page-in; 0 when the queue is full. */
@@ -456,11 +551,14 @@ static int queue_start(const hcu_sound_request *r, uint32_t hash, int looping)
 
 static void start_sound(const hcu_sound_request *r, uint32_t hash, int looping)
 {
-	const hcu_spu_sample *sample = choose_sample(hash);
+	const hcu_spu_sample *sample = choose_sample(hash, r->permutation_hint);
 	int stolen, voice;
 	uint8_t priority = r->priority == 255u ? 0u : r->priority;
 	uint32_t vol_l, vol_r, ticks;
-	if (!sample) { s_stats.no_sample++; return; }
+	if (!sample) { s_stats.no_sample++; note_announcer(hash, "nosample"); return; }
+#if defined(__mips__)
+	printf("HALO_PS2_LOCAL menu-sound start sample-bytes=%u resident=%u\n", sample->bytes, sample->resident);
+#endif
 	if (!request_volumes(r, sample, &vol_l, &vol_r) && r->has_position && s_listener_valid) {
 		s_stats.inaudible++;
 		return;
@@ -468,8 +566,9 @@ static void start_sound(const hcu_sound_request *r, uint32_t hash, int looping)
 	{
 		hcu_spu_sample *paged = (hcu_spu_sample *)sample;
 		paged->last_used = r->game_time;
-		/* a sample still being paged in, or a second page-in while one is under way: the start waits for a later tick */
-		if (paged->loading || (!paged->resident && s_loading)) {
+		/* a sample still being paged in, one whose transfer settled this tick, or a second page-in while one is
+		 * under way: the start waits for a later tick */
+		if (paged->loading || paged == s_settling || (!paged->resident && s_loading)) {
 			if (!queue_start(r, hash, looping)) s_stats.dropped_busy++;
 			return;
 		}
@@ -479,8 +578,16 @@ static void start_sound(const hcu_sound_request *r, uint32_t hash, int looping)
 		}
 		{
 			int was_resident = paged->resident;
-			if (page_in(paged) != 0) { s_stats.page_fails++; return; }
+			if (page_in(paged) != 0) { s_stats.page_fails++; note_announcer(hash, "page-fail"); return; }
 			if (!was_resident) s_page_ins_this_tick++;
+			/* a sample uploaded this tick starts on the next one: every episode of a steady tone in the captures began
+			 * within milliseconds of a page-in and its key-on, and a voice that reads SPU2 RAM before the write has
+			 * settled replays stale blocks */
+			if (!was_resident && !paged->loading) s_settling = paged;
+			if (!was_resident && !paged->loading) {
+				if (!queue_start(r, hash, looping)) s_stats.dropped_busy++;
+				return;
+			}
 			if (paged->loading) {
 				if (!queue_start(r, hash, looping)) s_stats.dropped_busy++;
 				return;
@@ -503,6 +610,7 @@ static void start_sound(const hcu_sound_request *r, uint32_t hash, int looping)
 	s_voice[voice].sample = sample;
 	s_voice[voice].request = *r;
 	s_stats.started++;
+	note_announcer(hash, "key-on");
 	if (looping) s_stats.loops_started++;
 	{
 		uint32_t i, active = 0;
@@ -527,6 +635,12 @@ static void fade_sound(const hcu_sound_request *r, uint32_t hash)
 		voice_state *v = &s_voice[i];
 		if (!v->active || v->hash != hash || v->owner != r->owner_datum) continue;
 		v->request.gain = r->gain;
+		if (r->pitch > 0.0f && r->pitch != v->request.pitch) {
+			/* a loop's pitch follows its source (an engine's revs): the voice plays, and lasts, at the new rate */
+			v->request.pitch = r->pitch;
+			s_hw->set_param(voice_entry(i, SD_VOICE_PARAM_PITCH), (uint16_t)hcu_spu_pitch_for(v->sample->rate, r->pitch));
+			if (v->looping) v->end_tick = v->start_tick + voice_ticks(v->sample, r->pitch, 2u);
+		}
 		if (r->has_position) {
 			v->request.has_position = 1;
 			v->request.position[0] = r->position[0];
@@ -548,6 +662,8 @@ void hcu_spu_tick(uint32_t now)
 {
 	uint32_t i, vol_l, vol_r, ticks, queued;
 	if (!s_hw) return;
+	/* last tick's final slice has had a tick to land in SPU2 RAM; starts queued for it may key on now */
+	s_settling = NULL;
 	advance_loading();
 	/* Sounds that waited for a page-in: one new sample per tick; one that waited too long is dropped. A start
 	 * that must wait again is queued behind the rest (only the entries queued before this tick are visited). */
@@ -555,7 +671,11 @@ void hcu_spu_tick(uint32_t now)
 		pending_start p = s_pending[s_pending_head];
 		s_pending_head = (s_pending_head + 1u) % HCU_SPU_PENDING;
 		s_pending_count--;
-		if ((int32_t)(now - p.born) > (int32_t)HCU_SPU_PENDING_MAX_AGE) { s_stats.dropped_busy++; continue; }
+		if ((int32_t)(now - p.born) > (int32_t)HCU_SPU_PENDING_MAX_AGE) {
+			s_stats.dropped_busy++;
+			note_announcer(p.hash, "dropped");
+			continue;
+		}
 		p.request.game_time = now;
 		s_draining = 1;
 		s_draining_born = p.born;

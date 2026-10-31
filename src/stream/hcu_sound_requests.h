@@ -53,7 +53,8 @@ typedef struct {
 	uint8_t accepted;           /* cache seam result; not playback success */
 	uint8_t metadata_known;     /* bit 0 owner, 1 position, 2 priority, 3 gain, 4 pitch, 5 time */
 	uint8_t repeat;             /* PERMUTATION_REQUEST: submits merged here, 1..255 */
-	uint8_t reserved[2];
+	uint8_t permutation_hint;   /* 0 unknown, else the playing recording's flat tag permutation index + 1 */
+	uint8_t reserved;
 	float gain;                 /* playback gain, 1.0 nominal */
 	float pitch;                /* playback pitch multiplier, 1.0 nominal */
 	uint32_t game_time;         /* CE game time in ticks at submit */

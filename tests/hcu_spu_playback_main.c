@@ -106,9 +106,11 @@ int main(void)
 	nops = 0;
 	r = req(HCU_SOUND_EVENT_IMPULSE, 7, 4, 100, 0.5f);
 	hcu_spu_request(&r, hashes[0]);
-	CHECK(nops == 7); /* vol L/R, pitch, adsr1/2, ssa, kon */
+	CHECK(nops == 8); /* vol L/R, pitch, adsr1/2, ssa, lsax, kon */
 	CHECK(ops[5].kind == 1 && ops[5].value == HCU_SPU_RAM_BASE);
-	CHECK(ops[6].kind == 2 && ops[6].value == 1u);
+	/* the loop address is the sample's terminator block: the SPU2 jumps to it at an end block */
+	CHECK(ops[6].kind == 1 && ops[6].entry == (1u | 0x2100u) && ops[6].value == HCU_SPU_RAM_BASE + samples[0].bytes - 16u);
+	CHECK(ops[7].kind == 2 && ops[7].value == 1u);
 	CHECK(ops[0].value == hcu_spu_volume_for(0.5f, 1.0f));
 	hcu_spu_get_stats(&st);
 	CHECK(st.requests == 1 && st.started == 1 && st.voices_active == 1);
@@ -181,7 +183,7 @@ int main(void)
 		r = req(HCU_SOUND_EVENT_IMPULSE, 1, 3, 500, 1.0f);
 		r.has_position = 1; r.position[1] = -10.0f;
 		hcu_spu_request(&r, hashes[0]);
-		CHECK(nops == 7 && ops[0].value < ops[1].value && ops[1].value > 0);
+		CHECK(nops == 8 && ops[0].value < ops[1].value && ops[1].value > 0);
 		nops = 0;
 		r.position[1] = 0.0f; r.position[0] = 100.0f;
 		hcu_spu_request(&r, hashes[0]);
@@ -198,7 +200,7 @@ int main(void)
 		CHECK(st.inaudible == 2);
 		r.position[0] = 8.0f;
 		hcu_spu_request(&r, hashes[1]);
-		CHECK(nops == 7);
+		CHECK(nops == 8);
 		hcu_spu_set_listener(0, 0, 0);
 	}
 
@@ -207,7 +209,7 @@ int main(void)
 	nops = 0;
 	r = req(HCU_SOUND_EVENT_LOOPING_START, 9, 3, 600, 1.0f);
 	hcu_spu_request(&r, hashes[0]);
-	CHECK(nops == 7);
+	CHECK(nops == 8);
 	nops = 0;
 	hcu_spu_request(&r, hashes[0]);
 	hcu_spu_get_stats(&st);
@@ -216,13 +218,19 @@ int main(void)
 	hcu_spu_tick(610 * TEST_MS_PER_TICK);
 	CHECK(nops == 0);
 	hcu_spu_tick(640 * TEST_MS_PER_TICK);
-	CHECK(nops == 8); /* key-off, then the seven key-on operations */
+	CHECK(nops == 9); /* key-off, then the eight key-on operations */
 	hcu_spu_get_stats(&st);
 	CHECK(st.loop_restarts == 1 && st.voices_active == 1);
 	r = req(HCU_SOUND_EVENT_FADE, 9, 3, 641, 0.5f);
 	nops = 0;
 	hcu_spu_request(&r, hashes[0]);
 	CHECK(nops == 2 && ops[0].value == hcu_spu_volume_for(0.5f, 1.0f));
+	/* a loop whose pitch moves (an engine's revs) has its voice pitch changed with the volume */
+	r = req(HCU_SOUND_EVENT_FADE, 9, 3, 641, 0.5f);
+	r.pitch = 1.5f;
+	nops = 0;
+	hcu_spu_request(&r, hashes[0]);
+	CHECK(nops == 3 && ops[0].value == hcu_spu_pitch_for(samples[0].rate, 1.5f));
 	r = req(HCU_SOUND_EVENT_FADE, 9, 3, 642, 0.0f);
 	nops = 0;
 	hcu_spu_request(&r, hashes[0]);
@@ -257,6 +265,14 @@ int main(void)
 		CHECK(upload_addr[0] % 64u == 0 && upload_addr[0] >= HCU_SPU_RAM_BASE &&
 			upload_addr[0] + 900000u <= HCU_SPU_RAM_END);
 		CHECK(upload_addr[0] != ps[0].spu_addr); /* never over the playing sample */
+		/* a sample uploaded in a tick starts on the next one, never in the tick that wrote it */
+		{
+			hcu_spu_stats before;
+			hcu_spu_get_stats(&before);
+			hcu_spu_tick(1001 * TEST_MS_PER_TICK);
+			hcu_spu_get_stats(&st);
+			CHECK(st.started == before.started + 1);
+		}
 		/* requesting the evicted one now evicts again (sample 0 and 2 both play: nothing is evictable) */
 		uploads = 0;
 		r = req(HCU_SOUND_EVENT_IMPULSE, 3, 3, 1002, 1.0f);
@@ -300,7 +316,11 @@ int main(void)
 		hcu_spu_tick(2000 * TEST_MS_PER_TICK + 66u);
 		hcu_spu_get_stats(&st);
 		CHECK(part_calls == 3 && part_offset[2] == 32768u && part_bytes[2] == 40000u - 32768u);
-		CHECK(st.page_ins == 1 && st.started == 1 && st.voices_active == 1 && st.page_fails == 0);
+		/* the last slice's transfer settles for one tick before the voice is keyed on */
+		CHECK(st.page_ins == 1 && st.started == 0 && st.voices_active == 0 && st.page_fails == 0);
+		hcu_spu_tick(2000 * TEST_MS_PER_TICK + 99u);
+		hcu_spu_get_stats(&st);
+		CHECK(st.started == 1 && st.voices_active == 1);
 		/* a finished one-shot is keyed off explicitly (once), not left to the end flag */
 		hcu_spu_tick(2000 * TEST_MS_PER_TICK + 66u + 500u);
 		hcu_spu_get_stats(&st);
@@ -373,10 +393,13 @@ int main(void)
 		dr = req(HCU_SOUND_EVENT_IMPULSE, 2, 3, 2000, 1.0f);
 		hcu_spu_request(&dr, dh[second - 1u]);
 		hcu_spu_get_stats(&st);
-		CHECK(uploads == 1 && st.started == 1);
+		CHECK(uploads == 1 && st.started == 0); /* the page-in's sound starts on the next tick */
 		hcu_spu_tick(2001 * TEST_MS_PER_TICK);
 		hcu_spu_get_stats(&st);
-		CHECK(uploads == 2 && st.started == 2 && st.page_fails == 0);
+		CHECK(uploads == 2 && st.started == 1 && st.page_fails == 0);
+		hcu_spu_tick(2002 * TEST_MS_PER_TICK);
+		hcu_spu_get_stats(&st);
+		CHECK(st.started == 2);
 		/* a sound that waits longer than the queue allows is dropped, not started late */
 		dr = req(HCU_SOUND_EVENT_IMPULSE, 3, 3, 2010, 1.0f);
 		hcu_spu_request(&dr, dh[first - 1u]);
@@ -406,6 +429,29 @@ int main(void)
 	hcu_spu_request(&r, hashes[0]);
 	hcu_spu_get_stats(&st);
 	CHECK(st.voices_active == 2);
+	hcu_spu_attach(&hw, samples, count);
+	/* a request that names its recording (a pitch range's permutation) gets that one, not the next in turn */
+	nops = 0;
+	r = req(HCU_SOUND_EVENT_IMPULSE, 1, 4, 102, 1.0f);
+	r.permutation_hint = 2; /* flat permutation 1 */
+	hcu_spu_request(&r, hashes[1]);
+	CHECK(ops[5].value == samples[2].spu_addr);
+	nops = 0;
+	r.permutation_hint = 1; /* flat permutation 0 */
+	hcu_spu_request(&r, hashes[1]);
+	CHECK(ops[5].value == samples[1].spu_addr);
+	nops = 0;
+	r.permutation_hint = 9; /* a permutation that was not kept plays the nearest one below it */
+	hcu_spu_request(&r, hashes[1]);
+	CHECK(ops[5].value == samples[2].spu_addr);
+
+	/* a kept recording of a pitch range carries the tag's permutation index, which may exceed the kept count */
+	{
+		const uint16_t big_perms[3] = { 3, 6, 0 }, one[3] = { 1, 1, 1 };
+		hcu_spu_sample tmp[8];
+		uint32_t n = 0, sz = build_image(3, hashes, big_perms, one, 64);
+		CHECK(hcu_spu_bank_parse(image, sz, tmp, 8, &n, 0, 0) == 0 && n == 3 && tmp[0].perm == 3 && tmp[1].perm == 6);
+	}
 	printf("spu-playback-ok started=%u stopped=%u loops=%u fades=%u\n", st.started, st.stopped, st.loops_started, st.fades);
 	return 0;
 }

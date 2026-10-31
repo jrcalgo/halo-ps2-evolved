@@ -117,10 +117,28 @@ class BankTests(unittest.TestCase):
         self.assertEqual(info["count"], len(entries))
         self.assertGreater(info["count"], 0)
         self.assertLessEqual(info["spu_bytes"], 60000)
+        self.assertFalse(any("dialog\\multiplayer1\\" in e["path"].lower() for e in entries))
         bad = bytearray(blob)
         bad[len(bad) // 2] ^= 1
         with self.assertRaises(ValueError):
             sb.verify_bank(bytes(bad))
+
+    def test_announcer_lines_page_past_the_resident_budget(self):
+        blob, entries = sb.build_bank(MAP, budget=60000, max_perms=1, announcer=True)
+        info = sb.verify_bank(blob)
+        speech = [e for e in entries if "dialog\\multiplayer1\\" in e["path"].lower()]
+        names = {e["path"].lower() for e in speech}
+        self.assertGreaterEqual(len(names), 36)
+        self.assertIn("sound\\dialog\\multiplayer1\\slayer", names)
+        self.assertIn("sound\\dialog\\multiplayer1\\team_slayer", names)
+        self.assertIn("sound\\dialog\\multiplayer1\\game_over", names)
+        self.assertLessEqual(info["spu_bytes"], 60000)
+        self.assertLessEqual(info["spu_bytes"], sb.SPU_RAM_BYTES - sb.SPU_RESERVED_BYTES - sb.MIN_POOL_BYTES)
+        self.assertTrue(speech)
+        self.assertTrue(all(e["offset"] >= info["spu_bytes"] for e in speech))
+        self.assertEqual(len(speech), len(names))
+        for suffix in sb.ANNOUNCER_ALSO:
+            self.assertTrue(any(e["path"].lower().endswith(suffix) for e in entries), suffix)
 
 
 if __name__ == "__main__":
