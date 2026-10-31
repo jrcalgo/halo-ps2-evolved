@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import ctypes
+import math
 import struct
 import sys
 import tempfile
@@ -13,13 +14,14 @@ from pathlib import Path
 
 from PIL import Image
 from PIL import ImageDraw
+from PIL import ImageFilter
 
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "submodules" / "halo-ps2" / "tools"))
 sys.path.insert(0, str(ROOT / "submodules" / "halo-64"))
 
-from halo2ps2 import bitmaps, mapinfo  # noqa: E402
+from halo2ps2 import bitmaps, mapinfo, modelconv, texconv  # noqa: E402
 from halo2ps2.tagindex import TagIndex  # noqa: E402
 from tools.n64.xiso import XboxDisc  # noqa: E402
 
@@ -32,6 +34,8 @@ LOGO_BITMAP = r"ui\shell\main_menu\halo_logo"
 MULTIPLAYER_BITMAP = r"ui\shell\main_menu\menu_multiplayer"
 SETTINGS_BITMAP = r"ui\shell\main_menu\menu_settings"
 PLANET_BITMAP = r"sky\planets\threshold space"
+SPACE_BITMAP = r"sky\sky_x10\bitmaps\space"
+STARS_BITMAP = r"sky\space\bitmaps\stars"
 # Keep this order in sync with MENU_GLYPH_* in src/stream/hcu_main_menu.c.
 BUTTON_ICON_DIR = Path("/home/ai/Documents/Halo/ps2buttons")
 GLYPH_CELL = 16
@@ -93,62 +97,86 @@ def write_atlas(images: list[Image.Image], count: int, columns: int, rows: int,
     (destination / f"{name}.rgb5a1").write_bytes(rgb5a1(atlas))
 
 
-def write_ring_texture(image: Image.Image, destination: Path, name: str) -> None:
-    """Write one GS texture from the corresponding retail ring material."""
-    texture = image.convert("RGBA").resize((128, 128), Image.Resampling.LANCZOS)
+def write_ring_texture(image: Image.Image, destination: Path, name: str,
+                       size: tuple[int, int]) -> None:
+    """Preserve the retail material's aspect ratio in its GS texture."""
+    texture = image.convert("RGBA").resize(size, Image.Resampling.LANCZOS)
     texture.save(destination / f"{name}.png")
     (destination / f"{name}.rgb5a1").write_bytes(rgb5a1(texture))
 
 
-def write_loading_backplate(ui_map: Path, destination: Path) -> None:
-    """Build a PS2-sized backplate from CE's own Halo and Threshold bitmaps.
+def write_space_texture(image: Image.Image, destination: Path, name: str,
+                        stars: bool = False) -> None:
+    """Convert CE's tiling space/star bitmap to a compact menu texture."""
+    source = image.convert("RGBA").resize((128, 128), Image.Resampling.LANCZOS)
+    if stars:
+        # The retail star bitmap is stored over opaque black. Make its dark
+        # field transparent so the CE nebula bitmap remains visible beneath it.
+        gray = source.convert("L")
+        source.putalpha(gray.point(lambda value: 255 if value >= 28 else 0))
+    source.save(destination / f"{name}.png")
+    (destination / f"{name}.rgb5a1").write_bytes(rgb5a1(source))
 
-    The retail progress renderer expects a loose 320x240 loading.tga, which
-    is absent from the supplied Xbox XISO. Keep the bitmap art source-authentic
-    and let the PS2 progress renderer reproduce the retail blue sweep.
+
+def write_loading_backplate(destination: Path) -> None:
+    """Reconstruct CE's tinted-glass Halo loading image for the PS2 renderer.
+
+    The supplied Xbox XISO has no loose loading.tga. The moving blue progress
+    flash is rendered at runtime; this static art is deliberately separate
+    from the menu planet, star field, and material textures.
     """
-    canvas = Image.new("RGBA", (512, 448), (2, 5, 16, 255))
+    scale = 2
+    width, height = 512 * scale, 448 * scale
+    canvas = Image.new("RGBA", (width, height), (1, 3, 9, 255))
     pixels = canvas.load()
-    for y in range(448):
-        shade = max(0, 16 - y // 24)
-        for x in range(512):
-            pixels[x, y] = (2, 4 + shade // 3, 15 + shade, 255)
+    for y in range(height):
+        for x in range(width):
+            dx = (x - width * 0.5) / width
+            dy = (y - height * 0.48) / height
+            lift = max(0.0, 1.0 - (dx * dx * 5.5 + dy * dy * 8.0))
+            value = int(3 + lift * 8)
+            pixels[x, y] = (value, value + 2, value + 7, 255)
 
-    planet = decode_group(ui_map, PLANET_BITMAP)[0].convert("RGBA")
-    planet.thumbnail((230, 230), Image.Resampling.LANCZOS)
-    px = Image.new("RGBA", (230, 230), (0, 0, 0, 0))
-    px.alpha_composite(planet, ((230 - planet.width) // 2, (230 - planet.height) // 2))
-    alpha = Image.new("L", (230, 230), 0)
-    ImageDraw.Draw(alpha).ellipse((3, 3, 227, 227), fill=255)
-    px.putalpha(Image.composite(px.getchannel("A"), Image.new("L", (230, 230), 0), alpha))
-    canvas.alpha_composite(px, (270, 32))
+    box = (24 * scale, 126 * scale, 488 * scale, 350 * scale)
+    glow = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    ImageDraw.Draw(glow).ellipse(box, outline=(115, 157, 194, 92), width=20 * scale)
+    canvas.alpha_composite(glow.filter(ImageFilter.GaussianBlur(15 * scale)))
 
-    outer = decode_group(ui_map, RING_OUTER_BITMAP)[0].convert("RGBA")
-    inner = decode_group(ui_map, RING_INNER_BITMAP)[0].convert("RGBA")
-    # The loading silhouette is a broad ring across the planet field. CE's
-    # outer/inner material maps remain distinct, matching the retail model.
-    for source, box, color in ((outer, (8, 132, 504, 330), (170, 190, 210)),
-                               (inner, (20, 148, 492, 314), (135, 170, 205))):
-        width, height = box[2] - box[0], box[3] - box[1]
-        texture = source.resize((width, height), Image.Resampling.LANCZOS)
-        mask = Image.new("L", (width, height), 0)
-        draw = ImageDraw.Draw(mask)
-        draw.ellipse((0, 0, width - 1, height - 1), fill=155)
-        draw.ellipse((22, 26, width - 23, height - 26), fill=0)
-        # Preserve material luminance while tinting toward CE's cold space light.
-        tint = Image.new("RGBA", texture.size, (*color, 255))
-        texture = Image.blend(texture, tint, 0.45)
-        texture.putalpha(mask)
-        canvas.alpha_composite(texture, (box[0], box[1]))
+    far = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    fd = ImageDraw.Draw(far)
+    fd.arc(box, 180, 360, fill=(75, 104, 132, 145), width=9 * scale)
+    fd.arc((38 * scale, 137 * scale, 474 * scale, 339 * scale), 180, 360,
+           fill=(35, 54, 76, 185), width=4 * scale)
+    canvas.alpha_composite(far)
 
-    # A soft star field uses the same dark blue palette as the UI scene.
-    draw = ImageDraw.Draw(canvas)
-    for i in range(168):
-        x = (i * 167 + 31) % 512
-        y = (i * 83 + 17) % 448
-        level = 40 + ((i * 37) % 100)
-        draw.point((x, y), fill=(level // 2, level // 2, level, 180))
-    canvas.convert("RGB").save(destination / "halo_ce_loading_backplate.png")
+    near = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    nd = ImageDraw.Draw(near)
+    nd.arc(box, 0, 180, fill=(128, 160, 186, 205), width=10 * scale)
+    nd.arc((38 * scale, 137 * scale, 474 * scale, 339 * scale), 0, 180,
+           fill=(61, 83, 105, 225), width=4 * scale)
+    nd.arc((49 * scale, 143 * scale, 463 * scale, 333 * scale), 0, 180,
+           fill=(24, 38, 55, 235), width=3 * scale)
+    for i in range(17):
+        x = (66 + i * 23) * scale
+        y = (263 + int(23 * (1.0 - abs(x / scale - 256) / 210))) * scale
+        nd.line((x, y, x, y + 8 * scale), fill=(89, 112, 132, 165), width=scale)
+    canvas.alpha_composite(near)
+
+    label = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    ld = ImageDraw.Draw(label)
+    try:
+        from PIL import ImageFont
+        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 11 * scale)
+    except OSError:
+        from PIL import ImageFont
+        font = ImageFont.load_default()
+    text = "LOADING"
+    bounds = ld.textbbox((0, 0), text, font=font)
+    ld.text(((width - (bounds[2] - bounds[0])) // 2, 390 * scale), text,
+            font=font, fill=(122, 153, 177, 165))
+    canvas.alpha_composite(label)
+    canvas = canvas.convert("RGB").resize((512, 448), Image.Resampling.LANCZOS)
+    canvas.save(destination / "halo_ce_loading_backplate.png")
     (destination / "loading.rgb5a1").write_bytes(rgb5a1(canvas.convert("RGBA")))
 
 
@@ -189,6 +217,102 @@ def write_title_art(ui_map: Path, destination: Path) -> None:
             pixels[x, y] = red, green, blue, alpha if radius < 124 else 0
     planet.save(destination / "halo_ce_planet.png")
     (destination / "halo_ce_planet.rgb5a1").write_bytes(rgb5a1(planet))
+
+
+def write_menu_camera_path(ui_map: Path, destination: Path) -> bytes:
+    """Extract the title camera's named path from the retail UI scenario.
+
+    ScenarioCutsceneCameraPoint records are 0x68 bytes in the Xbox cache.
+    The `ring_loop` script visits uicam, then point_2 through point_11.
+    Store the placed Halo position and those points as camera position,
+    forward/up, and horizontal FOV.
+    """
+    header = mapinfo.read_header(ui_map)
+    index = TagIndex.read(ui_map)
+    scenario = next(e for e in index.entries
+                    if e.group == "scnr" and e.path == r"levels\ui\ui")
+    with ui_map.open("rb") as source:
+        source.seek(header.tag_data_offset)
+        tag_data = source.read(header.tag_data_size)
+
+    def at(address: int, size: int) -> bytes:
+        offset = address - index.base
+        if offset < 0 or offset + size > len(tag_data):
+            raise ValueError("UI scenario pointer falls outside the tag data")
+        return tag_data[offset:offset + size]
+
+    scenario_data = at(scenario.data_address, 0x4FC)
+    scenery_count, scenery_address = struct.unpack_from("<iI", scenario_data, 0x210)
+    if scenery_count < 1:
+        raise ValueError("UI scenario has no placed Halo scenery")
+    scenery = at(scenery_address, 32)
+    ring_position = struct.unpack_from("<3f", scenery, 8)
+    yaw, pitch, roll = struct.unpack_from("<3f", scenery, 20)
+    cr, sr = math.cos(roll), math.sin(roll)
+    cp, sp = math.cos(pitch), math.sin(pitch)
+    cy, sy = math.cos(yaw), math.sin(yaw)
+    ring_basis = (cy * cp, sy * cr - cy * sp * sr, cy * sp * cr + sy * sr,
+                  -(sy * cp), sy * sp * sr + cy * cr, cy * sr - sy * sp * cr,
+                  -sp, -(cp * sr), cp * cr)
+    count, address = struct.unpack_from("<iI", scenario_data, 0x4F0)
+    records = {}
+    for i in range(max(0, count)):
+        raw = at(address + i * 0x68, 0x68)
+        name = raw[4:36].split(b"\0", 1)[0].decode("ascii", "replace")
+        if name not in {"uicam", *(f"point_{n}" for n in range(2, 12))}:
+            continue
+        position = struct.unpack_from("<3f", raw, 0x28)
+        yaw, pitch, roll = struct.unpack_from("<3f", raw, 0x34)
+        fov = struct.unpack_from("<f", raw, 0x40)[0]
+        cr, sr = math.cos(roll), math.sin(roll)
+        cp, sp = math.cos(pitch), math.sin(pitch)
+        cy, sy = math.cos(yaw), math.sin(yaw)
+        forward = (cy * cp, sy * cr - cy * sp * sr, cy * sp * cr + sy * sr)
+        up = (-sp, -cp * sr, cp * cr)
+        records[name] = (*position, *forward, *up, fov)
+
+    names = ("uicam", *(f"point_{n}" for n in range(2, 12)))
+    missing = [name for name in names if name not in records]
+    if missing:
+        raise ValueError(f"UI scenario camera path is missing {', '.join(missing)}")
+    payload = b"HCM3" + struct.pack("<I3f9f", len(names), *ring_position, *ring_basis)
+    payload += b"".join(struct.pack("<10f", *records[name]) for name in names)
+    (destination / "halo_ce_camera.bin").write_bytes(payload)
+    return payload
+
+
+def write_menu_ring_mesh(ui_map: Path, destination: Path) -> bytes:
+    """Export the retail scenery\halo\halo triangles and their two ring UV sets."""
+    data = texconv.MapData.open(ui_map)
+    model = next(e for e in data.index.entries
+                 if e.group == "mode" and e.path == r"scenery\halo\halo")
+    source = modelconv.read_model(data, model)
+    parts = source.geometries[0]
+    shadow_part = next((p for p in parts
+                        if "shadow" in data.by_id[p.shader_id].path), None)
+    if shadow_part is None:
+        raise ValueError("retail Halo model has no inner ring shadow material")
+    shadow_shader = texconv.resolve_shader(data, shadow_part.shader_id)
+    shadow_bitmap = data.by_id[shadow_shader.bitmap_id]
+    images = bitmaps.parse_images(data.region, data.base, shadow_bitmap.data_address)
+    width, height, rgba = bitmaps.decode_level(images[0],
+        bitmaps.read_pixels(images[0], bitmaps.file_reader(ui_map)))
+    shadow = Image.frombytes("RGBA", (width, height), rgba).resize(
+        (128, 8), Image.Resampling.LANCZOS)
+    shadow.save(destination / "halo_ce_ring_shadow.png")
+    shadow_encoded = rgb5a1(shadow)
+    (destination / "halo_ce_ring_shadow.rgb5a1").write_bytes(shadow_encoded)
+    payload = bytearray(b"HMR1" + struct.pack("<I", len(parts)))
+    tag_paths = {e.tag_id: e.path for e in data.index.entries}
+    for part in parts:
+        path = tag_paths.get(part.shader_id, "")
+        kind = 2 if "shadow" in path else 0 if "inner ring" in path else 1
+        payload += struct.pack("<II", kind, len(part.tris))
+        for tri in part.tris:
+            for vertex in tri:
+                payload += struct.pack("<5f", *part.pos[vertex], *part.uv[vertex])
+    (destination / "halo_ce_ring_mesh.bin").write_bytes(payload)
+    return bytes(payload)
 
 
 class _RsvgRectangle(Structure):
@@ -311,19 +435,26 @@ def main() -> int:
         write_atlas(decode_group(decompressed, GAME_TYPE_BITMAP), 6, 2, 4,
                     args.out, "halo_ce_gametype_atlas")
         write_ring_texture(decode_group(decompressed, RING_INNER_BITMAP)[0],
-                           args.out, "halo_ce_ring_inner")
+                           args.out, "halo_ce_ring_inner", (128, 8))
         write_ring_texture(decode_group(decompressed, RING_OUTER_BITMAP)[0],
-                           args.out, "halo_ce_ring_outer")
+                           args.out, "halo_ce_ring_outer", (128, 64))
+        write_space_texture(decode_group(decompressed, SPACE_BITMAP)[0],
+                            args.out, "halo_ce_space")
+        write_space_texture(decode_group(decompressed, STARS_BITMAP)[0],
+                            args.out, "halo_ce_stars", stars=True)
         write_title_art(decompressed, args.out)
-        write_loading_backplate(decompressed, args.out)
+        camera_path = write_menu_camera_path(decompressed, args.out)
+        ring_mesh = write_menu_ring_mesh(decompressed, args.out)
+        write_loading_backplate(args.out)
     write_button_glyphs(args.out, args.button_icons)
     if args.package_out:
         args.package_out.parent.mkdir(parents=True, exist_ok=True)
         names = ("halo_ce_ring_inner", "halo_ce_ring_outer", "halo_ce_map_atlas",
                  "halo_ce_gametype_atlas", "halo_ce_logo", "halo_ce_buttons",
-                 "halo_ce_planet", "ps2_button_glyphs")
+                 "halo_ce_planet", "ps2_button_glyphs", "halo_ce_space",
+                 "halo_ce_stars", "halo_ce_ring_shadow")
         args.package_out.write_bytes(b"".join(
-            (args.out / f"{name}.rgb5a1").read_bytes() for name in names))
+            (args.out / f"{name}.rgb5a1").read_bytes() for name in names) + camera_path + ring_mesh)
     return 0
 
 
