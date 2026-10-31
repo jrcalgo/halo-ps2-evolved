@@ -67,6 +67,7 @@ EE_LDFLAGS += -Wl,--wrap,malloc -Wl,--wrap,free -Wl,--wrap,calloc -Wl,--wrap,rea
 EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_main.o \
 	$(WORLD_OUTPUT)/stream/hcu_file_bridge.o \
 	$(WORLD_OUTPUT)/stream/hcu_input_bridge.o \
+	$(WORLD_OUTPUT)/stream/hcu_ingame_overlay.o \
 	$(WORLD_OUTPUT)/stream/hcu_main_menu.o \
 	$(WORLD_OUTPUT)/stream/hcu_loading_screen.o \
 	$(WORLD_OUTPUT)/stream/hcu_sound_requests.o \
@@ -339,6 +340,19 @@ $(WORLD_OUTPUT)/stream/hcu_input_bridge.o: src/stream/hcu_input_bridge.c
 		-include $(HCU_ROOT)/port/ps2/include/halo_ps2_prefix.h \
 		-c $< -o $@
 
+$(WORLD_OUTPUT)/stream/hcu_ingame_overlay.o: src/stream/hcu_ingame_overlay.c src/stream/hcu_ingame_overlay.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
+		-fms-extensions -fshort-wchar \
+		-I$(HCU_ROOT)/port/ps2/include -I$(HCU_ROOT)/source \
+		-I$(HCU_ROOT)/source/cseries -I$(HCU_ROOT)/source/cache \
+		-I$(HCU_ROOT)/source/tag_files -I$(HCU_ROOT)/source/memory \
+		-I$(HCU_ROOT)/source/math -I$(HCU_ROOT)/source/game \
+		-I$(HCU_ROOT)/port/include -I$(HCU_ROOT)/port/include/xdk \
+		-DHALO_PS2=1 \
+		-include $(HCU_ROOT)/port/ps2/include/halo_ps2_prefix.h \
+		-c $< -o $@
+
 $(WORLD_OUTPUT)/stream/hcu_render_snapshot.o: src/stream/hcu_render_snapshot.c
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
@@ -541,6 +555,11 @@ ifeq ($(WORLD_HCU_LINK_PROBE),1)
 # parent functions/data; it does not alter behavior of retained sections.
 EE_CFLAGS += -ffunction-sections -fdata-sections
 EE_LDFLAGS += -Wl,--gc-sections
+endif
+ifeq ($(WORLD_HCU_LINK_PROBE),1)
+# The optical file reader calls fileXio. A relink of an out-of-date file.o
+# must see the same library the gameplay link uses.
+WORLD_FILEXIO ?= 1
 endif
 WORLD_FILEXIO ?= 0
 ifeq ($(WORLD_FILEXIO),1)
