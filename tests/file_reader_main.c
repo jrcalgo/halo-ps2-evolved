@@ -10,7 +10,7 @@ static uint8_t data[64];
 
 int main(int argc, char **argv)
 {
-	file_reader_t reader = { -1, 0 };
+	file_reader_t reader = { .descriptor = -1 };
 	ctag_map_source source;
 	arena_t arena;
 	size_t size = 0, baseline;

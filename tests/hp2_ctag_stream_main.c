@@ -80,7 +80,7 @@ static int ctag_sink_write(void *context, uint32_t offset,
 
 static int read_exact(const char *path, uint8_t *destination, size_t size)
 {
-	file_reader_t reader = { -1, 0 };
+	file_reader_t reader = { .descriptor = -1 };
 	int result;
 	if (file_reader_open(&reader, path) != 0) return 0;
 	result = reader.size == size && file_reader_read_at(&reader, 0,

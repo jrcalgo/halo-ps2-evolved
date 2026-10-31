@@ -40,6 +40,15 @@ static void write_be32(uint8_t *bytes, uint32_t value)
 	bytes[3] = (uint8_t)value;
 }
 
+#define SIG_S1(x) (rotate_right((x), 6) ^ rotate_right((x), 11) ^ rotate_right((x), 25))
+#define SIG_S0(x) (rotate_right((x), 2) ^ rotate_right((x), 13) ^ rotate_right((x), 22))
+/* One round with the working variables renamed instead of shifted, so eight rounds return to the original names. */
+#define ROUND(a, b, c, d, e, f, g, h, i) do { \
+	uint32_t t1_ = (h) + SIG_S1(e) + (((e) & (f)) ^ (~(e) & (g))) + round_constants[i] + words[i]; \
+	uint32_t t2_ = SIG_S0(a) + (((a) & (b)) ^ ((a) & (c)) ^ ((b) & (c))); \
+	(d) += t1_; (h) = t1_ + t2_; \
+} while (0)
+
 static void transform(sha256_context *context, const uint8_t block[64])
 {
 	uint32_t words[64];
@@ -57,15 +66,15 @@ static void transform(sha256_context *context, const uint8_t block[64])
 	c = context->state[2]; d = context->state[3];
 	e = context->state[4]; f = context->state[5];
 	g = context->state[6]; h = context->state[7];
-	for (i = 0; i < 64; i++) {
-		uint32_t s1 = rotate_right(e, 6) ^ rotate_right(e, 11) ^ rotate_right(e, 25);
-		uint32_t choice = (e & f) ^ (~e & g);
-		uint32_t t1 = h + s1 + choice + round_constants[i] + words[i];
-		uint32_t s0 = rotate_right(a, 2) ^ rotate_right(a, 13) ^ rotate_right(a, 22);
-		uint32_t majority = (a & b) ^ (a & c) ^ (b & c);
-		uint32_t t2 = s0 + majority;
-		h = g; g = f; f = e; e = d + t1;
-		d = c; c = b; b = a; a = t1 + t2;
+	for (i = 0; i < 64; i += 8) {
+		ROUND(a, b, c, d, e, f, g, h, i);
+		ROUND(h, a, b, c, d, e, f, g, i + 1);
+		ROUND(g, h, a, b, c, d, e, f, i + 2);
+		ROUND(f, g, h, a, b, c, d, e, i + 3);
+		ROUND(e, f, g, h, a, b, c, d, i + 4);
+		ROUND(d, e, f, g, h, a, b, c, i + 5);
+		ROUND(c, d, e, f, g, h, a, b, i + 6);
+		ROUND(b, c, d, e, f, g, h, a, i + 7);
 	}
 	context->state[0] += a; context->state[1] += b;
 	context->state[2] += c; context->state[3] += d;
@@ -91,6 +100,14 @@ void sha256_update(sha256_context *context, const void *data, size_t size)
 	if (!context || (!bytes && size)) return;
 	context->bit_count += (uint64_t)size * 8u;
 	while (size) {
+		if (!context->block_size) {
+			while (size >= sizeof(context->block)) {
+				transform(context, bytes);
+				bytes += sizeof(context->block);
+				size -= sizeof(context->block);
+			}
+			if (!size) break;
+		}
 		size_t room = sizeof(context->block) - context->block_size;
 		size_t take = size < room ? size : room;
 		memcpy(context->block + context->block_size, bytes, take);
