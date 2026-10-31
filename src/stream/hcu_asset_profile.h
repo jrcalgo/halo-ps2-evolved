@@ -38,6 +38,15 @@ int hcu_asset_profile_preflight_reader(hcu_asset_profile_read_at read_at,
 int hcu_asset_profile_preflight_reader_scratch(hcu_asset_profile_read_at read_at,
 	void *reader_context, uint32_t image_size, uint32_t expected_profile_id,
 	hcu_asset_profile_view *view, uint8_t *scratch, uint32_t scratch_bytes);
+/* One-shot whole-file digest from the preflight that just succeeded for this
+ * reader. Returns 1 and consumes the proof, or 0 when the caller must re-read. */
+int hcu_asset_profile_take_package_digest(hcu_asset_profile_read_at read_at,
+	void *reader_context, uint32_t size, uint8_t digest[32]);
+/* 1 when that same preflight checked every chunk hash for this view.
+ * Consumes the proof so a later visitor re-reads. */
+int hcu_asset_profile_chunks_fresh(const hcu_asset_profile_view *view);
+/* Keep a directory image in caller memory so later row lookups do not re-read. */
+void hcu_asset_profile_directory_cache_bind(void *memory, uint32_t bytes);
 int hcu_asset_profile_preflight(const void *image, size_t image_size,
 	uint32_t expected_profile_id, hcu_asset_profile_view *view);
 int hcu_asset_profile_lookup(const hcu_asset_profile_view *view, uint32_t type,

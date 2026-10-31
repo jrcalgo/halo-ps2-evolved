@@ -301,6 +301,12 @@ int hcu_map_service_current_world(const hcu_map_service *service,
 	const struct bsp_section **bsp, const void **source, uint32_t *generation);
 /* Read-only diagnostic trace used by the opt-in M2 CE lifecycle fixture. */
 void hcu_map_service_lifecycle_trace(const char *phase, unsigned int cycle);
+/* Gameplay optical-read trace. Armed only while HALO_PS2_C3_LAG_TRACE is set;
+ * both calls are empty otherwise, and the guest does not call them unless that
+ * measure build is on. */
+void hcu_map_service_trace_arm(void);
+void hcu_map_service_trace_read(const char *kind, uint32_t offset, uint32_t size,
+	uint32_t cycles);
 #ifdef HALO_PS2_M2_UI_LIFECYCLE_TEST
 /* Test-profile-only failure injection at CE's pre-unload and post-unload seams. */
 void hcu_map_service_lifecycle_fail_preflight_once(void);

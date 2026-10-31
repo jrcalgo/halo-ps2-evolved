@@ -18,6 +18,11 @@
 #include <stdint.h>
 #include <string.h>
 
+#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
+static int s_opt_trace_armed;
+static uint32_t s_opt_trace_events;
+#endif
+
 extern uint8_t *world_load_section_with_scratch(arena_t *owner,
 	arena_t *scratch, const char *path, const char *tag,
 	size_t *raw_size, int optional);
@@ -27,6 +32,9 @@ extern uint8_t *world_load_section_with_scratch(arena_t *owner,
 #else
 #define HCU_TRACE(...) ((void)0)
 #endif
+
+/* Directory image kept for the life of the section scratch. One bind. */
+static int s_directory_cache_bound;
 
 static hcu_map_service *s_service;
 
@@ -65,7 +73,7 @@ static int verify_source_hash(hcu_map_service *service,
 	if (!service || !service->section_scratch) return 0;
 	mark = arena_mark(service->section_scratch);
 	buffer_size = arena_free(service->section_scratch);
-	if (buffer_size > 262144u) buffer_size = 262144u;
+	if (buffer_size > 131072u) buffer_size = 131072u;
 	if (buffer_size < 16384u) {
 		printf("HALO_PS2_LOCAL map-preflight sha256-scratch-failed bytes=%u\n",
 			(unsigned)buffer_size);
@@ -99,9 +107,14 @@ static int verify_profile_package_hash(hcu_asset_profile_read_at reader,
 	sha256_context sha;
 	uint32_t offset = 0;
 	if (!reader || !expected || !size) return 0;
+	{
+		uint8_t cached[32];
+		if (hcu_asset_profile_take_package_digest(reader, context, size, cached))
+			return memcmp(cached, expected, 32) == 0;
+	}
 	if (s_service && s_service->section_scratch) {
 		size_t free_bytes = arena_free(s_service->section_scratch);
-		if (free_bytes > 65536u) free_bytes = 65536u;
+		if (free_bytes > 131072u) free_bytes = 131072u;
 		if (free_bytes >= 65536u) {
 			mark = arena_mark(s_service->section_scratch);
 			scratch = (uint8_t *)arena_alloc(s_service->section_scratch, free_bytes, 64);
@@ -1233,8 +1246,9 @@ static void fail_preflight_for_entry(hcu_map_service *service,
 		clear_staged_request(service);
 }
 
-/* Package envelope preflight uses 64 KiB caller scratch whenever the shared
- * section arena can lend it; otherwise preserve the bounded stack fallback. */
+/* Package envelope preflight borrows at most 128 KiB from the existing
+ * section arena. A smaller free tail uses that tail; otherwise the bounded
+ * stack fallback. The directory cache above is a separate 128 KiB hold. */
 static int preflight_package_reader_with_scratch(hcu_map_service *service,
 	hcu_asset_profile_read_at reader, void *context, uint32_t image_size,
 	uint32_t profile_id, hcu_asset_profile_view *candidate)
@@ -1243,10 +1257,20 @@ static int preflight_package_reader_with_scratch(hcu_map_service *service,
 	uint8_t *scratch;
 	int rc;
 	if (!reader || !candidate) return HCU_ASSET_PROFILE_E_ARGUMENT;
+	if (service && service->section_scratch && !s_directory_cache_bound) {
+		size_t cache_free = arena_free(service->section_scratch);
+		if (cache_free >= 131072u) {
+			void *cache = arena_alloc(service->section_scratch, 131072u, 64);
+			if (cache) {
+				hcu_asset_profile_directory_cache_bind(cache, 131072u);
+				s_directory_cache_bound = 1;
+			}
+		}
+	}
 	if (!service || !service->section_scratch) return hcu_asset_profile_preflight_reader(reader,
 		context, image_size, profile_id, candidate);
 	free_bytes = arena_free(service->section_scratch);
-	if (free_bytes > 65536u) free_bytes = 65536u;
+	if (free_bytes > 131072u) free_bytes = 131072u;
 	if (free_bytes < 512u) return hcu_asset_profile_preflight_reader(reader,
 		context, image_size, profile_id, candidate);
 	mark = arena_mark(service->section_scratch);
@@ -1392,6 +1416,15 @@ static int hcu_map_service_preflight_impl(const char *map_name)
 		return profile_preflight(service, entry);
 	}
 #endif
+	/* The menu image may admit the one map whose generated runtime and
+	 * partition were selected before boot.  The profile preflight still
+	 * validates the package, extents and owner capacities before mounting. */
+	if (service->runtime_registered && service->runtime.partition_row &&
+		strcmp(service->runtime.partition_row,
+			"bloodgulch_mounted_gunner_4p4bot") == 0 &&
+		strcmp(service->runtime_map_name, "bloodgulch") == 0 &&
+		strcmp(entry->identity.map_name, "bloodgulch") == 0)
+		return profile_preflight(service, entry);
 	if (service->preflight_ready && !service->runtime_registered)
 		return service->staged_entry == entry;
 	/* The full catalog is available for identity and extent checks, but no
@@ -1720,6 +1753,32 @@ int hcu_map_service_shutdown(hcu_map_service *service)
 	service->initialized = 0;
 	if (s_service == service) s_service = NULL;
 	return 1;
+}
+
+void hcu_map_service_trace_arm(void)
+{
+#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
+	s_opt_trace_armed = 1;
+#endif
+}
+
+void hcu_map_service_trace_read(const char *kind, uint32_t offset, uint32_t size,
+	uint32_t cycles)
+{
+#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
+	unsigned us;
+	if (!s_opt_trace_armed || size < 2048u || s_opt_trace_events >= 240u) return;
+	us = (unsigned)((uint64_t)cycles * 1000u / 294912u);
+	if (us < 1500u && size < 16384u) return;
+	s_opt_trace_events++;
+	printf("HALO_PS2_LOCAL opt-read kind=%s off=%u bytes=%u us=%u\n",
+		kind ? kind : "?", (unsigned)offset, (unsigned)size, us);
+#else
+	(void)kind;
+	(void)offset;
+	(void)size;
+	(void)cycles;
+#endif
 }
 
 void hcu_map_service_lifecycle_trace(const char *phase, unsigned int cycle)

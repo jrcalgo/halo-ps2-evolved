@@ -4,6 +4,7 @@
 #include <string.h>
 #include "ps2_ctag.h"
 #include "stream/sha256.h"
+#include "stream/hcu_load_trace.h"
 
 #include <stdio.h>
 
@@ -269,6 +270,7 @@ int hcu_profile_mount_prepare(hcu_profile_mount *mount,
 	size_t relocation_bytes;
 	uint32_t i, j;
 	uint32_t max_relocations;
+	int chunks_already_hashed = 0;
 	if (!mount || !profile || !catalog_entry || !backend || !backend->mount_stream ||
 		!backend->register_ctag_visitor || !backend->unmount ||
 		(!backend->register_bsp_visitor && catalog_entry->bsp_count) ||
@@ -301,9 +303,14 @@ int hcu_profile_mount_prepare(hcu_profile_mount *mount,
 	if (span_overlap(relocation_storage, relocation_storage_bytes,
 		stream_scratch, stream_scratch_bytes))
 		return HCU_PROFILE_MOUNT_E_ARGUMENT;
+	/* Preflight already hashed every chunk of this view. Skipping the second
+	 * read here is local to prepare: the flag is consumed, so the visitor's
+	 * own pass still fails closed if the package changes afterwards. */
+	chunks_already_hashed = hcu_asset_profile_chunks_fresh(profile);
 	if (hcu_asset_profile_lookup(profile, HCU_ASSET_CHUNK_CE, 0, &ce_chunk) !=
 		HCU_ASSET_PROFILE_OK || !ce_chunk.size ||
-		!digest_profile_chunk(profile, &ce_chunk, stream_scratch, stream_scratch_bytes))
+		(!chunks_already_hashed &&
+		 !digest_profile_chunk(profile, &ce_chunk, stream_scratch, stream_scratch_bytes)))
 		return HCU_PROFILE_MOUNT_E_CHUNK;
 	if (!cbsp_bindings && cbsp_binding_count) return HCU_PROFILE_MOUNT_E_ARGUMENT;
 	if (cbsp_binding_count) {
@@ -319,7 +326,8 @@ int hcu_profile_mount_prepare(hcu_profile_mount *mount,
 				hcu_asset_profile_lookup(profile, HCU_ASSET_CHUNK_MEDIA,
 					cbsp_bindings[i].media_chunk_id, &media_chunk) != HCU_ASSET_PROFILE_OK ||
 				memcmp(media_chunk.sha256, cbsp_bindings[i].expected_chunk_sha256, 32) ||
-				!digest_profile_chunk(profile, &media_chunk, stream_scratch, stream_scratch_bytes))
+				(!chunks_already_hashed &&
+				 !digest_profile_chunk(profile, &media_chunk, stream_scratch, stream_scratch_bytes)))
 				return HCU_PROFILE_MOUNT_E_CHUNK;
 			for (j = 0; j < i; ++j)
 				if (cbsp_bindings[j].source_file_offset == cbsp_bindings[i].source_file_offset ||
@@ -648,7 +656,9 @@ static int visit_ctag(void *context, ctag_ctag_sink_fn sink,
 	printf("HALO_PS2_LOCAL visit-ctag begin chunk=%u\n",
 		(unsigned)mount->ce_chunk.size);
 	mount->callbacks_active++;
+	HCU_LOAD_TRACE_BEGIN("ctag-visit");
 	result = stream_chunk(mount, &mount->ce_chunk, sink, sink_context, raw_size);
+	HCU_LOAD_TRACE_END("ctag-visit");
 	mount->callbacks_active--;
 	printf("HALO_PS2_LOCAL visit-ctag result=%d raw=%u\n", result,
 		raw_size ? (unsigned)*raw_size : 0u);

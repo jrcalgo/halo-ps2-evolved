@@ -2,6 +2,7 @@
 #include "stream/sha256.h"
 #include "stream/hcu_load_trace.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 #if (defined(_EE) || defined(_MIPS_ARCH_R5900)) && ((defined(HALO_PS2_C3_TIMING) && HALO_PS2_C3_TIMING) || \
@@ -30,7 +31,100 @@ static uint32_t le32(const uint8_t *p)
 { return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24; }
 static int rd(hcu_asset_profile_read_at r, void *c,uint32_t o,void *d,uint32_t n)
 { int ok=r(c,o,d,n)==0; if(ok) HCU_LOAD_TRACE_READ_AT("asset-rd", n); return ok; }
+
+/* Directory rows are 96 bytes. Caching the whole directory turns later binary
+ * searches into memcpy. The bytes live in caller storage (the section scratch). */
+static uint8_t *s_dir_mem;
+static uint32_t s_dir_cap, s_dir_bytes, s_dir_total;
+static hcu_asset_profile_read_at s_dir_reader;
+static void *s_dir_context;
+static int s_dir_valid;
+static struct {
+	hcu_asset_profile_read_at reader; void *context; uint32_t size;
+	uint8_t digest[32]; int valid;
+} s_pkg;
+static struct {
+	hcu_asset_profile_read_at reader; void *context; uint32_t total; int valid;
+} s_verified;
+
+static void forget_load_proofs(void)
+{
+	s_pkg.valid = 0;
+	s_verified.valid = 0;
+	s_dir_valid = 0;
+}
+
+void hcu_asset_profile_directory_cache_bind(void *memory, uint32_t bytes)
+{
+	s_dir_mem = (uint8_t *)memory;
+	s_dir_cap = memory ? bytes : 0u;
+	s_dir_valid = 0;
+}
+
+static int dir_cache_matches(const hcu_asset_profile_view *v)
+{
+	return s_dir_valid && v && s_dir_mem && s_dir_reader == v->read_at &&
+		s_dir_context == v->reader_context && s_dir_total == v->total_bytes &&
+		s_dir_bytes == v->directory_bytes;
+}
+
+static int dir_cache_fill(const hcu_asset_profile_view *v)
+{
+	uint32_t at = 0;
+	if (!s_dir_mem || !v || !v->read_at || v->memory_image || !v->directory_bytes ||
+		v->directory_bytes > s_dir_cap || v->directory_bytes > v->total_bytes)
+		return 0;
+	while (at < v->directory_bytes) {
+		uint32_t n = v->directory_bytes - at;
+		if (n > 65536u) n = 65536u;
+		if (!rd(v->read_at, v->reader_context, at, s_dir_mem + at, n)) {
+			s_dir_valid = 0;
+			return 0;
+		}
+		at += n;
+	}
+	s_dir_reader = v->read_at;
+	s_dir_context = v->reader_context;
+	s_dir_total = v->total_bytes;
+	s_dir_bytes = v->directory_bytes;
+	s_dir_valid = 1;
+	return 1;
+}
+
+static int dir_cache_copy(const hcu_asset_profile_view *v, uint32_t at, void *dst, uint32_t n)
+{
+	if (!v || v->memory_image || !n) return 0;
+	if (!dir_cache_matches(v)) {
+		if (at >= v->directory_bytes || n > v->directory_bytes - at) return 0;
+		if (!dir_cache_fill(v)) return 0;
+	}
+	if (at > s_dir_bytes || n > s_dir_bytes - at) return 0;
+	memcpy(dst, s_dir_mem + at, n);
+	return 1;
+}
+
+int hcu_asset_profile_take_package_digest(hcu_asset_profile_read_at reader,
+	void *context, uint32_t size, uint8_t digest[32])
+{
+	if (!digest || !s_pkg.valid || s_pkg.reader != reader || s_pkg.context != context ||
+		s_pkg.size != size)
+		return 0;
+	memcpy(digest, s_pkg.digest, 32);
+	s_pkg.valid = 0;
+	return 1;
+}
+
+int hcu_asset_profile_chunks_fresh(const hcu_asset_profile_view *view)
+{
+	int fresh = view && !view->memory_image && s_verified.valid &&
+		s_verified.reader == view->read_at && s_verified.context == view->reader_context &&
+		s_verified.total == view->total_bytes;
+	/* One-shot. The visitor must not inherit this and skip its own re-check. */
+	if (fresh) s_verified.valid = 0;
+	return fresh;
+}
 static uint32_t row_size(const hcu_asset_profile_view *v) { return v->record_bytes; }
+static int rawread(const hcu_asset_profile_view *v,uint32_t at,void *dst,uint32_t n);
 static int read_entry(const hcu_asset_profile_view *v,uint32_t i,hcu_asset_chunk_view *e)
 {
 	uint8_t b[HCP2_RECORD_SIZE]; uint32_t z,at; uint64_t dirend;
@@ -40,8 +134,7 @@ static int read_entry(const hcu_asset_profile_view *v,uint32_t i,hcu_asset_chunk
 	dirend=(uint64_t)HCP_HEADER_SIZE+(uint64_t)v->chunk_count*z;
 	if(dirend>v->total_bytes||dirend!=v->directory_bytes)return 0;
 	at=HCP_HEADER_SIZE+i*z;
-	if(v->memory_image) memcpy(b,v->memory_image+at,z);
-	else if(!rd(v->read_at,v->reader_context,at,b,z)) return 0;
+	if(!rawread(v,at,b,z)) return 0;
 	e->type=le32(b); e->chunk_id=le32(b+4);
 	if(v->version==1) { e->offset=le32(b+8); e->size=le32(b+12); e->first_segment=i; e->segment_count=1; memcpy(e->sha256,b+16,32); }
 	else {
@@ -57,45 +150,34 @@ static int read_entry(const hcu_asset_profile_view *v,uint32_t i,hcu_asset_chunk
 	return 1;
 }
 static int rawread(const hcu_asset_profile_view *v,uint32_t at,void *dst,uint32_t n)
-{ if(!v||(!dst&&n)||at>v->total_bytes||n>v->total_bytes-at)return 0; if(v->memory_image) { memcpy(dst,v->memory_image+at,n); return 1; } return v->read_at&&rd(v->read_at,v->reader_context,at,dst,n); }
-static int zeroes(const hcu_asset_profile_view *v,uint32_t at,uint32_t n)
-{ uint8_t b[HCP_SCRATCH]; while(n) { uint32_t k=n<sizeof(b)?n:(uint32_t)sizeof(b),i; if(!rawread(v,at,b,k)) return 0; for(i=0;i<k;i++) if(b[i]) return 0; at+=k; n-=k; } return 1; }
-
-/* Preflight walks the directory rows, padding and segment bytes strictly in order. Each file-bridge read is an
- * RPC, so two read-ahead windows (directory, data) replace ~3 RPCs per chunk with one per window. */
-#define PF_DIR_WIN 3840u
-#define PF_DATA_WIN 8192u
-typedef struct {
-	hcu_asset_profile_read_at reader; void *context;
-	uint32_t image_size, dir_end, off[2], len[2];
-	uint8_t dir[PF_DIR_WIN], data[PF_DATA_WIN];
-} pf_window;
-static pf_window s_pf_window;
-static int pf_read(void *c, uint32_t at, void *dst, uint32_t n)
 {
-	pf_window *w=(pf_window *)c;
-	uint32_t k=at<w->dir_end?0u:1u, cap=k?PF_DATA_WIN:PF_DIR_WIN, end=k?w->image_size:w->dir_end, fill;
-	uint8_t *win=k?w->data:w->dir;
-	if(n>cap||at>end||n>end-at) return w->reader(w->context,at,dst,n);
-	if(!(w->len[k]&&at>=w->off[k]&&at-w->off[k]<=w->len[k]&&n<=w->len[k]-(at-w->off[k]))) {
-		fill=end-at<cap?end-at:cap;
-		w->len[k]=0;
-		if(w->reader(w->context,at,win,fill)!=0) return -1;
-		w->off[k]=at; w->len[k]=fill;
-	}
-	memcpy(dst,win+(at-w->off[k]),n);
-	return 0;
+	if(!v||(!dst&&n)||at>v->total_bytes||n>v->total_bytes-at)return 0;
+	if(v->memory_image) { if(n) memcpy(dst,v->memory_image+at,n); return 1; }
+	if(n && at<=v->directory_bytes && n<=v->directory_bytes-at && dir_cache_copy(v,at,dst,n)) return 1;
+	return v->read_at&&rd(v->read_at,v->reader_context,at,dst,n);
 }
 
-/* Preflight with caller-owned read scratch of at least HCP_SCRATCH bytes. A larger
- * scratch means fewer, larger reads of the same bytes; the checks are unchanged. */
+/* Read `n` bytes and fold them into the running whole-package digest. */
+static int read_hashed(hcu_asset_profile_read_at reader, void *context,
+	uint32_t at, void *dst, uint32_t n, sha256_context *pkg)
+{
+	if(!rd(reader,context,at,dst,n)) return 0;
+	if(pkg && n) sha256_update(pkg,dst,n);
+	return 1;
+}
+
+/* One forward read of the package. Segment, logical and whole-file digests are
+ * updated from those bytes. A later verify of the same reader can consume the
+ * whole-file digest instead of reading the package again. The next preflight
+ * drops that proof first, so a mutated package is hashed from scratch. */
 int hcu_asset_profile_preflight_reader_scratch(hcu_asset_profile_read_at reader,void *context,uint32_t image_size,uint32_t expected,hcu_asset_profile_view *view,uint8_t *buf,uint32_t buf_bytes)
 {
-	uint8_t h[32],row[96],dig[32],expected_logical[32]; uint32_t ver,rs,profile,count,doff,dsize,total,last_end,i,pt=0,pi=0,prev_index=0,logical_off=0,logical_size=0,seg_count=0; uint64_t expect;
-	sha256_context logical_sha; int in_logical=0;
+	uint8_t h[32],dig[32],expected_logical[32],*dir=0; uint32_t ver,rs,profile,count,doff,dsize,total,last_end,i,pt=0,pi=0,prev_index=0,logical_off=0,logical_size=0,seg_count=0; uint64_t expect;
+	sha256_context logical_sha, pkg; int in_logical=0, dir_owned=0, rc=HCU_ASSET_PROFILE_OK;
 	hcu_asset_profile_read_at raw_reader=reader; void *raw_context=context;
 	if(!reader||!view) return HCU_ASSET_PROFILE_E_ARGUMENT;
 	if(!buf||buf_bytes<HCP_SCRATCH) return HCU_ASSET_PROFILE_E_ARGUMENT;
+	forget_load_proofs();
 	if(image_size<32||!rd(reader,context,0,h,32)) return HCU_ASSET_PROFILE_E_BOUNDS;
 	ver=le32(h+4); rs=ver==1?48u:ver==2?96u:0u;
 	if(!rs || (ver==1?memcmp(h,"HCP1",4):memcmp(h,"HCP2",4)) || le32(h+8)!=32) return HCU_ASSET_PROFILE_E_FORMAT;
@@ -103,49 +185,83 @@ int hcu_asset_profile_preflight_reader_scratch(hcu_asset_profile_read_at reader,
 	expect=(uint64_t)count*rs;
 	if(!profile||!count||count>HCU_ASSET_PROFILE_MAX_CHUNKS||doff!=32||expect!=dsize||total!=image_size||dsize>total-doff) return HCU_ASSET_PROFILE_E_FORMAT;
 	if(profile!=expected) return HCU_ASSET_PROFILE_E_PROFILE;
+	/* The directory is parsed from the same bytes the package digest just
+	 * covered. Prefer the caller cache so the EE heap is not asked for it. */
+	if(s_dir_mem && s_dir_cap>=32u && dsize<=s_dir_cap-32u) dir=s_dir_mem+32;
+	else {
+		dir=(uint8_t *)malloc(dsize);
+		if(!dir) return HCU_ASSET_PROFILE_E_MEMORY;
+		dir_owned=1;
+	}
+	sha256_init(&pkg);
+	sha256_update(&pkg,h,32);
+	{
+		uint32_t at=0;
+		while(at<dsize) {
+			uint32_t k=dsize-at; if(k>buf_bytes) k=buf_bytes;
+			if(!read_hashed(raw_reader,raw_context,doff+at,dir+at,k,&pkg)) { rc=HCU_ASSET_PROFILE_E_BOUNDS; goto out; }
+			at+=k;
+		}
+	}
 	last_end=doff+dsize;
-	memset(&s_pf_window,0,sizeof(s_pf_window));
-	s_pf_window.reader=raw_reader; s_pf_window.context=raw_context; s_pf_window.image_size=total; s_pf_window.dir_end=last_end;
-	reader=pf_read; context=&s_pf_window;
 	for(i=0;i<count;i++) {
+		const uint8_t *row=dir+i*rs;
 		uint32_t type,id,off,n,lo=0,ls=0,idx=0,nseg=1,at,rem; sha256_context segsha;
-		if(!rd(reader,context,doff+i*rs,row,rs)) return HCU_ASSET_PROFILE_E_BOUNDS; /* preflight-row */
 		type=le32(row); id=le32(row+4); off=le32(row+8);
 		if(ver==1) n=le32(row+12);
 		else { n=le32(row+12); lo=le32(row+16); ls=le32(row+20); idx=le32(row+24); nseg=le32(row+28); }
 		uint64_t canonical=((uint64_t)last_end+15u)&~(uint64_t)15u;
 		if(!hcu_asset_chunk_id_valid(type,id)||!n||(ver==1&&type==2&&n>65536u)||
-			(off&15u)||off!=canonical||off>total||n>total-off) return HCU_ASSET_PROFILE_E_BOUNDS;
-		if(!zeroes(&(hcu_asset_profile_view){.read_at=reader,.reader_context=context,.total_bytes=total},last_end,off-last_end)) return HCU_ASSET_PROFILE_E_FORMAT;
+			(off&15u)||off!=canonical||off>total||n>total-off) { rc=HCU_ASSET_PROFILE_E_BOUNDS; goto out; }
+		at=last_end;
+		while(at<off) {
+			uint32_t k=off-at,z; if(k>buf_bytes) k=buf_bytes;
+			if(!read_hashed(raw_reader,raw_context,at,buf,k,&pkg)) { rc=HCU_ASSET_PROFILE_E_BOUNDS; goto out; }
+			for(z=0;z<k;z++) if(buf[z]) { rc=HCU_ASSET_PROFILE_E_FORMAT; goto out; }
+			at+=k;
+		}
 		if(ver==1) {
-			if(i&&(type<pt||(type==pt&&id<=pi))) return HCU_ASSET_PROFILE_E_FORMAT;
+			if(i&&(type<pt||(type==pt&&id<=pi))) { rc=HCU_ASSET_PROFILE_E_FORMAT; goto out; }
 			sha256_init(&segsha); at=off; rem=n;
-			while(rem) { uint32_t k=rem<buf_bytes?rem:(uint32_t)buf_bytes; if(!rd(reader,context,at,buf,k)) return HCU_ASSET_PROFILE_E_BOUNDS; sha256_update(&segsha,buf,k); at+=k; rem-=k; }
-			sha256_final(&segsha,dig); HCU_LOAD_TRACE_HASH("hcp1",n); if(memcmp(dig,row+16,32)) return HCU_ASSET_PROFILE_E_HASH;
+			while(rem) { uint32_t k=rem<buf_bytes?rem:(uint32_t)buf_bytes; if(!read_hashed(raw_reader,raw_context,at,buf,k,&pkg)) { rc=HCU_ASSET_PROFILE_E_BOUNDS; goto out; } sha256_update(&segsha,buf,k); at+=k; rem-=k; }
+			sha256_final(&segsha,dig); HCU_LOAD_TRACE_HASH("hcp1",n); if(memcmp(dig,row+16,32)) { rc=HCU_ASSET_PROFILE_E_HASH; goto out; }
 		} else {
-			if(!ls||!nseg||nseg>count||idx>=nseg||n>65536u||lo>ls||n>ls-lo) return HCU_ASSET_PROFILE_E_FORMAT;
+			if(!ls||!nseg||nseg>count||idx>=nseg||n>65536u||lo>ls||n>ls-lo) { rc=HCU_ASSET_PROFILE_E_FORMAT; goto out; }
 			if(!i || type!=pt || id!=pi) {
-				if(in_logical && (prev_index+1!=seg_count || logical_off!=logical_size)) return HCU_ASSET_PROFILE_E_FORMAT;
-				if(i&&(type<pt||(type==pt&&id<=pi))) return HCU_ASSET_PROFILE_E_FORMAT;
-				if(idx!=0||lo!=0) return HCU_ASSET_PROFILE_E_FORMAT;
+				if(in_logical && (prev_index+1!=seg_count || logical_off!=logical_size)) { rc=HCU_ASSET_PROFILE_E_FORMAT; goto out; }
+				if(i&&(type<pt||(type==pt&&id<=pi))) { rc=HCU_ASSET_PROFILE_E_FORMAT; goto out; }
+				if(idx!=0||lo!=0) { rc=HCU_ASSET_PROFILE_E_FORMAT; goto out; }
 				logical_size=ls; logical_off=0; seg_count=nseg; prev_index=0; in_logical=1; memcpy(expected_logical,row+64,32); sha256_init(&logical_sha);
-			} else if(idx!=prev_index+1||lo!=logical_off||ls!=logical_size||nseg!=seg_count||memcmp(expected_logical,row+64,32)) return HCU_ASSET_PROFILE_E_FORMAT;
+			} else if(idx!=prev_index+1||lo!=logical_off||ls!=logical_size||nseg!=seg_count||memcmp(expected_logical,row+64,32)) { rc=HCU_ASSET_PROFILE_E_FORMAT; goto out; }
 			sha256_init(&segsha); at=off; rem=n;
-			while(rem) { uint32_t k=rem<buf_bytes?rem:(uint32_t)buf_bytes; if(!rd(reader,context,at,buf,k)) return HCU_ASSET_PROFILE_E_BOUNDS; sha256_update(&segsha,buf,k); sha256_update(&logical_sha,buf,k); at+=k; rem-=k; }
-			sha256_final(&segsha,dig); HCU_LOAD_TRACE_HASH("segment",n); if(memcmp(dig,row+32,32)) return HCU_ASSET_PROFILE_E_HASH;
+			while(rem) { uint32_t k=rem<buf_bytes?rem:(uint32_t)buf_bytes; if(!read_hashed(raw_reader,raw_context,at,buf,k,&pkg)) { rc=HCU_ASSET_PROFILE_E_BOUNDS; goto out; } sha256_update(&segsha,buf,k); sha256_update(&logical_sha,buf,k); at+=k; rem-=k; }
+			sha256_final(&segsha,dig); HCU_LOAD_TRACE_HASH("segment",n); if(memcmp(dig,row+32,32)) { rc=HCU_ASSET_PROFILE_E_HASH; goto out; }
 			logical_off+=n; prev_index=idx;
-			if(idx+1==nseg) { sha256_final(&logical_sha,dig); HCU_LOAD_TRACE_HASH("logical",logical_size); if(logical_off!=logical_size||memcmp(dig,row+64,32)) return HCU_ASSET_PROFILE_E_HASH; in_logical=0; }
+			if(idx+1==nseg) { sha256_final(&logical_sha,dig); HCU_LOAD_TRACE_HASH("logical",logical_size); if(logical_off!=logical_size||memcmp(dig,row+64,32)) { rc=HCU_ASSET_PROFILE_E_HASH; goto out; } in_logical=0; }
 		}
 		last_end=off+n; pt=type; pi=id;
 	}
-	if(in_logical||last_end!=total) return HCU_ASSET_PROFILE_E_FORMAT;
+	if(in_logical||last_end!=total) { rc=HCU_ASSET_PROFILE_E_FORMAT; goto out; }
+	sha256_final(&pkg,dig);
+	HCU_LOAD_TRACE_HASH("package",total);
+	memcpy(s_pkg.digest,dig,32);
+	s_pkg.reader=raw_reader; s_pkg.context=raw_context; s_pkg.size=total; s_pkg.valid=1;
+	s_verified.reader=raw_reader; s_verified.context=raw_context; s_verified.total=total; s_verified.valid=1;
+	if(s_dir_mem && doff+dsize<=s_dir_cap) {
+		memcpy(s_dir_mem,h,32);
+		if(dir!=s_dir_mem+32) memcpy(s_dir_mem+32,dir,dsize);
+		s_dir_reader=raw_reader; s_dir_context=raw_context; s_dir_total=total; s_dir_bytes=doff+dsize; s_dir_valid=1;
+	}
 	{
 		hcu_asset_profile_view v; hcu_asset_chunk_view e;
 		memset(&v,0,sizeof(v)); v.profile_id=profile; v.total_bytes=total; v.chunk_count=count; v.directory_bytes=doff+dsize; v.version=ver; v.record_bytes=rs; v.read_at=raw_reader; v.reader_context=raw_context;
-		if(hcu_asset_profile_lookup(&v,1,0,&e)||hcu_asset_profile_lookup(&v,3,0,&e)) return HCU_ASSET_PROFILE_E_FORMAT;
+		if(hcu_asset_profile_lookup(&v,1,0,&e)||hcu_asset_profile_lookup(&v,3,0,&e)) { rc=HCU_ASSET_PROFILE_E_FORMAT; goto out; }
 		*view=v;
 	}
-	return HCU_ASSET_PROFILE_OK;
+out:
+	if(dir_owned) free(dir);
+	if(rc) { s_pkg.valid=0; s_verified.valid=0; s_dir_valid=0; }
+	return rc;
 }
 int hcu_asset_profile_preflight_reader(hcu_asset_profile_read_at reader,void *context,uint32_t image_size,uint32_t expected,hcu_asset_profile_view *view)
 {
@@ -178,7 +294,7 @@ static int read_range_unchecked(const hcu_asset_profile_view*v,const hcu_asset_c
 	 * intersecting segment in logarithmic time before reading the requested span. */
 	if(v->version==2) while(lo<hi) { uint32_t mid=lo+(hi-lo)/2u,row=first+mid,base,n;uint8_t b[96];
 		uint32_t ra=HCP_HEADER_SIZE+row*v->record_bytes;
-		if(v->memory_image)memcpy(b,v->memory_image+ra,v->record_bytes);else if(!rd(v->read_at,v->reader_context,ra,b,v->record_bytes))return 0;
+		if(!rawread(v,ra,b,v->record_bytes))return 0;
 		if(le32(b)!=e->type||le32(b+4)!=e->chunk_id||le32(b+24)!=mid||le32(b+28)!=count||le32(b+20)!=e->size)return 0;
 		base=le32(b+16);n=le32(b+12);
 		if(!n||n>HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES||base>e->size||n>e->size-base)return 0;
@@ -186,7 +302,7 @@ static int read_range_unchecked(const hcu_asset_profile_view*v,const hcu_asset_c
 	}
 	for(i=lo;i<count&&done<size;i++) { uint8_t b[96];uint32_t row=first+i,off,n,base=0,seglo,take,ra;
 		ra=HCP_HEADER_SIZE+row*v->record_bytes;
-		if(v->memory_image)memcpy(b,v->memory_image+ra,v->record_bytes);else if(!rd(v->read_at,v->reader_context,ra,b,v->record_bytes))return 0;
+		if(!rawread(v,ra,b,v->record_bytes))return 0;
 		if(le32(b)!=e->type||le32(b+4)!=e->chunk_id)return 0;
 		off=le32(b+8);n=v->version==1?le32(b+12):le32(b+12);
 		if(v->version==2){base=le32(b+16);if(!n||n>HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES||le32(b+24)!=i||le32(b+28)!=count||le32(b+20)!=e->size||base>e->size||n>e->size-base)return 0;}
@@ -194,7 +310,7 @@ static int read_range_unchecked(const hcu_asset_profile_view*v,const hcu_asset_c
 		if(offset>=base+n)continue;
 		seglo=offset>base?offset:base;{uint32_t segend=end<base+n?end:base+n;take=segend-seglo;}
 		if(off>v->total_bytes||n>v->total_bytes-off||take>n-(seglo-base))return 0;
-		if(v->memory_image)memcpy(dst+done,v->memory_image+off+(seglo-base),take);else if(!rd(v->read_at,v->reader_context,off+(seglo-base),dst+done,take))return 0;
+		if(!rawread(v,off+(seglo-base),dst+done,take))return 0;
 		done+=take;
 	}
 	return done==size;
