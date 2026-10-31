@@ -1,5 +1,7 @@
 #include "stream/hcu_main_menu.h"
+#include "stream/hcu_map_table.h"
 
+#include <stddef.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -270,16 +272,31 @@ static void menu_apply_variant_selection(hcu_main_menu_state *state, unsigned se
 	}
 }
 
-static void menu_step_variant_selection(hcu_main_menu_state *state, int step)
+/* A builtin or saved variant whose game type has no authored equipment on this
+ * map is skipped. Slayer is always in the mask, so the walk terminates. */
+static int menu_selection_supported(const hcu_main_menu_state *state, unsigned selection)
 {
 	const hcu_main_menu_variant *saved = menu_saved_variants_const(state);
+	unsigned type;
+	if (selection < HCU_MAIN_MENU_GAME_TYPE_COUNT)
+		type = selection;
+	else {
+		unsigned slot = selection - HCU_MAIN_MENU_GAME_TYPE_COUNT;
+		if (slot >= HCU_MAIN_MENU_SAVED_VARIANT_COUNT || !saved[slot].valid)
+			return 0;
+		type = saved[slot].game_type;
+	}
+	return hcu_mp_map_supports(state->session.map, type);
+}
+
+static void menu_step_variant_selection(hcu_main_menu_state *state, int step)
+{
 	unsigned selection = state->session.variant_index;
 	unsigned count = HCU_MAIN_MENU_GAME_TYPE_COUNT + HCU_MAIN_MENU_SAVED_VARIANT_COUNT;
 	unsigned tries;
 	for (tries = 0; tries < count; ++tries) {
 		selection = menu_wrap(selection, step, count);
-		if (selection < HCU_MAIN_MENU_GAME_TYPE_COUNT ||
-			saved[selection - HCU_MAIN_MENU_GAME_TYPE_COUNT].valid) {
+		if (menu_selection_supported(state, selection)) {
 			menu_apply_variant_selection(state, selection);
 			return;
 		}
@@ -352,11 +369,11 @@ static void menu_adjust_profile(hcu_main_menu_state *state, int step, int contro
 static unsigned menu_mode_row_count(unsigned game_type)
 {
 	switch (game_type) {
-	case HCU_GAME_CTF: return 6;
-	case HCU_GAME_KING: return 4;
-	case HCU_GAME_ODDBALL: return 9;
-	case HCU_GAME_RACE: return 5;
-	default: return 6; /* Slayer and Team Slayer. */
+	case HCU_GAME_CTF: return 7;
+	case HCU_GAME_KING: return 5;
+	case HCU_GAME_ODDBALL: return 10;
+	case HCU_GAME_RACE: return 6;
+	default: return 7; /* Slayer and Team Slayer, including TIME LIMIT. */
 	}
 }
 
@@ -370,11 +387,13 @@ static void menu_adjust_mode_option(hcu_main_menu_state *state, int step)
 		else if (state->row == 2) v->ctf_flag_must_reset ^= 1;
 		else if (state->row == 3) v->ctf_flag_at_home ^= 1;
 		else if (state->row == 4) v->score_index = (uint8_t)menu_wrap(v->score_index, step, 5);
+		else if (state->row == 5) v->time_limit = (uint8_t)menu_wrap(v->time_limit, step, 6);
 		break;
 	case HCU_GAME_KING:
 		if (state->row == 0) v->king_moving_hill ^= 1;
 		else if (state->row == 1) v->score_index = (uint8_t)menu_wrap(v->score_index, step, 5);
 		else if (state->row == 2) v->teams ^= 1;
+		else if (state->row == 3) v->time_limit = (uint8_t)menu_wrap(v->time_limit, step, 6);
 		break;
 	case HCU_GAME_ODDBALL:
 		if (state->row == 0) v->oddball_trait_with_ball = (uint8_t)menu_wrap(v->oddball_trait_with_ball, step, 4);
@@ -385,12 +404,14 @@ static void menu_adjust_mode_option(hcu_main_menu_state *state, int step)
 		else if (state->row == 5) v->oddball_ball_count = (uint8_t)menu_wrap(v->oddball_ball_count, step, 16);
 		else if (state->row == 6) v->score_index = (uint8_t)menu_wrap(v->score_index, step, 5);
 		else if (state->row == 7) v->teams ^= 1;
+		else if (state->row == 8) v->time_limit = (uint8_t)menu_wrap(v->time_limit, step, 6);
 		break;
 	case HCU_GAME_RACE:
 		if (state->row == 0) v->race_team_scoring = (uint8_t)menu_wrap(v->race_team_scoring, step, 3);
 		else if (state->row == 1) v->race_type = (uint8_t)menu_wrap(v->race_type, step, 3);
 		else if (state->row == 2) v->score_index = (uint8_t)menu_wrap(v->score_index, step, 6);
 		else if (state->row == 3) v->teams ^= 1;
+		else if (state->row == 4) v->time_limit = (uint8_t)menu_wrap(v->time_limit, step, 6);
 		break;
 	default:
 		if (state->row == 0) v->slayer_death_bonus ^= 1;
@@ -398,6 +419,7 @@ static void menu_adjust_mode_option(hcu_main_menu_state *state, int step)
 		else if (state->row == 2) v->slayer_kill_penalty ^= 1;
 		else if (state->row == 3) v->score_index = (uint8_t)menu_wrap(v->score_index, step, 5);
 		else if (state->row == 4) v->teams ^= 1;
+		else if (state->row == 5) v->time_limit = (uint8_t)menu_wrap(v->time_limit, step, 6);
 		break;
 	}
 }
@@ -493,9 +515,12 @@ enum hcu_main_menu_action hcu_main_menu_step(hcu_main_menu_state *state,
 		else if (down) state->row = (uint8_t)menu_wrap(state->row, 1, LOBBY_ROW_COUNT);
 		if ((left || right) && state->row == LOBBY_GAME_TYPE)
 			menu_step_variant_selection(state, left ? -1 : 1);
-		else if ((left || right) && state->row == LOBBY_MAP)
+		else if ((left || right) && state->row == LOBBY_MAP) {
 			state->session.map = (uint8_t)menu_wrap(state->session.map, left ? -1 : 1,
 				HCU_MAIN_MENU_MAP_COUNT);
+			if (!menu_selection_supported(state, state->session.variant_index))
+				menu_apply_variant_selection(state, HCU_GAME_SLAYER);
+		}
 		if (confirm && state->row == LOBBY_OPTIONS) { state->page = HCU_MAIN_MENU_PAGE_GAME_OPTIONS; state->row = 0; }
 		else if (confirm && state->row == LOBBY_SAVE) { state->page = HCU_MAIN_MENU_PAGE_SAVE_VARIANT; state->row = 0; }
 		else if (confirm && state->row == LOBBY_START && state->player_count)
@@ -1111,7 +1136,13 @@ const hcu_main_menu_session *hcu_main_menu_selected_session(void)
 #define MENU_PROFILE_MAGIC 0x32525048u /* HPR2 */
 #define MENU_SYSTEM_MAGIC 0x32535948u /* HYS2 */
 #define MENU_SAVE_VERSION 2u
-#define MENU_PROFILE_VERSION 3u
+#define MENU_PROFILE_VERSION 4u
+/* time_limit is the last byte of each variant. A version-3 file is this
+ * record minus one byte per saved slot. */
+#define MENU_VARIANT_V3_BYTES (sizeof(hcu_main_menu_variant) - 1u)
+#define MENU_PROFILE_V3_BYTES (sizeof(menu_profile_record) - HCU_MAIN_MENU_SAVED_VARIANT_COUNT)
+typedef char menu_variant_time_is_last[(offsetof(hcu_main_menu_variant, time_limit) + 1u
+	== sizeof(hcu_main_menu_variant)) ? 1 : -1];
 
 typedef struct menu_profile_record {
 	uint32_t magic;
@@ -1201,6 +1232,7 @@ static void menu_sanitize_variant(hcu_main_menu_variant *v)
 	v->weapon_set %= 11; v->starting_equipment = v->starting_equipment != 0;
 	v->radar_display %= 3; v->other_players_radar = v->other_players_radar != 0;
 	v->friends_on_screen = v->friends_on_screen != 0;
+	v->time_limit %= 6;
 }
 
 static void menu_sanitize_profile(hcu_main_menu_profile *profile, unsigned index)
@@ -1236,6 +1268,17 @@ static int menu_storage_load_profile(hcu_main_menu_state *state, unsigned p)
 			state->profiles[p] = s_menu_profile_save.profile;
 			memcpy(state->saved_variants[p], s_menu_profile_save.variants,
 				sizeof(state->saved_variants[p]));
+		} else if (read_bytes == (int)MENU_PROFILE_V3_BYTES &&
+			s_menu_profile_save.version == 3u &&
+			s_menu_profile_save.checksum == menu_save_checksum(&s_menu_profile_save, MENU_PROFILE_V3_BYTES)) {
+			const uint8_t *raw = (const uint8_t *)&s_menu_profile_save;
+			const uint8_t *src = raw + 16u + sizeof(hcu_main_menu_profile);
+			unsigned slot;
+			state->profiles[p] = s_menu_profile_save.profile;
+			memset(state->saved_variants[p], 0, sizeof(state->saved_variants[p]));
+			for (slot = 0; slot < HCU_MAIN_MENU_SAVED_VARIANT_COUNT; ++slot)
+				memcpy(&state->saved_variants[p][slot],
+					src + slot * MENU_VARIANT_V3_BYTES, MENU_VARIANT_V3_BYTES);
 		} else if (read_bytes == (int)sizeof(menu_profile_legacy_record)) {
 			const menu_profile_legacy_record *old = (const menu_profile_legacy_record *)&s_menu_profile_save;
 			if (old->version != MENU_SAVE_VERSION ||
@@ -1909,6 +1952,7 @@ static void menu_mode_option(const hcu_main_menu_variant *v, unsigned row,
 	static const char *const balls[3] = {"NORMAL","REVERSE TAG","JUGGERNAUT"};
 	static const char *const team_scoring[3] = {"MINIMUM","MAXIMUM","SUM"};
 	static const char *const race_types[3] = {"NORMAL","ANY ORDER","RALLY"};
+	static const char *const time_limits[6] = {"NONE","5 MIN","10 MIN","15 MIN","30 MIN","60 MIN"};
 	*label = "BACK"; *value = NULL;
 	switch (v->game_type) {
 	case HCU_GAME_CTF:
@@ -1917,11 +1961,13 @@ static void menu_mode_option(const hcu_main_menu_variant *v, unsigned row,
 		else if (row == 2) { *label = "FLAG MUST RESET"; *value = menu_yes_no(v->ctf_flag_must_reset); }
 		else if (row == 3) { *label = "FLAG AT HOME TO SCORE"; *value = menu_yes_no(v->ctf_flag_at_home); }
 		else if (row == 4) { *label = "CAPTURES TO WIN"; snprintf(number, number_size, "%u", ctf_scores[v->score_index % 5u]); *value = number; }
+		else if (row == 5) { *label = "TIME LIMIT"; *value = time_limits[v->time_limit % 6u]; }
 		break;
 	case HCU_GAME_KING:
 		if (row == 0) { *label = "MOVING HILL"; *value = menu_yes_no(v->king_moving_hill); }
 		else if (row == 1) { *label = "SCORE TO WIN"; snprintf(number, number_size, "%u", general_scores[v->score_index % 5u]); *value = number; }
 		else if (row == 2) { *label = "TEAMS"; *value = menu_yes_no(v->teams); }
+		else if (row == 3) { *label = "TIME LIMIT"; *value = time_limits[v->time_limit % 6u]; }
 		break;
 	case HCU_GAME_ODDBALL:
 		if (row == 0) { *label = "TRAIT WITH BALL"; *value = traits[v->oddball_trait_with_ball % 4u]; }
@@ -1932,12 +1978,14 @@ static void menu_mode_option(const hcu_main_menu_variant *v, unsigned row,
 		else if (row == 5) { *label = "BALL SPAWN COUNT"; snprintf(number, number_size, "%u", v->oddball_ball_count + 1u); *value = number; }
 		else if (row == 6) { *label = "SCORE TO WIN"; snprintf(number, number_size, "%u", general_scores[v->score_index % 5u]); *value = number; }
 		else if (row == 7) { *label = "TEAMS"; *value = menu_yes_no(v->teams); }
+		else if (row == 8) { *label = "TIME LIMIT"; *value = time_limits[v->time_limit % 6u]; }
 		break;
 	case HCU_GAME_RACE:
 		if (row == 0) { *label = "TEAM SCORING"; *value = team_scoring[v->race_team_scoring % 3u]; }
 		else if (row == 1) { *label = "RACE TYPE"; *value = race_types[v->race_type % 3u]; }
 		else if (row == 2) { *label = "LAPS TO WIN"; snprintf(number, number_size, "%u", race_scores[v->score_index % 6u]); *value = number; }
 		else if (row == 3) { *label = "TEAMS"; *value = menu_yes_no(v->teams); }
+		else if (row == 4) { *label = "TIME LIMIT"; *value = time_limits[v->time_limit % 6u]; }
 		break;
 	default:
 		if (row == 0) { *label = "DEATH BONUS"; *value = menu_yes_no(v->slayer_death_bonus); }
@@ -1945,6 +1993,7 @@ static void menu_mode_option(const hcu_main_menu_variant *v, unsigned row,
 		else if (row == 2) { *label = "KILL PENALTY"; *value = menu_yes_no(v->slayer_kill_penalty); }
 		else if (row == 3) { *label = "KILLS TO WIN"; snprintf(number, number_size, "%u", slayer_scores[v->score_index % 5u]); *value = number; }
 		else if (row == 4) { *label = "TEAMS"; *value = menu_yes_no(v->teams); }
+		else if (row == 5) { *label = "TIME LIMIT"; *value = time_limits[v->time_limit % 6u]; }
 		break;
 	}
 }
@@ -2405,6 +2454,8 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 	hcu_main_menu_state_init(&state);
 	menu_storage_load(&state);
 	s_menu_widescreen = state.widescreen != 0;
+	if (state.widescreen)
+		printf("HALO_PS2_LOCAL fov-default degrees=90 widescreen=anamorphic\n");
 	if (hcu_spu_init() == 0)
 		(void)hcu_spu_load_bank("D:\\packages\\menu_audio.hsb");
 	if (s_kept_ready) { memcpy(state.profiles, s_kept_profiles, sizeof(s_kept_profiles)); memcpy(state.saved_variants, s_kept_variants, sizeof(s_kept_variants)); }
@@ -2486,6 +2537,10 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 			state.profile_present_mask |= (uint32_t)(1u << state.profile_index);
 		memcpy(s_kept_profiles, state.profiles, sizeof(s_kept_profiles));
 		memcpy(s_kept_variants, state.saved_variants, sizeof(s_kept_variants)); s_kept_ready = 1;
+		if (state.page != previous_page && state.widescreen &&
+			(previous_page == HCU_MAIN_MENU_PAGE_VIDEO_SETTINGS ||
+			 previous_page == HCU_MAIN_MENU_PAGE_SETTINGS))
+			printf("HALO_PS2_LOCAL fov-default degrees=90 widescreen=anamorphic\n");
 		if (state.page != previous_page &&
 			(previous_page == HCU_MAIN_MENU_PAGE_SAVE_VARIANT ||
 			 previous_page == HCU_MAIN_MENU_PAGE_MODE_OPTIONS ||

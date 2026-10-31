@@ -100,6 +100,9 @@ typedef struct hcu_main_menu_variant {
 	uint8_t radar_display;
 	uint8_t other_players_radar;
 	uint8_t friends_on_screen;
+	/* Minutes index: NONE, 5, 10, 15, 30, 60. Last so a version-3 save is
+	 * the same bytes with this field absent. */
+	uint8_t time_limit;
 } hcu_main_menu_variant;
 
 typedef struct hcu_main_menu_session {
