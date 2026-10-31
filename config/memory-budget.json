@@ -1,13 +1,13 @@
 {
-  "version": 6,
+  "version": 7,
   "unit": "byte",
-  "committed_bytes": 30801920,
-  "reserve_bytes": 2752512,
+  "committed_bytes": 30867456,
+  "reserve_bytes": 2686976,
   "total_bytes": 33554432,
-  "notes": "Version 2 moved 131072 bytes from frame_scratch to dma_commands after the stream viewer measured two 4096-qword upload chains (1179648 bytes total). Version 3 (user-approved 2026-10-24) moves 262144 bytes from the uncommitted reserve to elf_static after production gameplay ELF file-backed bytes measured 2193924 B against 2097152 B. Version 4 (user-approved 2026-10-24) moves 131072 bytes more from the uncommitted reserve to elf_static after the C3 production gameplay ELF measured 2361604 file-backed B against 2359296 B; the C3.11 successor link is 12036 B over. elf_static charges file-backed PT_LOAD bytes only; PT_LOAD NOBITS is charged to resident_gameplay. Non-ELF staging allocations remain charged to their runtime owner. Version 5 (user-approved 2026-10-25) moves 524288 bytes from the uncommitted reserve to texture_cache, growing the C3 object pool from 1547648 to 2071936 bytes. Version 6 (user-approved 2026-10-27) moves 2097152 bytes from reserve to texture_cache; its C3 model-cache arena is 4169088 bytes, committed total 30801920, reserve 2752512. Physical EE total remains 33554432 bytes; bitmap owner and fixed C2/C5 regions are unchanged. Version 6 was adopted into the main lineage on 2026-10-29 after the user approved a ~2 MiB object pool for vehicles; the bots_sidewinder candidate row and its fixture move with it.",
+  "notes": "Version 2 moved 131072 bytes from frame_scratch to dma_commands after the stream viewer measured two 4096-qword upload chains (1179648 bytes total). Version 3 (user-approved 2026-10-24) moves 262144 bytes from the uncommitted reserve to elf_static after production gameplay ELF file-backed bytes measured 2193924 B against 2097152 B. Version 4 (user-approved 2026-10-24) moves 131072 bytes more from the uncommitted reserve to elf_static after the C3 production gameplay ELF measured 2361604 file-backed B against 2359296 B; the C3.11 successor link is 12036 B over. elf_static charges file-backed PT_LOAD bytes only; PT_LOAD NOBITS is charged to resident_gameplay. Non-ELF staging allocations remain charged to their runtime owner. Version 5 (user-approved 2026-10-25) moves 524288 bytes from the uncommitted reserve to texture_cache, growing the C3 object pool from 1547648 to 2071936 bytes. Version 6 (user-approved 2026-10-27) moves 2097152 bytes from reserve to texture_cache; its C3 model-cache arena is 4169088 bytes, committed total 30801920, reserve 2752512. Version 7 reconciles the ELF reservation with the runtime allowance by moving 65536 bytes from the uncommitted reserve to elf_static. The physical EE total remains 33554432 bytes and the runtime reserve starts at 0x01cf0000.",
   "regions": [
     {"name": "system_kernel", "role": "reservation", "bytes": 1572864, "accounts": ["kernel", "stacks", "iop_ee_buffers"]},
-    {"name": "elf_static", "role": "reservation", "bytes": 2490368, "accounts": ["executable_sections", "constants", "static_tables"]},
+    {"name": "elf_static", "role": "reservation", "bytes": 2555904, "accounts": ["executable_sections", "constants", "static_tables"]},
     {"name": "resident_gameplay", "role": "permanent", "bytes": 6815744, "accounts": ["permanent_data"]},
     {"name": "current_bsp", "role": "map", "bytes": 6291456, "accounts": ["map_data"]},
     {"name": "texture_cache", "role": "reservation", "bytes": 6815744, "accounts": ["ram_textures", "lightmaps", "C3_model_cache"]},
@@ -17,6 +17,6 @@
     {"name": "checkpoint", "role": "reservation", "bytes": 524288, "accounts": ["checkpoint_storage"]},
     {"name": "audio", "role": "reservation", "bytes": 524288, "accounts": ["audio_staging"]},
     {"name": "frame_scratch", "role": "frame_scratch", "bytes": 393216, "accounts": ["frame_scratch"]},
-    {"name": "uncommitted_reserve", "role": "reserve", "bytes": 2752512, "accounts": ["reserve"]}
+    {"name": "uncommitted_reserve", "role": "reserve", "bytes": 2686976, "accounts": ["reserve"]}
   ]
 }
