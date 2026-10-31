@@ -53,6 +53,7 @@ class MapServiceProfileLifecycleTest(unittest.TestCase):
             str(ROOT / "src/stream/cbsp_catalog.c"),
             str(ROOT / "src/stream/ctag_resource_index.c"),
             str(ROOT / "src/stream/ctag_map_source.c"),
+            str(ROOT / "tests/hcu_loading_screen_host_stub.c"),
             str(ROOT / "src/stream/sha256.c"),
             str(ROOT / "src/stream/hcu_asset_profile.c"),
             str(ROOT / "src/stream/hmap.c"),
