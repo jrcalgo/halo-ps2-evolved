@@ -19,3 +19,17 @@ def test_real_chain_and_gs_tex_readers_validate_quad(tmp_path):
     for mode in ("valid", "overflow", "bad_uv", "add", "opaque", "multitexture", "premultiplied", "raw_add", "premultiplied_overflow", "meter_fill", "meter_empty", "meter_bad_ref"):
         args = [str(exe)] if mode == "valid" else [str(exe), mode]
         subprocess.run(args, check=True, capture_output=True, text=True)
+
+
+def test_screen_flash_quad_is_untextured_and_scissored(tmp_path):
+    exe = tmp_path / "hcu_bitmap_flash_test"
+    subprocess.run([
+        "cc", "-std=c11", "-Wall", "-Wextra", "-Werror",
+        "-I", str(ENGINE / "src"), "-I", str(ROOT / "src"),
+        str(ROOT / "tests/hcu_bitmap_flash_main.c"),
+        str(ROOT / "src/stream/hcu_bitmap_quad.c"),
+        str(ENGINE / "src/render/chain.c"), str(ENGINE / "src/world/tex.c"),
+        "-lm", "-o", str(exe),
+    ], check=True, capture_output=True, text=True)
+    for mode in ("lighten", "darken", "tint", "invert", "overflow", "bad_rect"):
+        subprocess.run([str(exe), mode], check=True, capture_output=True, text=True)

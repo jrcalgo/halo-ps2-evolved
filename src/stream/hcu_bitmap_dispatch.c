@@ -1,4 +1,5 @@
 #include "stream/hcu_bitmap_dispatch.h"
+#include "stream/hcu_bitmap_defer_probe.h"
 #include "render/gs.h"
 #include "render/hud_effect.h"
 #include "world/tex.h"
@@ -196,15 +197,27 @@ static unsigned pages_for(uint32_t w, uint32_t h, uint32_t psm)
 	return ((tbw + 1u) / 2u) * ((h + page_h - 1u) / page_h);
 }
 
-/* Meter (CE hud meter shader): the bitmap's alpha encodes the fill order and the request's
- * meter_value is the fill threshold (0..255). Two exact GS alpha-test passes partition it:
- * EMPTY draws the background where texel alpha < value, then FILL draws the gradient where it
- * is >= value. The gradient is min->max lerped at value/255 (integer), or the flash colour when
- * CE's flash is active. CE's per-channel combiner and subtractive flash are not reproduced.
- * Each pass is its own GIF packet with TEST set and restored, so no state leaks. */
+/* Meter (CE hud meter shader, matching the N64 meter_surface the Xbox combiner
+ * implements): texel alpha is the fill order. order >= flash alpha (the maximum)
+ * is the empty background; order < gradient_min alpha is the solid colour, lerped
+ * min->max at that threshold; the band [min, max) is the flash colour (damage and
+ * recharge). When CE is not flashing the two alphas are equal, so the band is
+ * empty and one threshold partitions the meter. A GS alpha test cannot lerp a
+ * different colour per texel, so the solid region is one colour. Each pass is
+ * its own GIF packet with TEST set and restored. */
 static uint32_t meter_lerp_channel(uint32_t a, uint32_t b, uint32_t t)
 {
 	return (a * (255u - t) + b * t + 127u) / 255u;
+}
+
+/* Texel alpha in the converted textures is on the GS scale (0x80 = 1.0) while CE's meter value is
+ * 0..255, so the alpha-test reference is rescaled. The GS tests the alpha after MODULATE, i.e.
+ * texel * vertex_alpha / 0x80, so a pass whose vertex alpha is not 1.0 scales its reference too. */
+uint8_t hcu_bitmap_meter_alpha_ref(uint32_t value, uint32_t vertex_alpha)
+{
+	uint32_t ref = (value * 128u + 127u) / 255u;
+	uint32_t va = (vertex_alpha * 128u + 127u) / 255u;
+	return (uint8_t)((ref * va + 64u) / 128u);
 }
 
 static hcu_bitmap_quad_status meter_emit(chain_t *geometry_chain, const tex_info *image,
@@ -212,27 +225,45 @@ static hcu_bitmap_quad_status meter_emit(chain_t *geometry_chain, const tex_info
 	const hcu_bitmap_vertex_t vertices[4], const halo_ps2_bitmap_request *request)
 {
 	hcu_bitmap_vertex_t quad[4];
-	uint32_t t = request->meter_value, empty = request->meter_background_color, fill, i;
+	uint32_t min_a = request->meter_value;
+	uint32_t max_a = request->meter_flash_color >> 24;
+	uint32_t empty = request->meter_background_color;
+	uint32_t mn = request->meter_gradient_min_color, mx = request->meter_gradient_max_color;
+	uint32_t solid, flash, i;
+	int flashing = (request->has_meter & HALO_PS2_BITMAP_METER_FLASHING) && max_a > min_a;
+	hcu_bitmap_blend_t saved = state->blend;
 	hcu_bitmap_quad_status status;
-	if (request->has_meter & HALO_PS2_BITMAP_METER_FLASHING) {
-		fill = request->meter_flash_color & 0x00FFFFFFu;
-	} else {
-		uint32_t mn = request->meter_gradient_min_color, mx = request->meter_gradient_max_color;
-		fill = (meter_lerp_channel((mn >> 16) & 255u, (mx >> 16) & 255u, t) << 16) |
-			(meter_lerp_channel((mn >> 8) & 255u, (mx >> 8) & 255u, t) << 8) |
-			meter_lerp_channel(mn & 255u, mx & 255u, t);
-	}
+	solid = (meter_lerp_channel((mn >> 16) & 255u, (mx >> 16) & 255u, min_a) << 16) |
+		(meter_lerp_channel((mn >> 8) & 255u, (mx >> 8) & 255u, min_a) << 8) |
+		meter_lerp_channel(mn & 255u, mx & 255u, min_a);
+	flash = (request->meter_flash_color & 0x00FFFFFFu) | 0xFF000000u;
 	memcpy(quad, vertices, sizeof(quad));
+	/* Flash is added for order >= min, then subtracted for order >= max, so
+	 * only the band [min, max) remains. An alpha blend cannot punch that hole. */
+	if (flashing) {
+		for (i = 0; i < 4; i++) quad[i].argb = flash;
+		state->blend = HCU_BITMAP_BLEND_RAW_ADD;
+		state->alpha_test = HCU_BITMAP_ALPHA_TEST_FILL;
+		state->alpha_ref = hcu_bitmap_meter_alpha_ref(min_a, 255u);
+		status = hcu_bitmap_quad_emit_validated(geometry_chain, image, state, quad);
+		if (status != HCU_BITMAP_QUAD_OK) { state->blend = saved; return status; }
+		state->blend = HCU_BITMAP_BLEND_SUBTRACT;
+		state->alpha_ref = hcu_bitmap_meter_alpha_ref(max_a, 255u);
+		status = hcu_bitmap_quad_emit_validated(geometry_chain, image, state, quad);
+		state->blend = saved;
+		if (status != HCU_BITMAP_QUAD_OK) return status;
+	}
 	if (empty >> 24) {
 		for (i = 0; i < 4; i++) quad[i].argb = empty;
-		state->alpha_test = HCU_BITMAP_ALPHA_TEST_EMPTY;
-		state->alpha_ref = (uint8_t)t;
+		state->alpha_test = HCU_BITMAP_ALPHA_TEST_FILL;
+		state->alpha_ref = hcu_bitmap_meter_alpha_ref(max_a, empty >> 24);
 		status = hcu_bitmap_quad_emit_validated(geometry_chain, image, state, quad);
 		if (status != HCU_BITMAP_QUAD_OK) return status;
 	}
-	for (i = 0; i < 4; i++) quad[i].argb = fill | 0xFF000000u;
-	state->alpha_test = HCU_BITMAP_ALPHA_TEST_FILL;
-	state->alpha_ref = (uint8_t)t;
+	if (!min_a) return HCU_BITMAP_QUAD_OK;
+	for (i = 0; i < 4; i++) quad[i].argb = solid | 0xFF000000u;
+	state->alpha_test = HCU_BITMAP_ALPHA_TEST_EMPTY;
+	state->alpha_ref = hcu_bitmap_meter_alpha_ref(min_a, 255u);
 	return hcu_bitmap_quad_emit_validated(geometry_chain, image, state, quad);
 }
 
@@ -709,6 +740,33 @@ static hcu_bitmap_dispatch_status dispatch_request_impl(
 			break;
 		}
 	}
+	/* If verified metadata survived a prior TC_DEFER, ask the bounded cache
+	 * whether admission is possible before touching the backing package again.
+	 * A successful probe is rolled back; the normal path below still performs
+	 * the integrity checked read needed to queue an actual upload. */
+	if (descriptor && !cache->map[binding->cache_key]) {
+		uint32_t probe_pages = pages_for(descriptor->width, descriptor->height, descriptor->psm);
+		tc_result probe_result;
+		const tc_entry *probe_entry;
+		if (!probe_pages || probe_pages > cache->total_pages) return HCU_BITMAP_DISPATCH_E_CAPACITY;
+		tc_journal_begin(cache, journal);
+#if defined(HALO_PS2_C3_BITMAP_DEFER_PROBE) && HALO_PS2_C3_BITMAP_DEFER_PROBE
+		cache->hud_priority = 1;
+		probe_result = tc_acquire_j_probe(cache, journal, binding->cache_key, probe_pages,
+			descriptor->mip_bytes + descriptor->clut_bytes, &probe_entry,
+			HCU_BITMAP_DEFER_PROBE_PTR, HCU_BITMAP_PROBE_HUD);
+#else
+		cache->hud_priority = 1;
+		probe_result = tc_acquire_j(cache, journal, binding->cache_key, probe_pages,
+			descriptor->mip_bytes + descriptor->clut_bytes, &probe_entry);
+#endif
+		cache->hud_priority = 0;
+		tc_journal_rollback(cache, journal);
+		if (probe_result == TC_DEFER) {
+			return HCU_BITMAP_DISPATCH_E_DEFERRED;
+		}
+		if (probe_result == TC_FULL) return HCU_BITMAP_DISPATCH_E_CAPACITY;
+	}
 	memset(&image, 0, sizeof(image));
 	memset(&mip, 0, sizeof(mip));
 	clut = NULL;
@@ -805,6 +863,24 @@ static hcu_bitmap_dispatch_status dispatch_request_impl(
 		return HCU_BITMAP_DISPATCH_E_IDENTITY;
 	if (texture_page_base_words > 0x3FFFu * 64u || clut_base_words > 0x3FFFu * 64u)
 		return HCU_BITMAP_DISPATCH_E_ARGUMENT;
+	/* Publish only after chunk hash, TEXS parse, source datum and image shape
+	 * have all passed. This descriptor contains no source pointers or pixels.
+	 * It is recorded before admission so a TC_DEFER leaves verified metadata
+	 * for the next frame's probe, which then skips the package read. */
+	if (!resident_hit && resident_mode && (descriptor || empty_descriptor)) {
+		hcu_bitmap_resident_descriptor *d = descriptor ? descriptor : empty_descriptor;
+		memset(d, 0, sizeof(*d));
+		d->bitmap_output_datum = binding->bitmap_output_datum;
+		d->bitmap_index = binding->bitmap_index; d->image_index = binding->image_index;
+		d->cache_key = binding->cache_key; d->chunk_id = binding->chunk_id;
+		d->expected_source_datum = binding->expected_source_datum;
+		d->profile_id = binding->expected_profile_id; d->generation = expected_generation;
+		d->width = image.width; d->height = image.height; d->psm = image.psm;
+		d->clut_entries = image.clut_entries; d->mip_bytes = mip.bytes; d->clut_bytes = clut_bytes;
+		d->source_offset = image.pixel_offset;
+		memcpy(d->chunk_sha256, binding->expected_chunk_sha256, 32);
+		d->valid = 1;
+	}
 
 	/* Protect each outstanding source/GPU lease from tc's LRU eviction policy. */
 	/* C3.7/bounded transaction: the journal records only what this request mutates (no whole-table copy).
@@ -812,9 +888,16 @@ static hcu_bitmap_dispatch_status dispatch_request_impl(
 	tc_journal_begin(cache, journal);
 	upload_before = *upload_chain;
 	geometry_before = *geometry_chain;
+#if defined(HALO_PS2_C3_BITMAP_DEFER_PROBE) && HALO_PS2_C3_BITMAP_DEFER_PROBE
+	cache->hud_priority = 1;
+	acquired = tc_acquire_j_probe(cache, journal, binding->cache_key, pages,
+		upload_source ? mip.bytes + clut_bytes : 0u, &entry,
+		HCU_BITMAP_DEFER_PROBE_PTR, HCU_BITMAP_PROBE_HUD);
+#else
 	cache->hud_priority = 1;
 	acquired = tc_acquire_j(cache, journal, binding->cache_key, pages,
 		upload_source ? mip.bytes + clut_bytes : 0u, &entry);
+#endif
 	cache->hud_priority = 0;
 	if (acquired != TC_HIT && acquired != TC_UPLOAD) {
 		tc_journal_rollback(cache, journal);
@@ -878,6 +961,9 @@ static hcu_bitmap_dispatch_status dispatch_request_impl(
 		vertices[i].x = request->vertices[i].x; vertices[i].y = request->vertices[i].y;
 		vertices[i].u = request->vertices[i].u; vertices[i].v = request->vertices[i].v;
 		vertices[i].argb = request->vertices[i].color;
+		if (vertices[i].u < 0.0f || vertices[i].u > 1.0f ||
+			vertices[i].v < 0.0f || vertices[i].v > 1.0f)
+			state.uv_extended = 1;
 	}
 	if (prepare_only) {
 		*prepared_tex0 = state.tex0;
@@ -909,20 +995,10 @@ static hcu_bitmap_dispatch_status dispatch_request_impl(
 			!cache->map[slots[i].cache_key]) memset(&slots[i], 0, sizeof(slots[i]));
 	tc_journal_commit(journal);
 	if (resident_hit) context->counters.hits++;
-	else if (resident_mode && (descriptor || empty_descriptor)) {
-		hcu_bitmap_resident_descriptor *d = descriptor ? descriptor : empty_descriptor;
-		memset(d, 0, sizeof(*d));
-		d->bitmap_output_datum = binding->bitmap_output_datum;
-		d->bitmap_index = binding->bitmap_index; d->image_index = binding->image_index;
-		d->cache_key = binding->cache_key; d->chunk_id = binding->chunk_id;
-		d->expected_source_datum = binding->expected_source_datum;
-		d->profile_id = binding->expected_profile_id; d->generation = expected_generation;
-		d->width = image.width; d->height = image.height; d->psm = image.psm;
-		d->clut_entries = image.clut_entries; d->mip_bytes = mip.bytes; d->clut_bytes = clut_bytes;
-		d->source_offset = image.pixel_offset;
-		memcpy(d->chunk_sha256, binding->expected_chunk_sha256, 32);
-		d->valid = 1;
-	}
+#if defined(HALO_PS2_C3_BITMAP_DEFER_PROBE) && HALO_PS2_C3_BITMAP_DEFER_PROBE
+	hcu_bitmap_defer_probe_add_hud(HCU_BITMAP_DEFER_PROBE_PTR, !prepare_only,
+		acquired == TC_UPLOAD);
+#endif
 	return HCU_BITMAP_DISPATCH_OK;
 
 rollback:
@@ -1089,13 +1165,19 @@ int hcu_bitmap_dispatch_reader(const halo_ps2_bitmap_request_reader *reader,
 	void *context)
 {
 	hcu_bitmap_dispatch_context *ctx = (hcu_bitmap_dispatch_context *)context;
-	uint32_t i;
+	uint32_t i, bitmap_requests = 0;
 	if (!reader || !reader->held || !ctx || !reader->requests || !reader->queue ||
 		!ctx->leases || ctx->lease_count > ctx->lease_capacity ||
-		ctx->screen_effect_prepared_count > reader->count ||
-		reader->count - ctx->screen_effect_prepared_count > ctx->lease_capacity - ctx->lease_count || !ctx->cache ||
+		ctx->screen_effect_prepared_count > reader->count || !ctx->cache ||
 		!ctx->cache_readers || ctx->cache_reader_count < ctx->cache->max_keys ||
 		reader->generation != ctx->expected_generation)
+		return HCU_BITMAP_DISPATCH_E_ARGUMENT;
+	for (i = 0; i < reader->count; i++)
+		if (!reader->requests[i].screen_effect_mask && !reader->requests[i].screen_flash &&
+			!reader->requests[i].motion_marker)
+			bitmap_requests++;
+	/* Flashes and motion markers are untextured, so they do not take a lease. */
+	if (bitmap_requests > ctx->lease_capacity - ctx->lease_count)
 		return HCU_BITMAP_DISPATCH_E_ARGUMENT;
 	if (hcu_bitmap_dispatch_capture_screen_effects(ctx, reader->queue) != HCU_BITMAP_DISPATCH_OK)
 		return HCU_BITMAP_DISPATCH_E_ARGUMENT;
@@ -1118,6 +1200,44 @@ int hcu_bitmap_dispatch_reader(const halo_ps2_bitmap_request_reader *reader,
 			if (ctx->first_error == HCU_BITMAP_DISPATCH_OK) ctx->first_error = HCU_BITMAP_DISPATCH_E_VIEW;
 			continue;
 		}
+		/* Screen flash: untextured, so no binding, texture lease or cache entry. */
+		if (reader->requests[i].screen_flash) {
+			hcu_bitmap_quad_status flash = hcu_bitmap_quad_emit_flash(ctx->geometry_chain,
+				ctx->screen_w, ctx->screen_h, &target, 0xFFFFFFu,
+				(int16_t)reader->requests[i].screen_flash_type, reader->requests[i].vertices[0].color);
+			if (flash == HCU_BITMAP_QUAD_OK) ctx->screen_flashes++;
+			else if (flash == HCU_BITMAP_QUAD_CAPACITY) ctx->counters.deferred++;
+			else if (ctx->first_error == HCU_BITMAP_DISPATCH_OK) ctx->first_error = HCU_BITMAP_DISPATCH_E_ARGUMENT;
+			continue;
+		}
+		/* Motion-sensor blip or sweep: untextured, same virtual-frame vertices as the HUD.
+		 * A sweep (motion_disc_radius set) is a ring clipped to the radar circle. */
+		if (reader->requests[i].motion_marker) {
+			hcu_bitmap_vertex_t marker_v[4];
+			hcu_bitmap_quad_status marker;
+			unsigned k;
+			for (k = 0; k < 4; k++) {
+				marker_v[k].x = reader->requests[i].vertices[k].x;
+				marker_v[k].y = reader->requests[i].vertices[k].y;
+				marker_v[k].u = 0.0f; marker_v[k].v = 0.0f;
+				marker_v[k].argb = reader->requests[i].vertices[k].color;
+			}
+			if (reader->requests[i].motion_disc_radius > 0.0f) {
+				float hole = 0.0f;
+				if (i + 1u < reader->count && reader->requests[i + 1u].motion_marker == 2u)
+					hole = (reader->requests[i + 1u].vertices[1].x -
+						reader->requests[i + 1u].vertices[0].x) * 0.5f;
+				marker = hcu_bitmap_quad_emit_ring(ctx->geometry_chain, ctx->screen_w, ctx->screen_h,
+					&target, reader->requests[i].motion_disc_x, reader->requests[i].motion_disc_y,
+					reader->requests[i].motion_disc_radius, hole, marker_v[0].argb);
+				if (hole > 0.0f) i++; /* the subtractive square is the hole; the ring drew it */
+			} else {
+				marker = hcu_bitmap_quad_emit_marker(ctx->geometry_chain, ctx->screen_w, ctx->screen_h,
+					&target, marker_v, reader->requests[i].motion_marker == 2u);
+			}
+			if (marker == HCU_BITMAP_QUAD_CAPACITY) ctx->counters.deferred++;
+			continue;
+		}
 		status = reader->requests[i].has_multiply_map ?
 			dispatch_multiply_request(ctx, &reader->requests[i], target, lease) :
 			dispatch_request_impl(ctx, &reader->requests[i], ctx->bindings,
@@ -1129,6 +1249,21 @@ int hcu_bitmap_dispatch_reader(const halo_ps2_bitmap_request_reader *reader,
 			ctx->upload_chain, ctx->geometry_chain,
 			ctx->texture_page_base_words, ctx->clut_base_words,
 			ctx->screen_w, ctx->screen_h, target, lease, 0, NULL, NULL);
+		/* A multiply overlay that is not the narrow sniper strip still draws its
+		 * primary map. Composing the second map would exceed the per-frame budget. */
+		if (status == HCU_BITMAP_DISPATCH_E_UNSUPPORTED && reader->requests[i].has_multiply_map) {
+			halo_ps2_bitmap_request plain = reader->requests[i];
+			plain.has_multiply_map = 0;
+			status = dispatch_request_impl(ctx, &plain, ctx->bindings,
+				ctx->binding_count, ctx->profile, ctx->expected_generation,
+				ctx->cache, ctx->journal, ctx->cache_readers, ctx->cache_reader_count,
+				ctx->slots, ctx->slot_count,
+				ctx->source_storage, ctx->source_storage_bytes, ctx->slot_stride,
+				ctx->staging_buffer, ctx->staging_buffer_bytes,
+				ctx->upload_chain, ctx->geometry_chain,
+				ctx->texture_page_base_words, ctx->clut_base_words,
+				ctx->screen_w, ctx->screen_h, target, lease, 0, NULL, NULL);
+		}
 		if (status == HCU_BITMAP_DISPATCH_OK) {
 			if (reader->requests[i].has_meter & HALO_PS2_BITMAP_METER_PRESENT) ctx->meter_quads++;
 			/* C3.10: dispatch runs inside the parent emit window, so the upload rides the next kick */

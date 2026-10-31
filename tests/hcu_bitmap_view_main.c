@@ -24,6 +24,7 @@ static void make_tex(void)
 #define SCREEN_W 640
 /* GS A+D address of SCISSOR_1 (same value as hcu_bitmap_quad.c's GS_A_SCISSOR_1). */
 #define GS_A_SCISSOR_1_ADDR 0x40u
+#define GS_A_XYOFFSET_1_ADDR 0x18u
 #define SCREEN_H 480
 
 /* CE viewport-relative quad: a 40x30 box at (10,12) inside a 160x120 viewport. */
@@ -76,11 +77,16 @@ static int emit_for_window(const hcu_bitmap_view *views, uint32_t view_count, in
 	if (hcu_bitmap_quad_place(&state, &rect, ce_quad, placed) != 0) return -3;
 	if (hcu_bitmap_quad_emit(&chain, &textures, 0, &state, placed) != HCU_BITMAP_QUAD_OK) return -4;
 	q = (uint64_t *)((uint8_t *)memory + 32);
-	if (q[13] != GS_A_SCISSOR_1_ADDR) return -5;
-	if (scissor_out) *scissor_out = q[12];
-	/* Vertex 0 of the two-triangle packet starts at q[16]; its position is q[20]. */
-	if (vx_out) *vx_out = (uint32_t)q[20];
-	if (vy_out) *vy_out = (uint32_t)(q[20] >> 32);
+	if (q[13] != GS_A_XYOFFSET_1_ADDR || q[15] != GS_A_SCISSOR_1_ADDR) return -5;
+	{
+		int xo = (2048 * 16) - SCREEN_W * 8, yo = (2048 * 16) - SCREEN_H * 8;
+		uint64_t expect = (uint64_t)(xo & 0xFFFF) | ((uint64_t)(yo & 0xFFFF) << 32);
+		if (q[12] != expect) return -6;
+	}
+	if (scissor_out) *scissor_out = q[14];
+	/* Vertex 0 of the two-triangle packet starts at q[18]; its position is q[22]. */
+	if (vx_out) *vx_out = (uint32_t)q[22];
+	if (vy_out) *vy_out = (uint32_t)(q[22] >> 32);
 	return 0;
 }
 
@@ -114,9 +120,13 @@ static void check_views(uint32_t count)
 		CHECK(rect_eq(r, layout.views[k].x, layout.views[k].y, layout.views[k].w, layout.views[k].h));
 		/* Scissor is exactly this view's rectangle. */
 		CHECK(scissor == scissor_for(layout.views[k].x, layout.views[k].y, layout.views[k].w, layout.views[k].h));
-		/* CE (10,12) is placed at view origin + (10,12) in absolute screen space. */
-		CHECK(vx == gs_coord_expect((float)expect_x + 10.0f, SCREEN_W));
-		CHECK(vy == gs_coord_expect((float)expect_y + 12.0f, SCREEN_H));
+		/* CE (10,12) is scaled by the pane/screen ratio and offset by the view origin. */
+		{
+			float sx = (float)layout.views[k].w / SCREEN_W, sy = (float)layout.views[k].h / SCREEN_H;
+			float sc = sx < sy ? sx : sy;
+			CHECK(vx == gs_coord_expect((float)expect_x + 10.0f * sc, SCREEN_W));
+			CHECK(vy == gs_coord_expect((float)expect_y + 12.0f * sc, SCREEN_H));
+		}
 	}
 	/* Each view's CE quad stays inside its own rectangle. */
 	for (k = 0; k < count; k++) {

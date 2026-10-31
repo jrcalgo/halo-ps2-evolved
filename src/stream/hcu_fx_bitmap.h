@@ -47,11 +47,19 @@ typedef int (*hcu_fx_source_load_fn)(void *context, const hcu_bitmap_binding *bi
 	uint16_t *width, uint16_t *height, uint8_t *psm);
 typedef int (*hcu_fx_source_submit_fn)(void *context, const hcu_bitmap_binding *binding,
 	uint16_t width, uint16_t height, uint8_t psm, uint64_t *tex0_out);
+/* Returns nonzero only when admission is provably deferred for this frame. */
+typedef int (*hcu_fx_admission_defer_fn)(void *context, uint32_t cache_key,
+	uint16_t width, uint16_t height, uint8_t psm);
 int hcu_fx_texture_resolve(hcu_fx_descriptor_cache *cache,
 	const hcu_bitmap_binding *binding, uint32_t profile_id, uint32_t map_generation,
 	hcu_fx_resident_query_fn resident_query, hcu_fx_source_load_fn source_load,
 	hcu_fx_source_submit_fn source_submit, void *context, uint64_t *tex0_out,
 	int *source_attempted, int *source_loaded);
+int hcu_fx_texture_resolve_prechecked(hcu_fx_descriptor_cache *cache,
+	const hcu_bitmap_binding *binding, uint32_t profile_id, uint32_t map_generation,
+	hcu_fx_resident_query_fn resident_query, hcu_fx_admission_defer_fn admission_defer,
+	hcu_fx_source_load_fn source_load, hcu_fx_source_submit_fn source_submit,
+	void *context, uint64_t *tex0_out, int *source_attempted, int *source_loaded);
 
 typedef struct {
 	uint32_t binding;   /* index into the binding table, or HCU_FX_BITMAP_NONE for flat quads */

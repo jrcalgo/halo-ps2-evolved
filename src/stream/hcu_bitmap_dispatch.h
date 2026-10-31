@@ -152,6 +152,7 @@ typedef struct {
 	uint32_t lease_capacity, lease_count;
 	hcu_bitmap_dispatch_status first_error;
 	uint32_t meter_quads;   /* monotonic: meter requests emitted (each is a fill pass plus an empty pass) */
+	uint32_t screen_flashes; /* monotonic: screen flash quads emitted */
 	hcu_bitmap_resident_descriptor *resident_descriptors;
 	uint32_t resident_capacity;
 	uint32_t resident_generation;
@@ -220,5 +221,8 @@ hcu_bitmap_dispatch_status hcu_bitmap_dispatch_complete(hcu_bitmap_dispatch_cont
  * remain outstanding; this makes the existing two-frame LRU honor GPU pins. */
 void hcu_bitmap_dispatch_touch_cache(tc_t *cache, const uint16_t *cache_readers,
 	uint32_t cache_reader_count);
+
+/* GS alpha-test reference for a meter pass (see hcu_bitmap_dispatch.c). */
+uint8_t hcu_bitmap_meter_alpha_ref(uint32_t value, uint32_t vertex_alpha);
 
 #endif

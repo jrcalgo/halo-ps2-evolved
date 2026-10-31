@@ -135,7 +135,9 @@ int main(void)
 	if (!check(queue.requests[0].vertices[0].x == 10.0f && queue.requests[0].vertices[0].u == 0.0f && queue.requests[0].vertices[3].color == 0xFF102033u, "copied vertices")) return 1;
 	if (!check(queue.requests[0].framebuffer_blend_function == 7 && queue.requests[0].point_sampled && queue.requests[0].alpha_weighted && queue.requests[0].bitmap_wrap, "draw state and primary wrap")) return 1;
 	params.map[1] = &s_bitmaps[0];
-	if (!check(halo_ps2_bitmap_request_capture(&queue, &params, vertices) == HALO_PS2_BITMAP_REQUEST_UNSUPPORTED, "multitexture rejection")) return 1;
+	if (!check(halo_ps2_bitmap_request_capture(&queue, &params, vertices) == HALO_PS2_BITMAP_REQUEST_OK &&
+		queue.count == 2 && !queue.requests[1].has_multiply_map,
+		"non-multiply second map draws the primary")) return 1;
 	params.map0_to_1_blend_function = 1; /* CE shader multiply */
 	params.map_scale[1].i = 1.0f; params.map_scale[1].j = 2.0f;
 	params.map_texture_scale[1].i = params.map_texture_scale[1].j = 1.0f;
@@ -147,10 +149,10 @@ int main(void)
 	params.map_fade[1] = &multiply_fade;
 	params.map_wrapped[1] = TRUE;
 	if (!check(halo_ps2_bitmap_request_capture(&queue, &params, vertices) == HALO_PS2_BITMAP_REQUEST_OK &&
-		queue.count == 2 && queue.multiply_count_by_view[3] == 1,
+		queue.count == 3 && queue.multiply_count_by_view[3] == 1,
 		"two-map CE multiply with animated offset is captured")) return 1;
 	{
-		halo_ps2_bitmap_request const *request = &queue.requests[1];
+		halo_ps2_bitmap_request const *request = &queue.requests[2];
 		if (!check(request->has_multiply_map && request->multiply_bitmap_tag_index == 19 &&
 			request->multiply_bitmap_index == 0 && request->multiply_slot == 6 && request->multiply_wrap &&
 			request->multiply_scale_u == 1.0f && request->multiply_scale_v == 2.0f &&
@@ -169,8 +171,10 @@ int main(void)
 	if (!check(halo_ps2_bitmap_request_capture(&queue, &params, vertices) == HALO_PS2_BITMAP_REQUEST_OK,
 		"identity map-0 offset pointer accepted")) return 1;
 	multiply_offset.x = 0.25f;
-	if (!check(halo_ps2_bitmap_request_capture(&queue, &params, vertices) == HALO_PS2_BITMAP_REQUEST_UNSUPPORTED,
-		"nonidentity map-0 offset remains unsupported")) return 1;
+	if (!check(halo_ps2_bitmap_request_capture(&queue, &params, vertices) == HALO_PS2_BITMAP_REQUEST_OK &&
+		queue.requests[queue.count - 1].vertices[1].u > 0.49f &&
+		queue.requests[queue.count - 1].vertices[1].u < 0.51f,
+		"nonidentity map-0 offset is baked into UVs")) return 1;
 	{
 		union { uint32_t u; real f; } not_finite;
 		not_finite.u = 0x7FC00000u;
@@ -209,7 +213,7 @@ int main(void)
 	for (i = (int)queue.count; i < (int)HALO_PS2_BITMAP_REQUEST_CAPACITY; i++)
 		if (halo_ps2_bitmap_request_capture(&queue, &params, vertices) != HALO_PS2_BITMAP_REQUEST_OK) return 1;
 	if (!check(halo_ps2_bitmap_request_capture(&queue, &params, vertices) == HALO_PS2_BITMAP_REQUEST_FULL, "capacity bound")) return 1;
-	if (!check(queue.unsupported_count == 3 && queue.missing_texture_count == 1 && queue.invalid_identity_count == 1 && queue.full_count == 1, "failure counters include rejected nonidentity map-0 transforms")) return 1;
+	if (!check(queue.unsupported_count == 1 && queue.missing_texture_count == 1 && queue.invalid_identity_count == 1 && queue.full_count == 1, "failure counters keep the nonfinite map-0 offset")) return 1;
 	if (!check(halo_ps2_bitmap_requests_end(&queue) == HALO_PS2_BITMAP_REQUEST_OK, "queue end invokes consumer")) return 1;
 	if (!check(probe.calls == 1 && probe.observed_count == HALO_PS2_BITMAP_REQUEST_CAPACITY && probe.observed_generation == 9001 && queue.readers == 0, "consumer receives sealed pinned reader and releases it")) return 1;
 	if (!check(halo_ps2_bitmap_requests_set_view(&queue, 0, 0) == HALO_PS2_BITMAP_REQUEST_INVALID_ARGUMENT, "closed queue rejects view update")) return 1;
@@ -248,11 +252,11 @@ int main(void)
 		queue.requests[0].vertices[2].u == 0.5f && queue.requests[0].vertices[2].v > 0.399f &&
 		queue.requests[0].vertices[2].v < 0.401f,
 		"font atlas pixel UVs use CE inverse-scale normalization")) return 1;
-	vertices[3].texture_coordinates.x = 101.0f;
+	vertices[3].texture_coordinates.x = 900.0f;
 	if (!check(halo_ps2_bitmap_request_capture(&queue, &params, vertices) == HALO_PS2_BITMAP_REQUEST_UNSUPPORTED &&
 		queue.unsupported_reason_mask == HALO_PS2_BITMAP_UNSUPPORTED_UV_RANGE &&
 		queue.unsupported_reason_counts[6] == 1 && queue.first_unsupported_reason == HALO_PS2_BITMAP_UNSUPPORTED_UV_RANGE,
-		"out-of-range normalized UV stays fail-closed with bounded cause")) return 1;
+		"normalized UV outside [-8, 8] stays fail-closed with bounded cause")) return 1;
 	memset(&screen_effect, 0, sizeof(screen_effect));
 	screen_effect.convolution_mask = &s_bitmaps[0];
 	screen_effect.convolution_type = 2;
@@ -293,6 +297,19 @@ int main(void)
 		queue.screen_effects[0].light_uses_mask && queue.screen_effects[0].desaturation_uses_mask &&
 		queue.screen_effects[0].mask_request_index == 1u,
 		"screen effect values and mask request linkage are copied into the active view snapshot")) return 1;
+	{
+		uint16_t before = queue.count;
+		/* Screen flash: bitmap-free flagged request with the colour in vertex 0. */
+		if (!check(halo_ps2_bitmap_request_capture_screen_flash(&queue, 1, 1.0f, 0.5f, 0.25f, 0.5f) ==
+			HALO_PS2_BITMAP_REQUEST_OK && queue.count == before + 1u &&
+			queue.requests[before].screen_flash == 1u && queue.requests[before].screen_flash_type == 1u &&
+			queue.requests[before].bitmap_tag_index == -1 && !queue.requests[before].has_multiply_map &&
+			queue.requests[before].vertices[0].color == 0x80FF8040u,
+			"screen flash is captured as a flagged, bitmap-free request")) return 1;
+		if (!check(halo_ps2_bitmap_request_capture_screen_flash(&queue, 0, 1.0f, 1.0f, 1.0f, 1.0f) ==
+			HALO_PS2_BITMAP_REQUEST_UNSUPPORTED && queue.count == before + 1u,
+			"screen flash type none is rejected")) return 1;
+	}
 	puts("bitmap-requests-ok records=128 captured=128 queue_end_consumer=1 bounded=1 pointers_retained=0");
 	return 0;
 }

@@ -173,10 +173,9 @@ int main(void)
 		dispatch.lease_count || owner.gpu_pending) return 25;
 	/* A faulted batch drops only its frame: the CE end succeeds, nothing emits, nothing stays pending. */
 	if (hcu_bitmap_frame_begin_callback(&owner,12,1) != 0) return 13;
-	if (hcu_bitmap_frame_set_view_callback(&owner,0,0) != 0) return 14;
-	queue.full_count=1;
+	/* No set-view call for the one active window: the window count mismatches (fatal). */
 	if (hcu_bitmap_frame_end_callback(&owner,12,0) != HCU_BITMAP_FRAME_OK) return 15;
-	if (owner.stat_drops != 1 || owner.last_drop_cause != 16u || owner.drain_pending ||
+	if (owner.stat_drops != 1 || owner.last_drop_cause != 33u || owner.drain_pending ||
 		owner.gpu_pending || owner.in_frame) return 16;
 	if (s_dispatch_calls != 2 || dispatch.lease_count) return 16;
 	/* Recovery: the next frame opens clean and its batch dispatches at the next emit window. */
@@ -264,6 +263,19 @@ int main(void)
 	s_fence_observed=1;
 	if (hcu_bitmap_frame_owner_discard_pending(&owner) != HCU_BITMAP_FRAME_OK) return 53;
 	if (hcu_bitmap_frame_owner_unbind(&owner) != HCU_BITMAP_FRAME_OK) return 52;
+	/* A request the seam could not capture (queue full here) skips that request, not the frame. */
+	if (hcu_bitmap_frame_owner_bind_immutable(&owner,&queue,&dispatch,fake_fence_query,0,
+		HALO_PS2_BITMAP_FRAME_TEST_CAPS,&profile,&binding,1,7) != HCU_BITMAP_FRAME_OK) return 60;
+	if (hcu_bitmap_frame_begin_callback(&owner,18,1) != 0) return 61;
+	if (hcu_bitmap_frame_set_view_callback(&owner,0,0) != 0) return 61;
+	queue.full_count=1;
+	queue.missing_texture_count=1;
+	if (hcu_bitmap_frame_end_callback(&owner,18,0) != 0 || owner.stat_drops != 0 ||
+		owner.stat_partial != 1 || owner.last_partial_cause != 20u || owner.partial_causes_seen != 20u ||
+		owner.last_partial_frame != 18u || !owner.drain_pending) return 62;
+	s_fence_observed=1;
+	if (hcu_bitmap_frame_owner_discard_pending(&owner) != HCU_BITMAP_FRAME_OK) return 63;
+	if (hcu_bitmap_frame_owner_unbind(&owner) != HCU_BITMAP_FRAME_OK) return 64;
 	puts("FRAME_OWNER_OK binds/views/dispatch/fence/unbind/drop-and-recover/discard");
 	return 0;
 }

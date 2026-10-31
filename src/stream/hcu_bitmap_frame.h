@@ -59,11 +59,20 @@ typedef struct {
 	uint32_t stat_ends;
 	uint32_t stat_end_failures;
 	uint32_t stat_requests;
-	/* Fail-closed batch drops: a frame whose sealed batch faults emits nothing and never blocks the CE frame. */
+	/* Fail-closed batch drops: a frame with an aborted CE call or a window-count mismatch emits nothing and never blocks the CE frame. */
 	uint32_t stat_drops;
 	uint32_t last_drop_cause;   /* bit 0 abort, 1 unsupported, 2 missing texture, 3 invalid identity,
 	                               4 full, 5 view-count mismatch */
 	uint32_t drop_causes_seen;
+	/* Degraded batches: a request the PS2 path cannot capture (unsupported, missing texture, bad identity,
+	 * queue full) is skipped alone; every other request of the frame still draws. Cause bits as above
+	 * (1<<1 .. 1<<4); the reason fields describe the most recent degraded frame. */
+	uint32_t stat_partial;
+	uint32_t last_partial_cause;
+	uint32_t partial_causes_seen;
+	uint32_t last_partial_reason;      /* queue first_unsupported_reason */
+	uint32_t last_partial_flags;       /* queue first_unsupported_flags */
+	uint32_t last_partial_frame;
 	uint8_t frame_dropped;
 	/* Teardown discards of a sealed batch that was never dispatched, and the leases they released. */
 	uint32_t stat_discarded_batches;
