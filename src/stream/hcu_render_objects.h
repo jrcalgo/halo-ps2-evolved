@@ -423,7 +423,7 @@ int hcu_render_synthetic_object_add(halo_ps2_frame_snapshot *s, uint32_t view,
 uint32_t hcu_render_objects_fp_lod(int32_t view_w, int32_t view_h, int32_t screen_w, int32_t screen_h);
 /* As view_begin, with the view's rectangle: picks the first-person level for this view. */
 void hcu_render_objects_view_begin_rect(uint32_t view, int32_t view_w, int32_t view_h,
-	int32_t screen_w, int32_t screen_h);
+	int32_t screen_w, int32_t screen_h, float camera_aspect);
 /* Fixed-size PINE-readable timing snapshot. Accessor returns NULL in quiet builds. */
 typedef struct {
 	uint32_t version, frame, view;
@@ -514,7 +514,7 @@ int hcu_render_objects_parity_summary(hcu_render_parity_summary *out);
  * snapshot; end records the kick sequence. release drops any pin (GPU already drained). */
 const halo_ps2_frame_snapshot *hcu_render_objects_frame_begin(uint32_t frame, uint32_t synthetic_views,
 	const halo_ps2_snapshot_camera *synthetic_cameras, uint32_t layout_view_count,
-	int32_t screen_w, int32_t screen_h);
+	int32_t screen_w, int32_t screen_h, float display_aspect);
 void hcu_render_objects_view_begin(uint32_t view);
 void hcu_render_objects_view_end(uint32_t view, hcu_render_objects_view_stats *out);
 void hcu_render_objects_frame_end(void);

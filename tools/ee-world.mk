@@ -69,6 +69,10 @@ EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_main.o \
 	$(WORLD_OUTPUT)/stream/hcu_input_bridge.o \
 	$(WORLD_OUTPUT)/stream/hcu_main_menu.o \
 	$(WORLD_OUTPUT)/stream/hcu_loading_screen.o \
+	$(WORLD_OUTPUT)/stream/hcu_sound_requests.o \
+	$(WORLD_OUTPUT)/stream/hcu_spu_playback.o \
+	$(WORLD_OUTPUT)/stream/hcu_spu_hw_ps2.o \
+	$(WORLD_OUTPUT)/stream/hcu_spu_irx.o \
 	$(WORLD_OUTPUT)/stream/hcu_render_snapshot.o \
 	$(WORLD_OUTPUT)/stream/hcu_storage_boot.o \
 	$(WORLD_OUTPUT)/stream/hcu_map_service.o \
@@ -95,10 +99,6 @@ WORLD_FILEXIO := 1
 # C3 (opt-in HCU_C3=1): snapshot bank, sound-request recorder, render content and frame layout.
 ifeq ($(HCU_C3),1)
 EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_snapshot_bank.o \
-	$(WORLD_OUTPUT)/stream/hcu_sound_requests.o \
-	$(WORLD_OUTPUT)/stream/hcu_spu_playback.o \
-	$(WORLD_OUTPUT)/stream/hcu_spu_hw_ps2.o \
-	$(WORLD_OUTPUT)/stream/hcu_spu_irx.o \
 	$(WORLD_OUTPUT)/stream/hcu_render_content.o \
 	$(WORLD_OUTPUT)/stream/hcu_render_frame.o \
 	$(WORLD_OUTPUT)/stream/hcu_render_media.o \
@@ -186,6 +186,7 @@ $(WORLD_OUTPUT)/stream/hcu_main.o: src/stream/hcu_main.c src/stream/hcu_main_men
 	$(if $(WORLD_HCU_PARTITION_PROFILE),$(WORLD_OUTPUT)/c2/$(WORLD_HCU_PARTITION_PROFILE).h)
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
+		$(if $(filter 1,$(HCU_LOAD_TRACE)),-DHCU_LOAD_TRACE=1,) \
 		-I$(HCU_ROOT)/port/ps2/include -I$(HCU_ROOT)/source \
 		-I$(HCU_ROOT)/port/include -fshort-wchar -I$(HCU_ROOT)/source/cseries -DHALO_PS2=1 \
 		-DHALO_HCU_TAG_CACHE_BYTES=$(WORLD_HCU_TAG_CACHE_BYTES) \
@@ -201,7 +202,9 @@ $(WORLD_OUTPUT)/stream/hcu_main.o: src/stream/hcu_main.c src/stream/hcu_main_men
 		-include $(HCU_ROOT)/port/ps2/include/halo_ps2_prefix.h \
 		-c $< -o $@
 
-$(WORLD_OUTPUT)/stream/hcu_main_menu.o: src/stream/hcu_main_menu.c src/stream/hcu_main_menu.h
+$(WORLD_OUTPUT)/stream/hcu_main_menu.o: src/stream/hcu_main_menu.c src/stream/hcu_main_menu.h \
+	src/stream/assets/ps2_button_glyphs.rgb5a1 src/stream/assets/halo_ce_camera.bin \
+	src/stream/assets/halo_ce_ring_mesh.bin src/stream/assets/halo_ce_ring_shadow.rgb5a1
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
 
@@ -346,26 +349,6 @@ $(WORLD_OUTPUT)/stream/hcu_snapshot_bank.o: src/stream/hcu_snapshot_bank.c src/s
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
 		-I$(HCU_ROOT)/port/ps2/include -c $< -o $@
 
-$(WORLD_OUTPUT)/stream/hcu_sound_requests.o: src/stream/hcu_sound_requests.c src/stream/hcu_sound_requests.h
-	@mkdir -p $(@D)
-	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
-
-$(WORLD_OUTPUT)/stream/hcu_spu_playback.o: src/stream/hcu_spu_playback.c src/stream/hcu_spu_playback.h src/stream/hcu_spu_hw.h
-	@mkdir -p $(@D)
-	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
-
-$(WORLD_OUTPUT)/stream/hcu_spu_hw_ps2.o: src/stream/hcu_spu_hw_ps2.c src/stream/hcu_spu_hw.h
-	@mkdir -p $(@D)
-	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
-
-$(WORLD_OUTPUT)/stream/hcu_spu_irx.o: src/stream/hcu_spu_irx.S \
-	$(PS2SDK)/iop/irx/libsd.irx $(PS2SDK)/iop/irx/sdrdrv.irx
-	@mkdir -p $(@D)
-	$(EE_CC) -G0 -x assembler-with-cpp \
-		-DHALO_PS2_LIBSD_IRX=\"$(PS2SDK)/iop/irx/libsd.irx\" \
-		-DHALO_PS2_SDRDRV_IRX=\"$(PS2SDK)/iop/irx/sdrdrv.irx\" \
-		-c $< -o $@
-
 $(WORLD_OUTPUT)/stream/hcu_render_content.o: src/stream/hcu_render_content.c src/stream/hcu_render_content.h
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
@@ -399,6 +382,26 @@ $(WORLD_OUTPUT)/stream/hcu_render_world.o: src/stream/hcu_render_world.c src/str
 endif
 endif
 
+$(WORLD_OUTPUT)/stream/hcu_sound_requests.o: src/stream/hcu_sound_requests.c src/stream/hcu_sound_requests.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_spu_playback.o: src/stream/hcu_spu_playback.c src/stream/hcu_spu_playback.h src/stream/hcu_spu_hw.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_spu_hw_ps2.o: src/stream/hcu_spu_hw_ps2.c src/stream/hcu_spu_hw.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_spu_irx.o: src/stream/hcu_spu_irx.S \
+	$(PS2SDK)/iop/irx/libsd.irx $(PS2SDK)/iop/irx/sdrdrv.irx
+	@mkdir -p $(@D)
+	$(EE_CC) -G0 -x assembler-with-cpp \
+		-DHALO_PS2_LIBSD_IRX=\"$(PS2SDK)/iop/irx/libsd.irx\" \
+		-DHALO_PS2_SDRDRV_IRX=\"$(PS2SDK)/iop/irx/sdrdrv.irx\" \
+		-c $< -o $@
+
 $(WORLD_OUTPUT)/stream/hcu_memory_bind.o: src/stream/hcu_memory_bind.c
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc \
@@ -423,7 +426,7 @@ $(WORLD_OUTPUT)/game/%.o: src/game/%.c
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
 
-EE_LIBS = -ldraw -lgraph -lpacket2 -ldma -ldebug -lpad -lmtap -lm
+EE_LIBS = -ldraw -lgraph -lpacket2 -ldma -ldebug -lpad -lmtap -lmc -lm
 EE_INCS = -I$(ENGINE)/src
 EE_CFLAGS = -std=gnu11 -Wall -Wextra -Wno-unused-parameter -MMD -MP -G0 \
 	-ffile-prefix-map=$(PS2SDK)=/ps2sdk
@@ -435,6 +438,9 @@ HCU_C3_TELEMETRY ?= 0
 HCU_C3_TIMING ?= 0
 HCU_C3_LAG_TRACE ?= 0
 HCU_C3_SESSION_TRACE ?= 0
+HCU_C3_PERF_PROBE ?= 0
+HCU_C3_PHASE_PROBE ?= 0
+HCU_C3_BITMAP_DEFER_PROBE ?= 0
 HCU_C3_BITMAP_RESIDENT ?= 1
 HCU_C3_BUILD_PRESET ?= quiet
 # Preset values are canonical in tools/c3_build_presets.json. The Python
@@ -459,6 +465,15 @@ EE_CFLAGS += -DHALO_PS2_C3_LAG_TRACE=1
 endif
 ifeq ($(HCU_C3_SESSION_TRACE),1)
 EE_CFLAGS += -DHALO_PS2_C3_SESSION_TRACE=1
+endif
+ifeq ($(HCU_C3_PERF_PROBE),1)
+EE_CFLAGS += -DHALO_PS2_C3_PERF_PROBE=1
+endif
+ifeq ($(HCU_C3_PHASE_PROBE),1)
+EE_CFLAGS += -DHALO_PS2_C3_PHASE_PROBE=1
+endif
+ifeq ($(HCU_C3_BITMAP_DEFER_PROBE),1)
+EE_CFLAGS += -DHALO_PS2_C3_BITMAP_DEFER_PROBE=1
 endif
 endif
 # C3.7 stress only: texture-cache fence lag in kicks. Unset/0 adds no define (every other build is unchanged).

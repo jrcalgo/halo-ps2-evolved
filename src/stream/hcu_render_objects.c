@@ -13,7 +13,8 @@ static uint32_t s_lag_trace_events;
 #define HCU_C3_LAG_TRACE_EVENT_CAP 64u
 #endif
 #if (defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE) || \
-	(defined(HALO_PS2_C3_PERF_PROBE) && HALO_PS2_C3_PERF_PROBE)
+	(defined(HALO_PS2_C3_PERF_PROBE) && HALO_PS2_C3_PERF_PROBE) || \
+	defined(HCU_RENDER_OBJECTS_EE)
 #include "platform/timer.h"
 #endif
 
@@ -190,7 +191,7 @@ static void hcu_render_object_frustums_prepare(const halo_ps2_frame_snapshot *sn
  * may render it into a different 1-4 view layout. */
 #ifdef HCU_RENDER_OBJECTS_EE
 static void hcu_render_object_frustums_prepare_admission(const halo_ps2_frame_snapshot *snap,
-	uint32_t layout_view_count, int32_t screen_w, int32_t screen_h)
+	uint32_t layout_view_count, int32_t screen_w, int32_t screen_h, float display_aspect)
 {
 	hcu_render_layout layout;
 	uint32_t view;
@@ -205,7 +206,8 @@ static void hcu_render_object_frustums_prepare_admission(const halo_ps2_frame_sn
 	memset(s_view_frustums, 0, sizeof s_view_frustums);
 	for (view = 0; view < snap->view_count && view < HALO_PS2_FRAME_MAX_VIEWS; ++view)
 		if (view < layout.view_count && (snap->views[view].flags & HALO_PS2_FRAME_VIEW_ACTIVE)) {
-			float aspect = (float)layout.views[view].w / (float)layout.views[view].h;
+			float aspect = ((float)layout.views[view].w / (float)layout.views[view].h) *
+				display_aspect / ((float)screen_w / (float)screen_h);
 			hcu_render_objects_frustum_build_aspect(&snap->views[view], aspect, &s_view_frustums[view]);
 		}
 }
@@ -960,13 +962,22 @@ int hcu_render_fx_particle_build_quad(const hcu_render_effect_draw *e,
 	float radius, scale, depth, diameter, pixel_scale = 1.0f, vfov;
 	static const float cx[4] = { 0, 1, 1, 0 };
 	static const float cy[4] = { 0, 0, 1, 1 };
-	int i, k;
+	int i, k, state_driven;
 	if (!e || !camera || !q || e->kind != HALO_PS2_FRAME_FX_PARTICLE ||
 		(e->bitmap_width == 0 || e->bitmap_height == 0) || viewport_h <= 0 || !isfinite(e->scale) || e->scale <= 0.0f ||
 		!isfinite(e->runtime_oo_width) || !fx_finite3(e->position) ||
 		!isfinite(e->age_sec) || !isfinite(e->lifespan_sec) || e->age_sec < 0.0f ||
 		!isfinite(e->rotation)) return HCU_RENDER_CONTENT_E_ARGUMENT;
-	if (e->age_sec >= e->lifespan_sec &&
+	state_driven = (e->flags & HALO_PS2_FRAME_FX_PARTICLE_STATE_DRIVEN) != 0;
+	if (state_driven) {
+		if (e->age_sec != 0.0f || e->lifespan_sec != 0.0f ||
+			e->fade_in_sec != 0.0f || e->fade_out_sec != 0.0f ||
+			(e->flags & HALO_PS2_FRAME_FX_PARTICLE_FINAL_SEQUENCE))
+			return HCU_RENDER_CONTENT_E_ARGUMENT;
+	} else if (!(e->lifespan_sec > 0.0f)) {
+		return HCU_RENDER_CONTENT_E_ARGUMENT;
+	}
+	if (!state_driven && e->age_sec >= e->lifespan_sec &&
 		!(e->flags & HALO_PS2_FRAME_FX_PARTICLE_FINAL_SEQUENCE)) return 1;
 	if (!fx_finite3(camera->position) || !isfinite(camera->vertical_field_of_view) ||
 		!(camera->vertical_field_of_view > 0.0f) ||
@@ -1024,7 +1035,11 @@ int hcu_render_fx_particle_build_quad(const hcu_render_effect_draw *e,
 	diameter = (float)viewport_h * radius / (tanf(vfov * 0.5f) * depth);
 	if (diameter <= e->lod_cutoff) return 1;
 	if (e->minimum_pixels > diameter) pixel_scale = e->minimum_pixels / diameter;
-	scale = 2.0f * radius * e->runtime_oo_width * pixel_scale;
+	/* Particle-system CE records carry the exact scale passed to build_sprite,
+	 * which multiplies bitmap width directly. Ordinary particle datums carry
+	 * a radius plus definition->runtime_oo_width and use CE's diameter formula. */
+	scale = state_driven ? radius * pixel_scale :
+		2.0f * radius * e->runtime_oo_width * pixel_scale;
 	if (!isfinite(scale) || !(scale > 0.0f)) return HCU_RENDER_CONTENT_E_ARGUMENT;
 	q->kind = (uint16_t)e->kind; q->resource_id = e->resource_id; q->pad = 0;
 	for (i = 0; i < 4; i++) {
@@ -1627,6 +1642,7 @@ static int entry_need(const obj_slot *s, uint32_t *out)
 typedef struct {
 	uint32_t entry, off, stage, at, last_frame, pump_frame;
 	uint8_t tex_ok;
+	uint32_t read_cycles;
 	sha256_context sha;
 } obj_load_job;
 static obj_load_job s_job = { OBJ_JOB_NONE, 0u, 0u, 0u, 0u, 0u, 0u };
@@ -1725,6 +1741,9 @@ static int job_pump(const hcu_asset_profile_view *view, const obj_slot *s, const
 	uint8_t *bytes, uint32_t model_span, uint32_t frame)
 {
 	uint32_t budget = OBJ_LOAD_SLICE_BYTES;
+#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
+	uint32_t slice_read = 0;
+#endif
 	if (s_job.pump_frame == frame + 1u) return 0;   /* one slice per frame, however often residency runs */
 	s_job.pump_frame = frame + 1u;
 	s_job.last_frame = frame;
@@ -1740,11 +1759,30 @@ static int job_pump(const hcu_asset_profile_view *view, const obj_slot *s, const
 		if (!s_job.at) sha256_init(&s_job.sha);
 		while (s_job.at < size) {
 			uint32_t n = size - s_job.at;
-			if (!budget) return 0;
+			if (!budget) {
+#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
+				if (slice_read > 294912u * 4u)
+					printf("HALO_PS2_LOCAL lag-slice frame=%u entry=%u at=%u bytes=%u read-ms=%.2f\n",
+						(unsigned)frame, (unsigned)s_job.entry, (unsigned)s_job.at,
+						(unsigned)size, timer_ms(0, slice_read));
+#endif
+				return 0;
+			}
 			if (n > budget) n = budget;
-			if (hcu_asset_profile_read_range(view, HCU_ASSET_CHUNK_MEDIA, chunk, s_job.at, dst + s_job.at, n) != 0) {
-				bad = 1;
-				break;
+			{
+#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
+				uint32_t rt = timer_cycles();
+#endif
+				int read_rc = hcu_asset_profile_read_range(view, HCU_ASSET_CHUNK_MEDIA, chunk, s_job.at, dst + s_job.at, n);
+#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
+				rt = timer_cycles() - rt;
+				slice_read += rt;
+				s_job.read_cycles += rt;
+#endif
+				if (read_rc != 0) {
+					bad = 1;
+					break;
+				}
 			}
 			sha256_update(&s_job.sha, dst + s_job.at, n);
 			s_job.at += n;
@@ -1795,6 +1833,12 @@ static int entry_load(const hcu_asset_profile_view *view, uint32_t i, uint32_t f
 			s_job.at = 0u;
 			s_job.pump_frame = 0u;
 			s_job.tex_ok = 0u;
+			s_job.read_cycles = 0u;
+#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
+			printf("HALO_PS2_LOCAL lag-job frame=%u entry=%u datum=%u model=%u texture=%u\n",
+				(unsigned)frame, (unsigned)i, (unsigned)e->source_datum,
+				(unsigned)s->model_size, (unsigned)s->tex_size);
+#endif
 		}
 		off = s_job.off;
 		bytes = s_pool + off;
@@ -1891,12 +1935,14 @@ static int entry_load(const hcu_asset_profile_view *view, uint32_t i, uint32_t f
 #if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
 	if (s_lag_trace_events < HCU_C3_LAG_TRACE_EVENT_CAP) {
 		s_lag_trace_events++;
-		printf("HALO_PS2_LOCAL lag-load frame=%u entry=%u datum=%u model=%u texture=%u result=resident model-read-cycles=%u model-hash-cycles=%u model-open-cycles=%u texture-read-cycles=%u texture-hash-cycles=%u texture-open-cycles=%u total-cycles=%u pool=%u/%u nodes=%u textures=%u\n",
+		printf("HALO_PS2_LOCAL lag-load frame=%u entry=%u datum=%u model=%u texture=%u result=resident model-read-cycles=%u model-hash-cycles=%u model-open-cycles=%u texture-read-cycles=%u texture-hash-cycles=%u texture-open-cycles=%u slice-read-cycles=%u total-cycles=%u pool=%u/%u nodes=%u textures=%u path=%s\n",
 		(unsigned)frame, (unsigned)i, (unsigned)e->source_datum, (unsigned)s->model_size, (unsigned)s->tex_size,
 		(unsigned)trace_model_read, (unsigned)trace_model_hash, (unsigned)trace_model_open,
 		(unsigned)trace_tex_read, (unsigned)trace_tex_hash, (unsigned)trace_tex_open,
+		(unsigned)s_job.read_cycles,
 		(unsigned)(timer_cycles()-trace_start), (unsigned)s_res.pool_used, (unsigned)s_res.pool_bytes,
-		(unsigned)s_meta[i].node_count, (unsigned)s_meta[i].texture_count);
+		(unsigned)s_meta[i].node_count, (unsigned)s_meta[i].texture_count,
+		e->path ? e->path : "?");
 	}
 #endif
 	s_res.loads++;
@@ -1970,13 +2016,14 @@ static void entry_request(const hcu_asset_profile_view *view, uint32_t i, uint32
 
 /* Frame begin: every entry the snapshot's visible views reference is made resident before the views draw. */
 static void residency_frame(const halo_ps2_frame_snapshot *snap, uint32_t frame,
-	uint32_t layout_view_count, int32_t screen_w, int32_t screen_h)
+	uint32_t layout_view_count, int32_t screen_w, int32_t screen_h, float display_aspect)
 {
 	static uint8_t need[HCU_OBJECTS_MAX_MODELS];
 	static uint8_t priority[HCU_OBJECTS_MAX_MODELS];
 	uint32_t v, ref, i, p;
 	if (!snap || !s_pool) return;
-	hcu_render_object_frustums_prepare_admission(snap, layout_view_count, screen_w, screen_h);
+	hcu_render_object_frustums_prepare_admission(snap, layout_view_count, screen_w, screen_h,
+		display_aspect);
 	memset(need, 0, sizeof need);
 	memset(priority, 0xFF, sizeof priority);
 	for (v = 0; v < snap->view_count && v < HALO_PS2_FRAME_MAX_VIEWS; v++) {
@@ -2522,6 +2569,13 @@ static int fx_resident_query(void *context, uint32_t cache_key, uint16_t width,
 	return st == BSP_FX_TEX_MISS ? HCU_FX_RESIDENT_MISS : st;
 }
 
+static int fx_admission_defer(void *context, uint32_t cache_key, uint16_t width,
+	uint16_t height, uint8_t psm)
+{
+	(void)context;
+	return bsp_render_fx_texture_admission_defer(cache_key, width, height, psm);
+}
+
 #define FX_DECAL_MAX_PER_FRAME 6u
 /* Frame-time governor. The renderer shares the EE with the 30 Hz simulation, so a frame that spends its time on a
  * burst of optional effects (a dozen impact decals, first-use effect textures) makes the scheduler drop renders:
@@ -2605,6 +2659,12 @@ typedef struct {
 static fx_decal_src_slot s_decal_src[FX_DECAL_SRC_SLOTS];
 static unsigned s_decal_src_next;
 
+/* A bitmap's first use reads and hash-verifies its whole chunk (several ms on the EE). One such read is taken per
+ * frame; a decal whose bitmap would be a second is left to the next frame (s_decal_cold_deferred tells the caller
+ * it was deferred, not refused), so a burst of new impact types spreads over frames instead of stalling one. */
+static uint32_t s_decal_cold_frame = 0xffffffffu;
+static int s_decal_cold_deferred;
+
 static const fx_decal_src_slot *fx_decal_source_cached(const hcu_bitmap_binding *b)
 {
 	bsp_fx_tex_src src;
@@ -2613,6 +2673,8 @@ static const fx_decal_src_slot *fx_decal_source_cached(const hcu_bitmap_binding 
 	for (i = 0; i < FX_DECAL_SRC_SLOTS; i++)
 		if (s_decal_src[i].used && s_decal_src[i].chunk_id == b->chunk_id &&
 			!memcmp(s_decal_src[i].sha, b->expected_chunk_sha256, 32)) return &s_decal_src[i];
+	if (s_decal_cold_frame == s_frame) { s_decal_cold_deferred = 1; return NULL; }
+	s_decal_cold_frame = s_frame;
 	if (fx_source(b, &src) != 0 || !src.clut || src.clut_bytes > sizeof slot->clut) return NULL;
 	slot = &s_decal_src[s_decal_src_next++ % FX_DECAL_SRC_SLOTS];
 	memcpy(slot->sha, b->expected_chunk_sha256, 32);
@@ -2923,21 +2985,23 @@ static int fx_decal_composite_one(render_ctx_t *rc, const hcu_render_effect_draw
 	uint16_t decal_w, decal_h;
 	uint32_t nv, tiles_x, tiles_y, tile_count, per_tile;
 	int x0, y0, x1, y1, x, y;
-	if (!rc || !effect || !binding || !quad || !g ||
-		!fx_decal_one_tile(rc, quad, g, &x0, &y0, &x1, &y1)) return 0;
+#define DBG_WHY(n) ((void)0)
+	if (!rc || !effect || !binding || !quad || !g) return 0;
+	if (!fx_decal_one_tile(rc, quad, g, &x0, &y0, &x1, &y1)) DBG_WHY(1);
 	tiles_x = (uint32_t)(x1 - x0) / DECAL_COMPOSE_W + 1u;
 	tiles_y = (uint32_t)(y1 - y0) / DECAL_COMPOSE_H + 1u;
-	if (tiles_x > 8u || tiles_y > 14u) return 0;
+	if (tiles_x > 8u || tiles_y > 14u) DBG_WHY(2);
 	tile_count = tiles_x * tiles_y;
 	nv = fx_quad_clip(rc, quad, effect, (const uint8_t[4]){255,255,255,128}, NULL,
 		g, 1, 0, 0, 0, NULL);
 	per_tile = 165u + 18u * nv;
-	if (!nv || !chain_has_space(rc->chain, 3u * 76u + tile_count * per_tile)) return 0;
-	if (!fx_decal_channel_textures(rc, binding, effect, base_tex0, variants, &decal_w, &decal_h)) return 0;
+	if (!nv) DBG_WHY(3);
+	if (!chain_has_space(rc->chain, 3u * 76u + tile_count * per_tile)) DBG_WHY(4);
+	if (!fx_decal_channel_textures(rc, binding, effect, base_tex0, variants, &decal_w, &decal_h)) DBG_WHY(5);
 	for (y = y0; y <= y1; y += (int)DECAL_COMPOSE_H)
 		for (x = x0; x <= x1; x += (int)DECAL_COMPOSE_W)
 			if (!fx_decal_composite_tile(rc, effect, quad, g, variants, decal_w, decal_h,
-				(uint32_t)x, (uint32_t)y, pending)) return 0;
+				(uint32_t)x, (uint32_t)y, pending)) DBG_WHY(6);
 	return 1;
 }
 
@@ -3093,8 +3157,11 @@ static void fx_contrail_colour(const hcu_render_effect_draw *e,
 	}
 }
 
+static uint32_t dbg_res_t0;
+static uint32_t s_dbg_t[4];
 static void fx_pass(render_ctx_t *rc, int first_person_pass)
 {
+	uint32_t dbg_a = timer_cycles(), dbg_b, dbg_c;
 	const halo_ps2_snapshot_camera *cam;
 	float right[3], up[3];
 	clip_gs g;
@@ -3225,11 +3292,12 @@ static void fx_pass(render_ctx_t *rc, int first_person_pass)
 		if (bk->binding == HCU_FX_BITMAP_NONE) { s_view_counters.fx_no_binding += bk->count; continue; }
 		binding = &s_fx_bind[bk->binding];
 		if (fx_backoff_active(bk->binding)) { s_view_counters.fx_budget_deferred += bk->count; continue; }
+		dbg_res_t0 = timer_cycles();
 		s_fx_submit_blend = (uint8_t)bk->blend_function;
-		st = hcu_fx_texture_resolve(s_fx_descriptors, binding,
+		st = hcu_fx_texture_resolve_prechecked(s_fx_descriptors, binding,
 			s_fx_profile ? s_fx_profile->profile_id : 0u,
 			s_snapshot ? s_snapshot->map_generation : 0u,
-			fx_resident_query, fx_source_load, fx_source_submit, &src, &tex0,
+			fx_resident_query, fx_admission_defer, fx_source_load, fx_source_submit, &src, &tex0,
 			&source_attempted, NULL);
 		if (source_attempted) s_view_counters.fx_source_calls++;
 		if (st == BSP_FX_TEX_OK) fx_backoff_set(bk->binding, 0);
@@ -3249,6 +3317,7 @@ static void fx_pass(render_ctx_t *rc, int first_person_pass)
 		}
 	}
 
+	dbg_c = timer_cycles(); s_dbg_t[1] += dbg_c - dbg_b;
 	/* Common depth state; alpha is set per CE shader-state bucket below. */
 	if (!chain_has_space(c, FX_STATE_QW + 1u)) {
 		s_view_counters.fx_skipped_space += admitted;
@@ -3297,9 +3366,12 @@ static void fx_pass(render_ctx_t *rc, int first_person_pass)
 					uint32_t oi = s_fx_order[bk->first + k];
 					uint32_t qi = s_fx_cidx[oi];
 					const hcu_bitmap_binding *binding = &s_fx_bind[s_fx_cbind[oi]];
-					if (fx_decal_composite_one(rc, &s_fx[qi], binding, &s_fxq[qi], &g,
-						s_fx_tex0[b], 0u)) {
+					s_decal_cold_deferred = 0;
+					int dbg_dc_ok = fx_decal_composite_one(rc, &s_fx[qi], binding, &s_fxq[qi], &g, s_fx_tex0[b], 0u);
+if (dbg_dc_ok) {
 						s_view_counters.fx_drawn++; s_view_counters.fx_textured++;
+					} else if (s_decal_cold_deferred) {
+						s_view_counters.fx_budget_deferred++;
 					} else {
 						s_view_counters.effects_refused++;
 						s_view_counters.fx_blend_unsupported++;
@@ -3350,6 +3422,7 @@ static void fx_pass(render_ctx_t *rc, int first_person_pass)
 			else s_view_counters.fx_flat++;
 		}
 	}
+	s_dbg_t[2] += timer_cycles() - dbg_c;
 	/* Do not leak the last effect blend state into the following pass. */
 	fx_chain_restore_bounds(c, saved_limit, saved_hud_limit, saved_scope);
 	(void)fx_blend_state(c, 0u);
@@ -3358,7 +3431,9 @@ static void fx_pass(render_ctx_t *rc, int first_person_pass)
 static void object_pass(void *user, render_ctx_t *rc)
 {
 	uint32_t i;
+	uint32_t dbg_start = timer_cycles(), dbg_fx0 = 0, dbg_fx1 = 0, dbg_fx_start;
 	(void)user;
+	s_dbg_t[0] = s_dbg_t[1] = s_dbg_t[2] = 0u;
 #if HCU_C3_OBJECT_VIEW_CACHE
 	s_objr.setup_emitted = obj_render_begin_view(rc);
 	if (!s_objr.setup_emitted) s_view_counters.failures++;
@@ -3481,7 +3556,9 @@ static void object_pass(void *user, render_ctx_t *rc)
 	}
 	/* World decals/particles use the untouched world Z buffer. CE source pass flags
 	 * select camera-local particles for the later viewmodel depth context. */
+	dbg_fx_start = timer_cycles();
 	fx_pass(rc, 0);
+	dbg_fx0 = timer_cycles() - dbg_fx_start;
 	/* CE has already selected these exact model tags and mapped its animation
 	 * graph pose into each model's node order. Draw arms and gun as separate
 	 * view-space model submissions, after world objects, using only the
@@ -3638,7 +3715,9 @@ static void object_pass(void *user, render_ctx_t *rc)
 			s_view_counters.failures++;
 		}
 	}
+	dbg_fx_start = timer_cycles();
 	if (viewmodel_ready) fx_pass(&viewmodel_rc, 1);
+	dbg_fx1 = timer_cycles() - dbg_fx_start;
 	if (viewmodel_ready && !rb_first_person_depth_end(rc)) s_view_counters.failures++;
 	#if (defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE) || \
 		(defined(HALO_PS2_C3_PERF_PROBE) && HALO_PS2_C3_PERF_PROBE)
@@ -3875,7 +3954,7 @@ static int publish_synthetic(uint32_t frame, uint32_t views, const halo_ps2_snap
 
 const halo_ps2_frame_snapshot *hcu_render_objects_frame_begin(uint32_t frame, uint32_t synthetic_views,
 	const halo_ps2_snapshot_camera *synthetic_cameras, uint32_t layout_view_count,
-	int32_t screen_w, int32_t screen_h)
+	int32_t screen_w, int32_t screen_h, float display_aspect)
 {
 	const halo_ps2_frame_snapshot *pre_admit_snapshot = NULL;
 	hcu_snapshot_bank_stats bank_stats;
@@ -3906,7 +3985,8 @@ const halo_ps2_frame_snapshot *hcu_render_objects_frame_begin(uint32_t frame, ui
 			pre_admit_snapshot->sequence, pre_admit_snapshot->map_generation)) {
 			pre_admit_sequence = pre_admit_snapshot->sequence;
 			pre_admit_generation = pre_admit_snapshot->map_generation;
-			residency_frame(pre_admit_snapshot, frame, layout_view_count, screen_w, screen_h);
+			residency_frame(pre_admit_snapshot, frame, layout_view_count, screen_w, screen_h,
+				display_aspect);
 			if (s_sky_index < s_slot_count && !s_slots[s_sky_index].refused) {
 				entry_request(s_profile, s_sky_index, frame, 0u);
 				if (s_slots[s_sky_index].loaded && !s_sky_pinned) {
@@ -3924,7 +4004,8 @@ const halo_ps2_frame_snapshot *hcu_render_objects_frame_begin(uint32_t frame, ui
 	s_snapshot = s_pin.pinned ? s_pin.snapshot : NULL;
 	if (s_snapshot && (!pre_admitted || !hcu_render_objects_residency_pre_admit_matches(
 		pre_admit_sequence, pre_admit_generation, s_snapshot->sequence, s_snapshot->map_generation)))
-		residency_frame(s_snapshot, frame, layout_view_count, screen_w, screen_h);
+		residency_frame(s_snapshot, frame, layout_view_count, screen_w, screen_h,
+			display_aspect);
 	hcu_render_parity_frame_reset(&s_frame_parity);
 	if (s_sky_index < s_slot_count && !s_slots[s_sky_index].refused) {
 		entry_request(s_profile, s_sky_index, frame, 0u);   /* the sky is requested with the top rank (it is pinned once loaded) */
@@ -3942,14 +4023,14 @@ const halo_ps2_frame_snapshot *hcu_render_objects_frame_begin(uint32_t frame, ui
 }
 
 void hcu_render_objects_view_begin_rect(uint32_t view, int32_t view_w, int32_t view_h,
-	int32_t screen_w, int32_t screen_h)
+	int32_t screen_w, int32_t screen_h, float camera_aspect)
 {
 	/* Keep selection aligned with the parent view's exact projection. The same
 	 * layout aspect was used to admit residency before the snapshot was pinned. */
 	if (s_snapshot && view < s_snapshot->view_count && view < HALO_PS2_FRAME_MAX_VIEWS &&
 		view_w > 0 && view_h > 0)
 		hcu_render_objects_frustum_build_aspect(&s_snapshot->views[view],
-			(float)view_w / (float)view_h, &s_view_frustums[view]);
+			camera_aspect, &s_view_frustums[view]);
 	hcu_render_objects_view_begin(view);
 	s_view_fp_lod = hcu_render_objects_fp_lod(view_w, view_h, screen_w, screen_h);
 }
