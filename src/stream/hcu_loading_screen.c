@@ -1,6 +1,7 @@
 #include "stream/hcu_loading_screen.h"
 #include "platform/video.h"
 
+#include "render/bsp_render.h"
 #include "render/chain.h"
 #include "render/gs.h"
 #include "render/upload.h"
@@ -20,25 +21,42 @@
 
 enum {
 	LOAD_W = 512, LOAD_H = 448, LOAD_BYTES = LOAD_W * LOAD_H * 2,
-	MASK_W = 128, MASK_H = 16, MASK_BYTES = MASK_W * MASK_H * 4,
+	MASK_W = LOAD_W, MASK_H = LOAD_H, MASK_BYTES = MASK_W * MASK_H * 4,
 	/* Loading temporarily reuses menu texture pages. The synchronous CE map
 	 * precache reads sources into EE memory and returns before BSP texture
 	 * uploads begin, so the shared GS range is idle while these frames render. */
-	LOAD_PAGE = 0, LOAD_PAGES = 64, MASK_PAGE = LOAD_PAGE + LOAD_PAGES,
-	MASK_PAGES = 1,
-	LOAD_CHAIN_QW = 16, FRAME_PACKET_QW = 128
+	/* GS base addresses below use 2048-word (8 KiB) allocation pages. Keep the
+	 * coverage mask after the complete RGB16 backplate to avoid overlap. */
+	LOAD_PAGE = 0, LOAD_PAGES = (LOAD_BYTES + 8191) / 8192,
+	MASK_PAGE = LOAD_PAGE + LOAD_PAGES,
+	MASK_PAGES = (MASK_BYTES + 8191) / 8192,
+	/* Backplate is one upload (8 qwords). The 512x448 PSMCT32 mask is 57344 qwords,
+	 * over the GIF IMAGE limit, so gs_upload splits it into two 224-row bands (16
+	 * qwords). Plus the END tag: 25 qwords. 40 leaves a spare band. */
+	LOAD_CHAIN_QW = 40, FRAME_PACKET_QW = 128
 };
 
 static video_t *s_video;
 static uint8_t *s_dma;
 static size_t s_dma_bytes;
-static uint64_t s_upload_chain[LOAD_CHAIN_QW] __attribute__((aligned(64)));
+/* LOAD_CHAIN_QW counts 16-byte quadwords; each holds two uint64_t. */
+static uint64_t s_upload_chain[LOAD_CHAIN_QW * 2] __attribute__((aligned(64)));
 static packet2_t s_packet;
 static unsigned s_frame;
 static uint64_t s_bytes_read;
 static uint32_t s_last_present_cycles;
-static float s_progress, s_last_progress, s_wobble;
-static int s_ready, s_active, s_rendering;
+static float s_progress, s_last_progress;
+static int s_ready, s_active, s_rendering, s_hold;
+static uint32_t s_max_gap_ms;
+
+static void set_scissor(packet2_t *p, unsigned x0, unsigned x1)
+{
+	uint64_t value = (uint64_t)x0 | (uint64_t)x1 << 16 |
+		(uint64_t)0 << 32 | (uint64_t)(VIDEO_HEIGHT - 1) << 48;
+	packet2_add_u64(p, GIF_TAG(1, 0, 0, 0, GIFX_FLG_PACKED, 1));
+	packet2_add_u64(p, GIF_REGS_AD);
+	packet2_add_u64(p, value); packet2_add_u64(p, 0x40u); /* SCISSOR_1 */
+}
 
 static void texture_state(packet2_t *p, unsigned page, unsigned psm,
 	unsigned w, unsigned h)
@@ -65,7 +83,7 @@ static void sprite(packet2_t *p, unsigned page, unsigned psm,
 {
 	int ox = 2048 - VIDEO_WIDTH / 2, oy = 2048 - VIDEO_HEIGHT / 2;
 	texture_state(p, page, psm, w, h);
-	packet2_add_u64(p, GIF_TAG(1, 0, 0, 0, GIFX_FLG_PACKED, 1));
+	packet2_add_u64(p, GIF_TAG(2, 0, 0, 0, GIFX_FLG_PACKED, 1));
 	packet2_add_u64(p, GIF_REGS_AD);
 	packet2_add_u64(p, GS_ALPHA(0, 1, 0, 1, 0)); packet2_add_u64(p, GS_A_ALPHA_1);
 	packet2_add_u64(p, GS_TEST(0, 1, 0, 0, 0, 0, 0, 1)); packet2_add_u64(p, GS_A_TEST_1);
@@ -85,18 +103,21 @@ static void sprite(packet2_t *p, unsigned page, unsigned psm,
 	packet2_add_u64(p, 0x00FFFFFFu);
 }
 
-static void make_mask(uint32_t *mask)
+static void make_mask(const uint16_t *background, uint32_t *mask)
 {
-	unsigned x, y;
-	for (y = 0; y < MASK_H; ++y) {
-		double gy = pow(sin(3.1415 * (double)y / 15.0), 0.75);
-		for (x = 0; x < MASK_W; ++x) {
-			double gx = sin(3.1415 * (double)x / 127.0);
-			unsigned intensity = (unsigned)((gx * gy * (250.0 / 255.0) + 5.0 / 255.0) * 255.0);
-			/* CE's A8B8G8R8 mask has the same intensity in all channels. */
-			mask[y * MASK_W + x] = (intensity << 24) | (intensity << 16) |
-				(intensity << 8) | intensity;
-		}
+	unsigned i;
+	for (i = 0; i < MASK_W * MASK_H; ++i) {
+		unsigned pixel = background[i];
+		unsigned red = (pixel & 31u) << 3;
+		unsigned green = ((pixel >> 5) & 31u) << 3;
+		unsigned blue = ((pixel >> 10) & 31u) << 3;
+		unsigned luminance = (red * 3u + green * 6u + blue) / 10u;
+		/* Reuse the backplate as coverage: dark space stays untouched while
+		 * visible ring edges and the LOADING glyphs receive the blue tint. */
+		unsigned intensity = luminance > 12u ? (luminance - 12u) * 5u : 0u;
+		if (intensity > 192u) intensity = 192u;
+		mask[i] = (intensity << 24) | (intensity << 16) |
+			(intensity << 8) | intensity;
 	}
 }
 
@@ -141,7 +162,7 @@ static int upload_assets(void)
 	background = load_background();
 	mask = (uint32_t *)memalign(64u, MASK_BYTES);
 	if (!background || !mask) { free(background); free(mask); return 0; }
-	make_mask(mask);
+	make_mask(background, mask);
 	SyncDCache(background, (uint8_t *)background + LOAD_BYTES);
 	SyncDCache(mask, (uint8_t *)mask + MASK_BYTES);
 	chain_init(&chain, s_upload_chain, LOAD_CHAIN_QW);
@@ -152,7 +173,7 @@ static int upload_assets(void)
 		(s_video->tex_base + MASK_PAGE * 2048u) / 64u, MASK_W / 64u,
 		GS_PSMCT32, MASK_W, MASK_H)) { free(background); free(mask); return 0; }
 	chain_end(&chain, 0);
-	SyncDCache(s_upload_chain, s_upload_chain + chain_qwords(&chain));
+	SyncDCache(s_upload_chain, (uint8_t *)s_upload_chain + chain_qwords(&chain) * 16u);
 	dma_channel_send_chain(DMA_CHANNEL_GIF, s_upload_chain, 0, 0, 0);
 	dma_wait_fast(); free(background); free(mask);
 	return 1;
@@ -164,13 +185,20 @@ static void present(float progress)
 	int x;
 	float glow;
 	unsigned tint;
-	if (!s_ready || !s_video || !storage || s_rendering || s_dma_bytes < FRAME_PACKET_QW * 16u)
+	if (!s_ready || !s_video || !storage || s_rendering || s_dma_bytes < FRAME_PACKET_QW * 16u) {
+		static unsigned s_skip_reports;
+		if (s_skip_reports++ < 3u)
+			printf("HALO_PS2_LOCAL loading-screen-skip ready=%d video=%d storage=%d rendering=%d dma=%u\n",
+				s_ready, s_video != NULL, storage != NULL, s_rendering, (unsigned)s_dma_bytes);
 		return;
+	}
 	s_rendering = 1;
-	s_wobble += 0.01f;
-	progress = (float)((sin(s_wobble) * 0.05 + progress - s_last_progress) * 0.2 + s_last_progress);
 	if (progress > 1.f) progress = 1.f;
 	if (progress < 0.f) progress = 0.f;
+	/* Keep the sweep monotonic even if read accounting reports a smaller target
+	 * or frame timing varies. Ease forward only; the lightbar never retreats. */
+	if (progress < s_last_progress) progress = s_last_progress;
+	else progress = s_last_progress + (progress - s_last_progress) * 0.2f;
 	s_last_progress = progress;
 	packet2_reset(&s_packet, 0);
 	s_packet.max_qwords_count = FRAME_PACKET_QW; s_packet.type = P2_TYPE_NORMAL;
@@ -182,22 +210,31 @@ static void present(float progress)
 	tint = (unsigned)(glow * 255.f);
 	/* The 512x448 backplate matches the PS2 field without aspect distortion. */
 	sprite(&s_packet, LOAD_PAGE, GS_PSMCT16S, LOAD_W, LOAD_H,
-		0, 0, VIDEO_WIDTH, VIDEO_HEIGHT, tint, tint, tint, 0x80, 0);
-	/* Retail progress_bar.c moves its 128-pixel sine mask from just left of the
-	 * field to just beyond the right edge. Scale the travel to this 512-pixel
-	 * PS2 frame, retaining the CE easing and blue brightness envelope. */
-	x = (int)(progress * (VIDEO_WIDTH + MASK_W)) - MASK_W;
+		0, 0, VIDEO_WIDTH, VIDEO_HEIGHT, 255, 255, 255, 0xFF, 0);
+	/* A narrow column travels strictly left-to-right. Scissoring the full-frame
+	 * coverage texture colors only the visible ring and LOADING letters. */
 	{
+		const unsigned column_w = 36u;
+		unsigned left;
+		unsigned right;
+		x = (int)(progress * (VIDEO_WIDTH - column_w));
+		left = (unsigned)x;
+		right = left + column_w - 1u;
+		set_scissor(&s_packet, left, right);
 		sprite(&s_packet, MASK_PAGE, GS_PSMCT32, MASK_W, MASK_H,
-			x, VIDEO_HEIGHT / 2 - MASK_H / 2,
-			x + MASK_W, VIDEO_HEIGHT / 2 + MASK_H / 2,
-			40, 112, 255, tint, 1);
+			0, 0, VIDEO_WIDTH, VIDEO_HEIGHT, 48, 132, 255, tint, 1);
+		set_scissor(&s_packet, 0u, VIDEO_WIDTH - 1u);
 	}
 	packet2_update(&s_packet, draw_finish(s_packet.next));
 	SyncDCache(storage, storage + (s_packet.next - s_packet.base) * 16u);
 	dma_channel_send_packet2(&s_packet, DMA_CHANNEL_GIF, 1);
 	dma_wait_fast(); draw_wait_finish(); video_present(s_video);
-	s_last_present_cycles = timer_cycles();
+	{
+		uint32_t now = timer_cycles();
+		uint32_t gap = (uint32_t)timer_ms(s_last_present_cycles, now);
+		if (s_last_present_cycles && gap > s_max_gap_ms) s_max_gap_ms = gap;
+		s_last_present_cycles = now;
+	}
 	++s_frame; s_rendering = 0;
 }
 
@@ -207,16 +244,41 @@ void hcu_loading_screen_begin(void)
 	 * page zero when a loading interval begins: menu textures can be replaced
 	 * after selection, and BSP cache uploads begin at page 17 only after the
 	 * synchronous precache callback returns. */
-	if (!s_ready || !upload_assets()) return;
+	if (!s_ready) {
+		printf("HALO_PS2_FAIL loading-screen-unavailable\n");
+		return;
+	}
+	if (s_hold && s_active) return;
+	if (!upload_assets()) {
+		printf("HALO_PS2_FAIL loading-screen-assets\n");
+		return;
+	}
 	s_bytes_read = 0;
-	s_progress = 0.f; s_last_progress = 0.f; s_wobble = 0.f;
-	s_active = 1; present(0.01f);
+	s_progress = 0.f; s_last_progress = 0.f;
+	s_active = 1;
+	printf("HALO_PS2_LOCAL loading-screen-begin frame=%u\n", s_frame);
+	present(0.01f);
+}
+
+void hcu_loading_screen_hold(void)
+{
+	s_hold = 1;
+}
+
+void hcu_loading_screen_release(void)
+{
+	if (!s_hold) return;
+	s_hold = 0;
+	printf("HALO_PS2_LOCAL loading-screen-release max-gap-ms=%u\n", (unsigned)s_max_gap_ms);
+	hcu_loading_screen_end();
+	bsp_render_restore_font();
 }
 
 void hcu_loading_screen_end(void)
 {
 	unsigned frames = 0;
 	packet2_t *finish;
+	if (s_hold && s_active) return;
 	if (s_active) {
 		s_progress = 1.f;
 		/* Match CE's easing tail: continue presenting until the sweep passes the
@@ -226,6 +288,8 @@ void hcu_loading_screen_end(void)
 		} while (++frames < 40u && s_last_progress < 0.995f);
 		s_active = 0;
 	}
+	printf("HALO_PS2_LOCAL loading-screen-end frames=%u bytes=%llu presented=%u progress=%.3f\n",
+		frames, (unsigned long long)s_bytes_read, s_frame, (double)s_last_progress);
 	/* The menu and any loading present wait for GS FINISH and clear it.
 	 * CE's first draw_wait_finish needs one still pending, or it spins on
 	 * the last menu frame and never reaches gameplay. */
@@ -240,11 +304,12 @@ void hcu_loading_screen_end(void)
 
 void hcu_loading_screen_file_read(uint32_t bytes)
 {
-	const uint64_t byte_budget = 32u * 1024u * 1024u;
+	const uint64_t byte_budget = (s_hold ? 160u : 32u) * 1024u * 1024u;
 	if (!s_active || !bytes) return;
 	/* Reads may revisit bytes, so use them as a coarse indicator and leave the
 	 * final tenth for CE's end callback. A byte budget avoids reaching the end
 	 * of the sweep early during a long source scan. */
+	if (!s_bytes_read) printf("HALO_PS2_LOCAL loading-screen-first-read bytes=%u\n", (unsigned)bytes);
 	s_bytes_read += bytes;
 	s_progress = s_bytes_read >= byte_budget ? 0.9f :
 		(float)s_bytes_read * (0.9f / (float)byte_budget);

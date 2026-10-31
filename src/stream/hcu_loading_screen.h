@@ -12,5 +12,10 @@ void hcu_loading_screen_bind(void *video, void *dma_storage,
 void hcu_loading_screen_begin(void);
 void hcu_loading_screen_end(void);
 void hcu_loading_screen_file_read(uint32_t bytes);
+/* Keep the screen up after CE's progress_bar_end until hcu_loading_screen_release.
+ * The chained gameplay image still binds textures and builds the BSP renderer
+ * after CE considers the map loaded. */
+void hcu_loading_screen_hold(void);
+void hcu_loading_screen_release(void);
 
 #endif
