@@ -477,6 +477,10 @@ def main() -> None:
             OUT = OUT.with_name(OUT.name + "-movement-trace")
         if os.environ.get("HCU_C3_SESSION_TRACE") == "1":
             OUT = OUT.with_name(OUT.name + "-session-trace")
+        if os.environ.get("HCU_C3_PHASE_PROBE") == "1":
+            OUT = OUT.with_name(OUT.name + "-phase-probe")
+        if os.environ.get("HCU_C3_BITMAP_DEFER_PROBE") == "1":
+            OUT = OUT.with_name(OUT.name + "-bitmap-defer-probe")
         fence_lag = (os.environ.get("HCU_C3_FENCE_LAG_KICKS") or "0").strip()
         if fence_lag not in ("", "0"):
             OUT = OUT.with_name(OUT.name + f"-fence-lag{fence_lag}")

@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 
@@ -31,6 +32,27 @@ def run(command: list[str], *, env: dict[str, str], cwd: Path = ROOT) -> str:
 
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _seed_objects(src_root: Path, dst_root: Path) -> None:
+    """Copy a previous probe's objects, keeping timestamps.
+
+    stream/hcu_main.o is omitted: it is rebuilt per partition header. c2 headers
+    are omitted so the image header is generated for this row.
+    """
+    if not src_root.is_dir():
+        raise RuntimeError(f"missing object tree {src_root}")
+    copied = 0
+    for path in src_root.rglob("*.o"):
+        rel = path.relative_to(src_root)
+        if rel.as_posix() == "stream/hcu_main.o" or (rel.parts and rel.parts[0] == "c2"):
+            continue
+        dest = dst_root / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, dest)
+        copied += 1
+    if copied == 0:
+        raise RuntimeError(f"object tree {src_root} has no objects to reuse")
 
 
 def section_sizes(size_output: str) -> dict[str, int]:
@@ -176,6 +198,9 @@ def physical_placement(segment: dict[str, int] | list[dict[str, int]], symbols: 
 
 
 def main() -> None:
+    # The EE physical boundary must be compiled from the current manifest.
+    subprocess.run([sys.executable, str(ROOT / "tools/hcu_memory_budget_header.py"),
+                    "--check"], check=True)
     parser = argparse.ArgumentParser(description=__doc__)
     profile_roots = {
         "host": "host:/", "optical": "cdrom:/", "opl-usb": "mass:/",
@@ -211,6 +236,10 @@ def main() -> None:
                         help=("write every probe output under this directory (inside the build root) "
                               "instead of build/hcu-parent-link-probe; the shared HCU closure "
                               "directory is still rewritten, so hold the link lock around the run"))
+    parser.add_argument("--reuse-closure", action="store_true",
+                        help="skip the CE closure and hcu_ps2_link when this configuration's rooted.o already exists")
+    parser.add_argument("--reuse-objects-from", type=Path,
+                        help="seed parent and gameplay .o trees from a previous probe output, then compile without -B")
     args = parser.parse_args()
     try:
         c3_build_preset = apply_c3_build_preset(os.environ)
@@ -234,8 +263,8 @@ def main() -> None:
         parser.error("--partition-profile must be a lowercase row identifier")
     if args.headless_runtime_guest and not args.partition_profile:
         parser.error("--headless-runtime-guest requires a selected --partition-profile row")
-    if args.headless_runtime_guest and (args.asset_profile != "host" or args.asset_root):
-        parser.error("--headless-runtime-guest requires the host asset profile")
+    if args.headless_runtime_guest and (args.asset_profile not in ("host", "optical") or args.asset_root):
+        parser.error("--headless-runtime-guest requires the host or optical asset profile")
     if (args.tag_cache_bytes <= 0 or args.tag_cache_bytes >= 6291456 or
             args.tag_cache_bytes % 16 != 0):
         parser.error("--tag-cache-bytes must be positive, 16-byte aligned, and below 6291456")
@@ -265,6 +294,10 @@ def main() -> None:
         profile_suffix += f"-partition-{args.partition_profile}"
     if args.headless_runtime_guest:
         profile_suffix += "-headless-runtime-guest"
+    if os.environ.get("HCU_C3_PHASE_PROBE") == "1":
+        profile_suffix += "-phase-probe"
+    if os.environ.get("HCU_C3_BITMAP_DEFER_PROBE") == "1":
+        profile_suffix += "-bitmap-defer-probe"
     closure_suffix = (f"-step8-mp-workload-{args.step8_mp_workload_players}p" if args.step8_mp_workload_only else
                       "-step8-mp-capacity" if args.step8_mp_capacity_diagnostic else
                       "-m2-ui-lifecycle" if args.m2_ui_lifecycle_test else
@@ -289,6 +322,10 @@ def main() -> None:
             closure_suffix += "-movement-trace"
         if os.environ.get("HCU_C3_SESSION_TRACE") == "1":
             closure_suffix += "-session-trace"
+        if os.environ.get("HCU_C3_PHASE_PROBE") == "1":
+            closure_suffix += "-phase-probe"
+        if os.environ.get("HCU_C3_BITMAP_DEFER_PROBE") == "1":
+            closure_suffix += "-bitmap-defer-probe"
         fence_lag = (os.environ.get("HCU_C3_FENCE_LAG_KICKS") or "0").strip()
         if fence_lag not in ("", "0"):
             closure_suffix += f"-fence-lag{fence_lag}"
@@ -335,7 +372,10 @@ def main() -> None:
     if args.headless_runtime_guest:
         closure_command.append("--production-runtime-guest")
         link_command.append("--production-runtime-guest")
-    run(closure_command, env=env)
+    closure_ready = (hcu_closure / "rooted.o").is_file() and (hcu_closure / "result.json").is_file()
+    if not (args.reuse_closure and closure_ready):
+        run(closure_command, env=env)
+        run(link_command, env=env)
     if hcu_c3 and (os.environ.get("HCU_C3_TIMING") == "1" or
                    os.environ.get("HCU_C3_TELEMETRY") == "1"):
         closure_report = json.loads((hcu_closure / "result.json").read_text())
@@ -345,17 +385,34 @@ def main() -> None:
                 "timed C3 guest requires HALO_PS2_C3_TIMING in the selected CE closure; "
                 f"profile={hcu_closure}, defines={closure_report.get('profile_defines')}, "
                 f"flags={closure_report.get('flags')}")
-    run(link_command, env=env)
     parent_vis = "src/world/visibility.c"
-    run(["make", "-B", "-f", "tools/ee-world.mk", f"WORLD_OUTPUT={parent_output}",
+    make_rebuild = [] if args.reuse_objects_from else ["-B"]
+    reuse_root = None
+    if args.reuse_objects_from:
+        reuse_root = (args.reuse_objects_from if args.reuse_objects_from.is_absolute()
+                      else ROOT / args.reuse_objects_from).resolve()
+        _seed_objects(reuse_root / "parent-sections-os", parent_output)
+    run(["make", *make_rebuild, "-f", "tools/ee-world.mk", f"WORLD_OUTPUT={parent_output}",
          f"WORLD_VIS_SOURCE={parent_vis}", "WORLD_STREAM_DIAGNOSTIC=0",
          "WORLD_PLAY=0", "WORLD_HCU_LINK_PROBE=1", "WORLD_HCU_MEMORY_BRIDGE=1",
          f"EE_OPTFLAGS={optimization}", "all"], env=env)
     # The link below globs every object under the output directory, so drop
     # objects a previous configuration built but this one no longer lists.
+    # A reused tree is wiped first and then reseeded without hcu_main.o, which
+    # the partition header must rebuild. Drop c2 headers so the image header
+    # is generated against this row's package.
     for stale in gameplay_output.rglob("*.o"):
         stale.unlink()
-    run(["make", "-B", "-f", "tools/ee-world.mk", f"WORLD_OUTPUT={gameplay_output}",
+    for stale_header in (gameplay_output / "c2").glob("*.h"):
+        stale_header.unlink()
+    if reuse_root is not None:
+        gameplay_sources = [path for path in reuse_root.iterdir()
+                            if path.is_dir() and path.name.startswith("parent-hcu-gameplay-")]
+        if len(gameplay_sources) != 1:
+            raise RuntimeError(
+                f"{reuse_root} has {len(gameplay_sources)} gameplay object trees")
+        _seed_objects(gameplay_sources[0], gameplay_output)
+    run(["make", *make_rebuild, "-f", "tools/ee-world.mk", f"WORLD_OUTPUT={gameplay_output}",
          f"WORLD_VIS_SOURCE={parent_vis}", "WORLD_STREAM_DIAGNOSTIC=0",
          "WORLD_PLAY=0", "WORLD_HCU_LINK_PROBE=1", "WORLD_HCU_GAMEPLAY=1",
          f"WORLD_HCU_ASSET_PROFILE={asset_profile}",
@@ -368,6 +425,8 @@ def main() -> None:
          f"WORLD_HCU_PARTITION_PROFILE={args.partition_profile or ''}",
          f"WORLD_HCU_PROFILE_PACKAGE_ROOT={args.profile_package_root}",
          f"WORLD_HCU_HEADLESS_RUNTIME_GUEST={1 if args.headless_runtime_guest else 0}",
+         f"HCU_C3_PHASE_PROBE={1 if os.environ.get('HCU_C3_PHASE_PROBE') == '1' else 0}",
+         f"HCU_C3_BITMAP_DEFER_PROBE={1 if os.environ.get('HCU_C3_BITMAP_DEFER_PROBE') == '1' else 0}",
          f"EE_OPTFLAGS={optimization}", "parent-objects"], env=env)
 
     parent_objects = sorted(parent_output.rglob("*.o"))
@@ -393,7 +452,7 @@ def main() -> None:
         "-L" + str(prefix / "ps2sdk/ee/lib"), "-o", str(elf),
         *[str(path) for path in parent_objects], *[str(path) for path in hcu_objects],
         "-ldraw", "-lgraph", "-lpacket2", "-ldma", "-ldebug", "-lpad",
-        "-lmtap", "-lm",
+        "-lmtap", "-lfileXio", "-lm",
     ]
     run(link_command, env=env)
     undefined = run([str(nm), "-u", str(elf)], env=env).splitlines()
@@ -436,12 +495,13 @@ def main() -> None:
     gameplay_command = [
         str(compiler), "-mabi=n32", "-G0", "-T", str(linkfile),
         "-Wl,--gc-sections", "-Wl,--wrap,malloc", "-Wl,--wrap,free",
-        "-Wl,--wrap,calloc", "-Wl,--wrap,realloc", "-Wl,-u,halo_shell_main",
+        "-Wl,--wrap,calloc", "-Wl,--wrap,realloc", "-Wl,--wrap,_open",
+        "-Wl,-u,halo_shell_main",
         "-Wl,-Map," + str(gameplay_map), "-Wl,-zmax-page-size=128",
         "-L" + str(prefix / "ps2sdk/ee/lib"), "-o", str(gameplay_elf),
         *[str(path) for path in gameplay_objects], *[str(path) for path in hcu_objects],
         "-ldraw", "-lgraph", "-lpacket2", "-ldma", "-ldebug", "-lpad",
-        "-lmtap", "-lfileXio", "-lpatches", "-lsdr", "-lm",
+        "-lmtap", "-lfileXio", "-lpatches", "-lsdr", "-lmc", "-lcdvd", "-lm",
     ]
     run(gameplay_command, env=env)
     c3_batch_profile_binding = None
