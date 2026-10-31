@@ -890,7 +890,12 @@ def link_row(row: str, package_root: Path, out: Path, cycles: int = 1, ticks: in
     with LINK_LOCK.open("w") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         rc, timed_out = run_group(command, log=out / "link.log", timeout=LINK_TIMEOUT, env=env)
-    elf = link_dir / f"hcu-gameplay-machine-partition-{row}-headless-runtime-guest.elf"
+    variant = ""
+    if os.environ.get("HCU_C3_PHASE_PROBE") == "1":
+        variant += "-phase-probe"
+    if os.environ.get("HCU_C3_BITMAP_DEFER_PROBE") == "1":
+        variant += "-bitmap-defer-probe"
+    elf = link_dir / f"hcu-gameplay-machine-partition-{row}-headless-runtime-guest{variant}.elf"
     if timed_out:
         return None, f"link timed out after {LINK_TIMEOUT}s"
     if rc or not elf.is_file():

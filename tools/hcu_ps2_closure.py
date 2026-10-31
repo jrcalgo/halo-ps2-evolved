@@ -403,6 +403,10 @@ def main() -> None:
             profile += "-movement-trace"
         if os.environ.get("HCU_C3_SESSION_TRACE") == "1":
             profile += "-session-trace"
+        if os.environ.get("HCU_C3_PHASE_PROBE") == "1":
+            profile += "-phase-probe"
+        if os.environ.get("HCU_C3_BITMAP_DEFER_PROBE") == "1":
+            profile += "-bitmap-defer-probe"
         fence_lag = (os.environ.get("HCU_C3_FENCE_LAG_KICKS") or "0").strip()
         if fence_lag not in ("", "0"):
             profile += f"-fence-lag{fence_lag}"
@@ -419,6 +423,8 @@ def main() -> None:
          "--inlines", str(HCU / "port/include/xdk")],
         cwd=ROOT, check=True)
     includes = ["-I" + str(HCU / item) for item in manifest["include_dirs"]]
+    includes.extend(("-I" + str(ROOT / "src"),
+                     "-I" + str(ROOT / "src/stream")))
     includes.extend(("-I" + str(prefix / "ps2sdk/common/include"),
                      "-I" + str(prefix / "ps2sdk/ee/include")))
     source_flags = [("-Oz" if args.m2_ui_lifecycle_test and flag == "-Os" else flag)
@@ -439,6 +445,10 @@ def main() -> None:
         source_flags.append("-DHALO_PS2_C3_MOVEMENT_TRACE=1")
     if hcu_c3 and os.environ.get("HCU_C3_SESSION_TRACE") == "1":
         source_flags.append("-DHALO_PS2_C3_SESSION_TRACE=1")
+    if hcu_c3 and os.environ.get("HCU_C3_PHASE_PROBE") == "1":
+        source_flags.append("-DHALO_PS2_C3_PHASE_PROBE=1")
+    if hcu_c3 and os.environ.get("HCU_C3_BITMAP_DEFER_PROBE") == "1":
+        source_flags.append("-DHALO_PS2_C3_BITMAP_DEFER_PROBE=1")
     fence_lag = (os.environ.get("HCU_C3_FENCE_LAG_KICKS") or "0").strip()
     if hcu_c3 and fence_lag not in ("", "0"):
         source_flags.append(f"-DHALO_PS2_C3_FENCE_LAG_KICKS={int(fence_lag)}")
@@ -622,9 +632,19 @@ def main() -> None:
                 roots.append("ps2_animation_trace_bind_contexts")
             if args.production_runtime_guest:
                 roots.extend(PRODUCTION_BITMAP_ROOTS)
+                # The parent fills chain-load state before entering CE. A
+                # partial --gc-sections link cannot see those parent writes.
+                roots.extend(("hcu_chain_launch_present", "hcu_chain_game_type",
+                              "hcu_chain_score", "hcu_chain_players",
+                              "hcu_chain_rules", "hcu_chain_rules_present"))
             if hcu_c3:
                 # C3: the parent sound recorder binds this CE seam from hcu_main.c.
                 roots.append("halo_ps2_sound_request_bind_sink")
+                # The partial CE link cannot see the parent render-loop calls.
+                # Keep the weak CE seam so the final strong parent definition
+                # and its per-frame probe remain reachable.
+                roots.extend(("hcu_c3_render_tick", "hcu_c3_render_can_publish",
+                              "hcu_c3_snapshot_tick", "hcu_c3_publication_timing"))
                 # The C3 caller also samples the real bitmap frame telemetry.
                 # These per-function sections otherwise have no strong caller
                 # inside the CE closure and are discarded by --gc-sections.
