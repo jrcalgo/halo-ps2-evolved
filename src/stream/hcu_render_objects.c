@@ -1282,6 +1282,7 @@ uint32_t hcu_render_objects_fp_lod(int32_t view_w, int32_t view_h, int32_t scree
 #include "core/mat.h"
 #include "platform/video.h"
 #include "render/bsp_render.h"
+#include "render/render_internal.h"
 #include "render/chain.h"
 #include "render/clip.h"
 #include "render/gs.h"
@@ -1628,16 +1629,16 @@ static int entry_need(const obj_slot *s, uint32_t *out)
 	return 0;
 }
 
-/* Time-sliced verified read. After the opening frames a lazy load reads and hashes at most OBJ_LOAD_SLICE_BYTES per
- * frame into its reserved pool region and finishes once both chunks verify, so a first-use model costs several short
- * frames (the object appears late) instead of one hitch of the whole software SHA-256. One job runs at a time; a job
- * whose entry stops being requested is dropped. Host builds load synchronously. */
+/* Time-sliced verified read. A lazy load reads and hashes at most OBJ_LOAD_SLICE_BYTES per frame into its reserved
+ * pool region and finishes once both chunks verify, so a first-use model costs several short frames (the object
+ * appears late) instead of one hitch of the whole software SHA-256. One job runs at a time; a job whose entry stops
+ * being requested is dropped. Host builds load synchronously. */
 #ifdef HCU_RENDER_OBJECTS_EE
 #define OBJ_LOAD_SLICE_BYTES 24576u
 #else
 #define OBJ_LOAD_SLICE_BYTES 0u
 #endif
-#define OBJ_SLICE_AFTER_FRAME 60u
+#define OBJ_SLICE_AFTER_FRAME 0u
 #define OBJ_JOB_NONE 0xFFFFFFFFu
 typedef struct {
 	uint32_t entry, off, stage, at, last_frame, pump_frame;
@@ -1854,6 +1855,7 @@ static int entry_load(const hcu_asset_profile_view *view, uint32_t i, uint32_t f
 		pre_verified = 1;
 		pre_tex_ok = s_job.tex_ok;
 	} else {
+		s_job.read_cycles = 0u;
 		off = pool_alloc(need);
 		if (off == OBJ_NONE) return -1;
 		bytes = s_pool + off;
@@ -2014,10 +2016,44 @@ static void entry_request(const hcu_asset_profile_view *view, uint32_t i, uint32
 	s_res.misses++;
 }
 
+/* First-person weapon and hands models. Their path ends in \fp\fp. */
+static int path_is_fp_model(const char *path)
+{
+	size_t n;
+	static const char suf[] = "\\fp\\fp";
+	if (!path) return 0;
+	n = strlen(path);
+	if (n < sizeof suf - 1u) return 0;
+	return memcmp(path + (n - (sizeof suf - 1u)), suf, sizeof suf - 1u) == 0;
+}
+
+/* One unloaded viewmodel per frame. While the visible set is still loading it waits, so scenery appears first;
+ * after that it reserves a pool region of its own and the sliced read spreads the optical read and hash over
+ * frames. Picking the weapon up later finds it resident. Once resident, residency_frame pins the slot at rank 0. */
+static void fp_prewarm(uint32_t frame)
+{
+	uint32_t i;
+	if (!s_profile || s_job.entry != OBJ_JOB_NONE) return;
+	for (i = 0; i < s_slot_count; i++)
+		if (!s_slots[i].loaded && !s_slots[i].refused && s_slot_rank[i] != HCU_OBJECTS_RANK_UNUSED)
+			return;
+	for (i = 0; i < s_slot_count; i++) {
+		obj_slot *s = &s_slots[i];
+		if (s->loaded || s->refused || !s->entry || !path_is_fp_model(s->entry->path)) continue;
+		entry_request(s_profile, i, frame, 0u);
+		return;
+	}
+}
+
 /* Frame begin: every entry the snapshot's visible views reference is made resident before the views draw. */
 static void residency_frame(const halo_ps2_frame_snapshot *snap, uint32_t frame,
 	uint32_t layout_view_count, int32_t screen_w, int32_t screen_h, float display_aspect)
 {
+#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
+	uint32_t residency_t0 = timer_cycles();
+	uint32_t loads_before = s_res.loads;
+	uint32_t misses_before = s_res.misses;
+#endif
 	static uint8_t need[HCU_OBJECTS_MAX_MODELS];
 	static uint8_t priority[HCU_OBJECTS_MAX_MODELS];
 	uint32_t v, ref, i, p;
@@ -2066,6 +2102,11 @@ static void residency_frame(const halo_ps2_frame_snapshot *snap, uint32_t frame,
 	/* Ranks before any eviction: an entry is displaced only by a strictly more important request. */
 	for (i = 0; i < s_slot_count; i++)
 		s_slot_rank[i] = need[i] ? priority[i] : HCU_OBJECTS_RANK_UNUSED;
+	/* Viewmodels already in the pool stay ahead of scenery. Same rank cannot evict them. */
+	for (i = 0; i < s_slot_count; i++)
+		if (s_slots[i].loaded && s_slots[i].entry && path_is_fp_model(s_slots[i].entry->path) &&
+			s_slot_rank[i] > 0u)
+			s_slot_rank[i] = 0u;
 	/* Mark what this frame uses before any eviction, so a referenced entry is never the victim. */
 	for (i = 0; i < s_slot_count; i++)
 		if (need[i] && s_slots[i].loaded) s_slots[i].last_used = frame + 1u;
@@ -2073,6 +2114,17 @@ static void residency_frame(const halo_ps2_frame_snapshot *snap, uint32_t frame,
 	for (p = 0; p <= 3u; p++)
 		for (i = 0; i < s_slot_count; i++)
 			if (need[i] && priority[i] == p) entry_request(s_profile, i, frame, p);
+	fp_prewarm(frame);
+#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
+	{
+		uint32_t dt = timer_cycles() - residency_t0;
+		if (dt > 294912u * 5u || s_res.loads != loads_before)
+			printf("HALO_PS2_LOCAL lag-residency frame=%u ms=%.2f new-loads=%u new-misses=%u pool=%u/%u job=%u\n",
+				(unsigned)frame, timer_ms(0, dt), (unsigned)(s_res.loads - loads_before),
+				(unsigned)(s_res.misses - misses_before), (unsigned)s_res.pool_used, (unsigned)s_res.pool_bytes,
+				(unsigned)s_job.entry);
+	}
+#endif
 }
 
 /* ---- texture binding (same mapping as hcu_render_media.c, global texture index) ---------------- */
@@ -3428,10 +3480,45 @@ if (dbg_dc_ok) {
 	(void)fx_blend_state(c, 0u);
 }
 
+/* One viewmodel texture per frame. The cursor walks every loaded viewmodel texture; a GS cache hit is cheap,
+ * so a later eviction is warmed again the next time the cursor reaches it. */
+static void fp_tex_warm_one(void)
+{
+	static uint32_t s_fp_warm_frame = 0xffffffffu;
+	static uint32_t s_fp_warm_slot, s_fp_warm_local;
+	uint32_t tries;
+	if (s_fp_warm_frame == s_frame || !s_slot_count) return;
+	s_fp_warm_frame = s_frame;
+	for (tries = 0; tries < s_slot_count; tries++) {
+		obj_slot *s;
+		uint32_t slot, count, local;
+		if (s_fp_warm_slot >= s_slot_count) { s_fp_warm_slot = 0u; s_fp_warm_local = 0u; }
+		slot = s_fp_warm_slot;
+		s = &s_slots[slot];
+		count = (s->loaded && s->has_tex) ? s->tex.texture_count : 0u;
+		if (count > 32u) count = 32u;
+		if (!s->loaded || !s->entry || !path_is_fp_model(s->entry->path) || s_fp_warm_local >= count) {
+			s_fp_warm_slot++;
+			s_fp_warm_local = 0u;
+			continue;
+		}
+		local = s_fp_warm_local++;
+		if (s_fp_warm_local >= count) { s_fp_warm_slot++; s_fp_warm_local = 0u; }
+		{
+			tex_image_t img;
+			if (slot_texture(s, (int)(s->tex_base + local), &img) != 0) continue;
+			if (!img.w || !img.h || (img.w & (img.w - 1)) || (img.h & (img.h - 1))) continue;
+			(void)rb_object_tex0((unsigned)(s->tex_base + local), &img, 0);
+			return;
+		}
+	}
+}
+
 static void object_pass(void *user, render_ctx_t *rc)
 {
 	uint32_t i;
 	uint32_t dbg_start = timer_cycles(), dbg_fx0 = 0, dbg_fx1 = 0, dbg_fx_start;
+	fp_tex_warm_one();
 	(void)user;
 	s_dbg_t[0] = s_dbg_t[1] = s_dbg_t[2] = 0u;
 #if HCU_C3_OBJECT_VIEW_CACHE
@@ -3733,6 +3820,14 @@ static void object_pass(void *user, render_ctx_t *rc)
 			s_timing_probe.triangles = s_view_triangles;
 			s_timing_probe.skinned_nodes = s_view_skinned;
 			s_timing_probe.failures = s_view_counters.failures;
+#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
+			if (s_fp_render_cycles > 294912u * 8u || s_world_render_cycles > 294912u * 16u)
+				printf("HALO_PS2_LOCAL lag-draw frame=%u view=%u world-ms=%.2f fp-ms=%.2f fx-bytes=%u drawn=%u tris=%u\n",
+					(unsigned)s_frame, (unsigned)s_cur_view,
+					timer_ms(0, s_world_render_cycles), timer_ms(0, s_fp_render_cycles),
+					(unsigned)s_view_counters.fx_source_read_bytes,
+					(unsigned)s_view_drawn, (unsigned)s_view_triangles);
+#endif
 		}
 	#endif
 	}

@@ -103,9 +103,9 @@ typedef struct hcu_snapshot_bank_stats {
 
 void hcu_snapshot_bank_get_stats(hcu_snapshot_bank_stats *out);
 
-/* Opt-in lag-trace diagnostic. Present in DWARF only when
- * HALO_PS2_C3_LAG_TRACE is enabled; values are raw IEEE/integer bit patterns. */
-#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
+/* Opt-in rejection snapshot; lag-trace prints it, session-trace exposes it read-only. */
+#if (defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE) || \
+	(defined(HALO_PS2_C3_SESSION_TRACE) && HALO_PS2_C3_SESSION_TRACE)
 typedef struct hcu_snapshot_bank_rejection {
 	uint32_t reason;
 	uint32_t index;
