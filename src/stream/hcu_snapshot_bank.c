@@ -397,7 +397,8 @@ static int validate_snapshot(const halo_ps2_frame_snapshot *s)
 				if (r->age_sec != 0.0f || r->lifespan_sec != 0.0f ||
 					r->fade_in_sec != 0.0f || r->fade_out_sec != 0.0f ||
 					(r->flags & (uint16_t)~(HALO_PS2_FRAME_FX_PARTICLE_STATE_DRIVEN |
-						HALO_PS2_FRAME_FX_PASS_TRANSITION)) != 0u) {
+						HALO_PS2_FRAME_FX_PASS_TRANSITION |
+						HALO_PS2_FRAME_FX_FIRST_PERSON)) != 0u) {
 					TRACE_FX_REJECT(__LINE__, i, r); return 0;
 				}
 			} else if (!(r->lifespan_sec > 0.0f)) {

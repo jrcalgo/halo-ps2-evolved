@@ -560,6 +560,45 @@ static void test_bounds(void)
 	s->fx_requests[0].runtime_oo_width = 1.0f;
 	assert(hcu_snapshot_bank_commit(s) == 0);
 	assert(hcu_snapshot_bank_latest()->fx_requests[0].flags & HALO_PS2_FRAME_FX_PARTICLE_FINAL_SEQUENCE);
+
+	/* Particle-system sprites are published with zero age/lifespan/fades and the
+	 * state-driven flag, also when owned by the first-person view. The snapshot
+	 * must commit; a rejection re-shows the previous frame. */
+	{
+		uint16_t shapes[3] = {
+			HALO_PS2_FRAME_FX_PARTICLE_STATE_DRIVEN,
+			HALO_PS2_FRAME_FX_PARTICLE_STATE_DRIVEN | HALO_PS2_FRAME_FX_FIRST_PERSON,
+			HALO_PS2_FRAME_FX_PARTICLE_STATE_DRIVEN | HALO_PS2_FRAME_FX_PASS_TRANSITION };
+		unsigned k;
+		for (k = 0; k < 3u; ++k) {
+			s = hcu_snapshot_bank_begin_write();
+			add_object(s, 3u);
+			s->fx_request_count = 1u;
+			s->effect_count = 1u;
+			memset(&s->fx_requests[0], 0, sizeof s->fx_requests[0]);
+			s->fx_requests[0].kind = HALO_PS2_FRAME_FX_PARTICLE;
+			s->fx_requests[0].owner_object = HALO_PS2_FRAME_NONE_U16;
+			s->fx_requests[0].view_mask = 1u;
+			s->fx_requests[0].flags = shapes[k];
+			s->fx_requests[0].bitmap_width = 128u;
+			s->fx_requests[0].bitmap_height = 128u;
+			s->fx_requests[0].runtime_oo_width = 1.0f;
+			assert(hcu_snapshot_bank_commit(s) == 0);
+		}
+		/* The same record without the flag is not a valid timed particle. */
+		s = hcu_snapshot_bank_begin_write();
+		add_object(s, 3u);
+		s->fx_request_count = 1u;
+		s->effect_count = 1u;
+		memset(&s->fx_requests[0], 0, sizeof s->fx_requests[0]);
+		s->fx_requests[0].kind = HALO_PS2_FRAME_FX_PARTICLE;
+		s->fx_requests[0].owner_object = HALO_PS2_FRAME_NONE_U16;
+		s->fx_requests[0].view_mask = 1u;
+		s->fx_requests[0].bitmap_width = 128u;
+		s->fx_requests[0].bitmap_height = 128u;
+		s->fx_requests[0].runtime_oo_width = 1.0f;
+		assert(hcu_snapshot_bank_commit(s) == -1);
+	}
 	s = hcu_snapshot_bank_begin_write();
 	add_object(s, 3u);
 	s->fx_request_count = 1u; s->effect_count = 1u;
