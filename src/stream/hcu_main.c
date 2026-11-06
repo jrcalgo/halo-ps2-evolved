@@ -704,12 +704,15 @@ static int hcu_c2_read_traced(const hcu_c2_file *file, uint32_t offset,
 #define hcu_c2_read_at_k(file, off, dst, n, kind) hcu_c2_read_at(file, off, dst, n)
 #endif
 
+#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
 static struct { uint32_t calls; uint32_t bytes; } s_prd_size[8];
 static struct { uint32_t ra; uint32_t calls; uint32_t bytes; } s_prd_ra[24];
 static uint32_t s_prd_total;
+#endif
 static int hcu_c2_package_read_at(void *context, uint32_t offset,
 	void *destination, uint32_t size)
 {
+#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
 	{
 		uint32_t ra = (uint32_t)(uintptr_t)__builtin_return_address(0), k = 0, c;
 		uint32_t b = size <= 64u ? 0u : size <= 128u ? 1u : size <= 256u ? 2u : size <= 512u ? 3u :
@@ -728,6 +731,7 @@ static int hcu_c2_package_read_at(void *context, uint32_t offset,
 					(unsigned)s_prd_ra[i].calls, (unsigned)s_prd_ra[i].bytes);
 		}
 	}
+#endif
 	(void)context;
 	return hcu_c2_read_at_k(&s_c2_package, offset, destination, size, "pkg") ?
 		HCU_ASSET_PROFILE_OK : HCU_ASSET_PROFILE_E_STATE;

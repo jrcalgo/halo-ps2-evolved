@@ -3445,7 +3445,7 @@ static uint32_t dbg_res_t0;
 static uint32_t s_dbg_t[4];
 static void fx_pass(render_ctx_t *rc, int first_person_pass)
 {
-	uint32_t dbg_a = timer_cycles(), dbg_b, dbg_c;
+	uint32_t dbg_a = timer_cycles(), dbg_b = dbg_a, dbg_c;
 	const halo_ps2_snapshot_camera *cam;
 	float right[3], up[3];
 	clip_gs g;
