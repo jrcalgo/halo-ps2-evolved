@@ -12,6 +12,7 @@ import fcntl
 import json
 import os
 import shutil
+import struct
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -24,7 +25,6 @@ import hcu_mp_map_table as mp  # noqa: E402
 TMP = Path("/home/ai/.cache/hbtmp")
 LOCK = Path("/tmp/hb/build.lock")
 CHAIN_INC = ROOT / "build/c3/chain/inc"
-BLOODGULCH_HSB = (ROOT / "build/c3/chain/pkg/bloodgulch_mounted_gunner_4p4bot/bloodgulch.hsb")
 SELECTED = ROOT / "build/m2-c2-r3-selected-packages/pkg"
 SPU_BUDGET = "2076656"
 
@@ -48,6 +48,17 @@ def c3_base() -> dict[str, str]:
     return env
 
 
+def hsb_is_resident(path: Path) -> bool:
+    """True when the whole bank fits SPU RAM: no data beyond the header's resident spu_bytes (no paged tail)."""
+    if not path.is_file():
+        return False
+    head = path.read_bytes()[:32]
+    if len(head) < 32:
+        return False
+    magic, _ver, _count, _eoff, data_off, total, spu_bytes, _pad = struct.unpack("<4s7I", head)
+    return magic == b"HSB1" and total - data_off - spu_bytes < 4096
+
+
 def prepare_map(name: str) -> str:
     item = next(row for row in mp.maps() if row.name == name)
     dest = ROOT / "build/c3" / name
@@ -68,15 +79,16 @@ def prepare_map(name: str) -> str:
             "--output-dir", str(pkg_out),
         ], cwd=ROOT, env=env, check=True)
     hsb = dest / f"{name}.hsb"
-    if not hsb.is_file():
-        if name == "bloodgulch":
-            shutil.copy2(BLOODGULCH_HSB, hsb)
-        else:
-            subprocess.run([
-                sys.executable, "tools/hcu_sound_bank.py",
-                str(ROOT / item.map_path), str(hsb),
-                "--budget", SPU_BUDGET, "--max-perms", "2",
-            ], cwd=ROOT, env=env, check=True)
+    if not hsb_is_resident(hsb):
+        # Audio is never paged: a paged bank overwrites SPU RAM under playing voices (the buzz) and its tail sounds
+        # (footsteps, reloads, ...) are silent or late. Every map ships a fully resident bank.
+        hsb.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run([
+            sys.executable, "tools/hcu_sound_bank.py",
+            str(ROOT / item.map_path), str(hsb),
+            "--budget", SPU_BUDGET, "--max-perms", "1",
+            "--low-rate", "16000", "--tail-rate", "11025", "--no-announcer",
+        ], cwd=ROOT, env=env, check=True)
     inc = dest / "inc"
     inc.mkdir(parents=True, exist_ok=True)
     for header in ("hcu_c3_render.h", "hcu_c3_workload.h", "hcu_c2_cycles.h"):
