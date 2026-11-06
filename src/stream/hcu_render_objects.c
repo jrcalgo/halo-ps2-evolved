@@ -2886,11 +2886,25 @@ static uint32_t fx_decal_cap(void)
 	return s_gov_level == 0u ? FX_DECAL_MAX_PER_FRAME : s_gov_level == 1u ? FX_DECAL_MAX_PER_FRAME / 2u : 1u;
 }
 
+/* True when the binding's verified chunk is already in the EE source pool (a hit needs no package read). */
+static int fx_source_pooled(const hcu_bitmap_binding *b)
+{
+	hcu_asset_chunk_view cv;
+	if (!b || !s_fx_src_pool || !s_fx_profile || s_fx_src_profile != (const void *)s_fx_profile ||
+		b->image_index != 0u) return 0;
+	if (hcu_asset_profile_lookup(s_fx_profile, HCU_ASSET_CHUNK_MEDIA, b->chunk_id, &cv) != HCU_ASSET_PROFILE_OK ||
+		cv.size > s_fx_staging_bytes || memcmp(cv.sha256, b->expected_chunk_sha256, 32)) return 0;
+	return fx_src_find(b->chunk_id, cv.sha256, cv.size) >= 0;
+}
+
 static int fx_source_load(void *context, const hcu_bitmap_binding *binding,
 	uint16_t *width, uint16_t *height, uint8_t *psm)
 {
 	bsp_fx_tex_src *src = (bsp_fx_tex_src *)context;
-	if (s_gov_level) return BSP_FX_TEX_BUDGET;      /* governor: a first-use read waits for a frame on time */
+	/* Governor: a first-use package read waits for a frame on time. A chunk already held in the EE source pool
+	 * costs a memcpy, so it is not held back: at a steady 20 Hz the governor stays raised, and refusing pooled
+	 * sources would keep every new impact and explosion effect from ever drawing. */
+	if (s_gov_level && !fx_source_pooled(binding)) return BSP_FX_TEX_BUDGET;
 	if (!src || !width || !height || !psm || fx_source(binding, src) != 0) return BSP_FX_TEX_NO_SOURCE;
 	*width = src->w; *height = src->h; *psm = src->psm;
 	return 0;
