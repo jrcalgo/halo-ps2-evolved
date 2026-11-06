@@ -3484,9 +3484,21 @@ static void fx_contrail_colour(const hcu_render_effect_draw *e,
 
 static uint32_t dbg_res_t0;
 static uint32_t s_dbg_t[4];
+#if defined(HALO_PS2_C3_PHASE_PROBE) && HALO_PS2_C3_PHASE_PROBE
+/* PINE-readable: the largest cycles any one object pass spent in: fp texture warm, world objects, world fx,
+ * viewmodel plus its fx. */
+uint32_t g_hcu_obj_stall[16];
+#define OBJ_STAGE(n) uint32_t n = timer_cycles()
+#define OBJ_MAXREC(i, c) do { uint32_t v_ = (c); if (v_ > g_hcu_obj_stall[i]) g_hcu_obj_stall[i] = v_; } while (0)
+#else
+#define OBJ_STAGE(n) (void)0
+#define OBJ_MAXREC(i, c) ((void)0)
+#endif
+
 static void fx_pass(render_ctx_t *rc, int first_person_pass)
 {
 	uint32_t dbg_a = timer_cycles(), dbg_b = dbg_a, dbg_c;
+	OBJ_STAGE(fxs_0);
 	const halo_ps2_snapshot_camera *cam;
 	float right[3], up[3];
 	clip_gs g;
@@ -3560,6 +3572,7 @@ static void fx_pass(render_ctx_t *rc, int first_person_pass)
 		verts += nv;
 		admitted++;
 	}
+	OBJ_MAXREC(4, timer_cycles() - fxs_0);
 	/* Each decal costs a palette compose and a tile composite on the GS: sixty-four of them take a frame. Keep
 	 * the FX_DECAL_MAX_PER_FRAME nearest to the camera (decals carry no age; impact holes the player just made
 	 * are near it); the others are not drawn this frame, not deleted. */
@@ -3589,6 +3602,7 @@ static void fx_pass(render_ctx_t *rc, int first_person_pass)
 			}
 		}
 	}
+	OBJ_MAXREC(5, timer_cycles() - fxs_0);
 	if (!admitted) {
 		fx_chain_restore_bounds(c, saved_limit, saved_hud_limit, saved_scope);
 		return;
@@ -3623,11 +3637,13 @@ static void fx_pass(render_ctx_t *rc, int first_person_pass)
 		if (fx_backoff_active(bk->binding)) { s_view_counters.fx_budget_deferred += bk->count; continue; }
 		dbg_res_t0 = timer_cycles();
 		s_fx_submit_blend = (uint8_t)bk->blend_function;
+		OBJ_STAGE(fxs_r);
 		st = hcu_fx_texture_resolve_prechecked(s_fx_descriptors, binding,
 			s_fx_profile ? s_fx_profile->profile_id : 0u,
 			s_snapshot ? s_snapshot->map_generation : 0u,
 			fx_resident_query, fx_admission_defer, fx_source_load, fx_source_submit, &src, &tex0,
 			&source_attempted, NULL);
+		OBJ_MAXREC(8, timer_cycles() - fxs_r);
 		if (source_attempted) s_view_counters.fx_source_calls++;
 		if (st == BSP_FX_TEX_OK) fx_backoff_set(bk->binding, 0);
 		else if (source_attempted) fx_backoff_set(bk->binding, 1);
@@ -3647,6 +3663,7 @@ static void fx_pass(render_ctx_t *rc, int first_person_pass)
 	}
 
 	dbg_c = timer_cycles(); s_dbg_t[1] += dbg_c - dbg_b;
+	OBJ_MAXREC(6, dbg_c - fxs_0);
 	/* Common depth state; alpha is set per CE shader-state bucket below. */
 	if (!chain_has_space(c, FX_STATE_QW + 1u)) {
 		s_view_counters.fx_skipped_space += admitted;
@@ -3696,7 +3713,9 @@ static void fx_pass(render_ctx_t *rc, int first_person_pass)
 					uint32_t qi = s_fx_cidx[oi];
 					const hcu_bitmap_binding *binding = &s_fx_bind[s_fx_cbind[oi]];
 					s_decal_cold_deferred = 0;
+					OBJ_STAGE(fxs_d);
 					int dbg_dc_ok = fx_decal_composite_one(rc, &s_fx[qi], binding, &s_fxq[qi], &g, s_fx_tex0[b], 0u);
+					OBJ_MAXREC(9, timer_cycles() - fxs_d);
 if (dbg_dc_ok) {
 						s_view_counters.fx_drawn++; s_view_counters.fx_textured++;
 					} else if (s_decal_cold_deferred) {
@@ -3752,6 +3771,7 @@ if (dbg_dc_ok) {
 		}
 	}
 	s_dbg_t[2] += timer_cycles() - dbg_c;
+	OBJ_MAXREC(7, timer_cycles() - fxs_0);
 	/* Do not leak the last effect blend state into the following pass. */
 	fx_chain_restore_bounds(c, saved_limit, saved_hud_limit, saved_scope);
 	(void)fx_blend_state(c, 0u);
@@ -3759,15 +3779,6 @@ if (dbg_dc_ok) {
 
 /* One viewmodel texture per frame. The cursor walks every loaded viewmodel texture; a GS cache hit is cheap,
  * so a later eviction is warmed again the next time the cursor reaches it. */
-#if defined(HALO_PS2_C3_PHASE_PROBE) && HALO_PS2_C3_PHASE_PROBE
-/* PINE-readable: the largest cycles any one object pass spent in: fp texture warm, world objects, world fx,
- * viewmodel plus its fx. */
-uint32_t g_hcu_obj_stall[8];
-#define OBJ_STAGE(n) uint32_t n = timer_cycles()
-#else
-#define OBJ_STAGE(n) (void)0
-#endif
-
 static void fp_tex_warm_one(void)
 {
 	static uint32_t s_fp_warm_frame = 0xffffffffu;
