@@ -19,7 +19,7 @@ FIELDS = (
 _BLOCK = struct.Struct("<" + "I" * len(FIELDS))
 _WORD = struct.Struct("<I")
 RING_MAGIC = 0x52463343
-RING_VERSION = 4
+RING_VERSION = 5
 RING_CAPACITY = 32
 RING_FIELDS = ("sequence", "frame", "tick", "view_count", "view0_cycles",
                "view1_cycles", "view2_cycles", "view3_cycles", "build_cycles",
@@ -42,6 +42,8 @@ RING_FIELDS += ("last_pool_event", "last_pool_event_resource",
                 "first_person_model_misses", "view_skipped", "chain_overflow",
                 "emit_failures", "scheduler_steps", "dropped_delta",
                 "flash_type", "flash_argb")
+RING_FIELDS += ("snapshot_commit_rejects", "spu_page_ins", "spu_uploaded_bytes",
+                "gov_level", "gov_pressure", "obj_load_bytes", "obj_load_cycles")
 _RING_HEADER = struct.Struct("<6I")
 _RING_FRAME = struct.Struct("<" + "I" * len(RING_FIELDS))
 RING_BYTES = _RING_HEADER.size + RING_CAPACITY * _RING_FRAME.size

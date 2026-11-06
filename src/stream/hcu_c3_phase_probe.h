@@ -8,7 +8,7 @@
 #define HCU_C3_PHASE_PROBE_MAGIC 0x50484333u /* "3CHP" */
 #define HCU_C3_PHASE_PROBE_VERSION 2u
 #define HCU_C3_FRAME_RING_MAGIC 0x52463343u /* C3FR */
-#define HCU_C3_FRAME_RING_VERSION 4u
+#define HCU_C3_FRAME_RING_VERSION 5u
 #define HCU_C3_FRAME_RING_CAPACITY 32u
 
 typedef struct hcu_c3_frame_probe {
@@ -71,6 +71,14 @@ typedef struct hcu_c3_frame_probe {
 	uint32_t dropped_delta;
 	uint32_t flash_type;
 	uint32_t flash_argb;
+	/* v5: per-frame deltas (cumulative counters minus the frame start) and governor state. */
+	uint32_t snapshot_commit_rejects;
+	uint32_t spu_page_ins;
+	uint32_t spu_uploaded_bytes;
+	uint32_t gov_level;
+	uint32_t gov_pressure;
+	uint32_t obj_load_bytes;
+	uint32_t obj_load_cycles;
 } hcu_c3_frame_probe;
 
 typedef struct hcu_c3_frame_probe_ring {

@@ -91,8 +91,8 @@ uint32_t hcu_bitmap_frame_ee_timer_read(void) { return timer_cycles(); }
 #else
 #define HCU_C3_TIMING_ENABLED 0
 #endif
-#if (defined(HALO_PS2_C3_TIMING) && HALO_PS2_C3_TIMING) || \
-	(defined(HALO_PS2_C3_PHASE_PROBE) && HALO_PS2_C3_PHASE_PROBE) || HCU_C3_TELEMETRY_ENABLED
+/* The phase probe publishes through PINE and needs no serial output: only TIMING/TELEMETRY print. */
+#if (defined(HALO_PS2_C3_TIMING) && HALO_PS2_C3_TIMING) || HCU_C3_TELEMETRY_ENABLED
 #define HCU_C3_TIMING_LOG_ENABLED 1
 #else
 #define HCU_C3_TIMING_LOG_ENABLED 0
@@ -1685,6 +1685,13 @@ static void hcu_c3_frame_probe_publish(const hcu_c3_frame_probe *frame)
 	slot->dropped_delta = frame->dropped_delta;
 	slot->flash_type = frame->flash_type;
 	slot->flash_argb = frame->flash_argb;
+	slot->snapshot_commit_rejects = frame->snapshot_commit_rejects;
+	slot->spu_page_ins = frame->spu_page_ins;
+	slot->spu_uploaded_bytes = frame->spu_uploaded_bytes;
+	slot->gov_level = frame->gov_level;
+	slot->gov_pressure = frame->gov_pressure;
+	slot->obj_load_bytes = frame->obj_load_bytes;
+	slot->obj_load_cycles = frame->obj_load_cycles;
 	ring->overwrites += sequence > HCU_C3_FRAME_RING_CAPACITY;
 	ring->write_sequence = sequence;
 	ring->seq++;
@@ -3298,8 +3305,17 @@ void hcu_c3_render_tick(int tick)
 	u32 c3_video_wait_t0, c3_video_wait_t1, c3_present_t0, c3_present_t1;
 	u32 c3_submit_t0, c3_submit_t1;
 #endif
-#if HCU_C3_TIMING_LOG_ENABLED
+#if HCU_C3_TIMING_LOG_ENABLED || (defined(HALO_PS2_C3_PHASE_PROBE) && HALO_PS2_C3_PHASE_PROBE)
 	hcu_bitmap_dispatch_counters c3_hud_before = s_c3_bitmap_dispatch.counters;
+#endif
+#if defined(HALO_PS2_C3_PHASE_PROBE) && HALO_PS2_C3_PHASE_PROBE
+	hcu_spu_stats c3_spu_before;
+	uint32_t c3_load_bytes_before = 0, c3_load_cycles_before = 0;
+	memset(&c3_spu_before, 0, sizeof c3_spu_before);
+	if (hcu_spu_ready()) hcu_spu_get_stats(&c3_spu_before);
+	#if defined(HCU_C3_OBJECTS)
+	hcu_render_objects_load_probe(&c3_load_bytes_before, &c3_load_cycles_before);
+	#endif
 #endif
 #if defined(HALO_PS2_C3_PHASE_PROBE) && HALO_PS2_C3_PHASE_PROBE && defined(HCU_C3_OBJECTS)
 	hcu_render_objects_residency c3_residency_before = {0};
@@ -3528,6 +3544,32 @@ void hcu_c3_render_tick(int tick)
 		frame_probe.flash_argb = 0;
 		frame_probe.fx_stream_drops = 0;
 		frame_probe.chain_overflow = 0;
+		{
+			hcu_snapshot_bank_stats bank_now;
+			hcu_spu_stats spu_now;
+			static uint32_t rejects_prev;
+			hcu_snapshot_bank_get_stats(&bank_now);
+			memset(&spu_now, 0, sizeof spu_now);
+			if (hcu_spu_ready()) hcu_spu_get_stats(&spu_now);
+			/* Commits happen in publication, outside this tick: delta since the previous ring frame. */
+			frame_probe.snapshot_commit_rejects = bank_now.commit_rejects - rejects_prev;
+			rejects_prev = bank_now.commit_rejects;
+			frame_probe.spu_page_ins = spu_now.page_ins - c3_spu_before.page_ins;
+			frame_probe.spu_uploaded_bytes = spu_now.uploaded_bytes - c3_spu_before.uploaded_bytes;
+		}
+		frame_probe.gov_level = 0;
+		frame_probe.gov_pressure = 0;
+		frame_probe.obj_load_bytes = 0;
+		frame_probe.obj_load_cycles = 0;
+#if defined(HCU_C3_OBJECTS)
+		{
+			uint32_t load_bytes, load_cycles;
+			hcu_render_objects_governor(&frame_probe.gov_level, &frame_probe.gov_pressure);
+			hcu_render_objects_load_probe(&load_bytes, &load_cycles);
+			frame_probe.obj_load_bytes = load_bytes - c3_load_bytes_before;
+			frame_probe.obj_load_cycles = load_cycles - c3_load_cycles_before;
+		}
+#endif
 #if defined(HALO_PS2_C3_FRAME_SNAPSHOT)
 		{
 			extern void halo_ps2_c3_fx_stream_drops(uint32_t out[6]);

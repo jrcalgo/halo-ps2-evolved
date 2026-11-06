@@ -1633,6 +1633,14 @@ static int prepared_lookup(const halo_ps2_frame_snapshot *snap, uint32_t oi, uin
 }
 
 
+/* Frame-probe counters: bytes and EE cycles spent in blocking object-model/texture reads plus SHA-256, all paths. */
+static uint32_t s_probe_load_bytes, s_probe_load_cycles;
+void hcu_render_objects_load_probe(uint32_t *bytes, uint32_t *cycles)
+{
+	if (bytes) *bytes = s_probe_load_bytes;
+	if (cycles) *cycles = s_probe_load_cycles;
+}
+
 static int read_verified(const hcu_asset_profile_view *view, uint32_t id, uint32_t size,
 	uint8_t *dst, const uint8_t want[32]
 #if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
@@ -1643,12 +1651,16 @@ static int read_verified(const hcu_asset_profile_view *view, uint32_t id, uint32
 	sha256_context s;
 	uint8_t digest[32];
 	uint32_t at = 0;
+	uint32_t probe_t0 = timer_cycles();
 #if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
 	uint32_t t = timer_cycles();
 #endif
 	while (at < size) {
 		uint32_t n = size - at < OBJ_READ_STEP ? size - at : OBJ_READ_STEP;
-		if (hcu_asset_profile_read_range(view, HCU_ASSET_CHUNK_MEDIA, id, at, dst + at, n) != 0) return -1;
+		if (hcu_asset_profile_read_range(view, HCU_ASSET_CHUNK_MEDIA, id, at, dst + at, n) != 0) {
+			s_probe_load_cycles += timer_cycles() - probe_t0;
+			return -1;
+		}
 		at += n;
 	}
 #if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
@@ -1661,6 +1673,8 @@ static int read_verified(const hcu_asset_profile_view *view, uint32_t id, uint32
 #if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
 	if (hash_cycles) *hash_cycles = timer_cycles() - t;
 #endif
+	s_probe_load_bytes += size;
+	s_probe_load_cycles += timer_cycles() - probe_t0;
 	return memcmp(digest, want, 32) ? -2 : 0;
 }
 
@@ -1869,10 +1883,12 @@ static int job_pump(const hcu_asset_profile_view *view, const obj_slot *s, const
 			if (n > 65536u) n = 65536u;
 			if (!n) return 0;
 			{
+				uint32_t probe_t0 = timer_cycles();
 #if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
 				uint32_t rt = timer_cycles();
 #endif
 				int read_rc = hcu_asset_profile_read_range(view, HCU_ASSET_CHUNK_MEDIA, chunk, s_job.at, dst + s_job.at, n);
+				s_probe_load_cycles += timer_cycles() - probe_t0;
 #if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
 				rt = timer_cycles() - rt;
 				slice_read += rt;
@@ -1883,7 +1899,12 @@ static int job_pump(const hcu_asset_profile_view *view, const obj_slot *s, const
 					break;
 				}
 			}
-			sha256_update(&s_job.sha, dst + s_job.at, n);
+			{
+				uint32_t probe_h0 = timer_cycles();
+				sha256_update(&s_job.sha, dst + s_job.at, n);
+				s_probe_load_cycles += timer_cycles() - probe_h0;
+				s_probe_load_bytes += n;
+			}
 			s_job.at += n;
 			budget -= n;
 		}
@@ -2879,6 +2900,12 @@ static void fx_governor_update(void)
 		s_gov_ok_streak = 0u;
 	}
 	s_gov_level = s_gov_pressure >= FX_GOV_LEVEL2 ? 2u : s_gov_pressure >= FX_GOV_LEVEL1 ? 1u : 0u;
+}
+
+void hcu_render_objects_governor(uint32_t *level, uint32_t *pressure)
+{
+	if (level) *level = s_gov_level;
+	if (pressure) *pressure = s_gov_pressure;
 }
 
 static uint32_t fx_decal_cap(void)

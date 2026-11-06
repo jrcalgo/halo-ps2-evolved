@@ -554,6 +554,10 @@ void hcu_render_objects_frame_end(void);
 int hcu_render_objects_release(void);
 void hcu_render_objects_totals(hcu_render_objects_counters *out);
 void hcu_render_objects_residency_stats(hcu_render_objects_residency *out);
+/* Cumulative bytes and EE cycles spent in blocking object model/texture reads plus SHA-256 (frame-probe deltas). */
+void hcu_render_objects_load_probe(uint32_t *bytes, uint32_t *cycles);
+/* Frame-time governor state (0..2 level, 0..48 pressure). */
+void hcu_render_objects_governor(uint32_t *level, uint32_t *pressure);
 void hcu_render_objects_last_pool_event(hcu_render_objects_pool_event *out);
 #endif
 
