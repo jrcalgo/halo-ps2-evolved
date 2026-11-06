@@ -2220,7 +2220,13 @@ static void fp_prewarm(uint32_t frame)
 {
 	uint32_t i;
 	if (!s_profile) return;
-	if (s_job.entry != OBJ_JOB_NONE && s_job.rank < 3u) return;
+	if (s_job.entry != OBJ_JOB_NONE && s_job.rank < 3u) {
+		/* Leave the job alone, but keep it moving: a prewarm job names a viewmodel the snapshot does not reference,
+		 * so the need loop never pumps it. Left idle it goes stale after two frames, a rank-3 request abandons it,
+		 * and the next prewarm restarts it from byte zero: a four-frame cycle of 48 KB reads that never completes. */
+		if (s_job.entry < s_slot_count) entry_request(s_profile, s_job.entry, frame, s_job.rank);
+		return;
+	}
 	for (i = 0; i < s_slot_count; i++) {
 		obj_slot *s = &s_slots[i];
 		if (s->loaded || s->refused || !s->entry || !path_is_fp_model(s->entry->path)) continue;
