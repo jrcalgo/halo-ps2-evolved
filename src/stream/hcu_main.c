@@ -166,7 +166,15 @@ extern unsigned hcu_c2_successor_fault_count;
  * ELF NOBITS is charged to resident_gameplay, not to elf_static. */
 #define HCU_LOW_KERNEL_BYTES 0x00100000u
 #include "stream/hcu_memory_budget_generated.h"
-#define HCU_FILE_BACKED_END (HCU_LOW_KERNEL_BYTES + HCU_ELF_STATIC_BYTES)
+/* The phase-probe ELF carries about 5 KB of measurement code the shipping ELF does not, and the shipping layout has a
+ * few hundred bytes of slack. The probe's file-backed span, and the boot backing after it, may start this much
+ * higher, taken from the uncommitted reserve; shipping builds may not. */
+#if defined(HALO_PS2_C3_PHASE_PROBE) && HALO_PS2_C3_PHASE_PROBE
+#define HCU_BOOT_CHECK_PROBE_SLACK 4096u
+#else
+#define HCU_BOOT_CHECK_PROBE_SLACK 0u
+#endif
+#define HCU_FILE_BACKED_END (HCU_LOW_KERNEL_BYTES + HCU_ELF_STATIC_BYTES + HCU_BOOT_CHECK_PROBE_SLACK)
 #define HCU_RESERVE_START (HCU_FILE_BACKED_END + (unsigned)MEM_LAYOUT_V2_BYTES)
 #define HCU_RESERVE_END 0x01f80000u
 #define HCU_RESERVE_BYTES (HCU_RESERVE_END - HCU_RESERVE_START)

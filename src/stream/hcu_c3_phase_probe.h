@@ -9,7 +9,7 @@
 #define HCU_C3_PHASE_PROBE_VERSION 2u
 #define HCU_C3_FRAME_RING_MAGIC 0x52463343u /* C3FR */
 #define HCU_C3_FRAME_RING_VERSION 5u
-#define HCU_C3_FRAME_RING_CAPACITY 32u
+#define HCU_C3_FRAME_RING_CAPACITY 24u
 
 typedef struct hcu_c3_frame_probe {
 	uint32_t sequence;

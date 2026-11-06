@@ -20,7 +20,7 @@ _BLOCK = struct.Struct("<" + "I" * len(FIELDS))
 _WORD = struct.Struct("<I")
 RING_MAGIC = 0x52463343
 RING_VERSION = 5
-RING_CAPACITY = 32
+RING_CAPACITY = 24
 RING_FIELDS = ("sequence", "frame", "tick", "view_count", "view0_cycles",
                "view1_cycles", "view2_cycles", "view3_cycles", "build_cycles",
                "gs_wait_cycles", "video_wait_cycles", "present_cycles",

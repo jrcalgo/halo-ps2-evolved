@@ -2213,6 +2213,7 @@ static int path_is_fp_model(const char *path)
 	return memcmp(path + (n - (sizeof suf - 1u)), suf, sizeof suf - 1u) == 0;
 }
 
+#define OBJ_FP_IDLE_RANK 2u
 /* One unloaded viewmodel per frame, at rank 0, without waiting for the rest of the visible set.
  * A rank 0-2 job already in flight is left alone. A rank-3 job is preempted between slices by
  * entry_request. Once resident, residency_frame keeps the slot at rank 0. */
@@ -2229,7 +2230,12 @@ static void fp_prewarm(uint32_t frame)
 	}
 	for (i = 0; i < s_slot_count; i++) {
 		obj_slot *s = &s_slots[i];
+		uint32_t need;
 		if (s->loaded || s->refused || !s->entry || !path_is_fp_model(s->entry->path)) continue;
+		/* Prewarm only into free space and only while the pool is under half full: it must never evict, and it
+		 * must not crowd out the vehicles and scenery the visible set needs. A visible viewmodel is requested by
+		 * the need loop and is not limited by this. */
+		if (entry_need(s, &need) != 0 || s_res.pool_used + need > s_res.pool_bytes / 2u || pool_find(need) < 0) continue;
 		entry_request(s_profile, i, frame, 0u);
 		return;
 	}
@@ -2292,11 +2298,13 @@ static void residency_frame(const halo_ps2_frame_snapshot *snap, uint32_t frame,
 	/* Ranks before any eviction: an entry is displaced only by a strictly more important request. */
 	for (i = 0; i < s_slot_count; i++)
 		s_slot_rank[i] = need[i] ? priority[i] : HCU_OBJECTS_RANK_UNUSED;
-	/* Viewmodels already in the pool stay ahead of scenery. Same rank cannot evict them. */
+	/* Viewmodels already in the pool stay ahead of scenery (rank 3 cannot evict rank 2), but a vehicle or a
+	 * visible gun may displace the ones the player is not holding. Pinning them all at rank 0 let the prewarmed
+	 * set fill most of the pool and starve a 774 KB vehicle at rank 1 into a permanent load/evict cycle. */
 	for (i = 0; i < s_slot_count; i++)
 		if (s_slots[i].loaded && s_slots[i].entry && path_is_fp_model(s_slots[i].entry->path) &&
-			s_slot_rank[i] > 0u)
-			s_slot_rank[i] = 0u;
+			s_slot_rank[i] > OBJ_FP_IDLE_RANK)
+			s_slot_rank[i] = OBJ_FP_IDLE_RANK;
 	s_rank_frame = frame;
 	s_need_pin_seq = snap->sequence;
 	s_need_pin_gen = snap->map_generation;
@@ -3751,6 +3759,15 @@ if (dbg_dc_ok) {
 
 /* One viewmodel texture per frame. The cursor walks every loaded viewmodel texture; a GS cache hit is cheap,
  * so a later eviction is warmed again the next time the cursor reaches it. */
+#if defined(HALO_PS2_C3_PHASE_PROBE) && HALO_PS2_C3_PHASE_PROBE
+/* PINE-readable: the largest cycles any one object pass spent in: fp texture warm, world objects, world fx,
+ * viewmodel plus its fx. */
+uint32_t g_hcu_obj_stall[8];
+#define OBJ_STAGE(n) uint32_t n = timer_cycles()
+#else
+#define OBJ_STAGE(n) (void)0
+#endif
+
 static void fp_tex_warm_one(void)
 {
 	static uint32_t s_fp_warm_frame = 0xffffffffu;
@@ -3787,7 +3804,9 @@ static void object_pass(void *user, render_ctx_t *rc)
 {
 	uint32_t i;
 	uint32_t dbg_start = timer_cycles(), dbg_fx0 = 0, dbg_fx1 = 0, dbg_fx_start;
+	OBJ_STAGE(ps_a);
 	fp_tex_warm_one();
+	OBJ_STAGE(ps_b);
 	(void)user;
 	s_dbg_t[0] = s_dbg_t[1] = s_dbg_t[2] = 0u;
 #if HCU_C3_OBJECT_VIEW_CACHE
@@ -3920,9 +3939,11 @@ static void object_pass(void *user, render_ctx_t *rc)
 	}
 	/* World decals/particles use the untouched world Z buffer. CE source pass flags
 	 * select camera-local particles for the later viewmodel depth context. */
+	OBJ_STAGE(ps_c);
 	dbg_fx_start = timer_cycles();
 	fx_pass(rc, 0);
 	dbg_fx0 = timer_cycles() - dbg_fx_start;
+	OBJ_STAGE(ps_d);
 	/* CE has already selected these exact model tags and mapped its animation
 	 * graph pose into each model's node order. Draw arms and gun as separate
 	 * view-space model submissions, after world objects, using only the
@@ -4092,6 +4113,13 @@ static void object_pass(void *user, render_ctx_t *rc)
 	dbg_fx_start = timer_cycles();
 	if (viewmodel_ready) fx_pass(&viewmodel_rc, 1);
 	dbg_fx1 = timer_cycles() - dbg_fx_start;
+#if defined(HALO_PS2_C3_PHASE_PROBE) && HALO_PS2_C3_PHASE_PROBE
+	{
+		uint32_t ps_e = timer_cycles(), k, v[4];
+		v[0] = ps_b - ps_a; v[1] = ps_c - ps_b; v[2] = ps_d - ps_c; v[3] = ps_e - ps_d;
+		for (k = 0; k < 4u; k++) if (v[k] > g_hcu_obj_stall[k]) g_hcu_obj_stall[k] = v[k];
+	}
+#endif
 	if (viewmodel_ready && !rb_first_person_depth_end(rc)) s_view_counters.failures++;
 	#if (defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE) || \
 		(defined(HALO_PS2_C3_PERF_PROBE) && HALO_PS2_C3_PERF_PROBE)
