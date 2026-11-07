@@ -52,6 +52,8 @@ int main(void)
 	state.row = 3;
 	(void)hcu_main_menu_step(&state, 0, 0, 0, 1, 0, 0);
 	if (state.session.variant.score_index != 3) return 10;
+	/* A fresh Slayer variant places every multiplayer vehicle (DEFAULT), not the warthog alone. */
+	if (state.session.variant.vehicle_set != 0) return 106;
 	state.row = 5;
 	(void)hcu_main_menu_step(&state, 0, 0, 0, 1, 0, 0);
 	if (state.session.variant.time_limit != 1 || state.session.variant.score_index != 3) return 40;

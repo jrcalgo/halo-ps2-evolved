@@ -190,7 +190,9 @@ static void menu_variant_defaults(hcu_main_menu_variant *variant, unsigned game_
 		variant->game_type == HCU_GAME_TEAM_SLAYER;
 	variant->maximum_health = 1;
 	variant->shields = 1;
-	variant->vehicle_set = 2; /* WARTHOG: CE's stock local-game default. */
+	/* DEFAULT: every multiplayer vehicle the map places (warthog, ghost, scorpion). The set WARTHOG (2) made
+	 * game_engine_remap_vehicle drop the ghost and the scorpion on every map. */
+	variant->vehicle_set = 0;
 	variant->radar_display = variant->game_type == HCU_GAME_SLAYER ||
 		variant->game_type == HCU_GAME_TEAM_SLAYER ? 0 : 1;
 	variant->other_players_radar = 1;
