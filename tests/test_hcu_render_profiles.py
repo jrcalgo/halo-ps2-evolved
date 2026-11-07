@@ -8,7 +8,8 @@ def test_menu_render_profile_is_forwarded_to_gameplay_before_renderer_init():
     main = (ROOT / "src/stream/hcu_main.c").read_text()
     menu = (ROOT / "src/stream/hcu_main_menu.c").read_text()
     assert "argv[7] = render_profile" in main
-    assert "LoadExecPS2(chosen->elf, 8, argv)" in main
+    assert "argv[8] = fov_text" in main
+    assert "LoadExecPS2(chosen->elf, 9, argv)" in main
     assert "j == i + 6" in main
     assert "s_hcu_render_profile = (unsigned)render_profile" in main
     ensure = main[main.index("static void hcu_video_ensure(void)"):]

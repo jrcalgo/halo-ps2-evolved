@@ -43,6 +43,8 @@ def host_asset_manifest(elf):
 
 
 STAGE_MARKERS = {
+    "main-menu": "HALO_PS2_LOCAL main-menu-frame stage=presented",
+    "opl-probe": "HALO_OPL_PROBE complete",
     "playable": "HALO_PS2_LOCAL playable",
     "m3-memory-ready": "HALO_PS2_LOCAL memory-ready",
     "m1-boundary": "HALO_PS2_LOCAL m1-ui-map-request",
@@ -255,11 +257,13 @@ def find_link_probe_report(elf, probe_directory=None):
     the default result.json unconditionally can compare a real guest run against
     the wrong tag-cache/layout profile, so identity is the selection key.
     """
-    probe_directory = (Path(probe_directory) if probe_directory is not None
-                       else ROOT / "build/hcu-parent-link-probe")
+    directories = ([Path(probe_directory)] if probe_directory is not None else
+                   [Path(elf).resolve().parent, ROOT / "build/hcu-parent-link-probe"])
     wanted = sha(elf)
-    candidates = [probe_directory / "result.json"]
-    candidates.extend(sorted(probe_directory.glob("result-*.json")))
+    candidates = []
+    for directory in dict.fromkeys(directories):
+        candidates.append(directory / "result.json")
+        candidates.extend(sorted(directory.glob("result-*.json")))
     for candidate in candidates:
         if not candidate.is_file():
             continue
@@ -336,10 +340,10 @@ def failed_guest_evidence(log_text, success_marker):
 
 def boot_once(config, elf, mode, display, timeout, stage, success_marker,
               disc=None, boot_from_disc=False, require_physical_placement=False,
-              stable_seconds=2.0):
+              stable_seconds=2.0, disable_hostfs=False):
     run = OUTPUT / f"emulator-m1-{mode}-{uuid.uuid4().hex}"
     run.mkdir(parents=True)
-    ini = prepare(config, run, mode)
+    ini = prepare(config, run, mode, hostfs=not disable_hostfs, full_boot=boot_from_disc)
     log = run / "emulog.txt"
     command = [config["binary"], "-datapath", str(run / "data"),
                "-nofullscreen", "-logfile", str(log)]
@@ -426,13 +430,12 @@ def boot_once(config, elf, mode, display, timeout, stage, success_marker,
                 result["reached_game_initialize_done"] = True
                 save(result_path, result)
             if success_marker in text and success_at is None:
+                if require_physical_placement:
+                    physical, linked = required_physical_evidence(text, elf, True)
+                    result["physical_memory"] = physical
+                    result["linked_physical"] = linked
                 if stage == "m2-ui-lifecycle":
                     result["lifecycle_evidence"] = validate_m2_ui_lifecycle_log(text)
-                    if require_physical_placement:
-                        physical, linked = required_physical_evidence(
-                            text, elf, True)
-                        result["physical_memory"] = physical
-                        result["linked_physical"] = linked
                 success_at = time.monotonic()
                 result["reached_success_marker"] = True
                 save(result_path, result)
@@ -501,6 +504,8 @@ def main():
                         help="ELF to qualify (default: standalone HCU closure)")
     parser.add_argument("--disc", type=Path, default=None,
                         help="optional ISO mounted as the guest DVD source")
+    parser.add_argument("--disable-hostfs", action="store_true",
+                        help="disable PCSX2 host filesystem for packaged disc tests")
     parser.add_argument("--boot-from-disc", action="store_true",
                         help="boot the PS2 executable named by the ISO SYSTEM.CNF")
     parser.add_argument("--require-physical-placement", action="store_true",
@@ -510,7 +515,8 @@ def main():
     args = parser.parse_args()
     if args.stable_seconds <= 0:
         parser.error("--stable-seconds must be positive")
-    elf = args.elf.resolve() if not args.boot_from_disc else None
+    elf = (args.elf.resolve() if not args.boot_from_disc or
+           args.require_physical_placement else None)
     if elf is not None and not elf.is_file():
         raise RuntimeError(f"ELF does not exist: {elf}")
     disc = args.disc.resolve() if args.disc is not None else None
@@ -530,7 +536,7 @@ def main():
                                      args.stage, success_marker, disc,
                                      args.boot_from_disc,
                                      args.require_physical_placement,
-                                     args.stable_seconds))
+                                     args.stable_seconds, args.disable_hostfs))
         except (OSError, RuntimeError, subprocess.SubprocessError) as error:
             # boot_once persists the exact failed run before raising. Keep the
             # aggregate pointer truthful too; otherwise a failed current ELF

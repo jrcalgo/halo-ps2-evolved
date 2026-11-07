@@ -175,9 +175,21 @@ def build_header(row: str, package_root: Path, asset_root: Path) -> str:
     out.append(f"#define HCU_C2_IMAGE_METADATA_STORAGE_BYTES {storage_bytes}u")
     out.append(f"static const uint8_t HCU_C2_IMAGE_METADATA_SHA256[32] = {sha_array(metadata_sha)};")
     out.append(f"#define HCU_C2_IMAGE_RELOCATION_BYTES {relocation_bytes}u")
-    out.append("static const uint8_t HCU_C2_IMAGE_METADATA[HCU_C2_IMAGE_METADATA_BYTES] = {")
-    out.append(byte_array(blob))
-    out.append("};")
+    if os.environ.get("HCU_C2_COMPRESS_METADATA") == "1":
+        sys.path.insert(0, str(ROOT / "submodules/halo-ps2/tools"))
+        from halo2ps2.hp2 import lz4_compress, lz4_decompress
+        packed = lz4_compress(blob)
+        if lz4_decompress(packed, len(blob)) != blob:
+            raise HeaderError("metadata compression round trip failed")
+        out.append("#define HCU_C2_IMAGE_METADATA_LZ4 1")
+        out.append("static const uint8_t HCU_C2_IMAGE_METADATA_PACKED[] = {")
+        out.append(byte_array(packed))
+        out.append("};")
+        out.append("static uint8_t HCU_C2_IMAGE_METADATA[HCU_C2_IMAGE_METADATA_BYTES];")
+    else:
+        out.append("static const uint8_t HCU_C2_IMAGE_METADATA[HCU_C2_IMAGE_METADATA_BYTES] = {")
+        out.append(byte_array(blob))
+        out.append("};")
     out.append("")
     out.append(f"#define HCU_C2_IMAGE_SOURCE_COUNT {len(sources)}u")
     out.append("typedef struct { const char *key; const char *path; uint32_t bytes; uint8_t sha256[32]; } hcu_c2_image_source;")

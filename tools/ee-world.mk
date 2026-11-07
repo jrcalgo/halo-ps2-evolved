@@ -56,10 +56,27 @@ WORLD_HCU_STEP8_MP_WORKLOAD_PLAYERS ?= 2
 WORLD_HCU_PARTITION_PROFILE ?=
 WORLD_HCU_HEADLESS_RUNTIME_GUEST ?=0
 WORLD_HCU_MAIN_MENU ?= 1
+HCU_EMBED_IOMANX = $(PS2SDK)/iop/irx/iomanX.irx
+HCU_EMBED_FILEXIO = $(PS2SDK)/iop/irx/fileXio.irx
+HCU_EMBED_LIBSD = $(PS2SDK)/iop/irx/libsd.irx
+ifeq ($(WORLD_HCU_PACKED_IRX),1)
+EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_irx_unpack.o
+HCU_EMBED_IOMANX = $(WORLD_OUTPUT)/stream/iomanx.lz4
+HCU_EMBED_FILEXIO = $(WORLD_OUTPUT)/stream/filexio.lz4
+HCU_EMBED_LIBSD = $(WORLD_OUTPUT)/stream/libsd.lz4
+endif
 WORLD_HCU_PROFILE_PACKAGE_ROOT ?=build/m2-c2-r3-selected-packages/pkg
 ifeq ($(WORLD_HCU_GAMEPLAY),1)
 # Optional CE machine path; the regular measured viewer remains the default.
 WORLD_HCU_MEMORY_BRIDGE := 1
+# Diagnostic builds keep the installed production CRT, with a register-only
+# entry trampoline. Disabled builds contain neither display nor exception code.
+WORLD_HCU_BOOT_DIAG ?= 0
+ifeq ($(WORLD_HCU_BOOT_DIAG),1)
+EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_boot_diag.o $(WORLD_OUTPUT)/stream/hcu_boot_entry.o $(WORLD_OUTPUT)/stream/hcu_boot_screen.o
+EE_LDFLAGS += -Wl,-e,hcu_boot_entry -Wl,--wrap,_libcglue_init -Wl,--wrap,SetupHeap -Wl,--wrap,_InitSys -Wl,--wrap,_libcglue_args_parse -Wl,--wrap,InitAlarm -Wl,--wrap,_ps2sdk_init_timer -Wl,--wrap,InitThread -Wl,--wrap,InitExecPS2 -Wl,--wrap,InitTLBFunctions
+endif
+
 WORLD_HCU_TAG_CACHE_BYTES ?= 2097152
 WORLD_HCU_ASSET_PROFILE ?= host
 include tools/hcu-asset-profile.mk
@@ -203,7 +220,7 @@ $(WORLD_OUTPUT)/stream/hcu_main.o: src/stream/hcu_main.c src/stream/hcu_main_men
 		-include $(HCU_ROOT)/port/ps2/include/halo_ps2_prefix.h \
 		-c $< -o $@
 
-$(WORLD_OUTPUT)/stream/hcu_main_menu.o: src/stream/hcu_main_menu.c src/stream/hcu_main_menu.h \
+$(WORLD_OUTPUT)/stream/hcu_main_menu.o: src/stream/hcu_main_menu.c src/stream/hcu_main_menu.h hcu-profile-force \
 	src/stream/assets/ps2_button_glyphs.rgb5a1 src/stream/assets/halo_ce_camera.bin \
 	src/stream/assets/halo_ce_ring_mesh.bin src/stream/assets/halo_ce_ring_shadow.rgb5a1
 	@mkdir -p $(@D)
@@ -325,11 +342,13 @@ $(WORLD_OUTPUT)/stream/hcu_storage_boot.o: src/stream/hcu_storage_boot.c
 		-DHALO_FILE_USE_FILEXIO -c $< -o $@
 
 $(WORLD_OUTPUT)/stream/hcu_filexio_irx.o: src/stream/hcu_filexio_irx.S \
-	$(PS2SDK)/iop/irx/iomanX.irx $(PS2SDK)/iop/irx/fileXio.irx
+	$(HCU_EMBED_IOMANX) $(HCU_EMBED_FILEXIO)
 	@mkdir -p $(@D)
 	$(EE_CC) -G0 -x assembler-with-cpp \
-		-DHALO_PS2_IOMANX_IRX=\"$(PS2SDK)/iop/irx/iomanX.irx\" \
-		-DHALO_PS2_FILEXIO_IRX=\"$(PS2SDK)/iop/irx/fileXio.irx\" \
+		-DHALO_PS2_IOMANX_IRX=\"$(HCU_EMBED_IOMANX)\" \
+		-DHALO_PS2_FILEXIO_IRX=\"$(HCU_EMBED_FILEXIO)\" \
+		-DHALO_PS2_IOMANX_RAW_BYTES=$(shell stat -c %s $(PS2SDK)/iop/irx/iomanX.irx) \
+		-DHALO_PS2_FILEXIO_RAW_BYTES=$(shell stat -c %s $(PS2SDK)/iop/irx/fileXio.irx) \
 		-c $< -o $@
 
 $(WORLD_OUTPUT)/stream/hcu_input_bridge.o: src/stream/hcu_input_bridge.c
@@ -404,16 +423,37 @@ $(WORLD_OUTPUT)/stream/hcu_spu_playback.o: src/stream/hcu_spu_playback.c src/str
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
 
+ifneq ($(WORLD_HCU_SDRDRV_IRX),)
+HCU_SDRDRV_IMAGE := $(WORLD_HCU_SDRDRV_IRX)
+.PHONY: hcu_diag_irx_refresh
+$(WORLD_OUTPUT)/stream/hcu_spu_irx.o: hcu_diag_irx_refresh
+endif
+ifeq ($(WORLD_HCU_BOOT_DIAG),1)
+ifneq ($(WORLD_HCU_SDR_TRACE_IRX),)
+$(WORLD_OUTPUT)/stream/hcu_spu_hw_ps2.o: EE_CFLAGS += -DHALO_PS2_SDR_START_TRACE=1
+HCU_SDRDRV_IMAGE := $(WORLD_HCU_SDR_TRACE_IRX)
+.PHONY: hcu_diag_irx_refresh
+$(WORLD_OUTPUT)/stream/hcu_spu_irx.o: hcu_diag_irx_refresh
+endif
+endif
+HCU_SDRDRV_IMAGE ?= $(PS2SDK)/iop/irx/sdrdrv.irx
+HCU_EMBED_SDRDRV = $(HCU_SDRDRV_IMAGE)
+ifeq ($(WORLD_HCU_PACKED_IRX),1)
+HCU_EMBED_SDRDRV = $(WORLD_OUTPUT)/stream/sdrdrv.lz4
+endif
+
 $(WORLD_OUTPUT)/stream/hcu_spu_hw_ps2.o: src/stream/hcu_spu_hw_ps2.c src/stream/hcu_spu_hw.h
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
 
 $(WORLD_OUTPUT)/stream/hcu_spu_irx.o: src/stream/hcu_spu_irx.S \
-	$(PS2SDK)/iop/irx/libsd.irx $(PS2SDK)/iop/irx/sdrdrv.irx
+	$(HCU_EMBED_LIBSD) $(HCU_EMBED_SDRDRV)
 	@mkdir -p $(@D)
 	$(EE_CC) -G0 -x assembler-with-cpp \
-		-DHALO_PS2_LIBSD_IRX=\"$(PS2SDK)/iop/irx/libsd.irx\" \
-		-DHALO_PS2_SDRDRV_IRX=\"$(PS2SDK)/iop/irx/sdrdrv.irx\" \
+		-DHALO_PS2_LIBSD_IRX=\"$(HCU_EMBED_LIBSD)\" \
+		-DHALO_PS2_SDRDRV_IRX=\"$(HCU_EMBED_SDRDRV)\" \
+		-DHALO_PS2_LIBSD_RAW_BYTES=$(shell stat -c %s $(PS2SDK)/iop/irx/libsd.irx) \
+		-DHALO_PS2_SDRDRV_RAW_BYTES=$(shell stat -c %s $(HCU_SDRDRV_IMAGE)) \
 		-c $< -o $@
 
 $(WORLD_OUTPUT)/stream/hcu_memory_bind.o: src/stream/hcu_memory_bind.c
@@ -445,6 +485,15 @@ EE_INCS = -I$(ENGINE)/src
 EE_CFLAGS = -std=gnu11 -Wall -Wextra -Wno-unused-parameter -MMD -MP -G0 \
 	-ffile-prefix-map=$(PS2SDK)=/ps2sdk
 EE_CFLAGS += $(EE_OPTFLAGS)
+ifeq ($(WORLD_HCU_PACKED_IRX),1)
+EE_CFLAGS += -DHALO_PS2_PACKED_IRX=1
+endif
+ifeq ($(WORLD_HCU_BOOT_COMPACT),1)
+EE_CFLAGS += -DHALO_PS2_BOOT_COMPACT=1
+endif
+ifeq ($(WORLD_HCU_BOOT_DIAG),1)
+EE_CFLAGS += -DHALO_PS2_BOOT_DIAG=1
+endif
 # C3 umbrella (opt-in): the parent and the CE port compile the same frame-snapshot path.
 # C3 telemetry is separate and off by default; set HCU_C3_TELEMETRY=1 for qualification logs.
 HCU_C3 ?= 0
@@ -603,3 +652,28 @@ $(WORLD_OUTPUT)/vu1/world.o: $(ENGINE)/src/vu1/world.vsm $(ENGINE)/src/vu1/bsp.v
 
 include $(PS2SDK)/samples/Makefile.pref
 include $(PS2SDK)/samples/Makefile.eeglobal
+
+$(WORLD_OUTPUT)/stream/hcu_boot_diag.o: src/stream/hcu_boot_diag.c src/stream/hcu_boot_diag.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_boot_screen.o: src/stream/hcu_boot_screen.c submodules/ps2sdk/ee/debug/src/scr_printf.c
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_boot_entry.o: src/stream/hcu_boot_entry.S
+	@mkdir -p $(@D)
+	$(EE_CC) -G0 -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_irx_unpack.o: src/stream/hcu_irx_unpack.c src/stream/hcu_irx_unpack.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/iomanx.lz4: $(PS2SDK)/iop/irx/iomanX.irx tools/pack_hcu_irx.py
+	python3 tools/pack_hcu_irx.py $< $@
+$(WORLD_OUTPUT)/stream/filexio.lz4: $(PS2SDK)/iop/irx/fileXio.irx tools/pack_hcu_irx.py
+	python3 tools/pack_hcu_irx.py $< $@
+$(WORLD_OUTPUT)/stream/libsd.lz4: $(PS2SDK)/iop/irx/libsd.irx tools/pack_hcu_irx.py
+	python3 tools/pack_hcu_irx.py $< $@
+$(WORLD_OUTPUT)/stream/sdrdrv.lz4: $(HCU_SDRDRV_IMAGE) tools/pack_hcu_irx.py hcu_diag_irx_refresh
+	python3 tools/pack_hcu_irx.py $< $@

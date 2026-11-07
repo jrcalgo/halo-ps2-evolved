@@ -6,7 +6,7 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from hcu_parent_link_probe import (load_segment_interval, load_segment_intervals,
+from hcu_parent_link_probe import (MEM_LAYOUT_V2_BYTES, load_segment_interval, load_segment_intervals,
                                    load_segment_sizes,
                                    named_symbols, physical_placement,
                                    section_sizes)  # noqa: E402
@@ -55,11 +55,12 @@ def test_physical_placement_rejects_overlapping_load_intervals():
 
 
 def test_physical_placement_rejects_file_overage_and_reserve_overlap():
-    segment = {"start": 0x100000, "file_end": 0x360880,
-               "memory_end": 0x4f6888}
-    symbols = named_symbols(
-        "00100000 T _ftext\n00360880 D _fbss\n004f6888 B _end\n",
-        {"_ftext", "_fbss", "_end"})
+    budget = json.loads((ROOT / "config/memory-budget.json").read_text())
+    static_bytes = next(r["bytes"] for r in budget["regions"] if r["name"] == "elf_static")
+    bss = 0x100000 + static_bytes + 128
+    end = bss + 0x200000
+    segment = {"start": 0x100000, "file_end": bss, "memory_end": end}
+    symbols = {"_ftext": 0x100000, "_fbss": bss, "_end": end}
     report = physical_placement(segment, symbols)
     assert report["necessary_conditions_pass"] is False
     assert any("elf_static" in error for error in report["errors"])
@@ -72,7 +73,7 @@ def test_file_backed_fit_cannot_hide_boot_backing_reserve_overlap():
     symbols = {"_ftext": 0x100000, "_fbss": 0x200000,
                "_end": 0x300000, "_stack": 0xffffffff,
                "_stack_size": 131072, "_heap_size": 0xffffffff}
-    report = physical_placement(segment, symbols, layout_bytes=25 * 1024 * 1024)
+    report = physical_placement(segment, symbols, layout_bytes=MEM_LAYOUT_V2_BYTES + 2 * 1024 * 1024)
     assert segment["file_end"] <= report["elf_static_end"]
     assert not report["necessary_conditions_pass"]
     assert "minimum boot backing overlaps untouched reserve" in report["errors"]
@@ -88,7 +89,7 @@ def test_physical_placement_keeps_dynamic_crt_heap_and_kernel_stack_unresolved()
     assert report["nobits"] == {"start": 0x200000, "end": 0x300000,
                                  "bytes": 0x100000}
     assert report["guarded_alignment_slack_bytes"] == 310
-    assert report["boot_malloc_request_bytes"] == 24_117_248 - 0x100000 + 310
+    assert report["boot_malloc_request_bytes"] == MEM_LAYOUT_V2_BYTES - 0x100000 + 310
     assert report["crt_heap"]["size_is_runtime_dynamic"]
     assert report["thread_stack"]["kernel_assigned"]
     assert not report["thread_stack"]["physical_bounds_guest_verified"]
@@ -220,3 +221,10 @@ def test_nondefault_tag_cache_profile_artifact_is_isolated_and_diagnostic():
     assert gameplay["acceptance"] is False
     assert gameplay["elf"]["path"].endswith(
         "hcu-gameplay-machine-tagcache-4477120.elf")
+
+
+def test_placement_layout_matches_compiled_engine_arena_budget():
+    import re
+    header = (ROOT / "submodules/halo-ps2/engine/src/core/mem.h").read_text()
+    compiled = int(re.search(r"#define MEM_LAYOUT_V2_BYTES \(\(size_t\)(\d+)u\)", header)[1])
+    assert MEM_LAYOUT_V2_BYTES == compiled

@@ -27,7 +27,7 @@ def save(path, result):
     path.write_text(json.dumps(result, indent=2) + "\n")
 
 
-def prepare(config, run, mode):
+def prepare(config, run, mode, hostfs=True, full_boot=False):
     original = Path(config["bios"])
     if not original.is_file() or original.stat().st_size != 4 * 1024 * 1024:
         raise RuntimeError("The configured PS2 ROM0 is missing or has an unexpected size")
@@ -51,7 +51,9 @@ def prepare(config, run, mode):
                           PauseOnFocusLoss="false", StartFullscreen="false", RenderToSeparateWindow="false")
     settings["Filenames"]["BIOS"] = "SCPH-30001.bin"
     settings["Folders"]["Bios"] = str(bios)
-    settings["EmuCore"]["HostFs"] = "true"
+    settings["EmuCore"]["HostFs"] = "true" if hostfs else "false"
+    if full_boot:
+        settings["EmuCore"]["EnableFastBoot"] = "false"
     settings["Logging"].update(EnableFileLogging="true", EnableEEConsole="true", EnableIOPConsole="true")
     for key in ("EnableEE", "EnableIOP", "EnableVU0", "EnableVU1"):
         settings["EmuCore/CPU/Recompiler"][key] = "true" if mode == "recompiler" else "false"

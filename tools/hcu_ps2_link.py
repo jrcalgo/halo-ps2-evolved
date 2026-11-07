@@ -355,6 +355,10 @@ def emit(names: list[str], weak_names: set[str] | None = None) -> tuple[str, lis
     ]
     missing = []
     for name in names:
+        # The XDK declarations retain their source spellings; the forced PS2
+        # prefix namespaces these exports when their definitions compile.
+        name = {"halo_xbox_CreateThread": "CreateThread",
+                "halo_xbox_ResumeThread": "ResumeThread"}.get(name, name)
         if name == "fast_ftol_C":
             # Xbox FISTP helper behind cseries.h fast_ftol: round to nearest,
             # ties to even. Not a libc symbol, so it cannot be left to the

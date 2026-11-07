@@ -34,6 +34,22 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def check_kernel_symbol_ownership(nm: Path, kernel: Path, objects: list[Path],
+                                  env: dict[str, str]) -> None:
+    """Reject CE exports that would silently replace an EE kernel function."""
+    def defined(path: Path) -> set[str]:
+        output = run([str(nm), "-g", "--defined-only", str(path)], env=env)
+        return {parts[-1] for line in output.splitlines()
+                if len(parts := line.split()) >= 3
+                and parts[-2] in {"T", "D", "B", "W", "V", "C"}}
+    reserved = defined(kernel)
+    for obj in objects:
+        collisions = sorted(defined(obj) & reserved)
+        if collisions:
+            raise RuntimeError(f"CE/PS2SDK kernel symbol collision in {obj}: "
+                               + ", ".join(collisions))
+
+
 def _seed_objects(src_root: Path, dst_root: Path) -> None:
     """Copy a previous probe's objects, keeping timestamps.
 
@@ -120,11 +136,18 @@ def _budget_region_bytes(name: str) -> int:
 
 LOW_KERNEL_END = 0x00100000
 HIGH_KERNEL_START = 0x01f80000
-MEM_LAYOUT_V2_BYTES = 24_117_248  # submodules/halo-ps2/engine/src/core/mem.h
+# The carved arenas exclude the ELF and kernel reservations and untouched
+# reserve. Keep reports aligned with the current budget, rather than a previous
+# texture-cache capacity.
+MEM_LAYOUT_V2_BYTES = sum(
+    row["bytes"] for row in json.loads(
+        (Path(__file__).resolve().parents[1] / "config/memory-budget.json").read_text()
+    )["regions"] if row["name"] not in
+    ("system_kernel", "elf_static", "uncommitted_reserve"))
 
 
 def physical_placement(segment: dict[str, int] | list[dict[str, int]], symbols: dict[str, int],
-                       layout_bytes: int = 24_117_248) -> dict[str, object]:
+                       layout_bytes: int = MEM_LAYOUT_V2_BYTES) -> dict[str, object]:
     """Necessary physical-capacity proof; actual malloc placement is a guest check."""
     segments = segment if isinstance(segment, list) else [segment]
     first, last = segments[0], segments[-1]
@@ -203,13 +226,15 @@ def main() -> None:
                     "--check"], check=True)
     parser = argparse.ArgumentParser(description=__doc__)
     profile_roots = {
-        "host": "host:/", "optical": "cdrom:/", "opl-usb": "mass:/",
+        "host": "host:/", "optical": "cdrom:/", "opl-iso": "cdrom:/", "opl-usb": "mass:/",
         "opl-smb": "smb0:/", "opl-hdd": "pfs0:/",
     }
     parser.add_argument("--asset-profile", choices=tuple(profile_roots), default="host",
                         help="deterministic filesystem profile compiled into HCU")
     parser.add_argument("--asset-root", choices=tuple(profile_roots.values()),
                         help="deprecated exact-root alias; prefer --asset-profile")
+    parser.add_argument("--boot-diagnostics", action="store_true",
+                        help="build a distinct staged GS/exception diagnostic using the production CRT")
     parser.add_argument("--m2-ui-lifecycle-test", action="store_true",
                         help="build a distinct opt-in CE UI lifecycle guest ELF")
     parser.add_argument("--step8-mp-capacity-diagnostic", action="store_true",
@@ -263,8 +288,8 @@ def main() -> None:
         parser.error("--partition-profile must be a lowercase row identifier")
     if args.headless_runtime_guest and not args.partition_profile:
         parser.error("--headless-runtime-guest requires a selected --partition-profile row")
-    if args.headless_runtime_guest and (args.asset_profile not in ("host", "optical") or args.asset_root):
-        parser.error("--headless-runtime-guest requires the host or optical asset profile")
+    if args.headless_runtime_guest and (args.asset_profile not in ("host", "optical", "opl-iso") or args.asset_root):
+        parser.error("--headless-runtime-guest requires the host, optical or opl-iso asset profile")
     if (args.tag_cache_bytes <= 0 or args.tag_cache_bytes >= 6291456 or
             args.tag_cache_bytes % 16 != 0):
         parser.error("--tag-cache-bytes must be positive, 16-byte aligned, and below 6291456")
@@ -288,6 +313,8 @@ def main() -> None:
                       "-m2-ui-lifecycle" if args.m2_ui_lifecycle_test else
                       "-m2-animation-trace" if args.m2_animation_trace else
                       "-m3-render-clear" if args.m3_render_clear_test else "")
+    if args.boot_diagnostics:
+        profile_suffix += "-boot-diag"
     if args.tag_cache_bytes != 2097152:
         profile_suffix += f"-tagcache-{args.tag_cache_bytes}"
     if args.partition_profile:
@@ -416,6 +443,7 @@ def main() -> None:
          f"WORLD_VIS_SOURCE={parent_vis}", "WORLD_STREAM_DIAGNOSTIC=0",
          "WORLD_PLAY=0", "WORLD_HCU_LINK_PROBE=1", "WORLD_HCU_GAMEPLAY=1",
          f"WORLD_HCU_ASSET_PROFILE={asset_profile}",
+         f"WORLD_HCU_BOOT_DIAG={1 if args.boot_diagnostics else 0}",
          f"WORLD_HCU_RENDER_CLEAR_TEST={1 if args.m3_render_clear_test else 0}",
          f"WORLD_HCU_ANIMATION_TRACE_TEST={1 if args.m2_animation_trace else 0}",
          f"WORLD_HCU_M2_UI_LIFECYCLE_TEST={1 if (args.m2_ui_lifecycle_test or args.step8_mp_capacity_diagnostic) else 0}",
@@ -440,6 +468,9 @@ def main() -> None:
     missing = [str(path) for path in hcu_objects if not path.is_file()]
     if missing:
         raise RuntimeError("missing HCU joint-link inputs: " + ", ".join(missing))
+    check_kernel_symbol_ownership(prefix / "ee/bin/mips64r5900el-ps2-elf-nm",
+                                  prefix / "ps2sdk/ee/lib/libkernel.a",
+                                  hcu_objects, env)
 
     elf = output / "hcu-parent-link.elf"
     map_file = output / "hcu-parent-link.map"
@@ -503,7 +534,13 @@ def main() -> None:
         "-ldraw", "-lgraph", "-lpacket2", "-ldma", "-ldebug", "-lpad",
         "-lmtap", "-lfileXio", "-lpatches", "-lsdr", "-lmc", "-lcdvd", "-lm",
     ]
+    if args.boot_diagnostics:
+        gameplay_command[1:1] = ["-Wl,-e,hcu_boot_entry", "-Wl,--wrap,_libcglue_init", "-Wl,--wrap,SetupHeap", "-Wl,--wrap,_InitSys", "-Wl,--wrap,_libcglue_args_parse", "-Wl,--wrap,InitAlarm", "-Wl,--wrap,_ps2sdk_init_timer", "-Wl,--wrap,InitThread", "-Wl,--wrap,InitExecPS2", "-Wl,--wrap,InitTLBFunctions"]
     run(gameplay_command, env=env)
+    if os.environ.get("WORLD_HCU_PACKED_IRX") == "1":
+        linked_names = run([str(nm), "-g", "--defined-only", str(gameplay_elf)], env=env)
+        if not re.search(r"\bT hcu_irx_unpack$", linked_names, re.M):
+            raise RuntimeError("packed IRX build omitted the runtime unpacker")
     c3_batch_profile_binding = None
     # CE calls hcu_c3_batch_profile only from its realtime-scheduler batch loop
     # (main.c, HALO_PS2_C3_REALTIME_SCHEDULER); a deterministic timed build has no
@@ -606,6 +643,7 @@ def main() -> None:
             "map_service": gameplay_map_service,
             "runtime_guest_mode": "headless-ce-map-load" if guest_scope else None,
             "asset_profile": asset_profile,
+            "boot_diagnostics": args.boot_diagnostics,
             "asset_root": asset_root,
             "partition_profile": args.partition_profile,
             "profile_package_root": str(args.profile_package_root),
@@ -662,6 +700,7 @@ def main() -> None:
             "hcu_gameplay_parent_compile": (
                 "make -B -f tools/ee-world.mk WORLD_PLAY=0 WORLD_HCU_LINK_PROBE=1 "
                 "WORLD_HCU_GAMEPLAY=1 WORLD_HCU_ASSET_PROFILE=" + asset_profile +
+                f" WORLD_HCU_BOOT_DIAG={1 if args.boot_diagnostics else 0}" +
                 " WORLD_HCU_RENDER_CLEAR_TEST=" +
                 ("1" if args.m3_render_clear_test else "0") +
                 " WORLD_HCU_ANIMATION_TRACE_TEST=" +

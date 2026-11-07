@@ -40,8 +40,9 @@ C3_ENV = {
 
 
 def guest_elf(link: Path, item: mp.MpMap) -> Path:
+    suffix = "-phase-probe" if os.environ.get("HCU_C3_PHASE_PROBE") == "1" else ""
     name = (f"hcu-gameplay-machine-optical-partition-{item.row}"
-            "-headless-runtime-guest.elf")
+            f"-headless-runtime-guest{suffix}.elf")
     return link / name
 
 
