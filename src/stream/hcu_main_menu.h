@@ -136,6 +136,8 @@ typedef struct hcu_main_menu_state {
 	uint8_t hud_inset;
 	uint8_t fps_counter;
 	uint8_t subtitles;
+	/* First-person field of view in degrees across 16:9, 60 to 100 (the slider on the video page). */
+	uint8_t fov;
 
 	hcu_main_menu_profile profiles[HCU_MAIN_MENU_PROFILE_COUNT];
 	hcu_main_menu_session session;
@@ -183,6 +185,8 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 /* Valid only after hcu_main_menu_run returns MULTIPLAYER. */
 const hcu_main_menu_session *hcu_main_menu_selected_session(void);
 unsigned hcu_main_menu_selected_render_profile(void);
+/* The video page's field of view in degrees (60 to 100), 90 by default. */
+unsigned hcu_main_menu_selected_fov(void);
 #endif
 
 #endif

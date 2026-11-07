@@ -163,8 +163,13 @@ enum {
 enum {
 	SETTING_RESOLUTION, SETTING_ANIMATIONS, SETTING_PARTICLES, SETTING_VIEW_MODEL,
 	SETTING_TERRAIN, SETTING_WIDESCREEN, SETTING_HUD_INSET, SETTING_FPS,
-	SETTING_SUBTITLES, SETTING_BACK, SETTING_ROW_COUNT
+	SETTING_SUBTITLES, SETTING_FOV, SETTING_BACK, SETTING_ROW_COUNT
 };
+/* Field of view slider: degrees across 16:9, a click of the D-pad moves it MENU_FOV_STEP. */
+#define MENU_FOV_MIN 60
+#define MENU_FOV_MAX 100
+#define MENU_FOV_STEP 5
+#define MENU_FOV_DEFAULT 90
 enum { SETTINGS_PROFILES, SETTINGS_CONTROLS, SETTINGS_VIDEO, SETTINGS_SAVE, SETTINGS_BACK, SETTINGS_HUB_ROWS };
 
 static unsigned menu_wrap(unsigned value, int step, unsigned count)
@@ -236,6 +241,7 @@ void hcu_main_menu_state_init(hcu_main_menu_state *state)
 	state->resolution = 3u; /* saved menu index: High Detail */
 	state->view_model = 1;
 	state->widescreen = 1; /* ANAMORPHIC; menu_storage_load may override */
+	state->fov = MENU_FOV_DEFAULT;
 	for (i = 0; i < HCU_MAIN_MENU_PROFILE_COUNT; ++i) {
 		menu_profile_init(&state->profiles[i], i);
 		if (i < 4u) state->port_profile[i] = (uint8_t)i;
@@ -338,6 +344,11 @@ static void menu_adjust_setting(hcu_main_menu_state *state, int step)
 	case SETTING_HUD_INSET: state->hud_inset = (uint8_t)menu_wrap(state->hud_inset, step, 6); break;
 	case SETTING_FPS: state->fps_counter ^= 1; break;
 	case SETTING_SUBTITLES: state->subtitles ^= 1; break;
+	case SETTING_FOV: {
+		int fov = (int)state->fov + step * MENU_FOV_STEP;
+		state->fov = (uint8_t)(fov < MENU_FOV_MIN ? MENU_FOV_MIN : fov > MENU_FOV_MAX ? MENU_FOV_MAX : fov);
+		break;
+	}
 	default: break;
 	}
 }
@@ -1130,6 +1141,7 @@ static unsigned s_kept_ready;
 static hcu_main_menu_session s_selected_session;
 static int s_menu_widescreen = 1;
 static unsigned s_selected_render_profile = 3u;
+static unsigned s_selected_fov = 90u;
 
 const hcu_main_menu_session *hcu_main_menu_selected_session(void)
 {
@@ -1139,6 +1151,11 @@ const hcu_main_menu_session *hcu_main_menu_selected_session(void)
 unsigned hcu_main_menu_selected_render_profile(void)
 {
 	return s_selected_render_profile < 4u ? s_selected_render_profile : 3u;
+}
+
+unsigned hcu_main_menu_selected_fov(void)
+{
+	return s_selected_fov >= 60u && s_selected_fov <= 100u ? s_selected_fov : 90u;
 }
 
 #define MENU_PROFILE_MAGIC 0x32525048u /* HPR2 */
@@ -1173,8 +1190,8 @@ typedef struct menu_system_record {
 	uint32_t magic;
 	uint32_t version;
 	uint32_t checksum;
-	uint8_t settings[9];
-	uint8_t reserved[43];
+	uint8_t settings[10]; /* [9] is the field of view in degrees; 0 in older saves (the default) */
+	uint8_t reserved[42];
 } menu_system_record;
 
 static menu_profile_record s_menu_profile_save __attribute__((aligned(64)));
@@ -1327,6 +1344,8 @@ static void menu_storage_load(hcu_main_menu_state *state)
 			state->hud_inset = s_menu_system_save.settings[6] % 6;
 			state->fps_counter = s_menu_system_save.settings[7] != 0;
 			state->subtitles = s_menu_system_save.settings[8] != 0;
+			state->fov = s_menu_system_save.settings[9] >= MENU_FOV_MIN && s_menu_system_save.settings[9] <= MENU_FOV_MAX &&
+				!(s_menu_system_save.settings[9] % MENU_FOV_STEP) ? s_menu_system_save.settings[9] : MENU_FOV_DEFAULT;
 		}
 	}
 }
@@ -1367,6 +1386,7 @@ static int menu_storage_save(const hcu_main_menu_state *state)
 	s_menu_system_save.settings[4] = state->terrain_detail; s_menu_system_save.settings[5] = state->widescreen;
 	s_menu_system_save.settings[6] = state->hud_inset; s_menu_system_save.settings[7] = state->fps_counter;
 	s_menu_system_save.settings[8] = state->subtitles;
+	s_menu_system_save.settings[9] = state->fov;
 	s_menu_system_save.checksum = menu_save_checksum(&s_menu_system_save, sizeof(s_menu_system_save));
 	fd = menu_mc_sync_result(mcOpen(0, 0, "/HALOPS2/SYSTEM.DAT", O_WRONLY | O_CREAT | O_TRUNC));
 	if (fd < 0) return 0;
@@ -1821,6 +1841,15 @@ static void menu_row(packet2_t *packet, const video_t *video, int x0, int x1,
 	}
 }
 
+/* A track from x0 to x1 at y with a filled part and a knob at position/range (the video page's field of view). */
+static void menu_slider(packet2_t *packet, int x0, int x1, int y, int position, int range, int selected)
+{
+	int knob = x0 + (x1 - x0) * position / (range > 0 ? range : 1);
+	menu_flat_rect(packet, x0, y, x1, y + 4, 40, 70, 112, 0xA0);
+	menu_flat_rect(packet, x0, y, knob, y + 4, selected ? 150 : 88, selected ? 205 : 150, selected ? 255 : 210, 0xC0);
+	menu_flat_rect(packet, knob - 3, y - 5, knob + 4, y + 9, selected ? 255 : 190, selected ? 255 : 215, 255, 0xE0);
+}
+
 static void menu_profile_name(char out[HCU_MAIN_MENU_PROFILE_NAME_LENGTH + 1],
 	const hcu_main_menu_profile *profile)
 {
@@ -2205,11 +2234,11 @@ static void menu_settings(packet2_t *packet, const video_t *video, const hcu_mai
 static void menu_video_settings(packet2_t *packet, const video_t *video, const hcu_main_menu_state *state)
 {
 	static const char *const labels[SETTING_ROW_COUNT] = {"3D RESOLUTION","ANIMATIONS","PARTICLES","VIEW MODEL",
-		"TERRAIN DETAIL","WIDESCREEN","HUD INSET","FPS COUNTER","SUBTITLES","BACK"};
+		"TERRAIN DETAIL","WIDESCREEN","HUD INSET","FPS COUNTER","SUBTITLES","FIELD OF VIEW","BACK"};
 	static const char *const resolutions[4] = {"STANDARD","MEDIUM","CHUNKY","HIGH DETAIL"};
 	static const char *const view_models[4] = {"LOW","MEDIUM","HIGH","OFF IN SPLIT"};
 	static const char *const terrain[4] = {"FULL","HIGH","MEDIUM","LOW"};
-	unsigned r; char inset[16];
+	unsigned r; char inset[16], fov_text[8];
 	menu_page(packet, video, "VIDEO AND AUDIO", "LEFT/RIGHT CHANGE   CROSS SELECT   CIRCLE BACK");
 	for (r = 0; r < SETTING_ROW_COUNT; ++r) {
 		const char *value = NULL;
@@ -2222,7 +2251,10 @@ static void menu_video_settings(packet2_t *packet, const video_t *video, const h
 		else if (r == SETTING_HUD_INSET) { if (state->hud_inset) snprintf(inset, sizeof(inset), "%u PIXELS", state->hud_inset * 4u); else strcpy(inset, "OFF"); value = inset; }
 		else if (r == SETTING_FPS) value = state->fps_counter ? "ON" : "OFF";
 		else if (r == SETTING_SUBTITLES) value = state->subtitles ? "ON" : "OFF";
-		menu_row(packet, video, 38, 474, 75 + (int)r * 33, r == state->row, labels[r], value);
+		else if (r == SETTING_FOV) { snprintf(fov_text, sizeof(fov_text), "%u", (unsigned)state->fov); value = fov_text; }
+		menu_row(packet, video, 38, 474, 75 + (int)r * 29, r == state->row, labels[r], value);
+		if (r == SETTING_FOV) menu_slider(packet, 262, 408, 75 + (int)r * 29 + 12, (int)state->fov - MENU_FOV_MIN,
+			MENU_FOV_MAX - MENU_FOV_MIN, r == state->row);
 	}
 }
 
@@ -2463,10 +2495,10 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 	hcu_main_menu_state_init(&state);
 	menu_storage_load(&state);
 	video_set_render_profile(video, state.resolution);
-	s_selected_render_profile = state.resolution;
+	s_selected_render_profile = state.resolution; s_selected_fov = state.fov;
 	s_menu_widescreen = state.widescreen != 0;
 	if (state.widescreen)
-		printf("HALO_PS2_LOCAL fov-default degrees=90 widescreen=anamorphic\n");
+		printf("HALO_PS2_LOCAL fov-default degrees=%u widescreen=anamorphic\n", (unsigned)state.fov);
 	if (hcu_spu_init() == 0)
 		(void)hcu_spu_load_bank("D:\\packages\\menu_audio.hsb");
 	if (s_kept_ready) { memcpy(state.profiles, s_kept_profiles, sizeof(s_kept_profiles)); memcpy(state.saved_variants, s_kept_variants, sizeof(s_kept_variants)); }
@@ -2485,7 +2517,7 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 		/* Keep the selected 3D profile attached to the shared renderer state so it takes
 		 * effect on the first gameplay frame after the menu exits. */
 		video_set_render_profile(video, state.resolution);
-		s_selected_render_profile = state.resolution;
+		s_selected_render_profile = state.resolution; s_selected_fov = state.fov;
 		if (frame == 0) printf("HALO_PS2_LOCAL main-menu-frame stage=input\n");
 		menu_read_input(&input, events, &up, &down, &left, &right, &confirm, &back, &start);
 #if defined(__mips__)
@@ -2540,7 +2572,7 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 			confirm || start, back);
 		/* Keep this captured value current even when the user changes settings and
 		 * starts a game before the next menu frame. */
-		s_selected_render_profile = state.resolution;
+		s_selected_render_profile = state.resolution; s_selected_fov = state.fov;
 		video_set_render_profile(video, state.resolution);
 		if (state.page == HCU_MAIN_MENU_PAGE_PROFILE_SELECT &&
 			(events[0].edges & PAD_BTN_SQUARE) && hcu_main_menu_create_profile(&state)) {
@@ -2564,7 +2596,7 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 		if (state.page != previous_page && state.widescreen &&
 			(previous_page == HCU_MAIN_MENU_PAGE_VIDEO_SETTINGS ||
 			 previous_page == HCU_MAIN_MENU_PAGE_SETTINGS))
-			printf("HALO_PS2_LOCAL fov-default degrees=90 widescreen=anamorphic\n");
+			printf("HALO_PS2_LOCAL fov-default degrees=%u widescreen=anamorphic\n", (unsigned)state.fov);
 		if (state.page != previous_page &&
 			(previous_page == HCU_MAIN_MENU_PAGE_SAVE_VARIANT ||
 			 previous_page == HCU_MAIN_MENU_PAGE_MODE_OPTIONS ||

@@ -297,13 +297,13 @@ static void hcu_chain_rules_from_menu(const hcu_main_menu_variant *v, unsigned c
 
 static void hcu_chain_to_gameplay(void)
 {
-	char scenario[96], game[16], score[16], players[16], widescreen[8], rules_text[80], render_profile[8];
+	char scenario[96], game[16], score[16], players[16], widescreen[8], rules_text[80], render_profile[8], fov_text[8];
 	unsigned char rules[HCU_CHAIN_RULE_BYTES];
 	const hcu_main_menu_session *session = hcu_main_menu_selected_session();
 	const hcu_mp_map *chosen;
 	unsigned game_type = 0, game_score = 0;
 	short player_count = 1;
-	char *argv[8];
+	char *argv[9];
 	int probe;
 	if (!hcu_ps2_menu_launch(scenario, sizeof scenario, &game_type, &game_score, &player_count))
 		return;
@@ -321,6 +321,7 @@ static void hcu_chain_to_gameplay(void)
 	snprintf(players, sizeof players, "%d", (int)player_count);
 	snprintf(widescreen, sizeof widescreen, "%u", session->widescreen != 0);
 	snprintf(render_profile, sizeof render_profile, "%u", hcu_main_menu_selected_render_profile());
+	snprintf(fov_text, sizeof fov_text, "%u", hcu_main_menu_selected_fov());
 	hcu_chain_rules_from_menu(&session->variant, rules);
 	if (rules[HCU_RULE_GAME] != (unsigned char)game_type)
 		rules[HCU_RULE_GAME] = (unsigned char)game_type;
@@ -328,16 +329,16 @@ static void hcu_chain_to_gameplay(void)
 		rules_text[0] = '\0';
 	argv[0] = (char *)chosen->elf;
 	argv[1] = scenario; argv[2] = game; argv[3] = score; argv[4] = players;
-	argv[5] = widescreen; argv[6] = rules_text; argv[7] = render_profile;
-	printf("HALO_PS2_LOCAL chain-load %s map=%s game=%s score=%s players=%s widescreen=%s render-profile=%s rules=%s\n",
-		chosen->elf, scenario, game, score, players, widescreen, render_profile, rules_text);
+	argv[5] = widescreen; argv[6] = rules_text; argv[7] = render_profile; argv[8] = fov_text;
+	printf("HALO_PS2_LOCAL chain-load %s map=%s game=%s score=%s players=%s widescreen=%s render-profile=%s fov=%s rules=%s\n",
+		chosen->elf, scenario, game, score, players, widescreen, render_profile, fov_text, rules_text);
 	fflush(stdout);
 	SifInitRpc(0);
 	SifIopReset("", 0);
 	while (!SifIopSync()) {}
 	SifInitRpc(0);
 	SifLoadFileInit();
-	LoadExecPS2(chosen->elf, 8, argv);
+	LoadExecPS2(chosen->elf, 9, argv);
 	printf("HALO_PS2_FAIL chain-load returned\n");
 }
 #endif
@@ -4530,7 +4531,10 @@ static int report_kernel_stack(void)
 
 #if defined(HALO_HCU_HEADLESS_RUNTIME_GUEST)
 /* port: LoadExecPS2 argv is [elf, scenario, gametype, score, players,
- * widescreen, V-rules, render-profile]. Older launches omit render-profile. */
+ * widescreen, V-rules, render-profile, fov]. Older launches omit render-profile and fov. */
+extern void halo_ps2_render_set_fov_degrees(float degrees);
+static unsigned s_hcu_fov_degrees = 90u;
+
 static void hcu_chain_capture_args(int argc, char **argv)
 {
 	int i, j;
@@ -4567,6 +4571,11 @@ static void hcu_chain_capture_args(int argc, char **argv)
 				if (end != argv[j] && *end == '\0' && parsed_profile < VIDEO_PROFILE_COUNT)
 					render_profile = parsed_profile;
 			}
+			if (j == i + 7) {
+				unsigned long parsed_fov = strtoul(argv[j], &end, 10);
+				if (end != argv[j] && *end == '\0' && parsed_fov >= 60ul && parsed_fov <= 100ul)
+					s_hcu_fov_degrees = (unsigned)parsed_fov;
+			}
 			if (hcu_chain_rules_parse(argv[j], hcu_chain_rules)) {
 				hcu_chain_rules_present = 1;
 				continue;
@@ -4579,6 +4588,7 @@ static void hcu_chain_capture_args(int argc, char **argv)
 		hcu_chain_players = (short)players;
 		s_hcu_widescreen = widescreen != 0;
 		s_hcu_render_profile = (unsigned)render_profile;
+		halo_ps2_render_set_fov_degrees((float)s_hcu_fov_degrees);
 		if (s_hcu_video_ready)
 			video_set_render_profile(&s_hcu_video, s_hcu_render_profile);
 		hcu_chain_launch_present = 1;
@@ -4620,7 +4630,7 @@ int main(int argc, char **argv)
 #if defined(HALO_HCU_HEADLESS_RUNTIME_GUEST)
 	hcu_chain_capture_args(argc, argv);
 	if (s_hcu_widescreen)
-		printf("HALO_PS2_LOCAL fov-default degrees=90 widescreen=anamorphic\n");
+		printf("HALO_PS2_LOCAL fov-default degrees=%u widescreen=anamorphic\n", s_hcu_fov_degrees);
 #else
 	(void)argc;
 	(void)argv;

@@ -637,6 +637,8 @@ def main() -> None:
                 roots.extend(("hcu_chain_launch_present", "hcu_chain_game_type",
                               "hcu_chain_score", "hcu_chain_players",
                               "hcu_chain_rules", "hcu_chain_rules_present"))
+                # The parent hands the menu's field of view to the renderer from main().
+                roots.append("halo_ps2_render_set_fov_degrees")
             if hcu_c3:
                 # C3: the parent sound recorder binds this CE seam from hcu_main.c.
                 roots.append("halo_ps2_sound_request_bind_sink")
