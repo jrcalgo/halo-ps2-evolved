@@ -1,3 +1,4 @@
+#include "stream/hcu_boot_diag.h"
 #include "stream/hcu_main_menu.h"
 #include "stream/hcu_map_table.h"
 
@@ -2272,7 +2273,9 @@ static int menu_load_textures(const uint16_t *textures[11], void **allocation)
 	const size_t full_bytes = legacy_full_bytes + MENU_RING_SHADOW_BYTES;
 	unsigned long file_size = 0, read_size = 0;
 	uint8_t *data;
-	int file = hcu_file_bridge_open("D:\\packages\\menu_textures.bin", &file_size);
+	int file;
+	hcu_boot_diag_note("tex open", 0, 0, 0);
+	file = hcu_file_bridge_open("D:\\packages\\menu_textures.bin", &file_size);
 	if (file < 0 || (file_size != base_bytes && file_size != glyph_bytes &&
 		file_size != legacy_full_bytes && file_size < full_bytes + MENU_CAMERA_BYTES + 8u)) {
 		if (file >= 0) hcu_file_bridge_close(file);
@@ -2280,6 +2283,7 @@ static int menu_load_textures(const uint16_t *textures[11], void **allocation)
 	}
 	data = (uint8_t *)malloc((size_t)file_size);
 	if (!data) { hcu_file_bridge_close(file); return -1; }
+	hcu_boot_diag_note("tex read", (unsigned)file, (unsigned)file_size, 0);
 	if (!hcu_file_bridge_read(file, data, (unsigned long)file_size, &read_size) ||
 		read_size != file_size) {
 		hcu_file_bridge_close(file); free(data); return -1;
@@ -2471,6 +2475,7 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 	const uint16_t *textures[11]; void *texture_allocation = NULL;
 	if (!video || !dma_storage || dma_bytes < MENU_PACKET_QW * 16u || !scratch)
 		return HCU_MAIN_MENU_ACTION_MULTIPLAYER;
+	hcu_boot_diag_note("menu enter", 0, 0, 0);
 	mark = arena_mark(scratch);
 	font = (uint8_t *)arena_alloc(scratch, MENU_FONT_BYTES, 64u);
 	clut = (uint32_t *)arena_alloc(scratch, MENU_CLUT_BYTES, 64u);
@@ -2488,6 +2493,7 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 	 * frames display atlas tiles instead of the loading screen. */
 	hcu_loading_screen_end();
 #endif
+	hcu_boot_diag_note("menu upload", 0, 0, 0);
 	if (menu_upload_assets(video, dma_storage, dma_bytes, font, clut, textures)) {
 		free(texture_allocation);
 		menu_ring_mesh_clear();
@@ -2495,14 +2501,22 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 	}
 	free(texture_allocation);
 	hcu_main_menu_state_init(&state);
+	hcu_boot_diag_note("card load", 0, 0, 0);
 	menu_storage_load(&state);
 	video_set_render_profile(video, state.resolution);
 	s_selected_render_profile = state.resolution; s_selected_fov = state.fov;
 	s_menu_widescreen = state.widescreen != 0;
 	if (state.widescreen)
 		printf("HALO_PS2_LOCAL fov-default degrees=%u widescreen=anamorphic\n", (unsigned)state.fov);
-	if (hcu_spu_init() == 0)
-		(void)hcu_spu_load_bank("D:\\packages\\menu_audio.hsb");
+	hcu_boot_diag_note("menu SPU", 0, 0, 0);
+	{
+		int spu_result = hcu_spu_init();
+		hcu_boot_diag_note("menu SPU ret", (unsigned)spu_result, 0, 0);
+		if (spu_result == 0) {
+			spu_result = hcu_spu_load_bank("D:\\packages\\menu_audio.hsb");
+			hcu_boot_diag_note("menu bank ret", (unsigned)spu_result, 0, 0);
+		}
+	}
 	if (s_kept_ready) { memcpy(state.profiles, s_kept_profiles, sizeof(s_kept_profiles)); memcpy(state.saved_variants, s_kept_variants, sizeof(s_kept_variants)); }
 	memset(&input, 0, sizeof(input)); memset(events, 0, sizeof(events)); memset(&packet, 0, sizeof(packet));
 	packet.max_qwords_count = MENU_PACKET_QW; packet.type = P2_TYPE_NORMAL; packet.mode = P2_MODE_NORMAL;
@@ -2654,7 +2668,10 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 		draw_wait_finish();
 		if (frame == 0) printf("HALO_PS2_LOCAL main-menu-frame stage=finish\n");
 		video_present(video); ++frame;
-		if (frame == 1) printf("HALO_PS2_LOCAL main-menu-frame stage=presented\n");
+		if (frame == 1) {
+			hcu_boot_diag_stage(HCU_BOOT_MENU, 0);
+			printf("HALO_PS2_LOCAL main-menu-frame stage=presented\n");
+		}
 	}
 #if defined(__mips__)
 	menu_sound("sound\\music\\title1\\in", HCU_SOUND_EVENT_STOP, frame);

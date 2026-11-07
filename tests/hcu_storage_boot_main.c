@@ -11,6 +11,7 @@ const unsigned char halo_filexio_irx_start[24] = { 2 };
 const uint32_t halo_iomanx_irx_size = 16;
 const uint32_t halo_filexio_irx_size = 24;
 
+static int busy_polls, server_after_binds;
 static int have_iomanx, have_legacy_iomanx, have_filexio;
 static int zero_search_result;
 static int invalid_positive_search_result;
@@ -31,10 +32,18 @@ int sbv_patch_disable_prefix_check(void)
 	return fail_prefix_patch ? -1 : 0;
 }
 
+int sceSifCheckStatRpc(SifRpcClientData_t *client)
+{
+	(void)client;
+	if (busy_polls > 0) { --busy_polls; return 1; }
+	return 0;
+}
+
 int sceSifBindRpc(SifRpcClientData_t *client, int server_id, int mode)
 {
 	assert(server_id == FILEXIO_IRX && mode == SIF_RPC_M_NOWAIT);
 	bind_calls++;
+	if (server_after_binds && bind_calls >= server_after_binds) filexio_server_ready = 1;
 	client->server = filexio_server_ready ? (void *)1 : NULL;
 	return 0;
 }
@@ -83,6 +92,7 @@ int file_reader_filexio_init(void)
 
 static void reset(void)
 {
+	busy_polls = server_after_binds = 0;
 	have_iomanx = have_legacy_iomanx = have_filexio = 0;
 	zero_search_result = 0;
 	invalid_positive_search_result = 0;
@@ -167,7 +177,18 @@ int main(void)
 	reset();
 	have_iomanx = have_filexio = 1;
 	assert(hcu_storage_boot_init() != 0);
-	assert(init_calls == 0 && bind_calls == 2);
+	assert(init_calls == 0 && bind_calls == 200);
 	assert(delay_calls == 200);
+	/* A server registered after the first negative reply needs a fresh bind. */
+	reset();
+	server_after_binds = 3;
+	assert(hcu_storage_boot_init() == 0);
+	assert(bind_calls == 3 && exec_count == 0);
+
+	/* An outstanding packet must not be rebound while it owns the client. */
+	reset();
+	busy_polls = 250;
+	assert(hcu_storage_boot_init() != 0);
+	assert(bind_calls == 0 && init_calls == 0);
 	return 0;
 }

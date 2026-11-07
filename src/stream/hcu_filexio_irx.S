@@ -11,6 +11,13 @@ halo_iomanx_irx_end:
 	.global halo_iomanx_irx_size
 halo_iomanx_irx_size:
 	.long halo_iomanx_irx_end-halo_iomanx_irx_start
+	.global halo_iomanx_irx_raw_size
+halo_iomanx_irx_raw_size:
+#ifdef HALO_PS2_IOMANX_RAW_BYTES
+	.long HALO_PS2_IOMANX_RAW_BYTES
+#else
+	.long halo_iomanx_irx_end-halo_iomanx_irx_start
+#endif
 
 	.section .rodata.hcu_filexio_irx,"a",@progbits
 	.balign 16
@@ -23,3 +30,10 @@ halo_filexio_irx_end:
 	.global halo_filexio_irx_size
 halo_filexio_irx_size:
 	.long halo_filexio_irx_end-halo_filexio_irx_start
+	.global halo_filexio_irx_raw_size
+halo_filexio_irx_raw_size:
+#ifdef HALO_PS2_FILEXIO_RAW_BYTES
+	.long HALO_PS2_FILEXIO_RAW_BYTES
+#else
+	.long halo_filexio_irx_end-halo_filexio_irx_start
+#endif

@@ -11,7 +11,7 @@ def test_hcu_file_bridge_handle_and_reopen_lifecycle():
         executable = Path(temp) / "hcu-file-bridge-test"
         subprocess.run([
             "cc", "-std=gnu11", "-D_EE", "-DHALO_FILE_USE_FILEXIO",
-            "-Wall", "-Wextra", "-Werror", "-Wno-int-to-pointer-cast",
+            "-Derrno=hcu_test_errno", "-Wall", "-Wextra", "-Werror", "-Wno-int-to-pointer-cast",
             "-Wl,--wrap=malloc", "-Wl,--wrap=calloc", "-Wl,--wrap=realloc",
             "-I" + str(root / "src"), "-I" + str(engine),
             "-I" + str(ps2sdk / "common/include"),

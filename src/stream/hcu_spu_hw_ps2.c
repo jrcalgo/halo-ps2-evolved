@@ -6,12 +6,15 @@
 #include <kernel.h>
 #include <libsdr.h>
 #include <loadfile.h>
+#include <ps2lib_err.h>
 #include <sifrpc.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "stream/hcu_file_bridge.h"
+#include "stream/hcu_boot_diag.h"
+#include "stream/hcu_irx_unpack.h"
 #include "stream/sha256.h"
 
 #define HCU_SPU_STAGE_BYTES 16384u
@@ -62,10 +65,83 @@ static int hw_upload(const hcu_spu_sample *sample, uint32_t spu_addr);
 static int hw_upload_part(const hcu_spu_sample *sample, uint32_t spu_addr, uint32_t offset, uint32_t bytes);
 static const hcu_spu_hw s_hw = { hw_set_param, hw_set_addr, hw_set_switch, hw_get_switch, hw_upload, hw_upload_part };
 
+#if defined(HALO_PS2_BOOT_DIAG) && HALO_PS2_BOOT_DIAG
+/* Same sequence as the linked SDK's SifExecModuleBuffer, with checkpoints
+ * between its blocking operations. Keep the module image alive until loadfile
+ * returns; the watchdog holds a stalled call rather than freeing its buffer. */
+static int diagnostic_exec_irx(const unsigned char *image, uint32_t size,
+	int *start_result, int sound_driver)
+{
+	SifDmaTransfer_t dma;
+	void *iop;
+	unsigned qid;
+	int result;
+#if defined(HALO_PS2_SDR_START_TRACE)
+	void *trace = NULL;
+	char args[32];
+	static unsigned zeros[16] __attribute__((aligned(64)));
+	int arg_bytes = 0;
+	if (sound_driver) {
+		hcu_boot_diag_note("sdr trace alloc", 64, 0, 0);
+		trace = SifAllocIopHeap(64);
+		if (!trace) return -E_IOP_NO_MEMORY;
+		dma.src = zeros; dma.dest = trace; dma.size = 64; dma.attr = 0;
+		sceSifWriteBackDCache(zeros, 64);
+		qid = sceSifSetDma(&dma, 1);
+		if (!qid) { SifFreeIopHeap(trace); return -1; }
+		while (sceSifDmaStat(qid) >= 0) {}
+		arg_bytes = snprintf(args, sizeof(args), "hcu=%08x", (unsigned)(uintptr_t)trace) + 1;
+		hcu_boot_diag_watch_iop((unsigned)(uintptr_t)trace);
+	}
+#endif
+	size = (size + 15u) & ~15u;
+	hcu_boot_diag_note(sound_driver ? "sdr heap" : "sd heap", size, 0, 0);
+	iop = SifAllocIopHeap((int)size);
+	if (!iop) return -E_IOP_NO_MEMORY;
+	dma.src = (void *)image; dma.dest = iop; dma.size = size; dma.attr = 0;
+	hcu_boot_diag_note(sound_driver ? "sdr cache" : "sd cache", size, (unsigned)(uintptr_t)iop, 0);
+	sceSifWriteBackDCache((void *)image, size);
+	hcu_boot_diag_note(sound_driver ? "sdr DMA send" : "sd DMA send", size, 0, 0);
+	qid = sceSifSetDma(&dma, 1);
+	if (!qid) {
+		SifFreeIopHeap(iop);
+		return -1;
+	}
+	hcu_boot_diag_note(sound_driver ? "sdr DMA wait" : "sd DMA wait", qid, size, 0);
+	while (sceSifDmaStat(qid) >= 0) {}
+	hcu_boot_diag_note(sound_driver ? "sdr load/start" : "sd load/start", (unsigned)(uintptr_t)iop, size, 0);
+#if defined(HALO_PS2_SDR_START_TRACE)
+	result = SifLoadStartModuleBuffer(iop, arg_bytes, sound_driver ? args : NULL, start_result);
+	/* The driver retains the checkpoint pointer for its RPC thread. Keep the
+	 * small allocation alive for this diagnostic's IOP lifetime. */
+	hcu_boot_diag_watch_iop(0);
+#else
+	result = SifLoadStartModuleBuffer(iop, 0, NULL, start_result);
+#endif
+	hcu_boot_diag_note(sound_driver ? "sdr heap free" : "sd heap free", (unsigned)result, (unsigned)*start_result, 0);
+	SifFreeIopHeap(iop);
+	return result;
+}
+#endif
+
 static int load_irx(const char *name, const unsigned char *image, uint32_t size)
 {
 	int start_result = 0;
+	int sound_driver = image == halo_sdrdrv_irx_start;
+#ifdef HALO_PS2_PACKED_IRX
+	extern const uint32_t halo_libsd_irx_raw_size, halo_sdrdrv_irx_raw_size;
+	uint32_t raw_size = image == halo_libsd_irx_start ? halo_libsd_irx_raw_size : halo_sdrdrv_irx_raw_size;
+	image = hcu_irx_unpack(image, size, raw_size);
+	if (!image) return -1;
+	size = raw_size;
+#endif
+	hcu_boot_diag_note(name, size, 0, 0);
+#if defined(HALO_PS2_BOOT_DIAG) && HALO_PS2_BOOT_DIAG
+	int id = diagnostic_exec_irx(image, size, &start_result, sound_driver);
+#else
 	int id = SifExecModuleBuffer((void *)image, size, 0, NULL, &start_result);
+#endif
+	hcu_boot_diag_note("SPU IRX ret", (unsigned)id, (unsigned)start_result, size);
 	printf("HALO_PS2_LOCAL spu-module name=%s id=%d start=%d\n", name, id, start_result);
 	return id > 0 && start_result != 1 ? 0 : -1;
 }
@@ -74,14 +150,20 @@ int hcu_spu_init(void)
 {
 	uint32_t voice;
 	if (s_hw_ready) return 0;
-	if (load_irx("libsd", halo_libsd_irx_start, halo_libsd_irx_size) != 0 ||
-		load_irx("sdrdrv", halo_sdrdrv_irx_start, halo_sdrdrv_irx_size) != 0)
+	hcu_boot_diag_note("SPU libsd", halo_libsd_irx_size, 0, 0);
+	if (load_irx("libsd", halo_libsd_irx_start, halo_libsd_irx_size) != 0)
 		return -1;
+	hcu_boot_diag_note("SPU sdrdrv", halo_sdrdrv_irx_size, 0, 0);
+	if (load_irx("sdrdrv", halo_sdrdrv_irx_start, halo_sdrdrv_irx_size) != 0)
+		return -1;
+	hcu_boot_diag_note("SPU RPC init", 0, 0, 0);
 	if (sceSdRemoteInit() < 0) {
 		printf("HALO_PS2_LOCAL spu-fail stage=remote-init\n");
 		return -2;
 	}
+	hcu_boot_diag_note("SPU sd init", 0, 0, 0);
 	(void)sceSdRemote(1, rSdInit, HCU_SPU_SD_INIT_COLD, 0, 0, 0, 0, 0);
+	hcu_boot_diag_note("SPU mixer", 0, 0, 0);
 	/* CORE1 carries the effect voices to the output; CORE0 is muted like audsrv does. */
 	hw_set_param((uint16_t)(HCU_SPU_CORE0 | SD_PARAM_MVOLL), 0);
 	hw_set_param((uint16_t)(HCU_SPU_CORE0 | SD_PARAM_MVOLR), 0);
@@ -90,20 +172,25 @@ int hcu_spu_init(void)
 	hw_set_switch((uint16_t)(HCU_SPU_CORE1 | SD_SWITCH_VMIXL), 0xFFFFFF);
 	hw_set_switch((uint16_t)(HCU_SPU_CORE1 | SD_SWITCH_VMIXR), 0xFFFFFF);
 	for (voice = 0; voice < HCU_SPU_VOICES; ++voice) {
+		hcu_boot_diag_note("SPU voice", voice, 0, 0);
 		hw_set_param((uint16_t)(HCU_SPU_CORE1 | (voice << 1) | SD_VPARAM_VOLL), 0);
 		hw_set_param((uint16_t)(HCU_SPU_CORE1 | (voice << 1) | SD_VPARAM_VOLR), 0);
 	}
+	hcu_boot_diag_note("SPU keyoff", 0, 0, 0);
 	hw_set_switch((uint16_t)(HCU_SPU_CORE1 | SD_SWITCH_KOFF), 0xFFFFFF);
+	hcu_boot_diag_note("SPU heap init", 0, 0, 0);
 	if (SifInitIopHeap() < 0) {
 		printf("HALO_PS2_LOCAL spu-fail stage=iop-heap-init\n");
 		return -3;
 	}
+	hcu_boot_diag_note("SPU heap alloc", HCU_SPU_STAGE_BYTES, 0, 0);
 	s_iop_stage = SifAllocIopHeap((int)HCU_SPU_STAGE_BYTES);
 	if (!s_iop_stage) {
 		printf("HALO_PS2_LOCAL spu-fail stage=iop-heap-alloc\n");
 		return -4;
 	}
 	s_hw_ready = 1;
+	hcu_boot_diag_note("SPU ready", (unsigned)(uintptr_t)s_iop_stage, 0, 0);
 	printf("HALO_PS2_LOCAL spu-ready iop-stage=%p\n", s_iop_stage);
 	return 0;
 }
@@ -112,9 +199,12 @@ static int upload_chunk(const uint8_t *data, uint32_t bytes, uint32_t spu_addr)
 {
 	uint32_t padded = (bytes + 63u) & ~63u;
 	if (padded > bytes) memset(s_stage + bytes, 0, padded - bytes);
+	hcu_boot_diag_note("SPU to IOP", padded, spu_addr, 0);
 	if (sceSdTransToIOP(s_stage, s_iop_stage, padded, 1) < 0) return -1;
+	hcu_boot_diag_note("SPU DMA call", padded, spu_addr, 0);
 	(void)sceSdRemote(1, rSdVoiceTrans, 0, SD_TRANS_WRITE | SD_TRANS_MODE_DMA,
 		(u8 *)s_iop_stage, spu_addr, padded, 0);
+	hcu_boot_diag_note("SPU DMA wait", padded, spu_addr, 0);
 	(void)sceSdRemote(1, rSdVoiceTransStatus, 0, 1, 0, 0, 0, 0);
 	(void)data;
 	return 0;
@@ -161,11 +251,13 @@ int hcu_spu_load_bank(const char *path)
 	sha256_context sha;
 	uint8_t digest[32], trailer[32];
 	if (!s_hw_ready) return -1;
+	hcu_boot_diag_note("SPU bank open", 0, 0, 0);
 	token = hcu_file_bridge_open(path, &size);
 	if (token < 0) {
 		printf("HALO_PS2_LOCAL spu-fail stage=bank-open path=%s\n", path);
 		return -2;
 	}
+	hcu_boot_diag_note("SPU bank head", (unsigned)size, (unsigned)token, 0);
 	header_bytes = size < HCU_SPU_HEADER_BYTES ? (uint32_t)size : HCU_SPU_HEADER_BYTES;
 	if (!read_exact(token, s_header, header_bytes)) goto fail_read;
 	if (hcu_spu_bank_parse(s_header, (uint32_t)size, s_parsed, HCU_SPU_MAX_SAMPLES, &count, &data_off, &data_end) != 0 ||
@@ -182,6 +274,7 @@ int hcu_spu_load_bank(const char *path)
 	spu_addr = HCU_SPU_RAM_BASE;
 	while (remaining) {
 		uint32_t n = remaining < HCU_SPU_STAGE_BYTES ? remaining : HCU_SPU_STAGE_BYTES;
+		hcu_boot_diag_note("SPU bank read", data_end - remaining, n, remaining);
 		if (!read_exact(token, s_stage, n)) goto fail_read;
 		sha256_update(&sha, s_stage, n);
 		/* The whole file is read to verify it; only the leading part that fits SPU2 RAM is uploaded now. */
@@ -193,6 +286,7 @@ int hcu_spu_load_bank(const char *path)
 		spu_addr += n;
 		remaining -= n;
 	}
+	hcu_boot_diag_note("SPU bank hash", uploaded, data_end, 0);
 	sha256_final(&sha, digest);
 	if (!read_exact(token, trailer, 32) || memcmp(digest, trailer, 32) != 0) {
 		/* SPU2 RAM holds unverified bytes; never attach, never key on. */

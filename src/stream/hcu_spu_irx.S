@@ -9,6 +9,13 @@ halo_libsd_irx_end:
 	.global halo_libsd_irx_size
 halo_libsd_irx_size:
 	.long halo_libsd_irx_end-halo_libsd_irx_start
+	.global halo_libsd_irx_raw_size
+halo_libsd_irx_raw_size:
+#ifdef HALO_PS2_LIBSD_RAW_BYTES
+	.long HALO_PS2_LIBSD_RAW_BYTES
+#else
+	.long halo_libsd_irx_end-halo_libsd_irx_start
+#endif
 
 	.section .rodata.hcu_sdrdrv_irx,"a",@progbits
 	.balign 16
@@ -21,3 +28,10 @@ halo_sdrdrv_irx_end:
 	.global halo_sdrdrv_irx_size
 halo_sdrdrv_irx_size:
 	.long halo_sdrdrv_irx_end-halo_sdrdrv_irx_start
+	.global halo_sdrdrv_irx_raw_size
+halo_sdrdrv_irx_raw_size:
+#ifdef HALO_PS2_SDRDRV_RAW_BYTES
+	.long HALO_PS2_SDRDRV_RAW_BYTES
+#else
+	.long halo_sdrdrv_irx_end-halo_sdrdrv_irx_start
+#endif

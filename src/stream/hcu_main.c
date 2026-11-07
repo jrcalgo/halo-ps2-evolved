@@ -9,6 +9,7 @@
 #include "stream/hcu_map_service.h"
 #include "stream/hcu_file_bridge.h"
 #include "stream/file.h"
+#include "stream/hp2.h"
 #include "stream/hcu_render_snapshot.h"
 /* C3:snapshot begin */
 #if defined(HCU_C3_FRAME_SNAPSHOT)
@@ -16,6 +17,7 @@
 #endif
 /* C3:snapshot end */
 #include "stream/hcu_storage_boot.h"
+#include "stream/hcu_boot_diag.h"
 #include "halo_ps2_cache.h"
 #include "halo_ps2_bitmap_frame.h"
 #include "ps2_step8_memory_owners.h"
@@ -333,13 +335,19 @@ static void hcu_chain_to_gameplay(void)
 	printf("HALO_PS2_LOCAL chain-load %s map=%s game=%s score=%s players=%s widescreen=%s render-profile=%s fov=%s rules=%s\n",
 		chosen->elf, scenario, game, score, players, widescreen, render_profile, fov_text, rules_text);
 	fflush(stdout);
+	hcu_boot_diag_stage(HCU_BOOT_HANDOFF, 0);
 	SifInitRpc(0);
+	hcu_boot_diag_note("chain IOP reset", 0, 0, 0);
 	SifIopReset("", 0);
 	while (!SifIopSync()) {}
+	hcu_boot_diag_note("chain RPC init", 0, 0, 0);
 	SifInitRpc(0);
+	hcu_boot_diag_note("chain loadfile", 0, 0, 0);
 	SifLoadFileInit();
+	hcu_boot_diag_note("chain ELF exec", 0, 0, 0);
 	LoadExecPS2(chosen->elf, 9, argv);
 	printf("HALO_PS2_FAIL chain-load returned\n");
+	hcu_boot_diag_fail(-10);
 }
 #endif
 
@@ -949,6 +957,13 @@ static int hcu_register_selected_runtime(hcu_map_service *service,
 		runtime.profile_id = HCU_C2_IMAGE_PROFILE_ID;
 		memcpy(runtime.package_sha256, HCU_C2_IMAGE_PACKAGE_SHA256, 32);
 		runtime.compatibility = hcu_c2_compatible;
+#ifdef HCU_C2_IMAGE_METADATA_LZ4
+		if (lz4_decode(HCU_C2_IMAGE_METADATA_PACKED, sizeof(HCU_C2_IMAGE_METADATA_PACKED),
+			HCU_C2_IMAGE_METADATA, sizeof(HCU_C2_IMAGE_METADATA)) != HCU_C2_IMAGE_METADATA_BYTES) {
+			hcu_c2_close_image_files();
+			return 0;
+		}
+#endif
 		runtime.metadata_bytes = HCU_C2_IMAGE_METADATA;
 		runtime.metadata_size = HCU_C2_IMAGE_METADATA_BYTES;
 		memcpy(runtime.metadata_sha256, HCU_C2_IMAGE_METADATA_SHA256, 32);
@@ -3676,6 +3691,7 @@ void hcu_c3_render_tick(int tick)
 	hcu_c3_bitmap_print_tick(tick);
 	/* C3:bitmap end */
 	s_c3r.frames++;
+	if (s_c3r.frames == 1) hcu_boot_diag_stage(HCU_BOOT_FRAME, 0);
 	#if HCU_C3_TIMING_LOG_ENABLED
 	if (s_c3r.frames == 1u || (s_c3r.frames % 30u) == 0u) {
 		bsp_render_phase_timing phases;
@@ -4627,7 +4643,9 @@ int main(int argc, char **argv)
 	struct ps2_animation_trace_event *animation_trace_storage;
 	struct ps2_animation_trace_context *animation_context_storage;
 #endif
+	hcu_boot_diag_begin();
 #if defined(HALO_HCU_HEADLESS_RUNTIME_GUEST)
+	hcu_boot_diag_stage(HCU_BOOT_GAMEPLAY, 0);
 	hcu_chain_capture_args(argc, argv);
 	if (s_hcu_widescreen)
 		printf("HALO_PS2_LOCAL fov-default degrees=%u widescreen=anamorphic\n", s_hcu_fov_degrees);
@@ -4640,17 +4658,20 @@ int main(int argc, char **argv)
 	printf("HALO_PS2_LOCAL machine entry\n");
 	if (!ps2_abi_check()) {
 		printf("HALO_PS2_FAIL CE ABI runtime smoke failed\n");
+		hcu_boot_diag_fail_reason(-1, "could not bind renderer owners to EE and GS telemetry domains");
 		return 1;
 	}
 	/* CRT clears this NOBITS span before main. Charge it to resident_gameplay
 	 * so the one boot allocation covers only the rest of the v2 layout. */
 	if ((uintptr_t)&_end < (uintptr_t)&_fbss) {
 		printf("[err] invalid ELF NOBITS bounds\n");
+		hcu_boot_diag_fail_reason(-1, "invalid ELF NOBITS bounds");
 		return 1;
 	}
 	resident_static_bytes = (size_t)((uintptr_t)&_end - (uintptr_t)&_fbss);
 	if (resident_static_bytes > 6815744u) {
 		printf("[err] ELF NOBITS exceeds resident_gameplay\n");
+		hcu_boot_diag_fail_reason(-1, "ELF NOBITS exceeds resident_gameplay");
 		return 1;
 	}
 	backing_bytes = MEM_LAYOUT_V2_BYTES - resident_static_bytes;
@@ -4658,10 +4679,12 @@ int main(int argc, char **argv)
 	 * allocator-owned address. The link/runtime ledger includes this slack. */
 	/* Bypass HCU's post-boot malloc arena wrapper for the single machine-owned
 	 * backing allocation. The linked HCU profile supplies --wrap=malloc/free. */
+	hcu_boot_diag_stage(HCU_BOOT_MEMORY, 0);
 	backing = __real_malloc((unsigned long)(backing_bytes + MEM_LAYOUT_V2_GUARDED_SLACK));
 	if (!backing)
 	{
 		printf("[err] cannot allocate budget-v2 backing\n");
+		hcu_boot_diag_fail_reason(-1, "cannot allocate budget-v2 backing");
 		return 1;
 	}
 	/* EE RAM below 1 MiB and above 31.5 MiB belongs to system/kernel;
@@ -4677,11 +4700,13 @@ int main(int argc, char **argv)
 	{
 		printf("[err] ELF/boot backing exceeds EE fixed budget\n");
 		__real_free(backing);
+		hcu_boot_diag_fail_reason(-1, "ELF/boot backing exceeds EE fixed budget");
 		return 1;
 	}
 	if (report_kernel_stack() != 0) {
 		printf("[err] cannot prove kernel stack is inside system_kernel reservation\n");
 		__real_free(backing);
+		hcu_boot_diag_fail_reason(-1, "cannot prove kernel stack is inside system_kernel reservation");
 		return 1;
 	}
 	arena_init(&boot, "boot", backing,
@@ -4695,6 +4720,7 @@ int main(int argc, char **argv)
 	{
 		printf("[err] cannot initialize budget-v2 layout\n");
 		__real_free(backing);
+		hcu_boot_diag_fail_reason(-1, "cannot initialize budget-v2 layout");
 		return 1;
 	}
 	/* Partition selection happens here, before physical_memory_allocate(); a
@@ -4704,6 +4730,7 @@ int main(int argc, char **argv)
 		printf("[err] cannot bind CE fixed memory regions\n");
 		physical_memory_free();
 		__real_free(backing);
+		hcu_boot_diag_fail_reason(-1, "cannot bind CE fixed memory regions");
 		return 1;
 	}
 #ifdef HALO_PS2_M2_ANIMATION_TRACE
@@ -4726,6 +4753,7 @@ int main(int argc, char **argv)
 		printf("[err] cannot bind budgeted M2 animation trace buffer\n");
 		physical_memory_free();
 		__real_free(backing);
+		hcu_boot_diag_fail_reason(-1, "cannot bind budgeted M2 animation trace buffer");
 		return 1;
 	}
 	printf("HALO_PS2_LOCAL animation-trace-bound events=0x%x contexts=0x%x count=%u event-bytes=%u context-bytes=%u resident-used=%u\n",
@@ -4743,6 +4771,7 @@ int main(int argc, char **argv)
 		printf("[err] budget-v2 intervals or boundary canaries invalid\n");
 		physical_memory_free();
 		__real_free(backing);
+		hcu_boot_diag_fail_reason(-1, "budget-v2 intervals or boundary canaries invalid");
 		return 1;
 	}
 	printf("HALO_PS2_LOCAL memory-layout bss=%u backing=%u guard_slack=%u\n",
@@ -4756,12 +4785,17 @@ int main(int argc, char **argv)
 		(unsigned)HCU_RESERVE_START,
 		(unsigned)(ee_physical_address(backing) -
 			ee_physical_address(&_end)));
+	hcu_boot_diag_note("EElo/base/R", (unsigned)ee_physical_address(&_end),
+		(unsigned)ee_physical_address(backing), HCU_RESERVE_START);
+	hcu_boot_diag_note("EElen/BSS", backing_bytes, resident_static_bytes,
+		MEM_LAYOUT_V2_GUARDED_SLACK);
 	physical_memory_allocate();
 	if (!physical_memory_ready())
 	{
 		printf("[err] required CE fixed memory regions are unavailable\n");
 		physical_memory_free();
 		__real_free(backing);
+		hcu_boot_diag_fail_reason(-1, "required CE fixed memory regions are unavailable");
 		return 1;
 	}
 	if (!mem_layout_v2_guards_intact(&layout) ||
@@ -4770,25 +4804,32 @@ int main(int argc, char **argv)
 		printf("[err] budget-v2 boundary canary corrupted during CE bind\n");
 		physical_memory_free();
 		__real_free(backing);
+		hcu_boot_diag_fail_reason(-1, "budget-v2 boundary canary corrupted during CE bind");
 		return 1;
 	}
 	printf("HALO_PS2_LOCAL memory-ready canaries=%u\n",
 		(unsigned)(MEM_LAYOUT_V2_REGION_COUNT + 1));
+	hcu_boot_diag_stage(HCU_BOOT_PAD, 0);
 	if (!pad_init())
 	{
 		printf("[err] PS2 pad service initialization failed\n");
+		hcu_boot_diag_fail(-6);
 		physical_memory_free();
 		__real_free(backing);
+		hcu_boot_diag_fail(-1);
 		return 1;
 	}
 	printf("HALO_PS2_LOCAL pad-ready\n");
 	/* pad_init starts SIF RPC. Reuse OPL's IOP modules when present; never
 	 * reset the IOP because that can destroy the launcher's storage driver. */
 	printf("HALO_PS2_LOCAL storage-boot-begin\n");
+	hcu_boot_diag_stage(HCU_BOOT_FILEXIO, 0);
 	if (hcu_storage_boot_init() != 0)
 	{
+		hcu_boot_diag_fail(-7);
 		physical_memory_free();
 		__real_free(backing);
+		hcu_boot_diag_fail(-1);
 		return 1;
 	}
 	printf("HALO_PS2_LOCAL storage-boot-ready\n");
@@ -4796,8 +4837,10 @@ int main(int argc, char **argv)
 		printf("[err] invalid asset root %s\n", HALO_HCU_ASSET_ROOT);
 		physical_memory_free();
 		__real_free(backing);
+		hcu_boot_diag_fail_reason(-1, "invalid asset root");
 		return 1;
 	}
+	hcu_boot_diag_stage(HCU_BOOT_DISC, 0);
 #if !defined(HALO_PS2_MAIN_MENU) || defined(HALO_HCU_HEADLESS_RUNTIME_GUEST)
 	if (hcu_spu_init() == 0)
 #if defined(HALO_HCU_HEADLESS_RUNTIME_GUEST)
@@ -4835,8 +4878,13 @@ int main(int argc, char **argv)
 		printf("[err] cannot bind bounded CE snapshot/renderer storage\n");
 		physical_memory_free();
 		__real_free(backing);
+		hcu_boot_diag_fail_reason(-1, "cannot bind bounded CE snapshot/renderer storage");
 		return 1;
 	}
+	hcu_boot_diag_note("frame CUN", frame_scratch->cap, frame_scratch->used, snapshot_bytes);
+	hcu_boot_diag_note("DMA CUN", dma_commands->cap, dma_commands->used,
+		bsp_render_dma_storage_required());
+	hcu_boot_diag_note("work/strm", renderer_workspace_bytes, streaming->cap, 0);
 	snapshot_storage = arena_alloc(frame_scratch, snapshot_bytes, 16);
 	snapshot_guard = arena_alloc(frame_scratch,
 		MEM_LAYOUT_V2_GUARD_BYTES, 1);
@@ -4846,12 +4894,17 @@ int main(int argc, char **argv)
 		MEM_LAYOUT_V2_GUARD_BYTES, 1);
 	renderer_dma_storage = arena_alloc(dma_commands,
 		bsp_render_dma_storage_required(), 64);
+	hcu_boot_diag_note("snap/g/w", (unsigned)(uintptr_t)snapshot_storage,
+		(unsigned)(uintptr_t)snapshot_guard, (unsigned)(uintptr_t)renderer_workspace);
+	hcu_boot_diag_note("wG/DMA/use", (unsigned)(uintptr_t)renderer_workspace_guard,
+		(unsigned)(uintptr_t)renderer_dma_storage, frame_scratch->used);
 	if (!snapshot_storage || !snapshot_guard || !renderer_workspace ||
 		!renderer_workspace_guard || !renderer_dma_storage)
 	{
 		printf("[err] cannot reserve exact snapshot, renderer workspace, and DMA spans\n");
 		physical_memory_free();
 		__real_free(backing);
+		hcu_boot_diag_fail_reason(-1, "cannot reserve exact snapshot, renderer workspace, and DMA spans");
 		return 1;
 	}
 #if defined(HALO_PS2_MAIN_MENU) && \
@@ -4883,7 +4936,8 @@ int main(int argc, char **argv)
 			printf("[err] cannot bind bounded prepared-object cache\n");
 			physical_memory_free();
 			__real_free(backing);
-			return 1;
+			hcu_boot_diag_fail_reason(-1, "cannot bind bounded prepared-object cache");
+		return 1;
 		}
 		memset(s_c3_prepare_guard, 0xC7, MEM_LAYOUT_V2_GUARD_BYTES);
 		printf("HALO_PS2_LOCAL object-prepare-storage cap=%u guard-bytes=%u frame-used=%u frame-cap=%u\n",
@@ -4902,7 +4956,8 @@ int main(int argc, char **argv)
 			printf("[err] cannot reserve bounded FX resident descriptor cache\n");
 			physical_memory_free();
 			__real_free(backing);
-			return 1;
+			hcu_boot_diag_fail_reason(-1, "cannot reserve bounded FX resident descriptor cache");
+		return 1;
 		}
 		memset(s_c3_fx_descriptor_guard, 0xC7, MEM_LAYOUT_V2_GUARD_BYTES);
 		printf("HALO_PS2_LOCAL fx-descriptor-storage cap=%u guard-bytes=%u frame-used=%u frame-cap=%u\n",
@@ -4921,6 +4976,7 @@ int main(int argc, char **argv)
 		printf("[err] cannot bind bounded CE render snapshot storage\n");
 		physical_memory_free();
 		__real_free(backing);
+		hcu_boot_diag_fail_reason(-1, "cannot bind bounded CE render snapshot storage");
 		return 1;
 	}
 	snapshot_bound = 1;
@@ -4932,6 +4988,7 @@ int main(int argc, char **argv)
 		hcu_render_snapshot_unbind();
 		physical_memory_free();
 		__real_free(backing);
+		hcu_boot_diag_fail_reason(-1, "cannot bind bounded bsp_render DMA chains/workspace");
 		return 1;
 	}
 	/* C3:dma begin */
@@ -4995,6 +5052,7 @@ int main(int argc, char **argv)
 		hcu_render_snapshot_unbind();
 		physical_memory_free();
 		__real_free(backing);
+		hcu_boot_diag_fail_reason(-1, "cannot initialize HCU map service");
 		return 1;
 	}
 	/* A qualified row must register its runtime or boot stops here. */
@@ -5003,6 +5061,7 @@ int main(int argc, char **argv)
 		hcu_render_snapshot_unbind();
 		physical_memory_free();
 		__real_free(backing);
+		hcu_boot_diag_fail(-1);
 		return 1;
 	}
 #ifdef HCU_C2_SUCCESSOR_BUILT
@@ -5012,6 +5071,7 @@ int main(int argc, char **argv)
 		hcu_render_snapshot_unbind();
 		physical_memory_free();
 		__real_free(backing);
+		hcu_boot_diag_fail(-1);
 		return 1;
 	}
 #endif
@@ -5047,13 +5107,16 @@ int main(int argc, char **argv)
 		hcu_render_snapshot_unbind();
 		physical_memory_free();
 		__real_free(backing);
+		hcu_boot_diag_fail_reason(-1, "cannot bind renderer drain gate to HCU map service");
 		return 1;
 	}
 	{
 		unsigned long asset_bytes = 0;
 		const char *failed_stage = NULL;
-		if (!hcu_file_bridge_probe("D:\\maps\\ui.map", &asset_bytes,
+		if (!hcu_file_bridge_probe_asset("D:\\maps\\ui.map", &asset_bytes,
 			&failed_stage)) {
+			hcu_boot_diag_note("UI probe bytes", (unsigned)asset_bytes, 0, 0);
+			hcu_boot_diag_note(failed_stage ? failed_stage : "UI probe unknown", 0, 0, 0);
 			printf("[err] asset root %s failed read-only maps/ui.map probe at %s\n",
 				HALO_HCU_ASSET_ROOT,
 				failed_stage ? failed_stage : "unknown");
@@ -5061,7 +5124,8 @@ int main(int argc, char **argv)
 			hcu_render_snapshot_unbind();
 			physical_memory_free();
 			__real_free(backing);
-			return 1;
+			hcu_boot_diag_fail_reason(-1, "maps/ui.map read-only file probe failed");
+		return 1;
 		}
 		printf("HALO_PS2_LOCAL asset-probe-ready root=%s bytes=%u\n",
 			HALO_HCU_ASSET_ROOT, (unsigned)asset_bytes);
@@ -5080,7 +5144,8 @@ int main(int argc, char **argv)
 				hcu_render_snapshot_unbind();
 			physical_memory_free();
 			__real_free(backing);
-			return 1;
+			hcu_boot_diag_fail(-1);
+		return 1;
 		}
 	}
 #endif
@@ -5167,6 +5232,7 @@ int main(int argc, char **argv)
 		(unsigned)render_section_scratch.invalid_releases);
 	if (!hcu_map_service_shutdown(&s_map_service)) {
 		printf("HALO_PS2_FAIL shutdown readers remain live; backing retained\n");
+		hcu_boot_diag_fail(-1);
 		return 1;
 	}
 	hcu_report_owner_telemetry("shutdown");

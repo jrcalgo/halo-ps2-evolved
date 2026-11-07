@@ -19,6 +19,16 @@ static int s_active_descriptors;
 static int s_high_descriptors;
 static unsigned s_heap_alloc_calls;
 static int s_fail_read;
+static int s_bad_stat_mode;
+/* Model the target SDK errno object without binding host libc TLS errno. */
+int hcu_test_errno;
+int __real__open(const char *path, int flags, ...)
+{
+	(void)path; (void)flags;
+	assert(!"FileXio bridge must not fall back to libc open");
+	return -1;
+}
+void hcu_loading_screen_file_read(uint32_t bytes) { (void)bytes; }
 static char s_last_path[128];
 
 void *__real_malloc(size_t size);
@@ -46,6 +56,7 @@ int fileXioOpen(const char *path, int flags, ...)
 {
 	int i;
 	assert(flags == FIO_O_RDONLY);
+	if (strstr(path, "MISSING.MAP")) return -1;
 	assert(strlen(path) < sizeof(s_last_path));
 	strcpy(s_last_path, path);
 	for (i = 0; i < HANDLE_COUNT; ++i)
@@ -106,7 +117,7 @@ int fileXioGetStat(const char *path, iox_stat_t *info)
 		return 0;
 	}
 	if (strcmp(path, "cdrom:\\MAPS\\UI.MAP") == 0) {
-		info->mode = FIO_S_IFREG;
+		info->mode = s_bad_stat_mode ? FIO_S_IFDIR : FIO_S_IFREG;
 		info->size = FILE_BYTES;
 		return 0;
 	}
@@ -191,5 +202,22 @@ int main(void)
 			&is_directory));
 		assert(!is_directory && size == FILE_BYTES);
 	}
+	/* OPL may return valid file size with stale directory bits in mode.
+	 * The known-file probe must still prove open/read/seek/EOF and close. */
+	s_bad_stat_mode = 1;
+	assert(!hcu_file_bridge_probe("D:\\maps\\ui.map", &size, &failed_stage));
+	assert(strcmp(failed_stage, "validate-file") == 0);
+	assert(hcu_file_bridge_probe_asset("D:\\maps\\ui.map", &size, &failed_stage));
+	assert(size == FILE_BYTES && failed_stage == NULL);
+	assert(s_active_descriptors == 0);
+	s_fail_read = 1;
+	assert(!hcu_file_bridge_probe_asset("D:\\maps\\ui.map", &size, &failed_stage));
+	assert(strcmp(failed_stage, "read-first-byte") == 0);
+	assert(s_active_descriptors == 0);
+	s_fail_read = 0;
+	assert(!hcu_file_bridge_probe_asset("D:\\maps\\missing.map", &size, &failed_stage));
+	assert(strcmp(failed_stage, "open") == 0);
+	s_bad_stat_mode = 0;
+	assert(s_heap_alloc_calls == heap_alloc_baseline);
 	return 0;
 }

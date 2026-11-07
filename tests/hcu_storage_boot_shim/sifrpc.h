@@ -6,6 +6,7 @@ typedef struct {
 	void *server;
 } SifRpcClientData_t;
 
+int sceSifCheckStatRpc(SifRpcClientData_t *client);
 int sceSifBindRpc(SifRpcClientData_t *client, int server_id, int mode);
 
 #endif

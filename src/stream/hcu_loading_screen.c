@@ -1,4 +1,5 @@
 #include "stream/hcu_loading_screen.h"
+#include "stream/hcu_boot_diag.h"
 #include "platform/video.h"
 
 #include "render/bsp_render.h"
@@ -174,7 +175,9 @@ static int upload_assets(void)
 		GS_PSMCT32, MASK_W, MASK_H)) { free(background); free(mask); return 0; }
 	chain_end(&chain, 0);
 	SyncDCache(s_upload_chain, (uint8_t *)s_upload_chain + chain_qwords(&chain) * 16u);
+	hcu_boot_diag_note("load upld", LOAD_BYTES, MASK_BYTES, 0);
 	dma_channel_send_chain(DMA_CHANNEL_GIF, s_upload_chain, 0, 0, 0);
+	hcu_boot_diag_note("load upwait", 0, 0, 0);
 	dma_wait_fast(); free(background); free(mask);
 	return 1;
 }
@@ -192,6 +195,7 @@ static void present(float progress)
 				s_ready, s_video != NULL, storage != NULL, s_rendering, (unsigned)s_dma_bytes);
 		return;
 	}
+	hcu_boot_diag_note("load calc", s_frame, (unsigned)s_bytes_read, 0);
 	s_rendering = 1;
 	if (progress > 1.f) progress = 1.f;
 	if (progress < 0.f) progress = 0.f;
@@ -227,8 +231,15 @@ static void present(float progress)
 	}
 	packet2_update(&s_packet, draw_finish(s_packet.next));
 	SyncDCache(storage, storage + (s_packet.next - s_packet.base) * 16u);
+	hcu_boot_diag_note("load send", s_frame, (unsigned)(s_packet.next - s_packet.base), 0);
 	dma_channel_send_packet2(&s_packet, DMA_CHANNEL_GIF, 1);
-	dma_wait_fast(); draw_wait_finish(); video_present(s_video);
+	hcu_boot_diag_note("load DMA", s_frame, 0, 0);
+	dma_wait_fast();
+	hcu_boot_diag_note("load FINISH", s_frame, 0, 0);
+	draw_wait_finish();
+	hcu_boot_diag_note("load vsync", s_frame, 0, 0);
+	video_present(s_video);
+	hcu_boot_diag_note("load shown", s_frame, 0, 0);
 	{
 		uint32_t now = timer_cycles();
 		uint32_t gap = (uint32_t)timer_ms(s_last_present_cycles, now);

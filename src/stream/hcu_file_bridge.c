@@ -1,3 +1,4 @@
+#include "stream/hcu_boot_diag.h"
 #include "stream/hcu_file_bridge.h"
 #include "stream/hcu_loading_screen.h"
 
@@ -110,6 +111,7 @@ int hcu_file_bridge_read(int token, void *buffer, unsigned long count,
 			 * return, including in the middle of a larger caller request. */
 			size_t chunk = amount - done;
 			if (chunk > 262144u) chunk = 262144u;
+			hcu_boot_diag_note("file read", (unsigned)token, slot->position, (unsigned)chunk);
 			if (file_reader_read_at(&slot->reader, slot->position, (uint8_t *)buffer + done, chunk) != 0)
 				return 0;
 			slot->position += (uint32_t)chunk;
@@ -168,23 +170,34 @@ int hcu_file_bridge_stat(const char *path, unsigned long *size_out,
 	return 1;
 }
 
-int hcu_file_bridge_probe(const char *path, unsigned long *size_out,
-	const char **failed_stage)
+static int bridge_probe(const char *path, unsigned long *size_out,
+	const char **failed_stage, int strict_metadata)
 {
 	unsigned long stat_size = 0, open_size = 0, got = 0;
-	int directory = 0, token = -1, ok = 0;
+	int directory = 0, token = -1, ok = 0, stat_ok;
 	uint8_t first_byte;
 	long position;
 	const char *stage = "stat";
 	if (size_out) *size_out = 0;
 	if (failed_stage) *failed_stage = NULL;
 	if (!path || !path[0]) goto done;
-	if (!hcu_file_bridge_stat(path, &stat_size, &directory)) goto done;
-	if (directory || stat_size == 0) { stage = "validate-file"; goto done; }
+	/* This checks a known asset file, not a directory lookup. OPL CDVDMAN
+	 * returns a sceCdlFILE starting at iox_stat.attr without writing mode;
+	 * FileXio can therefore return a stale directory bit. Retain that advisory
+	 * metadata, but prove readability/size using the actual disc descriptor. */
+	hcu_boot_diag_note("UI stat call", 0, 0, 0);
+	stat_ok = hcu_file_bridge_stat(path, &stat_size, &directory);
+	hcu_boot_diag_note("UI stat ok", (unsigned)stat_ok, (unsigned)directory, (unsigned)stat_size);
+	if (strict_metadata && !stat_ok) goto done;
+	if (strict_metadata && (directory || stat_size == 0)) {
+		stage = "validate-file"; goto done;
+	}
 	stage = "open";
+	hcu_boot_diag_note("UI open call", 0, 0, 0);
 	token = hcu_file_bridge_open(path, &open_size);
 	if (token < 0) goto done;
-	if (open_size != stat_size) { stage = "size"; goto done; }
+	if (open_size == 0) { stage = "validate-size"; goto done; }
+	if (strict_metadata && open_size != stat_size) { stage = "size"; goto done; }
 	stage = "seek-start";
 	if (hcu_file_bridge_seek(token, 0, 0) != 0) goto done;
 	stage = "read-first-byte";
@@ -192,7 +205,7 @@ int hcu_file_bridge_probe(const char *path, unsigned long *size_out,
 		goto done;
 	stage = "seek-eof";
 	position = hcu_file_bridge_seek(token, 0, 2);
-	if (position < 0 || (unsigned long)position != stat_size) goto done;
+	if (position < 0 || (unsigned long)position != open_size) goto done;
 	stage = "read-eof";
 	got = 1;
 	if (!hcu_file_bridge_read(token, &first_byte, 1, &got) || got != 0)
@@ -200,10 +213,25 @@ int hcu_file_bridge_probe(const char *path, unsigned long *size_out,
 	stage = "close";
 	if (!hcu_file_bridge_close(token)) { token = -1; goto done; }
 	token = -1;
-	if (size_out) *size_out = stat_size;
+	if (size_out) *size_out = open_size;
 	ok = 1;
 done:
+	hcu_boot_diag_note("UI stat/open/dir", (unsigned)stat_size, (unsigned)open_size, (unsigned)directory);
+	hcu_boot_diag_note("UI token/got/ok", (unsigned)token, (unsigned)got, (unsigned)ok);
+	hcu_boot_diag_note(stage, 0, 0, 0);
 	if (token >= 0 && !hcu_file_bridge_close(token)) stage = "close";
 	if (!ok && failed_stage) *failed_stage = stage;
 	return ok;
+}
+
+int hcu_file_bridge_probe(const char *path, unsigned long *size_out,
+	const char **failed_stage)
+{
+	return bridge_probe(path, size_out, failed_stage, 1);
+}
+
+int hcu_file_bridge_probe_asset(const char *path, unsigned long *size_out,
+	const char **failed_stage)
+{
+	return bridge_probe(path, size_out, failed_stage, 0);
 }

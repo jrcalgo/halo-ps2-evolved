@@ -1,4 +1,6 @@
 #include "stream/hcu_storage_boot.h"
+#include "stream/hcu_boot_diag.h"
+#include "stream/hcu_irx_unpack.h"
 
 #include "stream/file.h"
 
@@ -47,13 +49,21 @@ static int filexio_server_ready(int *bind_result_out)
 {
 	static SifRpcClientData_t probe;
 	int poll, result;
-	result = sceSifBindRpc(&probe, FILEXIO_IRX, SIF_RPC_M_NOWAIT);
-	if (bind_result_out) *bind_result_out = result;
-	if (result < 0) return result;
+	if (bind_result_out) *bind_result_out = 0;
+	if (!sceSifCheckStatRpc(&probe)) probe.server = NULL;
+	/* A completed bind with no server must be retried. Conversely, a timed
+	 * out NOWAIT packet still owns probe: never overwrite it with a second
+	 * request (including on a later invocation after module loading). */
 	for (poll = 0; poll < HCU_FILEXIO_BIND_POLLS; ++poll) {
-		if (probe.server) return 1;
+		if (!sceSifCheckStatRpc(&probe)) {
+			if (probe.server) return 1;
+			result = sceSifBindRpc(&probe, FILEXIO_IRX, SIF_RPC_M_NOWAIT);
+			if (bind_result_out) *bind_result_out = result;
+			if (result < 0) return result;
+		}
 		DelayThread(HCU_FILEXIO_BIND_DELAY_US);
 	}
+	if (!sceSifCheckStatRpc(&probe) && probe.server) return 1;
 	return 0;
 }
 
@@ -63,6 +73,7 @@ static int ensure_module(const char *name, const char *legacy_name,
 	int id, module_start_result = 0, legacy_id;
 	HCU_TRACE("HALO_PS2_LOCAL storage-search %s\n", name);
 	id = SifSearchModuleByName(name);
+	hcu_boot_diag_note(name, (unsigned)id, 0, 0);
 	HCU_TRACE("HALO_PS2_LOCAL storage-search-done %s id=%d\n", name, id);
 	/* PS2SDK's SearchModuleByName returns a positive module ID on success.
 	 * The value 0 is not a valid loaded module ID (the IOP implementation uses
@@ -77,6 +88,7 @@ static int ensure_module(const char *name, const char *legacy_name,
 	if (legacy_name) {
 		HCU_TRACE("HALO_PS2_LOCAL storage-search-legacy %s\n", legacy_name);
 		legacy_id = SifSearchModuleByName(legacy_name);
+		hcu_boot_diag_note(legacy_name, (unsigned)legacy_id, 0, 0);
 		if (valid_module_id(legacy_id)) {
 			printf("HALO_PS2_LOCAL storage-module-reused name=%s id=%d\n",
 				legacy_name, legacy_id);
@@ -84,6 +96,15 @@ static int ensure_module(const char *name, const char *legacy_name,
 		}
 	}
 	if (!image || image_size == 0 || image_size > UINT32_MAX) return -1;
+#ifdef HALO_PS2_PACKED_IRX
+	{
+		extern const uint32_t halo_iomanx_irx_raw_size, halo_filexio_irx_raw_size;
+		uint32_t raw_size = image == halo_iomanx_irx_start ? halo_iomanx_irx_raw_size : halo_filexio_irx_raw_size;
+		image = hcu_irx_unpack(image, image_size, raw_size);
+		if (!image) return -1;
+		image_size = raw_size;
+	}
+#endif
 	HCU_TRACE("HALO_PS2_LOCAL storage-load-begin %s bytes=%u\n", name,
 		(unsigned)image_size);
 	id = SifExecModuleBuffer((void *)image, (u32)image_size, 0, NULL,
@@ -92,6 +113,7 @@ static int ensure_module(const char *name, const char *legacy_name,
 		name, id, module_start_result);
 	HCU_TRACE("HALO_PS2_LOCAL storage-load-result %s id=%d start=%d\n",
 		name, id, module_start_result);
+	hcu_boot_diag_note(name, (unsigned)id, (unsigned)module_start_result, (unsigned)image_size);
 	if (id <= 0 || module_start_result != 0)
 		return -1;
 	HCU_TRACE("HALO_PS2_LOCAL storage-load-done %s\n", name);
@@ -108,6 +130,7 @@ int hcu_storage_boot_init(void)
 	/* Reuse an OPL/launcher-provided RPC server before touching its IOP state. */
 	printf("HALO_PS2_LOCAL storage-filexio-bind-probe\n");
 	server_result = filexio_server_ready(&bind_result);
+	hcu_boot_diag_note("FileXio bind/RPC", (unsigned)server_result, (unsigned)bind_result, 0);
 	printf("HALO_PS2_LOCAL storage-filexio-bind-result phase=initial status=%d rpc=%d\n",
 		server_result, bind_result);
 	if (server_result > 0) {
@@ -143,6 +166,7 @@ int hcu_storage_boot_init(void)
 	}
 	printf("HALO_PS2_LOCAL storage-filexio-bind-probe-after-load\n");
 	server_result = filexio_server_ready(&bind_result);
+	hcu_boot_diag_note("FileXio bind/RPC", (unsigned)server_result, (unsigned)bind_result, 0);
 	printf("HALO_PS2_LOCAL storage-filexio-bind-result phase=post-load status=%d rpc=%d\n",
 		server_result, bind_result);
 	if (server_result <= 0) {

@@ -17,3 +17,9 @@ int hcu_file_bridge_stat(const char *path, unsigned long *size_out,
  * handle. failed_stage receives a stable diagnostic token on failure. */
 int hcu_file_bridge_probe(const char *path, unsigned long *size_out,
 	const char **failed_stage);
+
+/* Startup check for a known packaged asset: descriptor open/size/read/seek/EOF
+ * are authoritative. Stat remains advisory because OPL optical mode is unset.
+ * This does not provide generic directory classification. */
+int hcu_file_bridge_probe_asset(const char *path, unsigned long *size_out,
+ const char **failed_stage);
