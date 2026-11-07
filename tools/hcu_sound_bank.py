@@ -354,7 +354,7 @@ def build_bank(map_path: Path, budget: int = DEFAULT_BUDGET, max_perms: int = 2,
                pin_bytes: int = 0, pin_perms: int = 2, usage: dict[int, int] | None = None,
                fill_perms: int = 1, low_rate: int = 0, tail_rate: int = 0,
                announcer: bool = False, announcer_rate: int = 0,
-               tier_rates: dict[int, int] | None = None) -> tuple[bytes, list[dict]]:
+               tier_rates: dict[int, int] | None = None, walk_perms: int = 0, walk_rate: int = 0) -> tuple[bytes, list[dict]]:
     """With pin_bytes, the bank opens with a pinned prefix of at most pin_bytes (the PIN_TIERS sounds, pin_perms
     permutations each): header spu_bytes is that prefix's size, the player uploads only it at load and never
     evicts it; everything after is paged through the rest of SPU2 RAM. Without it spu_bytes is the data size.
@@ -466,6 +466,13 @@ def build_bank(map_path: Path, budget: int = DEFAULT_BUDGET, max_perms: int = 2,
     for tier, path, tag, info, perms in candidates:
         if tier >= len(TIERS) or path in stored_paths:
             continue
+        if walk_perms > 1 and is_walk_sound(path):
+            # Walking footsteps keep several variations, band-limited to walk_rate so they fit; if they do not,
+            # the sound still gets its one recording like any other footstep.
+            if add(tier, path, tag, info, perms, walk_perms, budget, walk_rate) or \
+                    add(tier, path, tag, info, perms, 1, budget, walk_rate):
+                stored_paths.add(path)
+            continue
         if add(tier, path, tag, info, perms, fill_perms if usage else max_perms, budget):
             stored_paths.add(path)
     prefix_used = used
@@ -528,6 +535,11 @@ def spu_pitch(rate: int) -> int:
     return round(0x1000 * rate / SPU_BASE_RATE)
 
 
+def is_walk_sound(path: str) -> bool:
+    lowered = path.lower()
+    return "footsteps" in lowered and lowered.endswith("\\walk")
+
+
 def _tier_index(prefix: str, word: str = "") -> int:
     return next(i for i, (pre, words) in enumerate(TIERS) if pre == prefix and (not word or word in words))
 
@@ -559,6 +571,10 @@ def main() -> int:
     ap.add_argument("--fringe-rate", type=int, default=0,
                     help="sample-rate ceiling for the lowest-priority tiers (weapon posing, vehicle enter/exit "
                          "foley, flamethrower, Chief grunts), e.g. 6000; lets every sound fit the resident bank")
+    ap.add_argument("--walk-perms", type=int, default=0,
+                    help="permutations kept for each surface's walking footstep (the recordings the game varies); 0 or 1 keeps one")
+    ap.add_argument("--walk-rate", type=int, default=0,
+                    help="sample rate the kept walking footsteps are band-limited to (e.g. 6000), so the extra variations fit")
     ap.add_argument("--paged", action="store_true",
                     help="allow a bank larger than SPU2 RAM; the player pages samples in on first use")
     ap.add_argument("--announcer-rate", type=int, default=0,
@@ -588,7 +604,7 @@ def main() -> int:
             tier_rates.update({tier: rate for tier in tiers})
     blob, entries = build_bank(args.map, args.budget, args.max_perms, args.pin_bytes, args.pin_perms, usage,
                                args.fill_perms, args.low_rate, args.tail_rate, args.announcer, args.announcer_rate,
-                               tier_rates or None)
+                               tier_rates or None, args.walk_perms, args.walk_rate)
     info = verify_bank(blob)
     args.output.write_bytes(blob)
     announcer_rows = [e for e in entries if is_announcer_sound(e["path"])]

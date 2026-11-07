@@ -30,7 +30,8 @@ SPU_BUDGET = "2076656"
 SOUND_BANK_ARGS = ["--budget", SPU_BUDGET, "--max-perms", "1", "--low-rate", "16000",
                    "--tail-rate", "8000", "--announcer-rate", "8000",
                    "--vehicle-rate", "8000", "--impact-rate", "8000", "--hit-rate", "8000",
-                   "--fringe-rate", "6000"]
+                   "--fringe-rate", "6000",
+                   "--walk-perms", "4", "--walk-rate", "6000"]
 
 
 def c3_base() -> dict[str, str]:
