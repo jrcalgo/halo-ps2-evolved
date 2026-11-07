@@ -353,7 +353,7 @@ def _pin_tier(path: str) -> int | None:
 def build_bank(map_path: Path, budget: int = DEFAULT_BUDGET, max_perms: int = 2,
                pin_bytes: int = 0, pin_perms: int = 2, usage: dict[int, int] | None = None,
                fill_perms: int = 1, low_rate: int = 0, tail_rate: int = 0,
-               announcer: bool = False) -> tuple[bytes, list[dict]]:
+               announcer: bool = False, announcer_rate: int = 0) -> tuple[bytes, list[dict]]:
     """With pin_bytes, the bank opens with a pinned prefix of at most pin_bytes (the PIN_TIERS sounds, pin_perms
     permutations each): header spu_bytes is that prefix's size, the player uploads only it at load and never
     evicts it; everything after is paged through the rest of SPU2 RAM. Without it spu_bytes is the data size.
@@ -450,6 +450,15 @@ def build_bank(map_path: Path, budget: int = DEFAULT_BUDGET, max_perms: int = 2,
             if add(tier, path, tag, info, perms, max_perms, budget):
                 pinned_paths.add(path)
     stored_paths = set(pinned_paths)
+    if announcer and announcer_rate:
+        # Resident announcer: the speech is crushed to announcer_rate and placed before the tier fill, inside the
+        # resident budget, so no sound is ever paged. The fill then takes what is left, most important tiers first.
+        for tier, path, tag, info, perms in announcers:
+            if path in stored_paths:
+                continue
+            speech = ANNOUNCER_DIALOG in path.lower()      # the mode ticks keep their tier rate
+            if add(tier, path, tag, info, perms, 1, budget, min(info["rate"], announcer_rate) if speech else 0):
+                stored_paths.add(path)
     for tier, path, tag, info, perms in candidates:
         if tier >= len(TIERS) or path in stored_paths:
             continue
@@ -464,7 +473,7 @@ def build_bank(map_path: Path, budget: int = DEFAULT_BUDGET, max_perms: int = 2,
             override = info["rate"] if ANNOUNCER_DIALOG in path.lower() else 0
             if add(tier, path, tag, info, perms, max(max_perms, 1), PAGED_BUDGET_LIMIT, override):
                 stored_paths.add(path)
-    if announcer and spu_bytes is None:
+    if announcer and spu_bytes is None and not announcer_rate:
         # Leave the player's paging pool. The resident prefix ends on a sample boundary so a sample is
         # either uploaded whole or paged whole. Announcer lines past the gameplay prefix page in.
         resident_cap = min(budget, SPU_RAM_BYTES - SPU_RESERVED_BYTES - MIN_POOL_BYTES)
@@ -537,6 +546,9 @@ def main() -> int:
                     help="sample rate for the least critical tiers (shell casings, melee, ui, ambience, dialogue), e.g. 11025")
     ap.add_argument("--paged", action="store_true",
                     help="allow a bank larger than SPU2 RAM; the player pages samples in on first use")
+    ap.add_argument("--announcer-rate", type=int, default=0,
+                    help="keep the multiplayer announcer speech RESIDENT, band-limited to this sample rate (e.g. 8000), "
+                         "ahead of the gameplay tier fill; nothing is paged")
     ap.add_argument("--announcer", action=argparse.BooleanOptionalAction, default=True,
                     help="keep every multiplayer announcer line, paging any that do not fit the resident budget")
     args = ap.parse_args()
@@ -554,7 +566,7 @@ def main() -> int:
                 h = int(key, 16) if len(key) == 8 and all(c in "0123456789abcdef" for c in key.lower()) else name_hash(key)
                 usage[h] = usage.get(h, 0) + int(parts[1])
     blob, entries = build_bank(args.map, args.budget, args.max_perms, args.pin_bytes, args.pin_perms, usage,
-                               args.fill_perms, args.low_rate, args.tail_rate, args.announcer)
+                               args.fill_perms, args.low_rate, args.tail_rate, args.announcer, args.announcer_rate)
     info = verify_bank(blob)
     args.output.write_bytes(blob)
     announcer_rows = [e for e in entries if is_announcer_sound(e["path"])]

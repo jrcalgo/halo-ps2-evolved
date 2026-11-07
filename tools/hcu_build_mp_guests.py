@@ -27,6 +27,8 @@ LOCK = Path("/tmp/hb/build.lock")
 CHAIN_INC = ROOT / "build/c3/chain/inc"
 SELECTED = ROOT / "build/m2-c2-r3-selected-packages/pkg"
 SPU_BUDGET = "2076656"
+SOUND_BANK_ARGS = ["--budget", SPU_BUDGET, "--max-perms", "1", "--low-rate", "16000",
+                   "--tail-rate", "8000", "--announcer-rate", "8000"]
 
 
 def c3_base() -> dict[str, str]:
@@ -79,16 +81,18 @@ def prepare_map(name: str) -> str:
             "--output-dir", str(pkg_out),
         ], cwd=ROOT, env=env, check=True)
     hsb = dest / f"{name}.hsb"
-    if not hsb_is_resident(hsb):
+    stamp = hsb.with_name(hsb.name + ".args")
+    sound_args = " ".join(SOUND_BANK_ARGS)
+    if not hsb_is_resident(hsb) or not stamp.is_file() or stamp.read_text() != sound_args:
         # Audio is never paged: a paged bank overwrites SPU RAM under playing voices (the buzz) and its tail sounds
-        # (footsteps, reloads, ...) are silent or late. Every map ships a fully resident bank.
+        # (footsteps, reloads, ...) are silent or late. Every map ships a fully resident bank, announcer included: the
+        # announcer speech and the least critical tiers are crushed to 8 kHz so everything fits SPU2 RAM.
         hsb.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run([
             sys.executable, "tools/hcu_sound_bank.py",
-            str(ROOT / item.map_path), str(hsb),
-            "--budget", SPU_BUDGET, "--max-perms", "1",
-            "--low-rate", "16000", "--tail-rate", "11025", "--no-announcer",
+            str(ROOT / item.map_path), str(hsb), *SOUND_BANK_ARGS,
         ], cwd=ROOT, env=env, check=True)
+        stamp.write_text(sound_args)
     inc = dest / "inc"
     inc.mkdir(parents=True, exist_ok=True)
     for header in ("hcu_c3_render.h", "hcu_c3_workload.h", "hcu_c2_cycles.h"):
