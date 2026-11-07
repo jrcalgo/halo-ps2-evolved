@@ -23,7 +23,7 @@ Out of scope: network play and System Link, PAL, 60 fps and campaign.
 
 ## Status
 
-Work proceeds through measured, evidence-backed milestones. A milestone closes only on host, emulator (PCSX2) or hardware evidence, never on compilation alone. The governing plans are [the HCU remake plan](plans/5.hcu-remake.md) and [M2–M4 closure](plans/7.hcu-remake-m2-m4.md). Evidence reports live under [`docs/reports`](docs/reports).
+The native main menu now works on a physical PS2 through OPL 1.1.0-Beta-1996 and 1.2.0-Beta-1996 from the internal APA HDD, and exposes all 13 multiplayer maps and the game modes. The full 13-map image is prepared; loading and playing those selections on PS2 remain to be qualified. Menu-to-gameplay chains work in PCSX2 across all 13 maps and game modes. Blood Gulch has been verified with one and two players. The game keeps Halo's 30 Hz simulation target, but real-console performance has not yet been measured; PCSX2 results are about 30 FPS at one player and 20–30 FPS at two players. Hardware controls, sound, settings persistence and extended stability still need qualification. Evidence reports live under [`docs/reports`](docs/reports).
 
 ## Getting started
 
