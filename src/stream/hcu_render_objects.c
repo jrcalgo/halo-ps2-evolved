@@ -3376,24 +3376,27 @@ static int fx_decal_composite_one(render_ctx_t *rc, const hcu_render_effect_draw
 	uint64_t variants[3];
 	uint16_t decal_w, decal_h;
 	uint32_t nv, tiles_x, tiles_y, tile_count, per_tile;
-	int x0, y0, x1, y1, x, y;
-#define DBG_WHY(n) ((void)0)
+	int x0 = 0, y0 = 0, x1 = -1, y1 = -1, x, y;
+	/* Every refusal below returns 0. They were `DBG_WHY(n)` no-ops, so a decal outside the viewport (where
+	 * fx_decal_one_tile returns 0 without writing its bounds) ran the tile loops over uninitialised stack ints:
+	 * a view-dependent, build-layout-dependent stall of seconds per frame. */
 	if (!rc || !effect || !binding || !quad || !g) return 0;
-	if (!fx_decal_one_tile(rc, quad, g, &x0, &y0, &x1, &y1)) DBG_WHY(1);
+	if (!fx_decal_one_tile(rc, quad, g, &x0, &y0, &x1, &y1)) return 0;
+	if (x1 < x0 || y1 < y0) return 0;
 	tiles_x = (uint32_t)(x1 - x0) / DECAL_COMPOSE_W + 1u;
 	tiles_y = (uint32_t)(y1 - y0) / DECAL_COMPOSE_H + 1u;
-	if (tiles_x > 8u || tiles_y > 14u) DBG_WHY(2);
+	if (tiles_x > 16u || tiles_y > 16u) return 0;     /* bounds are clamped to the viewport: unreachable unless corrupt */
 	tile_count = tiles_x * tiles_y;
 	nv = fx_quad_clip(rc, quad, effect, (const uint8_t[4]){255,255,255,128}, NULL,
 		g, 1, 0, 0, 0, NULL);
 	per_tile = 165u + 18u * nv;
-	if (!nv) DBG_WHY(3);
-	if (!chain_has_space(rc->chain, 3u * 76u + tile_count * per_tile)) DBG_WHY(4);
-	if (!fx_decal_channel_textures(rc, binding, effect, base_tex0, variants, &decal_w, &decal_h)) DBG_WHY(5);
+	if (!nv) return 0;
+	if (!chain_has_space(rc->chain, 3u * 76u + tile_count * per_tile)) return 0;
+	if (!fx_decal_channel_textures(rc, binding, effect, base_tex0, variants, &decal_w, &decal_h)) return 0;
 	for (y = y0; y <= y1; y += (int)DECAL_COMPOSE_H)
 		for (x = x0; x <= x1; x += (int)DECAL_COMPOSE_W)
 			if (!fx_decal_composite_tile(rc, effect, quad, g, variants, decal_w, decal_h,
-				(uint32_t)x, (uint32_t)y, pending)) DBG_WHY(6);
+				(uint32_t)x, (uint32_t)y, pending)) return 0;
 	return 1;
 }
 
