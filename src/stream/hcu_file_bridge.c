@@ -121,6 +121,13 @@ int hcu_file_bridge_read(int token, void *buffer, unsigned long count,
 	return 1;
 }
 
+int hcu_file_bridge_prefetch(int token, uint32_t offset, uint32_t size)
+{
+	struct hcu_file_slot *slot = get_slot(token);
+	if (!slot) return 1;
+	return file_reader_prefetch(&slot->reader, offset, size);
+}
+
 int hcu_file_bridge_size(int token, unsigned long *size_out)
 {
 	struct hcu_file_slot *slot = get_slot(token);

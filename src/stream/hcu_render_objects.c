@@ -1312,6 +1312,9 @@ uint32_t hcu_render_objects_fp_lod(int32_t view_w, int32_t view_h, int32_t scree
 
 #ifdef HCU_RENDER_OBJECTS_EE
 #include "core/mat.h"
+#ifdef HCU_RENDER_OBJECTS_EE
+#include "stream/file.h"
+#endif
 #include "platform/video.h"
 #include "render/bsp_render.h"
 #include "render/render_internal.h"
@@ -1712,6 +1715,26 @@ static int entry_need(const obj_slot *s, uint32_t *out)
 #define OBJ_LOAD_SLICE_BYTES 0u
 #endif
 #define OBJ_SLICE_AFTER_FRAME 0u
+#ifdef HCU_RENDER_OBJECTS_EE
+/* Disc reads for a sliced load run in the background. The optical staging buffer (carved off the pool tail)
+ * receives the next window while the frame renders; a pump consumes a window only once it has arrived, so a load
+ * never makes the EE wait on the drive. A window holds at most 32 sectors minus the sector-offset slack. */
+#define OBJ_PREFETCH_STAGE_BYTES 65536u
+#define OBJ_WINDOW_FAST 61440u   /* ranks 0 and 1: gun, hands, vehicles */
+#define OBJ_WINDOW_SLOW 30720u   /* scenery */
+static uint8_t s_stage_bound;
+#if defined(HALO_PS2_C3_PHASE_PROBE) && HALO_PS2_C3_PHASE_PROBE
+/* PINE-readable: [0] windows consumed, [1] pumps that found the next window still on its way. */
+uint32_t g_hcu_obj_pf[4];
+/* Probe-only A/B controls. g_hcu_obj_prefetch_off is PINE-writable: nonzero reverts loads to blocking slices. The
+ * ballast takes pool bytes at map load so a short capture exercises the same eviction churn a long session does. */
+uint32_t g_hcu_obj_prefetch_off;
+#define OBJ_PROBE_POOL_BALLAST_BYTES (1280u * 1024u)
+#define OBJ_PF_COUNT(i) (g_hcu_obj_pf[i]++)
+#else
+#define OBJ_PF_COUNT(i) ((void)0)
+#endif
+#endif
 #define OBJ_JOB_NONE 0xFFFFFFFFu
 typedef struct {
 	uint32_t entry, off, stage, at, last_frame, pump_frame;
@@ -1850,6 +1873,13 @@ static int job_pump(const hcu_asset_profile_view *view, const obj_slot *s, const
 	 * within the 64 KiB media staging limit. The SHA-256 context is updated once per byte. */
 	uint32_t slices = s_job.rank <= 1u ? 2u : 1u;
 	uint32_t budget = OBJ_LOAD_SLICE_BYTES * slices;
+#ifdef HCU_RENDER_OBJECTS_EE
+	uint32_t window = s_stage_bound ? (s_job.rank <= 1u ? OBJ_WINDOW_FAST : OBJ_WINDOW_SLOW) : 0u;
+#if defined(HALO_PS2_C3_PHASE_PROBE) && HALO_PS2_C3_PHASE_PROBE
+	if (g_hcu_obj_prefetch_off) window = 0u;
+#endif
+	if (window) budget = window;
+#endif
 	if (budget > 65536u) budget = 65536u;
 #if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
 	uint32_t slice_read = 0;
@@ -1879,8 +1909,31 @@ static int job_pump(const hcu_asset_profile_view *view, const obj_slot *s, const
 				return 0;
 			}
 			if (n > budget) n = budget;
-			if (n > OBJ_LOAD_SLICE_BYTES) n = OBJ_LOAD_SLICE_BYTES;
-			if (n > 65536u) n = 65536u;
+#ifdef HCU_RENDER_OBJECTS_EE
+			if (window) {
+				if (n > window) n = window;
+				/* Start (first call) or poll the background read of this window; come back next frame if
+				 * it has not arrived. Nothing here blocks. */
+				int ready = hcu_asset_profile_range_ready(view, HCU_ASSET_CHUNK_MEDIA, chunk, s_job.at, n);
+				if (ready == 0) {
+					OBJ_PF_COUNT(1);
+					return 0;
+				}
+				if (ready < 0) {
+					/* No read-ahead for this range: fall back to a short blocking slice for this pump. */
+					OBJ_PF_COUNT(2);
+					window = 0u;
+					if (budget > OBJ_LOAD_SLICE_BYTES * slices) budget = OBJ_LOAD_SLICE_BYTES * slices;
+					if (n > OBJ_LOAD_SLICE_BYTES) n = OBJ_LOAD_SLICE_BYTES;
+				} else {
+					OBJ_PF_COUNT(0);
+				}
+			} else
+#endif
+			{
+				if (n > OBJ_LOAD_SLICE_BYTES) n = OBJ_LOAD_SLICE_BYTES;
+				if (n > 65536u) n = 65536u;
+			}
 			if (!n) return 0;
 			{
 				uint32_t probe_t0 = timer_cycles();
@@ -1899,6 +1952,20 @@ static int job_pump(const hcu_asset_profile_view *view, const obj_slot *s, const
 					break;
 				}
 			}
+#ifdef HCU_RENDER_OBJECTS_EE
+			if (window) {
+				/* The bytes are copied out of the staging buffer: let the drive fetch the next window now, so it
+				 * arrives during the rest of this frame. After the model's last window, that is the texture. */
+				uint32_t after = s_job.at + n;
+				if (after < size) {
+					uint32_t rest = size - after;
+					(void)hcu_asset_profile_range_ready(view, HCU_ASSET_CHUNK_MEDIA, chunk, after, rest < window ? rest : window);
+				} else if (!tex && e->texture_chunk && s->tex_size) {
+					(void)hcu_asset_profile_range_ready(view, HCU_ASSET_CHUNK_MEDIA, e->texture_chunk, 0u,
+						s->tex_size < window ? s->tex_size : window);
+				}
+			}
+#endif
 			{
 				uint32_t probe_h0 = timer_cycles();
 				sha256_update(&s_job.sha, dst + s_job.at, n);
@@ -4198,6 +4265,20 @@ int hcu_render_objects_load(const hcu_asset_profile_view *view, arena_t *arena,
 		room = room > padding ? room - padding : 0;
 		room &= ~(size_t)(OBJ_ALIGN - 1u);
 	}
+#ifdef HCU_RENDER_OBJECTS_EE
+	s_stage_bound = 0u;
+	if (room > 16u * OBJ_PREFETCH_STAGE_BYTES) {
+		/* The staging buffer for background disc reads comes off the pool's tail: no new static memory. */
+		uint8_t *stage;
+		room -= OBJ_PREFETCH_STAGE_BYTES;
+#if defined(HALO_PS2_C3_PHASE_PROBE) && HALO_PS2_C3_PHASE_PROBE
+		if (room > OBJ_PROBE_POOL_BALLAST_BYTES) room -= OBJ_PROBE_POOL_BALLAST_BYTES;
+#endif
+		base = arena_alloc(arena, room, OBJ_ALIGN);
+		stage = arena_alloc(arena, OBJ_PREFETCH_STAGE_BYTES, 64u);
+		s_stage_bound = (uint8_t)(base && stage && file_reader_prefetch_bind(stage, OBJ_PREFETCH_STAGE_BYTES));
+	} else
+#endif
 	base = room ? arena_alloc(arena, room, OBJ_ALIGN) : NULL;
 	pool_init(base, base ? (uint32_t)room : 0u);
 	for (i = 0; i < count; i++) {

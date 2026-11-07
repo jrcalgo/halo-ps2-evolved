@@ -745,6 +745,12 @@ static int hcu_c2_package_read_at(void *context, uint32_t offset,
 		HCU_ASSET_PROFILE_OK : HCU_ASSET_PROFILE_E_STATE;
 }
 
+/* Non-blocking read-ahead for object loads: the package file asked for a range. */
+static int hcu_c2_package_prefetch(uint32_t offset, uint32_t size)
+{
+	return hcu_file_bridge_prefetch(s_c2_package.token, offset, size);
+}
+
 /* The datum table names the one source map each output datum comes from. A
  * datum outside the table has no source and is refused. */
 static int hcu_c2_source_read(void *context, int32_t output_datum,
@@ -859,6 +865,12 @@ static int hcu_c2s_package_read_at(void *context, uint32_t offset,
 		HCU_ASSET_PROFILE_OK : HCU_ASSET_PROFILE_E_STATE;
 }
 
+/* Non-blocking read-ahead for object loads: the package reader's file token, asked for a range. */
+static int hcu_c2s_package_prefetch(uint32_t offset, uint32_t size)
+{
+	return hcu_file_bridge_prefetch(s_c2s_package.token, offset, size);
+}
+
 static int hcu_c2s_source_read(void *context, int32_t output_datum,
 	uint32_t file_offset, uint32_t size, void *buffer, int blocking)
 {
@@ -931,6 +943,7 @@ static int hcu_register_selected_runtime(hcu_map_service *service,
 		}
 		memset(&runtime, 0, sizeof(runtime));
 		runtime.package_read_at = hcu_c2_package_read_at;
+		hcu_asset_profile_set_prefetch(hcu_c2_package_read_at, hcu_c2_package_prefetch);
 		runtime.package_size = HCU_C2_IMAGE_PACKAGE_BYTES;
 		runtime.profile_id = HCU_C2_IMAGE_PROFILE_ID;
 		memcpy(runtime.package_sha256, HCU_C2_IMAGE_PACKAGE_SHA256, 32);
@@ -1043,6 +1056,7 @@ static int hcu_register_successor_runtime(hcu_map_service *service,
 	}
 	memset(&runtime, 0, sizeof(runtime));
 	runtime.package_read_at = hcu_c2s_package_read_at;
+	hcu_asset_profile_set_prefetch(hcu_c2s_package_read_at, hcu_c2s_package_prefetch);
 	runtime.package_size = HCU_C2_SUCC_PACKAGE_BYTES;
 	runtime.profile_id = HCU_C2_SUCC_PROFILE_ID;
 	memcpy(runtime.package_sha256, HCU_C2_SUCC_PACKAGE_SHA256, 32);

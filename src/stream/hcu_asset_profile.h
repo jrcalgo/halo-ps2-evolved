@@ -71,6 +71,13 @@ int hcu_asset_profile_read_chunk_staged_profiled(const hcu_asset_profile_view *v
 int hcu_asset_profile_read_range(const hcu_asset_profile_view *view,
 	uint32_t type, uint32_t chunk_id, uint32_t logical_offset,
 	void *destination, uint32_t size);
+/* Non-blocking read-ahead hook for one package reader: fn(package_offset, size) returns 1 when those bytes are
+ * resident and 0 while a background transfer is pending. */
+typedef int (*hcu_asset_profile_prefetch_fn)(uint32_t offset, uint32_t size);
+void hcu_asset_profile_set_prefetch(hcu_asset_profile_read_at read_at, hcu_asset_profile_prefetch_fn fn);
+/* 1 when the logical range is resident, 0 while its background read is pending, -1 when no read-ahead applies. */
+int hcu_asset_profile_range_ready(const hcu_asset_profile_view *view, uint32_t type, uint32_t chunk_id,
+	uint32_t logical_offset, uint32_t size);
 int hcu_asset_profile_lifetime(uint32_t type, uint32_t *lifetime);
 /* Chunk-kind table. Kinds 1 and 3 are unkeyed (id 0); kinds 2, 4, 5 and 6 are
  * keyed by chunk id. Unknown kinds are refused by every format check. */

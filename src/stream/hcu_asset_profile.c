@@ -315,6 +315,47 @@ static int read_range_unchecked(const hcu_asset_profile_view*v,const hcu_asset_c
 	}
 	return done==size;
 }
+/* Optional non-blocking read-ahead, registered per package reader. */
+static struct { hcu_asset_profile_read_at reader; hcu_asset_profile_prefetch_fn fn; } s_prefetch[2];
+void hcu_asset_profile_set_prefetch(hcu_asset_profile_read_at reader, hcu_asset_profile_prefetch_fn fn)
+{
+	uint32_t i;
+	for (i = 0; i < 2u; i++) if (s_prefetch[i].reader == reader || !s_prefetch[i].reader) { s_prefetch[i].reader = reader; s_prefetch[i].fn = fn; return; }
+}
+/* Maps a logical range of one chunk to its package bytes (the segments must be physically contiguous) and
+ * starts or polls a background read of them. 1 = those bytes are resident (a read costs a memcpy), 0 = the disc
+ * transfer is still pending, -1 = no read-ahead applies to this range (read it normally). Never blocks and never
+ * reads the disc itself. */
+int hcu_asset_profile_range_ready(const hcu_asset_profile_view*v,uint32_t type,uint32_t id,uint32_t offset,uint32_t size)
+{
+	hcu_asset_chunk_view e; hcu_asset_profile_prefetch_fn fn=0; uint32_t k,first,count,end,lo=0,hi,i,phys=0,span=0;
+	if(!v||!size||v->memory_image||v->version!=2)return -1;
+	for(k=0;k<2u;k++) if(s_prefetch[k].reader&&s_prefetch[k].reader==v->read_at) fn=s_prefetch[k].fn;
+	if(!fn)return -1;
+	if(hcu_asset_profile_lookup(v,type,id,&e))return -1;
+	if(offset>e.size||size>e.size-offset)return -1;
+	first=e.first_segment;count=e.segment_count;end=offset+size;hi=count;
+	if(first>v->chunk_count||count>v->chunk_count-first||!count)return -1;
+	while(lo<hi) { uint32_t mid=lo+(hi-lo)/2u,base,n;uint8_t b[96];
+		if(!rawread(v,HCP_HEADER_SIZE+(first+mid)*v->record_bytes,b,v->record_bytes))return -1;
+		base=le32(b+16);n=le32(b+12);
+		if(base+n<=offset)lo=mid+1;else hi=mid;
+	}
+	for(i=lo;i<count&&span<size;i++) { uint8_t b[96];uint32_t poff,n,base,seglo,segend,physical;
+		if(!rawread(v,HCP_HEADER_SIZE+(first+i)*v->record_bytes,b,v->record_bytes))return -1;
+		if(le32(b)!=e.type||le32(b+4)!=e.chunk_id)return -1;
+		poff=le32(b+8);n=le32(b+12);base=le32(b+16);
+		if(end<=base)break;
+		if(offset>=base+n)continue;
+		seglo=offset>base?offset:base;segend=end<base+n?end:base+n;
+		if(poff>v->total_bytes||n>v->total_bytes-poff||seglo-base>n)return -1;
+		physical=poff+(seglo-base);
+		if(!span)phys=physical;else if(physical!=phys+span)return -1;
+		span+=segend-seglo;
+	}
+	if(span!=size)return -1;
+	return fn(phys,span)?1:0;
+}
 int hcu_asset_profile_read_range(const hcu_asset_profile_view*v,uint32_t type,uint32_t id,uint32_t off,void*dst,uint32_t n)
 { hcu_asset_chunk_view e; if(!v||(!dst&&n))return HCU_ASSET_PROFILE_E_ARGUMENT; if(hcu_asset_profile_lookup(v,type,id,&e))return HCU_ASSET_PROFILE_E_FORMAT; if(off>e.size||n>e.size-off)return HCU_ASSET_PROFILE_E_BOUNDS; return read_range_unchecked(v,&e,off,(uint8_t*)dst,n)?0:HCU_ASSET_PROFILE_E_BOUNDS; }
 /* Reload one directory record using bounds derived from the preflighted view,
