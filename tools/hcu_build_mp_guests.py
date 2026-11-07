@@ -28,7 +28,9 @@ CHAIN_INC = ROOT / "build/c3/chain/inc"
 SELECTED = ROOT / "build/m2-c2-r3-selected-packages/pkg"
 SPU_BUDGET = "2076656"
 SOUND_BANK_ARGS = ["--budget", SPU_BUDGET, "--max-perms", "1", "--low-rate", "16000",
-                   "--tail-rate", "8000", "--announcer-rate", "8000"]
+                   "--tail-rate", "8000", "--announcer-rate", "8000",
+                   "--vehicle-rate", "8000", "--impact-rate", "8000", "--hit-rate", "8000",
+                   "--fringe-rate", "6000"]
 
 
 def c3_base() -> dict[str, str]:

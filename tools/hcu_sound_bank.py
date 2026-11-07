@@ -353,7 +353,8 @@ def _pin_tier(path: str) -> int | None:
 def build_bank(map_path: Path, budget: int = DEFAULT_BUDGET, max_perms: int = 2,
                pin_bytes: int = 0, pin_perms: int = 2, usage: dict[int, int] | None = None,
                fill_perms: int = 1, low_rate: int = 0, tail_rate: int = 0,
-               announcer: bool = False, announcer_rate: int = 0) -> tuple[bytes, list[dict]]:
+               announcer: bool = False, announcer_rate: int = 0,
+               tier_rates: dict[int, int] | None = None) -> tuple[bytes, list[dict]]:
     """With pin_bytes, the bank opens with a pinned prefix of at most pin_bytes (the PIN_TIERS sounds, pin_perms
     permutations each): header spu_bytes is that prefix's size, the player uploads only it at load and never
     evicts it; everything after is paged through the rest of SPU2 RAM. Without it spu_bytes is the data size.
@@ -387,6 +388,9 @@ def build_bank(map_path: Path, budget: int = DEFAULT_BUDGET, max_perms: int = 2,
     used = 0
 
     def tier_rate(tier, rate):
+        # Per-tier ceilings (--vehicle-rate and friends) that squeeze a few tiers so every sound fits the bank.
+        if tier_rates and tier in tier_rates:
+            rate = min(rate, tier_rates[tier])
         if tail_rate and tier == AMBIENCE_TIER:
             return min(rate, AMBIENT_RATE)
         if tail_rate and (tier >= TAIL_RATE_TIERS or tier in TAIL_RATE_EXTRA_TIERS):
@@ -524,6 +528,10 @@ def spu_pitch(rate: int) -> int:
     return round(0x1000 * rate / SPU_BASE_RATE)
 
 
+def _tier_index(prefix: str, word: str = "") -> int:
+    return next(i for i, (pre, words) in enumerate(TIERS) if pre == prefix and (not word or word in words))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__.splitlines()[0],
@@ -544,6 +552,13 @@ def main() -> int:
                     help="band-limit sounds after the gunshot/impact/explosion/drop tiers to this sample rate (e.g. 16000)")
     ap.add_argument("--tail-rate", type=int, default=0,
                     help="sample rate for the least critical tiers (shell casings, melee, ui, ambience, dialogue), e.g. 11025")
+    ap.add_argument("--vehicle-rate", type=int, default=0, help="sample-rate ceiling for the vehicles tier (e.g. 8000)")
+    ap.add_argument("--impact-rate", type=int, default=0, help="sample-rate ceiling for surface impacts (e.g. 8000)")
+    ap.add_argument("--hit-rate", type=int, default=0,
+                    help="sample-rate ceiling for weapon hits, sparks, bounces and grenade throws (e.g. 8000)")
+    ap.add_argument("--fringe-rate", type=int, default=0,
+                    help="sample-rate ceiling for the lowest-priority tiers (weapon posing, vehicle enter/exit "
+                         "foley, flamethrower, Chief grunts), e.g. 6000; lets every sound fit the resident bank")
     ap.add_argument("--paged", action="store_true",
                     help="allow a bank larger than SPU2 RAM; the player pages samples in on first use")
     ap.add_argument("--announcer-rate", type=int, default=0,
@@ -565,8 +580,15 @@ def main() -> int:
                 key = parts[0].strip()
                 h = int(key, 16) if len(key) == 8 and all(c in "0123456789abcdef" for c in key.lower()) else name_hash(key)
                 usage[h] = usage.get(h, 0) + int(parts[1])
+    tier_rates = {}
+    for rate, tiers in ((args.vehicle_rate, (_tier_index("vehicles\\"),)), (args.impact_rate, (_tier_index("impulse\\impacts\\"),)),
+                        (args.hit_rate, (_tier_index("weapons\\", "hit"),)),
+                        (args.fringe_rate, tuple(range(len(TIERS) - 3, len(TIERS))))):
+        if rate:
+            tier_rates.update({tier: rate for tier in tiers})
     blob, entries = build_bank(args.map, args.budget, args.max_perms, args.pin_bytes, args.pin_perms, usage,
-                               args.fill_perms, args.low_rate, args.tail_rate, args.announcer, args.announcer_rate)
+                               args.fill_perms, args.low_rate, args.tail_rate, args.announcer, args.announcer_rate,
+                               tier_rates or None)
     info = verify_bank(blob)
     args.output.write_bytes(blob)
     announcer_rows = [e for e in entries if is_announcer_sound(e["path"])]
