@@ -60,6 +60,19 @@ typedef struct {
 	uint8_t looping;
 } pending_start;
 static pending_start s_pending[HCU_SPU_PENDING];
+/* A looping sound's start segment hands over to its loop in place: CE reports the old segment's stop and the new
+ * segment's start in the same tick, but the hardware it models queues the loop behind the start, so the loop begins when
+ * the start segment ends. A stop of a looping voice is therefore held until the end of the tick; a start for the same
+ * owner in that tick turns it into a chain (the old voice plays out, the loop starts at its end), and none keeps it a
+ * stop. A release during the start segment stops both. */
+#define HCU_SPU_CHAINS 6u
+typedef struct {
+	uint8_t used, filled; /* filled: the successor's request is stored; otherwise this is a held stop */
+	uint32_t owner, parent, hash, start_at;
+	hcu_sound_request request;
+} chain_state;
+static chain_state s_chain[HCU_SPU_CHAINS];
+static void chain_tick(uint32_t now);
 static uint32_t s_pending_head, s_pending_count;
 static uint32_t s_page_in_time, s_page_ins_this_tick;
 static hcu_spu_sample *s_loading; /* the one sample being paged in over several ticks */
@@ -182,6 +195,7 @@ void hcu_spu_attach(const hcu_spu_hw *hw, const hcu_spu_sample *samples, uint32_
 	for (i = 0; i < s_sample_count; ++i) { s_samples[i] = samples[i]; s_samples[i].loading = 0; s_samples[i].loaded = 0; }
 	memset(s_perm_cursor, 0, sizeof(s_perm_cursor));
 	memset(s_voice, 0, sizeof(s_voice));
+	memset(s_chain, 0, sizeof(s_chain));
 	memset(&s_stats, 0, sizeof(s_stats));
 	s_stats.samples = s_sample_count;
 }
@@ -612,11 +626,11 @@ static void start_sound(const hcu_sound_request *r, uint32_t hash, int looping)
 	}
 }
 
-static void stop_sound(const hcu_sound_request *r, uint32_t hash)
+static void stop_sound(uint32_t owner, uint32_t hash)
 {
 	uint32_t i;
 	for (i = 0; i < HCU_SPU_VOICES; ++i)
-		if (s_voice[i].active && s_voice[i].hash == hash && s_voice[i].owner == r->owner_datum)
+		if (s_voice[i].active && s_voice[i].hash == hash && s_voice[i].owner == owner)
 			key_off(i);
 }
 
@@ -675,6 +689,7 @@ void hcu_spu_tick(uint32_t now)
 		start_sound(&p.request, p.hash, p.looping);
 		s_draining = 0;
 	}
+	chain_tick(now);
 	/* A one-shot whose nominal end has passed is keyed off: the SPU2 does not always stop a voice at the end flag, and
 	 * one left running replays the first blocks of its sample as a steady tone until something reuses the voice. */
 	{
@@ -705,6 +720,99 @@ void hcu_spu_tick(uint32_t now)
 	}
 }
 
+static voice_state *loop_voice(uint32_t hash, uint32_t owner)
+{
+	uint32_t i;
+	for (i = 0; i < HCU_SPU_VOICES; ++i)
+		if (s_voice[i].active && s_voice[i].looping && s_voice[i].hash == hash && s_voice[i].owner == owner)
+			return &s_voice[i];
+	return 0;
+}
+
+/* filled 0: the held stop of voice `hash`; filled 1: the sound `hash` waiting behind its predecessor. */
+static chain_state *chain_find(uint32_t owner, uint32_t hash, uint8_t filled)
+{
+	uint32_t i;
+	for (i = 0; i < HCU_SPU_CHAINS; ++i)
+		if (s_chain[i].used && s_chain[i].filled == filled && s_chain[i].owner == owner &&
+			(filled ? s_chain[i].hash : s_chain[i].parent) == hash)
+			return &s_chain[i];
+	return 0;
+}
+
+/* A stop or a fade-out of a sound waiting behind its predecessor applies to both; returns 1 when it was waiting. */
+static int chain_apply(const hcu_sound_request *r, uint32_t hash, int stop)
+{
+	chain_state *c = chain_find(r->owner_datum, hash, 1);
+	if (!c) return 0;
+	if (stop) {
+		stop_sound(c->owner, c->parent);
+		c->used = 0;
+	} else {
+		c->request.gain = r->gain;
+		if (r->pitch > 0.0f) c->request.pitch = r->pitch;
+		if (r->event == HCU_SOUND_EVENT_FADE) fade_sound(r, c->parent);
+	}
+	return 1;
+}
+
+/* A stop of a looping voice is held to the end of the tick (see chain_state). Returns 1 when held. */
+static int chain_hold_stop(const hcu_sound_request *r, uint32_t hash)
+{
+	uint32_t i;
+	voice_state *v = loop_voice(hash, r->owner_datum);
+	if (!v) return 0;
+	if (chain_find(r->owner_datum, hash, 0)) return 1;
+	for (i = 0; i < HCU_SPU_CHAINS; ++i)
+		if (!s_chain[i].used) {
+			s_chain[i].used = 1;
+			s_chain[i].filled = 0;
+			s_chain[i].owner = r->owner_datum;
+			s_chain[i].parent = hash;
+			s_chain[i].start_at = v->end_tick;
+			return 1;
+		}
+	return 0;
+}
+
+/* A start for an owner with a held stop: the held voice plays out and this sound starts after it. 1 when taken. */
+static int chain_take_start(const hcu_sound_request *r, uint32_t hash)
+{
+	uint32_t i;
+	for (i = 0; i < HCU_SPU_CHAINS; ++i) {
+		chain_state *c = &s_chain[i];
+		voice_state *v;
+		if (!c->used || c->filled || c->owner != r->owner_datum || c->parent == hash) continue;
+		c->filled = 1;
+		c->hash = hash;
+		c->request = *r;
+		v = loop_voice(c->parent, c->owner);
+		if (v) v->looping = 0; /* plays to its end and is keyed off there, not restarted */
+		return 1;
+	}
+	return 0;
+}
+
+/* Once per tick, after the tick's requests: held stops with no successor take effect, and waiting sounds whose
+ * predecessor has ended start. */
+static void chain_tick(uint32_t now)
+{
+	uint32_t i;
+	for (i = 0; i < HCU_SPU_CHAINS; ++i) {
+		chain_state *c = &s_chain[i];
+		if (!c->used) continue;
+		if (!c->filled) {
+			stop_sound(c->owner, c->parent);
+			c->used = 0;
+		} else if ((int32_t)(now - c->start_at) >= 0) {
+			hcu_sound_request r = c->request;
+			c->used = 0;
+			r.game_time = now;
+			start_sound(&r, c->hash, 1);
+		}
+	}
+}
+
 void hcu_spu_request(const hcu_sound_request *r, uint32_t name_hash)
 {
 	if (!r || !s_hw || !s_sample_count) return;
@@ -715,25 +823,28 @@ void hcu_spu_request(const hcu_sound_request *r, uint32_t name_hash)
 		start_sound(r, name_hash, 0);
 		break;
 	case HCU_SOUND_EVENT_LOOPING_START: {
-		uint32_t i;
+		voice_state *v;
 		s_stats.requests++;
 		expire(r->game_time);
 		/* CE re-announces a running loop while it is being updated: one voice per owner and sound. */
-		for (i = 0; i < HCU_SPU_VOICES; ++i)
-			if (s_voice[i].active && s_voice[i].looping && s_voice[i].hash == name_hash &&
-				s_voice[i].owner == r->owner_datum) {
-				fade_sound(r, name_hash);
-				return;
-			}
+		v = loop_voice(name_hash, r->owner_datum);
+		if (v) {
+			fade_sound(r, name_hash);
+			return;
+		}
+		if (chain_apply(r, name_hash, 0) || chain_take_start(r, name_hash)) return;
 		start_sound(r, name_hash, 1);
 		break;
 	}
 	case HCU_SOUND_EVENT_STOP:
 	case HCU_SOUND_EVENT_LOOPING_STOP:
-		stop_sound(r, name_hash);
+		if (chain_apply(r, name_hash, 1)) break;
+		if (r->event == HCU_SOUND_EVENT_STOP && chain_hold_stop(r, name_hash)) break;
+		stop_sound(r->owner_datum, name_hash);
 		break;
 	case HCU_SOUND_EVENT_FADE:
 		s_stats.requests++;
+		if (chain_apply(r, name_hash, 0)) break;
 		fade_sound(r, name_hash);
 		break;
 	default:

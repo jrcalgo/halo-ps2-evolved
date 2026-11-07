@@ -240,6 +240,7 @@ int main(void)
 	hcu_spu_request(&r, hashes[0]);
 	r = req(HCU_SOUND_EVENT_STOP, 9, 3, 651, 0.0f);
 	hcu_spu_request(&r, hashes[0]);
+	hcu_spu_tick(651 * TEST_MS_PER_TICK); /* a loop's stop is held to the end of the tick (it may be a hand-over) */
 	hcu_spu_get_stats(&st);
 	CHECK(st.voices_active == 0);
 
@@ -451,6 +452,66 @@ int main(void)
 		hcu_spu_sample tmp[8];
 		uint32_t n = 0, sz = build_image(3, hashes, big_perms, one, 64);
 		CHECK(hcu_spu_bank_parse(image, sz, tmp, 8, &n, 0, 0) == 0 && n == 3 && tmp[0].perm == 3 && tmp[1].perm == 6);
+	}
+	/* a looping sound's start segment hands over to its loop: the loop waits for the start segment to end, a release
+	 * during it stops both, and a lone stop of a loop still takes effect (one tick late) */
+	{
+		unsigned kon_count, koff_count;
+		hcu_spu_attach(&hw, samples, count);
+		nops = 0;
+		r = req(HCU_SOUND_EVENT_LOOPING_START, 50, 4, 100, 1.0f);
+		hcu_spu_request(&r, hashes[0]);          /* start segment, plays one second */
+		CHECK(nops == 8 && ops[7].kind == 2 && ops[7].entry == (1u | 0x1500u) && ops[7].value == 1u);
+		hcu_spu_tick(100 * TEST_MS_PER_TICK);
+		nops = 0;
+		r = req(HCU_SOUND_EVENT_STOP, 50, 4, 101, 0.0f);
+		hcu_spu_request(&r, hashes[0]);          /* hand-over: the old segment's stop ... */
+		CHECK(nops == 0);
+		r = req(HCU_SOUND_EVENT_LOOPING_START, 50, 4, 101, 1.0f);
+		hcu_spu_request(&r, hashes[1]);          /* ... and the loop's start, in the same tick */
+		CHECK(nops == 0);
+		hcu_spu_tick(101 * TEST_MS_PER_TICK);
+		CHECK(nops == 0);                         /* the start segment still plays, the loop has not started */
+		hcu_spu_tick(100 * TEST_MS_PER_TICK + 500);
+		CHECK(nops == 0);
+		hcu_spu_tick(100 * TEST_MS_PER_TICK + 1100);
+		kon_count = koff_count = 0;
+		for (i = 0; i < nops; ++i) {
+			if (ops[i].kind == 2 && ops[i].entry == (1u | 0x1500u)) kon_count++;
+			if (ops[i].kind == 2 && ops[i].entry == (1u | 0x1600u)) koff_count++;
+		}
+		CHECK(kon_count == 1 && koff_count == 1);  /* the loop starts as the start segment is keyed off */
+
+		/* a release while the start segment plays stops it and the loop that was waiting */
+		hcu_spu_attach(&hw, samples, count);
+		r = req(HCU_SOUND_EVENT_LOOPING_START, 60, 4, 200, 1.0f);
+		hcu_spu_request(&r, hashes[0]);
+		hcu_spu_tick(200 * TEST_MS_PER_TICK);
+		r = req(HCU_SOUND_EVENT_STOP, 60, 4, 201, 0.0f);
+		hcu_spu_request(&r, hashes[0]);
+		r = req(HCU_SOUND_EVENT_LOOPING_START, 60, 4, 201, 1.0f);
+		hcu_spu_request(&r, hashes[1]);
+		hcu_spu_tick(201 * TEST_MS_PER_TICK);
+		nops = 0;
+		r = req(HCU_SOUND_EVENT_STOP, 60, 4, 210, 0.0f);
+		hcu_spu_request(&r, hashes[1]);           /* the loop is stopped before it ever started */
+		CHECK(nops == 1 && ops[0].kind == 2 && ops[0].entry == (1u | 0x1600u));
+		nops = 0;
+		hcu_spu_tick(200 * TEST_MS_PER_TICK + 2000);
+		for (i = 0, kon_count = 0; i < nops; ++i)
+			if (ops[i].kind == 2 && ops[i].entry == (1u | 0x1500u)) kon_count++;
+		CHECK(kon_count == 0);
+
+		/* a stop of a loop that nothing replaces is only held to the end of the tick */
+		hcu_spu_attach(&hw, samples, count);
+		r = req(HCU_SOUND_EVENT_LOOPING_START, 70, 4, 300, 1.0f);
+		hcu_spu_request(&r, hashes[0]);
+		nops = 0;
+		r = req(HCU_SOUND_EVENT_STOP, 70, 4, 301, 0.0f);
+		hcu_spu_request(&r, hashes[0]);
+		CHECK(nops == 0);
+		hcu_spu_tick(301 * TEST_MS_PER_TICK);
+		CHECK(nops == 1 && ops[0].kind == 2 && ops[0].entry == (1u | 0x1600u));
 	}
 	printf("spu-playback-ok started=%u stopped=%u loops=%u fades=%u\n", st.started, st.stopped, st.loops_started, st.fades);
 	return 0;
