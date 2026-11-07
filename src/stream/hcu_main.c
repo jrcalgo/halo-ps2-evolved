@@ -4573,7 +4573,7 @@ static void hcu_chain_capture_args(int argc, char **argv)
 			}
 			if (j == i + 7) {
 				unsigned long parsed_fov = strtoul(argv[j], &end, 10);
-				if (end != argv[j] && *end == '\0' && parsed_fov >= 60ul && parsed_fov <= 100ul)
+				if (end != argv[j] && *end == '\0' && parsed_fov >= 60ul && parsed_fov <= 120ul)
 					s_hcu_fov_degrees = (unsigned)parsed_fov;
 			}
 			if (hcu_chain_rules_parse(argv[j], hcu_chain_rules)) {

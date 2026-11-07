@@ -167,7 +167,7 @@ enum {
 };
 /* Field of view slider: degrees across 16:9, a click of the D-pad moves it MENU_FOV_STEP. */
 #define MENU_FOV_MIN 60
-#define MENU_FOV_MAX 100
+#define MENU_FOV_MAX 120
 #define MENU_FOV_STEP 5
 #define MENU_FOV_DEFAULT 90
 enum { SETTINGS_PROFILES, SETTINGS_CONTROLS, SETTINGS_VIDEO, SETTINGS_SAVE, SETTINGS_BACK, SETTINGS_HUB_ROWS };
@@ -1155,7 +1155,7 @@ unsigned hcu_main_menu_selected_render_profile(void)
 
 unsigned hcu_main_menu_selected_fov(void)
 {
-	return s_selected_fov >= 60u && s_selected_fov <= 100u ? s_selected_fov : 90u;
+	return s_selected_fov >= 60u && s_selected_fov <= 120u ? s_selected_fov : 90u;
 }
 
 #define MENU_PROFILE_MAGIC 0x32525048u /* HPR2 */

@@ -98,7 +98,7 @@ int main(void)
 	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0);
 	(void)hcu_main_menu_step(&state, 0, 0, 0, 1, 0, 0);
 	if (state.page != HCU_MAIN_MENU_PAGE_VIDEO_SETTINGS || state.resolution != 0u) return 19;
-	/* The field of view slider: 90 by default, 60 to 100 in steps of 5, clamped at both ends. */
+	/* The field of view slider: 90 by default, 60 to 120 in steps of 5, clamped at both ends. */
 	if (state.fov != 90u) return 101;
 	for (i = 0; i < 9u; ++i)
 		(void)hcu_main_menu_step(&state, 0, 1, 0, 0, 0, 0);
@@ -106,14 +106,14 @@ int main(void)
 	if (state.fov != 95u) return 102;
 	(void)hcu_main_menu_step(&state, 0, 0, 0, 1, 0, 0);
 	(void)hcu_main_menu_step(&state, 0, 0, 0, 1, 0, 0);
-	if (state.fov != 100u) return 103;
+	if (state.fov != 105u) return 103;
 	for (i = 0; i < 12u; ++i)
 		(void)hcu_main_menu_step(&state, 0, 0, 1, 0, 0, 0);
 	if (state.fov != 60u) return 104;
 	state.fov = 90u;
-	for (i = 0; i < 3u; ++i)
+	for (i = 0; i < 8u; ++i)
 		(void)hcu_main_menu_step(&state, 0, 0, 0, 1, 0, 0);
-	if (state.fov != 100u) return 105;
+	if (state.fov != 120u) return 105;
 	if (hcu_main_menu_build_ring_texture(a, 128, 128) ||
 		hcu_main_menu_build_ring_texture(b, 128, 128) || memcmp(a, b, sizeof(a)) ||
 		!texture_hash(a, 128 * 128)) return 20;
