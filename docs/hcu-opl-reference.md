@@ -24,9 +24,10 @@ Parent asset profiles are deterministic build selections in
 |---|---|---|
 | `host` | `host:/` | Existing development and PCSX2 host-backed profile |
 | `optical` | `cdrom:/` | PS2 optical-disc profile |
-| `opl-usb` | `mass:/` | OPL USB mass-storage profile |
+| `opl-iso` | `cdrom:/` | OPL virtual disc, including APA-installed HDD games |
+| `opl-usb` | `mass:/` | Standalone files on USB, not an OPL game ISO |
 | `opl-smb` | `smb0:/` | OPL SMB share filesystem profile |
-| `opl-hdd` | `pfs0:/` | OPL expansion-HDD filesystem profile |
+| `opl-hdd` | `pfs0:/` | Standalone files on a mounted PFS partition, not an APA game ISO |
 
 The host FileXio fixture verifies only path selection and bounded file API
 delegation. It is not evidence that OPL leaves a particular device mounted,
@@ -34,3 +35,9 @@ that a given console has the required IRX services, or that an OPL-launched
 game can load assets. Those claims still require target/PCSX2 storage-profile
 smokes and deterministic missing-root diagnostics. No OPL source file has been
 modified as part of this integration.
+
+The pinned upstream submodule is **not** the reference for Grimdoomer build
+1996. The separate exact-commit source snapshot and investigation status are
+documented in [the qualification record](reports/opl-apa-qualification-2026-11-07.md).
+An OPL logo is evidence of the loader route only. It proves neither Halo's
+entry point nor virtual-disc access.

@@ -292,7 +292,8 @@ def main() -> int:
             if iso.startswith(("MAPS/UI.", "PACKAGES/MENU_", "PACKAGES/LOAD.")):
                 grafts.append(f"{iso.replace('/', '')}={path.resolve()}")
         run("xorriso", "-as", "mkisofs", "-iso-level", "2", "--norock",
-            "-graft-points", *weights, "-V", "HALO_PS2", "-o", str(output), *grafts)
+            "-graft-points", *weights, "-sysid", "PLAYSTATION",
+            "-V", "HALO_PS2", "-o", str(output), *grafts)
     publish_dvd_path_table(output)
     try:
         logo_checksum = publish_ps2_logo(output, args.logo_source.resolve())

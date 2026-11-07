@@ -10,6 +10,7 @@ class AssetProfileTests(unittest.TestCase):
         expected = {
             "host": "host:/",
             "optical": "cdrom:/",
+            "opl-iso": "cdrom:/",
             "opl-usb": "mass:/",
             "opl-smb": "smb0:/",
             "opl-hdd": "pfs0:/",
