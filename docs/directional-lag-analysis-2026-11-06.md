@@ -56,3 +56,28 @@ The same churn happens in both runs; only its cost on the frame path differs.
 * Pool size and eviction policy are unchanged, so the churn still happens (now it is cheap).
 * First-use FX texture resolves still block (up to about 79 ms each, seen at startup).
 * SHA-256 verification is still per chunk on the frame path.
+
+## Addendum: the stall that survived the read-ahead fix (2026-11-07)
+
+After v4's read-ahead fix the shipping Blood Gulch build still stalled on the user's desktop in about half of the runs:
+one rendered frame every 2.8 s (the frame counter `s_frames_total` read 0.36 per second; 30 per second when healthy), starting
+after one to nine minutes of play, with no input needed. The probe build never stalled on that desktop and headless runs
+(including a copy of the user's PCSX2.ini) never stalled in ten minutes.
+
+How it was found: a watcher polled the frame counter, the object-load job (`s_job`), the read-ahead window (`s_pf`) and the
+emulator's `rchar` over PINE. When a stall began the load job was idle (`entry` = none), the read-ahead window was idle, and the
+emulator read nothing from the disc, so loading and the disc were ruled out. A save-state taken during the stall holds the EE
+registers (the `cpuRegs` block); four samples put the program counter in `fx_decal_composite_one` (`hcu_render_objects.c`) and
+`decal_compose_emit_palette` (`engine/src/render/decal_compose.h:201`) three times, and in normal rendering once.
+
+Cause: `fx_decal_composite_one` called `fx_decal_one_tile(rc, quad, g, &x0, &y0, &x1, &y1)` and ignored a zero return.
+`fx_decal_one_tile` returns 0 without writing its outputs when the decal's projected bounds are outside the viewport, so
+`x0..y1` were uninitialised stack ints and the per-tile loops (`for y..y1 / for x..x1`, one palette upload and three composite
+passes per tile) ran over garbage bounds. The function's other refusals (`tiles_x > 8`, no vertices, no chain space, no channel
+textures, a failed tile) were all `DBG_WHY(n)`, defined as `((void)0)`, so none of them did anything either. What the garbage
+was depended on the view (a decal off to the side), the stack layout (the probe build lays out the stack differently, hence
+"smooth"), and the moment, which is why it was intermittent, direction dependent and persistent once the camera faced the decal.
+
+Fix (d898f84): the bounds start initialised; every refusal returns 0. The tile counts are clamped to the viewport by
+`fx_decal_one_tile`, so a decal costs at most 10 x 14 tiles. Status: one clean 13-minute desktop run on the fixed build; not yet
+confirmed by long play.
