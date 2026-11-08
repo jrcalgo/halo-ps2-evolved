@@ -916,6 +916,9 @@ typedef struct {
 	uint32_t material;
 } menu_ring_mesh_part;
 
+/* A mesh vertex is position (3 floats), UV (2 floats) and a light byte baked by tools/build_hcu_menu_assets.py. */
+#define MENU_RING_VERTEX_BYTES 24u
+#define MENU_RING_TRIANGLE_BYTES (3u * MENU_RING_VERTEX_BYTES)
 static menu_ring_mesh_part s_menu_ring_mesh_parts[MENU_RING_MESH_PARTS];
 static uint8_t *s_menu_ring_mesh_owner;
 static const uint8_t *s_menu_ring_mesh_data;
@@ -934,7 +937,7 @@ static int menu_ring_mesh_import(const uint8_t *blob, size_t bytes, int copy)
 	size_t offset = 8u;
 	const uint8_t *data = blob;
 	uint8_t *owned = NULL;
-	if (!blob || bytes < 8u || memcmp(blob, "HMR1", 4)) return -1;
+	if (!blob || bytes < 8u || memcmp(blob, "HMR2", 4)) return -1;
 	memcpy(&count, blob + 4, sizeof(count));
 	if (count != MENU_RING_MESH_PARTS) return -1;
 	for (i = 0; i < count; ++i) {
@@ -942,8 +945,8 @@ static int menu_ring_mesh_import(const uint8_t *blob, size_t bytes, int copy)
 		if (offset + 8u > bytes) return -1;
 		memcpy(&kind, blob + offset, 4); memcpy(&triangles, blob + offset + 4u, 4);
 		if (kind >= MENU_RING_MESH_PARTS || triangles > 3000u ||
-			offset + 8u + (size_t)triangles * 60u > bytes) return -1;
-		offset += 8u + (size_t)triangles * 60u;
+			offset + 8u + (size_t)triangles * MENU_RING_TRIANGLE_BYTES > bytes) return -1;
+		offset += 8u + (size_t)triangles * MENU_RING_TRIANGLE_BYTES;
 	}
 	if (offset != bytes) return -1;
 	if (copy) {
@@ -962,7 +965,7 @@ static int menu_ring_mesh_import(const uint8_t *blob, size_t bytes, int copy)
 		s_menu_ring_mesh_parts[kind].material = kind;
 		s_menu_ring_mesh_parts[kind].triangle_count = triangles;
 		s_menu_ring_mesh_parts[kind].triangles = data + offset + 8u;
-		offset += 8u + (size_t)triangles * 60u;
+		offset += 8u + (size_t)triangles * MENU_RING_TRIANGLE_BYTES;
 	}
 	return 0;
 }
@@ -1523,7 +1526,7 @@ static void menu_image(packet2_t *packet, const video_t *video, unsigned page,
 	menu_image_draw(packet, video, page, tw, th, tbw, x0, y0, x1, y1, u0, v0, u1, v1, 0);
 }
 
-typedef struct { float x, y, z, u, v; } menu_ring_vertex;
+typedef struct { float x, y, z, u, v, light; } menu_ring_vertex;
 
 static menu_ring_vertex menu_ring_to_camera(const float *local, const float *uv)
 {
@@ -1537,7 +1540,7 @@ static menu_ring_vertex menu_ring_to_camera(const float *local, const float *uv)
 	out.x = delta[0] * right[0] + delta[1] * right[1] + delta[2] * right[2];
 	out.y = delta[0] * s_menu_camera.up[0] + delta[1] * s_menu_camera.up[1] + delta[2] * s_menu_camera.up[2];
 	out.z = delta[0] * s_menu_camera.forward[0] + delta[1] * s_menu_camera.forward[1] + delta[2] * s_menu_camera.forward[2];
-	out.u = uv[0]; out.v = uv[1];
+	out.u = uv[0]; out.v = uv[1]; out.light = 128.0f;
 	return out;
 }
 
@@ -1552,7 +1555,7 @@ static menu_ring_vertex menu_sky_to_camera(const float *sky, float u, float v)
 	out.x = delta[0] * right[0] + delta[1] * right[1] + delta[2] * right[2];
 	out.y = delta[0] * s_menu_camera.up[0] + delta[1] * s_menu_camera.up[1] + delta[2] * s_menu_camera.up[2];
 	out.z = delta[0] * s_menu_camera.forward[0] + delta[1] * s_menu_camera.forward[1] + delta[2] * s_menu_camera.forward[2];
-	out.u = u; out.v = v;
+	out.u = u; out.v = v; out.light = 128.0f;
 	return out;
 }
 
@@ -1605,7 +1608,8 @@ static unsigned menu_ring_clip(const menu_ring_vertex input[3],
 					previous.y + (current.y - previous.y) * t,
 					previous.z + (current.z - previous.z) * t,
 					previous.u + (current.u - previous.u) * t,
-					previous.v + (current.v - previous.v) * t};
+					previous.v + (current.v - previous.v) * t,
+					previous.light + (current.light - previous.light) * t};
 			}
 			if (current_inside && written < MENU_RING_CLIP_VERTICES)
 				destination[written++] = current;
@@ -1651,8 +1655,13 @@ static void menu_ring_emit_vertex(packet2_t *packet, const video_t *video,
 	if (vv < 0.0f) vv = 0.0f;
 	if (u > 4095.0f) u = 4095.0f;
 	if (vv > 4095.0f) vv = 4095.0f;
-	menu_vertex_3d(packet, x, y, (int)(u * 16.0f), (int)(vv * 16.0f), z,
-		material == 1u ? 216u : 240u, material == 2u ? 0x70u : 0x80u);
+	/* Halo 64's baked menu light (the sky light on the hull, the shadow on the landscapes), Gouraud-shaded. */
+	{
+		int shade = (int)(v.light + 0.5f);
+		if (shade < 0) shade = 0; if (shade > 255) shade = 255;
+		menu_vertex_3d(packet, x, y, (int)(u * 16.0f), (int)(vv * 16.0f), z,
+			(unsigned)shade, material == 2u ? 0x70u : 0x80u);
+	}
 	(void)video;
 }
 
@@ -1673,9 +1682,11 @@ static unsigned menu_ring_triangle_polygon(const menu_ring_mesh_part *part,
 	menu_ring_vertex source[3];
 	for (unsigned j = 0; j < 3u; ++j) {
 		float local[3], uv[2];
-		const uint8_t *raw = part->triangles + ((size_t)tri * 3u + j) * 20u;
-		memcpy(local, raw, sizeof(local)); memcpy(uv, raw + 12u, sizeof(uv));
+		const uint8_t *raw = part->triangles + ((size_t)tri * 3u + j) * MENU_RING_VERTEX_BYTES;
+		uint32_t light;
+		memcpy(local, raw, sizeof(local)); memcpy(uv, raw + 12u, sizeof(uv)); memcpy(&light, raw + 20u, sizeof(light));
 		source[j] = menu_ring_to_camera(local, uv);
+		source[j].light = (float)light;
 	}
 	return menu_ring_clip(source, polygon);
 }
@@ -1727,7 +1738,7 @@ static void menu_ring(packet2_t *packet, const video_t *video, unsigned frame)
 	if (!s_menu_camera_ready || !s_menu_ring_mesh_data || !s_menu_camera.started) return;
 	menu_ring_draw_part(packet, video, &s_menu_ring_mesh_parts[1]);
 	menu_ring_draw_part(packet, video, &s_menu_ring_mesh_parts[0]);
-	menu_ring_draw_part(packet, video, &s_menu_ring_mesh_parts[2]);
+	/* The ring's shadow part is not drawn: its brightness is baked into the landscapes' vertices, as in Halo 64. */
 	menu_depth_state(packet, video, 1u, 1u);
 }
 

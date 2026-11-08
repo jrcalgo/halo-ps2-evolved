@@ -313,8 +313,75 @@ def write_menu_camera_path(ui_map: Path, destination: Path) -> bytes:
     return payload
 
 
+# Halo 64's menu light (tools/n64/ui.py, models.py), baked into the ring's vertices rather than computed at run time:
+# * the outer hull gets a sky light from above: shade = 0.5 + 0.5 * max(0, normal . SKY_LIGHT), against the vertex's
+#   model-space normal (tools/n64/models.py SKY_LIGHT);
+# * the inner landscapes are self-lit and lie under the ring's shadow, so each vertex takes the shadow bitmap's
+#   brightness where the shadow surface lies over it (1 elsewhere), and the separate shadow pass is not drawn.
+# The GS multiplies texture by vertex / 128, so a vertex byte of 128 is the plain texture. The gains keep the menu's
+# earlier overall brightness (inner 240, hull 216 on average) and take only the direction of the light from Halo 64:
+# the hull's mean shade over its vertices is 0.593, so 216 / 0.593 = 364.
+SKY_LIGHT = (0.3, 0.2, 0.93)
+RING_INNER_GAIN = 240.0
+RING_HULL_GAIN = 364.0
+
+
+def _ring_sky_shade(normal) -> float:
+    light = max(0.0, sum(n * l for n, l in zip(normal, SKY_LIGHT)))
+    return min(1.0, 0.5 + 0.5 * light)
+
+
+def _ring_shadow_brightness(shadow_part, shadow_image: Image.Image):
+    """Return f(position) -> shadow brightness 0..1 for a point of the ring model (1 where no shadow surface lies
+    within half a unit of it). Same lookup as Halo 64's UIModels.ring_shadow."""
+    grey = shadow_image.convert("L")
+    width, height = grey.size
+    pixels = grey.load()
+    triangles = [((shadow_part.pos[a], shadow_part.uv[a]), (shadow_part.pos[b], shadow_part.uv[b]),
+                  (shadow_part.pos[c], shadow_part.uv[c])) for a, b, c in shadow_part.tris]
+
+    def sample(u: float, v: float) -> float:
+        x = (u - math.floor(u)) * width - 0.5
+        y = min(height - 1.0, max(0.0, v * height - 0.5))
+        x0, y0 = math.floor(x), int(y)
+        fx, fy = x - x0, y - y0
+        y1 = min(height - 1, y0 + 1)
+        total = 0.0
+        for yy, wy in ((y0, 1 - fy), (y1, fy)):
+            for xx, wx in ((x0 % width, 1 - fx), ((x0 + 1) % width, fx)):
+                total += pixels[xx, yy] * wx * wy
+        return total / 255.0
+
+    def sub(a, b):
+        return (a[0] - b[0], a[1] - b[1], a[2] - b[2])
+
+    def dot(a, b):
+        return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+
+    def brightness(point) -> float:
+        best = None
+        for (pa, ua), (pb, ub), (pc, uc) in triangles:
+            e1, e2, w = sub(pb, pa), sub(pc, pa), sub(point, pa)
+            d00, d01, d11, d20, d21 = dot(e1, e1), dot(e1, e2), dot(e2, e2), dot(w, e1), dot(w, e2)
+            denominator = d00 * d11 - d01 * d01
+            if denominator <= 1e-12:
+                continue
+            s = (d11 * d20 - d01 * d21) / denominator
+            t = (d00 * d21 - d01 * d20) / denominator
+            if s < -0.02 or t < -0.02 or s + t > 1.02:
+                continue
+            closest = tuple(pa[k] + e1[k] * s + e2[k] * t for k in range(3))
+            distance = math.sqrt(dot(sub(point, closest), sub(point, closest)))
+            if distance < 0.5 and (best is None or distance < best[0]):
+                best = (distance, (ua[0] + (ub[0] - ua[0]) * s + (uc[0] - ua[0]) * t,
+                                   ua[1] + (ub[1] - ua[1]) * s + (uc[1] - ua[1]) * t))
+        return sample(*best[1]) if best else 1.0
+
+    return brightness
+
+
 def write_menu_ring_mesh(ui_map: Path, destination: Path) -> bytes:
-    """Export the retail scenery\halo\halo triangles and their two ring UV sets."""
+    """Export the retail scenery\\halo\\halo triangles, their UVs and a baked light byte per vertex ("HMR2")."""
     data = texconv.MapData.open(ui_map)
     model = next(e for e in data.index.entries
                  if e.group == "mode" and e.path == r"scenery\halo\halo")
@@ -329,20 +396,27 @@ def write_menu_ring_mesh(ui_map: Path, destination: Path) -> bytes:
     images = bitmaps.parse_images(data.region, data.base, shadow_bitmap.data_address)
     width, height, rgba = bitmaps.decode_level(images[0],
         bitmaps.read_pixels(images[0], bitmaps.file_reader(ui_map)))
-    shadow = Image.frombytes("RGBA", (width, height), rgba).resize(
-        RING_SHADOW_SIZE, Image.Resampling.LANCZOS)
+    shadow_full = Image.frombytes("RGBA", (width, height), rgba)
+    shadow = shadow_full.resize(RING_SHADOW_SIZE, Image.Resampling.LANCZOS)
     shadow.save(destination / "halo_ce_ring_shadow.png")
     shadow_encoded = rgb5a1(shadow, dither=True)
     (destination / "halo_ce_ring_shadow.rgb5a1").write_bytes(shadow_encoded)
-    payload = bytearray(b"HMR1" + struct.pack("<I", len(parts)))
+    brightness = _ring_shadow_brightness(shadow_part, shadow_full)
+    payload = bytearray(b"HMR2" + struct.pack("<I", len(parts)))
     tag_paths = {e.tag_id: e.path for e in data.index.entries}
     for part in parts:
         path = tag_paths.get(part.shader_id, "")
         kind = 2 if "shadow" in path else 0 if "inner ring" in path else 1
+        if kind == 0:
+            light = [min(255, round(RING_INNER_GAIN * brightness(p))) for p in part.pos]
+        elif kind == 1:
+            light = [min(255, round(RING_HULL_GAIN * _ring_sky_shade(n))) for n in part.nrm]
+        else:
+            light = [round(RING_INNER_GAIN)] * len(part.pos)
         payload += struct.pack("<II", kind, len(part.tris))
         for tri in part.tris:
             for vertex in tri:
-                payload += struct.pack("<5f", *part.pos[vertex], *part.uv[vertex])
+                payload += struct.pack("<5fI", *part.pos[vertex], *part.uv[vertex], light[vertex])
     (destination / "halo_ce_ring_mesh.bin").write_bytes(payload)
     return bytes(payload)
 
