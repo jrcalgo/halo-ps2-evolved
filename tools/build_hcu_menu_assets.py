@@ -46,6 +46,35 @@ RING_OUTER_SIZE = (512, 256)
 RING_SHADOW_SIZE = (1024, 32)
 PLANET_SIZE = 512
 MOON_SIZE = 256  # retail Basis bitmap is 256x256
+
+# Retail multiplayer screen art (ui.map). Headers are blue glow text and the option pictures are blue line art, so both
+# pack as 8-bit indices with one shared palette each: 1 byte per pixel instead of the 2 an RGB5A1 texture takes.
+MP_UI_MAGIC = b"HMUI"
+MP_HEADER_SIZE = (384, 48)  # retail 512x64 at 0.75; the 512-wide PS2 menu shows it at about 0.8 of retail's 640
+MP_PANEL_SIZE = (256, 128)
+_SHELL = "ui\\shell\\main_menu\\"
+MP_HEADERS = (
+    _SHELL + "multiplayer_type_select\\header_multiplayer",
+    _SHELL + "multiplayer_type_select\\connected\\4way_profile_select\\header_select_profile",
+    _SHELL + "multiplayer_type_select\\mp_map_select\\header_select_map",
+    _SHELL + "gametype_select\\header_select_gametype",
+    _SHELL + "settings_select\\multiplayer_setup\\playlist_edit\\header_set_options",
+    _SHELL + "settings_select\\multiplayer_setup\\playlist_edit\\game_type_select\\header_rules",
+    _SHELL + "settings_select\\multiplayer_setup\\player_options_edit\\header_player_options",
+    _SHELL + "settings_select\\multiplayer_setup\\item_options_edit\\header_item_options",
+    _SHELL + "settings_select\\multiplayer_setup\\indicator_options_edit\\header_indicator_options",
+    _SHELL + "multiplayer_type_select\\connected\\pregame\\header_enlisted_players",
+)
+# header_enlisted_players holds "SELECT TEAMS" first and "ENLISTED PLAYERS" second.
+MP_HEADER_IMAGE = {MP_HEADERS[9]: 1}
+MP_OPTIONS_BITMAP = _SHELL + "multiplayer_type_select\\mp_options"
+MP_GAMETYPE_OPTIONS_BITMAP = _SHELL + "settings_select\\multiplayer_setup\\playlist_edit\\gametype_options"
+# (bitmap, image) for each picture: split screen, edit gametypes, then the rules, player, item, indicator and save rows.
+MP_PANELS = (
+    (MP_OPTIONS_BITMAP, 1), (MP_OPTIONS_BITMAP, 3),
+    (MP_GAMETYPE_OPTIONS_BITMAP, 1), (MP_GAMETYPE_OPTIONS_BITMAP, 2), (MP_GAMETYPE_OPTIONS_BITMAP, 3),
+    (MP_GAMETYPE_OPTIONS_BITMAP, 4), (MP_GAMETYPE_OPTIONS_BITMAP, 5),
+)
 GLYPH_CELL = 16
 GLYPH_ATLAS = (256, 16)
 GLYPH_SOURCES = (
@@ -113,11 +142,15 @@ def decode_group(ui_map: Path, tag_path: str) -> list[Image.Image]:
     return images
 
 
+# The retail 256x128 map and game type pictures hold their art in the top-left 140x114 and pad the rest with black.
+PICTURE_CROP = (0, 0, 140, 114)
+
+
 def write_atlas(images: list[Image.Image], count: int, columns: int, rows: int,
                 destination: Path, name: str) -> None:
     atlas = Image.new("RGBA", (columns * 128, rows * 64), (0, 0, 0, 0))
     for index, image in enumerate(images[:count]):
-        tile = image.resize((128, 64), Image.Resampling.LANCZOS)
+        tile = image.crop(PICTURE_CROP).resize((128, 64), Image.Resampling.LANCZOS)
         atlas.alpha_composite(tile, ((index % columns) * 128, (index // columns) * 64))
     atlas.save(destination / f"{name}.png")
     (destination / f"{name}.rgb5a1").write_bytes(rgb5a1(atlas))
@@ -204,6 +237,41 @@ def write_loading_backplate(destination: Path) -> None:
     canvas = canvas.convert("RGB").resize((512, 448), Image.Resampling.LANCZOS)
     canvas.save(destination / "halo_ce_loading_backplate.png")
     (destination / "loading.rgb5a1").write_bytes(rgb5a1(canvas.convert("RGBA")))
+
+
+def quantize_rgba(sheet: Image.Image) -> tuple[bytes, bytes]:
+    """Returns (indices, palette) for a CT32 CLUT in the GS's PSMT8 storage order. Alpha is 0..0x80 as on the GS."""
+    paletted = sheet.quantize(colors=256, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE)
+    flat = paletted.getpalette("RGBA") or []
+    flat = list(flat) + [0] * (1024 - len(flat))
+    clut = bytearray(1024)
+    for index in range(256):
+        r, g, b, a = flat[index * 4:index * 4 + 4]
+        # CSM1 swaps the second and third group of eight entries in every 32.
+        slot = (index & 0xE7) | ((index & 0x08) << 1) | ((index & 0x10) >> 1)
+        clut[slot * 4:slot * 4 + 4] = bytes((r, g, b, (a * 128 + 127) // 255))
+    return paletted.tobytes(), bytes(clut)
+
+
+def write_mp_ui(ui_map: Path, destination: Path) -> bytes:
+    """Writes halo_ce_mp_ui.bin: 'HMUI', header CLUT, panel CLUT, 384x480 header atlas, 256x896 panel atlas."""
+    hw, hh = MP_HEADER_SIZE
+    headers = Image.new("RGBA", (hw, hh * len(MP_HEADERS)), (0, 0, 0, 0))
+    for row, path in enumerate(MP_HEADERS):
+        art = decode_group(ui_map, path)[MP_HEADER_IMAGE.get(path, 0)].resize((hw, hh), Image.Resampling.LANCZOS)
+        headers.alpha_composite(art, (0, row * hh))
+    pw, ph = MP_PANEL_SIZE
+    panels = Image.new("RGBA", (pw, ph * len(MP_PANELS)), (0, 0, 0, 0))
+    for row, (path, image) in enumerate(MP_PANELS):
+        art = decode_group(ui_map, path)[image].resize((pw, ph), Image.Resampling.LANCZOS)
+        panels.alpha_composite(art, (0, row * ph))
+    headers.save(destination / "halo_ce_mp_headers.png")
+    panels.save(destination / "halo_ce_mp_panels.png")
+    header_pixels, header_clut = quantize_rgba(headers)
+    panel_pixels, panel_clut = quantize_rgba(panels)
+    blob = MP_UI_MAGIC + bytes(12) + header_clut + panel_clut + header_pixels + panel_pixels
+    (destination / "halo_ce_mp_ui.bin").write_bytes(blob)
+    return blob
 
 
 def write_title_art(ui_map: Path, destination: Path) -> None:
@@ -549,6 +617,7 @@ def main() -> int:
         write_space_texture(decode_group(decompressed, STARS_BITMAP)[0],
                             args.out, "halo_ce_stars", stars=True)
         write_title_art(decompressed, args.out)
+        mp_ui = write_mp_ui(decompressed, args.out)
         camera_path = write_menu_camera_path(decompressed, args.out)
         ring_mesh = write_menu_ring_mesh(decompressed, args.out)
         write_loading_backplate(args.out)
@@ -560,7 +629,7 @@ def main() -> int:
                  "halo_ce_planet", "ps2_button_glyphs", "halo_ce_space",
                  "halo_ce_stars", "halo_ce_ring_shadow", "halo_ce_moon")
         args.package_out.write_bytes(b"".join(
-            (args.out / f"{name}.rgb5a1").read_bytes() for name in names) + camera_path + ring_mesh)
+            (args.out / f"{name}.rgb5a1").read_bytes() for name in names) + mp_ui + camera_path + ring_mesh)
     return 0
 
 

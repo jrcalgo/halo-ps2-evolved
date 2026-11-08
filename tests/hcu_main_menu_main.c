@@ -35,12 +35,77 @@ int main(void)
 	if (state.item != HCU_MAIN_MENU_SETTINGS) return 3;
 	(void)hcu_main_menu_step(&state, 0, 1, 0, 0, 0, 0);
 	if (state.item != HCU_MAIN_MENU_MULTIPLAYER) return 4;
+	/* Retail order: type list, controllers, map, game type, then the lobby. */
 	if (hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0) != HCU_MAIN_MENU_ACTION_NONE ||
-		state.page != HCU_MAIN_MENU_PAGE_CONNECT) return 5;
+		state.page != HCU_MAIN_MENU_PAGE_TYPE ||
+		state.row != HCU_MAIN_MENU_TYPE_SPLIT_SCREEN) return 5;
+	/* The cursor skips cooperative play and system link, which this port cannot start. */
+	(void)hcu_main_menu_step(&state, 0, 1, 0, 0, 0, 0);
+	if (state.row != HCU_MAIN_MENU_TYPE_EDIT_GAMETYPES) return 50;
+	(void)hcu_main_menu_step(&state, 0, 1, 0, 0, 0, 0);
+	if (state.row != HCU_MAIN_MENU_TYPE_QUICK_START) return 51;
+	(void)hcu_main_menu_step(&state, 1, 0, 0, 0, 0, 0);
+	(void)hcu_main_menu_step(&state, 1, 0, 0, 0, 0, 0);
+	if (state.row != HCU_MAIN_MENU_TYPE_SPLIT_SCREEN) return 52;
+	state.row = HCU_MAIN_MENU_TYPE_COOP;
+	if (hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0) != HCU_MAIN_MENU_ACTION_NONE ||
+		state.page != HCU_MAIN_MENU_PAGE_TYPE) return 53;
+	state.row = HCU_MAIN_MENU_TYPE_SPLIT_SCREEN;
+	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0);
+	if (state.page != HCU_MAIN_MENU_PAGE_CONNECT || state.edit_gametypes) return 54;
 	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0);
 	if (state.player_count != 1 || state.page != HCU_MAIN_MENU_PAGE_CONNECT) return 6;
 	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0);
+	if (state.page != HCU_MAIN_MENU_PAGE_MAP_SELECT) return 55;
+	(void)hcu_main_menu_step(&state, 0, 0, 0, 1, 0, 0);
+	if (state.session.map != 10) return 56;
+	(void)hcu_main_menu_step(&state, 0, 0, 1, 0, 0, 0);
+	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0);
+	if (state.page != HCU_MAIN_MENU_PAGE_GAMETYPE_SELECT) return 57;
+	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0);
 	if (state.page != HCU_MAIN_MENU_PAGE_LOBBY) return 7;
+	/* Back steps through game type and map to the controllers, then the type list. */
+	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 0, 1);
+	if (state.page != HCU_MAIN_MENU_PAGE_GAMETYPE_SELECT) return 58;
+	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 0, 1);
+	if (state.page != HCU_MAIN_MENU_PAGE_MAP_SELECT) return 59;
+	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 0, 1);
+	if (state.page != HCU_MAIN_MENU_PAGE_CONNECT) return 60;
+	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 0, 1);
+	if (state.page != HCU_MAIN_MENU_PAGE_TYPE) return 61;
+	/* QUICK START plays at once with the first player. */
+	{
+		hcu_main_menu_state quick = state;
+		quick.row = HCU_MAIN_MENU_TYPE_QUICK_START; quick.player_count = 0; quick.joined_mask = 0;
+		if (hcu_main_menu_step(&quick, 0, 0, 0, 0, 1, 0) != HCU_MAIN_MENU_ACTION_MULTIPLAYER ||
+			quick.player_count != 1 || !(quick.joined_mask & 1u)) return 62;
+	}
+	/* EDIT GAMETYPES opens the list, rules pages and save without a map or players. */
+	{
+		hcu_main_menu_state edit = state;
+		edit.row = HCU_MAIN_MENU_TYPE_EDIT_GAMETYPES;
+		(void)hcu_main_menu_step(&edit, 0, 0, 0, 0, 1, 0);
+		if (edit.page != HCU_MAIN_MENU_PAGE_GAMETYPE_SELECT || !edit.edit_gametypes) return 63;
+		(void)hcu_main_menu_step(&edit, 0, 0, 0, 0, 1, 0);
+		if (edit.page != HCU_MAIN_MENU_PAGE_GAME_OPTIONS) return 64;
+		edit.row = 4; /* SAVE GAME TYPE */
+		(void)hcu_main_menu_step(&edit, 0, 0, 0, 0, 1, 0);
+		if (edit.page != HCU_MAIN_MENU_PAGE_SAVE_VARIANT) return 65;
+		(void)hcu_main_menu_step(&edit, 0, 0, 0, 0, 0, 1);
+		if (edit.page != HCU_MAIN_MENU_PAGE_GAME_OPTIONS) return 66;
+		(void)hcu_main_menu_step(&edit, 0, 0, 0, 0, 0, 1);
+		if (edit.page != HCU_MAIN_MENU_PAGE_GAMETYPE_SELECT) return 67;
+		(void)hcu_main_menu_step(&edit, 0, 0, 0, 0, 0, 1);
+		if (edit.page != HCU_MAIN_MENU_PAGE_TYPE || edit.row != HCU_MAIN_MENU_TYPE_EDIT_GAMETYPES) return 68;
+	}
+	/* Walk forward to the lobby again for the options checks below. */
+	state.row = HCU_MAIN_MENU_TYPE_SPLIT_SCREEN;
+	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0);
+	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0);
+	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0);
+	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0);
+	if (state.page != HCU_MAIN_MENU_PAGE_LOBBY) return 69;
+	state.row = 0;
 	/* GAME OPTIONS, change score, return, then save CUSTOM 1. */
 	(void)hcu_main_menu_step(&state, 0, 1, 0, 0, 0, 0);
 	(void)hcu_main_menu_step(&state, 0, 1, 0, 0, 0, 0);

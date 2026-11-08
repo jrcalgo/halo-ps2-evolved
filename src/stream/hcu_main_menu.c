@@ -83,6 +83,10 @@ __asm__(
 	"hcu_main_menu_stars_rgb5a1:\n"
 	".incbin \"src/stream/assets/halo_ce_stars.rgb5a1\"\n"
 	".balign 16\n"
+	".global hcu_main_menu_mp_ui_bin\n"
+	"hcu_main_menu_mp_ui_bin:\n"
+	".incbin \"src/stream/assets/halo_ce_mp_ui.bin\"\n"
+	".balign 16\n"
 	".global hcu_main_menu_camera_bin\n"
 	"hcu_main_menu_camera_bin:\n"
 	".incbin \"src/stream/assets/halo_ce_camera.bin\"\n"
@@ -105,6 +109,7 @@ extern const uint16_t hcu_main_menu_planet_rgb5a1[];
 extern const uint16_t hcu_main_menu_moon_rgb5a1[];
 extern const uint16_t hcu_main_menu_space_rgb5a1[];
 extern const uint16_t hcu_main_menu_stars_rgb5a1[];
+extern const uint8_t hcu_main_menu_mp_ui_bin[];
 extern const uint8_t hcu_main_menu_camera_bin[];
 extern const uint8_t hcu_main_menu_ring_mesh_bin[];
 extern const uint8_t hcu_main_menu_ring_mesh_end[];
@@ -142,7 +147,7 @@ enum {
 	LOBBY_ROW_COUNT
 };
 enum {
-	OPTION_MODE_RULES, OPTION_PLAYER, OPTION_ITEMS, OPTION_INDICATORS, OPTION_BACK,
+	OPTION_MODE_RULES, OPTION_PLAYER, OPTION_ITEMS, OPTION_INDICATORS, OPTION_SAVE, OPTION_BACK,
 	OPTION_ROW_COUNT
 };
 enum {
@@ -301,6 +306,8 @@ static int menu_selection_supported(const hcu_main_menu_state *state, unsigned s
 			return 0;
 		type = saved[slot].game_type;
 	}
+	/* Editing game types is not tied to a map, so every type stays in the list. */
+	if (state->edit_gametypes) return 1;
 	return hcu_mp_map_supports(state->session.map, type);
 }
 
@@ -483,6 +490,12 @@ static void menu_adjust_indicator_option(hcu_main_menu_state *state, int step)
 	}
 }
 
+static int menu_type_row_enabled(unsigned row)
+{
+	return row == HCU_MAIN_MENU_TYPE_QUICK_START || row == HCU_MAIN_MENU_TYPE_SPLIT_SCREEN ||
+		row == HCU_MAIN_MENU_TYPE_EDIT_GAMETYPES;
+}
+
 enum hcu_main_menu_action hcu_main_menu_step(hcu_main_menu_state *state,
 	int up, int down, int left, int right, int confirm, int back)
 {
@@ -494,7 +507,10 @@ enum hcu_main_menu_action hcu_main_menu_step(hcu_main_menu_state *state,
 		if (!confirm) return HCU_MAIN_MENU_ACTION_NONE;
 		state->row = 0;
 		switch (state->item) {
-		case HCU_MAIN_MENU_MULTIPLAYER: state->page = HCU_MAIN_MENU_PAGE_CONNECT; break;
+		case HCU_MAIN_MENU_MULTIPLAYER:
+			state->page = HCU_MAIN_MENU_PAGE_TYPE;
+			state->row = HCU_MAIN_MENU_TYPE_SPLIT_SCREEN;
+			break;
 		default: state->page = HCU_MAIN_MENU_PAGE_SETTINGS; break;
 		}
 		return HCU_MAIN_MENU_ACTION_NONE;
@@ -507,17 +523,50 @@ enum hcu_main_menu_action hcu_main_menu_step(hcu_main_menu_state *state,
 		case HCU_MAIN_MENU_PAGE_INDICATOR_OPTIONS:
 			state->page = HCU_MAIN_MENU_PAGE_GAME_OPTIONS; break;
 		case HCU_MAIN_MENU_PAGE_GAME_OPTIONS:
-		case HCU_MAIN_MENU_PAGE_SAVE_VARIANT: state->page = HCU_MAIN_MENU_PAGE_LOBBY; break;
+			state->page = state->edit_gametypes ? HCU_MAIN_MENU_PAGE_GAMETYPE_SELECT : HCU_MAIN_MENU_PAGE_LOBBY;
+			break;
+		case HCU_MAIN_MENU_PAGE_SAVE_VARIANT:
+			state->page = state->edit_gametypes ? HCU_MAIN_MENU_PAGE_GAME_OPTIONS : HCU_MAIN_MENU_PAGE_LOBBY;
+			break;
+		case HCU_MAIN_MENU_PAGE_TYPE: state->page = HCU_MAIN_MENU_PAGE_TITLE; break;
+		case HCU_MAIN_MENU_PAGE_CONNECT: state->page = HCU_MAIN_MENU_PAGE_TYPE; break;
+		case HCU_MAIN_MENU_PAGE_MAP_SELECT: state->page = HCU_MAIN_MENU_PAGE_CONNECT; break;
+		case HCU_MAIN_MENU_PAGE_GAMETYPE_SELECT:
+			state->page = state->edit_gametypes ? HCU_MAIN_MENU_PAGE_TYPE : HCU_MAIN_MENU_PAGE_MAP_SELECT;
+			break;
 		case HCU_MAIN_MENU_PAGE_PROFILE_EDIT: state->page = HCU_MAIN_MENU_PAGE_PROFILE_SELECT; break;
 		case HCU_MAIN_MENU_PAGE_PROFILE_NAME: state->page = HCU_MAIN_MENU_PAGE_PROFILE_EDIT; break;
-		case HCU_MAIN_MENU_PAGE_LOBBY: state->page = HCU_MAIN_MENU_PAGE_CONNECT; break;
+		case HCU_MAIN_MENU_PAGE_LOBBY: state->page = HCU_MAIN_MENU_PAGE_GAMETYPE_SELECT; break;
 		case HCU_MAIN_MENU_PAGE_PROFILE_SELECT:
 		case HCU_MAIN_MENU_PAGE_CONTROLS:
 		case HCU_MAIN_MENU_PAGE_VIDEO_SETTINGS:
 			state->page = HCU_MAIN_MENU_PAGE_SETTINGS; break;
 		default: state->page = HCU_MAIN_MENU_PAGE_TITLE; break;
 		}
-		state->row = state->page == HCU_MAIN_MENU_PAGE_PROFILE_SELECT ? state->profile_index : 0;
+		state->row = state->page == HCU_MAIN_MENU_PAGE_PROFILE_SELECT ? state->profile_index :
+			state->page == HCU_MAIN_MENU_PAGE_TYPE ? (state->edit_gametypes ?
+				HCU_MAIN_MENU_TYPE_EDIT_GAMETYPES : HCU_MAIN_MENU_TYPE_SPLIT_SCREEN) : 0;
+		return HCU_MAIN_MENU_ACTION_NONE;
+	}
+	if (state->page == HCU_MAIN_MENU_PAGE_TYPE) {
+		if (up || down) {
+			unsigned row = state->row;
+			do row = menu_wrap(row, up ? -1 : 1, HCU_MAIN_MENU_TYPE_ROW_COUNT);
+			while (!menu_type_row_enabled(row));
+			state->row = (uint8_t)row;
+		}
+		if (!confirm || !menu_type_row_enabled(state->row)) return HCU_MAIN_MENU_ACTION_NONE;
+		state->edit_gametypes = state->row == HCU_MAIN_MENU_TYPE_EDIT_GAMETYPES;
+		/* A type edited with the whole list open may not exist on the saved map. */
+		if (!state->edit_gametypes && !menu_selection_supported(state, state->session.variant_index))
+			menu_apply_variant_selection(state, HCU_GAME_SLAYER);
+		if (state->row == HCU_MAIN_MENU_TYPE_QUICK_START) {
+			/* Start now with the saved map and game type; the first pad plays. */
+			if (!state->player_count) { state->joined_mask |= 1u; state->player_count = 1; }
+			return HCU_MAIN_MENU_ACTION_MULTIPLAYER;
+		}
+		state->page = state->edit_gametypes ? HCU_MAIN_MENU_PAGE_GAMETYPE_SELECT : HCU_MAIN_MENU_PAGE_CONNECT;
+		state->row = 0;
 		return HCU_MAIN_MENU_ACTION_NONE;
 	}
 	if (state->page == HCU_MAIN_MENU_PAGE_CONNECT) {
@@ -525,8 +574,27 @@ enum hcu_main_menu_action hcu_main_menu_step(hcu_main_menu_state *state,
 			state->joined_mask |= 1u;
 			state->player_count = 1;
 		} else if (confirm && state->player_count) {
-			state->page = HCU_MAIN_MENU_PAGE_LOBBY;
+			state->page = HCU_MAIN_MENU_PAGE_MAP_SELECT;
 			state->row = 0;
+		}
+		return HCU_MAIN_MENU_ACTION_NONE;
+	}
+	if (state->page == HCU_MAIN_MENU_PAGE_MAP_SELECT) {
+		if (left || right || up || down) {
+			state->session.map = (uint8_t)menu_wrap(state->session.map, (left || up) ? -1 : 1,
+				HCU_MAIN_MENU_MAP_COUNT);
+			if (!menu_selection_supported(state, state->session.variant_index))
+				menu_apply_variant_selection(state, HCU_GAME_SLAYER);
+		}
+		if (confirm) { state->page = HCU_MAIN_MENU_PAGE_GAMETYPE_SELECT; state->row = 0; }
+		return HCU_MAIN_MENU_ACTION_NONE;
+	}
+	if (state->page == HCU_MAIN_MENU_PAGE_GAMETYPE_SELECT) {
+		if (left || right || up || down)
+			menu_step_variant_selection(state, (left || up) ? -1 : 1);
+		if (confirm) {
+			if (state->edit_gametypes) { state->page = HCU_MAIN_MENU_PAGE_GAME_OPTIONS; state->row = 0; }
+			else { state->page = HCU_MAIN_MENU_PAGE_LOBBY; state->row = LOBBY_START; }
 		}
 		return HCU_MAIN_MENU_ACTION_NONE;
 	}
@@ -550,12 +618,16 @@ enum hcu_main_menu_action hcu_main_menu_step(hcu_main_menu_state *state,
 	if (state->page == HCU_MAIN_MENU_PAGE_GAME_OPTIONS) {
 		if (up) state->row = (uint8_t)menu_wrap(state->row, -1, OPTION_ROW_COUNT);
 		else if (down) state->row = (uint8_t)menu_wrap(state->row, 1, OPTION_ROW_COUNT);
-		if (state->row == OPTION_BACK && confirm) { state->page = HCU_MAIN_MENU_PAGE_LOBBY; state->row = LOBBY_OPTIONS; }
+		if (state->row == OPTION_BACK && confirm) {
+			state->page = state->edit_gametypes ? HCU_MAIN_MENU_PAGE_GAMETYPE_SELECT : HCU_MAIN_MENU_PAGE_LOBBY;
+			state->row = state->edit_gametypes ? 0 : LOBBY_OPTIONS;
+		}
 		else if (confirm) {
 			if (state->row == OPTION_MODE_RULES) state->page = HCU_MAIN_MENU_PAGE_MODE_OPTIONS;
 			else if (state->row == OPTION_PLAYER) state->page = HCU_MAIN_MENU_PAGE_PLAYER_OPTIONS;
 			else if (state->row == OPTION_ITEMS) state->page = HCU_MAIN_MENU_PAGE_ITEM_OPTIONS;
 			else if (state->row == OPTION_INDICATORS) state->page = HCU_MAIN_MENU_PAGE_INDICATOR_OPTIONS;
+			else if (state->row == OPTION_SAVE) state->page = HCU_MAIN_MENU_PAGE_SAVE_VARIANT;
 			state->row = 0;
 		}
 		return HCU_MAIN_MENU_ACTION_NONE;
@@ -597,9 +669,12 @@ enum hcu_main_menu_action hcu_main_menu_step(hcu_main_menu_state *state,
 			saved[state->row] = state->session.variant;
 			saved[state->row].valid = 1;
 			menu_apply_variant_selection(state, HCU_MAIN_MENU_GAME_TYPE_COUNT + state->row);
-			state->page = HCU_MAIN_MENU_PAGE_LOBBY;
-			state->row = LOBBY_SAVE;
-		} else if (confirm) { state->page = HCU_MAIN_MENU_PAGE_LOBBY; state->row = LOBBY_SAVE; }
+			state->page = state->edit_gametypes ? HCU_MAIN_MENU_PAGE_GAME_OPTIONS : HCU_MAIN_MENU_PAGE_LOBBY;
+			state->row = state->edit_gametypes ? OPTION_SAVE : LOBBY_SAVE;
+		} else if (confirm) {
+			state->page = state->edit_gametypes ? HCU_MAIN_MENU_PAGE_GAME_OPTIONS : HCU_MAIN_MENU_PAGE_LOBBY;
+			state->row = state->edit_gametypes ? OPTION_SAVE : LOBBY_SAVE;
+		}
 		return HCU_MAIN_MENU_ACTION_NONE;
 	}
 	if (state->page == HCU_MAIN_MENU_PAGE_PROFILE_SELECT) {
@@ -989,7 +1064,34 @@ static int menu_ring_mesh_import(const uint8_t *blob, size_t bytes, int copy)
 #define MENU_STARS_PAGE 202u
 #define MENU_RING_SHADOW_PAGE 206u  /* 1024x32:   8 pages */
 #define MENU_MOON_PAGE 214u         /* 256x256:  16 pages */
-#define MENU_TEXTURE_PAGES 230u
+/* Retail multiplayer screen art, packed by tools/build_hcu_menu_assets.py as PSMT8 with two palettes. The header
+ * atlas is 384x480 (ten 384x48 headers, 3 pages wide, 8 tall) and the panel atlas is 256x896 (seven 256x128
+ * pictures, 2 pages wide, 14 tall). Both palettes share the page after them. */
+#define MENU_UI_HEADER_PAGE 230u
+#define MENU_UI_HEADER_W 384u
+#define MENU_UI_HEADER_H 48u
+#define MENU_UI_HEADER_COUNT 10u
+#define MENU_UI_HEADER_PAGES 24u
+#define MENU_UI_PANEL_PAGE (MENU_UI_HEADER_PAGE + MENU_UI_HEADER_PAGES)
+#define MENU_UI_PANEL_W 256u
+#define MENU_UI_PANEL_H 128u
+#define MENU_UI_PANEL_COUNT 7u
+#define MENU_UI_PANEL_PAGES 28u
+#define MENU_UI_CLUT_PAGE (MENU_UI_PANEL_PAGE + MENU_UI_PANEL_PAGES)
+#define MENU_UI_CLUT_WORDS 256u  /* one 16x16 CT32 palette */
+#define MENU_UI_HEADER_BYTES (MENU_UI_HEADER_W * MENU_UI_HEADER_H * MENU_UI_HEADER_COUNT)
+#define MENU_UI_PANEL_BYTES (MENU_UI_PANEL_W * MENU_UI_PANEL_H * MENU_UI_PANEL_COUNT)
+#define MENU_MP_UI_BYTES (16u + 2u * 1024u + MENU_UI_HEADER_BYTES + MENU_UI_PANEL_BYTES)
+#define MENU_TEXTURE_PAGES (MENU_UI_CLUT_PAGE + 1u)
+enum {
+	MENU_HEADER_TYPE, MENU_HEADER_PROFILE, MENU_HEADER_MAP, MENU_HEADER_GAMETYPE, MENU_HEADER_SET_OPTIONS,
+	MENU_HEADER_RULES, MENU_HEADER_PLAYER, MENU_HEADER_ITEMS, MENU_HEADER_INDICATORS, MENU_HEADER_PLAYERS
+};
+enum {
+	MENU_PANEL_SPLIT, MENU_PANEL_GAMETYPES, MENU_PANEL_RULES, MENU_PANEL_PLAYER, MENU_PANEL_ITEMS,
+	MENU_PANEL_INDICATORS, MENU_PANEL_SAVE
+};
+static int s_menu_mp_ui; /* 1 once the package carried the retail multiplayer art */
 
 static float s_menu_camera_points[MENU_CAMERA_COUNT][10];
 static float s_menu_ring_position[3];
@@ -1483,12 +1585,12 @@ static void menu_flat_state(packet2_t *packet, const video_t *video)
 	packet2_add_u64(packet, GS_TEST(0, 1, 0, 0, 0, 0, 1, 1)); packet2_add_u64(packet, GS_A_TEST_1);
 }
 
-static void menu_texture_state(packet2_t *packet, const video_t *video,
+static void menu_texture_state_clut(packet2_t *packet, const video_t *video,
 	unsigned page, unsigned psm, unsigned tw, unsigned th, unsigned tbw,
-	unsigned clut_page, int nearest)
+	unsigned clut_words, int nearest)
 {
 	uint32_t base = video->tex_base + page * MENU_PAGE_WORDS;
-	uint32_t clut = video->tex_base + clut_page * MENU_PAGE_WORDS;
+	uint32_t clut = video->tex_base + clut_words;
 	unsigned filter = nearest ? 0u : 1u;
 	packet2_add_u64(packet, GIF_TAG(6, 0, 0, 0, GIFX_FLG_PACKED, 1)); packet2_add_u64(packet, GIF_REGS_AD);
 	packet2_add_u64(packet, GS_TEX0(base / 64u, tbw, psm, tw, th, 1, 0,
@@ -1498,6 +1600,13 @@ static void menu_texture_state(packet2_t *packet, const video_t *video,
 	packet2_add_u64(packet, GS_ALPHA(0, 1, 0, 1, 0)); packet2_add_u64(packet, GS_A_ALPHA_1);
 	packet2_add_u64(packet, GS_TEST(0, 1, 0, 0, 0, 0, 1, 1)); packet2_add_u64(packet, GS_A_TEST_1);
 	packet2_add_u64(packet, 0); packet2_add_u64(packet, GS_A_TEXFLUSH);
+}
+
+static void menu_texture_state(packet2_t *packet, const video_t *video,
+	unsigned page, unsigned psm, unsigned tw, unsigned th, unsigned tbw,
+	unsigned clut_page, int nearest)
+{
+	menu_texture_state_clut(packet, video, page, psm, tw, th, tbw, clut_page * MENU_PAGE_WORDS, nearest);
 }
 
 static void menu_image_draw(packet2_t *packet, const video_t *video, unsigned page,
@@ -1759,20 +1868,45 @@ static const menu_sky_quad s_menu_sky_quads[2] = {
 	  MENU_MOON_PAGE, 8u, MENU_MOON_SIZE },
 };
 
+/* The GS interpolates the texture coordinates linearly in screen space, so a big quad seen at an angle needs cutting
+ * into cells or its two triangles disagree along their shared diagonal (a dotted seam across the planet). */
+#define MENU_SKY_GRID 8u
+
+static menu_ring_vertex menu_sky_grid_vertex(const menu_sky_quad *quad, unsigned gx, unsigned gy)
+{
+	float fx = (float)gx / (float)MENU_SKY_GRID, fy = (float)gy / (float)MENU_SKY_GRID, p[3];
+	for (unsigned k = 0; k < 3u; ++k) {
+		float top = quad->corner[0][k] + (quad->corner[1][k] - quad->corner[0][k]) * fx;
+		float bottom = quad->corner[2][k] + (quad->corner[3][k] - quad->corner[2][k]) * fx;
+		p[k] = top + (bottom - top) * fy;
+	}
+	return menu_sky_to_camera(p,
+		quad->uv[0][0] + (quad->uv[1][0] - quad->uv[0][0]) * fx,
+		quad->uv[0][1] + (quad->uv[2][1] - quad->uv[0][1]) * fy);
+}
+
+/* Cell (cx, cy)'s triangle t (0: upper left, 1: lower right), clipped to the view. */
+static unsigned menu_sky_cell_polygon(const menu_sky_quad *quad, unsigned cx, unsigned cy, unsigned t,
+	menu_ring_vertex polygon[MENU_RING_CLIP_VERTICES])
+{
+	menu_ring_vertex a = menu_sky_grid_vertex(quad, cx, cy), b = menu_sky_grid_vertex(quad, cx + 1u, cy);
+	menu_ring_vertex c = menu_sky_grid_vertex(quad, cx, cy + 1u), d = menu_sky_grid_vertex(quad, cx + 1u, cy + 1u);
+	menu_ring_vertex source[3];
+	if (t == 0u) { source[0] = a; source[1] = b; source[2] = c; }
+	else { source[0] = b; source[1] = d; source[2] = c; }
+	return menu_ring_clip(source, polygon);
+}
+
 static void menu_sky_quad_draw(packet2_t *packet, const video_t *video, const menu_sky_quad *quad)
 {
-	static const unsigned order[2][3] = {{0u, 1u, 2u}, {1u, 3u, 2u}};
-	menu_ring_vertex polygon[2][MENU_RING_CLIP_VERTICES];
-	unsigned count[2], vertex_count = 0, t, j;
-	for (t = 0; t < 2u; ++t) {
-		menu_ring_vertex source[3];
-		for (j = 0; j < 3u; ++j) {
-			unsigned c = order[t][j];
-			source[j] = menu_sky_to_camera(quad->corner[c], quad->uv[c][0], quad->uv[c][1]);
-		}
-		count[t] = menu_ring_clip(source, polygon[t]);
-		if (count[t] >= 3u) vertex_count += (count[t] - 2u) * 3u;
-	}
+	menu_ring_vertex polygon[MENU_RING_CLIP_VERTICES];
+	unsigned vertex_count = 0, cx, cy, t, j;
+	for (cy = 0; cy < MENU_SKY_GRID; ++cy)
+		for (cx = 0; cx < MENU_SKY_GRID; ++cx)
+			for (t = 0; t < 2u; ++t) {
+				unsigned n = menu_sky_cell_polygon(quad, cx, cy, t, polygon);
+				if (n >= 3u) vertex_count += (n - 2u) * 3u;
+			}
 	if (!vertex_count) return;
 	menu_texture_state(packet, video, quad->page, GS_PSMCT16S, quad->log2_size, quad->log2_size,
 		quad->size / 64u, 0, 0);
@@ -1785,17 +1919,20 @@ static void menu_sky_quad_draw(packet2_t *packet, const video_t *video, const me
 	packet2_add_u64(packet, GIF_TAG(vertex_count, 0, 1,
 		GS_PRIM(GSX_PRIM_TRIANGLE, 1, 1, 0, 0, 0, 1, 0, 0), GIFX_FLG_PACKED, 3));
 	packet2_add_u64(packet, 0x531);
-	for (t = 0; t < 2u; ++t) {
-		for (j = 1; j + 1 < count[t]; ++j) {
-			const menu_ring_vertex *v3[3] = { &polygon[t][0], &polygon[t][j], &polygon[t][j + 1u] };
-			for (unsigned k = 0; k < 3u; ++k) {
-				int x, y;
-				menu_ring_project(*v3[k], &x, &y);
-				menu_vertex_3d(packet, x, y, (int)(v3[k]->u * (float)quad->size * 16.0f),
-					(int)(v3[k]->v * (float)quad->size * 16.0f), 0u, 128u, 0x80u);
+	for (cy = 0; cy < MENU_SKY_GRID; ++cy)
+		for (cx = 0; cx < MENU_SKY_GRID; ++cx)
+			for (t = 0; t < 2u; ++t) {
+				unsigned n = menu_sky_cell_polygon(quad, cx, cy, t, polygon);
+				for (j = 1; j + 1 < n; ++j) {
+					const menu_ring_vertex *v3[3] = { &polygon[0], &polygon[j], &polygon[j + 1u] };
+					for (unsigned k = 0; k < 3u; ++k) {
+						int x, y;
+						menu_ring_project(*v3[k], &x, &y);
+						menu_vertex_3d(packet, x, y, (int)(v3[k]->u * (float)quad->size * 16.0f),
+							(int)(v3[k]->v * (float)quad->size * 16.0f), 0u, 128u, 0x80u);
+					}
+				}
 			}
-		}
-	}
 }
 
 static void menu_planet(packet2_t *packet, const video_t *video, unsigned frame)
@@ -1948,6 +2085,45 @@ static void menu_space_background(packet2_t *packet, const video_t *video,
 		0, 0, VIDEO_WIDTH, VIDEO_HEIGHT, drift, 0, 255 + drift, 255, 1);
 }
 
+/* A rectangle of the retail multiplayer art. Headers (panel == 0) and pictures (panel == 1) each have their own
+ * PSMT8 atlas and palette; `alpha` is the GS 0x80 = opaque scale. */
+static void menu_art_draw(packet2_t *packet, const video_t *video, int panel, int x0, int y0, int x1, int y1,
+	int u0, int v0, int u1, int v1, unsigned alpha)
+{
+	if (panel)
+		menu_texture_state_clut(packet, video, MENU_UI_PANEL_PAGE, GS_PSMT8, 8, 10,
+			MENU_UI_PANEL_W / 64u, MENU_UI_CLUT_PAGE * MENU_PAGE_WORDS + MENU_UI_CLUT_WORDS, 0);
+	else
+		menu_texture_state_clut(packet, video, MENU_UI_HEADER_PAGE, GS_PSMT8, 9, 9,
+			MENU_UI_HEADER_W / 64u, MENU_UI_CLUT_PAGE * MENU_PAGE_WORDS, 0);
+	packet2_add_u64(packet, GIF_TAG(2, 0, 1,
+		GS_PRIM(GSX_PRIM_SPRITE, 0, 1, 0, 1, 0, 1, 0, 0), GIFX_FLG_PACKED, 3));
+	packet2_add_u64(packet, 0x531);
+	menu_vertex(packet, x0, y0, u0, v0, 128, 128, 128, alpha);
+	menu_vertex(packet, x1, y1, u1, v1, 128, 128, 128, alpha);
+}
+
+/* One retail header at 0.8 of its Xbox size, or the text title when the package predates the art. */
+static void menu_header(packet2_t *packet, const video_t *video, unsigned header, const char *fallback)
+{
+	if (s_menu_mp_ui && header < MENU_UI_HEADER_COUNT) {
+		int v = (int)(header * MENU_UI_HEADER_H);
+		menu_art_draw(packet, video, 0, 22, 14, 22 + 410, 14 + 51, 0, v,
+			(int)MENU_UI_HEADER_W - 1, v + (int)MENU_UI_HEADER_H - 1, 0x80);
+	} else menu_text(packet, video, 34, 34, 3, 225, 236, 248, 0x80, fallback);
+}
+
+/* A retail option picture scaled into the box, drawn only when the package has the art. */
+static void menu_picture(packet2_t *packet, const video_t *video, unsigned picture,
+	int x0, int y0, int x1, int y1)
+{
+	int v;
+	if (!s_menu_mp_ui || picture >= MENU_UI_PANEL_COUNT) return;
+	v = (int)(picture * MENU_UI_PANEL_H);
+	menu_art_draw(packet, video, 1, x0, y0, x1, y1, 0, v,
+		(int)MENU_UI_PANEL_W - 1, v + (int)MENU_UI_PANEL_H - 1, 0x80);
+}
+
 static void menu_page(packet2_t *packet, const video_t *video, const char *title, const char *footer)
 {
 	menu_flat_rect(packet, 14, 18, 498, 430, 0, 7, 22, 0x64); menu_frame(packet, 14, 18, 498, 430);
@@ -1956,15 +2132,28 @@ static void menu_page(packet2_t *packet, const video_t *video, const char *title
 	if (footer) menu_prompt_center(packet, video, 408, 1, 82, 128, 181, 0x72, footer);
 }
 
+/* The page frame of a retail multiplayer screen: the retail header in place of the text title. */
+static void menu_page_mp(packet2_t *packet, const video_t *video, unsigned header, const char *title,
+	const char *footer)
+{
+	menu_flat_rect(packet, 14, 18, 498, 430, 0, 7, 22, 0x64); menu_frame(packet, 14, 18, 498, 430);
+	menu_header(packet, video, header, title);
+	menu_flat_rect(packet, 32, 66, 480, 68, 84, 145, 220, 0x68);
+	if (footer) menu_prompt_center(packet, video, 408, 1, 82, 128, 181, 0x72, footer);
+}
+
 static void menu_row(packet2_t *packet, const video_t *video, int x0, int x1,
 	int y, int selected, const char *label, const char *value)
 {
+	/* A long value (KING OF THE HILL) drops to the small font rather than run into the label. */
+	unsigned value_scale = 2;
+	if (value && menu_text_width(label, 2) + menu_text_width(value, 2) + 40u > (unsigned)(x1 - x0)) value_scale = 1;
 	if (selected) { menu_flat_rect(packet, x0, y, x1, y + 30, 27, 67, 116, 0x58); menu_frame(packet, x0, y, x1, y + 30); }
 	menu_text(packet, video, x0 + 10, y + 7, 2, selected ? 231 : 126,
 		selected ? 239 : 185, selected ? 248 : 236, 0x80, label);
 	if (value) {
-		int x = x1 - 10 - (int)menu_text_width(value, 2);
-		menu_text(packet, video, x, y + 7, 2, selected ? 255 : 143,
+		int x = x1 - 10 - (int)menu_text_width(value, value_scale);
+		menu_text(packet, video, x, y + (value_scale == 1 ? 11 : 7), value_scale, selected ? 255 : 143,
 			selected ? 255 : 199, selected ? 255 : 239, 0x80, value);
 	}
 }
@@ -2017,7 +2206,7 @@ static void menu_connect(packet2_t *packet, const video_t *video,
 	const hcu_main_menu_state *state, const menu_pad_event pads[4])
 {
 	unsigned p;
-	menu_page(packet, video, "CONNECT CONTROLLERS", "LEFT/RIGHT PROFILE   CROSS LOAD/JOIN   TRIANGLE GUEST   START CONTINUE");
+	menu_page_mp(packet, video, MENU_HEADER_PROFILE, "CONNECT CONTROLLERS", "LEFT/RIGHT PROFILE   CROSS LOAD/JOIN   TRIANGLE GUEST   START CONTINUE");
 	for (p = 0; p < 4; ++p) {
 		int x = 30 + (int)(p & 1u) * 238, y = 86 + (int)(p >> 1) * 145;
 		int joined = (state->joined_mask >> p) & 1u; char title[16], name[HCU_MAIN_MENU_PROFILE_NAME_LENGTH + 1];
@@ -2049,6 +2238,9 @@ static void menu_variant_name(const hcu_main_menu_state *state, char *out, size_
 	else snprintf(out, size, "CUSTOM %u", v - HCU_MAIN_MENU_GAME_TYPE_COUNT + 1u);
 }
 
+static void menu_map_picture(packet2_t *packet, const video_t *video, unsigned map, int x0, int y0, int x1, int y1);
+static void menu_type_picture(packet2_t *packet, const video_t *video, unsigned picture, int x0, int y0, int x1, int y1);
+
 static void menu_lobby(packet2_t *packet, const video_t *video, const hcu_main_menu_state *state)
 {
 	static const char *const labels[LOBBY_ROW_COUNT] = {"GAME TYPE", "MAP", "GAME OPTIONS", "SAVE VARIANT", "START GAME"};
@@ -2057,23 +2249,16 @@ static void menu_lobby(packet2_t *packet, const video_t *video, const hcu_main_m
 	char variant[32], players[24];
 	menu_variant_name(state, variant, sizeof(variant));
 	snprintf(players, sizeof(players), "%u PLAYER%s", state->player_count, state->player_count == 1 ? "" : "S");
-	menu_page(packet, video, "MULTIPLAYER", "CROSS JOIN/SELECT   CIRCLE LEAVE   START PLAY");
+	menu_page_mp(packet, video, MENU_HEADER_PLAYERS, "MULTIPLAYER", "CROSS SELECT   CIRCLE BACK   START PLAY");
 	menu_text(packet, video, 374, 38, 2, 100, 159, 218, 0x72, players);
 	for (r = 0; r < LOBBY_ROW_COUNT; ++r) {
 		const char *value = r == LOBBY_GAME_TYPE ? variant : r == LOBBY_MAP ? s_maps[map] : NULL;
 		menu_row(packet, video, 26, 304, 80 + (int)r * 47, r == state->row, labels[r], value);
 	}
-	menu_image(packet, video, MENU_MAP_PAGE, 9, 8, MENU_MAP_ATLAS_W / 64u,
-		322, 82, 488, 168, (int)(map % 4u) * 128 + 1, (int)(map / 4u) * 64 + 1,
-		(int)(map % 4u) * 128 + 127, (int)(map / 4u) * 64 + 63);
-	menu_frame(packet, 320, 80, 490, 170);
-	{
-		unsigned picture = type_picture[type % HCU_MAIN_MENU_GAME_TYPE_COUNT];
-		menu_image(packet, video, MENU_TYPE_PAGE, 8, 8, MENU_TYPE_ATLAS_W / 64u,
-			340, 190, 470, 255, (int)(picture % 2u) * 128 + 1, (int)(picture / 2u) * 64 + 1,
-			(int)(picture % 2u) * 128 + 127, (int)(picture / 2u) * 64 + 63);
-		menu_frame(packet, 338, 188, 472, 257);
-	}
+	menu_map_picture(packet, video, map, 344, 82, 450, 168);
+	menu_frame(packet, 342, 80, 452, 170);
+	menu_type_picture(packet, video, type_picture[type % HCU_MAIN_MENU_GAME_TYPE_COUNT], 365, 190, 445, 255);
+	menu_frame(packet, 363, 188, 447, 257);
 	for (p = 0; p < 4; ++p) {
 		int x = 24 + (int)p * 119; char name[HCU_MAIN_MENU_PROFILE_NAME_LENGTH + 1];
 		menu_flat_rect(packet, x, 332, x + 108, 397, 4, 15, 34, 0x68); menu_frame(packet, x, 332, x + 108, 397);
@@ -2093,14 +2278,191 @@ static void menu_lobby(packet2_t *packet, const video_t *video, const hcu_main_m
 	}
 }
 
+static void menu_selection_name(const hcu_main_menu_state *state, unsigned selection, char *out, size_t size)
+{
+	if (selection < HCU_MAIN_MENU_GAME_TYPE_COUNT) snprintf(out, size, "%s", s_game_types[selection]);
+	else snprintf(out, size, "CUSTOM %u", selection - HCU_MAIN_MENU_GAME_TYPE_COUNT + 1u);
+	(void)state;
+}
+
+/* The neighbouring game type in the list, skipping the ones this map cannot play. */
+static unsigned menu_neighbor_selection(const hcu_main_menu_state *state, int step)
+{
+	unsigned selection = state->session.variant_index;
+	unsigned count = HCU_MAIN_MENU_GAME_TYPE_COUNT + HCU_MAIN_MENU_SAVED_VARIANT_COUNT, tries;
+	for (tries = 0; tries < count; ++tries) {
+		selection = menu_wrap(selection, step, count);
+		if (menu_selection_supported(state, selection)) return selection;
+	}
+	return state->session.variant_index;
+}
+
+static unsigned menu_selection_picture(const hcu_main_menu_state *state, unsigned selection)
+{
+	static const unsigned type_picture[HCU_MAIN_MENU_GAME_TYPE_COUNT] = {0,1,2,3,4,2};
+	const hcu_main_menu_variant *saved = menu_saved_variants_const(state);
+	unsigned type = selection;
+	if (selection >= HCU_MAIN_MENU_GAME_TYPE_COUNT) {
+		unsigned slot = selection - HCU_MAIN_MENU_GAME_TYPE_COUNT;
+		type = slot < HCU_MAIN_MENU_SAVED_VARIANT_COUNT ? saved[slot].game_type : HCU_GAME_SLAYER;
+	}
+	return type_picture[type % HCU_MAIN_MENU_GAME_TYPE_COUNT];
+}
+
+static void menu_map_picture(packet2_t *packet, const video_t *video, unsigned map, int x0, int y0, int x1, int y1)
+{
+	map %= HCU_MAIN_MENU_MAP_COUNT;
+	menu_image(packet, video, MENU_MAP_PAGE, 9, 8, MENU_MAP_ATLAS_W / 64u, x0, y0, x1, y1,
+		(int)(map % 4u) * 128 + 1, (int)(map / 4u) * 64 + 1,
+		(int)(map % 4u) * 128 + 127, (int)(map / 4u) * 64 + 63);
+}
+
+static void menu_type_picture(packet2_t *packet, const video_t *video, unsigned picture, int x0, int y0, int x1, int y1)
+{
+	menu_image(packet, video, MENU_TYPE_PAGE, 8, 8, MENU_TYPE_ATLAS_W / 64u, x0, y0, x1, y1,
+		(int)(picture % 2u) * 128 + 1, (int)(picture / 2u) * 64 + 1,
+		(int)(picture % 2u) * 128 + 127, (int)(picture / 2u) * 64 + 63);
+}
+
+/* The retail multiplayer type list: rows on the left, the picture and description of the highlighted row on the
+ * right. Cooperative play and system link are drawn dim and are skipped by the cursor. */
+static void menu_type_select(packet2_t *packet, const video_t *video, const hcu_main_menu_state *state)
+{
+	static const char *const labels[HCU_MAIN_MENU_TYPE_ROW_COUNT] = {
+		"QUICK START", "COOPERATIVE PLAY", "SPLIT SCREEN", "SYSTEM LINK PLAY", "EDIT GAMETYPES"};
+	static const char *const description[HCU_MAIN_MENU_TYPE_ROW_COUNT][3] = {
+		{"START A GAME NOW WITH THE", "SAVED MAP AND GAME TYPE.", ""},
+		{"PLAY THROUGH THE SINGLE-PLAYER", "CAMPAIGN WITH A FRIEND.", ""},
+		{"PIT UP TO FOUR PEOPLE AGAINST", "EACH OTHER ON ONE TV.", ""},
+		{"CONNECT UP TO FOUR XBOX VIDEO", "GAME SYSTEMS FOR UP TO", "SIXTEEN PLAYERS."},
+		{"SET ALL THE ATTRIBUTES FOR YOUR", "MULTIPLAYER GAMETYPES AND", "KEEP THEM FOR FUTURE USE."}};
+	unsigned r, row = state->row % HCU_MAIN_MENU_TYPE_ROW_COUNT;
+	menu_page_mp(packet, video, MENU_HEADER_TYPE, "MULTIPLAYER", "UP/DOWN CHOOSE   CROSS SELECT   CIRCLE BACK");
+	for (r = 0; r < HCU_MAIN_MENU_TYPE_ROW_COUNT; ++r) {
+		int enabled = r == HCU_MAIN_MENU_TYPE_QUICK_START || r == HCU_MAIN_MENU_TYPE_SPLIT_SCREEN ||
+			r == HCU_MAIN_MENU_TYPE_EDIT_GAMETYPES;
+		int y = 88 + (int)r * 46;
+		if (r == row) { menu_flat_rect(packet, 26, y, 254, y + 36, 27, 67, 116, 0x58); menu_frame(packet, 26, y, 254, y + 36); }
+		menu_text(packet, video, 38, y + 11, 2, r == row ? 231 : enabled ? 126 : 62,
+			r == row ? 239 : enabled ? 185 : 82, r == row ? 248 : enabled ? 236 : 100, 0x80, labels[r]);
+	}
+	menu_flat_rect(packet, 266, 88, 490, 214, 4, 15, 34, 0x68); menu_frame(packet, 266, 88, 490, 214);
+	if (row == HCU_MAIN_MENU_TYPE_SPLIT_SCREEN) menu_picture(packet, video, MENU_PANEL_SPLIT, 270, 92, 486, 210);
+	else if (row == HCU_MAIN_MENU_TYPE_EDIT_GAMETYPES) menu_picture(packet, video, MENU_PANEL_GAMETYPES, 270, 92, 486, 210);
+	else menu_map_picture(packet, video, state->session.map, 318, 92, 438, 210);
+	for (r = 0; r < 3u; ++r)
+		menu_text(packet, video, 266, 228 + (int)r * 16, 1, 126, 185, 236, 0x80, description[row][r]);
+	menu_text(packet, video, 266, 292, 1, 100, 159, 218, 0x72, "SAVED GAME");
+	menu_text(packet, video, 266, 308, 1, 225, 236, 248, 0x80, s_maps[state->session.map % HCU_MAIN_MENU_MAP_COUNT]);
+	{
+		char variant[32]; menu_variant_name(state, variant, sizeof(variant));
+		menu_text(packet, video, 266, 324, 1, 225, 236, 248, 0x80, variant);
+	}
+}
+
+/* Three across, as the retail map and game type lists are: the highlighted entry large in the middle, its
+ * neighbours small and dim on either side. */
+/* A small solid triangle, drawn with rows because the 8x8 font has no arrow glyph. */
+static void menu_arrow(packet2_t *packet, int x, int cy, int right)
+{
+	int r;
+	for (r = -4; r <= 4; ++r) {
+		int w = (r < 0 ? -r : r) * 2;
+		menu_flat_rect(packet, right ? x : x + w, cy + r * 2, right ? x + 10 - w : x + 10, cy + r * 2 + 2,
+			140, 195, 245, 0x80);
+	}
+}
+
+/* The retail map and game type pictures are 140x114 of art, so these boxes keep that shape. */
+#define MENU_THREE_WIDE_CENTER_X0 176
+#define MENU_THREE_WIDE_CENTER_Y0 119
+#define MENU_THREE_WIDE_SIDE_Y0 164
+
+static void menu_three_wide_frame(packet2_t *packet)
+{
+	menu_flat_rect(packet, 22, 160, 136, 232, 4, 15, 34, 0x68);
+	menu_flat_rect(packet, 376, 160, 490, 232, 4, 15, 34, 0x68);
+	menu_flat_rect(packet, 140, 112, 372, 256, 12, 32, 62, 0x70);
+	menu_frame(packet, 140, 112, 372, 256);
+}
+
+static void menu_map_select(packet2_t *packet, const video_t *video, const hcu_main_menu_state *state)
+{
+	unsigned map = state->session.map % HCU_MAIN_MENU_MAP_COUNT, total = HCU_MAIN_MENU_MAP_COUNT;
+	unsigned left = menu_wrap(map, -1, total), right = menu_wrap(map, 1, total);
+	char position[16];
+	menu_page_mp(packet, video, MENU_HEADER_MAP, "SELECT MAP", "LEFT/RIGHT CHOOSE   CROSS SELECT   CIRCLE BACK");
+	menu_three_wide_frame(packet);
+	menu_map_picture(packet, video, left, 39, MENU_THREE_WIDE_SIDE_Y0, 118, MENU_THREE_WIDE_SIDE_Y0 + 64);
+	menu_map_picture(packet, video, right, 394, MENU_THREE_WIDE_SIDE_Y0, 473, MENU_THREE_WIDE_SIDE_Y0 + 64);
+	menu_flat_rect(packet, 22, 160, 136, 232, 0, 7, 22, 0x4C);
+	menu_flat_rect(packet, 376, 160, 490, 232, 0, 7, 22, 0x4C);
+	menu_map_picture(packet, video, map, MENU_THREE_WIDE_CENTER_X0, MENU_THREE_WIDE_CENTER_Y0,
+		MENU_THREE_WIDE_CENTER_X0 + 160, MENU_THREE_WIDE_CENTER_Y0 + 130);
+	menu_text_center(packet, video, 270, 2, 231, 239, 248, 0x80, s_maps[map]);
+	menu_text(packet, video, 30, 238, 1, 110, 160, 210, 0x70, s_maps[left]);
+	menu_text(packet, video, 490 - (int)menu_text_width(s_maps[right], 1) - 4, 238, 1, 110, 160, 210, 0x70, s_maps[right]);
+	menu_arrow(packet, 26, 196, 0);
+	menu_arrow(packet, 476, 196, 1);
+	snprintf(position, sizeof(position), "%u / %u", map + 1u, total);
+	menu_text_center(packet, video, 300, 1, 142, 181, 217, 0x80, position);
+	{
+		unsigned type, x = 40;
+		menu_text(packet, video, 40, 330, 1, 100, 159, 218, 0x72, "GAME TYPES ON THIS MAP");
+		for (type = 0; type < HCU_MAIN_MENU_GAME_TYPE_COUNT; ++type) {
+			if (!hcu_mp_map_supports(map, type)) continue;
+			menu_text(packet, video, (int)x, 350, 1, 225, 236, 248, 0x80, s_game_types[type]);
+			x += menu_text_width(s_game_types[type], 1) + 16u;
+			if (x > 400u) break;
+		}
+	}
+}
+
+static void menu_gametype_select(packet2_t *packet, const video_t *video, const hcu_main_menu_state *state)
+{
+	unsigned current = state->session.variant_index;
+	unsigned left = menu_neighbor_selection(state, -1), right = menu_neighbor_selection(state, 1);
+	char name[32], neighbor[32];
+	menu_page_mp(packet, video, MENU_HEADER_GAMETYPE, "SELECT GAME TYPE",
+		state->edit_gametypes ? "LEFT/RIGHT CHOOSE   CROSS EDIT   CIRCLE BACK" :
+		"LEFT/RIGHT CHOOSE   CROSS SELECT   CIRCLE BACK");
+	menu_three_wide_frame(packet);
+	menu_type_picture(packet, video, menu_selection_picture(state, left), 39, MENU_THREE_WIDE_SIDE_Y0, 118,
+		MENU_THREE_WIDE_SIDE_Y0 + 64);
+	menu_type_picture(packet, video, menu_selection_picture(state, right), 394, MENU_THREE_WIDE_SIDE_Y0, 473,
+		MENU_THREE_WIDE_SIDE_Y0 + 64);
+	menu_flat_rect(packet, 22, 160, 136, 232, 0, 7, 22, 0x4C);
+	menu_flat_rect(packet, 376, 160, 490, 232, 0, 7, 22, 0x4C);
+	menu_type_picture(packet, video, menu_selection_picture(state, current), MENU_THREE_WIDE_CENTER_X0,
+		MENU_THREE_WIDE_CENTER_Y0, MENU_THREE_WIDE_CENTER_X0 + 160, MENU_THREE_WIDE_CENTER_Y0 + 130);
+	menu_selection_name(state, current, name, sizeof(name));
+	menu_text_center(packet, video, 270, 2, 231, 239, 248, 0x80, name);
+	menu_selection_name(state, left, neighbor, sizeof(neighbor));
+	menu_text(packet, video, 30, 238, 1, 110, 160, 210, 0x70, neighbor);
+	menu_selection_name(state, right, neighbor, sizeof(neighbor));
+	menu_text(packet, video, 490 - (int)menu_text_width(neighbor, 1) - 4, 238, 1, 110, 160, 210, 0x70, neighbor);
+	menu_arrow(packet, 26, 196, 0);
+	menu_arrow(packet, 476, 196, 1);
+	if (!state->edit_gametypes)
+		menu_text_center(packet, video, 316, 1, 142, 181, 217, 0x80, s_maps[state->session.map % HCU_MAIN_MENU_MAP_COUNT]);
+}
+
 static void menu_game_options(packet2_t *packet, const video_t *video, const hcu_main_menu_state *state)
 {
 	static const char *const labels[OPTION_ROW_COUNT] = {
-		"GAME TYPE RULES", "PLAYER OPTIONS", "ITEM OPTIONS", "INDICATOR OPTIONS", "BACK"};
+		"GAME TYPE RULES", "PLAYER OPTIONS", "ITEM OPTIONS", "INDICATOR OPTIONS", "SAVE GAME TYPE", "BACK"};
+	/* The picture beside each row is the one the retail edit screen shows for it. */
+	static const uint8_t picture[OPTION_ROW_COUNT] = {
+		MENU_PANEL_RULES, MENU_PANEL_PLAYER, MENU_PANEL_ITEMS, MENU_PANEL_INDICATORS, MENU_PANEL_SAVE, 0xFF};
 	unsigned r;
-	menu_page(packet, video, "GAME OPTIONS", "CROSS SELECT   CIRCLE BACK");
+	menu_page_mp(packet, video, MENU_HEADER_SET_OPTIONS, "GAME OPTIONS", "CROSS SELECT   CIRCLE BACK");
 	for (r = 0; r < OPTION_ROW_COUNT; ++r)
-		menu_row(packet, video, 50, 462, 94 + (int)r * 55, r == state->row, labels[r], NULL);
+		menu_row(packet, video, 28, 268, 84 + (int)r * 50, r == state->row, labels[r], NULL);
+	if (picture[state->row % OPTION_ROW_COUNT] != 0xFFu) {
+		menu_flat_rect(packet, 280, 90, 492, 214, 4, 15, 34, 0x68); menu_frame(packet, 280, 90, 492, 214);
+		menu_picture(packet, video, picture[state->row % OPTION_ROW_COUNT], 284, 94, 488, 210);
+	}
+	menu_text_center(packet, video, 360, 1, 119, 169, 211, 0x80, s_game_types[state->session.variant.game_type % HCU_MAIN_MENU_GAME_TYPE_COUNT]);
 }
 
 static const char *menu_yes_no(unsigned value) { return value ? "YES" : "NO"; }
@@ -2168,7 +2530,7 @@ static void menu_mode_options(packet2_t *packet, const video_t *video, const hcu
 {
 	unsigned r, count = menu_mode_row_count(state->session.variant.game_type);
 	char number[16]; const char *label, *value;
-	menu_page(packet, video, s_game_types[state->session.variant.game_type], "LEFT/RIGHT CHANGE   CROSS SELECT   CIRCLE BACK");
+	menu_page_mp(packet, video, MENU_HEADER_RULES, s_game_types[state->session.variant.game_type], "LEFT/RIGHT CHANGE   CROSS SELECT   CIRCLE BACK");
 	for (r = 0; r < count; ++r) {
 		menu_mode_option(&state->session.variant, r, &label, &value, number, sizeof(number));
 		menu_row(packet, video, 28, 484, 78 + (int)r * (count > 7 ? 35 : 46), r == state->row, label, value);
@@ -2183,7 +2545,7 @@ static void menu_player_options(packet2_t *packet, const video_t *video, const h
 	static const char *const health[6] = {"50%","100%","150%","200%","300%","400%"};
 	static const char *const times[4] = {"INSTANT","5 SECONDS","10 SECONDS","15 SECONDS"};
 	unsigned r; const hcu_main_menu_variant *v = &state->session.variant; const char *value;
-	menu_page(packet, video, "PLAYER OPTIONS", "LEFT/RIGHT CHANGE   CROSS SELECT   CIRCLE BACK");
+	menu_page_mp(packet, video, MENU_HEADER_PLAYER, "PLAYER OPTIONS", "LEFT/RIGHT CHANGE   CROSS SELECT   CIRCLE BACK");
 	for (r = 0; r < PLAYER_ROW_COUNT; ++r) {
 		value = r == PLAYER_LIVES ? lives[v->lives % 4u] :
 			r == PLAYER_HEALTH ? health[v->maximum_health % 6u] :
@@ -2204,7 +2566,7 @@ static void menu_item_options(packet2_t *packet, const video_t *video, const hcu
 	static const char *const weapons[11] = {"NORMAL","PISTOLS","RIFLES","PLASMA WEAPONS","SNIPER",
 		"NO SNIPING","ROCKET LAUNCHERS","SHOTGUNS","SHORT RANGE","HUMAN","NONE"};
 	unsigned r; const hcu_main_menu_variant *v = &state->session.variant; const char *value;
-	menu_page(packet, video, "ITEM OPTIONS", "LEFT/RIGHT CHANGE   CROSS SELECT   CIRCLE BACK");
+	menu_page_mp(packet, video, MENU_HEADER_ITEMS, "ITEM OPTIONS", "LEFT/RIGHT CHANGE   CROSS SELECT   CIRCLE BACK");
 	for (r = 0; r < ITEM_ROW_COUNT; ++r) {
 		value = r == ITEM_GRENADES ? menu_yes_no(v->infinite_grenades) :
 			r == ITEM_VEHICLES ? vehicles[v->vehicle_set % 5u] :
@@ -2219,7 +2581,7 @@ static void menu_indicator_options(packet2_t *packet, const video_t *video, cons
 	static const char *const labels[INDICATOR_ROW_COUNT] = {"RADAR DISPLAY","OTHER PLAYERS ON RADAR","FRIENDS ON SCREEN","BACK"};
 	static const char *const displays[3] = {"MOTION TRACKER","NAV POINTS","NONE"};
 	unsigned r; const hcu_main_menu_variant *v = &state->session.variant; const char *value;
-	menu_page(packet, video, "INDICATOR OPTIONS", "LEFT/RIGHT CHANGE   CROSS SELECT   CIRCLE BACK");
+	menu_page_mp(packet, video, MENU_HEADER_INDICATORS, "INDICATOR OPTIONS", "LEFT/RIGHT CHANGE   CROSS SELECT   CIRCLE BACK");
 	for (r = 0; r < INDICATOR_ROW_COUNT; ++r) {
 		value = r == INDICATOR_RADAR_DISPLAY ? displays[v->radar_display % 3u] :
 			r == INDICATOR_OTHER_PLAYERS ? menu_yes_no(v->other_players_radar) :
@@ -2386,7 +2748,7 @@ static void menu_video_settings(packet2_t *packet, const video_t *video, const h
 	}
 }
 
-static int menu_load_textures(const uint16_t *textures[12], void **allocation)
+static int menu_load_textures(const uint16_t *textures[13], void **allocation)
 {
 #if defined(__mips__)
 	/* Order matches tools/build_hcu_menu_assets.py. Older discs omit the glyph atlas. */
@@ -2415,11 +2777,19 @@ static int menu_load_textures(const uint16_t *textures[12], void **allocation)
 		hcu_file_bridge_close(file); free(data); return -1;
 	}
 	hcu_file_bridge_close(file);
-	if (file_size >= full_bytes + MENU_CAMERA_BYTES + 8u) {
-		menu_camera_import(data + full_bytes, MENU_CAMERA_BYTES);
-		if (menu_ring_mesh_import(data + full_bytes + MENU_CAMERA_BYTES,
-			(size_t)file_size - full_bytes - MENU_CAMERA_BYTES, 1)) {
-			free(data); return -1;
+	/* A package built with the retail multiplayer art carries it between the moon and the camera path. */
+	textures[12] = NULL;
+	if (file_size >= full_bytes + MENU_MP_UI_BYTES + MENU_CAMERA_BYTES + 8u &&
+		!memcmp(data + full_bytes, "HMUI", 4u))
+		textures[12] = (const uint16_t *)(data + full_bytes);
+	{
+		const size_t path_at = full_bytes + (textures[12] ? MENU_MP_UI_BYTES : 0u);
+		if (file_size >= path_at + MENU_CAMERA_BYTES + 8u) {
+			menu_camera_import(data + path_at, MENU_CAMERA_BYTES);
+			if (menu_ring_mesh_import(data + path_at + MENU_CAMERA_BYTES,
+				(size_t)file_size - path_at - MENU_CAMERA_BYTES, 1)) {
+				free(data); return -1;
+			}
 		}
 	}
 	textures[0] = (const uint16_t *)data;
@@ -2456,6 +2826,7 @@ static int menu_load_textures(const uint16_t *textures[12], void **allocation)
 	textures[9] = hcu_main_menu_stars_rgb5a1;
 	textures[10] = hcu_main_menu_ring_shadow_rgb5a1;
 	textures[11] = hcu_main_menu_moon_rgb5a1;
+	textures[12] = (const uint16_t *)hcu_main_menu_mp_ui_bin;
 	menu_camera_import(hcu_main_menu_camera_bin, MENU_CAMERA_BYTES);
 	if (menu_ring_mesh_import(hcu_main_menu_ring_mesh_bin,
 		(size_t)(hcu_main_menu_ring_mesh_end - hcu_main_menu_ring_mesh_bin), 0)) return -1;
@@ -2465,10 +2836,10 @@ static int menu_load_textures(const uint16_t *textures[12], void **allocation)
 }
 
 static int menu_upload_assets(video_t *video, void *dma_storage, size_t dma_bytes,
-	uint8_t *font, uint32_t *clut, const uint16_t *textures[12])
+	uint8_t *font, uint32_t *clut, const uint16_t *textures[13])
 {
 	chain_t chain;
-	if (dma_bytes < 144u * 16u) return -1;
+	if (dma_bytes < 208u * 16u) return -1;
 	if ((uint64_t)video->tex_base +
 		(uint64_t)MENU_TEXTURE_PAGES * MENU_PAGE_WORDS > VIDEO_VRAM_WORDS)
 		return -1;
@@ -2485,8 +2856,10 @@ static int menu_upload_assets(video_t *video, void *dma_storage, size_t dma_byte
 	SyncDCache((void *)textures[9], (uint8_t *)textures[9] + MENU_SPACE_BYTES);
 	SyncDCache((void *)textures[10], (uint8_t *)textures[10] + MENU_RING_SHADOW_BYTES);
 	SyncDCache((void *)textures[11], (uint8_t *)textures[11] + MENU_MOON_BYTES);
+	s_menu_mp_ui = textures[12] != NULL;
+	if (s_menu_mp_ui) SyncDCache((void *)textures[12], (uint8_t *)textures[12] + MENU_MP_UI_BYTES);
 	SyncDCache(font, font + MENU_FONT_BYTES); SyncDCache(clut, (uint8_t *)clut + MENU_CLUT_BYTES);
-	chain_init(&chain, dma_storage, 144u);
+	chain_init(&chain, dma_storage, 208u);
 	if (gs_upload(&chain, textures[0], MENU_RING_INNER_BYTES,
 		(video->tex_base + MENU_RING_INNER_PAGE * MENU_PAGE_WORDS) / 64u,
 		MENU_RING_INNER_W / 64u, GS_PSMCT16S, MENU_RING_INNER_W, MENU_RING_INNER_H) ||
@@ -2529,6 +2902,21 @@ static int menu_upload_assets(video_t *video, void *dma_storage, size_t dma_byte
 		gs_upload(&chain, clut, MENU_CLUT_BYTES,
 		(video->tex_base + MENU_CLUT_PAGE * MENU_PAGE_WORDS) / 64u,
 		1u, GS_PSMCT32, 16u, 16u)) return -1;
+	if (s_menu_mp_ui) {
+		const uint8_t *ui = (const uint8_t *)textures[12];
+		const uint8_t *header_clut = ui + 16u, *panel_clut = header_clut + 1024u;
+		const uint8_t *headers = panel_clut + 1024u, *panels = headers + MENU_UI_HEADER_BYTES;
+		const uint32_t clut_block = (video->tex_base + MENU_UI_CLUT_PAGE * MENU_PAGE_WORDS) / 64u;
+		if (gs_upload(&chain, headers, MENU_UI_HEADER_BYTES,
+			(video->tex_base + MENU_UI_HEADER_PAGE * MENU_PAGE_WORDS) / 64u,
+			MENU_UI_HEADER_W / 64u, GS_PSMT8, MENU_UI_HEADER_W, MENU_UI_HEADER_H * MENU_UI_HEADER_COUNT) ||
+			gs_upload(&chain, panels, MENU_UI_PANEL_BYTES,
+			(video->tex_base + MENU_UI_PANEL_PAGE * MENU_PAGE_WORDS) / 64u,
+			MENU_UI_PANEL_W / 64u, GS_PSMT8, MENU_UI_PANEL_W, MENU_UI_PANEL_H * MENU_UI_PANEL_COUNT) ||
+			gs_upload(&chain, header_clut, 1024u, clut_block, 1u, GS_PSMCT32, 16u, 16u) ||
+			gs_upload(&chain, panel_clut, 1024u, clut_block + MENU_UI_CLUT_WORDS / 64u, 1u, GS_PSMCT32, 16u, 16u))
+			return -1;
+	}
 	chain_end(&chain, 0); SyncDCache(dma_storage, (uint8_t *)dma_storage + chain_qwords(&chain) * 16u);
 	dma_channel_send_chain(DMA_CHANNEL_GIF, dma_storage, 0, 0, 0); dma_wait_fast();
 	return chain.overflow ? -1 : 0;
@@ -2588,11 +2976,11 @@ static void menu_join_players(hcu_main_menu_state *state, menu_pad_event events[
 		} else if (!joined && (events[p].edges & PAD_BTN_TRIANGLE)) {
 			state->guest_mask |= (uint8_t)(1u << p);
 			state->joined_mask |= (uint8_t)(1u << p); ++state->player_count;
-		} else if (joined && (events[p].edges & PAD_BTN_CIRCLE)) {
+		} else if (joined && allow_continue && (events[p].edges & PAD_BTN_CIRCLE)) {
 			state->joined_mask &= (uint8_t)~(1u << p); state->guest_mask &= (uint8_t)~(1u << p);
 			if (state->player_count) --state->player_count;
 			*suppress_back = 1;
-		} else if (!allow_continue && (events[p].edges & PAD_BTN_CROSS)) *suppress_confirm = 1;
+		}
 	}
 }
 
@@ -2605,7 +2993,7 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 #if defined(__mips__)
 	int theme_loop_started = 0;
 #endif
-	const uint16_t *textures[12]; void *texture_allocation = NULL;
+	const uint16_t *textures[13]; void *texture_allocation = NULL;
 	if (!video || !dma_storage || dma_bytes < MENU_PACKET_QW * 16u || !scratch)
 		return HCU_MAIN_MENU_ACTION_MULTIPLAYER;
 	hcu_boot_diag_note("menu enter", 0, 0, 0);
@@ -2708,14 +3096,16 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 					break;
 				}
 			}
-			if (start && state.player_count) { state.page = HCU_MAIN_MENU_PAGE_LOBBY; state.row = 0; }
-			else if (back && !suppress_back && !state.player_count) { state.page = HCU_MAIN_MENU_PAGE_TITLE; state.row = 0; }
+			if (start && state.player_count) { state.page = HCU_MAIN_MENU_PAGE_MAP_SELECT; state.row = 0; }
+			else if (back && !suppress_back && !state.player_count) {
+				state.page = HCU_MAIN_MENU_PAGE_TYPE; state.row = HCU_MAIN_MENU_TYPE_SPLIT_SCREEN;
+			}
 		} else if (state.page == HCU_MAIN_MENU_PAGE_LOBBY) {
 			menu_join_players(&state, events, 0, &suppress_confirm, &suppress_back);
 			if (!state.player_count) { state.page = HCU_MAIN_MENU_PAGE_CONNECT; state.row = 0; }
 			else {
 				action = hcu_main_menu_step(&state, up, down, left, right,
-					(confirm && !suppress_confirm) || start, 0);
+					(confirm && !suppress_confirm) || start, back);
 			}
 		} else action = hcu_main_menu_step(&state, up, down, left, right,
 			confirm || start, back);
@@ -2769,6 +3159,9 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 		switch (state.page) {
 		case HCU_MAIN_MENU_PAGE_TITLE: menu_title(&packet, video, &state, frame); break;
 		case HCU_MAIN_MENU_PAGE_CONNECT: menu_connect(&packet, video, &state, events); break;
+		case HCU_MAIN_MENU_PAGE_TYPE: menu_type_select(&packet, video, &state); break;
+		case HCU_MAIN_MENU_PAGE_MAP_SELECT: menu_map_select(&packet, video, &state); break;
+		case HCU_MAIN_MENU_PAGE_GAMETYPE_SELECT: menu_gametype_select(&packet, video, &state); break;
 		case HCU_MAIN_MENU_PAGE_LOBBY: menu_lobby(&packet, video, &state); break;
 		case HCU_MAIN_MENU_PAGE_GAME_OPTIONS: menu_game_options(&packet, video, &state); break;
 		case HCU_MAIN_MENU_PAGE_MODE_OPTIONS: menu_mode_options(&packet, video, &state); break;

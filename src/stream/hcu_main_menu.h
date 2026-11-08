@@ -31,7 +31,22 @@ enum hcu_main_menu_page {
 	HCU_MAIN_MENU_PAGE_PROFILE_NAME,
 	HCU_MAIN_MENU_PAGE_CONTROLS,
 	HCU_MAIN_MENU_PAGE_SETTINGS,
-	HCU_MAIN_MENU_PAGE_VIDEO_SETTINGS
+	HCU_MAIN_MENU_PAGE_VIDEO_SETTINGS,
+	/* Retail multiplayer flow (ui.map): type list, map list, game type list. */
+	HCU_MAIN_MENU_PAGE_TYPE,
+	HCU_MAIN_MENU_PAGE_MAP_SELECT,
+	HCU_MAIN_MENU_PAGE_GAMETYPE_SELECT
+};
+
+/* Rows of the retail multiplayer type list. Cooperative play is campaign-only and
+ * system link needs a network, so those two rows are shown but cannot be selected. */
+enum hcu_main_menu_type_row {
+	HCU_MAIN_MENU_TYPE_QUICK_START,
+	HCU_MAIN_MENU_TYPE_COOP,
+	HCU_MAIN_MENU_TYPE_SPLIT_SCREEN,
+	HCU_MAIN_MENU_TYPE_SYSTEM_LINK,
+	HCU_MAIN_MENU_TYPE_EDIT_GAMETYPES,
+	HCU_MAIN_MENU_TYPE_ROW_COUNT
 };
 
 enum hcu_main_menu_action {
@@ -120,6 +135,8 @@ typedef struct hcu_main_menu_state {
 	uint8_t row;
 	uint8_t profile_index;
 	uint8_t name_cursor;
+	/* Set by EDIT GAMETYPES: the game type list opens the rules pages instead of the lobby. */
+	uint8_t edit_gametypes;
 	uint8_t joined_mask;
 	uint8_t guest_mask;
 	uint8_t player_count;
