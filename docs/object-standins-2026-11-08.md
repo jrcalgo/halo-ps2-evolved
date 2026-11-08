@@ -23,6 +23,19 @@ camera turned, and a model that was not resident was simply not drawn.
   `HCU_OBJECTS_MAX_MODELS` is 128 (largest table: 91). The prepared-object cache keeps its first 80 slots only;
   later slots (stand-ins past 80) draw through the unprepared path.
 
+## Proximity and FOV
+
+Each visible object gets an apparent size: its render radius divided by `distance x tan(vertical FOV / 2)`, i.e. its share of
+half the screen height. The largest value over a model's visible objects is that model's score (`s_slot_app`).
+
+* Full-detail loads (ranks 1-3) run in order of rank and, within a rank, biggest score first (one load runs at a time).
+* A model whose score is under `OBJ_UPGRADE_MIN_APP` (0.04, a radius of about 10 px at 480 lines) is not upgraded while its
+  stand-in is resident. A narrower FOV (the FOV slider, the sniper scope) raises the score, so zooming in loads the far
+  models at full detail.
+* When the pool needs room, a referenced model with a lower score is evicted before one with a higher score (then LRU).
+* Blood Gulch at the spawn base: only the nearby Scorpion is resident at full detail; the Ghost and Warthog at the far
+  base stay on stand-ins, instead of all three filling the pool.
+
 ## Measured (headless PCSX2, a walk with random turns, per 10 s buckets of "referenced model not resident")
 
 * Blood Gulch warm: 99.1% of referenced models resident at full detail, 0.9% drawn as stand-ins, 0.04% absent

@@ -1468,6 +1468,16 @@ static uint8_t s_key_span[HCU_OBJECTS_MAX_MODELS];
 /* Low-detail stand-ins: table index of the full entry each stand-in belongs to (OBJ_NONE8 for a full entry). */
 #define OBJ_NONE8 0xFFu
 static uint8_t s_proxy_full[HCU_OBJECTS_MAX_MODELS];
+static uint8_t s_full_proxy[HCU_OBJECTS_MAX_MODELS];   /* table index of a full entry's stand-in, OBJ_NONE8 when it has none */
+/* Apparent size of each slot this frame: the largest, over the visible objects that use it, of render radius divided by
+ * the half-height of the view at that distance (distance x tan(vertical FOV / 2)), so it is the object's share of half the
+ * screen height. Near, big and zoomed-in (narrow FOV, so the player's FOV setting and the sniper scope count) objects have
+ * the high values; this orders the full-detail loads and the evictions, and a model too small on screen to tell from its
+ * stand-in is not upgraded. 0 = not referenced. */
+static float s_slot_app[HCU_OBJECTS_MAX_MODELS];
+/* Below this share of half the screen height (a radius of about 10 pixels at 480 lines) the stand-in is drawn where a full
+ * model is not resident; closer, larger or more zoomed-in objects load the full model. */
+#define OBJ_UPGRADE_MIN_APP 0.04f
 static tex_source_t s_src_total;
 static int s_installed;
 
@@ -2181,6 +2191,15 @@ static int slot_hysteresis_holds(const obj_slot *s, int referenced, uint32_t fra
 	return frame < s->last_used + OBJ_EVICT_HYSTERESIS_FRAMES;
 }
 
+/* Among victims of one rank: a referenced model that looks smaller on screen goes first (the far one), then the least
+ * recently used. */
+static int slot_farther_victim(uint32_t v, uint32_t best)
+{
+	if (s_slot_rank[v] != HCU_OBJECTS_RANK_UNUSED && s_slot_app[v] != s_slot_app[best])
+		return s_slot_app[v] < s_slot_app[best];
+	return s_slots[v].last_used < s_slots[best].last_used;
+}
+
 /* Rank and pin rules match hcu_render_objects_residency_rank_victim_ok. The fence is per slot:
  * bytes in the unobserved kick stay, and a slot that just left the visible set stays too. */
 static int slot_victim_ok(uint32_t v, uint32_t requester_rank, uint32_t frame, uint32_t *refused_pinned)
@@ -2280,7 +2299,7 @@ static void entry_request(const hcu_asset_profile_view *view, uint32_t i, uint32
 				if (slot_victim_ok(v, rank, frame, &s_res.evict_refused_pinned) &&
 					!(pass == 0u && s_slot_rank[v] == HCU_OBJECTS_RANK_UNUSED && s_slots[v].pool_size <= OBJ_STICKY_BYTES) &&
 					(best == OBJ_NONE || s_slot_rank[v] > s_slot_rank[best] ||
-					 (s_slot_rank[v] == s_slot_rank[best] && s_slots[v].last_used < s_slots[best].last_used))) best = v;
+					 (s_slot_rank[v] == s_slot_rank[best] && slot_farther_victim(v, best)))) best = v;
 		if (best == OBJ_NONE) {
 			pool_event_record(blocked_by_fence ? 3u : 5u, s, need, reclaim);
 			if (blocked_by_fence) s_res.fence_blocked++;
@@ -2442,12 +2461,13 @@ static void residency_frame(const halo_ps2_frame_snapshot *snap, uint32_t frame,
 #endif
 	static uint8_t need[HCU_OBJECTS_MAX_MODELS];
 	static uint8_t priority[HCU_OBJECTS_MAX_MODELS];
-	uint32_t v, ref, i, p;
+	uint32_t v, ref, i;
 	if (!snap || !s_pool) return;
 	hcu_render_object_frustums_prepare_admission(snap, layout_view_count, screen_w, screen_h,
 		display_aspect);
 	memset(need, 0, sizeof need);
 	memset(priority, 0xFF, sizeof priority);
+	memset(s_slot_app, 0, sizeof s_slot_app);
 	for (v = 0; v < snap->view_count && v < HALO_PS2_FRAME_MAX_VIEWS; v++) {
 		const halo_ps2_frame_view *fv = &snap->views[v];
 		const hcu_render_objects_frustum *frustum = &s_view_frustums[v];
@@ -2479,8 +2499,18 @@ static void residency_frame(const halo_ps2_frame_snapshot *snap, uint32_t frame,
 			rank = hcu_render_objects_residency_priority(snap->objects[oi].type);
 			for (k = 0; k < s_slot_count; k++)
 				if (!s_slots[k].refused && !s_slots[k].entry->proxy && (s_slots[k].entry->source_datum & 0xFFFFu) == rid) {
+					const halo_ps2_frame_object *o = &snap->objects[oi];
+					float dx = o->world.position[0] - fv->camera.position[0];
+					float dy = o->world.position[1] - fv->camera.position[1];
+					float dz = o->world.position[2] - fv->camera.position[2];
+					float dist = sqrtf(dx * dx + dy * dy + dz * dz);
+					float tan_half = tanf(fv->camera.vertical_field_of_view * 0.5f);
+					float app;
+					if (!(tan_half > 0.02f && tan_half < 20.0f)) tan_half = 1.0f;   /* unknown FOV: 90 degrees */
+					app = (o->render_radius > 0.0f ? o->render_radius : 1.0f) / ((dist > 0.25f ? dist : 0.25f) * tan_half);
 					need[k] = 1;
 					if (rank < priority[k]) priority[k] = (uint8_t)rank;
+					if (app > s_slot_app[k]) s_slot_app[k] = app;
 					break;
 				}
 		}
@@ -2524,9 +2554,27 @@ static void residency_frame(const halo_ps2_frame_snapshot *snap, uint32_t frame,
 		if (need[i] && priority[i] == 0u) entry_request(s_profile, i, frame, 0u);
 	floor_prefetch(snap, frame);
 	fp_prewarm(frame);
-	for (p = 1u; p <= 3u; p++)
+	/* Ranks 1-3 by rank, and within a rank the biggest-looking (nearest and largest) model first, since only one load runs
+	 * at a time. A model that is too small on screen to tell from its resident stand-in is not upgraded. */
+	{
+		uint8_t order[HCU_OBJECTS_MAX_MODELS];
+		uint32_t n = 0u, a, b;
 		for (i = 0; i < s_slot_count; i++)
-			if (need[i] && priority[i] == p) entry_request(s_profile, i, frame, p);
+			if (need[i] && priority[i] >= 1u && priority[i] <= 3u) order[n++] = (uint8_t)i;
+		for (a = 1u; a < n; a++) {
+			uint8_t key = order[a];
+			for (b = a; b > 0u && (priority[order[b - 1u]] > priority[key] ||
+				(priority[order[b - 1u]] == priority[key] && s_slot_app[order[b - 1u]] < s_slot_app[key])); b--)
+				order[b] = order[b - 1u];
+			order[b] = key;
+		}
+		for (a = 0u; a < n; a++) {
+			i = order[a];
+			if (!s_slots[i].loaded && s_slot_app[i] < OBJ_UPGRADE_MIN_APP && s_full_proxy[i] != OBJ_NONE8 &&
+				s_slots[s_full_proxy[i]].loaded) continue;
+			entry_request(s_profile, i, frame, priority[i]);
+		}
+	}
 #if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
 	{
 		uint32_t dt = timer_cycles() - residency_t0;
@@ -4567,11 +4615,13 @@ int hcu_render_objects_load(const hcu_asset_profile_view *view, arena_t *arena,
 		info->entries++;
 	}
 	memset(s_proxy_full, OBJ_NONE8, sizeof s_proxy_full);
+	memset(s_full_proxy, OBJ_NONE8, sizeof s_full_proxy);
+	memset(s_slot_app, 0, sizeof s_slot_app);
 	for (i = 0; i < count; i++) {
 		uint32_t f;
 		if (!table[i].proxy) continue;
 		for (f = 0; f < count; f++)
-			if (!table[f].proxy && table[f].source_datum == table[i].source_datum) { s_proxy_full[i] = (uint8_t)f; break; }
+			if (!table[f].proxy && table[f].source_datum == table[i].source_datum) { s_proxy_full[i] = (uint8_t)f; s_full_proxy[f] = (uint8_t)i; break; }
 		if (s_proxy_full[i] == OBJ_NONE8) s_slots[i].refused = 1;   /* a stand-in without its full model is never drawn */
 	}
 #ifdef HCU_RENDER_OBJECTS_EE
