@@ -1052,3 +1052,23 @@ those entries unchanged and exactly one addition (101 total entries).
 Full readback SHA-256 matches the prepared image above. The report is
 `hardware/spu-load-installation.json`. Physical checkpoint observation is
 pending.
+
+### Full 13-map image installed and readback-verified
+
+The user confirms the PCSX2 menu-to-gameplay chains work across all 13 maps
+and game modes. Blood Gulch has been exercised with one and two players. The
+reported emulator performance is about 30 FPS in one-player mode and 20–30
+FPS in two-player mode; physical PS2 frame rate has not been measured. The
+physical main menu is confirmed through OPL 1.1.0-Beta-1996 and
+1.2.0-Beta-1996 from the internal APA HDD.
+
+Installed the full image as `Halo Full R2`, APA ID
+`PP.HPSX-00001..HALO_FULL_R2`. Preflight matched all 94 existing APA entries
+and 2432 MB free. After installation all prior entries remained unchanged,
+for 95 total. Extracted the full image back to the PC and verified its
+SHA-256 against the source: `bc5aa46e9e99594df37868305e454df75121ccb49a3f24d18663aed060bf32f7`.
+The readback is `/tmp/halo-full-r2-readback-1794093013.iso`; the complete
+report is `hardware/full-r2-installation.json`. This verifies the APA image
+transfer and contents. Physical loading and playing of maps/matches, controls,
+sound, settings persistence, extended stability, and frame rate remain to be
+qualified on the console.
