@@ -38,7 +38,7 @@
     "submodules/halo-ce-universal/source/game/game_globals.h": "061846798e72484c082c79fe10bc2d2a142a229a98bb0765160c0fc34b2542f3",
     "build/c3/render-stall-fixes-new/audit/survival-diag-r3/survival-beavercreek.failure.json": "f2b156248b0b2425f56d0b75ae013b2bfe888126520d42282691fd40c152b778",
     "build/c3/render-stall-fixes-new/audit/survival-diag-r3/survival-beavercreek.unadmitted.ctag": "ec71d99d7dbdca4ae3269951b6239487d1b11ecea41f784773c1f3ec8faf6b5e",
-    "build/hcu-ps2-closure/all-no-bootstrap-memory/halo-local.elf": "b1d3c7b0af253988aab8fc60a7a7618bb03435111784ddf784dd50f5d39280c5",
+    "build/hcu-ps2-closure/all-no-bootstrap-memory/halo-local.elf": "6ab1f2e01401caf1f182017c1d521362ee62b2ead31950a0ad00a97284563ec5",
     "build/retail-maps/decompressed/a10.map": "1ce33954aa12a2e0c21a07e20d0dc652b1b403e4ef1b98c067439a15545d9971",
     "build/retail-maps/decompressed/a30.map": "287959f34a7379a1dbec5fec15b4d94d17fe97ccd861f5c0c8fc80148b7ed293",
     "build/retail-maps/decompressed/a50.map": "d7a3e80a86f2b0f23d855ce353aed3c0eb252145697797d87f25623dc470f38d",

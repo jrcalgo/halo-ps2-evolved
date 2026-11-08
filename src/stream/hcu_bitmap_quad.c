@@ -352,3 +352,157 @@ hcu_bitmap_quad_status hcu_bitmap_quad_emit_marker(chain_t *c,uint16_t screen_w,
 	  for(i=0;i<6;i++,q+=6) put_vertex(q,&v[order[i]],&s,&none); }
 	return HCU_BITMAP_QUAD_OK;
 }
+
+/* ---- Controller button glyphs: vector shapes, so a prompt is sharp at any HUD scale. ---- */
+#define HCU_GLYPH_MAX_TRIS 96u
+#define HCU_GLYPH_SLICES 20u
+
+typedef struct { float x[3], y[3]; uint32_t argb; } glyph_tri_t;
+typedef struct { glyph_tri_t t[HCU_GLYPH_MAX_TRIS]; unsigned n; } glyph_mesh_t;
+
+static void gm_tri(glyph_mesh_t *m,float x0,float y0,float x1,float y1,float x2,float y2,uint32_t argb)
+{
+	glyph_tri_t *t;
+	if(m->n>=HCU_GLYPH_MAX_TRIS) return;
+	t=&m->t[m->n++];
+	t->x[0]=x0; t->y[0]=y0; t->x[1]=x1; t->y[1]=y1; t->x[2]=x2; t->y[2]=y2; t->argb=argb;
+}
+static void gm_quad(glyph_mesh_t *m,float x0,float y0,float x1,float y1,float x2,float y2,float x3,float y3,uint32_t argb)
+{
+	gm_tri(m,x0,y0,x1,y1,x2,y2,argb);
+	gm_tri(m,x0,y0,x2,y2,x3,y3,argb);
+}
+/* A stroke from a to b with half thickness ht; both ends are extended by ht so joined strokes meet. */
+static void gm_bar(glyph_mesh_t *m,float ax,float ay,float bx,float by,float ht,uint32_t argb)
+{
+	float dx=bx-ax, dy=by-ay, len=sqrtf(dx*dx+dy*dy), nx, ny, ex, ey;
+	if(len<1e-4f) return;
+	dx/=len; dy/=len; nx=-dy*ht; ny=dx*ht; ex=dx*ht; ey=dy*ht;
+	ax-=ex; ay-=ey; bx+=ex; by+=ey;
+	gm_quad(m,ax+nx,ay+ny,bx+nx,by+ny,bx-nx,by-ny,ax-nx,ay-ny,argb);
+}
+static void gm_ring(glyph_mesh_t *m,float cx,float cy,float ro,float ri,uint32_t argb)
+{
+	unsigned i;
+	for(i=0;i<HCU_GLYPH_SLICES;i++){
+		float a0=(float)i*(6.2831853f/(float)HCU_GLYPH_SLICES), a1=(float)(i+1u)*(6.2831853f/(float)HCU_GLYPH_SLICES);
+		float c0=cosf(a0),s0=sinf(a0),c1=cosf(a1),s1=sinf(a1);
+		if(ri<=0.0f) gm_tri(m,cx,cy,cx+ro*c0,cy+ro*s0,cx+ro*c1,cy+ro*s1,argb);
+		else gm_quad(m,cx+ri*c0,cy+ri*s0,cx+ro*c0,cy+ro*s0,cx+ro*c1,cy+ro*s1,cx+ri*c1,cy+ri*s1,argb);
+	}
+}
+/* Letters are 1 unit tall (y -0.5..0.5); returns the advance. */
+static float gm_letter(glyph_mesh_t *m,char ch,float x,uint32_t argb)
+{
+	const float ht=0.085f;
+	switch(ch){
+	case 'L':
+		gm_bar(m,x,-0.5f,x,0.5f,ht,argb); gm_bar(m,x,0.5f,x+0.46f,0.5f,ht,argb); return 0.46f;
+	case 'R':
+		gm_bar(m,x,-0.5f,x,0.5f,ht,argb); gm_bar(m,x,-0.5f,x+0.4f,-0.5f,ht,argb);
+		gm_bar(m,x+0.4f,-0.5f,x+0.4f,0.0f,ht,argb); gm_bar(m,x,0.0f,x+0.4f,0.0f,ht,argb);
+		gm_bar(m,x+0.14f,0.0f,x+0.46f,0.5f,ht,argb); return 0.46f;
+	case '1':
+		gm_bar(m,x+0.16f,-0.5f,x+0.16f,0.5f,ht,argb); gm_bar(m,x-0.08f,-0.3f,x+0.16f,-0.5f,ht,argb); return 0.3f;
+	case '2':
+		gm_bar(m,x,-0.5f,x+0.42f,-0.5f,ht,argb); gm_bar(m,x+0.42f,-0.5f,x+0.42f,0.0f,ht,argb);
+		gm_bar(m,x+0.42f,0.0f,x,0.0f,ht,argb); gm_bar(m,x,0.0f,x,0.5f,ht,argb);
+		gm_bar(m,x,0.5f,x+0.42f,0.5f,ht,argb); return 0.42f;
+	}
+	return 0.0f;
+}
+
+static uint32_t glyph_argb(uint32_t rgb,uint32_t alpha_byte,unsigned alpha_pct)
+{
+	return ((alpha_byte*alpha_pct/100u)<<24)|(rgb&0xFFFFFFu);
+}
+
+static void glyph_build(glyph_mesh_t *m,unsigned glyph,uint32_t fade)
+{
+	m->n=0;
+	if(glyph>=1u && glyph<=4u){
+		uint32_t plate=glyph_argb(0x1C1E22u,fade,92u), rim=glyph_argb(0x8A8E96u,fade,95u), sym;
+		gm_ring(m,0.0f,0.0f,1.0f,0.0f,rim);
+		gm_ring(m,0.0f,0.0f,0.9f,0.0f,plate);
+		switch(glyph){
+		case 1u: sym=glyph_argb(0x7B9CF2u,fade,100u);
+			gm_bar(m,-0.42f,-0.42f,0.42f,0.42f,0.085f,sym); gm_bar(m,-0.42f,0.42f,0.42f,-0.42f,0.085f,sym); break;
+		case 2u: sym=glyph_argb(0xF0605Eu,fade,100u); gm_ring(m,0.0f,0.0f,0.5f,0.35f,sym); break;
+		case 3u: sym=glyph_argb(0xEBA6DCu,fade,100u);
+			gm_bar(m,-0.4f,-0.4f,0.4f,-0.4f,0.075f,sym); gm_bar(m,0.4f,-0.4f,0.4f,0.4f,0.075f,sym);
+			gm_bar(m,0.4f,0.4f,-0.4f,0.4f,0.075f,sym); gm_bar(m,-0.4f,0.4f,-0.4f,-0.4f,0.075f,sym); break;
+		default: sym=glyph_argb(0x4FCDA6u,fade,100u);
+			gm_bar(m,0.0f,-0.5f,0.48f,0.36f,0.07f,sym); gm_bar(m,0.48f,0.36f,-0.48f,0.36f,0.07f,sym);
+			gm_bar(m,-0.48f,0.36f,0.0f,-0.5f,0.07f,sym); break;
+		}
+	} else if(glyph>=5u && glyph<=8u){
+		/* shoulder / trigger plate: a rectangle with chamfered corners, then the label in white */
+		uint32_t rim=glyph_argb(0x8A8E96u,fade,95u), plate=glyph_argb(0x1C1E22u,fade,92u), ink=glyph_argb(0xF2F2F2u,fade,100u);
+		static const char *const label[4]={"R1","L1","L2","R2"};
+		const char *s=label[glyph-5u];
+		float w[2], total, x;
+		unsigned k;
+		const float hw=1.6f, hh=1.0f, ch=0.34f;
+		const float rx[8]={-hw+ch,hw-ch,hw,hw,hw-ch,-hw+ch,-hw,-hw}, ry[8]={-hh,-hh,-hh+ch,hh-ch,hh,hh,hh-ch,-hh+ch};
+		for(k=0;k<8u;k++) gm_tri(m,0.0f,0.0f,rx[k],ry[k],rx[(k+1u)&7u],ry[(k+1u)&7u],rim);
+		{ const float ix[8]={-hw+ch+0.08f,hw-ch-0.08f,hw-0.09f,hw-0.09f,hw-ch-0.08f,-hw+ch+0.08f,-hw+0.09f,-hw+0.09f};
+		  const float iy[8]={-hh+0.09f,-hh+0.09f,-hh+ch+0.04f,hh-ch-0.04f,hh-0.09f,hh-0.09f,hh-ch-0.04f,-hh+ch+0.04f};
+		  for(k=0;k<8u;k++) gm_tri(m,0.0f,0.0f,ix[k],iy[k],ix[(k+1u)&7u],iy[(k+1u)&7u],plate); }
+		{ glyph_mesh_t *scratch=m; unsigned keep=m->n;
+		  w[0]=gm_letter(scratch,s[0],0.0f,0); w[1]=gm_letter(scratch,s[1],0.0f,0);
+		  m->n=keep; } /* measuring call only: its triangles are dropped */
+		total=w[0]+0.22f+w[1]; x=-total*0.5f;
+		x+=gm_letter(m,s[0],x,ink)+0.22f; gm_letter(m,s[1],x,ink);
+	}
+}
+
+hcu_bitmap_quad_status hcu_bitmap_quad_emit_glyph(chain_t *c,uint16_t screen_w,uint16_t screen_h,
+	const hcu_bitmap_rect *r,unsigned glyph,float cx,float cy,float height,uint32_t argb)
+{
+	hcu_bitmap_quad_state_t s; hcu_bitmap_vertex_t probe[4],placed[4];
+	glyph_mesh_t mesh; uint64_t prim; uint32_t *w; uint64_t *q; unsigned i,k; uint32_t data_qw,fade;
+	float scale,px,py,unit,ext_x,ext_y; tex_info none;
+	if(!c||!c->base||!r||!screen_w||!screen_h||screen_w>4095u||screen_h>4095u||glyph<1u||glyph>8u)
+		return HCU_BITMAP_QUAD_INVALID;
+	if(!finitef(cx)||!finitef(cy)||!finitef(height)||height<1.0f) return HCU_BITMAP_QUAD_INVALID;
+	fade=argb>>24;
+	if(fade<4u) return HCU_BITMAP_QUAD_OK;
+	memset(&s,0,sizeof(s)); s.screen_w=screen_w; s.screen_h=screen_h; s.z=0xFFFFFFu;
+	for(i=0;i<4;i++){ probe[i].x=cx; probe[i].y=cy; probe[i].u=0.0f; probe[i].v=0.0f; probe[i].argb=argb; }
+	if(hcu_bitmap_quad_place(&s,r,probe,placed)!=0) return HCU_BITMAP_QUAD_INVALID;
+	scale=(float)r->w/(float)screen_w < (float)r->h/(float)screen_h ?
+		(float)r->w/(float)screen_w : (float)r->h/(float)screen_h;
+	if(scale>1.0f) scale=1.0f;
+	px=placed[0].x; py=placed[0].y; unit=height*0.5f*scale;
+	if(unit<1.0f) return HCU_BITMAP_QUAD_OK;
+	ext_x=unit*(glyph>=5u?1.6f:1.0f); ext_y=unit;
+	{ float x0=px-ext_x-1.0f, y0=py-ext_y-1.0f, x1=px+ext_x+1.0f, y1=py+ext_y+1.0f;
+	  if(x0<0.0f) x0=0.0f;
+	  if(y0<0.0f) y0=0.0f;
+	  if(x1>(float)screen_w) x1=(float)screen_w;
+	  if(y1>(float)screen_h) y1=(float)screen_h;
+	  if(x1-x0<1.0f||y1-y0<1.0f) return HCU_BITMAP_QUAD_OK;
+	  s.clip_x=(uint16_t)x0; s.clip_y=(uint16_t)y0; s.clip_w=(uint16_t)(x1-x0); s.clip_h=(uint16_t)(y1-y0); }
+	glyph_build(&mesh,glyph,fade);
+	if(!mesh.n) return HCU_BITMAP_QUAD_OK;
+	data_qw=1u+5u+1u+mesh.n*9u;
+	if(c->overflow||c->qw>c->cap_qw||data_qw+1u>c->cap_qw-c->qw) return HCU_BITMAP_QUAD_CAPACITY;
+	prim=GS_PRIM(GSX_PRIM_TRIANGLE,1,0,0,1,0,1,0,0);
+	w=(uint32_t*)chain_cnt(c,data_qw,0); if(!w) return HCU_BITMAP_QUAD_CAPACITY;
+	w[0]=VIF_CODE(VIF_NOP,0,0); w[1]=VIF_CODE(VIF_NOP,0,0); w[2]=VIF_CODE(VIF_FLUSHA,0,0); w[3]=VIF_CODE(VIF_DIRECT,0,data_qw-1u);
+	q=(uint64_t*)(w+4);
+	q[0]=GIF_TAG(4,1,0,0,GIFX_FLG_PACKED,1); q[1]=GIF_REGS_AD;
+	q[2]=GS_ALPHA(0,1,0,1,0); q[3]=GS_A_ALPHA_1; /* Cs*As + Cd*(1-As) */
+	q[4]=GS_TEST(0,1,0,0,0,0,1,1); q[5]=GS_A_TEST_1;
+	q[6]=framebuffer_xyoffset(screen_w,screen_h); q[7]=GS_A_XYOFFSET_1;
+	q[8]=scissor_value(&s); q[9]=GS_A_SCISSOR_1;
+	q[10]=GIF_TAG(mesh.n*3u,1,1,prim,GIFX_FLG_PACKED,3); q[11]=0x531; q+=12;
+	memset(&none,0,sizeof(none)); none.width=1; none.height=1;
+	for(i=0;i<mesh.n;i++)
+		for(k=0;k<3u;k++){
+			hcu_bitmap_vertex_t v;
+			v.x=px+mesh.t[i].x[k]*unit; v.y=py+mesh.t[i].y[k]*unit; v.u=0.0f; v.v=0.0f; v.argb=mesh.t[i].argb;
+			put_vertex(q,&v,&s,&none); q+=6;
+		}
+	return HCU_BITMAP_QUAD_OK;
+}

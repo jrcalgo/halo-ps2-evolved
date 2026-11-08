@@ -1174,9 +1174,9 @@ int hcu_bitmap_dispatch_reader(const halo_ps2_bitmap_request_reader *reader,
 		return HCU_BITMAP_DISPATCH_E_ARGUMENT;
 	for (i = 0; i < reader->count; i++)
 		if (!reader->requests[i].screen_effect_mask && !reader->requests[i].screen_flash &&
-			!reader->requests[i].motion_marker)
+			!reader->requests[i].motion_marker && !reader->requests[i].button_glyph)
 			bitmap_requests++;
-	/* Flashes and motion markers are untextured, so they do not take a lease. */
+	/* Flashes, motion markers and button glyphs are untextured, so they do not take a lease. */
 	if (bitmap_requests > ctx->lease_capacity - ctx->lease_count)
 		return HCU_BITMAP_DISPATCH_E_ARGUMENT;
 	if (hcu_bitmap_dispatch_capture_screen_effects(ctx, reader->queue) != HCU_BITMAP_DISPATCH_OK)
@@ -1208,6 +1208,17 @@ int hcu_bitmap_dispatch_reader(const halo_ps2_bitmap_request_reader *reader,
 			if (flash == HCU_BITMAP_QUAD_OK) ctx->screen_flashes++;
 			else if (flash == HCU_BITMAP_QUAD_CAPACITY) ctx->counters.deferred++;
 			else if (ctx->first_error == HCU_BITMAP_DISPATCH_OK) ctx->first_error = HCU_BITMAP_DISPATCH_E_ARGUMENT;
+			continue;
+		}
+		/* Controller button glyph of a help prompt: vector shapes, no texture. */
+		if (reader->requests[i].button_glyph) {
+			hcu_bitmap_quad_status glyph = hcu_bitmap_quad_emit_glyph(ctx->geometry_chain,
+				ctx->screen_w, ctx->screen_h, &target, reader->requests[i].button_glyph,
+				(reader->requests[i].vertices[0].x + reader->requests[i].vertices[2].x) * 0.5f,
+				(reader->requests[i].vertices[0].y + reader->requests[i].vertices[2].y) * 0.5f,
+				reader->requests[i].vertices[2].y - reader->requests[i].vertices[0].y,
+				reader->requests[i].vertices[0].color);
+			if (glyph == HCU_BITMAP_QUAD_CAPACITY) ctx->counters.deferred++;
 			continue;
 		}
 		/* Motion-sensor blip or sweep: untextured, same virtual-frame vertices as the HUD.

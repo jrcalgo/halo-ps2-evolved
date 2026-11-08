@@ -118,6 +118,12 @@ hcu_bitmap_quad_status hcu_bitmap_quad_emit_ring(chain_t *chain,
 	uint16_t screen_w, uint16_t screen_h, const hcu_bitmap_rect *rect,
 	float cx, float cy, float outer, float inner, uint32_t argb);
 
+/* Controller button glyph (HALO_PS2_BUTTON_GLYPH_* 1..8) centred on (cx, cy) in the HUD's virtual
+ * frame, `height` tall, as alpha-blended vector triangles. `argb`'s alpha is the prompt fade. */
+hcu_bitmap_quad_status hcu_bitmap_quad_emit_glyph(chain_t *chain,
+	uint16_t screen_w, uint16_t screen_h, const hcu_bitmap_rect *rect,
+	unsigned glyph, float cx, float cy, float height, uint32_t argb);
+
 hcu_bitmap_quad_status hcu_bitmap_quad_emit_marker(chain_t *chain,
 	uint16_t screen_w, uint16_t screen_h, const hcu_bitmap_rect *rect,
 	const hcu_bitmap_vertex_t vertices[4], int subtract);

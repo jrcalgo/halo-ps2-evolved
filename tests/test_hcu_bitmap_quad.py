@@ -33,3 +33,16 @@ def test_screen_flash_quad_is_untextured_and_scissored(tmp_path):
     ], check=True, capture_output=True, text=True)
     for mode in ("lighten", "darken", "tint", "invert", "overflow", "bad_rect"):
         subprocess.run([str(exe), mode], check=True, capture_output=True, text=True)
+
+
+def test_button_glyphs_are_bounded_vector_packets(tmp_path):
+    exe = tmp_path / "hcu_bitmap_glyph_test"
+    subprocess.run([
+        "cc", "-std=c11", "-Wall", "-Wextra", "-Werror",
+        "-I", str(ENGINE / "src"), "-I", str(ROOT / "src"),
+        str(ROOT / "tests/hcu_bitmap_glyph_main.c"),
+        str(ROOT / "src/stream/hcu_bitmap_quad.c"),
+        str(ENGINE / "src/render/chain.c"), str(ENGINE / "src/world/tex.c"),
+        "-lm", "-o", str(exe),
+    ], check=True, capture_output=True, text=True)
+    subprocess.run([str(exe)], check=True, capture_output=True, text=True)

@@ -59,6 +59,9 @@ NATIVE_RESOLUTION_HUD_BITMAPS = {
     r"ui\hud\bitmaps\combined\hud_ammo_type_icons",
     r"ui\hud\bitmaps\combined\hud_counter_numbers",
     r"ui\hud\bitmaps\combined\hud_weapon_backgrounds",
+    # Message icons: the weapon icon beside the pickup prompt and the other help-text glyphs.
+    r"ui\hud\bitmaps\combined\hud_msg_icons",
+    r"ui\hud\bitmaps\hud_msg_icons_sm",
     r"ui\hud\bitmaps\hud_sweeper",
     r"ui\hud\bitmaps\hud_sweeper_mask",
     r"ui\hud\bitmaps\hud_sensor_blip",
