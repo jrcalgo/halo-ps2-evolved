@@ -49,6 +49,12 @@ SOURCE_RESOLUTION_HUD_BITMAPS = {
 # 640-wide frame, so the half-resolution world policy shows them upscaled 2x.
 # Keep Xbox mip 0 (all are power-of-two, 8..256) and drop the unused mip chain.
 # The colour depth stays on the converter's automatic PSMT4/PSMT8 choice.
+# The two HUD meter sheets (A8Y8: Y is the fill order, alpha the shape). Converted so the parent
+# can build the meter's palette per draw; see texconv.convert_meter_rgba.
+METER_HUD_BITMAPS = {
+    r"ui\hud\bitmaps\combined\hud_unit_meters",
+    r"ui\hud\bitmaps\combined\hud_ammo_meters",
+}
 NATIVE_RESOLUTION_HUD_BITMAPS = {
     r"ui\hud\bitmaps\combined\hud_unit_meters",
     r"ui\hud\bitmaps\combined\hud_unit_backgrounds",
@@ -264,7 +270,9 @@ def serialize_bitmap(sources: dict, owner: dict, schema: dict, *,
             }
             native_hud = path in NATIVE_RESOLUTION_HUD_BITMAPS
             preserve_source_resolution = path in SOURCE_RESOLUTION_HUD_BITMAPS or native_hud
+            is_meter = path in METER_HUD_BITMAPS and img.format_name == "a8y8"
             texture = (_convert_scope_mask(m, img, datum) if is_scope_mask else
+                       texconv.convert_meter_texture(m, img, datum) if is_meter else
                        texconv.convert_texture(m, img, datum, texconv.CLASS_BLEND,
                            preserve_source_resolution=preserve_source_resolution))
             if is_scope_mask:

@@ -26,7 +26,7 @@
     "plans/7.hcu-remake-m2-m4.md": "2258ab93565d7f29e818c15fd7c7d2441d2091f44f33bbc0bceb690879474589",
     "submodules/halo-ps2/docs/11-model-section.md": "29bae01392fa6ccea9664b7d463a7e4ac0207f711c71ed680a604b4775d8a1f4",
     "submodules/halo-ps2/tools/halo2ps2/objtex.py": "d547e0c44f27d5abcda2d0273036a3b5419c77dd9c954bdb0091a5f459bb71da",
-    "submodules/halo-ps2/tools/halo2ps2/texconv.py": "27dfb3b45c06c18ba25d4af10ebcfcdd4c9d36a3950f08c4ccef16a797f00497",
+    "submodules/halo-ps2/tools/halo2ps2/texconv.py": "2fd6947e57d91bb241ecaf520d819646e3615fca4649eeaa673e58b10357f05a",
     "submodules/halo-ps2/engine/src/world/scen.h": "91780f81e401e6821fee419cdc9b2231060fe83bd2afc007596a2e1bebf77710",
     "submodules/halo-ps2/docs/03-engine-architecture.md": "9fd93ea4aa13cd1454617a64bf26291c7d7f078c2d4b4365fd5cba0a4666c488",
     "submodules/halo-ce-universal/source/rasterizer/xbox/rasterizer_xbox_models.c": "c6acf980bc94e82389c5301f50332f4521233be9cd377dbefac591ffe489063b",

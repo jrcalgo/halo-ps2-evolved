@@ -529,6 +529,39 @@ int main(int argc, char **argv)
 	if (hcu_bitmap_meter_alpha_ref(0, 255u) != 0u || hcu_bitmap_meter_alpha_ref(255, 255u) != 128u ||
 		hcu_bitmap_meter_alpha_ref(128, 255u) != 64u || hcu_bitmap_meter_alpha_ref(255, 128u) != 64u ||
 		hcu_bitmap_meter_alpha_ref(255, 0u) != 0u) return 71;
+	/* The meter palette: shape level and fill order in the index, the Xbox combiner's result out. */
+	{
+		halo_ps2_bitmap_request m;
+		uint8_t clut[1024];
+		const uint8_t *e;
+		memset(&m, 0, sizeof(m));
+		m.has_meter = HALO_PS2_BITMAP_METER_PRESENT;
+		m.meter_value = 128;                                  /* fill threshold: half */
+		m.meter_gradient_min_color = 0x80FF0000u;             /* min colour red, threshold alpha */
+		m.meter_gradient_max_color = 0x000000FFu;             /* max colour blue */
+		m.meter_flash_color = 0x80000000u;                    /* flash alpha = threshold: no band */
+		m.meter_background_color = 0x40101010u;               /* empty colour, keeps 25% */
+		m.meter_tint_color = 0x00FFFFFFu;                     /* full fade, opacity 1: keeps nothing */
+		if (hcu_bitmap_meter_build_clut(&m, clut) != 0) return 72;
+		/* Index 0 and every outside-the-shape index draw nothing. */
+		if (clut[3] != 0u) return 73;
+		/* Shape level 3 (alpha 255), Y low (16): filled, near the min colour, opaque. CSM1: index 3<<6|4. */
+#define METER_E(idx) (clut + ((((idx) & 0xE7u) | (((idx) & 0x08u) << 1) | (((idx) & 0x10u) >> 1))) * 4u)
+		e = METER_E((3u << 6) | 4u);
+		if (e[0] < 200u || e[2] > 40u || e[3] != 128u) return 74;
+		/* Same shape, Y high (60 -> 242 of 255): above the threshold, so the empty colour, 75% opaque. */
+		e = METER_E((3u << 6) | 60u);
+		if (e[0] > 40u || e[3] != 96u) return 75;
+		/* A shape level of 127 scales the colour (premultiplied by the shape's alpha). */
+		e = METER_E((1u << 6) | 4u);
+		if (e[0] < 90u || e[0] > 140u || e[3] != 128u) return 76;
+		/* Raising the threshold turns the same Y filled. */
+		m.meter_value = 255; m.meter_flash_color = 0xFF000000u; m.meter_gradient_min_color = 0xFFFF0000u;
+		hcu_bitmap_meter_build_clut(&m, clut);
+		e = METER_E((3u << 6) | 60u);
+		if (e[3] != 128u || e[0] > e[2] + 200u) return 77;
+#undef METER_E
+	}
 	/* A screen flash needs no binding, texture lease or cache entry: one flat quad per view. */
 	{
 		halo_ps2_bitmap_request flash_req, scratch = s_queue.requests[0];

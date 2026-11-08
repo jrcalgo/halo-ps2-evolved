@@ -267,6 +267,130 @@ static hcu_bitmap_quad_status meter_emit(chain_t *geometry_chain, const tex_info
 	return hcu_bitmap_quad_emit_validated(geometry_chain, image, state, quad);
 }
 
+/* The Xbox meter shader (rasterizer_xbox_dynavobgeom.c, its register combiners decoded) works on a
+ * texel's Y (the fill order) and alpha (the shape):
+ *   alpha 0                    killed.
+ *   Y >= flash alpha           the empty colour, kept (1 - empty alpha) of what is behind.
+ *   else                       lerp(min colour, max colour, Y), plus the flash colour while Y is at
+ *                              or above the fill threshold (the band between the two thresholds),
+ *                              kept (1 - opacity) of what is behind.
+ *   then colour * shape alpha * tint.rgb is added to the retained backdrop.
+ * The GS alpha test sees one channel, so the meter bitmap's index holds both (shape level in the
+ * top two bits, Y >> 2 in the rest; see halo2ps2 texconv.convert_meter_rgba) and this builds the
+ * palette that turns each into that texel's result. Returns 1 when the entries are premultiplied
+ * (draw with Cs + Cd * (1 - As)), 0 when they are ordinary alpha-blend colours. */
+static const uint8_t k_meter_shape_level[4] = { 0u, 127u, 191u, 255u };
+
+static float meter_clamp(float v, float lo, float hi)
+{
+	return v < lo ? lo : v > hi ? hi : v;
+}
+
+static float meter_channel(uint32_t color, unsigned shift)
+{
+	return (float)((color >> shift) & 255u) * (1.0f / 255.0f);
+}
+
+int hcu_bitmap_meter_build_clut(const halo_ps2_bitmap_request *request, uint8_t clut[1024])
+{
+	float pr[256], pg[256], pb[256], pa[256];
+	float threshold, flash_alpha, empty_keep, filled_keep;
+	float min_c[3], max_c[3], flash_c[3], empty_c[3], tint[3];
+	int negative_flash = 0, premultiplied = 0;
+	unsigned i, k;
+	threshold = (float)request->meter_value * (1.0f / 255.0f);
+	flash_alpha = meter_channel(request->meter_flash_color, 24);
+	empty_keep = meter_channel(request->meter_background_color, 24);
+	filled_keep = meter_channel(request->meter_tint_color, 24);
+	for (k = 0; k < 3u; ++k) {
+		unsigned shift = 16u - 8u * k;
+		min_c[k] = meter_channel(request->meter_gradient_min_color, shift);
+		max_c[k] = meter_channel(request->meter_gradient_max_color, shift);
+		flash_c[k] = meter_channel(request->meter_flash_color, shift);
+		empty_c[k] = meter_channel(request->meter_background_color, shift);
+		tint[k] = meter_channel(request->meter_tint_color, shift);
+	}
+	for (i = 0; i < 256u; ++i) {
+		float shape = (float)k_meter_shape_level[i >> 6] * (1.0f / 255.0f);
+		float y = (float)((i & 63u) * 4u + 2u) * (1.0f / 255.0f), keep, ramp, band, col[3];
+		if (!(i >> 6)) { pr[i] = pg[i] = pb[i] = pa[i] = 0.0f; continue; }
+		if (y > 1.0f) y = 1.0f;
+		if (y >= flash_alpha) {
+			for (k = 0; k < 3u; ++k) col[k] = empty_c[k];
+			keep = empty_keep;
+		} else {
+			/* 4 * (threshold - Y) clamped, then 1 - 2x: 1 at and above the threshold, 0 a
+			 * little below it (the flash band's soft lower edge). */
+			ramp = meter_clamp(4.0f * (threshold - y), 0.0f, 1.0f);
+			band = 1.0f - 2.0f * ramp;
+			if (band < 0.0f) band = 0.0f;
+			for (k = 0; k < 3u; ++k) {
+				float g = (1.0f - y) * min_c[k] + y * max_c[k];
+				g += band * (negative_flash ? -flash_c[k] : flash_c[k]);
+				col[k] = meter_clamp(g, 0.0f, 1.0f);
+			}
+			keep = filled_keep;
+		}
+		pr[i] = col[0] * shape * tint[0];
+		pg[i] = col[1] * shape * tint[1];
+		pb[i] = col[2] * shape * tint[2];
+		pa[i] = 1.0f - keep;
+		if ((pr[i] > pa[i] + 0.002f || pg[i] > pa[i] + 0.002f || pb[i] > pa[i] + 0.002f)) premultiplied = 1;
+	}
+	for (i = 0; i < 256u; ++i) {
+		/* CSM1 order: the entries of blocks 8-15 and 16-23 swap. */
+		uint32_t pos = (i & 0xE7u) | ((i & 0x08u) << 1) | ((i & 0x10u) >> 1);
+		uint8_t *e = clut + pos * 4u;
+		float a = pa[i], r = pr[i], g = pg[i], b = pb[i];
+		if (!premultiplied && a > 0.0f) { r /= a; g /= a; b /= a; }
+		else if (!premultiplied) r = g = b = 0.0f;
+		e[0] = (uint8_t)(meter_clamp(r, 0.0f, 1.0f) * 255.0f + 0.5f);
+		e[1] = (uint8_t)(meter_clamp(g, 0.0f, 1.0f) * 255.0f + 0.5f);
+		e[2] = (uint8_t)(meter_clamp(b, 0.0f, 1.0f) * 255.0f + 0.5f);
+		e[3] = (uint8_t)(meter_clamp(a, 0.0f, 1.0f) * 128.0f + 0.5f);
+	}
+	return premultiplied;
+}
+
+/* Draws a meter from a texture built by convert_meter_rgba with a palette made for this draw,
+ * uploaded to one of the HUD's scratch CLUT slots and held by the lease until the kick that
+ * carries it is done. 1: drawn. 0: not applicable (no scratch slot or another kind of texture),
+ * the caller draws the old alpha-test passes. -1: the chains are full. */
+static int meter_emit_palette(hcu_bitmap_dispatch_context *ctx, const tex_info *image,
+	hcu_bitmap_quad_state_t *state, hcu_bitmap_vertex_t vertices[4],
+	const halo_ps2_bitmap_request *request, uint32_t tbp, uint32_t tbw,
+	chain_t *upload_chain, chain_t *geometry_chain, hcu_bitmap_lease *lease)
+{
+	uint8_t clut[1024] __attribute__((aligned(16)));
+	uint32_t physical_slot, slot_index, clut_words, cbp, i;
+	int premultiplied;
+	if (!ctx || !ctx->slots || ctx->slot_count < HCU_BITMAP_COMPOSE_OUTPUT_COUNT || !lease ||
+		image->psm != GS_PSMT8 || !(image->flags & TEX_F_METER) ||
+		!bsp_render_hud_effect_clut_base_words || bsp_render_hud_effect_clut_base_words(&clut_words) != 0)
+		return 0;
+	for (physical_slot = 0; physical_slot < HCU_BITMAP_COMPOSE_OUTPUT_COUNT; ++physical_slot) {
+		slot_index = ctx->slot_count - HCU_BITMAP_COMPOSE_OUTPUT_COUNT + physical_slot;
+		if (!ctx->slots[slot_index].valid && !ctx->slots[slot_index].readers) break;
+	}
+	if (physical_slot == HCU_BITMAP_COMPOSE_OUTPUT_COUNT) return 0;
+	cbp = clut_words / 64u + physical_slot * 4u;
+	if (cbp + 3u >= 0x4000u) return 0;
+	premultiplied = hcu_bitmap_meter_build_clut(request, clut);
+	if (gs_upload_inline(upload_chain, clut, sizeof(clut), cbp, 1u, GS_PSMCT32, 16u, 16u)) return -1;
+	state->tex0 = GS_TEX0(tbp, tbw, GS_PSMT8, (uint32_t)log2_exact(image->width),
+		(uint32_t)log2_exact(image->height), 1, 0, cbp, GS_PSMCT32, 0, 0, 1);
+	state->blend = premultiplied ? HCU_BITMAP_BLEND_PREMULTIPLIED : HCU_BITMAP_BLEND_ALPHA;
+	state->alpha_test = HCU_BITMAP_ALPHA_TEST_NONE;
+	for (i = 0; i < 4u; ++i) vertices[i].argb = 0xFFFFFFFFu;
+	if (hcu_bitmap_quad_emit_validated(geometry_chain, image, state, vertices) != HCU_BITMAP_QUAD_OK) return -1;
+	memset(&ctx->slots[slot_index], 0, sizeof(ctx->slots[slot_index]));
+	ctx->slots[slot_index].cache_key = UINT16_MAX;
+	ctx->slots[slot_index].readers = 1; ctx->slots[slot_index].valid = 1; ctx->slots[slot_index].reserved8 = 1;
+	ctx->slots[slot_index].compose_clut_slot = (uint16_t)physical_slot;
+	lease->reserved = (uint16_t)(slot_index + 1u);
+	return 1;
+}
+
 static int blend_for(int16_t ce_blend, hcu_bitmap_blend_t *out)
 {
 	/* Values are the pinned CE shader_framebuffer_blend_function enum. */
@@ -971,6 +1095,7 @@ static hcu_bitmap_dispatch_status dispatch_request_impl(
 		image.source_id = descriptor->expected_source_datum;
 		image.width = descriptor->width; image.height = descriptor->height;
 		image.psm = descriptor->psm; image.clut_entries = descriptor->clut_entries;
+		image.flags = descriptor->flags;
 		mip.bytes = descriptor->mip_bytes;
 		clut_bytes = descriptor->clut_bytes;
 		resident_hit = 1;
@@ -1069,7 +1194,7 @@ static hcu_bitmap_dispatch_status dispatch_request_impl(
 		d->expected_source_datum = binding->expected_source_datum;
 		d->profile_id = binding->expected_profile_id; d->generation = expected_generation;
 		d->width = image.width; d->height = image.height; d->psm = image.psm;
-		d->clut_entries = image.clut_entries; d->mip_bytes = mip.bytes; d->clut_bytes = clut_bytes;
+		d->clut_entries = image.clut_entries; d->flags = image.flags; d->mip_bytes = mip.bytes; d->clut_bytes = clut_bytes;
 		d->source_offset = image.pixel_offset;
 		memcpy(d->chunk_sha256, binding->expected_chunk_sha256, 32);
 		d->valid = 1;
@@ -1166,7 +1291,10 @@ static hcu_bitmap_dispatch_status dispatch_request_impl(
 		if (hcu_bitmap_quad_place(&state, &target, vertices, placed) != 0) goto rollback;
 		memcpy(vertices, placed, sizeof(vertices));
 		if (request->has_meter & HALO_PS2_BITMAP_METER_PRESENT) {
-			if (meter_emit(geometry_chain, &image,
+			int palette = meter_emit_palette(context, &image, &state, vertices, request, tbp, tbw,
+				upload_chain, geometry_chain, lease);
+			if (palette < 0) goto rollback;
+			if (!palette && meter_emit(geometry_chain, &image,
 				&state, vertices, request) != HCU_BITMAP_QUAD_OK)
 				goto rollback;
 		} else if (hcu_bitmap_quad_emit_validated(geometry_chain, &image,
@@ -1351,6 +1479,14 @@ void hcu_bitmap_dispatch_release(hcu_bitmap_source_slot *slots,
 		slots[lease->slot].readers--;
 		if (!slots[lease->slot].readers) memset(&slots[lease->slot], 0, sizeof(slots[lease->slot]));
 	}
+	/* A meter's palette slot, held beside its texture. */
+	if (slots && lease->reserved && (uint32_t)lease->reserved - 1u < slot_count &&
+		slots[lease->reserved - 1u].readers) {
+		slots[lease->reserved - 1u].readers--;
+		if (!slots[lease->reserved - 1u].readers)
+			memset(&slots[lease->reserved - 1u], 0, sizeof(slots[lease->reserved - 1u]));
+	}
+	lease->reserved = 0;
 	lease->active = 0;
 }
 

@@ -60,7 +60,7 @@ typedef struct {
 	uint16_t slot;
 	uint16_t active;
 	uint16_t cache_key;
-	uint16_t reserved;
+	uint16_t reserved;   /* a meter draw's palette slot + 1 (0 = none), released with the lease */
 	uint32_t generation;
 	uint32_t kick_seq;   /* C3.10: the parent kick that carries this lease's upload (0 = not bound to a kick) */
 } hcu_bitmap_lease;
@@ -72,6 +72,7 @@ typedef struct {
 	uint32_t source_offset, mip_bytes, clut_bytes;
 	uint16_t bitmap_index, image_index, cache_key;
 	uint16_t width, height, clut_entries;
+	uint16_t flags;   /* tex_info.flags (TEX_F_METER...), which a resident hit has no parse to read */
 	uint8_t psm, valid;
 	uint8_t chunk_sha256[32];
 } hcu_bitmap_resident_descriptor;
@@ -224,5 +225,8 @@ void hcu_bitmap_dispatch_touch_cache(tc_t *cache, const uint16_t *cache_readers,
 
 /* GS alpha-test reference for a meter pass (see hcu_bitmap_dispatch.c). */
 uint8_t hcu_bitmap_meter_alpha_ref(uint32_t value, uint32_t vertex_alpha);
+/* The 256-entry palette (1024 bytes, GS CSM1 order and alpha scale) one meter draw uses with a
+ * texture from halo2ps2's convert_meter_rgba. Returns 1 when its colours are premultiplied. */
+int hcu_bitmap_meter_build_clut(const halo_ps2_bitmap_request *request, uint8_t clut[1024]);
 
 #endif
