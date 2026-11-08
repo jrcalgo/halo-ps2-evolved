@@ -71,6 +71,10 @@ __asm__(
 	"hcu_main_menu_planet_rgb5a1:\n"
 	".incbin \"src/stream/assets/halo_ce_planet.rgb5a1\"\n"
 	".balign 64\n"
+	".global hcu_main_menu_moon_rgb5a1\n"
+	"hcu_main_menu_moon_rgb5a1:\n"
+	".incbin \"src/stream/assets/halo_ce_moon.rgb5a1\"\n"
+	".balign 64\n"
 	".global hcu_main_menu_space_rgb5a1\n"
 	"hcu_main_menu_space_rgb5a1:\n"
 	".incbin \"src/stream/assets/halo_ce_space.rgb5a1\"\n"
@@ -98,6 +102,7 @@ extern const uint16_t hcu_main_menu_gametype_atlas_rgb5a1[];
 extern const uint16_t hcu_main_menu_logo_rgb5a1[];
 extern const uint16_t hcu_main_menu_buttons_rgb5a1[];
 extern const uint16_t hcu_main_menu_planet_rgb5a1[];
+extern const uint16_t hcu_main_menu_moon_rgb5a1[];
 extern const uint16_t hcu_main_menu_space_rgb5a1[];
 extern const uint16_t hcu_main_menu_stars_rgb5a1[];
 extern const uint8_t hcu_main_menu_camera_bin[];
@@ -897,6 +902,8 @@ int hcu_main_menu_describe_prompt(const char *prompt, char *out, size_t out_size
 #define MENU_BUTTONS_BYTES (256u * 256u * 2u)
 #define MENU_PLANET_SIZE 512u
 #define MENU_PLANET_BYTES (MENU_PLANET_SIZE * MENU_PLANET_SIZE * 2u)
+#define MENU_MOON_SIZE 256u
+#define MENU_MOON_BYTES (MENU_MOON_SIZE * MENU_MOON_SIZE * 2u)
 #define MENU_CAMERA_COUNT 11u
 #define MENU_CAMERA_RECORD_BYTES 40u
 #define MENU_CAMERA_HEADER_BYTES 56u
@@ -972,13 +979,14 @@ static int menu_ring_mesh_import(const uint8_t *blob, size_t bytes, int copy)
 #define MENU_BUTTONS_PAGE 114u      /* 256x256:  16 pages */
 #define MENU_PLANET_PAGE 130u       /* 512x512:  64 pages, 130..193 */
 /* The glyph atlas is 256x16 PSMCT16: four pages wide and one page tall, so it occupies 194..197. video_init leaves
- * 288 pages after the frame and Z buffers; the menu's textures end at page 214. */
+ * 288 pages after the frame and Z buffers; the menu's textures end at page 230. */
 #define MENU_GLYPH_PAGE 194u
 #define MENU_GLYPH_PAGES 4u
 #define MENU_SPACE_PAGE 198u
 #define MENU_STARS_PAGE 202u
 #define MENU_RING_SHADOW_PAGE 206u  /* 1024x32:   8 pages */
-#define MENU_TEXTURE_PAGES 214u
+#define MENU_MOON_PAGE 214u         /* 256x256:  16 pages */
+#define MENU_TEXTURE_PAGES 230u
 
 static float s_menu_camera_points[MENU_CAMERA_COUNT][10];
 static float s_menu_ring_position[3];
@@ -1533,6 +1541,21 @@ static menu_ring_vertex menu_ring_to_camera(const float *local, const float *uv)
 	return out;
 }
 
+/* Retail draws the sky model (sky\\sky_ui\\sky_ui) at the camera: each vertex sits at camera * 0.999 + v / 1024, so it
+ * turns with the view and moves only 0.1% with the camera's position (render_sky.c). */
+static menu_ring_vertex menu_sky_to_camera(const float *sky, float u, float v)
+{
+	menu_ring_vertex out;
+	float delta[3], right[3];
+	for (unsigned k = 0; k < 3u; ++k) delta[k] = sky[k] * (1.0f / 1024.0f) - s_menu_camera.position[k] * 0.001f;
+	menu_camera_cross(s_menu_camera.forward, s_menu_camera.up, right);
+	out.x = delta[0] * right[0] + delta[1] * right[1] + delta[2] * right[2];
+	out.y = delta[0] * s_menu_camera.up[0] + delta[1] * s_menu_camera.up[1] + delta[2] * s_menu_camera.up[2];
+	out.z = delta[0] * s_menu_camera.forward[0] + delta[1] * s_menu_camera.forward[1] + delta[2] * s_menu_camera.forward[2];
+	out.u = u; out.v = v;
+	return out;
+}
+
 #define MENU_RING_CLIP_VERTICES 12u
 
 static float menu_ring_clip_distance(menu_ring_vertex v, unsigned plane,
@@ -1597,28 +1620,37 @@ static unsigned menu_ring_clip(const menu_ring_vertex input[3],
 	return count;
 }
 
-static void menu_ring_emit_vertex(packet2_t *packet, const video_t *video,
-	menu_ring_vertex v, unsigned material, float base_u, float base_v)
+/* Project a camera-space vertex to screen pixels with the menu camera's field of view (clamped to the GS range). */
+static void menu_ring_project(menu_ring_vertex v, int *out_x, int *out_y)
 {
 	float fov = s_menu_camera.fov > 0.1f ? s_menu_camera.fov : 1.22173f;
 	float focal_x = (float)VIDEO_WIDTH * 0.5f / tanf(fov * 0.5f);
 	float focal_y = (float)VIDEO_HEIGHT * 0.5f /
 		(tanf(fov * 0.5f) * (float)VIDEO_HEIGHT / (float)VIDEO_WIDTH);
+	int x, y;
 	if (s_menu_widescreen) focal_x *= (3.0f / 4.0f);
+	x = (int)((float)VIDEO_WIDTH * 0.5f + v.x * focal_x / v.z);
+	y = (int)((float)VIDEO_HEIGHT * 0.5f - v.y * focal_y / v.z);
+	if (x < -2048) x = -2048; if (x > 2047) x = 2047;
+	if (y < -2048) y = -2048; if (y > 2047) y = 2047;
+	*out_x = x; *out_y = y;
+}
+
+static void menu_ring_emit_vertex(packet2_t *packet, const video_t *video,
+	menu_ring_vertex v, unsigned material, float base_u, float base_v)
+{
 	unsigned tw = material == 1u ? MENU_RING_OUTER_W : (material == 2u ? MENU_RING_SHADOW_W : MENU_RING_INNER_W);
 	unsigned th = material == 1u ? MENU_RING_OUTER_H : (material == 2u ? MENU_RING_SHADOW_H : MENU_RING_INNER_H);
 	/* The texture is REPEAT-wrapped by the GS, so only the polygon's shared integer offset is removed. Wrapping each
 	 * vertex separately (the old fmodf) sent a triangle that crosses a tile edge across the whole texture. */
 	float u = (v.u - base_u) * (float)tw, vv = (v.v - base_v) * (float)th;
-	int x = (int)((float)VIDEO_WIDTH * 0.5f + v.x * focal_x / v.z);
-	int y = (int)((float)VIDEO_HEIGHT * 0.5f - v.y * focal_y / v.z);
+	int x, y;
 	uint32_t z = (uint32_t)(0x00ffffffu * (0.02f / v.z));
+	menu_ring_project(v, &x, &y);
 	if (u < 0.0f) u = 0.0f;
 	if (vv < 0.0f) vv = 0.0f;
 	if (u > 4095.0f) u = 4095.0f;
 	if (vv > 4095.0f) vv = 4095.0f;
-	if (x < -2048) x = -2048; if (x > 2047) x = 2047;
-	if (y < -2048) y = -2048; if (y > 2047) y = 2047;
 	menu_vertex_3d(packet, x, y, (int)(u * 16.0f), (int)(vv * 16.0f), z,
 		material == 1u ? 216u : 240u, material == 2u ? 0x70u : 0x80u);
 	(void)video;
@@ -1699,17 +1731,77 @@ static void menu_ring(packet2_t *packet, const video_t *video, unsigned frame)
 	menu_depth_state(packet, video, 1u, 1u);
 }
 
+/* The two planet quads of the retail menu sky (geometries 2 and 3 of sky\\sky_ui\\sky_ui, listed with
+ * tools/build_hcu_menu_assets.py's reader), already turned by the model's node rotation (80 degrees about z) so they
+ * share the camera's world axes. Retail places Threshold (the big world, bitmap 512x512) up and to one side and Basis
+ * (the small blue moon, 256x256) low and near, so the camera sweep brings each in and out of view. The texture
+ * coordinates are the model's 1..2 range minus one. */
+typedef struct { float corner[4][3]; float uv[4][2]; unsigned page, log2_size, size; } menu_sky_quad;
+static const menu_sky_quad s_menu_sky_quads[2] = {
+	{ {{5745.0f, 15142.0f, -697.0f}, {-6378.0f, 9882.0f, -7882.0f},
+	   {-545.0f, 11611.0f, 12502.0f}, {-12669.0f, 6351.0f, 5317.0f}},
+	  {{0.005f, 0.002f}, {0.995f, 0.002f}, {0.004f, 0.993f}, {0.995f, 0.995f}},
+	  MENU_PLANET_PAGE, 9u, MENU_PLANET_SIZE },
+	{ {{3481.0f, -5277.0f, 2681.0f}, {2414.0f, -5616.0f, 3180.0f},
+	   {3186.0f, -5871.0f, 1650.0f}, {2119.0f, -6209.0f, 2149.0f}},
+	  {{0.005f, 0.002f}, {0.995f, 0.002f}, {0.004f, 0.993f}, {0.995f, 0.995f}},
+	  MENU_MOON_PAGE, 8u, MENU_MOON_SIZE },
+};
+
+static void menu_sky_quad_draw(packet2_t *packet, const video_t *video, const menu_sky_quad *quad)
+{
+	static const unsigned order[2][3] = {{0u, 1u, 2u}, {1u, 3u, 2u}};
+	menu_ring_vertex polygon[2][MENU_RING_CLIP_VERTICES];
+	unsigned count[2], vertex_count = 0, t, j;
+	for (t = 0; t < 2u; ++t) {
+		menu_ring_vertex source[3];
+		for (j = 0; j < 3u; ++j) {
+			unsigned c = order[t][j];
+			source[j] = menu_sky_to_camera(quad->corner[c], quad->uv[c][0], quad->uv[c][1]);
+		}
+		count[t] = menu_ring_clip(source, polygon[t]);
+		if (count[t] >= 3u) vertex_count += (count[t] - 2u) * 3u;
+	}
+	if (!vertex_count) return;
+	menu_texture_state(packet, video, quad->page, GS_PSMCT16S, quad->log2_size, quad->log2_size,
+		quad->size / 64u, 0, 0);
+	menu_depth_state(packet, video, 1u, 1u);  /* no depth write; it also resets TEST, so set the cutout after it */
+	/* RGB5A1: a cleared alpha bit is the empty space around the planet, as for the title art. */
+	packet2_add_u64(packet, GIF_TAG(2, 0, 0, 0, GIFX_FLG_PACKED, 1));
+	packet2_add_u64(packet, GIF_REGS_AD);
+	packet2_add_u64(packet, 0x80ull << 32); packet2_add_u64(packet, GS_A_TEXA);
+	packet2_add_u64(packet, GS_TEST(1, 6, 0, 0, 0, 0, 1, 1)); packet2_add_u64(packet, GS_A_TEST_1);
+	packet2_add_u64(packet, GIF_TAG(vertex_count, 0, 1,
+		GS_PRIM(GSX_PRIM_TRIANGLE, 1, 1, 0, 0, 0, 1, 0, 0), GIFX_FLG_PACKED, 3));
+	packet2_add_u64(packet, 0x531);
+	for (t = 0; t < 2u; ++t) {
+		for (j = 1; j + 1 < count[t]; ++j) {
+			const menu_ring_vertex *v3[3] = { &polygon[t][0], &polygon[t][j], &polygon[t][j + 1u] };
+			for (unsigned k = 0; k < 3u; ++k) {
+				int x, y;
+				menu_ring_project(*v3[k], &x, &y);
+				menu_vertex_3d(packet, x, y, (int)(v3[k]->u * (float)quad->size * 16.0f),
+					(int)(v3[k]->v * (float)quad->size * 16.0f), 0u, 128u, 0x80u);
+			}
+		}
+	}
+}
+
 static void menu_planet(packet2_t *packet, const video_t *video, unsigned frame)
 {
-	float phase = (float)frame / 60.0f, dx, dy;
-	int x, y;
 	menu_camera_update(frame);
-	if (s_menu_camera_ready) {
-		dx = s_menu_camera.position[0]; dy = s_menu_camera.position[2];
-	} else { dx = -0.35f * sinf(phase * 0.11f); dy = 0.36f * cosf(phase * 0.088f); }
-	x = -35 + (int)(dx * 35.0f); y = 194 + (int)(dy * 22.0f);
-	menu_image_draw(packet, video, MENU_PLANET_PAGE, 9, 9, MENU_PLANET_SIZE / 64u,
-		x, y, x + 238, y + 238, 0, 0, MENU_PLANET_SIZE - 1u, MENU_PLANET_SIZE - 1u, 1);
+	if (s_menu_camera_ready && s_menu_camera.started) {
+		for (unsigned i = 0; i < 2u; ++i) menu_sky_quad_draw(packet, video, &s_menu_sky_quads[i]);
+		return;
+	}
+	{
+		/* No camera data (an older package): the earlier fixed placement. */
+		float phase = (float)frame / 60.0f;
+		int x = -35 + (int)(-0.35f * sinf(phase * 0.11f) * 35.0f);
+		int y = 194 + (int)(0.36f * cosf(phase * 0.088f) * 22.0f);
+		menu_image_draw(packet, video, MENU_PLANET_PAGE, 9, 9, MENU_PLANET_SIZE / 64u,
+			x, y, x + 238, y + 238, 0, 0, MENU_PLANET_SIZE - 1u, MENU_PLANET_SIZE - 1u, 1);
+	}
 }
 
 static unsigned menu_text_width(const char *text, unsigned scale)
@@ -2283,7 +2375,7 @@ static void menu_video_settings(packet2_t *packet, const video_t *video, const h
 	}
 }
 
-static int menu_load_textures(const uint16_t *textures[11], void **allocation)
+static int menu_load_textures(const uint16_t *textures[12], void **allocation)
 {
 #if defined(__mips__)
 	/* Order matches tools/build_hcu_menu_assets.py. Older discs omit the glyph atlas. */
@@ -2292,7 +2384,8 @@ static int menu_load_textures(const uint16_t *textures[11], void **allocation)
 		MENU_LOGO_BYTES + MENU_BUTTONS_BYTES + MENU_PLANET_BYTES;
 	const size_t glyph_bytes = base_bytes + MENU_GLYPH_BYTES;
 	const size_t legacy_full_bytes = glyph_bytes + 2u * MENU_SPACE_BYTES;
-	const size_t full_bytes = legacy_full_bytes + MENU_RING_SHADOW_BYTES;
+	const size_t shadow_end_bytes = legacy_full_bytes + MENU_RING_SHADOW_BYTES;
+	const size_t full_bytes = shadow_end_bytes + MENU_MOON_BYTES;
 	unsigned long file_size = 0, read_size = 0;
 	uint8_t *data;
 	int file;
@@ -2336,6 +2429,8 @@ static int menu_load_textures(const uint16_t *textures[11], void **allocation)
 		textures[1];
 	textures[10] = file_size >= full_bytes ?
 		(const uint16_t *)(data + legacy_full_bytes) : textures[0];
+	textures[11] = file_size >= full_bytes ?
+		(const uint16_t *)(data + shadow_end_bytes) : textures[6];
 	*allocation = data;
 #else
 	textures[0] = hcu_main_menu_ring_inner_rgb5a1;
@@ -2349,6 +2444,7 @@ static int menu_load_textures(const uint16_t *textures[11], void **allocation)
 	textures[8] = hcu_main_menu_space_rgb5a1;
 	textures[9] = hcu_main_menu_stars_rgb5a1;
 	textures[10] = hcu_main_menu_ring_shadow_rgb5a1;
+	textures[11] = hcu_main_menu_moon_rgb5a1;
 	menu_camera_import(hcu_main_menu_camera_bin, MENU_CAMERA_BYTES);
 	if (menu_ring_mesh_import(hcu_main_menu_ring_mesh_bin,
 		(size_t)(hcu_main_menu_ring_mesh_end - hcu_main_menu_ring_mesh_bin), 0)) return -1;
@@ -2358,7 +2454,7 @@ static int menu_load_textures(const uint16_t *textures[11], void **allocation)
 }
 
 static int menu_upload_assets(video_t *video, void *dma_storage, size_t dma_bytes,
-	uint8_t *font, uint32_t *clut, const uint16_t *textures[11])
+	uint8_t *font, uint32_t *clut, const uint16_t *textures[12])
 {
 	chain_t chain;
 	if (dma_bytes < 144u * 16u) return -1;
@@ -2377,6 +2473,7 @@ static int menu_upload_assets(video_t *video, void *dma_storage, size_t dma_byte
 	SyncDCache((void *)textures[8], (uint8_t *)textures[8] + MENU_SPACE_BYTES);
 	SyncDCache((void *)textures[9], (uint8_t *)textures[9] + MENU_SPACE_BYTES);
 	SyncDCache((void *)textures[10], (uint8_t *)textures[10] + MENU_RING_SHADOW_BYTES);
+	SyncDCache((void *)textures[11], (uint8_t *)textures[11] + MENU_MOON_BYTES);
 	SyncDCache(font, font + MENU_FONT_BYTES); SyncDCache(clut, (uint8_t *)clut + MENU_CLUT_BYTES);
 	chain_init(&chain, dma_storage, 144u);
 	if (gs_upload(&chain, textures[0], MENU_RING_INNER_BYTES,
@@ -2412,6 +2509,9 @@ static int menu_upload_assets(video_t *video, void *dma_storage, size_t dma_byte
 		gs_upload(&chain, textures[10], MENU_RING_SHADOW_BYTES,
 			(video->tex_base + MENU_RING_SHADOW_PAGE * MENU_PAGE_WORDS) / 64u,
 			MENU_RING_SHADOW_W / 64u, GS_PSMCT16S, MENU_RING_SHADOW_W, MENU_RING_SHADOW_H) ||
+		gs_upload(&chain, textures[11], MENU_MOON_BYTES,
+			(video->tex_base + MENU_MOON_PAGE * MENU_PAGE_WORDS) / 64u,
+			MENU_MOON_SIZE / 64u, GS_PSMCT16S, MENU_MOON_SIZE, MENU_MOON_SIZE) ||
 		gs_upload(&chain, font, MENU_FONT_BYTES,
 		(video->tex_base + MENU_FONT_PAGE * MENU_PAGE_WORDS) / 64u,
 		TEXT_ATLAS_W / 64u, GS_PSMT8, TEXT_ATLAS_W, TEXT_ATLAS_H) ||
@@ -2494,7 +2594,7 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 #if defined(__mips__)
 	int theme_loop_started = 0;
 #endif
-	const uint16_t *textures[11]; void *texture_allocation = NULL;
+	const uint16_t *textures[12]; void *texture_allocation = NULL;
 	if (!video || !dma_storage || dma_bytes < MENU_PACKET_QW * 16u || !scratch)
 		return HCU_MAIN_MENU_ACTION_MULTIPLAYER;
 	hcu_boot_diag_note("menu enter", 0, 0, 0);

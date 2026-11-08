@@ -34,6 +34,7 @@ LOGO_BITMAP = r"ui\shell\main_menu\halo_logo"
 MULTIPLAYER_BITMAP = r"ui\shell\main_menu\menu_multiplayer"
 SETTINGS_BITMAP = r"ui\shell\main_menu\menu_settings"
 PLANET_BITMAP = r"sky\planets\threshold space"
+MOON_BITMAP = r"sky\planets\basis space"
 SPACE_BITMAP = r"sky\sky_x10\bitmaps\space"
 STARS_BITMAP = r"sky\space\bitmaps\stars"
 # Keep this order in sync with MENU_GLYPH_* in src/stream/hcu_main_menu.c.
@@ -44,6 +45,7 @@ RING_INNER_SIZE = (1024, 64)
 RING_OUTER_SIZE = (512, 256)
 RING_SHADOW_SIZE = (1024, 32)
 PLANET_SIZE = 512
+MOON_SIZE = 256  # retail Basis bitmap is 256x256
 GLYPH_CELL = 16
 GLYPH_ATLAS = (256, 16)
 GLYPH_SOURCES = (
@@ -242,6 +244,11 @@ def write_title_art(ui_map: Path, destination: Path) -> None:
             pixels[x, y] = red, green, blue, alpha if radius < half * 124 / 128 else 0
     planet.save(destination / "halo_ce_planet.png")
     (destination / "halo_ce_planet.rgb5a1").write_bytes(rgb5a1(planet, dither=True))
+    moon = decode_group(ui_map, MOON_BITMAP)[0].convert("RGBA")
+    if moon.size != (MOON_SIZE, MOON_SIZE):
+        moon = moon.resize((MOON_SIZE, MOON_SIZE), Image.Resampling.LANCZOS)
+    moon.save(destination / "halo_ce_moon.png")
+    (destination / "halo_ce_moon.rgb5a1").write_bytes(rgb5a1(moon, dither=True))
 
 
 def write_menu_camera_path(ui_map: Path, destination: Path) -> bytes:
@@ -477,7 +484,7 @@ def main() -> int:
         names = ("halo_ce_ring_inner", "halo_ce_ring_outer", "halo_ce_map_atlas",
                  "halo_ce_gametype_atlas", "halo_ce_logo", "halo_ce_buttons",
                  "halo_ce_planet", "ps2_button_glyphs", "halo_ce_space",
-                 "halo_ce_stars", "halo_ce_ring_shadow")
+                 "halo_ce_stars", "halo_ce_ring_shadow", "halo_ce_moon")
         args.package_out.write_bytes(b"".join(
             (args.out / f"{name}.rgb5a1").read_bytes() for name in names) + camera_path + ring_mesh)
     return 0
