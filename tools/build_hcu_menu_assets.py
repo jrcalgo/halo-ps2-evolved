@@ -34,18 +34,25 @@ LOGO_BITMAP = r"ui\shell\main_menu\halo_logo"
 MULTIPLAYER_BITMAP = r"ui\shell\main_menu\menu_multiplayer"
 SETTINGS_BITMAP = r"ui\shell\main_menu\menu_settings"
 PLANET_BITMAP = r"sky\planets\threshold space"
-MOON_BITMAP = r"sky\planets\basis space"
 SPACE_BITMAP = r"sky\sky_x10\bitmaps\space"
 STARS_BITMAP = r"sky\space\bitmaps\stars"
 # Keep this order in sync with MENU_GLYPH_* in src/stream/hcu_main_menu.c.
 BUTTON_ICON_DIR = Path("/home/ai/Documents/Halo/ps2buttons")
 # GS texture sizes of the menu ring. Keep in sync with MENU_RING_* and MENU_PLANET_* in src/stream/hcu_main_menu.c.
 # Retail: inner ring 2048x128, outer ring 1024x512, shadow 1024x32, planet 512x512.
-RING_INNER_SIZE = (1024, 64)
-RING_OUTER_SIZE = (512, 256)
+# The ring, planet and sky textures are 8-bit indices with a 256-colour palette each (1 byte per texel, so twice the
+# texels of an RGB5A1 texture for the same video memory). The GS cannot address a texture wider than 1024, so the
+# retail 2048x128 inner ring is 1024x128.
+RING_INNER_SIZE = (1024, 128)
+RING_OUTER_SIZE = (1024, 512)
 RING_SHADOW_SIZE = (1024, 32)
 PLANET_SIZE = 512
-MOON_SIZE = 256  # retail Basis bitmap is 256x256
+STARS_SIZE = 256
+GALAXY_SIZE = (1024, 128)  # retail 1024x256
+GALAXY_BITMAP = r"sky\sky_x10\bitmaps\galaxy"
+SKY_MODEL = r"sky\sky_ui\sky_ui"
+SKY_MAGIC = b"HSK1"
+SKY_NODE_ROTATION = math.radians(80.0)  # the sky model's only node turns 80 degrees about z
 
 # Retail multiplayer screen art (ui.map). Headers are blue glow text and the option pictures are blue line art, so both
 # pack as 8-bit indices with one shared palette each: 1 byte per pixel instead of the 2 an RGB5A1 texture takes.
@@ -156,23 +163,48 @@ def write_atlas(images: list[Image.Image], count: int, columns: int, rows: int,
     (destination / f"{name}.rgb5a1").write_bytes(rgb5a1(atlas))
 
 
-def write_ring_texture(image: Image.Image, destination: Path, name: str,
-                       size: tuple[int, int]) -> None:
-    """Preserve the retail material's aspect ratio in its GS texture."""
+def quantize_t8(image: Image.Image, transparent: bool = False) -> tuple[bytes, bytes]:
+    """Returns (indices, palette) for a PSMT8 texture with a CT32 CLUT in the GS's storage order, dithered to the
+    palette so smooth gradients (the ring's hull, the planet, the galaxy) do not band. With `transparent`, index 0 is
+    reserved for texels whose alpha is below 24 (alpha 0 in the CLUT); the other 255 entries hold the colours."""
+    import numpy as np
+    rgba = image.convert("RGBA")
+    rgb = rgba.convert("RGB")
+    colors = 255 if transparent else 256
+    palette_source = rgb.quantize(colors=colors, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
+    paletted = rgb.quantize(palette=palette_source, dither=Image.Dither.FLOYDSTEINBERG)
+    flat = list((paletted.getpalette() or [])[:768])
+    flat += [0] * (768 - len(flat))
+    indices = np.asarray(paletted, dtype=np.uint8)
+    entries = [(flat[i * 3], flat[i * 3 + 1], flat[i * 3 + 2], 128) for i in range(256)]
+    if transparent:
+        indices = indices + 1
+        opaque = np.asarray(rgba.getchannel("A")) >= 24
+        # The empty entry takes the picture's mean colour so a filtered limb does not darken toward black.
+        mean = np.asarray(rgb, dtype=np.float64)[opaque].mean(axis=0) if opaque.any() else (0, 0, 0)
+        entries = [(int(mean[0]), int(mean[1]), int(mean[2]), 0)] + entries[:255]
+        indices = np.where(opaque, indices, 0).astype(np.uint8)
+    clut = bytearray(1024)
+    for index, (r, g, b, a) in enumerate(entries):
+        # CSM1 swaps the second and third group of eight entries in every 32.
+        slot = (index & 0xE7) | ((index & 0x08) << 1) | ((index & 0x10) >> 1)
+        clut[slot * 4:slot * 4 + 4] = bytes((r, g, b, a))
+    return indices.tobytes(), bytes(clut)
+
+
+def write_t8_texture(image: Image.Image, size: tuple[int, int], destination: Path, name: str,
+                     transparent: bool = False) -> bytes:
+    """Resizes to `size`, writes <name>.png (for looking at) and <name>.t8 (the indices); returns the CLUT."""
     texture = image.convert("RGBA").resize(size, Image.Resampling.LANCZOS)
     texture.save(destination / f"{name}.png")
-    (destination / f"{name}.rgb5a1").write_bytes(rgb5a1(texture, dither=True))
+    indices, clut = quantize_t8(texture, transparent)
+    (destination / f"{name}.t8").write_bytes(indices)
+    return clut
 
 
-def write_space_texture(image: Image.Image, destination: Path, name: str,
-                        stars: bool = False) -> None:
-    """Convert CE's tiling space/star bitmap to a compact menu texture."""
+def write_space_texture(image: Image.Image, destination: Path, name: str) -> None:
+    """Convert CE's tiling space bitmap to a compact menu texture."""
     source = image.convert("RGBA").resize((128, 128), Image.Resampling.LANCZOS)
-    if stars:
-        # The retail star bitmap is stored over opaque black. Make its dark
-        # field transparent so the CE nebula bitmap remains visible beneath it.
-        gray = source.convert("L")
-        source.putalpha(gray.point(lambda value: 255 if value >= 28 else 0))
     source.save(destination / f"{name}.png")
     (destination / f"{name}.rgb5a1").write_bytes(rgb5a1(source))
 
@@ -274,7 +306,8 @@ def write_mp_ui(ui_map: Path, destination: Path) -> bytes:
     return blob
 
 
-def write_title_art(ui_map: Path, destination: Path) -> None:
+def write_title_art(ui_map: Path, destination: Path) -> bytes:
+    """Writes the logo, buttons and planet; returns the planet's CLUT."""
     logo_source = decode_group(ui_map, LOGO_BITMAP)[0]
     content = logo_source.getbbox()
     if not content:
@@ -310,13 +343,34 @@ def write_title_art(ui_map: Path, destination: Path) -> None:
             radius = (dx * dx + dy * dy) ** 0.5
             red, green, blue, alpha = pixels[x, y]
             pixels[x, y] = red, green, blue, alpha if radius < half * 124 / 128 else 0
-    planet.save(destination / "halo_ce_planet.png")
-    (destination / "halo_ce_planet.rgb5a1").write_bytes(rgb5a1(planet, dither=True))
-    moon = decode_group(ui_map, MOON_BITMAP)[0].convert("RGBA")
-    if moon.size != (MOON_SIZE, MOON_SIZE):
-        moon = moon.resize((MOON_SIZE, MOON_SIZE), Image.Resampling.LANCZOS)
-    moon.save(destination / "halo_ce_moon.png")
-    (destination / "halo_ce_moon.rgb5a1").write_bytes(rgb5a1(moon, dither=True))
+    return write_t8_texture(planet, (PLANET_SIZE, PLANET_SIZE), destination, "halo_ce_planet", transparent=True)
+
+
+def write_sky_mesh(ui_map: Path, destination: Path) -> bytes:
+    """Export the retail sky model's space sphere and galaxy band ("HSK1"): space triangles, then galaxy triangles,
+    each vertex x, y, z (turned by the model's node rotation so they share the camera's world axes), u, v."""
+    data = texconv.MapData.open(ui_map)
+    model = next(e for e in data.index.entries if e.group == "mode" and e.path == SKY_MODEL)
+    source = modelconv.read_model(data, model)
+    cosine, sine = math.cos(SKY_NODE_ROTATION), math.sin(SKY_NODE_ROTATION)
+    layers = {}
+    for parts in source.geometries.values():
+        for part in parts:
+            path = data.by_id[part.shader_id].path
+            for kind in ("space", "galaxy"):
+                if path.endswith("\\" + kind):
+                    layers[kind] = part
+    if len(layers) != 2:
+        raise ValueError("retail sky model has no space sphere and galaxy band")
+    payload = bytearray(SKY_MAGIC + struct.pack("<II", len(layers["space"].tris), len(layers["galaxy"].tris)))
+    for kind in ("space", "galaxy"):
+        part = layers[kind]
+        for tri in part.tris:
+            for vertex in tri:
+                x, y, z = part.pos[vertex]
+                payload += struct.pack("<5f", x * cosine - y * sine, x * sine + y * cosine, z, *part.uv[vertex])
+    (destination / "halo_ce_sky_mesh.bin").write_bytes(payload)
+    return bytes(payload)
 
 
 def write_menu_camera_path(ui_map: Path, destination: Path) -> bytes:
@@ -391,7 +445,7 @@ def write_menu_camera_path(ui_map: Path, destination: Path) -> bytes:
 # the hull's mean shade over its vertices is 0.593, so 216 / 0.593 = 364.
 SKY_LIGHT = (0.3, 0.2, 0.93)
 RING_INNER_GAIN = 240.0
-RING_HULL_GAIN = 364.0
+RING_HULL_GAIN = 250.0
 
 
 def _ring_sky_shade(normal) -> float:
@@ -608,28 +662,38 @@ def main() -> int:
                     args.out, "halo_ce_map_atlas")
         write_atlas(decode_group(decompressed, GAME_TYPE_BITMAP), 6, 2, 4,
                     args.out, "halo_ce_gametype_atlas")
-        write_ring_texture(decode_group(decompressed, RING_INNER_BITMAP)[0],
-                           args.out, "halo_ce_ring_inner", RING_INNER_SIZE)
-        write_ring_texture(decode_group(decompressed, RING_OUTER_BITMAP)[0],
-                           args.out, "halo_ce_ring_outer", RING_OUTER_SIZE)
-        write_space_texture(decode_group(decompressed, SPACE_BITMAP)[0],
-                            args.out, "halo_ce_space")
-        write_space_texture(decode_group(decompressed, STARS_BITMAP)[0],
-                            args.out, "halo_ce_stars", stars=True)
-        write_title_art(decompressed, args.out)
+        cluts = [
+            write_t8_texture(decode_group(decompressed, RING_INNER_BITMAP)[0], RING_INNER_SIZE,
+                             args.out, "halo_ce_ring_inner"),
+            write_t8_texture(decode_group(decompressed, RING_OUTER_BITMAP)[0], RING_OUTER_SIZE,
+                             args.out, "halo_ce_ring_outer"),
+        ]
+        write_space_texture(decode_group(decompressed, SPACE_BITMAP)[0], args.out, "halo_ce_space")
+        planet_clut = write_title_art(decompressed, args.out)
+        cluts.append(planet_clut)
+        cluts.append(write_t8_texture(decode_group(decompressed, STARS_BITMAP)[0], (STARS_SIZE, STARS_SIZE),
+                                      args.out, "halo_ce_stars"))
+        cluts.append(write_t8_texture(decode_group(decompressed, GALAXY_BITMAP)[0], GALAXY_SIZE,
+                                      args.out, "halo_ce_galaxy"))
+        (args.out / "halo_ce_hd_cluts.bin").write_bytes(b"".join(cluts))
         mp_ui = write_mp_ui(decompressed, args.out)
         camera_path = write_menu_camera_path(decompressed, args.out)
+        sky_mesh = write_sky_mesh(decompressed, args.out)
         ring_mesh = write_menu_ring_mesh(decompressed, args.out)
         write_loading_backplate(args.out)
     write_button_glyphs(args.out, args.button_icons)
     if args.package_out:
         args.package_out.parent.mkdir(parents=True, exist_ok=True)
-        names = ("halo_ce_ring_inner", "halo_ce_ring_outer", "halo_ce_map_atlas",
-                 "halo_ce_gametype_atlas", "halo_ce_logo", "halo_ce_buttons",
-                 "halo_ce_planet", "ps2_button_glyphs", "halo_ce_space",
-                 "halo_ce_stars", "halo_ce_ring_shadow", "halo_ce_moon")
-        args.package_out.write_bytes(b"".join(
-            (args.out / f"{name}.rgb5a1").read_bytes() for name in names) + mp_ui + camera_path + ring_mesh)
+        # Order matches menu_load_textures in src/stream/hcu_main_menu.c.
+        parts = [(args.out / f"{name}.t8").read_bytes() for name in ("halo_ce_ring_inner", "halo_ce_ring_outer")]
+        parts += [(args.out / f"{name}.rgb5a1").read_bytes() for name in (
+            "halo_ce_map_atlas", "halo_ce_gametype_atlas", "halo_ce_logo", "halo_ce_buttons")]
+        parts.append((args.out / "halo_ce_planet.t8").read_bytes())
+        parts.append((args.out / "ps2_button_glyphs.rgb5a1").read_bytes())
+        parts.append((args.out / "halo_ce_space.rgb5a1").read_bytes())
+        parts += [(args.out / f"{name}.t8").read_bytes() for name in ("halo_ce_stars", "halo_ce_galaxy")]
+        parts.append((args.out / "halo_ce_hd_cluts.bin").read_bytes())
+        args.package_out.write_bytes(b"".join(parts) + mp_ui + sky_mesh + camera_path + ring_mesh)
     return 0
 
 

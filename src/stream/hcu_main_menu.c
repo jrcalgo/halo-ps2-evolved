@@ -12,6 +12,10 @@
 #include "stream/hcu_file_bridge.h"
 #include "stream/hcu_loading_screen.h"
 
+/* Milliseconds since the menu began, from the EE system timer. The menu draws slower than 60 Hz on real
+ * hardware and in the emulator, so animation and music timing cannot count frames. */
+static unsigned menu_elapsed_ms(void);
+
 static void menu_sound(const char *path, unsigned event, unsigned frame)
 {
 	hcu_sound_request request;
@@ -25,7 +29,8 @@ static void menu_sound(const char *path, unsigned event, unsigned frame)
 	request.gain = path[6] == 'm' ? 1.0f : 0.8f;
 	request.pitch = 1.0f;
 	request.priority = path[6] == 'm' ? 1 : 3;
-	request.game_time = frame * 1000u / 60u;
+	request.game_time = menu_elapsed_ms();
+	(void)frame;
 	printf("HALO_PS2_LOCAL menu-sound begin path=%s event=%u\n", path, event);
 	hcu_spu_request(&request, hcu_spu_name_hash(path));
 	printf("HALO_PS2_LOCAL menu-sound end path=%s\n", path);
@@ -39,17 +44,13 @@ static void menu_sound(const char *path, unsigned event, unsigned frame)
 __asm__(
 	".section .rodata\n"
 	".balign 64\n"
-	".global hcu_main_menu_ring_inner_rgb5a1\n"
-	"hcu_main_menu_ring_inner_rgb5a1:\n"
-	".incbin \"src/stream/assets/halo_ce_ring_inner.rgb5a1\"\n"
+	".global hcu_main_menu_ring_inner_t8\n"
+	"hcu_main_menu_ring_inner_t8:\n"
+	".incbin \"src/stream/assets/halo_ce_ring_inner.t8\"\n"
 	".balign 64\n"
-	".global hcu_main_menu_ring_outer_rgb5a1\n"
-	"hcu_main_menu_ring_outer_rgb5a1:\n"
-	".incbin \"src/stream/assets/halo_ce_ring_outer.rgb5a1\"\n"
-	".balign 64\n"
-	".global hcu_main_menu_ring_shadow_rgb5a1\n"
-	"hcu_main_menu_ring_shadow_rgb5a1:\n"
-	".incbin \"src/stream/assets/halo_ce_ring_shadow.rgb5a1\"\n"
+	".global hcu_main_menu_ring_outer_t8\n"
+	"hcu_main_menu_ring_outer_t8:\n"
+	".incbin \"src/stream/assets/halo_ce_ring_outer.t8\"\n"
 	".balign 64\n"
 	".global hcu_main_menu_map_atlas_rgb5a1\n"
 	"hcu_main_menu_map_atlas_rgb5a1:\n"
@@ -67,21 +68,31 @@ __asm__(
 	"hcu_main_menu_buttons_rgb5a1:\n"
 	".incbin \"src/stream/assets/halo_ce_buttons.rgb5a1\"\n"
 	".balign 64\n"
-	".global hcu_main_menu_planet_rgb5a1\n"
-	"hcu_main_menu_planet_rgb5a1:\n"
-	".incbin \"src/stream/assets/halo_ce_planet.rgb5a1\"\n"
-	".balign 64\n"
-	".global hcu_main_menu_moon_rgb5a1\n"
-	"hcu_main_menu_moon_rgb5a1:\n"
-	".incbin \"src/stream/assets/halo_ce_moon.rgb5a1\"\n"
+	".global hcu_main_menu_planet_t8\n"
+	"hcu_main_menu_planet_t8:\n"
+	".incbin \"src/stream/assets/halo_ce_planet.t8\"\n"
 	".balign 64\n"
 	".global hcu_main_menu_space_rgb5a1\n"
 	"hcu_main_menu_space_rgb5a1:\n"
 	".incbin \"src/stream/assets/halo_ce_space.rgb5a1\"\n"
 	".balign 64\n"
-	".global hcu_main_menu_stars_rgb5a1\n"
-	"hcu_main_menu_stars_rgb5a1:\n"
-	".incbin \"src/stream/assets/halo_ce_stars.rgb5a1\"\n"
+	".global hcu_main_menu_stars_t8\n"
+	"hcu_main_menu_stars_t8:\n"
+	".incbin \"src/stream/assets/halo_ce_stars.t8\"\n"
+	".balign 64\n"
+	".global hcu_main_menu_galaxy_t8\n"
+	"hcu_main_menu_galaxy_t8:\n"
+	".incbin \"src/stream/assets/halo_ce_galaxy.t8\"\n"
+	".balign 64\n"
+	".global hcu_main_menu_hd_cluts\n"
+	"hcu_main_menu_hd_cluts:\n"
+	".incbin \"src/stream/assets/halo_ce_hd_cluts.bin\"\n"
+	".balign 16\n"
+	".global hcu_main_menu_sky_mesh_bin\n"
+	"hcu_main_menu_sky_mesh_bin:\n"
+	".incbin \"src/stream/assets/halo_ce_sky_mesh.bin\"\n"
+	".global hcu_main_menu_sky_mesh_end\n"
+	"hcu_main_menu_sky_mesh_end:\n"
 	".balign 16\n"
 	".global hcu_main_menu_mp_ui_bin\n"
 	"hcu_main_menu_mp_ui_bin:\n"
@@ -98,17 +109,19 @@ __asm__(
 	"hcu_main_menu_ring_mesh_end:\n"
 	".previous\n");
 
-extern const uint16_t hcu_main_menu_ring_inner_rgb5a1[];
-extern const uint16_t hcu_main_menu_ring_outer_rgb5a1[];
-extern const uint16_t hcu_main_menu_ring_shadow_rgb5a1[];
+extern const uint8_t hcu_main_menu_ring_inner_t8[];
+extern const uint8_t hcu_main_menu_ring_outer_t8[];
 extern const uint16_t hcu_main_menu_map_atlas_rgb5a1[];
 extern const uint16_t hcu_main_menu_gametype_atlas_rgb5a1[];
 extern const uint16_t hcu_main_menu_logo_rgb5a1[];
 extern const uint16_t hcu_main_menu_buttons_rgb5a1[];
-extern const uint16_t hcu_main_menu_planet_rgb5a1[];
-extern const uint16_t hcu_main_menu_moon_rgb5a1[];
+extern const uint8_t hcu_main_menu_planet_t8[];
 extern const uint16_t hcu_main_menu_space_rgb5a1[];
-extern const uint16_t hcu_main_menu_stars_rgb5a1[];
+extern const uint8_t hcu_main_menu_stars_t8[];
+extern const uint8_t hcu_main_menu_galaxy_t8[];
+extern const uint8_t hcu_main_menu_hd_cluts[];
+extern const uint8_t hcu_main_menu_sky_mesh_bin[];
+extern const uint8_t hcu_main_menu_sky_mesh_end[];
 extern const uint8_t hcu_main_menu_mp_ui_bin[];
 extern const uint8_t hcu_main_menu_camera_bin[];
 extern const uint8_t hcu_main_menu_ring_mesh_bin[];
@@ -760,12 +773,24 @@ int hcu_main_menu_create_profile(hcu_main_menu_state *state)
 }
 
 #if !defined(__mips__)
+/* The top-left 128x128 of a PSMT8 ring texture as RGB5A1 through its palette (CLUT slots are in the GS's CSM1
+ * order). */
+static void menu_t8_corner(uint16_t *pixels, const uint8_t *texture, unsigned texture_width, const uint8_t *clut)
+{
+	for (unsigned y = 0; y < 128u; ++y)
+		for (unsigned x = 0; x < 128u; ++x) {
+			unsigned index = texture[y * texture_width + x];
+			unsigned slot = (index & 0xE7u) | ((index & 0x08u) << 1) | ((index & 0x10u) >> 1);
+			const uint8_t *c = clut + slot * 4u;
+			pixels[y * 128u + x] = (uint16_t)((c[0] >> 3) | ((c[1] >> 3) << 5) | ((c[2] >> 3) << 10) | 0x8000u);
+		}
+}
+
 int hcu_main_menu_build_ring_texture(uint16_t *pixels, unsigned width,
 	unsigned height)
 {
 	if (!pixels || width != 128u || height != 128u) return -1;
-	memcpy(pixels, hcu_main_menu_ring_inner_rgb5a1,
-		width * height * sizeof(*pixels));
+	menu_t8_corner(pixels, hcu_main_menu_ring_inner_t8, 1024u, hcu_main_menu_hd_cluts);
 	return 0;
 }
 
@@ -773,8 +798,7 @@ int hcu_main_menu_build_ring_outer_texture(uint16_t *pixels, unsigned width,
 	unsigned height)
 {
 	if (!pixels || width != 128u || height != 128u) return -1;
-	memcpy(pixels, hcu_main_menu_ring_outer_rgb5a1,
-		width * height * sizeof(*pixels));
+	menu_t8_corner(pixels, hcu_main_menu_ring_outer_t8, 1024u, hcu_main_menu_hd_cluts + 1024u);
 	return 0;
 }
 #endif
@@ -942,6 +966,7 @@ int hcu_main_menu_describe_prompt(const char *prompt, char *out, size_t out_size
 #include <fcntl.h>
 #include <gs_psm.h>
 #include <kernel.h>
+#include <timer.h>
 #include <libmc.h>
 #include <loadfile.h>
 #include <math.h>
@@ -956,17 +981,14 @@ int hcu_main_menu_describe_prompt(const char *prompt, char *out, size_t out_size
 #include "render/upload.h"
 
 #define MENU_PACKET_QW 24576u
-/* Ring texture sizes (tools/build_hcu_menu_assets.py RING_*_SIZE). Retail: inner ring 2048x128, outer ring 1024x512,
- * shadow 1024x32, planet 512x512; the first PS2 menu used 128x8, 128x64, 128x8 and 256x256. */
+/* Ring, planet and sky textures are PSMT8 (tools/build_hcu_menu_assets.py RING_*_SIZE). Retail: inner ring 2048x128
+ * (the GS cannot address a texture wider than 1024), outer ring 1024x512, planet 512x512. */
 #define MENU_RING_INNER_W 1024u
-#define MENU_RING_INNER_H 64u
-#define MENU_RING_OUTER_W 512u
-#define MENU_RING_OUTER_H 256u
-#define MENU_RING_SHADOW_W 1024u
-#define MENU_RING_SHADOW_H 32u
-#define MENU_RING_INNER_BYTES (MENU_RING_INNER_W * MENU_RING_INNER_H * 2u)
-#define MENU_RING_OUTER_BYTES (MENU_RING_OUTER_W * MENU_RING_OUTER_H * 2u)
-#define MENU_RING_SHADOW_BYTES (MENU_RING_SHADOW_W * MENU_RING_SHADOW_H * 2u)
+#define MENU_RING_INNER_H 128u
+#define MENU_RING_OUTER_W 1024u
+#define MENU_RING_OUTER_H 512u
+#define MENU_RING_INNER_BYTES (MENU_RING_INNER_W * MENU_RING_INNER_H)
+#define MENU_RING_OUTER_BYTES (MENU_RING_OUTER_W * MENU_RING_OUTER_H)
 #define MENU_MAP_ATLAS_W 512u
 #define MENU_MAP_ATLAS_H 256u
 #define MENU_MAP_ATLAS_BYTES (MENU_MAP_ATLAS_W * MENU_MAP_ATLAS_H * 2u)
@@ -976,9 +998,15 @@ int hcu_main_menu_describe_prompt(const char *prompt, char *out, size_t out_size
 #define MENU_LOGO_BYTES (512u * 128u * 2u)
 #define MENU_BUTTONS_BYTES (256u * 256u * 2u)
 #define MENU_PLANET_SIZE 512u
-#define MENU_PLANET_BYTES (MENU_PLANET_SIZE * MENU_PLANET_SIZE * 2u)
-#define MENU_MOON_SIZE 256u
-#define MENU_MOON_BYTES (MENU_MOON_SIZE * MENU_MOON_SIZE * 2u)
+#define MENU_PLANET_BYTES (MENU_PLANET_SIZE * MENU_PLANET_SIZE)
+#define MENU_STARS_SIZE 256u
+#define MENU_STARS_BYTES (MENU_STARS_SIZE * MENU_STARS_SIZE)
+#define MENU_GALAXY_W 1024u
+#define MENU_GALAXY_H 128u
+#define MENU_GALAXY_BYTES (MENU_GALAXY_W * MENU_GALAXY_H)
+#define MENU_HD_CLUTS_BYTES (5u * 1024u)
+#define MENU_SKY_MESH_MAGIC "HSK1"
+#define MENU_SKY_VERTEX_BYTES 20u
 #define MENU_CAMERA_COUNT 11u
 #define MENU_CAMERA_RECORD_BYTES 40u
 #define MENU_CAMERA_HEADER_BYTES 56u
@@ -1047,27 +1075,29 @@ static int menu_ring_mesh_import(const uint8_t *blob, size_t bytes, int copy)
 #define MENU_FONT_BYTES (TEXT_ATLAS_W * TEXT_ATLAS_H)
 #define MENU_CLUT_BYTES (256u * sizeof(uint32_t))
 #define MENU_PAGE_WORDS 2048u
-#define MENU_RING_INNER_PAGE 0u    /* 1024x64:  16 pages */
+#define MENU_RING_INNER_PAGE 0u    /* 1024x128 T8: 16 pages */
 #define MENU_MAP_PAGE 16u           /* 512x256:  32 pages */
 #define MENU_TYPE_PAGE 48u          /* 256x256:  16 pages */
 #define MENU_FONT_PAGE 64u
 #define MENU_CLUT_PAGE 65u
-#define MENU_RING_OUTER_PAGE 66u    /* 512x256:  32 pages */
-#define MENU_LOGO_PAGE 98u          /* 512x128:  16 pages */
-#define MENU_BUTTONS_PAGE 114u      /* 256x256:  16 pages */
-#define MENU_PLANET_PAGE 130u       /* 512x512:  64 pages, 130..193 */
+#define MENU_RING_OUTER_PAGE 66u    /* 1024x512 T8: 64 pages */
+#define MENU_LOGO_PAGE 130u         /* 512x128:  16 pages */
+#define MENU_BUTTONS_PAGE 146u      /* 256x256:  16 pages */
+#define MENU_PLANET_PAGE 162u       /* 512x512 T8: 32 pages, 162..193 */
 /* The glyph atlas is 256x16 PSMCT16: four pages wide and one page tall, so it occupies 194..197. video_init leaves
- * 288 pages after the frame and Z buffers; the menu's textures end at page 230. */
+ * 288 pages after the frame and Z buffers. */
 #define MENU_GLYPH_PAGE 194u
 #define MENU_GLYPH_PAGES 4u
-#define MENU_SPACE_PAGE 198u
-#define MENU_STARS_PAGE 202u
-#define MENU_RING_SHADOW_PAGE 206u  /* 1024x32:   8 pages */
-#define MENU_MOON_PAGE 214u         /* 256x256:  16 pages */
+#define MENU_SPACE_PAGE 198u        /* 128x128 CT16: 4 pages */
+#define MENU_STARS_PAGE 202u        /* 256x256 T8: 8 pages */
+#define MENU_GALAXY_PAGE 210u       /* 1024x128 T8: 16 pages */
+#define MENU_HD_CLUT_PAGE 226u      /* five 16x16 CT32 palettes: ring inner, ring outer, planet, stars, galaxy */
+#define MENU_HD_CLUT_WORDS 256u
+#define MENU_HD_CLUT(n) (MENU_HD_CLUT_PAGE * MENU_PAGE_WORDS + (n) * MENU_HD_CLUT_WORDS)
 /* Retail multiplayer screen art, packed by tools/build_hcu_menu_assets.py as PSMT8 with two palettes. The header
  * atlas is 384x480 (ten 384x48 headers, 3 pages wide, 8 tall) and the panel atlas is 256x896 (seven 256x128
  * pictures, 2 pages wide, 14 tall). Both palettes share the page after them. */
-#define MENU_UI_HEADER_PAGE 230u
+#define MENU_UI_HEADER_PAGE (MENU_HD_CLUT_PAGE + 1u)
 #define MENU_UI_HEADER_W 384u
 #define MENU_UI_HEADER_H 48u
 #define MENU_UI_HEADER_COUNT 10u
@@ -1182,6 +1212,13 @@ static void menu_camera_rotation_to(const float *forward, const float *up,
 	out[2] = (m[1][0] - m[0][1]) / (2.0f * s) * angle;
 }
 
+/* EE system time counts the 147.456 MHz bus clock. */
+static uint64_t s_menu_clock_start;
+static unsigned menu_elapsed_ms(void)
+{
+	return (unsigned)((GetTimerSystemTime() - s_menu_clock_start) / 147456u);
+}
+
 static void menu_camera_update(unsigned frame)
 {
 	const float interval = 200.0f / 30.0f, transition = 400.0f / 30.0f;
@@ -1195,14 +1232,20 @@ static void menu_camera_update(unsigned frame)
 		memcpy(s_menu_camera.forward, point + 3, 3u * sizeof(float));
 		memcpy(s_menu_camera.up, point + 6, 3u * sizeof(float));
 		s_menu_camera.fov = point[9];
-		s_menu_camera.last_frame = frame;
+		s_menu_camera.last_frame = menu_elapsed_ms();
 		s_menu_camera.started = 1;
 		return;
 	}
-	dt = (float)(frame - s_menu_camera.last_frame) / 60.0f;
-	s_menu_camera.last_frame = frame;
+	/* Halo's menu camera runs in game time (30 ticks a second), so it moves by wall-clock seconds
+	 * whatever rate the menu draws at. A long stall (a memory card write) is not caught up. */
+	{
+		unsigned now = menu_elapsed_ms();
+		dt = (float)(now - s_menu_camera.last_frame) * 0.001f;
+		s_menu_camera.last_frame = now;
+	}
+	(void)frame;
 	if (dt <= 0.0f) return;
-	if (dt > 0.1f) dt = 0.1f;
+	if (dt > 0.25f) dt = 0.25f;
 	s_menu_camera.time += dt;
 	/* Point zero seeds the camera pose. Point one is the first destination,
 	 * so begin the glide immediately instead of spending one full keyframe
@@ -1236,7 +1279,7 @@ static void menu_camera_update(unsigned frame)
 #define MENU_GLYPH_BYTES (MENU_GLYPH_W * MENU_GLYPH_H * 2u)
 #define MENU_SPACE_BYTES (128u * 128u * 2u)
 _Static_assert(MENU_GLYPH_W == 256u && MENU_GLYPH_H == 16u, "glyph atlas page fit");
-_Static_assert(MENU_GLYPH_PAGE == MENU_PLANET_PAGE + 64u, "glyph page follows the planet");
+_Static_assert(MENU_GLYPH_PAGE == MENU_PLANET_PAGE + 32u, "glyph page follows the planet");
 _Static_assert(MENU_TEXTURE_PAGES <= 288u, "menu textures fit the video memory left after the frame and Z buffers");
 _Static_assert(MENU_SPACE_PAGE == MENU_GLYPH_PAGE + MENU_GLYPH_PAGES, "space page follows glyph atlas");
 #define MENU_PAD_UP 0x0010u
@@ -1752,8 +1795,8 @@ static void menu_ring_project(menu_ring_vertex v, int *out_x, int *out_y)
 static void menu_ring_emit_vertex(packet2_t *packet, const video_t *video,
 	menu_ring_vertex v, unsigned material, float base_u, float base_v)
 {
-	unsigned tw = material == 1u ? MENU_RING_OUTER_W : (material == 2u ? MENU_RING_SHADOW_W : MENU_RING_INNER_W);
-	unsigned th = material == 1u ? MENU_RING_OUTER_H : (material == 2u ? MENU_RING_SHADOW_H : MENU_RING_INNER_H);
+	unsigned tw = material == 1u ? MENU_RING_OUTER_W : MENU_RING_INNER_W;
+	unsigned th = material == 1u ? MENU_RING_OUTER_H : MENU_RING_INNER_H;
 	/* The texture is REPEAT-wrapped by the GS, so only the polygon's shared integer offset is removed. Wrapping each
 	 * vertex separately (the old fmodf) sent a triangle that crosses a tile edge across the whole texture. */
 	float u = (v.u - base_u) * (float)tw, vv = (v.v - base_v) * (float)th;
@@ -1769,7 +1812,7 @@ static void menu_ring_emit_vertex(packet2_t *packet, const video_t *video,
 		int shade = (int)(v.light + 0.5f);
 		if (shade < 0) shade = 0; if (shade > 255) shade = 255;
 		menu_vertex_3d(packet, x, y, (int)(u * 16.0f), (int)(vv * 16.0f), z,
-			(unsigned)shade, material == 2u ? 0x70u : 0x80u);
+			(unsigned)shade, 0x80u);
 	}
 	(void)video;
 }
@@ -1812,14 +1855,14 @@ static void menu_ring_draw_part(packet2_t *packet, const video_t *video,
 	}
 	if (!vertex_count) return;
 	if (part->material == 1u)
-		menu_texture_state(packet, video, MENU_RING_OUTER_PAGE, GS_PSMCT16S, 9, 8, MENU_RING_OUTER_W / 64u, 0, 0);
-	else if (part->material == 2u)
-		menu_texture_state(packet, video, MENU_RING_SHADOW_PAGE, GS_PSMCT16S, 10, 5, MENU_RING_SHADOW_W / 64u, 0, 0);
+		menu_texture_state_clut(packet, video, MENU_RING_OUTER_PAGE, GS_PSMT8, 10, 9, MENU_RING_OUTER_W / 64u,
+			MENU_HD_CLUT(1), 0);
 	else
-		menu_texture_state(packet, video, MENU_RING_INNER_PAGE, GS_PSMCT16S, 10, 6, MENU_RING_INNER_W / 64u, 0, 0);
-	menu_depth_state(packet, video, part->material == 2u, 2u);
+		menu_texture_state_clut(packet, video, MENU_RING_INNER_PAGE, GS_PSMT8, 10, 7, MENU_RING_INNER_W / 64u,
+			MENU_HD_CLUT(0), 0);
+	menu_depth_state(packet, video, 0u, 2u);
 	packet2_add_u64(packet, GIF_TAG(vertex_count, 0, 1,
-		GS_PRIM(GSX_PRIM_TRIANGLE, 1, 1, 0, part->material == 2u, 0, 1, 0, 0),
+		GS_PRIM(GSX_PRIM_TRIANGLE, 1, 1, 0, 0, 0, 1, 0, 0),
 		GIFX_FLG_PACKED, 3));
 	packet2_add_u64(packet, 0x531);
 	for (tri = 0; tri < part->triangle_count; ++tri) {
@@ -1851,26 +1894,178 @@ static void menu_ring(packet2_t *packet, const video_t *video, unsigned frame)
 	menu_depth_state(packet, video, 1u, 1u);
 }
 
-/* The two planet quads of the retail menu sky (geometries 2 and 3 of sky\\sky_ui\\sky_ui, listed with
- * tools/build_hcu_menu_assets.py's reader), already turned by the model's node rotation (80 degrees about z) so they
- * share the camera's world axes. Retail places Threshold (the big world, bitmap 512x512) up and to one side and Basis
- * (the small blue moon, 256x256) low and near, so the camera sweep brings each in and out of view. The texture
- * coordinates are the model's 1..2 range minus one. */
+/* The retail sky (sky\sky_ui\sky_ui) is drawn at the camera, turning with the view and moving only 0.1% with its
+ * position. tools/build_hcu_menu_assets.py exports its space sphere (320 triangles) and galaxy band (16) already turned
+ * by the model's node rotation, with their own texture coordinates. The space shader is the star mask times the star
+ * bitmap (tiled 16 x 10 over the sphere) plus the nebula bitmap (once); the galaxy shader adds its band to the sky. */
+static uint8_t *s_menu_sky_owner;
+static const uint8_t *s_menu_sky_space, *s_menu_sky_galaxy;
+static unsigned s_menu_sky_space_tris, s_menu_sky_galaxy_tris;
+
+static size_t menu_sky_mesh_bytes(const uint8_t *blob, size_t bytes)
+{
+	uint32_t space, galaxy;
+	size_t total;
+	if (!blob || bytes < 12u || memcmp(blob, MENU_SKY_MESH_MAGIC, 4u)) return 0;
+	memcpy(&space, blob + 4, 4u); memcpy(&galaxy, blob + 8, 4u);
+	if (space > 1024u || galaxy > 256u) return 0;
+	total = 12u + (size_t)(space + galaxy) * 3u * MENU_SKY_VERTEX_BYTES;
+	return total <= bytes ? total : 0;
+}
+
+static int menu_sky_mesh_import(const uint8_t *blob, size_t bytes)
+{
+	uint32_t space, galaxy;
+	size_t total = menu_sky_mesh_bytes(blob, bytes);
+	uint8_t *owned;
+	if (!total) return -1;
+	owned = (uint8_t *)malloc(total);
+	if (!owned) return -1;
+	memcpy(owned, blob, total);
+	memcpy(&space, owned + 4, 4u); memcpy(&galaxy, owned + 8, 4u);
+	free(s_menu_sky_owner);
+	s_menu_sky_owner = owned;
+	s_menu_sky_space = owned + 12u;
+	s_menu_sky_galaxy = owned + 12u + (size_t)space * 3u * MENU_SKY_VERTEX_BYTES;
+	s_menu_sky_space_tris = space; s_menu_sky_galaxy_tris = galaxy;
+	return 0;
+}
+
+static void menu_sky_mesh_clear(void)
+{
+	free(s_menu_sky_owner);
+	s_menu_sky_owner = NULL; s_menu_sky_space = s_menu_sky_galaxy = NULL;
+	s_menu_sky_space_tris = s_menu_sky_galaxy_tris = 0;
+}
+
+static unsigned menu_sky_triangle(const uint8_t *triangles, unsigned tri, float u_scale, float v_scale,
+	menu_ring_vertex polygon[MENU_RING_CLIP_VERTICES])
+{
+	menu_ring_vertex source[3];
+	for (unsigned j = 0; j < 3u; ++j) {
+		float raw[5];
+		memcpy(raw, triangles + ((size_t)tri * 3u + j) * MENU_SKY_VERTEX_BYTES, sizeof(raw));
+		source[j] = menu_sky_to_camera(raw, raw[3] * u_scale, raw[4] * v_scale);
+	}
+	return menu_ring_clip(source, polygon);
+}
+
+/* One layer of the sky mesh. u_scale and v_scale are the shader's map scales; the polygon's whole tile offset is
+ * removed before the texel conversion (as for the ring) so the GS's wrap does the tiling. `additive` adds the layer to
+ * what is behind it (the stars and the galaxy); otherwise it replaces it (the nebula). */
+static void menu_sky_layer(packet2_t *packet, const video_t *video, const uint8_t *triangles, unsigned count,
+	unsigned page, unsigned psm, unsigned tw_log2, unsigned th_log2, unsigned tw, unsigned th,
+	unsigned clut_words, float u_scale, float v_scale, int additive, unsigned shade)
+{
+	menu_ring_vertex polygon[MENU_RING_CLIP_VERTICES];
+	unsigned tri, vertex_count = 0, j;
+	if (!triangles || !count) return;
+	for (tri = 0; tri < count; ++tri) {
+		unsigned n = menu_sky_triangle(triangles, tri, u_scale, v_scale, polygon);
+		if (n >= 3u) vertex_count += (n - 2u) * 3u;
+	}
+	if (!vertex_count) return;
+	menu_texture_state_clut(packet, video, page, psm, tw_log2, th_log2, tw / 64u, clut_words, 0);
+	menu_depth_state(packet, video, 1u, 1u);
+	if (additive) {
+		/* Cs + Cd: (Cs - 0) * FIX(1.0) + Cd */
+		packet2_add_u64(packet, GIF_TAG(1, 0, 0, 0, GIFX_FLG_PACKED, 1));
+		packet2_add_u64(packet, GIF_REGS_AD);
+		packet2_add_u64(packet, GS_ALPHA(0, 2, 2, 1, 0x80)); packet2_add_u64(packet, GS_A_ALPHA_1);
+	}
+	packet2_add_u64(packet, GIF_TAG(vertex_count, 0, 1,
+		GS_PRIM(GSX_PRIM_TRIANGLE, 1, 1, 0, additive ? 1 : 0, 0, 1, 0, 0), GIFX_FLG_PACKED, 3));
+	packet2_add_u64(packet, 0x531);
+	for (tri = 0; tri < count; ++tri) {
+		unsigned n = menu_sky_triangle(triangles, tri, u_scale, v_scale, polygon);
+		float base_u = 0.0f, base_v = 0.0f;
+		if (n < 3u) continue;
+		{
+			float min_u = polygon[0].u, min_v = polygon[0].v;
+			for (j = 1; j < n; ++j) {
+				if (polygon[j].u < min_u) min_u = polygon[j].u;
+				if (polygon[j].v < min_v) min_v = polygon[j].v;
+			}
+			base_u = floorf(min_u); base_v = floorf(min_v);
+		}
+		for (j = 1; j + 1 < n; ++j) {
+			const menu_ring_vertex *v3[3] = { &polygon[0], &polygon[j], &polygon[j + 1u] };
+			for (unsigned k = 0; k < 3u; ++k) {
+				float u = (v3[k]->u - base_u) * (float)tw, v = (v3[k]->v - base_v) * (float)th;
+				int x, y;
+				menu_ring_project(*v3[k], &x, &y);
+				if (u < 0.0f) u = 0.0f;
+				if (v < 0.0f) v = 0.0f;
+				if (u > 4095.0f) u = 4095.0f;
+				if (v > 4095.0f) v = 4095.0f;
+				menu_vertex_3d(packet, x, y, (int)(u * 16.0f), (int)(v * 16.0f), 0u, shade, 0x80u);
+			}
+		}
+	}
+}
+
+/* The nebula bitmap is dim blue; the retail menu is nearly black between its stars, so it is drawn at about 0.6. */
+#define MENU_NEBULA_SHADE 80u
+
+/* The sky behind everything: nebula, then the stars, then the galaxy band. */
+static void menu_sky_draw(packet2_t *packet, const video_t *video)
+{
+	menu_sky_layer(packet, video, s_menu_sky_space, s_menu_sky_space_tris, MENU_SPACE_PAGE, GS_PSMCT16S,
+		7, 7, 128u, 128u, 0u, 1.0f, 1.0f, 0, MENU_NEBULA_SHADE);
+	menu_sky_layer(packet, video, s_menu_sky_space, s_menu_sky_space_tris, MENU_STARS_PAGE, GS_PSMT8,
+		8, 8, MENU_STARS_SIZE, MENU_STARS_SIZE, MENU_HD_CLUT(3), 16.0f, 10.0f, 1, 128u);
+	menu_sky_layer(packet, video, s_menu_sky_galaxy, s_menu_sky_galaxy_tris, MENU_GALAXY_PAGE, GS_PSMT8,
+		10, 7, MENU_GALAXY_W, MENU_GALAXY_H, MENU_HD_CLUT(4), 1.0f, 1.0f, 1, 128u);
+	menu_depth_state(packet, video, 1u, 1u);
+}
+
+/* The big world (Threshold, bitmap 512x512). Retail leaves it high and to one side of the sky, well away from the
+ * ring; the title wants it large and right beside the ring, so the quad is built at run time: its centre direction is
+ * the ring's, seen from the middle of the camera path, turned MENU_PLANET_SIDE degrees to the left and lowered, and it
+ * spans MENU_PLANET_HALF at MENU_PLANET_DISTANCE (about 80 degrees across). Sky units are the model's (1/1024). */
+#define MENU_PLANET_DISTANCE 16000.0f
+#define MENU_PLANET_HALF 15000.0f
+#define MENU_PLANET_SIDE (-30.0f)
+#define MENU_PLANET_DROP (-0.2f)
 typedef struct { float corner[4][3]; float uv[4][2]; unsigned page, log2_size, size; } menu_sky_quad;
-static const menu_sky_quad s_menu_sky_quads[2] = {
-	{ {{5745.0f, 15142.0f, -697.0f}, {-6378.0f, 9882.0f, -7882.0f},
-	   {-545.0f, 11611.0f, 12502.0f}, {-12669.0f, 6351.0f, 5317.0f}},
-	  {{0.005f, 0.002f}, {0.995f, 0.002f}, {0.004f, 0.993f}, {0.995f, 0.995f}},
-	  MENU_PLANET_PAGE, 9u, MENU_PLANET_SIZE },
-	{ {{3481.0f, -5277.0f, 2681.0f}, {2414.0f, -5616.0f, 3180.0f},
-	   {3186.0f, -5871.0f, 1650.0f}, {2119.0f, -6209.0f, 2149.0f}},
-	  {{0.005f, 0.002f}, {0.995f, 0.002f}, {0.004f, 0.993f}, {0.995f, 0.995f}},
-	  MENU_MOON_PAGE, 8u, MENU_MOON_SIZE },
-};
+static menu_sky_quad s_menu_planet_quad;
+static int s_menu_planet_quad_ready;
+
+static void menu_planet_quad_build(void)
+{
+	static const float world_up[3] = { 0.0f, 0.0f, 1.0f };
+	float mean[3] = { 0.0f, 0.0f, 0.0f }, d[3], right[3], c[3], up[3], angle = MENU_PLANET_SIDE * 0.0174533f;
+	for (unsigned i = 0; i < MENU_CAMERA_COUNT; ++i)
+		for (unsigned k = 0; k < 3u; ++k) mean[k] += s_menu_camera_points[i][k] * (1.0f / (float)MENU_CAMERA_COUNT);
+	for (unsigned k = 0; k < 3u; ++k) d[k] = s_menu_ring_position[k] - mean[k];
+	menu_camera_normalize(d);
+	menu_camera_cross(d, world_up, right);
+	menu_camera_normalize(right);
+	for (unsigned k = 0; k < 3u; ++k) c[k] = d[k] * cosf(angle) - right[k] * sinf(angle);
+	c[2] -= MENU_PLANET_DROP;
+	menu_camera_normalize(c);
+	menu_camera_cross(c, world_up, right);
+	menu_camera_normalize(right);
+	menu_camera_cross(right, c, up);
+	for (unsigned k = 0; k < 3u; ++k) {
+		float centre = c[k] * MENU_PLANET_DISTANCE;
+		s_menu_planet_quad.corner[0][k] = centre - right[k] * MENU_PLANET_HALF + up[k] * MENU_PLANET_HALF;
+		s_menu_planet_quad.corner[1][k] = centre + right[k] * MENU_PLANET_HALF + up[k] * MENU_PLANET_HALF;
+		s_menu_planet_quad.corner[2][k] = centre - right[k] * MENU_PLANET_HALF - up[k] * MENU_PLANET_HALF;
+		s_menu_planet_quad.corner[3][k] = centre + right[k] * MENU_PLANET_HALF - up[k] * MENU_PLANET_HALF;
+	}
+	s_menu_planet_quad.uv[0][0] = 0.005f; s_menu_planet_quad.uv[0][1] = 0.002f;
+	s_menu_planet_quad.uv[1][0] = 0.995f; s_menu_planet_quad.uv[1][1] = 0.002f;
+	s_menu_planet_quad.uv[2][0] = 0.004f; s_menu_planet_quad.uv[2][1] = 0.993f;
+	s_menu_planet_quad.uv[3][0] = 0.995f; s_menu_planet_quad.uv[3][1] = 0.995f;
+	s_menu_planet_quad.page = MENU_PLANET_PAGE; s_menu_planet_quad.log2_size = 9u;
+	s_menu_planet_quad.size = MENU_PLANET_SIZE;
+	s_menu_planet_quad_ready = 1;
+}
 
 /* The GS interpolates the texture coordinates linearly in screen space, so a big quad seen at an angle needs cutting
  * into cells or its two triangles disagree along their shared diagonal (a dotted seam across the planet). */
-#define MENU_SKY_GRID 8u
+#define MENU_SKY_GRID 12u
 
 static menu_ring_vertex menu_sky_grid_vertex(const menu_sky_quad *quad, unsigned gx, unsigned gy)
 {
@@ -1908,16 +2103,16 @@ static void menu_sky_quad_draw(packet2_t *packet, const video_t *video, const me
 				if (n >= 3u) vertex_count += (n - 2u) * 3u;
 			}
 	if (!vertex_count) return;
-	menu_texture_state(packet, video, quad->page, GS_PSMCT16S, quad->log2_size, quad->log2_size,
-		quad->size / 64u, 0, 0);
+	menu_texture_state_clut(packet, video, quad->page, GS_PSMT8, quad->log2_size, quad->log2_size,
+		quad->size / 64u, MENU_HD_CLUT(2), 0);
 	menu_depth_state(packet, video, 1u, 1u);  /* no depth write; it also resets TEST, so set the cutout after it */
-	/* RGB5A1: a cleared alpha bit is the empty space around the planet, as for the title art. */
-	packet2_add_u64(packet, GIF_TAG(2, 0, 0, 0, GIFX_FLG_PACKED, 1));
+	/* Palette index 0 is the empty space around the planet (alpha 0): skip it, and blend the limb by the palette's
+	 * alpha. */
+	packet2_add_u64(packet, GIF_TAG(1, 0, 0, 0, GIFX_FLG_PACKED, 1));
 	packet2_add_u64(packet, GIF_REGS_AD);
-	packet2_add_u64(packet, 0x80ull << 32); packet2_add_u64(packet, GS_A_TEXA);
 	packet2_add_u64(packet, GS_TEST(1, 6, 0, 0, 0, 0, 1, 1)); packet2_add_u64(packet, GS_A_TEST_1);
 	packet2_add_u64(packet, GIF_TAG(vertex_count, 0, 1,
-		GS_PRIM(GSX_PRIM_TRIANGLE, 1, 1, 0, 0, 0, 1, 0, 0), GIFX_FLG_PACKED, 3));
+		GS_PRIM(GSX_PRIM_TRIANGLE, 1, 1, 0, 1, 0, 1, 0, 0), GIFX_FLG_PACKED, 3));
 	packet2_add_u64(packet, 0x531);
 	for (cy = 0; cy < MENU_SKY_GRID; ++cy)
 		for (cx = 0; cx < MENU_SKY_GRID; ++cx)
@@ -1933,23 +2128,15 @@ static void menu_sky_quad_draw(packet2_t *packet, const video_t *video, const me
 					}
 				}
 			}
+	menu_depth_state(packet, video, 1u, 1u);
 }
 
 static void menu_planet(packet2_t *packet, const video_t *video, unsigned frame)
 {
-	menu_camera_update(frame);
-	if (s_menu_camera_ready && s_menu_camera.started) {
-		for (unsigned i = 0; i < 2u; ++i) menu_sky_quad_draw(packet, video, &s_menu_sky_quads[i]);
-		return;
-	}
-	{
-		/* No camera data (an older package): the earlier fixed placement. */
-		float phase = (float)frame / 60.0f;
-		int x = -35 + (int)(-0.35f * sinf(phase * 0.11f) * 35.0f);
-		int y = 194 + (int)(0.36f * cosf(phase * 0.088f) * 22.0f);
-		menu_image_draw(packet, video, MENU_PLANET_PAGE, 9, 9, MENU_PLANET_SIZE / 64u,
-			x, y, x + 238, y + 238, 0, 0, MENU_PLANET_SIZE - 1u, MENU_PLANET_SIZE - 1u, 1);
-	}
+	(void)frame;
+	if (!s_menu_camera_ready || !s_menu_camera.started) return;
+	if (!s_menu_planet_quad_ready) menu_planet_quad_build();
+	menu_sky_quad_draw(packet, video, &s_menu_planet_quad);
 }
 
 static unsigned menu_text_width(const char *text, unsigned scale)
@@ -2077,12 +2264,14 @@ static void menu_prompt_center(packet2_t *packet, const video_t *video, int y,
 static void menu_space_background(packet2_t *packet, const video_t *video,
 	unsigned frame)
 {
-	int drift = (int)(frame / 24u) % 128;
-	/* Use CE's nebula and actual star bitmap as the two sky layers. */
+	menu_camera_update(frame);
+	if (s_menu_camera_ready && s_menu_camera.started && s_menu_sky_space) {
+		menu_sky_draw(packet, video);
+		return;
+	}
+	/* No sky mesh or camera path (an older package): the nebula bitmap alone, flat. */
 	menu_image(packet, video, MENU_SPACE_PAGE, 7, 7, 2,
 		0, 0, VIDEO_WIDTH, VIDEO_HEIGHT, 0, 0, 255, 255);
-	menu_image_draw(packet, video, MENU_STARS_PAGE, 7, 7, 2,
-		0, 0, VIDEO_WIDTH, VIDEO_HEIGHT, drift, 0, 255 + drift, 255, 1);
 }
 
 /* A rectangle of the retail multiplayer art. Headers (panel == 0) and pictures (panel == 1) each have their own
@@ -2748,24 +2937,27 @@ static void menu_video_settings(packet2_t *packet, const video_t *video, const h
 	}
 }
 
-static int menu_load_textures(const uint16_t *textures[13], void **allocation)
+#define MENU_TEXTURE_SLOTS 14u
+/* menu_load_textures fills these: 0 ring inner T8, 1 ring outer T8, 2 map atlas, 3 game type atlas, 4 logo, 5 buttons,
+ * 6 planet T8, 7 glyphs, 8 space, 9 stars T8, 10 galaxy T8, 11 the five HD palettes, 12 retail multiplayer art (or
+ * NULL). The package is the same sequence (tools/build_hcu_menu_assets.py), then the multiplayer art, the sky mesh,
+ * the camera path and the ring mesh. */
+static int menu_load_textures(const void *textures[MENU_TEXTURE_SLOTS], void **allocation)
 {
 #if defined(__mips__)
-	/* Order matches tools/build_hcu_menu_assets.py. Older discs omit the glyph atlas. */
-	const size_t rings_bytes = MENU_RING_INNER_BYTES + MENU_RING_OUTER_BYTES;
-	const size_t base_bytes = rings_bytes + MENU_MAP_ATLAS_BYTES + MENU_TYPE_ATLAS_BYTES +
-		MENU_LOGO_BYTES + MENU_BUTTONS_BYTES + MENU_PLANET_BYTES;
-	const size_t glyph_bytes = base_bytes + MENU_GLYPH_BYTES;
-	const size_t legacy_full_bytes = glyph_bytes + 2u * MENU_SPACE_BYTES;
-	const size_t shadow_end_bytes = legacy_full_bytes + MENU_RING_SHADOW_BYTES;
-	const size_t full_bytes = shadow_end_bytes + MENU_MOON_BYTES;
+	static const size_t sizes[12] = {
+		MENU_RING_INNER_BYTES, MENU_RING_OUTER_BYTES, MENU_MAP_ATLAS_BYTES, MENU_TYPE_ATLAS_BYTES,
+		MENU_LOGO_BYTES, MENU_BUTTONS_BYTES, MENU_PLANET_BYTES, MENU_GLYPH_BYTES, MENU_SPACE_BYTES,
+		MENU_STARS_BYTES, MENU_GALAXY_BYTES, MENU_HD_CLUTS_BYTES };
+	size_t texture_bytes = 0, at, sky_bytes;
 	unsigned long file_size = 0, read_size = 0;
 	uint8_t *data;
 	int file;
+	unsigned i;
+	for (i = 0; i < 12u; ++i) texture_bytes += sizes[i];
 	hcu_boot_diag_note("tex open", 0, 0, 0);
 	file = hcu_file_bridge_open("D:\\packages\\menu_textures.bin", &file_size);
-	if (file < 0 || (file_size != base_bytes && file_size != glyph_bytes &&
-		file_size != legacy_full_bytes && file_size < full_bytes + MENU_CAMERA_BYTES + 8u)) {
+	if (file < 0 || file_size < texture_bytes + 12u + MENU_CAMERA_BYTES + 8u) {
 		if (file >= 0) hcu_file_bridge_close(file);
 		return -1;
 	}
@@ -2777,69 +2969,55 @@ static int menu_load_textures(const uint16_t *textures[13], void **allocation)
 		hcu_file_bridge_close(file); free(data); return -1;
 	}
 	hcu_file_bridge_close(file);
-	/* A package built with the retail multiplayer art carries it between the moon and the camera path. */
+	at = 0;
+	for (i = 0; i < 12u; ++i) { textures[i] = data + at; at += sizes[i]; }
 	textures[12] = NULL;
-	if (file_size >= full_bytes + MENU_MP_UI_BYTES + MENU_CAMERA_BYTES + 8u &&
-		!memcmp(data + full_bytes, "HMUI", 4u))
-		textures[12] = (const uint16_t *)(data + full_bytes);
+	if (file_size >= at + MENU_MP_UI_BYTES && !memcmp(data + at, "HMUI", 4u)) {
+		textures[12] = data + at;
+		at += MENU_MP_UI_BYTES;
+	}
+	sky_bytes = menu_sky_mesh_bytes(data + at, (size_t)file_size - at);
+	if (!sky_bytes || file_size < at + sky_bytes + MENU_CAMERA_BYTES + 8u) { free(data); return -1; }
 	{
-		const size_t path_at = full_bytes + (textures[12] ? MENU_MP_UI_BYTES : 0u);
-		if (file_size >= path_at + MENU_CAMERA_BYTES + 8u) {
-			menu_camera_import(data + path_at, MENU_CAMERA_BYTES);
-			if (menu_ring_mesh_import(data + path_at + MENU_CAMERA_BYTES,
-				(size_t)file_size - path_at - MENU_CAMERA_BYTES, 1)) {
-				free(data); return -1;
-			}
+		const size_t path_at = at + sky_bytes;
+		menu_camera_import(data + path_at, MENU_CAMERA_BYTES);
+		if (menu_ring_mesh_import(data + path_at + MENU_CAMERA_BYTES,
+			(size_t)file_size - path_at - MENU_CAMERA_BYTES, 1) ||
+			menu_sky_mesh_import(data + at, sky_bytes)) {
+			free(data); return -1;
 		}
 	}
-	textures[0] = (const uint16_t *)data;
-	textures[1] = (const uint16_t *)(data + MENU_RING_INNER_BYTES);
-	textures[2] = (const uint16_t *)(data + rings_bytes);
-	textures[3] = (const uint16_t *)(data + rings_bytes + MENU_MAP_ATLAS_BYTES);
-	textures[4] = (const uint16_t *)(data + rings_bytes + MENU_MAP_ATLAS_BYTES + MENU_TYPE_ATLAS_BYTES);
-	textures[5] = (const uint16_t *)((const uint8_t *)textures[4] + MENU_LOGO_BYTES);
-	textures[6] = (const uint16_t *)((const uint8_t *)textures[5] + MENU_BUTTONS_BYTES);
-	textures[7] = file_size >= glyph_bytes ?
-		(const uint16_t *)((const uint8_t *)textures[6] + MENU_PLANET_BYTES) :
-		hcu_main_menu_glyphs_rgb5a1;
-	textures[8] = file_size >= legacy_full_bytes ?
-		(const uint16_t *)((const uint8_t *)textures[7] + MENU_GLYPH_BYTES) :
-		textures[6];
-	textures[9] = file_size >= legacy_full_bytes ?
-		(const uint16_t *)((const uint8_t *)textures[8] + MENU_SPACE_BYTES) :
-		textures[1];
-	textures[10] = file_size >= full_bytes ?
-		(const uint16_t *)(data + legacy_full_bytes) : textures[0];
-	textures[11] = file_size >= full_bytes ?
-		(const uint16_t *)(data + shadow_end_bytes) : textures[6];
 	*allocation = data;
 #else
-	textures[0] = hcu_main_menu_ring_inner_rgb5a1;
-	textures[1] = hcu_main_menu_ring_outer_rgb5a1;
+	textures[0] = hcu_main_menu_ring_inner_t8;
+	textures[1] = hcu_main_menu_ring_outer_t8;
 	textures[2] = hcu_main_menu_map_atlas_rgb5a1;
 	textures[3] = hcu_main_menu_gametype_atlas_rgb5a1;
 	textures[4] = hcu_main_menu_logo_rgb5a1;
 	textures[5] = hcu_main_menu_buttons_rgb5a1;
-	textures[6] = hcu_main_menu_planet_rgb5a1;
+	textures[6] = hcu_main_menu_planet_t8;
 	textures[7] = hcu_main_menu_glyphs_rgb5a1;
 	textures[8] = hcu_main_menu_space_rgb5a1;
-	textures[9] = hcu_main_menu_stars_rgb5a1;
-	textures[10] = hcu_main_menu_ring_shadow_rgb5a1;
-	textures[11] = hcu_main_menu_moon_rgb5a1;
-	textures[12] = (const uint16_t *)hcu_main_menu_mp_ui_bin;
+	textures[9] = hcu_main_menu_stars_t8;
+	textures[10] = hcu_main_menu_galaxy_t8;
+	textures[11] = hcu_main_menu_hd_cluts;
+	textures[12] = hcu_main_menu_mp_ui_bin;
 	menu_camera_import(hcu_main_menu_camera_bin, MENU_CAMERA_BYTES);
 	if (menu_ring_mesh_import(hcu_main_menu_ring_mesh_bin,
-		(size_t)(hcu_main_menu_ring_mesh_end - hcu_main_menu_ring_mesh_bin), 0)) return -1;
+		(size_t)(hcu_main_menu_ring_mesh_end - hcu_main_menu_ring_mesh_bin), 0) ||
+		menu_sky_mesh_import(hcu_main_menu_sky_mesh_bin,
+			(size_t)(hcu_main_menu_sky_mesh_end - hcu_main_menu_sky_mesh_bin))) return -1;
 	*allocation = NULL;
 #endif
 	return 0;
 }
 
 static int menu_upload_assets(video_t *video, void *dma_storage, size_t dma_bytes,
-	uint8_t *font, uint32_t *clut, const uint16_t *textures[13])
+	uint8_t *font, uint32_t *clut, const void *textures[MENU_TEXTURE_SLOTS])
 {
 	chain_t chain;
-	if (dma_bytes < 208u * 16u) return -1;
+	const uint32_t hd_clut_block = (video->tex_base + MENU_HD_CLUT_PAGE * MENU_PAGE_WORDS) / 64u;
+	if (dma_bytes < 512u * 16u) return -1;
 	if ((uint64_t)video->tex_base +
 		(uint64_t)MENU_TEXTURE_PAGES * MENU_PAGE_WORDS > VIDEO_VRAM_WORDS)
 		return -1;
@@ -2853,19 +3031,19 @@ static int menu_upload_assets(video_t *video, void *dma_storage, size_t dma_byte
 	SyncDCache((void *)textures[6], (uint8_t *)textures[6] + MENU_PLANET_BYTES);
 	SyncDCache((void *)textures[7], (uint8_t *)textures[7] + MENU_GLYPH_BYTES);
 	SyncDCache((void *)textures[8], (uint8_t *)textures[8] + MENU_SPACE_BYTES);
-	SyncDCache((void *)textures[9], (uint8_t *)textures[9] + MENU_SPACE_BYTES);
-	SyncDCache((void *)textures[10], (uint8_t *)textures[10] + MENU_RING_SHADOW_BYTES);
-	SyncDCache((void *)textures[11], (uint8_t *)textures[11] + MENU_MOON_BYTES);
+	SyncDCache((void *)textures[9], (uint8_t *)textures[9] + MENU_STARS_BYTES);
+	SyncDCache((void *)textures[10], (uint8_t *)textures[10] + MENU_GALAXY_BYTES);
+	SyncDCache((void *)textures[11], (uint8_t *)textures[11] + MENU_HD_CLUTS_BYTES);
 	s_menu_mp_ui = textures[12] != NULL;
 	if (s_menu_mp_ui) SyncDCache((void *)textures[12], (uint8_t *)textures[12] + MENU_MP_UI_BYTES);
 	SyncDCache(font, font + MENU_FONT_BYTES); SyncDCache(clut, (uint8_t *)clut + MENU_CLUT_BYTES);
-	chain_init(&chain, dma_storage, 208u);
+	chain_init(&chain, dma_storage, 512u);
 	if (gs_upload(&chain, textures[0], MENU_RING_INNER_BYTES,
 		(video->tex_base + MENU_RING_INNER_PAGE * MENU_PAGE_WORDS) / 64u,
-		MENU_RING_INNER_W / 64u, GS_PSMCT16S, MENU_RING_INNER_W, MENU_RING_INNER_H) ||
+		MENU_RING_INNER_W / 64u, GS_PSMT8, MENU_RING_INNER_W, MENU_RING_INNER_H) ||
 		gs_upload(&chain, textures[1], MENU_RING_OUTER_BYTES,
 		(video->tex_base + MENU_RING_OUTER_PAGE * MENU_PAGE_WORDS) / 64u,
-		MENU_RING_OUTER_W / 64u, GS_PSMCT16S, MENU_RING_OUTER_W, MENU_RING_OUTER_H) ||
+		MENU_RING_OUTER_W / 64u, GS_PSMT8, MENU_RING_OUTER_W, MENU_RING_OUTER_H) ||
 		gs_upload(&chain, textures[2], MENU_MAP_ATLAS_BYTES,
 		(video->tex_base + MENU_MAP_PAGE * MENU_PAGE_WORDS) / 64u,
 		MENU_MAP_ATLAS_W / 64u, GS_PSMCT16S, MENU_MAP_ATLAS_W, MENU_MAP_ATLAS_H) ||
@@ -2880,28 +3058,28 @@ static int menu_upload_assets(video_t *video, void *dma_storage, size_t dma_byte
 			256u / 64u, GS_PSMCT16S, 256u, 256u) ||
 		gs_upload(&chain, textures[6], MENU_PLANET_BYTES,
 			(video->tex_base + MENU_PLANET_PAGE * MENU_PAGE_WORDS) / 64u,
-			MENU_PLANET_SIZE / 64u, GS_PSMCT16S, MENU_PLANET_SIZE, MENU_PLANET_SIZE) ||
+			MENU_PLANET_SIZE / 64u, GS_PSMT8, MENU_PLANET_SIZE, MENU_PLANET_SIZE) ||
 		gs_upload(&chain, textures[7], MENU_GLYPH_BYTES,
 			(video->tex_base + MENU_GLYPH_PAGE * MENU_PAGE_WORDS) / 64u,
 			MENU_GLYPH_W / 64u, GS_PSMCT16S, MENU_GLYPH_W, MENU_GLYPH_H) ||
 		gs_upload(&chain, textures[8], MENU_SPACE_BYTES,
 			(video->tex_base + MENU_SPACE_PAGE * MENU_PAGE_WORDS) / 64u,
 			2u, GS_PSMCT16S, 128u, 128u) ||
-		gs_upload(&chain, textures[9], MENU_SPACE_BYTES,
+		gs_upload(&chain, textures[9], MENU_STARS_BYTES,
 			(video->tex_base + MENU_STARS_PAGE * MENU_PAGE_WORDS) / 64u,
-			2u, GS_PSMCT16S, 128u, 128u) ||
-		gs_upload(&chain, textures[10], MENU_RING_SHADOW_BYTES,
-			(video->tex_base + MENU_RING_SHADOW_PAGE * MENU_PAGE_WORDS) / 64u,
-			MENU_RING_SHADOW_W / 64u, GS_PSMCT16S, MENU_RING_SHADOW_W, MENU_RING_SHADOW_H) ||
-		gs_upload(&chain, textures[11], MENU_MOON_BYTES,
-			(video->tex_base + MENU_MOON_PAGE * MENU_PAGE_WORDS) / 64u,
-			MENU_MOON_SIZE / 64u, GS_PSMCT16S, MENU_MOON_SIZE, MENU_MOON_SIZE) ||
+			MENU_STARS_SIZE / 64u, GS_PSMT8, MENU_STARS_SIZE, MENU_STARS_SIZE) ||
+		gs_upload(&chain, textures[10], MENU_GALAXY_BYTES,
+			(video->tex_base + MENU_GALAXY_PAGE * MENU_PAGE_WORDS) / 64u,
+			MENU_GALAXY_W / 64u, GS_PSMT8, MENU_GALAXY_W, MENU_GALAXY_H) ||
 		gs_upload(&chain, font, MENU_FONT_BYTES,
 		(video->tex_base + MENU_FONT_PAGE * MENU_PAGE_WORDS) / 64u,
 		TEXT_ATLAS_W / 64u, GS_PSMT8, TEXT_ATLAS_W, TEXT_ATLAS_H) ||
 		gs_upload(&chain, clut, MENU_CLUT_BYTES,
 		(video->tex_base + MENU_CLUT_PAGE * MENU_PAGE_WORDS) / 64u,
 		1u, GS_PSMCT32, 16u, 16u)) return -1;
+	for (unsigned i = 0; i < 5u; ++i)
+		if (gs_upload(&chain, (const uint8_t *)textures[11] + i * 1024u, 1024u,
+			hd_clut_block + i * (MENU_HD_CLUT_WORDS / 64u), 1u, GS_PSMCT32, 16u, 16u)) return -1;
 	if (s_menu_mp_ui) {
 		const uint8_t *ui = (const uint8_t *)textures[12];
 		const uint8_t *header_clut = ui + 16u, *panel_clut = header_clut + 1024u;
@@ -2993,7 +3171,7 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 #if defined(__mips__)
 	int theme_loop_started = 0;
 #endif
-	const uint16_t *textures[13]; void *texture_allocation = NULL;
+	const void *textures[MENU_TEXTURE_SLOTS]; void *texture_allocation = NULL;
 	if (!video || !dma_storage || dma_bytes < MENU_PACKET_QW * 16u || !scratch)
 		return HCU_MAIN_MENU_ACTION_MULTIPLAYER;
 	hcu_boot_diag_note("menu enter", 0, 0, 0);
@@ -3005,7 +3183,7 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 		hcu_loading_screen_end();
 #endif
 		free(texture_allocation);
-		menu_ring_mesh_clear();
+		menu_ring_mesh_clear(); menu_sky_mesh_clear();
 		arena_release(scratch, mark); printf("HALO_PS2_FAIL main-menu asset load\n"); return HCU_MAIN_MENU_ACTION_MULTIPLAYER;
 	}
 #if defined(__mips__)
@@ -3017,7 +3195,7 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 	hcu_boot_diag_note("menu upload", 0, 0, 0);
 	if (menu_upload_assets(video, dma_storage, dma_bytes, font, clut, textures)) {
 		free(texture_allocation);
-		menu_ring_mesh_clear();
+		menu_ring_mesh_clear(); menu_sky_mesh_clear();
 		arena_release(scratch, mark); printf("HALO_PS2_FAIL main-menu asset upload\n"); return HCU_MAIN_MENU_ACTION_MULTIPLAYER;
 	}
 	free(texture_allocation);
@@ -3042,6 +3220,8 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 	memset(&input, 0, sizeof(input)); memset(events, 0, sizeof(events)); memset(&packet, 0, sizeof(packet));
 	packet.max_qwords_count = MENU_PACKET_QW; packet.type = P2_TYPE_NORMAL; packet.mode = P2_MODE_NORMAL;
 	packet.base = packet.next = (qword_t *)dma_storage;
+	s_menu_clock_start = GetTimerSystemTime();
+	s_menu_camera.started = 0;
 	printf("HALO_PS2_LOCAL main-menu-ready items=%u texture=%ux%u maps=%u profiles=%u\n",
 		(unsigned)HCU_MAIN_MENU_ITEM_COUNT, MENU_RING_OUTER_W, MENU_RING_OUTER_H,
 		(unsigned)HCU_MAIN_MENU_MAP_COUNT, (unsigned)HCU_MAIN_MENU_PROFILE_COUNT);
@@ -3058,10 +3238,10 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 		if (frame == 0) printf("HALO_PS2_LOCAL main-menu-frame stage=input\n");
 		menu_read_input(&input, events, &up, &down, &left, &right, &confirm, &back, &start);
 #if defined(__mips__)
-		hcu_spu_tick(frame * 1000u / 60u);
+		hcu_spu_tick(menu_elapsed_ms());
 		/* Retail title1 intro is 33.29 seconds; start the loop at the
 		 * nearest frame so the port does not leave an audible pause. */
-		if (!theme_loop_started && frame >= 1997u) {
+		if (!theme_loop_started && menu_elapsed_ms() >= 33290u) {
 			menu_sound("sound\\music\\title1\\loops", HCU_SOUND_EVENT_LOOPING_START, frame);
 			theme_loop_started = 1;
 		}
@@ -3209,7 +3389,7 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 		s_selected_session.player_count = state.player_count;
 		s_selected_session.widescreen = state.widescreen;
 	}
-	menu_ring_mesh_clear();
+	menu_ring_mesh_clear(); menu_sky_mesh_clear();
 	arena_release(scratch, mark);
 	printf("HALO_PS2_LOCAL main-menu-selected item=%s map=%s game=%s players=%u frames=%u\n",
 		action == HCU_MAIN_MENU_ACTION_FIREFIGHT ? "firefight" : "multiplayer",
