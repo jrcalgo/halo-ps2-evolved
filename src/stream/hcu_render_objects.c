@@ -2155,6 +2155,9 @@ static void entry_evict(uint32_t i)
 }
 
 #define OBJ_EVICT_HYSTERESIS_FRAMES 8u
+/* Models of at most this many pool bytes are "small": evicted last (entry_request) and loaded ahead of need
+ * (world_prefetch). Blood Gulch's scenery, pickups and loose weapons are all under it. */
+#define OBJ_STICKY_BYTES 65536u
 
 /* An entry that left the visible set keeps its bytes for eight more frames. */
 static int slot_hysteresis_holds(const obj_slot *s, int referenced, uint32_t frame)
@@ -2226,7 +2229,7 @@ static void entry_request(const hcu_asset_profile_view *view, uint32_t i, uint32
 	}
 	for (;;) {
 		int blocked_by_fence = 0;
-		uint32_t v, best, reclaim;
+		uint32_t v, best, reclaim, pass;
 		if (pool_find(need) >= 0) {
 			if (entry_load(view, i, frame, rank) == 0) return;
 			break;
@@ -2254,10 +2257,15 @@ static void entry_request(const hcu_asset_profile_view *view, uint32_t i, uint32
 		}
 		best = OBJ_NONE;
 		reclaim = s_res.pool_bytes - s_res.pool_used;
-		for (v = 0; v < s_slot_count; v++)
-			if (slot_victim_ok(v, rank, frame, &s_res.evict_refused_pinned) &&
-				(best == OBJ_NONE || s_slot_rank[v] > s_slot_rank[best] ||
-				 (s_slot_rank[v] == s_slot_rank[best] && s_slots[v].last_used < s_slots[best].last_used))) best = v;
+		/* Pass 0 spares the small unreferenced models (scenery, pickups, ground weapons): they cost a whole sliced
+		 * load each and show as pop-in when they return, while one large idle model frees as much as many of them.
+		 * Pass 1 takes them only when nothing else can make room. */
+		for (pass = 0; pass < 2u && best == OBJ_NONE; pass++)
+			for (v = 0; v < s_slot_count; v++)
+				if (slot_victim_ok(v, rank, frame, &s_res.evict_refused_pinned) &&
+					!(pass == 0u && s_slot_rank[v] == HCU_OBJECTS_RANK_UNUSED && s_slots[v].pool_size <= OBJ_STICKY_BYTES) &&
+					(best == OBJ_NONE || s_slot_rank[v] > s_slot_rank[best] ||
+					 (s_slot_rank[v] == s_slot_rank[best] && s_slots[v].last_used < s_slots[best].last_used))) best = v;
 		if (best == OBJ_NONE) {
 			pool_event_record(blocked_by_fence ? 3u : 5u, s, need, reclaim);
 			if (blocked_by_fence) s_res.fence_blocked++;
@@ -2306,6 +2314,29 @@ static void fp_prewarm(uint32_t frame)
 		entry_request(s_profile, i, frame, 0u);
 		return;
 	}
+}
+
+/* Loads the small models the world uses (the snapshot's resource table) before the camera turns to them. Measured
+ * on Blood Gulch while walking and turning: 8% of the visible references found their model not resident (trees,
+ * rocks, flag bases, beacons, pickups, loose weapons), each absent for the few frames its sliced load took.
+ * One bounded job at a time, smallest first, only into free pool space (never evicting), and only while no
+ * visible entry of rank 0 or 1 is waiting. */
+static void world_prefetch(const halo_ps2_frame_snapshot *snap, uint32_t frame)
+{
+	uint32_t i, r, best = OBJ_NONE, best_need = 0u;
+	if (!s_profile || !snap || s_job.entry != OBJ_JOB_NONE || rank01_pending(frame)) return;
+	for (r = 0; r < snap->resource_count; r++) {
+		uint32_t rid = snap->resources[r].id;
+		for (i = 0; i < s_slot_count; i++) {
+			const obj_slot *s = &s_slots[i];
+			uint32_t need;
+			if (s->loaded || s->refused || !s->entry || (s->entry->source_datum & 0xFFFFu) != rid) continue;
+			if (entry_need(s, &need) == 0 && need <= OBJ_STICKY_BYTES && pool_find(need) >= 0 &&
+				(best == OBJ_NONE || need < best_need)) { best = i; best_need = need; }
+			break;
+		}
+	}
+	if (best != OBJ_NONE) entry_request(s_profile, best, frame, 3u);
 }
 
 /* Frame begin: every entry the snapshot's visible views reference is made resident before the views draw. */
@@ -2402,6 +2433,7 @@ static void residency_frame(const halo_ps2_frame_snapshot *snap, uint32_t frame,
 	for (p = 1u; p <= 3u; p++)
 		for (i = 0; i < s_slot_count; i++)
 			if (need[i] && priority[i] == p) entry_request(s_profile, i, frame, p);
+	world_prefetch(snap, frame);
 #if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
 	{
 		uint32_t dt = timer_cycles() - residency_t0;
@@ -2495,7 +2527,12 @@ void hcu_render_objects_lod_tick(float frame_ms)
 
 float hcu_render_objects_lod_distance_scale(void)
 {
-	return s_world_lod_inited ? lodctl_distance_scale(&s_world_lod) : 1.0f;
+	/* Object draw distance is not scaled by the frame-time controller. The controller is fed the flip interval,
+	 * which at a 30 Hz lock is 33.3 to 33.4 ms against a 33.3 ms budget, so it sat at level 4 for the whole run
+	 * (measured over PINE: level 4, hold 60, smooth 33.36) and cut the draw distance to 40% (1600 of 4000 units).
+	 * Vehicles, rocks and trees beyond that distance were not drawn until the player came close, which showed
+	 * as pop-in. The far plane (4000) is the one object distance; the tick still runs for its statistics. */
+	return 1.0f;
 }
 
 #if defined(HALO_PS2_C3_MOVEMENT_TRACE)
