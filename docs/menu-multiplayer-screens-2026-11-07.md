@@ -8,13 +8,13 @@ Title -> **type list** -> controllers -> **map** -> **game type** -> lobby (enli
 
 | Retail row | PS2 |
 |---|---|
-| QUICK START | starts at once with the saved map and game type |
+| QUICK START | shown dim; only for replaying a cooperative game (not implemented), and split screen games are not kept after they end |
 | COOPERATIVE PLAY | shown dim; the port has no campaign |
 | SPLIT SCREEN | controllers, map, game type, lobby |
-| SYSTEM LINK PLAY | shown dim; no network |
+| ONLINE (was SYSTEM LINK PLAY) | shown dim; not implemented yet |
 | EDIT GAMETYPES | game type list, then the rules pages and SAVE GAME TYPE, no map or players needed |
 
-Circle steps back one page. The cursor skips the two dim rows. Cross now selects in the lobby; before, only Start did.
+Circle steps back one page. The cursor skips the three dim rows. Cross now selects in the lobby; before, only Start did.
 
 ## Art
 
