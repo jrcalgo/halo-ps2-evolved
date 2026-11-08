@@ -72,8 +72,15 @@ survival profile, so this was not needed.
 * `build/retail-maps` is a symlink into a frozen tree, so `hcu_multiplayer_profiles.py` records the resolved frozen path
   in each package manifest, and the guest then asks the disc for that path. The rebuilt manifests were rewritten to the
   plain `build/retail-maps/decompressed/<map>.map` path that the earlier packages carried.
-* The base ("selected") packages were gone, so they were regenerated from the 26 selection files with
-  `--c3-object-profile-v3` and no `--render-media` (`hcu_render_media.py` needs a render-free package).
+* The base ("selected") packages were gone, so they were regenerated from the 26 selection files with no
+  `--render-media`; `hcu_render_media.py` runs afterwards and needs a render-free package.
+* **Do not pass `--c3-object-profile-v3` (or `--c3-object-profile`).** They are opt-in lower-detail packings (64 px
+  object textures, clustered LODs; vehicles limited to 3% of a cluster). The shipped packages are built without them.
+  The first v6 build used the v3 profile by mistake: every map package came out about 5.8 MB smaller and vehicles,
+  weapons and effect textures were low definition. The manifest tells them apart: a package built with a profile has
+  an `object_profile` block, the shipped ones have none (Blood Gulch is 24.4 MB without it, 18.3 MB with it).
+* After the packages are rebuilt, sed the symlink-resolved map path out of each manifest, then relink all 13 guests
+  (`tools/hcu_build_mp_guests.py link`): the guests embed the per-map object table that comes from the package.
 
 ## Verification (headless PCSX2, Blood Gulch, 1 player)
 
@@ -81,7 +88,7 @@ The prompt was exercised with a temporary test hook (since removed) that spawned
 
 * A unit holding one weapon picks a second up automatically, so no prompt appears. The swap prompt needs a third weapon while the unit holds two (the hook gave a rocket launcher, then a sniper rifle).
 * The prompt state is set by CE (`action_result` 6). `hud_hires_button_draw` is called every frame, the request reaches the parent, and the glyph is drawn next to the weapon icon.
-* The default action binding is the Xbox A button, so the prompt shows the **Cross** glyph. With the glyph hook disabled the stock green "A" shows in the same place, so the glyph replaces the right button.
+* The default action binding is the Xbox X button, so the prompt shows the **Square** glyph (a pink square on the dark disc). An earlier version of this note said Cross: that was a bug, not the binding. `remap_sticks_for_local_player` (ui_widget.c, outside the PS2 closure) was a generated stub returning 0, so the prompt's button resolved to icon 0 (A) whatever the control was bound to, and the stock green "A" showed too. It is now implemented in `port/ps2/src/ps2_interface.c`.
 * The weapon icon beside the prompt is the native-resolution `hud_msg_icons` art.
 * A spawned weapon is only found by CE's nearby-item scan once it has a map cluster. A weapon placed exactly at ground height has `cluster=-1`, is never examined, and shows no prompt. Spawn it a little above the ground so it falls.
 * Dropped test weapons despawn after about 30 s, so a screenshot taken later shows no prompt.
