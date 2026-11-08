@@ -38,6 +38,12 @@ SPACE_BITMAP = r"sky\sky_x10\bitmaps\space"
 STARS_BITMAP = r"sky\space\bitmaps\stars"
 # Keep this order in sync with MENU_GLYPH_* in src/stream/hcu_main_menu.c.
 BUTTON_ICON_DIR = Path("/home/ai/Documents/Halo/ps2buttons")
+# GS texture sizes of the menu ring. Keep in sync with MENU_RING_* and MENU_PLANET_* in src/stream/hcu_main_menu.c.
+# Retail: inner ring 2048x128, outer ring 1024x512, shadow 1024x32, planet 512x512.
+RING_INNER_SIZE = (1024, 64)
+RING_OUTER_SIZE = (512, 256)
+RING_SHADOW_SIZE = (1024, 32)
+PLANET_SIZE = 512
 GLYPH_CELL = 16
 GLYPH_ATLAS = (256, 16)
 GLYPH_SOURCES = (
@@ -63,9 +69,27 @@ GLYPH_CAPTION_KEEP = {
 }
 
 
-def rgb5a1(image: Image.Image) -> bytes:
+def rgb5a1(image: Image.Image, dither: bool = False) -> bytes:
+    """Pack to PSMCT16 (5:5:5:1). `dither` applies an 8x8 ordered dither before the 8->5 bit reduction, which hides
+    the banding that smooth gradients (the planet, the ring's hull) show in five bits per channel."""
+    rgba = image.convert("RGBA")
+    if dither:
+        import numpy as np
+        width, height = rgba.size
+        pixels = np.asarray(rgba, dtype=np.int32)
+        bayer = np.array([[0, 32, 8, 40, 2, 34, 10, 42], [48, 16, 56, 24, 50, 18, 58, 26],
+                          [12, 44, 4, 36, 14, 46, 6, 38], [60, 28, 52, 20, 62, 30, 54, 22],
+                          [3, 35, 11, 43, 1, 33, 9, 41], [51, 19, 59, 27, 49, 17, 57, 25],
+                          [15, 47, 7, 39, 13, 45, 5, 37], [63, 31, 55, 23, 61, 29, 53, 21]], dtype=np.int32)
+        threshold = np.tile(bayer, (height // 8 + 1, width // 8 + 1))[:height, :width]
+        # one 5-bit step is 8 levels: add a 0..7 offset, then truncate
+        offset = (threshold * 8 // 64)[:, :, None]
+        colour = np.minimum(pixels[:, :, :3] + offset, 255)
+        words = (colour[:, :, 0] >> 3) | ((colour[:, :, 1] >> 3) << 5) | ((colour[:, :, 2] >> 3) << 10)
+        words |= (pixels[:, :, 3] >= 24).astype(np.int32) << 15
+        return words.astype("<u2").tobytes()
     result = bytearray()
-    for red, green, blue, alpha in image.convert("RGBA").getdata():
+    for red, green, blue, alpha in rgba.getdata():
         word = (red >> 3) | ((green >> 3) << 5) | ((blue >> 3) << 10)
         word |= (1 if alpha >= 24 else 0) << 15
         result += struct.pack("<H", word)
@@ -102,7 +126,7 @@ def write_ring_texture(image: Image.Image, destination: Path, name: str,
     """Preserve the retail material's aspect ratio in its GS texture."""
     texture = image.convert("RGBA").resize(size, Image.Resampling.LANCZOS)
     texture.save(destination / f"{name}.png")
-    (destination / f"{name}.rgb5a1").write_bytes(rgb5a1(texture))
+    (destination / f"{name}.rgb5a1").write_bytes(rgb5a1(texture, dither=True))
 
 
 def write_space_texture(image: Image.Image, destination: Path, name: str,
@@ -207,16 +231,17 @@ def write_title_art(ui_map: Path, destination: Path) -> None:
     (destination / "halo_ce_buttons.rgb5a1").write_bytes(rgb5a1(buttons))
 
     source = decode_group(ui_map, PLANET_BITMAP)[0].convert("RGBA")
-    planet = source.resize((256, 256), Image.Resampling.LANCZOS)
+    planet = source.resize((PLANET_SIZE, PLANET_SIZE), Image.Resampling.LANCZOS)
     pixels = planet.load()
-    for y in range(256):
-        for x in range(256):
-            dx, dy = x - 128, y - 128
+    half = PLANET_SIZE // 2
+    for y in range(PLANET_SIZE):
+        for x in range(PLANET_SIZE):
+            dx, dy = x - half, y - half
             radius = (dx * dx + dy * dy) ** 0.5
             red, green, blue, alpha = pixels[x, y]
-            pixels[x, y] = red, green, blue, alpha if radius < 124 else 0
+            pixels[x, y] = red, green, blue, alpha if radius < half * 124 / 128 else 0
     planet.save(destination / "halo_ce_planet.png")
-    (destination / "halo_ce_planet.rgb5a1").write_bytes(rgb5a1(planet))
+    (destination / "halo_ce_planet.rgb5a1").write_bytes(rgb5a1(planet, dither=True))
 
 
 def write_menu_camera_path(ui_map: Path, destination: Path) -> bytes:
@@ -298,9 +323,9 @@ def write_menu_ring_mesh(ui_map: Path, destination: Path) -> bytes:
     width, height, rgba = bitmaps.decode_level(images[0],
         bitmaps.read_pixels(images[0], bitmaps.file_reader(ui_map)))
     shadow = Image.frombytes("RGBA", (width, height), rgba).resize(
-        (128, 8), Image.Resampling.LANCZOS)
+        RING_SHADOW_SIZE, Image.Resampling.LANCZOS)
     shadow.save(destination / "halo_ce_ring_shadow.png")
-    shadow_encoded = rgb5a1(shadow)
+    shadow_encoded = rgb5a1(shadow, dither=True)
     (destination / "halo_ce_ring_shadow.rgb5a1").write_bytes(shadow_encoded)
     payload = bytearray(b"HMR1" + struct.pack("<I", len(parts)))
     tag_paths = {e.tag_id: e.path for e in data.index.entries}
@@ -435,9 +460,9 @@ def main() -> int:
         write_atlas(decode_group(decompressed, GAME_TYPE_BITMAP), 6, 2, 4,
                     args.out, "halo_ce_gametype_atlas")
         write_ring_texture(decode_group(decompressed, RING_INNER_BITMAP)[0],
-                           args.out, "halo_ce_ring_inner", (128, 8))
+                           args.out, "halo_ce_ring_inner", RING_INNER_SIZE)
         write_ring_texture(decode_group(decompressed, RING_OUTER_BITMAP)[0],
-                           args.out, "halo_ce_ring_outer", (128, 64))
+                           args.out, "halo_ce_ring_outer", RING_OUTER_SIZE)
         write_space_texture(decode_group(decompressed, SPACE_BITMAP)[0],
                             args.out, "halo_ce_space")
         write_space_texture(decode_group(decompressed, STARS_BITMAP)[0],

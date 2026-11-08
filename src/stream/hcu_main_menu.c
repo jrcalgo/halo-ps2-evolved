@@ -876,12 +876,17 @@ int hcu_main_menu_describe_prompt(const char *prompt, char *out, size_t out_size
 #include "render/upload.h"
 
 #define MENU_PACKET_QW 24576u
-#define MENU_RING_W 128u
-#define MENU_RING_INNER_H 8u
-#define MENU_RING_OUTER_H 64u
-#define MENU_RING_INNER_BYTES (MENU_RING_W * MENU_RING_INNER_H * 2u)
-#define MENU_RING_OUTER_BYTES (MENU_RING_W * MENU_RING_OUTER_H * 2u)
-#define MENU_RING_SHADOW_BYTES (MENU_RING_W * MENU_RING_INNER_H * 2u)
+/* Ring texture sizes (tools/build_hcu_menu_assets.py RING_*_SIZE). Retail: inner ring 2048x128, outer ring 1024x512,
+ * shadow 1024x32, planet 512x512; the first PS2 menu used 128x8, 128x64, 128x8 and 256x256. */
+#define MENU_RING_INNER_W 1024u
+#define MENU_RING_INNER_H 64u
+#define MENU_RING_OUTER_W 512u
+#define MENU_RING_OUTER_H 256u
+#define MENU_RING_SHADOW_W 1024u
+#define MENU_RING_SHADOW_H 32u
+#define MENU_RING_INNER_BYTES (MENU_RING_INNER_W * MENU_RING_INNER_H * 2u)
+#define MENU_RING_OUTER_BYTES (MENU_RING_OUTER_W * MENU_RING_OUTER_H * 2u)
+#define MENU_RING_SHADOW_BYTES (MENU_RING_SHADOW_W * MENU_RING_SHADOW_H * 2u)
 #define MENU_MAP_ATLAS_W 512u
 #define MENU_MAP_ATLAS_H 256u
 #define MENU_MAP_ATLAS_BYTES (MENU_MAP_ATLAS_W * MENU_MAP_ATLAS_H * 2u)
@@ -890,7 +895,8 @@ int hcu_main_menu_describe_prompt(const char *prompt, char *out, size_t out_size
 #define MENU_TYPE_ATLAS_BYTES (MENU_TYPE_ATLAS_W * MENU_TYPE_ATLAS_H * 2u)
 #define MENU_LOGO_BYTES (512u * 128u * 2u)
 #define MENU_BUTTONS_BYTES (256u * 256u * 2u)
-#define MENU_PLANET_BYTES (256u * 256u * 2u)
+#define MENU_PLANET_SIZE 512u
+#define MENU_PLANET_BYTES (MENU_PLANET_SIZE * MENU_PLANET_SIZE * 2u)
 #define MENU_CAMERA_COUNT 11u
 #define MENU_CAMERA_RECORD_BYTES 40u
 #define MENU_CAMERA_HEADER_BYTES 56u
@@ -956,23 +962,23 @@ static int menu_ring_mesh_import(const uint8_t *blob, size_t bytes, int copy)
 #define MENU_FONT_BYTES (TEXT_ATLAS_W * TEXT_ATLAS_H)
 #define MENU_CLUT_BYTES (256u * sizeof(uint32_t))
 #define MENU_PAGE_WORDS 2048u
-#define MENU_RING_INNER_PAGE 0u
-#define MENU_MAP_PAGE 4u
-#define MENU_TYPE_PAGE 36u
-#define MENU_FONT_PAGE 52u
-#define MENU_CLUT_PAGE 53u
-#define MENU_RING_OUTER_PAGE 54u
-#define MENU_LOGO_PAGE 58u
-#define MENU_BUTTONS_PAGE 74u
-#define MENU_PLANET_PAGE 90u
-/* Planet fills pages 90..105. This atlas is 256x16 PSMCT16: four pages wide
- * and one page tall, so it occupies 106..109. video_init leaves 288 pages
- * after the frame and Z buffers; 110 pages fits in that window. */
-#define MENU_GLYPH_PAGE 106u
+#define MENU_RING_INNER_PAGE 0u    /* 1024x64:  16 pages */
+#define MENU_MAP_PAGE 16u           /* 512x256:  32 pages */
+#define MENU_TYPE_PAGE 48u          /* 256x256:  16 pages */
+#define MENU_FONT_PAGE 64u
+#define MENU_CLUT_PAGE 65u
+#define MENU_RING_OUTER_PAGE 66u    /* 512x256:  32 pages */
+#define MENU_LOGO_PAGE 98u          /* 512x128:  16 pages */
+#define MENU_BUTTONS_PAGE 114u      /* 256x256:  16 pages */
+#define MENU_PLANET_PAGE 130u       /* 512x512:  64 pages, 130..193 */
+/* The glyph atlas is 256x16 PSMCT16: four pages wide and one page tall, so it occupies 194..197. video_init leaves
+ * 288 pages after the frame and Z buffers; the menu's textures end at page 214. */
+#define MENU_GLYPH_PAGE 194u
 #define MENU_GLYPH_PAGES 4u
-#define MENU_SPACE_PAGE 110u
-#define MENU_STARS_PAGE 114u
-#define MENU_RING_SHADOW_PAGE 118u
+#define MENU_SPACE_PAGE 198u
+#define MENU_STARS_PAGE 202u
+#define MENU_RING_SHADOW_PAGE 206u  /* 1024x32:   8 pages */
+#define MENU_TEXTURE_PAGES 214u
 
 static float s_menu_camera_points[MENU_CAMERA_COUNT][10];
 static float s_menu_ring_position[3];
@@ -1117,7 +1123,8 @@ static void menu_camera_update(unsigned frame)
 #define MENU_GLYPH_BYTES (MENU_GLYPH_W * MENU_GLYPH_H * 2u)
 #define MENU_SPACE_BYTES (128u * 128u * 2u)
 _Static_assert(MENU_GLYPH_W == 256u && MENU_GLYPH_H == 16u, "glyph atlas page fit");
-_Static_assert(MENU_GLYPH_PAGE == MENU_PLANET_PAGE + 16u, "glyph page follows the planet");
+_Static_assert(MENU_GLYPH_PAGE == MENU_PLANET_PAGE + 64u, "glyph page follows the planet");
+_Static_assert(MENU_TEXTURE_PAGES <= 288u, "menu textures fit the video memory left after the frame and Z buffers");
 _Static_assert(MENU_SPACE_PAGE == MENU_GLYPH_PAGE + MENU_GLYPH_PAGES, "space page follows glyph atlas");
 #define MENU_PAD_UP 0x0010u
 #define MENU_PAD_RIGHT 0x0020u
@@ -1591,21 +1598,25 @@ static unsigned menu_ring_clip(const menu_ring_vertex input[3],
 }
 
 static void menu_ring_emit_vertex(packet2_t *packet, const video_t *video,
-	menu_ring_vertex v, unsigned material)
+	menu_ring_vertex v, unsigned material, float base_u, float base_v)
 {
 	float fov = s_menu_camera.fov > 0.1f ? s_menu_camera.fov : 1.22173f;
 	float focal_x = (float)VIDEO_WIDTH * 0.5f / tanf(fov * 0.5f);
 	float focal_y = (float)VIDEO_HEIGHT * 0.5f /
 		(tanf(fov * 0.5f) * (float)VIDEO_HEIGHT / (float)VIDEO_WIDTH);
 	if (s_menu_widescreen) focal_x *= (3.0f / 4.0f);
-	unsigned tw = MENU_RING_W;
-	unsigned th = material == 1u ? MENU_RING_OUTER_H : MENU_RING_INNER_H;
-	float u = fmodf(v.u * (float)tw, (float)tw), vv = fmodf(v.v * (float)th, (float)th);
+	unsigned tw = material == 1u ? MENU_RING_OUTER_W : (material == 2u ? MENU_RING_SHADOW_W : MENU_RING_INNER_W);
+	unsigned th = material == 1u ? MENU_RING_OUTER_H : (material == 2u ? MENU_RING_SHADOW_H : MENU_RING_INNER_H);
+	/* The texture is REPEAT-wrapped by the GS, so only the polygon's shared integer offset is removed. Wrapping each
+	 * vertex separately (the old fmodf) sent a triangle that crosses a tile edge across the whole texture. */
+	float u = (v.u - base_u) * (float)tw, vv = (v.v - base_v) * (float)th;
 	int x = (int)((float)VIDEO_WIDTH * 0.5f + v.x * focal_x / v.z);
 	int y = (int)((float)VIDEO_HEIGHT * 0.5f - v.y * focal_y / v.z);
 	uint32_t z = (uint32_t)(0x00ffffffu * (0.02f / v.z));
-	if (u < 0.0f) u += (float)tw;
-	if (vv < 0.0f) vv += (float)th;
+	if (u < 0.0f) u = 0.0f;
+	if (vv < 0.0f) vv = 0.0f;
+	if (u > 4095.0f) u = 4095.0f;
+	if (vv > 4095.0f) vv = 4095.0f;
 	if (x < -2048) x = -2048; if (x > 2047) x = 2047;
 	if (y < -2048) y = -2048; if (y > 2047) y = 2047;
 	menu_vertex_3d(packet, x, y, (int)(u * 16.0f), (int)(vv * 16.0f), z,
@@ -1648,10 +1659,12 @@ static void menu_ring_draw_part(packet2_t *packet, const video_t *video,
 		if (n >= 3u) vertex_count += (n - 2u) * 3u;
 	}
 	if (!vertex_count) return;
-	menu_texture_state(packet, video,
-		part->material == 1u ? MENU_RING_OUTER_PAGE :
-			(part->material == 2u ? MENU_RING_SHADOW_PAGE : MENU_RING_INNER_PAGE),
-		GS_PSMCT16S, 7, part->material == 1u ? 6u : 3u, MENU_RING_W / 64u, 0, 0);
+	if (part->material == 1u)
+		menu_texture_state(packet, video, MENU_RING_OUTER_PAGE, GS_PSMCT16S, 9, 8, MENU_RING_OUTER_W / 64u, 0, 0);
+	else if (part->material == 2u)
+		menu_texture_state(packet, video, MENU_RING_SHADOW_PAGE, GS_PSMCT16S, 10, 5, MENU_RING_SHADOW_W / 64u, 0, 0);
+	else
+		menu_texture_state(packet, video, MENU_RING_INNER_PAGE, GS_PSMCT16S, 10, 6, MENU_RING_INNER_W / 64u, 0, 0);
 	menu_depth_state(packet, video, part->material == 2u, 2u);
 	packet2_add_u64(packet, GIF_TAG(vertex_count, 0, 1,
 		GS_PRIM(GSX_PRIM_TRIANGLE, 1, 1, 0, part->material == 2u, 0, 1, 0, 0),
@@ -1659,10 +1672,19 @@ static void menu_ring_draw_part(packet2_t *packet, const video_t *video,
 	packet2_add_u64(packet, 0x531);
 	for (tri = 0; tri < part->triangle_count; ++tri) {
 		unsigned n = menu_ring_triangle_polygon(part, tri, polygon);
+		float base_u = 0.0f, base_v = 0.0f;
+		if (n >= 3u) {
+			float min_u = polygon[0].u, min_v = polygon[0].v;
+			for (unsigned j = 1; j < n; ++j) {
+				if (polygon[j].u < min_u) min_u = polygon[j].u;
+				if (polygon[j].v < min_v) min_v = polygon[j].v;
+			}
+			base_u = floorf(min_u); base_v = floorf(min_v);
+		}
 		for (unsigned j = 1; j + 1 < n; ++j) {
-			menu_ring_emit_vertex(packet, video, polygon[0], part->material);
-			menu_ring_emit_vertex(packet, video, polygon[j], part->material);
-			menu_ring_emit_vertex(packet, video, polygon[j + 1u], part->material);
+			menu_ring_emit_vertex(packet, video, polygon[0], part->material, base_u, base_v);
+			menu_ring_emit_vertex(packet, video, polygon[j], part->material, base_u, base_v);
+			menu_ring_emit_vertex(packet, video, polygon[j + 1u], part->material, base_u, base_v);
 		}
 	}
 }
@@ -1686,8 +1708,8 @@ static void menu_planet(packet2_t *packet, const video_t *video, unsigned frame)
 		dx = s_menu_camera.position[0]; dy = s_menu_camera.position[2];
 	} else { dx = -0.35f * sinf(phase * 0.11f); dy = 0.36f * cosf(phase * 0.088f); }
 	x = -35 + (int)(dx * 35.0f); y = 194 + (int)(dy * 22.0f);
-	menu_image_draw(packet, video, MENU_PLANET_PAGE, 8, 8, 4,
-		x, y, x + 238, y + 238, 0, 0, 255, 255, 1);
+	menu_image_draw(packet, video, MENU_PLANET_PAGE, 9, 9, MENU_PLANET_SIZE / 64u,
+		x, y, x + 238, y + 238, 0, 0, MENU_PLANET_SIZE - 1u, MENU_PLANET_SIZE - 1u, 1);
 }
 
 static unsigned menu_text_width(const char *text, unsigned scale)
@@ -2341,7 +2363,7 @@ static int menu_upload_assets(video_t *video, void *dma_storage, size_t dma_byte
 	chain_t chain;
 	if (dma_bytes < 144u * 16u) return -1;
 	if ((uint64_t)video->tex_base +
-		(uint64_t)(MENU_RING_SHADOW_PAGE + 1u) * MENU_PAGE_WORDS > VIDEO_VRAM_WORDS)
+		(uint64_t)MENU_TEXTURE_PAGES * MENU_PAGE_WORDS > VIDEO_VRAM_WORDS)
 		return -1;
 	text_build_atlas(font); text_build_clut(clut);
 	SyncDCache((void *)textures[0], (uint8_t *)textures[0] + MENU_RING_INNER_BYTES);
@@ -2359,10 +2381,10 @@ static int menu_upload_assets(video_t *video, void *dma_storage, size_t dma_byte
 	chain_init(&chain, dma_storage, 144u);
 	if (gs_upload(&chain, textures[0], MENU_RING_INNER_BYTES,
 		(video->tex_base + MENU_RING_INNER_PAGE * MENU_PAGE_WORDS) / 64u,
-		MENU_RING_W / 64u, GS_PSMCT16S, MENU_RING_W, MENU_RING_INNER_H) ||
+		MENU_RING_INNER_W / 64u, GS_PSMCT16S, MENU_RING_INNER_W, MENU_RING_INNER_H) ||
 		gs_upload(&chain, textures[1], MENU_RING_OUTER_BYTES,
 		(video->tex_base + MENU_RING_OUTER_PAGE * MENU_PAGE_WORDS) / 64u,
-		MENU_RING_W / 64u, GS_PSMCT16S, MENU_RING_W, MENU_RING_OUTER_H) ||
+		MENU_RING_OUTER_W / 64u, GS_PSMCT16S, MENU_RING_OUTER_W, MENU_RING_OUTER_H) ||
 		gs_upload(&chain, textures[2], MENU_MAP_ATLAS_BYTES,
 		(video->tex_base + MENU_MAP_PAGE * MENU_PAGE_WORDS) / 64u,
 		MENU_MAP_ATLAS_W / 64u, GS_PSMCT16S, MENU_MAP_ATLAS_W, MENU_MAP_ATLAS_H) ||
@@ -2377,7 +2399,7 @@ static int menu_upload_assets(video_t *video, void *dma_storage, size_t dma_byte
 			256u / 64u, GS_PSMCT16S, 256u, 256u) ||
 		gs_upload(&chain, textures[6], MENU_PLANET_BYTES,
 			(video->tex_base + MENU_PLANET_PAGE * MENU_PAGE_WORDS) / 64u,
-			256u / 64u, GS_PSMCT16S, 256u, 256u) ||
+			MENU_PLANET_SIZE / 64u, GS_PSMCT16S, MENU_PLANET_SIZE, MENU_PLANET_SIZE) ||
 		gs_upload(&chain, textures[7], MENU_GLYPH_BYTES,
 			(video->tex_base + MENU_GLYPH_PAGE * MENU_PAGE_WORDS) / 64u,
 			MENU_GLYPH_W / 64u, GS_PSMCT16S, MENU_GLYPH_W, MENU_GLYPH_H) ||
@@ -2389,7 +2411,7 @@ static int menu_upload_assets(video_t *video, void *dma_storage, size_t dma_byte
 			2u, GS_PSMCT16S, 128u, 128u) ||
 		gs_upload(&chain, textures[10], MENU_RING_SHADOW_BYTES,
 			(video->tex_base + MENU_RING_SHADOW_PAGE * MENU_PAGE_WORDS) / 64u,
-			MENU_RING_W / 64u, GS_PSMCT16S, MENU_RING_W, MENU_RING_INNER_H) ||
+			MENU_RING_SHADOW_W / 64u, GS_PSMCT16S, MENU_RING_SHADOW_W, MENU_RING_SHADOW_H) ||
 		gs_upload(&chain, font, MENU_FONT_BYTES,
 		(video->tex_base + MENU_FONT_PAGE * MENU_PAGE_WORDS) / 64u,
 		TEXT_ATLAS_W / 64u, GS_PSMT8, TEXT_ATLAS_W, TEXT_ATLAS_H) ||
@@ -2522,7 +2544,7 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 	packet.max_qwords_count = MENU_PACKET_QW; packet.type = P2_TYPE_NORMAL; packet.mode = P2_MODE_NORMAL;
 	packet.base = packet.next = (qword_t *)dma_storage;
 	printf("HALO_PS2_LOCAL main-menu-ready items=%u texture=%ux%u maps=%u profiles=%u\n",
-		(unsigned)HCU_MAIN_MENU_ITEM_COUNT, MENU_RING_W, MENU_RING_OUTER_H,
+		(unsigned)HCU_MAIN_MENU_ITEM_COUNT, MENU_RING_OUTER_W, MENU_RING_OUTER_H,
 		(unsigned)HCU_MAIN_MENU_MAP_COUNT, (unsigned)HCU_MAIN_MENU_PROFILE_COUNT);
 #if defined(__mips__)
 	menu_sound("sound\\music\\title1\\in", HCU_SOUND_EVENT_IMPULSE, 0);
