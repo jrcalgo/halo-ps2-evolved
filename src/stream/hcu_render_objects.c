@@ -2425,6 +2425,7 @@ static int slot_binding(void *user, uint32_t shader_id, mat_binding_t *out)
 	out->pad = 0;
 	if (b.flags & TEX_B_ALPHA_TEST) out->flags |= MAT_ALPHA_TEST;
 	if (b.blend >= TEX_BLEND_ALPHA) out->flags |= MAT_BLEND;
+	if (b.blend == TEX_BLEND_ADD) out->flags |= MAT_ADD;
 	if (b.flags & TEX_B_TWO_SIDED) out->flags |= MAT_TWO_SIDED;
 	out->uv_scale[0] = b.uv_scale[0];
 	out->uv_scale[1] = b.uv_scale[1];
@@ -3612,7 +3613,8 @@ static void fx_pass(render_ctx_t *rc, int first_person_pass)
 		if (((s_fx[i].flags & HALO_PS2_FRAME_FX_FIRST_PERSON) != 0u) != (first_person_pass != 0))
 			continue;
 		if (s_fx[i].kind == HALO_PS2_FRAME_FX_EFFECT ||
-			s_fx[i].kind == HALO_PS2_FRAME_FX_PARTICLE_SYSTEM) continue;
+			s_fx[i].kind == HALO_PS2_FRAME_FX_PARTICLE_SYSTEM ||
+			s_fx[i].kind == HALO_PS2_FRAME_FX_LIGHT) continue; /* a light is drawn by flashlight_pass */
 		if (s_fx[i].kind == HALO_PS2_FRAME_FX_DECAL &&
 			(s_fx[i].flags & HALO_PS2_FRAME_FX_NATIVE_GEOMETRY))
 			qst = fx_native_decal_quad(&s_fx[i], &s_fxq[i]);
@@ -3847,6 +3849,126 @@ if (dbg_dc_ok) {
 	(void)fx_blend_state(c, 0u);
 }
 
+/* port: the flashlight (HALO_PS2_FRAME_FX_LIGHT, published by ps2_render.c): the pool of light the beam makes on
+ * the surface it hits, an additive Gouraud disc lying in that surface's plane. Colour is brightest at the centre
+ * and fades to black at the rim (two rings, so the fall-off is not a cone), added to the picture with Cs + Cd,
+ * depth-tested and not depth-written, so it lights world and objects alike and hides nothing. */
+#define FLASH_SEGMENTS 14u
+#define FLASH_RINGS 2u
+static const float s_flash_ring_radius[FLASH_RINGS] = { 0.42f, 1.0f };
+static const float s_flash_ring_level[FLASH_RINGS] = { 0.55f, 0.0f }; /* of the centre */
+
+static uint32_t flashlight_disc(const render_ctx_t *rc, const hcu_render_effect_draw *e, const clip_gs *g,
+	uint32_t *out)
+{
+	static const float tint[3] = { 0.92f, 0.96f, 1.0f };
+	float n[3], a[3], b[3], ref[3] = { 0.0f, 0.0f, 1.0f }, l, peak = 0.62f * e->age_sec * 255.0f;
+	float pts[1 + FLASH_RINGS * FLASH_SEGMENTS][3], lv[1 + FLASH_RINGS * FLASH_SEGMENTS];
+	uint32_t total = 0;
+	unsigned r, k, j, t, np = 1;
+	int cnt;
+	for (k = 0; k < 3; k++) n[k] = e->forward[k];
+	l = fx_len(n);
+	if (!(l > 1e-6f) || !(e->scale > 0.0f) || !(e->age_sec > 0.0f)) return 0;
+	for (k = 0; k < 3; k++) n[k] /= l;
+	if (fabsf(n[2]) > 0.99f) { ref[0] = 0.0f; ref[1] = 1.0f; ref[2] = 0.0f; }
+	fx_cross(ref, n, a);
+	l = fx_len(a);
+	if (!(l > 1e-6f)) return 0;
+	for (k = 0; k < 3; k++) a[k] /= l;
+	fx_cross(n, a, b);
+	for (k = 0; k < 3; k++) pts[0][k] = e->position[k];
+	lv[0] = 1.0f;
+	for (r = 0; r < FLASH_RINGS; r++)
+		for (j = 0; j < FLASH_SEGMENTS; j++) {
+			float ang = 6.2831853f * (float)j / (float)FLASH_SEGMENTS;
+			float ca = cosf(ang) * s_flash_ring_radius[r] * e->scale, sa = sinf(ang) * s_flash_ring_radius[r] * e->scale;
+			for (k = 0; k < 3; k++) pts[np][k] = e->position[k] + a[k] * ca + b[k] * sa;
+			lv[np++] = s_flash_ring_level[r];
+		}
+	for (t = 0; t < FLASH_SEGMENTS * (1u + 2u); t++) {
+		/* t < SEG: centre fan; then the band between ring 0 and ring 1, two triangles per segment */
+		unsigned i0, i1, i2, jn;
+		cvert in[3], poly[CLIP_MAX_VERTS];
+		if (t < FLASH_SEGMENTS) {
+			jn = (t + 1u) % FLASH_SEGMENTS;
+			i0 = 0; i1 = 1u + t; i2 = 1u + jn;
+		} else {
+			unsigned s2 = (t - FLASH_SEGMENTS) >> 1;
+			jn = (s2 + 1u) % FLASH_SEGMENTS;
+			if (((t - FLASH_SEGMENTS) & 1u) == 0u) { i0 = 1u + s2; i1 = 1u + FLASH_SEGMENTS + s2; i2 = 1u + FLASH_SEGMENTS + jn; }
+			else { i0 = 1u + s2; i1 = 1u + FLASH_SEGMENTS + jn; i2 = 1u + jn; }
+		}
+		{
+			const unsigned idx[3] = { i0, i1, i2 };
+			for (k = 0; k < 3; k++) {
+				float c = peak * lv[idx[k]];
+				clip_project(rc->clip, pts[idx[k]], &in[k]);
+				for (j = 0; j < CLIP_ATTRS; j++) in[k].a[j] = 0.0f;
+				in[k].a[4] = c * tint[0]; in[k].a[5] = c * tint[1]; in[k].a[6] = c * tint[2]; in[k].a[7] = 128.0f;
+			}
+		}
+		cnt = clip_polygon(in, rc->cam->near_z, poly);
+		if (cnt < 3) continue;
+		for (j = 1; (int)j + 1 < cnt; j++) {
+			if (out) {
+				clip_pack_vertex(&poly[0], 0, g, out); out += 12;
+				clip_pack_vertex(&poly[j], 0, g, out); out += 12;
+				clip_pack_vertex(&poly[j + 1], 0, g, out); out += 12;
+			}
+			total += 3;
+		}
+	}
+	return total;
+}
+
+static void flashlight_pass(render_ctx_t *rc)
+{
+	uint32_t i, nv, counts[4], light_count = 0, total = 0;
+	uint16_t which[4];
+	clip_gs g;
+	chain_t *c = rc->chain;
+	u32 *w;
+	u64 *q;
+	if (!s_fx_count || !s_snapshot || s_cur_view >= s_snapshot->view_count) return;
+	g.near_z = rc->cam->near_z; g.zmax = 16777215.0f;
+	g.sx = (float)VIDEO_WIDTH * 0.5f; g.sy = (float)VIDEO_HEIGHT * 0.5f; g.ox = 2048.0f; g.oy = 2048.0f;
+	g.fog_k = 0.0f; g.fog_b = 4080.0f;
+	for (i = 0; i < s_fx_count && light_count < 4u; i++) {
+		if (s_fx[i].kind != HALO_PS2_FRAME_FX_LIGHT) continue;
+		if (((s_fx[i].flags & HALO_PS2_FRAME_FX_FIRST_PERSON) != 0u)) continue;
+		nv = flashlight_disc(rc, &s_fx[i], &g, NULL);
+		if (!nv) continue;
+		which[light_count] = (uint16_t)i; counts[light_count] = nv; total += nv; light_count++;
+	}
+	if (!total) return;
+	if (!chain_has_space(c, FX_STATE_QW + FX_BLEND_STATE_QW + light_count * FX_PACKET_HDR_QW + 3u * total + 2u)) {
+		s_view_counters.fx_skipped_space += light_count;
+		return;
+	}
+	w = chain_cnt(c, FX_STATE_QW, rb_take_pending());
+	if (!w) return;
+	w[0] = VIF_CODE(VIF_NOP, 0, 0); w[1] = VIF_CODE(VIF_NOP, 0, 0);
+	w[2] = VIF_CODE(VIF_FLUSHA, 0, 0); w[3] = VIF_CODE(VIF_DIRECT, 0, 1 + 3);
+	q = (u64 *)(w + 4);
+	q[0] = GIF_TAG(3, 1, 0, 0, GIFX_FLG_PACKED, 1); q[1] = GIF_REGS_AD;
+	q[2] = GS_ALPHA(0, 2, 2, 1, 128);              q[3] = GS_A_ALPHA_1;      /* Cs + Cd */
+	q[4] = GS_TEST(0, 6, 0x40, 0, 0, 0, 1, 2);      q[5] = GS_A_TEST_1;
+	q[6] = GS_ZBUF(*rb_zbuf_page_ptr(), GS_PSMZ24, 1); q[7] = GS_A_ZBUF_1;     /* no depth write */
+	for (i = 0; i < light_count; i++) {
+		w = chain_cnt(c, FX_PACKET_HDR_QW + 3u * counts[i], 0);
+		if (!w) break;
+		w[0] = VIF_CODE(VIF_NOP, 0, 0); w[1] = VIF_CODE(VIF_NOP, 0, 0);
+		w[2] = VIF_CODE(VIF_FLUSHA, 0, 0); w[3] = VIF_CODE(VIF_DIRECT, 0, 1 + 3 * counts[i]);
+		q = (u64 *)(w + 4);
+		q[0] = GIF_TAG(counts[i], 1, 1, GS_PRIM(GSX_PRIM_TRIANGLE, 1, 0, 0, 1, 0, 0, 0, 0), GIFX_FLG_PACKED, 3);
+		q[1] = 0x412;
+		(void)flashlight_disc(rc, &s_fx[which[i]], &g, (uint32_t *)(q + 2));
+		s_view_counters.fx_drawn++;
+	}
+	(void)fx_blend_state(c, 0u);                        /* back to alpha blend for what follows */
+}
+
 /* One viewmodel texture per frame. The cursor walks every loaded viewmodel texture; a GS cache hit is cheap,
  * so a later eviction is warmed again the next time the cursor reaches it. */
 static void fp_tex_warm_one(void)
@@ -4022,6 +4144,7 @@ static void object_pass(void *user, render_ctx_t *rc)
 	 * select camera-local particles for the later viewmodel depth context. */
 	OBJ_STAGE(ps_c);
 	dbg_fx_start = timer_cycles();
+	flashlight_pass(rc);
 	fx_pass(rc, 0);
 	dbg_fx0 = timer_cycles() - dbg_fx_start;
 	OBJ_STAGE(ps_d);

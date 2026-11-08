@@ -56,6 +56,7 @@ static int src_binding(void *user, uint32_t shader_id, mat_binding_t *out)
 	out->pad = 0;
 	if (b.flags & TEX_B_ALPHA_TEST) out->flags |= MAT_ALPHA_TEST;
 	if (b.blend >= TEX_BLEND_ALPHA) out->flags |= MAT_BLEND;
+	if (b.blend == TEX_BLEND_ADD) out->flags |= MAT_ADD;
 	if (b.flags & TEX_B_TWO_SIDED) out->flags |= MAT_TWO_SIDED;
 	out->uv_scale[0] = b.uv_scale[0];
 	out->uv_scale[1] = b.uv_scale[1];
