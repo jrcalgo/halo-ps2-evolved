@@ -645,6 +645,199 @@ multiply_rollback:
 	return HCU_BITMAP_DISPATCH_E_CAPACITY;
 }
 
+/* A run of text (halo_ps2_text_glyph records). The characters are the font tag's 8-bit alpha
+ * bitmaps; the run is composed into one 8-bit indexed texture on the EE, uploaded to the HUD's
+ * scratch pages, and drawn as one quad. Each texel holds two 4-bit coverages: the text (low
+ * nibble) and its drop shadow (high nibble). The palette turns every pair into the text colour
+ * over a black shadow, so a string costs one texture, one palette and one quad. The output
+ * pool, slots and scratch pages are the ones the multiply overlay uses, released by the same
+ * fenced leases. */
+#define HCU_TEXT_MAX_W 512u
+#define HCU_TEXT_MAX_H 64u
+#define HCU_TEXT_MAX_TEXELS 16384u
+
+static uint32_t text_pow2_at_least(uint32_t n, uint32_t minimum)
+{
+	uint32_t p = minimum;
+	while (p < n) p <<= 1;
+	return p;
+}
+
+static hcu_bitmap_dispatch_status dispatch_text_run(hcu_bitmap_dispatch_context *ctx,
+	const halo_ps2_bitmap_request_queue *queue, const halo_ps2_bitmap_request *request,
+	hcu_bitmap_rect target, hcu_bitmap_lease *lease)
+{
+	hcu_bitmap_source_slot *slot;
+	tex_info output_image;
+	chain_t upload_before, geometry_before;
+	hcu_bitmap_quad_state_t state;
+	hcu_bitmap_vertex_t vertices[4], placed[4];
+	hcu_bitmap_blend_t blend;
+	uint8_t *output, *clut;
+	uint32_t first, count, i, g, row, col, pool_start, pool_end, candidate, output_bytes, index_bytes;
+	uint32_t scratch_words, scratch_pages, clut_words, tex_pages, page_first, tbp, tbw, cbp;
+	uint32_t slot_index, physical_slot, tex_w, tex_h, text_argb, fade, shadow_on;
+	int32_t min_x, min_y, max_x, max_y, run_w, run_h;
+	uint8_t used_pages[512];
+	float scale, ox, oy, qx0, qy0, qx1, qy1;
+	if (!ctx || !queue || !request || !lease || !request->text_run || !ctx->cache || !ctx->slots ||
+		ctx->slot_count < HCU_BITMAP_COMPOSE_OUTPUT_COUNT || !ctx->source_storage ||
+		ctx->source_storage_bytes < HCU_BITMAP_COMPOSE_RESERVED_BYTES ||
+		!ctx->upload_chain || !ctx->geometry_chain || !blend_for(request->framebuffer_blend_function, &blend))
+		return HCU_BITMAP_DISPATCH_E_UNSUPPORTED;
+	if (request->generation != ctx->expected_generation) return HCU_BITMAP_DISPATCH_E_IDENTITY;
+	first = request->text_glyph_first; count = request->text_glyph_count;
+	if (!count || first + count > queue->text_glyph_count || first + count > HALO_PS2_TEXT_GLYPH_CAPACITY)
+		return HCU_BITMAP_DISPATCH_E_UNSUPPORTED;
+	scale = request->text_scale; ox = request->text_origin_x; oy = request->text_origin_y;
+	if (!(scale > 0.0f && scale <= 8.0f) || !isfinite(ox) || !isfinite(oy)) return HCU_BITMAP_DISPATCH_E_UNSUPPORTED;
+	text_argb = request->vertices[0].color;
+	shadow_on = (request->vertices[1].color >> 24) != 0u;
+	fade = text_argb >> 24;
+	if (!fade) return HCU_BITMAP_DISPATCH_E_UNSUPPORTED;
+	min_x = min_y = 0x7FFFFFFF; max_x = max_y = -0x7FFFFFFF;
+	for (g = first; g < first + count; ++g) {
+		const halo_ps2_text_glyph *gl = &queue->text_glyphs[g];
+		if (!gl->pixels || gl->w <= 0 || gl->h <= 0) return HCU_BITMAP_DISPATCH_E_UNSUPPORTED;
+		if (gl->x < min_x) min_x = gl->x;
+		if (gl->y < min_y) min_y = gl->y;
+		if (gl->x + gl->w + 1 > max_x) max_x = gl->x + gl->w + 1;   /* the shadow sits one pixel right and down */
+		if (gl->y + gl->h + 1 > max_y) max_y = gl->y + gl->h + 1;
+	}
+	run_w = max_x - min_x; run_h = max_y - min_y;
+	if (run_w <= 0 || run_h <= 0 || run_w > (int32_t)HCU_TEXT_MAX_W || run_h > (int32_t)HCU_TEXT_MAX_H)
+		return HCU_BITMAP_DISPATCH_E_UNSUPPORTED;
+	tex_w = text_pow2_at_least((uint32_t)run_w, 16u);
+	tex_h = text_pow2_at_least((uint32_t)run_h, 8u);
+	if (tex_w > HCU_TEXT_MAX_W || tex_w * tex_h > HCU_TEXT_MAX_TEXELS) return HCU_BITMAP_DISPATCH_E_UNSUPPORTED;
+	for (physical_slot = 0; physical_slot < HCU_BITMAP_COMPOSE_OUTPUT_COUNT; ++physical_slot) {
+		slot_index = ctx->slot_count - HCU_BITMAP_COMPOSE_OUTPUT_COUNT + physical_slot;
+		if (!ctx->slots[slot_index].valid && !ctx->slots[slot_index].readers) break;
+	}
+	if (physical_slot == HCU_BITMAP_COMPOSE_OUTPUT_COUNT) return HCU_BITMAP_DISPATCH_E_BUSY;
+	slot = &ctx->slots[slot_index];
+	pool_start = ctx->source_storage_bytes - HCU_BITMAP_COMPOSE_RESERVED_BYTES;
+	pool_end = pool_start + HCU_BITMAP_COMPOSE_OUTPUT_POOL_BYTES;
+	index_bytes = tex_w * tex_h;
+	output_bytes = index_bytes + 1024u;
+	candidate = pool_start;
+	for (;;) {
+		int overlap = 0;
+		for (i = 0; i < HCU_BITMAP_COMPOSE_OUTPUT_COUNT; ++i) {
+			hcu_bitmap_source_slot *existing = &ctx->slots[ctx->slot_count - HCU_BITMAP_COMPOSE_OUTPUT_COUNT + i];
+			uint32_t existing_end;
+			if (!existing->valid || existing->cache_key != UINT16_MAX || !existing->reserved8) continue;
+			existing_end = existing->storage_offset + existing->storage_bytes;
+			if (candidate < existing_end && candidate + output_bytes > existing->storage_offset) {
+				candidate = (existing_end + 15u) & ~15u; overlap = 1; break;
+			}
+		}
+		if (!overlap) break;
+	}
+	if (candidate > pool_end || output_bytes > pool_end - candidate) return HCU_BITMAP_DISPATCH_E_CAPACITY;
+	if (!bsp_render_hud_effect_texture_base_words || !bsp_render_hud_effect_texture_page_count ||
+		!bsp_render_hud_effect_clut_base_words ||
+		bsp_render_hud_effect_texture_base_words(&scratch_words) != 0 ||
+		bsp_render_hud_effect_texture_page_count(&scratch_pages) != 0 ||
+		bsp_render_hud_effect_clut_base_words(&clut_words) != 0)
+		return HCU_BITMAP_DISPATCH_E_UNSUPPORTED;
+	tex_pages = pages_for(tex_w, tex_h, GS_PSMT8);
+	if (!tex_pages || scratch_pages > sizeof(used_pages) || !scratch_pages || tex_pages > scratch_pages)
+		return HCU_BITMAP_DISPATCH_E_CAPACITY;
+	memset(used_pages, 0, sizeof(used_pages));
+	for (i = 0; i < HCU_BITMAP_COMPOSE_OUTPUT_COUNT; ++i) {
+		hcu_bitmap_source_slot *existing = &ctx->slots[ctx->slot_count - HCU_BITMAP_COMPOSE_OUTPUT_COUNT + i];
+		uint32_t p;
+		if (!existing->valid || existing->cache_key != UINT16_MAX || !existing->reserved8) continue;
+		if (existing->gs_page_first > scratch_pages || existing->gs_page_count > scratch_pages - existing->gs_page_first)
+			return HCU_BITMAP_DISPATCH_E_CAPACITY;
+		for (p = 0; p < existing->gs_page_count; ++p) used_pages[existing->gs_page_first + p] = 1u;
+	}
+	for (page_first = 0; page_first + tex_pages <= scratch_pages; ++page_first) {
+		for (i = 0; i < tex_pages && !used_pages[page_first + i]; ++i) {}
+		if (i == tex_pages) break;
+	}
+	if (page_first + tex_pages > scratch_pages) return HCU_BITMAP_DISPATCH_E_CAPACITY;
+	tbp = scratch_words / 64u + page_first * 32u;
+	tbw = (tex_w + 63u) / 64u;
+	cbp = clut_words / 64u + physical_slot * 4u;
+	if (tbp >= 0x4000u || tbp + tex_pages * 32u > 0x4000u || cbp + 3u >= 0x4000u)
+		return HCU_BITMAP_DISPATCH_E_CAPACITY;
+	/* Compose: the text in the low nibble, its shadow (one pixel right and down) in the high one. */
+	output = (uint8_t *)ctx->source_storage + candidate;
+	clut = output + index_bytes;
+	memset(output, 0, index_bytes);
+	for (g = first; g < first + count; ++g) {
+		const halo_ps2_text_glyph *gl = &queue->text_glyphs[g];
+		for (row = 0; row < (uint32_t)gl->h; ++row) {
+			const uint8_t *src = gl->pixels + (uint32_t)(gl->src_y + (int32_t)row) * (uint32_t)gl->src_stride + (uint32_t)gl->src_x;
+			uint32_t dy = (uint32_t)(gl->y + (int32_t)row - min_y);
+			for (col = 0; col < (uint32_t)gl->w; ++col) {
+				uint32_t cov = (uint32_t)src[col] >> 4;
+				uint32_t dx = (uint32_t)(gl->x + (int32_t)col - min_x);
+				uint8_t *t, *sh;
+				if (!cov) continue;
+				t = output + dy * tex_w + dx;
+				if ((*t & 15u) < cov) *t = (uint8_t)((*t & 0xF0u) | cov);
+				if (shadow_on) {
+					sh = output + (dy + 1u) * tex_w + dx + 1u;
+					if ((uint32_t)(*sh >> 4) < cov) *sh = (uint8_t)((*sh & 15u) | (cov << 4));
+				}
+			}
+		}
+	}
+	/* Palette (CSM1 order: the entries of blocks 8-15 and 16-23 swap). GS alpha 128 is opaque. */
+	{
+		uint32_t r = (text_argb >> 16) & 255u, gr = (text_argb >> 8) & 255u, b = text_argb & 255u;
+		for (i = 0; i < 256u; ++i) {
+			float sa = (float)(i >> 4) / 15.0f, ta = (float)(i & 15u) / 15.0f;
+			float a = ta + sa * (1.0f - ta);
+			uint32_t pos = (i & 0xE7u) | ((i & 0x08u) << 1) | ((i & 0x10u) >> 1);
+			uint8_t *e = clut + pos * 4u;
+			float k = a > 0.0f ? ta / a : 0.0f;
+			e[0] = (uint8_t)((float)r * k + 0.5f); e[1] = (uint8_t)((float)gr * k + 0.5f);
+			e[2] = (uint8_t)((float)b * k + 0.5f); e[3] = (uint8_t)(a * 128.0f + 0.5f);
+		}
+	}
+	upload_before = *ctx->upload_chain;
+	geometry_before = *ctx->geometry_chain;
+	if (gs_upload_pair(ctx->upload_chain, output, index_bytes, tbp, tbw, GS_PSMT8, tex_w, tex_h,
+		clut, 1024u, cbp, 16u, 16u))
+		goto text_rollback;
+	memset(&output_image, 0, sizeof(output_image));
+	output_image.width = (uint16_t)tex_w; output_image.height = (uint16_t)tex_h; output_image.psm = GS_PSMT8;
+	memset(&state, 0, sizeof(state));
+	state.tex0 = GS_TEX0(tbp, tbw, GS_PSMT8, (uint32_t)log2_exact(tex_w), (uint32_t)log2_exact(tex_h),
+		1, 0, cbp, GS_PSMCT32, 0, 0, 1);
+	state.clamp = GS_CLAMP(1, 1, 0, tex_w - 1u, 0, tex_h - 1u);
+	state.screen_w = ctx->screen_w; state.screen_h = ctx->screen_h;
+	state.z = 0xFFFFFFu; state.blend = blend; state.texture_layers = 1;
+	state.point_sampled = scale == 1.0f ? 1u : 0u;
+	qx0 = ox + ((float)min_x - ox) * scale; qy0 = oy + ((float)min_y - oy) * scale;
+	qx1 = ox + ((float)(min_x + run_w) - ox) * scale; qy1 = oy + ((float)(min_y + run_h) - oy) * scale;
+	vertices[0].x = qx0; vertices[0].y = qy0; vertices[0].u = 0.0f; vertices[0].v = 0.0f;
+	vertices[1].x = qx1; vertices[1].y = qy0; vertices[1].u = (float)run_w / (float)tex_w; vertices[1].v = 0.0f;
+	vertices[2].x = qx1; vertices[2].y = qy1; vertices[2].u = (float)run_w / (float)tex_w; vertices[2].v = (float)run_h / (float)tex_h;
+	vertices[3].x = qx0; vertices[3].y = qy1; vertices[3].u = 0.0f; vertices[3].v = (float)run_h / (float)tex_h;
+	for (i = 0; i < 4; ++i) vertices[i].argb = (fade << 24) | 0x00FFFFFFu;
+	if (hcu_bitmap_quad_place(&state, &target, vertices, placed) != 0) goto text_rollback;
+	if (hcu_bitmap_quad_emit_validated(ctx->geometry_chain, &output_image, &state, placed) != HCU_BITMAP_QUAD_OK)
+		goto text_rollback;
+	memset(slot, 0, sizeof(*slot));
+	slot->cache_key = UINT16_MAX; slot->storage_offset = candidate;
+	slot->storage_bytes = output_bytes; slot->readers = 1; slot->valid = 1; slot->reserved8 = 1;
+	slot->gs_page_first = (uint16_t)page_first; slot->gs_page_count = (uint16_t)tex_pages;
+	slot->compose_clut_slot = (uint16_t)physical_slot;
+	lease->slot = (uint16_t)slot_index; lease->cache_key = UINT16_MAX;
+	lease->generation = request->generation; lease->active = 1;
+	return HCU_BITMAP_DISPATCH_OK;
+
+text_rollback:
+	*ctx->upload_chain = upload_before;
+	*ctx->geometry_chain = geometry_before;
+	return HCU_BITMAP_DISPATCH_E_CAPACITY;
+}
+
 static hcu_bitmap_dispatch_status dispatch_request_impl(
 	hcu_bitmap_dispatch_context *context,
 	const halo_ps2_bitmap_request *request,
@@ -1247,6 +1440,17 @@ int hcu_bitmap_dispatch_reader(const halo_ps2_bitmap_request_reader *reader,
 					&target, marker_v, reader->requests[i].motion_marker == 2u);
 			}
 			if (marker == HCU_BITMAP_QUAD_CAPACITY) ctx->counters.deferred++;
+			continue;
+		}
+		/* A run of text: composed into one texture, so it takes a lease like the multiply overlay. */
+		if (reader->requests[i].text_run) {
+			status = dispatch_text_run(ctx, reader->queue, &reader->requests[i], target, lease);
+			if (status == HCU_BITMAP_DISPATCH_OK) {
+				lease->kick_seq = bsp_render_kick_seq ? bsp_render_kick_seq() + 1u : 0u;
+				ctx->lease_count++;
+			} else if (status == HCU_BITMAP_DISPATCH_E_BUSY || status == HCU_BITMAP_DISPATCH_E_CAPACITY) {
+				ctx->counters.deferred++;   /* not drawn this frame; the string is queued again next frame */
+			}
 			continue;
 		}
 		status = reader->requests[i].has_multiply_map ?
