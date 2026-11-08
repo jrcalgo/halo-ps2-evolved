@@ -39,17 +39,24 @@ int main(void)
 	if (hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0) != HCU_MAIN_MENU_ACTION_NONE ||
 		state.page != HCU_MAIN_MENU_PAGE_TYPE ||
 		state.row != HCU_MAIN_MENU_TYPE_SPLIT_SCREEN) return 5;
-	/* The cursor skips cooperative play and system link, which this port cannot start. */
+	/* The cursor skips quick start, cooperative play and online, which this port cannot start. */
 	(void)hcu_main_menu_step(&state, 0, 1, 0, 0, 0, 0);
 	if (state.row != HCU_MAIN_MENU_TYPE_EDIT_GAMETYPES) return 50;
 	(void)hcu_main_menu_step(&state, 0, 1, 0, 0, 0, 0);
-	if (state.row != HCU_MAIN_MENU_TYPE_QUICK_START) return 51;
+	if (state.row != HCU_MAIN_MENU_TYPE_SPLIT_SCREEN) return 51; /* wraps past quick start */
 	(void)hcu_main_menu_step(&state, 1, 0, 0, 0, 0, 0);
-	(void)hcu_main_menu_step(&state, 1, 0, 0, 0, 0, 0);
-	if (state.row != HCU_MAIN_MENU_TYPE_SPLIT_SCREEN) return 52;
-	state.row = HCU_MAIN_MENU_TYPE_COOP;
-	if (hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0) != HCU_MAIN_MENU_ACTION_NONE ||
-		state.page != HCU_MAIN_MENU_PAGE_TYPE) return 53;
+	if (state.row != HCU_MAIN_MENU_TYPE_EDIT_GAMETYPES) return 52;
+	(void)hcu_main_menu_step(&state, 0, 1, 0, 0, 0, 0);
+	{
+		static const unsigned off[] = {HCU_MAIN_MENU_TYPE_QUICK_START, HCU_MAIN_MENU_TYPE_COOP,
+			HCU_MAIN_MENU_TYPE_ONLINE};
+		unsigned i;
+		for (i = 0; i < 3u; ++i) {
+			state.row = (uint8_t)off[i];
+			if (hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0) != HCU_MAIN_MENU_ACTION_NONE ||
+				state.page != HCU_MAIN_MENU_PAGE_TYPE) return 53;
+		}
+	}
 	state.row = HCU_MAIN_MENU_TYPE_SPLIT_SCREEN;
 	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0);
 	if (state.page != HCU_MAIN_MENU_PAGE_CONNECT || state.edit_gametypes) return 54;
@@ -73,13 +80,6 @@ int main(void)
 	if (state.page != HCU_MAIN_MENU_PAGE_CONNECT) return 60;
 	(void)hcu_main_menu_step(&state, 0, 0, 0, 0, 0, 1);
 	if (state.page != HCU_MAIN_MENU_PAGE_TYPE) return 61;
-	/* QUICK START plays at once with the first player. */
-	{
-		hcu_main_menu_state quick = state;
-		quick.row = HCU_MAIN_MENU_TYPE_QUICK_START; quick.player_count = 0; quick.joined_mask = 0;
-		if (hcu_main_menu_step(&quick, 0, 0, 0, 0, 1, 0) != HCU_MAIN_MENU_ACTION_MULTIPLAYER ||
-			quick.player_count != 1 || !(quick.joined_mask & 1u)) return 62;
-	}
 	/* EDIT GAMETYPES opens the list, rules pages and save without a map or players. */
 	{
 		hcu_main_menu_state edit = state;

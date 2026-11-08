@@ -505,8 +505,9 @@ static void menu_adjust_indicator_option(hcu_main_menu_state *state, int step)
 
 static int menu_type_row_enabled(unsigned row)
 {
-	return row == HCU_MAIN_MENU_TYPE_QUICK_START || row == HCU_MAIN_MENU_TYPE_SPLIT_SCREEN ||
-		row == HCU_MAIN_MENU_TYPE_EDIT_GAMETYPES;
+	/* Quick start replays the last cooperative game, which this port does not have yet, and a split
+	 * screen game is not saved past its end, so it never offers one. */
+	return row == HCU_MAIN_MENU_TYPE_SPLIT_SCREEN || row == HCU_MAIN_MENU_TYPE_EDIT_GAMETYPES;
 }
 
 enum hcu_main_menu_action hcu_main_menu_step(hcu_main_menu_state *state,
@@ -2518,18 +2519,17 @@ static void menu_type_picture(packet2_t *packet, const video_t *video, unsigned 
 static void menu_type_select(packet2_t *packet, const video_t *video, const hcu_main_menu_state *state)
 {
 	static const char *const labels[HCU_MAIN_MENU_TYPE_ROW_COUNT] = {
-		"QUICK START", "COOPERATIVE PLAY", "SPLIT SCREEN", "SYSTEM LINK PLAY", "EDIT GAMETYPES"};
+		"QUICK START", "COOPERATIVE PLAY", "SPLIT SCREEN", "ONLINE", "EDIT GAMETYPES"};
 	static const char *const description[HCU_MAIN_MENU_TYPE_ROW_COUNT][3] = {
 		{"START A GAME NOW WITH THE", "SAVED MAP AND GAME TYPE.", ""},
 		{"PLAY THROUGH THE SINGLE-PLAYER", "CAMPAIGN WITH A FRIEND.", ""},
 		{"PIT UP TO FOUR PEOPLE AGAINST", "EACH OTHER ON ONE TV.", ""},
-		{"CONNECT UP TO FOUR XBOX VIDEO", "GAME SYSTEMS FOR UP TO", "SIXTEEN PLAYERS."},
+		{"PLAY AGAINST PEOPLE OVER THE", "INTERNET. NOT AVAILABLE YET.", ""},
 		{"SET ALL THE ATTRIBUTES FOR YOUR", "MULTIPLAYER GAMETYPES AND", "KEEP THEM FOR FUTURE USE."}};
 	unsigned r, row = state->row % HCU_MAIN_MENU_TYPE_ROW_COUNT;
 	menu_page_mp(packet, video, MENU_HEADER_TYPE, "MULTIPLAYER", "UP/DOWN CHOOSE   CROSS SELECT   CIRCLE BACK");
 	for (r = 0; r < HCU_MAIN_MENU_TYPE_ROW_COUNT; ++r) {
-		int enabled = r == HCU_MAIN_MENU_TYPE_QUICK_START || r == HCU_MAIN_MENU_TYPE_SPLIT_SCREEN ||
-			r == HCU_MAIN_MENU_TYPE_EDIT_GAMETYPES;
+		int enabled = menu_type_row_enabled(r);
 		int y = 88 + (int)r * 46;
 		if (r == row) { menu_flat_rect(packet, 26, y, 254, y + 36, 27, 67, 116, 0x58); menu_frame(packet, 26, y, 254, y + 36); }
 		menu_text(packet, video, 38, y + 11, 2, r == row ? 231 : enabled ? 126 : 62,
