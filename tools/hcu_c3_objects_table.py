@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import struct
 import sys
 from pathlib import Path
 
@@ -42,7 +43,8 @@ def select(manifest: dict, paths: list[str] | None = None) -> list[dict]:
     must be unique; a collision is refused rather than resolved silently.
     """
     bindings = manifest["chunk_bindings"]
-    models = [b for b in bindings if b["kind"] == "MODL" and b["owner"]["group"] == "mode"]
+    models = [b for b in bindings if b["kind"] == "MODL" and b["owner"]["group"] == "mode" and
+              b.get("variant") != "proxy"]
     if paths is not None:
         models = [b for b in models if b["owner"]["path"] in paths]
         missing = [p for p in paths if not any(b["owner"]["path"] == p for b in models)]
@@ -58,7 +60,7 @@ def select(manifest: dict, paths: list[str] | None = None) -> list[dict]:
             raise SystemExit(f"{path}: resource id {datum & 0xFFFF} also used by {seen[datum & 0xFFFF]}")
         seen[datum & 0xFFFF] = path
         tex = [b for b in bindings if b["kind"] == "OTEX" and b["owner"]["path"] == path and b["owner"]["group"] == "mode"
-               and int(b["owner"]["output_datum"]) == datum]
+               and int(b["owner"]["output_datum"]) == datum and b.get("variant") != "proxy"]
         if len(tex) > 1:
             raise SystemExit(f"{path}: expected at most one OTEX binding for datum {datum}, found {len(tex)}")
         rows.append({
@@ -71,6 +73,33 @@ def select(manifest: dict, paths: list[str] | None = None) -> list[dict]:
             "tag_datum": int(model["owner"]["source_datum"]),  # CE tag id of the model (skyconv model_tag)
         })
     return rows
+
+
+def select_proxies(manifest: dict, rows: list[dict]) -> list[dict]:
+    """The low-detail stand-in of each full row that has one (binding variant "proxy"), in the order of `rows`.
+
+    A stand-in is a second MODL (and OTEX) chunk of the same model: same source and tag datum, so the snapshot's
+    resource id finds it, with its own chunk ids and hashes. The runtime keeps it resident and draws it while the
+    full model is not loaded. Appended after the full rows so every full row keeps its table index."""
+    bindings = manifest["chunk_bindings"]
+    out = []
+    for row in rows:
+        mine = [b for b in bindings if b.get("variant") == "proxy" and b["kind"] == "MODL" and
+                b["owner"]["group"] == "mode" and b["owner"]["path"] == row["path"] and
+                int(b["owner"]["output_datum"]) == row["source_datum"]]
+        if not mine:
+            continue
+        if len(mine) != 1:
+            raise SystemExit(f"{row['path']}: expected one proxy MODL binding, found {len(mine)}")
+        tex = [b for b in bindings if b.get("variant") == "proxy" and b["kind"] == "OTEX" and
+               b["owner"]["path"] == row["path"] and b["owner"]["group"] == "mode" and
+               int(b["owner"]["output_datum"]) == row["source_datum"]]
+        if len(tex) > 1:
+            raise SystemExit(f"{row['path']}: expected at most one proxy OTEX binding, found {len(tex)}")
+        out.append({**row, "model_chunk": int(mine[0]["chunk_id"]), "model_sha256": mine[0]["sha256"],
+                    "texture_chunk": int(tex[0]["chunk_id"]) if tex else 0,
+                    "texture_sha256": tex[0]["sha256"] if tex else "00" * 32, "proxy": 1})
+    return out
 
 
 def c_bytes(hex_digest: str) -> str:
@@ -108,6 +137,11 @@ def add_model_bounds(rows: list[dict], manifest: dict, package_json: Path) -> No
         if len(matches) != 1:
             raise SystemExit(f"{row['path']}: tag datum {row['tag_datum']} matches {len(matches)} MODL models")
         model = matches[0]
+        if row["texture_chunk"]:
+            otex = package["chunks"].get((2, row["texture_chunk"]))
+            if otex is None or hashlib.sha256(otex).hexdigest() != row["texture_sha256"]:
+                raise SystemExit(f"{row['path']}: OTEX chunk/hash mismatch in HCP")
+            row["tex_keys"] = min(255, struct.unpack_from("<I", otex, 8)[0])
         row["bound_profile_id"] = int(manifest["profile"]["id"])
         row["bound_source_datum"] = row["source_datum"]
         row["bound_tag_datum"] = row["tag_datum"]
@@ -176,7 +210,7 @@ def render(rows: list[dict], package_json: Path, sky: int | None = None, prefix:
             f"\t  {{ {r.get('bound_profile_id', 0)}u, {r['model_chunk']}u, {r['source_datum']}u, {r.get('bound_tag_datum', 0)}u, "
             f"{c_bytes(r['model_sha256'])}, {{ {c_float(r.get('bound_center', (0.0, 0.0, 0.0))[0])}, {c_float(r.get('bound_center', (0.0, 0.0, 0.0))[1])}, {c_float(r.get('bound_center', (0.0, 0.0, 0.0))[2])} }}, "
             f"{c_float(r.get('bound_radius', 0.0))}, {1 if 'bound_radius' in r else 0}u }},\n"
-            f"\t  \"{path_c}\" }},")
+            f"\t  \"{path_c}\", {r.get('proxy', 0)}u, {r.get('tex_keys', 0)}u }},")
     lines += ["};", "", f"#endif /* {guard} */", ""]
     return "\n".join(lines)
 
@@ -207,6 +241,8 @@ def main(argv=None) -> int:
             fog_rgb = tuple(max(0, min(255, int(round(float(channel) * 255.0))))
                             for channel in scenario_sky["fog_rgb"])
     sky = sky_index(rows, datum) if datum is not None else None
+    if not args.synthetic_paths:
+        rows += select_proxies(manifest, rows)
     add_model_bounds(rows, manifest, args.package_json)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     prefix = "succ_" if args.successor else ""

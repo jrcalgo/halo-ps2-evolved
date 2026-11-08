@@ -1244,6 +1244,24 @@ static int test_fp_lod_per_view(void)
 	return 0;
 }
 
+/* A model's low-detail stand-in shares its resource id: the full model wins when both are resident, the stand-in
+ * answers while the full one is not loaded, and nothing answers when neither is. */
+static int test_find_model_prefers_full_over_proxy(void)
+{
+	hcu_render_objects_model m[3];
+	memset(m, 0, sizeof m);
+	m[0].resource_id = 100; m[0].loaded = 0;                 /* full, not resident */
+	m[1].resource_id = 100; m[1].loaded = 1; m[1].proxy = 1; /* its stand-in */
+	m[2].resource_id = 200; m[2].loaded = 1;
+	CHECK(hcu_render_objects_find_model(m, 3u, 100u) == 1);  /* stand-in while the full model is absent */
+	m[0].loaded = 1;
+	CHECK(hcu_render_objects_find_model(m, 3u, 100u) == 0);  /* the full model once it is resident */
+	m[0].loaded = 0; m[1].loaded = 0;
+	CHECK(hcu_render_objects_find_model(m, 3u, 100u) == -1);
+	CHECK(hcu_render_objects_find_model(m, 3u, 200u) == 2);
+	return 0;
+}
+
 int main(void)
 {
 #if defined(HCU_RENDER_OBJECTS_EE) && ((defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE) || (defined(HALO_PS2_C3_PERF_PROBE) && HALO_PS2_C3_PERF_PROBE))
@@ -1272,6 +1290,7 @@ int main(void)
 	if (test_first_person_world()) return 13;
 	if (test_fp_lod_per_view()) return 14;
 	if (test_actual_boulder_bound_frustum()) return 19;
+	if (test_find_model_prefers_full_over_proxy()) return 20;
 	printf("hcu_render_objects tests passed\n");
 	return 0;
 }

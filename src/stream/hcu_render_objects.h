@@ -24,8 +24,9 @@
 extern "C" {
 #endif
 
-#define HCU_OBJECTS_MAX_MODELS 80u      /* table entries (one MODL chunk each); residency is by the pool */
-#define HCU_OBJECTS_TEX_STRIDE 32u      /* texture cache keys per entry: entry i owns [i*32, i*32+32) */
+#define HCU_OBJECTS_MAX_MODELS 128u     /* table entries (one MODL chunk each, full models then their low-detail stand-ins); residency is by the pool */
+#define HCU_OBJECTS_TEX_STRIDE 32u      /* legacy texture cache keys per entry; a table entry with tex_keys takes exactly that many, in table order */
+#define HCU_OBJECTS_KEY_BUDGET (80u * 32u) /* texture cache keys reserved for objects (hcu_main HCU_C3_BITMAP_OBJECT_KEY_CAPACITY) */
 #define HCU_OBJECTS_MAX_DRAW 64u        /* draw entries per view */
 #define HCU_OBJECTS_MAX_PARITY 64u      /* parity records kept for the first frame only */
 #define HCU_FX_MAX_PER_VIEW 64u          /* C3.6(c): fx requests drawn per view (fixed cap, no heap) */
@@ -55,7 +56,7 @@ typedef struct {
 	uint16_t texture_count;
 	uint16_t node_count;
 	uint8_t loaded;
-	uint8_t pad;
+	uint8_t proxy;        /* low-detail stand-in of another table entry (same resource id), drawn only while the full model is not loaded */
 } hcu_render_objects_model;
 
 #define HCU_OBJECTS_FP_WEAPON 1u
@@ -467,6 +468,8 @@ typedef struct {
 	uint8_t texture_sha256[32];
 	hcu_render_model_bound bounds;
 	const char *path;
+	uint8_t proxy;        /* 1: low-detail stand-in of the full entry with the same source_datum (always after the full entries) */
+	uint8_t tex_keys;     /* texture cache keys this entry needs (its OTEX texture count); 0 with a texture chunk = legacy stride */
 } hcu_render_objects_table_entry;
 
 typedef struct {

@@ -65,10 +65,15 @@ int hcu_render_objects_find_model(const hcu_render_objects_model *models, uint32
 	uint32_t resource_id)
 {
 	uint32_t i;
+	int proxy = -1;
 	if (!models) return -1;
+	/* The full model when it is resident, else its low-detail stand-in (always after the full entries). */
 	for (i = 0; i < model_count && i < HCU_OBJECTS_MAX_MODELS; i++)
-		if (models[i].loaded && models[i].resource_id == resource_id) return (int)i;
-	return -1;
+		if (models[i].loaded && models[i].resource_id == resource_id) {
+			if (!models[i].proxy) return (int)i;
+			if (proxy < 0) proxy = (int)i;
+		}
+	return proxy;
 }
 
 /* CE's render_object_list() skips the local first-person biped and, on that
@@ -1337,6 +1342,9 @@ typedef struct {
 	uint8_t valid, reserved;
 	mat4 root;
 } prepared_object;
+/* Prepared per-slot data is kept for the first table entries only (the full models come first); a later entry, a
+ * low-detail stand-in past the limit, draws through the unprepared path. Keeps the cache inside its reservation. */
+#define HCU_OBJECTS_PREPARED_SLOTS 80u
 typedef struct {
 	uint32_t epoch;
 	model_info info;
@@ -1348,7 +1356,7 @@ typedef struct {
 	uint8_t ready;
 	uint8_t pad[3];
 	prepared_object object[HALO_PS2_FRAME_MAX_OBJECTS];
-	prepared_slot slot[HCU_OBJECTS_MAX_MODELS];
+	prepared_slot slot[HCU_OBJECTS_PREPARED_SLOTS];
 	mat4 palette[HALO_PS2_FRAME_MAX_PALETTE];
 	uint8_t palette_ready[HALO_PS2_FRAME_MAX_PALETTE / 8u];
 } prepared_cache;
@@ -1363,7 +1371,7 @@ static void prepared_invalidate_all(void)
 	uint32_t i;
 	if (s_prepared) {
 		s_prepared->ready = 0u;
-		for (i = 0; i < HCU_OBJECTS_MAX_MODELS; ++i) s_prepared->slot[i].valid = 0u;
+		for (i = 0; i < HCU_OBJECTS_PREPARED_SLOTS; ++i) s_prepared->slot[i].valid = 0u;
 	}
 	for (i = 0; i < HCU_OBJECTS_MAX_MODELS; ++i)
 		if (++s_slot_epoch[i] == 0u) ++s_slot_epoch[i];
@@ -1453,6 +1461,13 @@ static hcu_render_objects_pool_event s_last_pool_event;
 static const hcu_asset_profile_view *s_profile;
 static uint32_t s_bounds_map_generation;
 static uint32_t s_tex_total;
+/* Texture cache keys of each entry: [s_key_base[i], s_key_base[i] + s_key_span[i]). Assigned in table order from the
+ * entry's tex_keys (its texture count), so the stand-ins cost a few keys each, not a 32-key stride. */
+static uint16_t s_key_base[HCU_OBJECTS_MAX_MODELS];
+static uint8_t s_key_span[HCU_OBJECTS_MAX_MODELS];
+/* Low-detail stand-ins: table index of the full entry each stand-in belongs to (OBJ_NONE8 for a full entry). */
+#define OBJ_NONE8 0xFFu
+static uint8_t s_proxy_full[HCU_OBJECTS_MAX_MODELS];
 static tex_source_t s_src_total;
 static int s_installed;
 
@@ -1477,7 +1492,7 @@ static float hcu_render_object_bound_radius(const halo_ps2_frame_snapshot *snap,
 	resource = &snap->resources[object->resource_slot];
 	for (i = 0; i < s_slot_count; ++i) {
 		const hcu_render_objects_table_entry *entry = s_slots[i].entry;
-		if (s_slots[i].refused || !entry || (entry->source_datum & 0xFFFFu) != resource->id) continue;
+		if (s_slots[i].refused || !entry || entry->proxy || (entry->source_datum & 0xFFFFu) != resource->id) continue;
 		if (!s_bounds_map_generation) s_bounds_map_generation = snap->map_generation;
 		generation = resource->generation;
 		if (hcu_render_model_bound_resolve(&entry->bounds, s_profile ? s_profile->profile_id : 0u,
@@ -1530,7 +1545,7 @@ int hcu_render_objects_prepare_cache_bind(void *memory, size_t bytes)
 	{
 		uint32_t i;
 		for (i = 0; i < HALO_PS2_FRAME_MAX_OBJECTS; ++i) s_prepared->object[i].valid = 0u;
-		for (i = 0; i < HCU_OBJECTS_MAX_MODELS; ++i) s_prepared->slot[i].valid = 0u;
+		for (i = 0; i < HCU_OBJECTS_PREPARED_SLOTS; ++i) s_prepared->slot[i].valid = 0u;
 	}
 	memset(s_prepared->palette_ready, 0, sizeof(s_prepared->palette_ready));
 	memset(&s_prepare_stats, 0, sizeof(s_prepare_stats));
@@ -1552,13 +1567,13 @@ static void prepare_snapshot(const halo_ps2_frame_snapshot *snap)
 	{
 		uint32_t k;
 		for (k = 0; k < HALO_PS2_FRAME_MAX_OBJECTS; ++k) s_prepared->object[k].valid = 0u;
-		for (k = 0; k < HCU_OBJECTS_MAX_MODELS; ++k) s_prepared->slot[k].valid = 0u;
+		for (k = 0; k < HCU_OBJECTS_PREPARED_SLOTS; ++k) s_prepared->slot[k].valid = 0u;
 	}
 	memset(s_prepared->palette_ready, 0, sizeof(s_prepared->palette_ready));
 	s_prepared->sequence = snap->sequence;
 	s_prepared->map_generation = snap->map_generation;
 	/* Model metadata/default permutations are shared by all objects using a resident slot. */
-	for (i = 0; i < s_slot_count && i < HCU_OBJECTS_MAX_MODELS; ++i) {
+	for (i = 0; i < s_slot_count && i < HCU_OBJECTS_PREPARED_SLOTS; ++i) {
 		prepared_slot *p = &s_prepared->slot[i];
 		if (!s_slots[i].loaded) continue;
 		p->info = model_get(&s_slots[i].models, 0);
@@ -1578,7 +1593,7 @@ static void prepare_snapshot(const halo_ps2_frame_snapshot *snap)
 		if (o->resource_slot >= snap->resource_count) continue;
 		r = &snap->resources[o->resource_slot];
 		slot = hcu_render_objects_find_model(s_meta, s_slot_count, r->id);
-		if (slot < 0 || !s_prepared->slot[slot].valid) continue;
+		if (slot < 0 || (uint32_t)slot >= HCU_OBJECTS_PREPARED_SLOTS || !s_prepared->slot[slot].valid) continue;
 		p->slot = (uint16_t)slot; p->resource_id = r->id; p->generation = o->id.generation;
 		p->root = mat_from_snapshot(&o->world);
 		p->pose_hash = 0u;
@@ -1625,7 +1640,7 @@ static int prepared_lookup(const halo_ps2_frame_snapshot *snap, uint32_t oi, uin
 		s_prepared->map_generation != snap->map_generation) return 0;
 	p = &s_prepared->object[oi];
 	if (!p->valid || p->generation != generation || p->resource_id != resource_id ||
-		p->slot >= HCU_OBJECTS_MAX_MODELS || !s_prepared->slot[p->slot].valid ||
+		p->slot >= HCU_OBJECTS_PREPARED_SLOTS || !s_prepared->slot[p->slot].valid ||
 		!s_slots[p->slot].loaded) return 0;
 	key.sequence = s_prepared->sequence; key.map_generation = s_prepared->map_generation;
 	key.object_generation = p->generation; key.resource_id = p->resource_id;
@@ -2087,7 +2102,7 @@ static int entry_load(const hcu_asset_profile_view *view, uint32_t i, uint32_t f
 			uint32_t t = timer_cycles();
 			if (tex_open(&s->tex, bytes + model_span, s->tex_size) == TEX_OK) {
 				trace_tex_open = timer_cycles() - t;
-				if (s->tex.texture_count > HCU_OBJECTS_TEX_STRIDE) s_res.keys_refused++;
+				if (s->tex.texture_count > s_key_span[s - s_slots]) s_res.keys_refused++;
 				else s->has_tex = 1;
 			} else trace_tex_open = timer_cycles() - t;
 		}
@@ -2097,7 +2112,7 @@ static int entry_load(const hcu_asset_profile_view *view, uint32_t i, uint32_t f
 		(pre_verified ? pre_tex_ok :
 			read_verified(view, e->texture_chunk, s->tex_size, bytes + model_span, e->texture_sha256) == 0) &&
 		tex_open(&s->tex, bytes + model_span, s->tex_size) == TEX_OK) {
-		if (s->tex.texture_count > HCU_OBJECTS_TEX_STRIDE) {
+		if (s->tex.texture_count > s_key_span[s - s_slots]) {
 			s_res.keys_refused++;      /* more textures than the entry's key stride: drawn flat */
 		} else {
 			s->has_tex = 1;
@@ -2106,7 +2121,7 @@ static int entry_load(const hcu_asset_profile_view *view, uint32_t i, uint32_t f
 #endif
 	s->pool_off = off;
 	s->pool_size = need;
-	s->tex_base = (uint32_t)(s - s_slots) * HCU_OBJECTS_TEX_STRIDE;
+	s->tex_base = s_key_base[s - s_slots];
 	s->src.binding = slot_binding;
 	s->src.texture = slot_texture;
 	s->src.lightmap = NULL;
@@ -2114,7 +2129,7 @@ static int entry_load(const hcu_asset_profile_view *view, uint32_t i, uint32_t f
 	s->src.texture_count = s->has_tex ? s->tex.texture_count : 0;
 	s->loaded = 1;
 	if (++s_slot_epoch[i] == 0u) ++s_slot_epoch[i];
-	if (s_prepared) { s_prepared->ready = 0u; s_prepared->slot[i].valid = 0u; }
+	if (s_prepared) { s_prepared->ready = 0u; if (i < HCU_OBJECTS_PREPARED_SLOTS) s_prepared->slot[i].valid = 0u; }
 	s->last_used = frame + 1u;
 	s_meta[i].resource_id = e->source_datum & 0xFFFFu; /* CE model.index: low 16 bits of the tag datum */
 	s_meta[i].source_datum = e->source_datum;
@@ -2147,7 +2162,7 @@ static void entry_evict(uint32_t i)
 	pool_free(s->pool_off);
 	s->loaded = 0;
 	if (++s_slot_epoch[i] == 0u) ++s_slot_epoch[i];
-	if (s_prepared) { s_prepared->ready = 0u; s_prepared->slot[i].valid = 0u; }
+	if (s_prepared) { s_prepared->ready = 0u; if (i < HCU_OBJECTS_PREPARED_SLOTS) s_prepared->slot[i].valid = 0u; }
 	s->has_tex = 0;
 	s_meta[i].loaded = 0;
 	s_res.evictions++;
@@ -2288,6 +2303,7 @@ static int path_is_fp_model(const char *path)
 	return memcmp(path + (n - (sizeof suf - 1u)), suf, sizeof suf - 1u) == 0;
 }
 
+static uint32_t floor_pool_bytes(void);
 #define OBJ_FP_IDLE_RANK 2u
 /* One unloaded viewmodel per frame, at rank 0, without waiting for the rest of the visible set.
  * A rank 0-2 job already in flight is left alone. A rank-3 job is preempted between slices by
@@ -2310,33 +2326,109 @@ static void fp_prewarm(uint32_t frame)
 		/* Prewarm only into free space and only while the pool is under half full: it must never evict, and it
 		 * must not crowd out the vehicles and scenery the visible set needs. A visible viewmodel is requested by
 		 * the need loop and is not limited by this. */
-		if (entry_need(s, &need) != 0 || s_res.pool_used + need > s_res.pool_bytes / 2u || pool_find(need) < 0) continue;
+		if (entry_need(s, &need) != 0 || s_res.pool_used - floor_pool_bytes() + need > s_res.pool_bytes / 2u || pool_find(need) < 0) continue;
 		entry_request(s_profile, i, frame, 0u);
 		return;
 	}
 }
 
-/* Loads the small models the world uses (the snapshot's resource table) before the camera turns to them. Measured
- * on Blood Gulch while walking and turning: 8% of the visible references found their model not resident (trees,
- * rocks, flag bases, beacons, pickups, loose weapons), each absent for the few frames its sliced load took.
- * One bounded job at a time, smallest first, only into free pool space (never evicting), and only while no
- * visible entry of rank 0 or 1 is waiting. */
-static void world_prefetch(const halo_ps2_frame_snapshot *snap, uint32_t frame)
+/* The resident floor: every low-detail stand-in and every small model (at most OBJ_STICKY_BYTES, not a viewmodel). A model
+ * is never absent: the frame draws the full model when it is resident and else its stand-in, and a small model is its own
+ * stand-in. Floor slots that are loaded have rank 0, so no request displaces them, as long as the floor stays within
+ * OBJ_FLOOR_PERCENT of the pool (the rest of the pool is for the full-detail models and viewmodels, which come and go). */
+#define OBJ_FLOOR_PERCENT 45u
+static int slot_is_floor(const obj_slot *s)
 {
-	uint32_t i, r, best = OBJ_NONE, best_need = 0u;
-	if (!s_profile || !snap || s_job.entry != OBJ_JOB_NONE || rank01_pending(frame)) return;
-	for (r = 0; r < snap->resource_count; r++) {
-		uint32_t rid = snap->resources[r].id;
+	uint32_t need;
+	if (!s->entry || s->refused) return 0;
+	if (s->entry->proxy) return 1;
+	if (path_is_fp_model(s->entry->path)) return 0;
+	if (s->loaded) return s->pool_size <= OBJ_STICKY_BYTES;
+	return entry_need(s, &need) == 0 && need <= OBJ_STICKY_BYTES;
+}
+
+static uint32_t floor_cap_bytes(void) { return (uint32_t)(((uint64_t)s_res.pool_bytes * OBJ_FLOOR_PERCENT) / 100u); }
+
+/* Marks the loaded floor slots rank 0, stand-ins first, while they fit the cap. Returns their bytes. */
+static uint32_t floor_protect(void)
+{
+	uint32_t i, pass, bytes = 0u, cap = floor_cap_bytes();
+	for (pass = 0; pass < 2u; pass++)
+		for (i = 0; i < s_slot_count; i++) {
+			const obj_slot *s = &s_slots[i];
+			if (!s->loaded || !slot_is_floor(s) || (s->entry->proxy != 0u) != (pass == 0u)) continue;
+			if (bytes + s->pool_size > cap) continue;
+			s_slot_rank[i] = 0u;
+			bytes += s->pool_size;
+		}
+	return bytes;
+}
+
+/* Bytes of the loaded floor slots (no rank change). */
+static uint32_t floor_pool_bytes(void)
+{
+	uint32_t i, bytes = 0u;
+	for (i = 0; i < s_slot_count; i++)
+		if (s_slots[i].loaded && slot_is_floor(&s_slots[i])) bytes += s_slots[i].pool_size;
+	return bytes;
+}
+
+/* Loads the missing floor slots at rank 1 (they displace idle viewmodels and scenery, never a visible gun, biped or
+ * vehicle), one bounded sliced job at a time. Stand-ins whose full model is absent come first, then small models the
+ * view references, then the rest; stand-ins first among equals. Small models are taken from the snapshot's resource
+ * table, so only those the map uses load. A job another entry owns is left while it is pumped; once nothing has
+ * pumped it for two frames (its model left the view) it only holds pool bytes, so it is dropped. */
+static void floor_prefetch(const halo_ps2_frame_snapshot *snap, uint32_t frame)
+{
+	uint32_t i, r, best = OBJ_NONE, best_score = 0u, held = 0u, cap = floor_cap_bytes();
+	if (!s_profile || !snap) return;
+	if (s_job.entry != OBJ_JOB_NONE) {
+		if (s_job.entry < s_slot_count && slot_is_floor(&s_slots[s_job.entry])) {
+			entry_request(s_profile, s_job.entry, frame, 1u);
+			return;
+		}
+		if (frame <= s_job.last_frame + 2u) return;
+		job_abandon();
+	}
+	held = floor_pool_bytes();
+	for (i = 0; i < s_slot_count; i++) {
+		const obj_slot *s = &s_slots[i];
+		uint32_t need, f, score = 0u;
+		if (!s->entry || s->loaded || s->refused || !slot_is_floor(s) || entry_need(s, &need) != 0) continue;
+		if (held + need > cap) continue;
+		if (s->entry->proxy) {
+			f = s_proxy_full[i];
+			if (f >= s_slot_count || s_slots[f].refused) continue;
+			score = s_slots[f].loaded ? 2u : (s_need_pin[f] ? 7u : 5u);
+		} else {
+			uint32_t known = 0u;
+			for (r = 0; r < snap->resource_count && !known; r++)
+				known = (s->entry->source_datum & 0xFFFFu) == snap->resources[r].id;
+			if (!known) continue;
+			score = s_need_pin[i] ? 6u : 3u;
+		}
+		if (best == OBJ_NONE || score > best_score) { best = i; best_score = score; }
+	}
+	if (best != OBJ_NONE) entry_request(s_profile, best, frame, 1u);
+}
+
+/* Map load: reads the floor (stand-ins first, then small models) into the empty pool before the first frame, whole and
+ * verified (the first frames load blocking), so the first minute of play does not stream scenery in. Stops at the cap. */
+static void floor_preload(void)
+{
+	uint32_t i, pass, held = 0u, cap = floor_cap_bytes();
+	for (pass = 0; pass < 2u; pass++)
 		for (i = 0; i < s_slot_count; i++) {
 			const obj_slot *s = &s_slots[i];
 			uint32_t need;
-			if (s->loaded || s->refused || !s->entry || (s->entry->source_datum & 0xFFFFu) != rid) continue;
-			if (entry_need(s, &need) == 0 && need <= OBJ_STICKY_BYTES && pool_find(need) >= 0 &&
-				(best == OBJ_NONE || need < best_need)) { best = i; best_need = need; }
-			break;
+			if (s->loaded || !slot_is_floor(s) || (s->entry->proxy != 0u) != (pass == 0u) || entry_need(s, &need) != 0) continue;
+			if (held + need > cap) continue;
+			if (s->entry->proxy && (s_proxy_full[i] >= s_slot_count || s_slots[s_proxy_full[i]].refused)) continue;
+			entry_request(s_profile, i, 0u, 1u);
+			if (s_slots[i].loaded) held += s_slots[i].pool_size;
 		}
-	}
-	if (best != OBJ_NONE) entry_request(s_profile, best, frame, 3u);
+	memset(&s_res.hits, 0, sizeof s_res.hits);
+	s_res.misses = 0u;
 }
 
 /* Frame begin: every entry the snapshot's visible views reference is made resident before the views draw. */
@@ -2370,7 +2462,7 @@ static void residency_frame(const halo_ps2_frame_snapshot *snap, uint32_t frame,
 				if (first_person_slots[fp] >= snap->resource_count) continue;
 				rid = snap->resources[first_person_slots[fp]].id;
 				for (k = 0; k < s_slot_count; k++)
-					if (!s_slots[k].refused &&
+					if (!s_slots[k].refused && !s_slots[k].entry->proxy &&
 						(s_slots[k].entry->source_datum & 0xFFFFu) == rid) {
 						need[k] = 1;
 						priority[k] = 0u;
@@ -2386,7 +2478,7 @@ static void residency_frame(const halo_ps2_frame_snapshot *snap, uint32_t frame,
 			rid = snap->resources[snap->objects[oi].resource_slot].id;
 			rank = hcu_render_objects_residency_priority(snap->objects[oi].type);
 			for (k = 0; k < s_slot_count; k++)
-				if (!s_slots[k].refused && (s_slots[k].entry->source_datum & 0xFFFFu) == rid) {
+				if (!s_slots[k].refused && !s_slots[k].entry->proxy && (s_slots[k].entry->source_datum & 0xFFFFu) == rid) {
 					need[k] = 1;
 					if (rank < priority[k]) priority[k] = (uint8_t)rank;
 					break;
@@ -2403,6 +2495,7 @@ static void residency_frame(const halo_ps2_frame_snapshot *snap, uint32_t frame,
 		if (s_slots[i].loaded && s_slots[i].entry && path_is_fp_model(s_slots[i].entry->path) &&
 			s_slot_rank[i] > OBJ_FP_IDLE_RANK)
 			s_slot_rank[i] = OBJ_FP_IDLE_RANK;
+	(void)floor_protect();   /* resident floor slots (stand-ins, small models) are never victims */
 	s_rank_frame = frame;
 	s_need_pin_seq = snap->sequence;
 	s_need_pin_gen = snap->map_generation;
@@ -2429,11 +2522,11 @@ static void residency_frame(const halo_ps2_frame_snapshot *snap, uint32_t frame,
 	 * Prewarm can preempt a rank-3 job before that job takes this frame's slice. */
 	for (i = 0; i < s_slot_count; i++)
 		if (need[i] && priority[i] == 0u) entry_request(s_profile, i, frame, 0u);
+	floor_prefetch(snap, frame);
 	fp_prewarm(frame);
 	for (p = 1u; p <= 3u; p++)
 		for (i = 0; i < s_slot_count; i++)
 			if (need[i] && priority[i] == p) entry_request(s_profile, i, frame, p);
-	world_prefetch(snap, frame);
 #if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
 	{
 		uint32_t dt = timer_cycles() - residency_t0;
@@ -2596,7 +2689,7 @@ static int pose_fn(void *user, const object_t *ob, object_nodes_t *out)
 		s_prepared->object[d->object_index].generation == d->generation &&
 		s_prepared->object[d->object_index].resource_id == d->resource_id &&
 		s_prepared->object[d->object_index].slot == d->slot &&
-		s_prepared->slot[d->slot].valid && s_prepared->slot[d->slot].epoch == s_slot_epoch[d->slot]) {
+		d->slot < HCU_OBJECTS_PREPARED_SLOTS && s_prepared->slot[d->slot].valid && s_prepared->slot[d->slot].epoch == s_slot_epoch[d->slot]) {
 		prepared = &s_prepared->object[d->object_index];
 		mi = s_prepared->slot[d->slot].info;
 	} else mi = model_get(&s->models, 0);
@@ -4081,7 +4174,7 @@ static void object_pass(void *user, render_ctx_t *rc)
 			s_prepared->object[d->object_index].generation == d->generation &&
 			s_prepared->object[d->object_index].resource_id == d->resource_id &&
 			s_prepared->object[d->object_index].slot == d->slot &&
-			s_prepared->slot[d->slot].valid && s_prepared->slot[d->slot].epoch == s_slot_epoch[d->slot]) {
+			d->slot < HCU_OBJECTS_PREPARED_SLOTS && s_prepared->slot[d->slot].valid && s_prepared->slot[d->slot].epoch == s_slot_epoch[d->slot]) {
 			mi = s_prepared->slot[d->slot].info;
 			memcpy(perm, s_prepared->slot[d->slot].perm, sizeof perm);
 			root = s_prepared->object[d->object_index].root;
@@ -4416,7 +4509,19 @@ int hcu_render_objects_load(const hcu_asset_profile_view *view, arena_t *arena,
 	memset(&s_view_counters, 0, sizeof s_view_counters);
 	s_profile = view;
 	s_slot_count = count;
-	s_tex_total = count * HCU_OBJECTS_TEX_STRIDE;
+	{
+		uint32_t keys = 0u;
+		memset(s_key_base, 0, sizeof s_key_base);
+		memset(s_key_span, 0, sizeof s_key_span);
+		for (i = 0; i < count; i++) {
+			uint32_t span = table[i].tex_keys ? table[i].tex_keys : (table[i].texture_chunk ? HCU_OBJECTS_TEX_STRIDE : 0u);
+			if (keys + span > HCU_OBJECTS_KEY_BUDGET) span = 0u;     /* out of keys: this entry draws flat */
+			s_key_base[i] = (uint16_t)keys;
+			s_key_span[i] = (uint8_t)span;
+			keys += span;
+		}
+		s_tex_total = keys;
+	}
 	s_installed = 0;
 	s_parity.records = NULL;
 	info->arena_before = (uint32_t)arena->used;
@@ -4458,8 +4563,20 @@ int hcu_render_objects_load(const hcu_asset_profile_view *view, arena_t *arena,
 			s->tex_size = 0;               /* a bad texture chunk leaves the entry flat, as before */
 		s_meta[i].resource_id = table[i].source_datum & 0xFFFFu;
 		s_meta[i].source_datum = table[i].source_datum;
+		s_meta[i].proxy = table[i].proxy;
 		info->entries++;
 	}
+	memset(s_proxy_full, OBJ_NONE8, sizeof s_proxy_full);
+	for (i = 0; i < count; i++) {
+		uint32_t f;
+		if (!table[i].proxy) continue;
+		for (f = 0; f < count; f++)
+			if (!table[f].proxy && table[f].source_datum == table[i].source_datum) { s_proxy_full[i] = (uint8_t)f; break; }
+		if (s_proxy_full[i] == OBJ_NONE8) s_slots[i].refused = 1;   /* a stand-in without its full model is never drawn */
+	}
+#ifdef HCU_RENDER_OBJECTS_EE
+	if (base) floor_preload();
+#endif
 	info->pool_bytes = s_pool_size;
 	info->arena_after = (uint32_t)arena->used;
 	return base ? HCU_RENDER_CONTENT_OK : HCU_RENDER_CONTENT_E_FULL;

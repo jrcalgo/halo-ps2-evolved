@@ -45,7 +45,7 @@ def _source_hash_file(path: Path) -> str:
 
 
 def build_media(sources: dict, tags: list, *, conversion_cache=None, input_hashes=None,
-                covered_out: dict | None = None, object_profile=None) -> dict:
+                covered_out: dict | None = None, object_profile=None, object_proxy: bool = False) -> dict:
     """Convert only `tags` entries shaped as source_key/group/path/source_datum.
 
     Unknown required groups fail closed: they need a real serialized format and
@@ -109,24 +109,41 @@ def build_media(sources: dict, tags: list, *, conversion_cache=None, input_hashe
         data_by_kind,bitmap_ids=conversions[cache_key]
         if group not in consumers: consumers[group] = _verify_consumer(group)
         consumer = consumers[group]
-        for kind, data in data_by_kind.items():
-            digest = hashlib.sha256(data).hexdigest()
-            key = f"{kind}:{digest}"
-            chunk = chunks_by_sha.setdefault(key, {
-                "key": key, "bytes": len(data), "data": data, "kind": kind, "sha256": digest,
-                "sources": [], "owners": [], "engine_consumer": consumer,
-            })
-            source = {"source_sha256": source_sha, "source_map": str(m.path)}
-            if source not in chunk["sources"]:
-                chunk["sources"].append(source)
-            owner = {"source_key": source_key, "source_datum": datum,
-                     "group": group, "path": item["path"]}
-            if owner not in chunk["owners"]:
-                chunk["owners"].append(owner)
-            if kind == "OTEX" and group == "mode":
-                for bitmap_id in bitmap_ids:
-                    covered_bitmaps[(source_key, bitmap_id)] = key
-            bindings.append({"owner": owner, "kind": kind, "chunk_key": key})
+        def add_chunks(kinds, variant=None):
+            for kind, data in kinds.items():
+                digest = hashlib.sha256(data).hexdigest()
+                key = f"{kind}:{digest}"
+                chunk = chunks_by_sha.setdefault(key, {
+                    "key": key, "bytes": len(data), "data": data, "kind": kind, "sha256": digest,
+                    "sources": [], "owners": [], "engine_consumer": consumer,
+                })
+                source = {"source_sha256": source_sha, "source_map": str(m.path)}
+                if source not in chunk["sources"]:
+                    chunk["sources"].append(source)
+                owner = {"source_key": source_key, "source_datum": datum,
+                         "group": group, "path": item["path"]}
+                if owner not in chunk["owners"]:
+                    chunk["owners"].append(owner)
+                if kind == "OTEX" and group == "mode" and variant is None:
+                    for bitmap_id in bitmap_ids:
+                        covered_bitmaps[(source_key, bitmap_id)] = key
+                bindings.append({"owner": owner, "kind": kind, "chunk_key": key,
+                                 **({"variant": variant} if variant else {})})
+        add_chunks(data_by_kind)
+        if object_proxy and group == "mode" and object_profile is None and \
+                modelconv.object_class(item["path"]) in modelconv.PROXY_CLASSES:
+            # Low-detail stand-in beside the full model (see modelconv.C3_OBJECT_PROXY_PROFILE). Kept only when the
+            # full model is big enough to be evicted and the stand-in is clearly smaller.
+            proxy_key = cache_key + ("proxy",)
+            if proxy_key not in conversions:
+                pr = modelconv.convert_map(m, [datum], object_profile=modelconv.C3_OBJECT_PROXY_PROFILE)
+                conversions[proxy_key] = ({"MODL": pr.modl, "OTEX": pr.otex}, ())
+            proxy_kinds = {k: v for k, v in conversions[proxy_key][0].items() if v}
+            full_bytes = sum(len(v) for v in data_by_kind.values() if v)
+            proxy_bytes = sum(len(v) for v in proxy_kinds.values())
+            if full_bytes > modelconv.PROXY_MIN_FULL_BYTES and \
+                    proxy_bytes <= full_bytes * modelconv.PROXY_MAX_FRACTION:
+                add_chunks(proxy_kinds, "proxy")
     chunks = sorted(chunks_by_sha.values(), key=lambda c: c["key"])
     if covered_out is not None:
         # Model-covered (source_key, bitmap datum) pairs; never part of the returned dict.

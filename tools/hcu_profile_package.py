@@ -226,7 +226,7 @@ def build_complete_media(sources: dict, tags: list, bitmap_schema: dict,
                          consumer_exclusions: dict | None = None,
                          bsp_selected: set | None = None, ctag_image: bytes | None = None,
                          schema: dict | None = None, tag_index_remaps: list | None = None,
-                         object_profile=None) -> dict:
+                         object_profile=None, object_proxy: bool = False) -> dict:
     """Build MODL/OTEX/ANIM plus every selected bitmap image as staged BITM.
 
     BITM uses the existing TEXS serializer, structural reader, and host-qualified
@@ -239,7 +239,8 @@ def build_complete_media(sources: dict, tags: list, bitmap_schema: dict,
     ordinary = [row for row in tags if row["group"] != "bitm"]
     covered = {}
     media = build_media(sources, ordinary, conversion_cache=conversion_cache,
-                        input_hashes=input_hashes, covered_out=covered, object_profile=object_profile)
+                        input_hashes=input_hashes, covered_out=covered, object_profile=object_profile,
+                        object_proxy=object_proxy)
     chunks = {row["key"]: row for row in media["chunks"]}
     bindings = list(media["bindings"])
     bitmap_catalog = []

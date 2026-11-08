@@ -250,7 +250,7 @@ def _ctag_decode(ctag_bytes):
 
 def build_one(spec, maps_dir:Path, manifest:dict, producers:dict, *, report_failures=False, cache=None,
               source_inputs=None, runtime_layout_probe=None, presentation=None,
-              consumer_exclusions=None, render_bsp=None, object_profile=None) -> tuple[bytes|None,dict,dict]:
+              consumer_exclusions=None, render_bsp=None, object_profile=None, object_proxy=False) -> tuple[bytes|None,dict,dict]:
     bsp_inputs=prepare_profile_bsp_roots(spec,maps_dir,manifest,cache)
     sources=_source_set(spec,maps_dir,cache)
     scenario=spec['scenario']
@@ -307,7 +307,7 @@ def build_one(spec, maps_dir:Path, manifest:dict, producers:dict, *, report_fail
             ctag_image=(_ctag_decode(result['ctag']).image if consumer_exclusions else None),
             schema=(manifest if consumer_exclusions else None),
             tag_index_remaps=(result['tag_index_remaps'] if consumer_exclusions else None),
-            object_profile=object_profile)
+            object_profile=object_profile,object_proxy=object_proxy)
         append_cbsp_chunks(media,bsp_assets)
         presentation_provenance=append_presentation_chunks(media,presentation,spec,
             result['source_occurrence_remaps']) if presentation is not None else None
@@ -363,7 +363,7 @@ def build_one(spec, maps_dir:Path, manifest:dict, producers:dict, *, report_fail
         if owner is None: raise ValueError('media owner lacks imported source binding')
         chunk_bindings.append({'chunk_id':chunk_ids[binding['chunk_key']],
             'sha256':binding['chunk_key'].split(':',1)[1],
-            **{k:binding[k] for k in ('kind','asset_id','presentation_chunk_id','jmad') if k in binding},
+            **{k:binding[k] for k in ('kind','asset_id','presentation_chunk_id','jmad','variant') if k in binding},
             'owner':{**{k:owner[k] for k in ('source_key','source_datum','group','path','output_datum')},
                      **({'source_image_index':binding['source_image_index']}
                         if 'source_image_index' in binding else {})},
@@ -425,6 +425,8 @@ def main(argv=None):
         help='opt-in C3 lower-detail object packing (modelconv.C3_OBJECT_PROFILE): one clustered LOD, 64 px textures')
     ap.add_argument('--c3-object-profile-v3',action='store_true',
         help='opt-in C3 v3 object packing (modelconv.C3_OBJECT_PROFILE_V3): v2 plus a clustered far first-person level')
+    ap.add_argument('--no-object-proxy',action='store_true',
+        help='do not pack the low-detail stand-in models (modelconv.C3_OBJECT_PROXY_PROFILE) next to the full ones')
     ap.add_argument('--consumer-exclusions',type=Path,default=None,
         help='pinned exclusion rows; bitmap media with only excluded live consumers is omitted and recorded')
     args=ap.parse_args(argv)
@@ -538,7 +540,7 @@ def main(argv=None):
             runtime_layout_probe=runtime_layout_evidence,presentation=cache.presentation,
             consumer_exclusions=consumer_exclusions,
             render_bsp=(args.render_bsp if args.render_media else None),
-            object_profile=object_profile)
+            object_profile=object_profile,object_proxy=not args.no_object_proxy)
         if args.session_selection and package is not None:
             catalog_rows=[r for r in roster.get('variants',[]) if
                 (r.get('disposition')=='combat' and r.get('recipe')) or
@@ -558,7 +560,7 @@ def main(argv=None):
                 runtime_layout_probe=runtime_layout_evidence,presentation=cache.presentation,
                 consumer_exclusions=consumer_exclusions,
                 render_bsp=(args.render_bsp if args.render_media else None),
-                object_profile=object_profile)
+                object_profile=object_profile,object_proxy=not args.no_object_proxy)
             if (package2,manifest2,artifacts2)!=(package,profile_manifest,artifacts):
                 raise ValueError(f'{stem}: independent rebuild differs')
             profile_manifest.setdefault('reproducibility',{})['independent_rebuild_equal']=True
