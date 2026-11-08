@@ -1072,3 +1072,29 @@ report is `hardware/full-r2-installation.json`. This verifies the APA image
 transfer and contents. Physical loading and playing of maps/matches, controls,
 sound, settings persistence, extended stability, and frame rate remain to be
 qualified on the console.
+
+
+### Blood Gulch hardware exception and R3 candidate
+
+The first reported physical Blood Gulch one-player run reaches stage 12
+(`HCU_BOOT_FRAME`) and faults with cause `10008010`, reported EPC `002056b5`,
+and BadVAddr `0049a7ee`. Cause indicates an address error on load. The nearest
+word-aligned instruction, `002056b4`, is a float load in
+`halo_ps2_fx_decals_each`; the reported EPC itself is not word aligned.
+BadVAddr is 198 bytes into `s_decal_bytes`, two bytes off float alignment.
+The decal allocator advanced by 66 bytes for one quad and its surface ID,
+allowing later float vertices to become unaligned.
+
+The shared PS2 decal cache now has an explicitly aligned base, rounds each
+allocation up to four bytes, accounts for padding when reusing/checking slots,
+and rejects an unaligned lock. All 13 map guests and the menu were rebuilt
+with the compact production layout and packed IRX settings. All guest link
+checks pass; minimum EE headroom is 8,266 bytes (Blood Gulch). The diagnostic
+R3 image preserves disc extents and contains the rebuilt ELFs. SHA-256:
+`57840292e8716d036b89d9f8ea48039e298659f5ec47ae46b5c9a02d842aba44`.
+Build results are in `full-game-r3/build-results.json`; image verification is
+`/tmp/HALO_FULL_TEST_R3-verification/result.json`.
+
+R3 has not yet passed a physical retest. A PCSX2 attempt could not start its
+visible desktop input interface; the Xvfb fallback also failed to initialize
+Qt's xcb plugin. These attempts provide no runtime validation of R3.
