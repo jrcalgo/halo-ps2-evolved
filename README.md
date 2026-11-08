@@ -15,15 +15,19 @@ The project started as a hybrid: a PS2-native renderer and map pipeline driving 
 ## Scope
 
 - Multiplayer only: the 13 stock Xbox multiplayer maps plus the UI map. Campaign missions are out of scope.
-- One to four local players in split screen, stock multiplayer modes, vehicles, Spartan bots, co-op team modes and endless survival.
+- One to four local players in split screen, stock multiplayer modes, vehicles, Spartan bots, and new weapons.
 - CE's fixed 30 Hz simulation, kept intact on real PS2 limits: 32 MiB EE RAM, 4 MiB GS eDRAM, 2 MiB IOP RAM and 2 MiB SPU2 RAM. Features are fitted to the hardware, not given larger pools or heap fallbacks.
 - Delivery through Open PS2 Loader.
 
-Out of scope: network play and System Link, PAL, 60 fps and campaign.
+Out of scope: network play and System Link, PAL, and campaign.
 
 ## Status
 
-The native main menu works on a physical PS2 through OPL 1.1.0-Beta-1996 and 1.2.0-Beta-1996 from the internal APA HDD, and exposes all 13 maps and game modes. The full image is installed and readback-verified; PS2 map/match testing is next. PCSX2 menu-to-gameplay chains pass across all 13 maps and game modes; Blood Gulch is verified with one and two players. Halo retains its 30 Hz simulation target. PCSX2 results are about 30 FPS at one player and 20–30 FPS at two; real-console FPS, controls, sound, settings persistence and extended stability remain unqualified. See [`docs/reports`](docs/reports) for evidence.
+The native main menu now works on a physical PS2 through OPL 1.1.0-Beta-1996 and 1.2.0-Beta-1996 from the internal APA HDD, and exposes all 13 multiplayer maps and the game modes. The full 13-map image is prepared; loading and playing those selections on PS2 remain to be qualified.
+
+Menu-to-gameplay chains work in PCSX2 across all 13 maps and game modes. All maps have been verified with one and two players. The game keeps Halo's 30 Hz simulation target, but real-console performance has not yet been measured; PCSX2 results are about 30 FPS at one player and 20–30 FPS at two players at max settings. Hardware controls, sound, settings persistence and extended stability still need qualification. 
+
+Evidence reports live under [`docs/reports`](docs/reports).
 
 ## Getting started
 
