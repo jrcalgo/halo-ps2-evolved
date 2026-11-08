@@ -6,8 +6,8 @@ camera turned, and a model that was not resident was simply not drawn.
 
 ## What changed
 
-* **Package.** For every vehicle, world-weapon and scenery/other model whose full pack is over 64 KB and at least 40%
-  larger than its stand-in, the package also holds a low-detail MODL/OTEX pair (`modelconv.C3_OBJECT_PROXY_PROFILE`:
+* **Package.** For every vehicle, world-weapon and scenery/other model whose full pack is over 64 KB and whose stand-in is at most 60%
+  of that size, the package also holds a low-detail MODL/OTEX pair (`modelconv.C3_OBJECT_PROXY_PROFILE`:
   the c3 v3 per-class LOD and clustering plan, 64 px textures). The chunk bindings carry `"variant": "proxy"`. Packages
   are built with stand-ins by default; `hcu_multiplayer_profiles.py --no-object-proxy` leaves them out.
   First-person, biped and sky models never get one. Blood Gulch: 22 stand-ins, about 0.7 MB more package.
