@@ -2020,45 +2020,25 @@ static void menu_sky_draw(packet2_t *packet, const video_t *video)
 	menu_depth_state(packet, video, 1u, 1u);
 }
 
-/* The big world (Threshold, bitmap 512x512). Retail leaves it high and to one side of the sky, well away from the
- * ring; the title wants it large and right beside the ring, so the quad is built at run time: its centre direction is
- * the ring's, seen from the middle of the camera path, turned MENU_PLANET_SIDE degrees to the left and lowered, and it
- * spans MENU_PLANET_HALF at MENU_PLANET_DISTANCE (about 80 degrees across). Sky units are the model's (1/1024). */
-#define MENU_PLANET_DISTANCE 16000.0f
-#define MENU_PLANET_HALF 15000.0f
-#define MENU_PLANET_SIDE (-30.0f)
-#define MENU_PLANET_DROP (-0.2f)
+/* The big world (Threshold, bitmap 512x512), placed exactly as the retail menu has it. It is one flat quad of the
+ * sky model (sky\sky_ui\sky_ui, shader sky_x10\shaders\threshold) with the model's 80 degree node turn applied; the
+ * sky is drawn at the camera (camera * 0.999 + v / 1024), so only its direction and size count: centre at azimuth
+ * 107.9, elevation 11.6 degrees, about 59 x 54 degrees across, 96.7 degrees from the ring. The corners are read from
+ * the retail ui.map (tools/build_hcu_menu_assets.py write_sky_mesh reads the same model). Sky units are the model's
+ * (1/1024). */
 typedef struct { float corner[4][3]; float uv[4][2]; unsigned page, log2_size, size; } menu_sky_quad;
 static menu_sky_quad s_menu_planet_quad;
 static int s_menu_planet_quad_ready;
 
 static void menu_planet_quad_build(void)
 {
-	static const float world_up[3] = { 0.0f, 0.0f, 1.0f };
-	float mean[3] = { 0.0f, 0.0f, 0.0f }, d[3], right[3], c[3], up[3], angle = MENU_PLANET_SIDE * 0.0174533f;
-	for (unsigned i = 0; i < MENU_CAMERA_COUNT; ++i)
-		for (unsigned k = 0; k < 3u; ++k) mean[k] += s_menu_camera_points[i][k] * (1.0f / (float)MENU_CAMERA_COUNT);
-	for (unsigned k = 0; k < 3u; ++k) d[k] = s_menu_ring_position[k] - mean[k];
-	menu_camera_normalize(d);
-	menu_camera_cross(d, world_up, right);
-	menu_camera_normalize(right);
-	for (unsigned k = 0; k < 3u; ++k) c[k] = d[k] * cosf(angle) - right[k] * sinf(angle);
-	c[2] -= MENU_PLANET_DROP;
-	menu_camera_normalize(c);
-	menu_camera_cross(c, world_up, right);
-	menu_camera_normalize(right);
-	menu_camera_cross(right, c, up);
-	for (unsigned k = 0; k < 3u; ++k) {
-		float centre = c[k] * MENU_PLANET_DISTANCE;
-		s_menu_planet_quad.corner[0][k] = centre - right[k] * MENU_PLANET_HALF + up[k] * MENU_PLANET_HALF;
-		s_menu_planet_quad.corner[1][k] = centre + right[k] * MENU_PLANET_HALF + up[k] * MENU_PLANET_HALF;
-		s_menu_planet_quad.corner[2][k] = centre - right[k] * MENU_PLANET_HALF - up[k] * MENU_PLANET_HALF;
-		s_menu_planet_quad.corner[3][k] = centre + right[k] * MENU_PLANET_HALF - up[k] * MENU_PLANET_HALF;
-	}
-	s_menu_planet_quad.uv[0][0] = 0.005f; s_menu_planet_quad.uv[0][1] = 0.002f;
-	s_menu_planet_quad.uv[1][0] = 0.995f; s_menu_planet_quad.uv[1][1] = 0.002f;
-	s_menu_planet_quad.uv[2][0] = 0.004f; s_menu_planet_quad.uv[2][1] = 0.993f;
-	s_menu_planet_quad.uv[3][0] = 0.995f; s_menu_planet_quad.uv[3][1] = 0.995f;
+	static const float corners[4][3] = {
+		{ 5744.7f, 15141.7f, -697.3f }, { -6378.5f, 9882.3f, -7881.6f },
+		{ -545.4f, 11610.9f, 12501.7f }, { -12668.6f, 6351.5f, 5317.4f } };
+	/* The model's coordinates are the 1..2 range minus one. */
+	static const float uv[4][2] = { { 0.005f, 0.002f }, { 0.995f, 0.002f }, { 0.004f, 0.993f }, { 0.995f, 0.995f } };
+	memcpy(s_menu_planet_quad.corner, corners, sizeof(corners));
+	memcpy(s_menu_planet_quad.uv, uv, sizeof(uv));
 	s_menu_planet_quad.page = MENU_PLANET_PAGE; s_menu_planet_quad.log2_size = 9u;
 	s_menu_planet_quad.size = MENU_PLANET_SIZE;
 	s_menu_planet_quad_ready = 1;
