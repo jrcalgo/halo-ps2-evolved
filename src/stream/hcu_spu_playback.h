@@ -83,6 +83,8 @@ void hcu_spu_request(const hcu_sound_request *request, uint32_t name_hash);
 void hcu_spu_tick(uint32_t now);
 void hcu_spu_get_stats(hcu_spu_stats *out);
 int hcu_spu_ready(void);
+/* Voices (a bit mask, CORE1 voice n = bit n) the player never allocates: the music stream owns them. */
+void hcu_spu_reserve_voices(uint32_t mask);
 /* Playing time in milliseconds of the loaded bank's sound (its first permutation) at pitch 1; 0 when it is not in the bank. */
 uint32_t hcu_spu_sound_length_ms(uint32_t name_hash);
 /* Listener pose (the first view's camera). Without one, sounds are centred at full distance gain. */

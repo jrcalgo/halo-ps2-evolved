@@ -9,6 +9,7 @@
 
 #if defined(__mips__)
 #include "stream/hcu_spu_playback.h"
+#include "stream/hcu_spu_stream.h"
 #include "stream/hcu_file_bridge.h"
 #include "stream/hcu_loading_screen.h"
 
@@ -3142,6 +3143,23 @@ static void menu_join_players(hcu_main_menu_state *state, menu_pad_event events[
 	}
 }
 
+#if defined(__mips__)
+/* Queues one of the three loop recordings (stream pieces 1..3) at random, none twice before the others have played
+ * and never the one that just played. `played` is a mask of the loops heard, `last` the loop picked last (3: none). */
+static int menu_theme_queue_loop(unsigned *seed, unsigned *played, unsigned *last)
+{
+	unsigned free_mask, pick, tries;
+	if (*played == 7u) *played = *last < 3u ? 1u << *last : 0u;
+	free_mask = ~*played & 7u;
+	*seed = *seed * 1664525u + 1013904223u;
+	pick = (*seed >> 16) % 3u;
+	for (tries = 0; tries < 3u && !(free_mask & (1u << pick)); ++tries) pick = (pick + 1u) % 3u;
+	if (hcu_spu_stream_queue(1u + pick) != 0) return -1;
+	*played |= 1u << pick; *last = pick;
+	return 0;
+}
+#endif
+
 enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 	void *dma_storage, size_t dma_bytes, arena_t *scratch)
 {
@@ -3153,6 +3171,8 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 	 * them, never one twice before the others have played). theme_phase 0: intro not started, 1: waiting for the
 	 * next piece at theme_next_ms, 2: the old single loop (a bank without the other recordings). */
 	int theme_phase = 0; unsigned theme_next_ms = 0, theme_played = 0, theme_last = 3u, theme_seed = 0;
+	int theme_streamed = 0; /* the music plays from disc (hcu_spu_stream) at its retail rate */
+	unsigned theme_stream_logged = 0;
 	static const char *const theme_loops[3] = { "sound\\music\\title1\\loops", "sound\\music\\title1\\loops2",
 		"sound\\music\\title1\\loops3" };
 #endif
@@ -3199,6 +3219,10 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 		if (spu_result == 0) {
 			spu_result = hcu_spu_load_bank("D:\\packages\\menu_audio.hsb");
 			hcu_boot_diag_note("menu bank ret", (unsigned)spu_result, 0, 0);
+			if (spu_result == 0) {
+				int stream_result = hcu_spu_stream_open_path("D:\\packages\\menu_music.hms");
+				hcu_boot_diag_note("menu music ret", (unsigned)stream_result, 0, 0);
+			}
 		}
 	}
 	if (s_kept_ready) { memcpy(state.profiles, s_kept_profiles, sizeof(s_kept_profiles)); memcpy(state.saved_variants, s_kept_variants, sizeof(s_kept_variants)); }
@@ -3211,7 +3235,20 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 		(unsigned)HCU_MAIN_MENU_ITEM_COUNT, MENU_RING_OUTER_W, MENU_RING_OUTER_H,
 		(unsigned)HCU_MAIN_MENU_MAP_COUNT, (unsigned)HCU_MAIN_MENU_PROFILE_COUNT);
 #if defined(__mips__)
-	menu_sound("sound\\music\\title1\\in", HCU_SOUND_EVENT_IMPULSE, 0);
+	/* Retail title1: the intro, then a loop recording picked at random each time the loop comes round. From disc when
+	 * the stream file is there (all four recordings at 44.1 kHz stereo), else from the resident bank. */
+	if (hcu_spu_stream_ready()) {
+		theme_seed = (unsigned)GetTimerSystemTime() | 1u;
+		if (hcu_spu_stream_queue(0) == 0 && menu_theme_queue_loop(&theme_seed, &theme_played, &theme_last) == 0 &&
+			hcu_spu_stream_start(hcu_spu_volume_for(1.0f, 1.0f)) == 0) {
+			theme_streamed = 1;
+			printf("HALO_PS2_LOCAL menu-music stream start pieces=%u\n", (unsigned)hcu_spu_stream_piece_count());
+		} else {
+			printf("HALO_PS2_LOCAL menu-music stream start failed, resident music\n");
+		}
+	}
+	if (!theme_streamed)
+		menu_sound("sound\\music\\title1\\in", HCU_SOUND_EVENT_IMPULSE, 0);
 #endif
 	while (action == HCU_MAIN_MENU_ACTION_NONE) {
 		int up, down, left, right, confirm, back, start, suppress_confirm = 0, suppress_back = 0;
@@ -3226,6 +3263,22 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 		hcu_spu_tick(menu_elapsed_ms());
 		/* The intro is 33.29 s; each next piece starts on the frame nearest the end of the one before (scheduled
 		 * from the first start, so the frame rounding does not add up) and the port leaves no audible pause. */
+		if (theme_streamed) {
+			/* keep the next recording queued while the current one plays; the refills run from here */
+			if (hcu_spu_stream_queued() < 1u) (void)menu_theme_queue_loop(&theme_seed, &theme_played, &theme_last);
+			hcu_spu_stream_tick();
+			theme_phase = 3;
+			{
+				hcu_spu_stream_stats stream_stats;
+				hcu_spu_stream_get_stats(&stream_stats);
+				if (stream_stats.refills >= theme_stream_logged + 16u) {
+					theme_stream_logged = stream_stats.refills;
+					printf("HALO_PS2_LOCAL menu-music stream refills=%u underruns=%u read_fails=%u pieces=%u at=%ums\n",
+						(unsigned)stream_stats.refills, (unsigned)stream_stats.underruns,
+						(unsigned)stream_stats.read_fails, (unsigned)stream_stats.pieces_started, menu_elapsed_ms());
+				}
+			}
+		}
 		if (!theme_phase) {
 			unsigned intro = hcu_spu_sound_length_ms(hcu_spu_name_hash("sound\\music\\title1\\in"));
 			theme_next_ms = intro ? intro : 33290u;
@@ -3383,6 +3436,16 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 		}
 	}
 #if defined(__mips__)
+	if (theme_streamed) {
+		hcu_spu_stream_stop();
+		{
+			hcu_spu_stream_stats stream_stats;
+			hcu_spu_stream_get_stats(&stream_stats);
+			printf("HALO_PS2_LOCAL menu-music stream stop refills=%u underruns=%u read_fails=%u pieces=%u\n",
+				(unsigned)stream_stats.refills, (unsigned)stream_stats.underruns,
+				(unsigned)stream_stats.read_fails, (unsigned)stream_stats.pieces_started);
+		}
+	}
 	menu_sound("sound\\music\\title1\\in", HCU_SOUND_EVENT_STOP, frame);
 	menu_sound(theme_loops[0], HCU_SOUND_EVENT_LOOPING_STOP, frame);
 	menu_sound(theme_loops[0], HCU_SOUND_EVENT_STOP, frame);

@@ -22,6 +22,10 @@ typedef struct {
 	/* Optional: uploads `bytes` of the sample from `offset` (a multiple of HCU_SPU_UPLOAD_PART) to `spu_addr + offset`,
 	 * so a large page-in is spread over game ticks instead of stalling one frame. NULL: `upload` is used whole. */
 	int (*upload_part)(const hcu_spu_sample *sample, uint32_t spu_addr, uint32_t offset, uint32_t bytes);
+	/* Optional, for the music stream: a voice's current address (NAX) and a raw upload of `bytes` (a multiple of 64,
+	 * at most HCU_SPU_UPLOAD_PART) from `data` to `spu_addr`. */
+	uint32_t (*get_addr)(uint16_t entry);
+	int (*upload_raw)(const void *data, uint32_t bytes, uint32_t spu_addr);
 } hcu_spu_hw;
 
 void hcu_spu_attach(const hcu_spu_hw *hw, const hcu_spu_sample *samples, uint32_t count);

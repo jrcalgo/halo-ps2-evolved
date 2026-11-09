@@ -33,9 +33,11 @@ MUSIC = (
      (r"sound\music\title1\loops", r"sound\music\title1\loops2", r"sound\music\title1\loops3")),
 )
 EFFECTS = (r"sound\sfx\ui\cursor", r"sound\sfx\ui\forward", r"sound\sfx\ui\back")
-# SPU2 RAM a bank can fill resident (HCU_SPU_RAM_END - HCU_SPU_RAM_BASE); the music is resampled to the highest rate
-# that leaves it room, since the three loops alone are about 4 MB at the retail 44.1 kHz.
-SPU_CAPACITY = 0x200000 - 0x5010
+# SPU2 RAM this bank can fill (HCU_SPU_RAM_END - HCU_SPU_RAM_BASE less the 64 KB at the top that the music stream's
+# rings use, HCU_STREAM_RESERVED_BYTES). The menu plays the music from disc (tools/build_hcu_menu_music.py) at the
+# retail rate; this bank's copy is only the fallback when the stream file cannot be opened, so it is resampled to the
+# highest rate that leaves room: the three loops alone are about 4 MB at the retail 44.1 kHz.
+SPU_CAPACITY = 0x200000 - 0x5010 - 0x10000
 RATE_STEP = 50
 
 

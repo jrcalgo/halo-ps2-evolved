@@ -45,6 +45,7 @@ static uint32_t s_sample_count;
 static uint8_t s_perm_cursor[HCU_SPU_MAX_SAMPLES];
 static voice_state s_voice[HCU_SPU_VOICES];
 static hcu_spu_stats s_stats;
+static uint32_t s_reserved_voices;
 static float s_listener[3], s_listener_forward[3], s_listener_up[3];
 static int s_listener_valid;
 
@@ -205,6 +206,11 @@ int hcu_spu_ready(void)
 	return s_hw != 0 && s_sample_count != 0;
 }
 
+void hcu_spu_reserve_voices(uint32_t mask)
+{
+	s_reserved_voices = mask & ((1u << HCU_SPU_VOICES) - 1u);
+}
+
 uint32_t hcu_spu_sound_length_ms(uint32_t name_hash)
 {
 	uint32_t i;
@@ -246,9 +252,9 @@ static int pick_voice(uint8_t priority, uint32_t now, int *stolen)
 	int victim = -1;
 	*stolen = 0;
 	for (i = 0; i < HCU_SPU_VOICES; ++i)
-		if (!s_voice[i].active) return (int)i;
+		if (!s_voice[i].active && !(s_reserved_voices & (1u << i))) return (int)i;
 	for (i = 0; i < HCU_SPU_VOICES; ++i) {
-		if (s_voice[i].priority > priority) continue;
+		if ((s_reserved_voices & (1u << i)) || s_voice[i].priority > priority) continue;
 		if (victim < 0 || s_voice[i].priority < s_voice[victim].priority ||
 			(s_voice[i].priority == s_voice[victim].priority &&
 			 (int32_t)(s_voice[victim].start_tick - s_voice[i].start_tick) > 0))

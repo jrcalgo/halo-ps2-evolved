@@ -106,7 +106,7 @@ def _ima_nibble(pred: int, index: int, nib: int) -> tuple[int, int]:
     return pred, max(0, min(88, index + INDEX_ADJUST[nib & 7]))
 
 
-def decode_xbox_adpcm(raw: bytes, channels: int = 1) -> list[int]:
+def decode_xbox_adpcm(raw: bytes, channels: int = 1, split: bool = False):
     """Xbox ADPCM, 64 output samples per channel per block: the header sample plus the first 63 of 64 nibbles.
 
     Mono is one 36-byte block (int16 predictor, step index, pad, 32 nibble bytes). Stereo is the standard IMA
@@ -136,6 +136,8 @@ def decode_xbox_adpcm(raw: bytes, channels: int = 1) -> list[int]:
                             out[ch].append(pred)
                         count[ch] += 1
                 state[ch] = [pred, index]
+    if split:
+        return out
     if channels == 1:
         return out[0]
     return [sum(frame) // channels for frame in zip(*out)]
@@ -186,10 +188,12 @@ def _vag_block(chunk: list[int], h1: int, h2: int, filt: int, shift: int):
 VAG_TERMINATOR_FLAGS = 7  # loop start | repeat | end
 
 
-def encode_vag(pcm: list[int]) -> bytes:
+def encode_vag(pcm: list[int], terminator: bool = True, reset: bool = False) -> bytes:
     """Encode mono PCM16 to SPU VAG blocks (one shot). The SPU2 does not reliably stop at an end flag: a voice that
     outlives its sample (the game tick that keys it off can be late) replays the sample from its start as a steady
-    tone. The audio therefore ends in a silent terminator block flagged loop-start|repeat|end, which loops on itself."""
+    tone. The audio therefore ends in a silent terminator block flagged loop-start|repeat|end, which loops on itself.
+    `terminator=False` leaves that block off (a stream's blocks carry no flags and the player sets them) and `reset`
+    makes the first block independent of the decoder's history (filter 0), so it can follow any other audio."""
     blocks = bytearray()
     h1 = h2 = 0
     total = (len(pcm) + 27) // 28
@@ -197,7 +201,7 @@ def encode_vag(pcm: list[int]) -> bytes:
         chunk = pcm[index * 28:(index + 1) * 28]
         chunk = chunk + [0] * (28 - len(chunk))
         best = None
-        for filt in range(len(VAG_FILTERS)):
+        for filt in range(1 if reset and index == 0 else len(VAG_FILTERS)):
             k1, k2 = VAG_FILTERS[filt]
             peak = 0
             p1, p2 = h1, h2
@@ -219,7 +223,8 @@ def encode_vag(pcm: list[int]) -> bytes:
         blocks.append(flags)
         for i in range(0, 28, 2):
             blocks.append(nibbles[i] | (nibbles[i + 1] << 4))
-    blocks += bytes([0, VAG_TERMINATOR_FLAGS]) + bytes(14)
+    if terminator:
+        blocks += bytes([0, VAG_TERMINATOR_FLAGS]) + bytes(14)
     return bytes(blocks)
 
 

@@ -89,6 +89,7 @@ EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_main.o \
 	$(WORLD_OUTPUT)/stream/hcu_loading_screen.o \
 	$(WORLD_OUTPUT)/stream/hcu_sound_requests.o \
 	$(WORLD_OUTPUT)/stream/hcu_spu_playback.o \
+	$(WORLD_OUTPUT)/stream/hcu_spu_stream.o \
 	$(WORLD_OUTPUT)/stream/hcu_spu_hw_ps2.o \
 	$(WORLD_OUTPUT)/stream/hcu_spu_irx.o \
 	$(WORLD_OUTPUT)/stream/hcu_render_snapshot.o \
@@ -420,6 +421,10 @@ $(WORLD_OUTPUT)/stream/hcu_sound_requests.o: src/stream/hcu_sound_requests.c src
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
 
 $(WORLD_OUTPUT)/stream/hcu_spu_playback.o: src/stream/hcu_spu_playback.c src/stream/hcu_spu_playback.h src/stream/hcu_spu_hw.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_spu_stream.o: src/stream/hcu_spu_stream.c src/stream/hcu_spu_stream.h src/stream/hcu_spu_hw.h src/stream/hcu_spu_playback.h
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
 

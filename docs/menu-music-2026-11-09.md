@@ -28,3 +28,22 @@ single looping voice.
 ## Verified
 Headless PCSX2 (`HALO_PS2_v18_music.iso`): intro at 8.77 s, `loops2` at 42.07 s, `loops` at 150.42 s (42.07 + 108.3);
 captured audio is non-silent. Not ear-tested.
+
+## Streaming from disc (full quality)
+The resident bank above is the fallback. The menu plays the music from disc at the retail 44.1 kHz in stereo:
+- `tools/build_hcu_menu_music.py` writes `menu_music.hms` ("HMS1", 11.7 MB, ISO name `MMUSIC.HMS`): the four pieces as
+  left/right SPU2 VAG, 16 KB slices interleaved per channel, flags unset, each piece's first block independent of
+  history (filter 0). About 40 dB SNR against the retail PCM.
+- `src/stream/hcu_spu_stream.c`: voices 22 (left) and 23 (right), hard panned, keyed on together. Each channel loops a
+  ring of two 16 KB halves in the last 64 KB of SPU2 RAM (0x1F0000..0x200000; the fallback bank is budgeted to leave it).
+  The player sets loop-start on the ring's first block and loop-end|repeat on its last; as the voice crosses into one
+  half the other is refilled (one disc read + one upload per channel, on separate ticks). Pieces play back to back
+  with no gap; silence once none is queued. `hcu_spu_reserve_voices` keeps the sound player off voices 22/23.
+- The menu queues the intro and a random loop, tops the queue up as pieces start (no repeat until all three played), and
+  logs `menu-music stream refills=.. underruns=.. read_fails=..` every 16 refills (0.65 s each).
+- Host test `tests/test_hcu_spu_stream.py` simulates SPU2 RAM and two voices: piece order, loop wraps, a 150 ms stall,
+  a failed read (plays silence, counted).
+
+This is a deliberate exception to "never page audio": it writes SPU2 RAM during playback, but only the half the voice
+has left. A late refill repeats a half, it cannot play other data. Headless PCSX2: 160 refills, 0 underruns, 0 read
+fails over 104 s, piece change on time. Not tested on real hardware or by ear.

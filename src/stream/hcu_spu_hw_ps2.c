@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "stream/hcu_file_bridge.h"
+#include "stream/hcu_spu_stream.h"
 #include "stream/hcu_boot_diag.h"
 #include "stream/hcu_irx_unpack.h"
 #include "stream/sha256.h"
@@ -63,7 +64,10 @@ static uint32_t hw_get_switch(uint16_t entry)
 
 static int hw_upload(const hcu_spu_sample *sample, uint32_t spu_addr);
 static int hw_upload_part(const hcu_spu_sample *sample, uint32_t spu_addr, uint32_t offset, uint32_t bytes);
-static const hcu_spu_hw s_hw = { hw_set_param, hw_set_addr, hw_set_switch, hw_get_switch, hw_upload, hw_upload_part };
+static uint32_t hw_get_addr(uint16_t entry);
+static int hw_upload_raw(const void *data, uint32_t bytes, uint32_t spu_addr);
+static const hcu_spu_hw s_hw = { hw_set_param, hw_set_addr, hw_set_switch, hw_get_switch, hw_upload, hw_upload_part,
+	hw_get_addr, hw_upload_raw };
 
 #if defined(HALO_PS2_BOOT_DIAG) && HALO_PS2_BOOT_DIAG
 /* Same sequence as the linked SDK's SifExecModuleBuffer, with checkpoints
@@ -212,6 +216,18 @@ static int upload_chunk(const uint8_t *data, uint32_t bytes, uint32_t spu_addr)
 
 static int read_exact(int token, void *dst, uint32_t bytes);
 
+static uint32_t hw_get_addr(uint16_t entry)
+{
+	return (uint32_t)sceSdRemote(1, rSdGetAddr, entry, 0, 0, 0, 0, 0);
+}
+
+static int hw_upload_raw(const void *data, uint32_t bytes, uint32_t spu_addr)
+{
+	if (bytes > HCU_SPU_STAGE_BYTES || (bytes & 63u)) return -1;
+	memcpy(s_stage, data, bytes);
+	return upload_chunk(s_stage, bytes, spu_addr);
+}
+
 /* One slice of a sample: the slices are read and uploaded on separate game ticks. */
 static int hw_upload_part(const hcu_spu_sample *sample, uint32_t spu_addr, uint32_t offset, uint32_t bytes)
 {
@@ -305,4 +321,41 @@ fail_read:
 	printf("HALO_PS2_LOCAL spu-fail stage=bank-read\n");
 	hcu_file_bridge_close(token);
 	return -5;
+}
+
+/* The music stream file stays open for the life of the menu: every refill seeks into it. */
+static int s_stream_token = -1;
+
+static int stream_read(void *context, uint32_t offset, void *destination, uint32_t bytes)
+{
+	(void)context;
+	if (s_stream_token < 0) return -1;
+	if (hcu_file_bridge_seek(s_stream_token, (long)offset, 0) != (long)offset) return -2;
+	return read_exact(s_stream_token, destination, bytes) ? 0 : -3;
+}
+
+int hcu_spu_stream_open_path(const char *path)
+{
+	unsigned long size = 0;
+	hcu_spu_stream_source source;
+	int token, result;
+	if (!s_hw_ready) return -1;
+	token = hcu_file_bridge_open(path, &size);
+	if (token < 0) {
+		printf("HALO_PS2_LOCAL spu-stream fail stage=open path=%s\n", path);
+		return -2;
+	}
+	source.read = stream_read; source.context = 0; source.size = (uint32_t)size;
+	if (s_stream_token >= 0) hcu_file_bridge_close(s_stream_token);
+	s_stream_token = token;
+	result = hcu_spu_stream_open(&s_hw, &source);
+	if (result != 0) {
+		printf("HALO_PS2_LOCAL spu-stream fail stage=parse result=%d size=%lu\n", result, size);
+		hcu_file_bridge_close(token);
+		s_stream_token = -1;
+		return -3;
+	}
+	hcu_spu_reserve_voices(HCU_STREAM_VOICE_MASK);
+	printf("HALO_PS2_LOCAL spu-stream ready pieces=%u size=%lu\n", (unsigned)hcu_spu_stream_piece_count(), size);
+	return 0;
 }

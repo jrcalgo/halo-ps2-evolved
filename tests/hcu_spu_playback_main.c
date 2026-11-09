@@ -24,7 +24,7 @@ static int h_upload(const hcu_spu_sample *sample, uint32_t addr)
 	uploads++;
 	return 0;
 }
-static const hcu_spu_hw hw = { h_param, h_addr, h_switch, h_get, h_upload, 0 };
+static const hcu_spu_hw hw = { h_param, h_addr, h_switch, h_get, h_upload, 0, 0, 0 };
 static unsigned part_calls, part_fail;
 static uint32_t part_offset[16], part_bytes[16];
 static int h_upload_part(const hcu_spu_sample *sample, uint32_t addr, uint32_t offset, uint32_t bytes)
@@ -35,7 +35,7 @@ static int h_upload_part(const hcu_spu_sample *sample, uint32_t addr, uint32_t o
 	part_calls++;
 	return 0;
 }
-static const hcu_spu_hw hw_part = { h_param, h_addr, h_switch, h_get, h_upload, h_upload_part };
+static const hcu_spu_hw hw_part = { h_param, h_addr, h_switch, h_get, h_upload, h_upload_part, 0, 0 };
 
 static void w32(uint8_t *p, uint32_t v) { p[0] = v; p[1] = v >> 8; p[2] = v >> 16; p[3] = v >> 24; }
 
