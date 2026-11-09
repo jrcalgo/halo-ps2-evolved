@@ -2022,9 +2022,9 @@ static void menu_sky_draw(packet2_t *packet, const video_t *video)
 }
 
 /* The big world (Threshold, bitmap 512x512), placed exactly as the retail menu has it. It is one flat quad of the
- * sky model (sky\sky_ui\sky_ui, shader sky_x10\shaders\threshold) with the model's 80 degree node turn applied; the
+ * sky model (sky\sky_ui\sky_ui, shader sky_x10\shaders\threshold) in model space (the node's 80 degree turn is cancelled by its inverse bind matrix); the
  * sky is drawn at the camera (camera * 0.999 + v / 1024), so only its direction and size count: centre at azimuth
- * 107.9, elevation 11.6 degrees, about 59 x 54 degrees across, 96.7 degrees from the ring. The corners are read from
+ * 27.9, elevation 11.6 degrees, about 59 x 54 degrees across. The corners are read from
  * the retail ui.map (tools/build_hcu_menu_assets.py write_sky_mesh reads the same model). Sky units are the model's
  * (1/1024). */
 typedef struct { float corner[4][3]; float uv[4][2]; unsigned page, log2_size, size; } menu_sky_quad;
@@ -2034,8 +2034,8 @@ static int s_menu_planet_quad_ready;
 static void menu_planet_quad_build(void)
 {
 	static const float corners[4][3] = {
-		{ 5744.7f, 15141.7f, -697.3f }, { -6378.5f, 9882.3f, -7881.6f },
-		{ -545.4f, 11610.9f, 12501.7f }, { -12668.6f, 6351.5f, 5317.4f } };
+		{ 15909.2f, -3028.1f, -697.3f }, { 8624.6f, 7997.6f, -7881.6f },
+		{ 11339.8f, 2553.3f, 12501.7f }, { 4055.1f, 13579.1f, 5317.4f } };
 	/* The model's coordinates are the 1..2 range minus one. */
 	static const float uv[4][2] = { { 0.005f, 0.002f }, { 0.995f, 0.002f }, { 0.004f, 0.993f }, { 0.995f, 0.995f } };
 	memcpy(s_menu_planet_quad.corner, corners, sizeof(corners));

@@ -211,6 +211,27 @@ def _root_entries_at(handle, extent: int, size: int) -> list[tuple[str, int, int
     return entries
 
 
+def menu_package_jobs(texture_path: Path, audio_path: Path, music_path: Path, assets_dir: Path):
+    """(package, command builder taking the retail iso) for each cached menu package."""
+    return [
+        (texture_path, lambda iso: ["python3", "tools/build_hcu_menu_assets.py", iso,
+                                    "--out", str(assets_dir), "--package-out", str(texture_path)]),
+        (audio_path, lambda iso: ["python3", "tools/build_hcu_menu_audio.py", iso, str(audio_path)]),
+        (music_path, lambda iso: ["python3", "tools/build_hcu_menu_music.py", iso, str(music_path)]),
+    ]
+
+
+def refresh_menu_package(package: Path, command, retail_iso: Path | None, force: bool, parser) -> None:
+    """Pull a menu package from the retail disc once; later builds reuse the cached file."""
+    if package.is_file() and not force:
+        print(f"menu package cached: {package.name}")
+        return
+    if retail_iso is None:
+        parser.error(f"missing menu package {package.name}; pass --retail-iso or set HALO_RETAIL_XISO "
+                     "to your Halo CE Xbox XISO")
+    run(*command(str(retail_iso.resolve())))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--elf", type=Path, required=True, help="menu ELF stored as /HPS2_000.01")
@@ -219,9 +240,10 @@ def main() -> int:
                         default=ROOT / "assets/ps2/boot-logo-ntsc.bin",
                         help="12-sector PS2 logo source (default: bundled NTSC logo)")
     parser.add_argument("--retail-iso", type=Path,
-                        help="Halo CE Xbox XISO the menu textures, audio and music are pulled from "
-                             "(default: $HALO_RETAIL_XISO, else ~/Documents/Halo/Halo - Combat Evolved.xiso.iso "
-                             "when any menu package is missing)")
+                        help="Halo CE Xbox XISO the menu textures, audio and music are pulled from, once, then cached "
+                             "(default: $HALO_RETAIL_XISO, else ~/Documents/Halo/Halo - Combat Evolved.xiso.iso)")
+    parser.add_argument("--refresh-menu-assets", action="store_true",
+                        help="pull the menu packages from the retail disc again even if cached copies exist")
     parser.add_argument("--menu-dir", type=Path,
                         default=ROOT / "build/halo-ps2-bloodgulch/packages",
                         help="directory with menu_textures.bin, menu_audio.hsb, and load.rgb")
@@ -241,23 +263,17 @@ def main() -> int:
     audio_path = menu_dir / "menu_audio.hsb"
     music_path = menu_dir / "menu_music.hms"
     loading_path = menu_dir / "load.rgb"
-    packages = (texture_path, audio_path, music_path)
-    if args.retail_iso is None and not all(path.is_file() for path in packages):
-        # Retail-derived art and audio are never tracked: pull them from the disc.
+    menu_dir.mkdir(parents=True, exist_ok=True)
+    retail_iso = args.retail_iso
+    if retail_iso is None:
         candidates = [os.environ.get("HALO_RETAIL_XISO"), str(DEFAULT_RETAIL_XISO)]
-        args.retail_iso = next((Path(c).expanduser() for c in candidates if c and Path(c).expanduser().is_file()), None)
-        if args.retail_iso is None:
-            missing = ", ".join(path.name for path in packages if not path.is_file())
-            parser.error(f"missing menu packages ({missing}); pass --retail-iso or set HALO_RETAIL_XISO "
-                         "to your Halo CE Xbox XISO")
-    if args.retail_iso:
-        if not args.retail_iso.is_file():
-            parser.error(f"missing retail XISO: {args.retail_iso}")
-        menu_dir.mkdir(parents=True, exist_ok=True)
-        run("python3", "tools/build_hcu_menu_assets.py", str(args.retail_iso.resolve()),
-            "--out", str(output.parent / "menu-assets"), "--package-out", str(texture_path))
-        run("python3", "tools/build_hcu_menu_audio.py", str(args.retail_iso.resolve()), str(audio_path))
-        run("python3", "tools/build_hcu_menu_music.py", str(args.retail_iso.resolve()), str(music_path))
+        retail_iso = next((Path(c).expanduser() for c in candidates if c and Path(c).expanduser().is_file()), None)
+    elif not retail_iso.is_file():
+        parser.error(f"missing retail XISO: {retail_iso}")
+    # Retail-derived art and audio are never tracked: pull them from the disc once, then reuse the cached packages
+    # (delete them or pass --refresh-menu-assets to pull again).
+    for package, generator in menu_package_jobs(texture_path, audio_path, music_path, output.parent / "menu-assets"):
+        refresh_menu_package(package, generator, retail_iso, args.refresh_menu_assets, parser)
 
     table = mp.maps()
     # (iso path, host path, sort weight). ELFs stay inside the BIOS loadelf window.

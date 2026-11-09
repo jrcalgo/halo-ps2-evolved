@@ -52,7 +52,10 @@ GALAXY_SIZE = (1024, 128)  # retail 1024x256
 GALAXY_BITMAP = r"sky\sky_x10\bitmaps\galaxy"
 SKY_MODEL = r"sky\sky_ui\sky_ui"
 SKY_MAGIC = b"HSK1"
-SKY_NODE_ROTATION = math.radians(80.0)  # the sky model's only node turns 80 degrees about z
+# The sky model's only node has an 80 degree default turn about z, but render_model multiplies each node matrix by the
+# node's default inverse matrix (-80 degrees), so at the default pose they cancel and the vertices keep their model-space
+# positions. Applying the turn (as an earlier version did) put the planet and galaxy band in the wrong place.
+SKY_NODE_ROTATION = 0.0
 
 # Retail multiplayer screen art (ui.map). Headers are blue glow text and the option pictures are blue line art, so both
 # pack as 8-bit indices with one shared palette each: 1 byte per pixel instead of the 2 an RGB5A1 texture takes.
@@ -348,7 +351,7 @@ def write_title_art(ui_map: Path, destination: Path) -> bytes:
 
 def write_sky_mesh(ui_map: Path, destination: Path) -> bytes:
     """Export the retail sky model's space sphere and galaxy band ("HSK1"): space triangles, then galaxy triangles,
-    each vertex x, y, z (turned by the model's node rotation so they share the camera's world axes), u, v."""
+    each vertex x, y, z (model space, which is the camera's world axes: the node turn cancels, see SKY_NODE_ROTATION), u, v."""
     data = texconv.MapData.open(ui_map)
     model = next(e for e in data.index.entries if e.group == "mode" and e.path == SKY_MODEL)
     source = modelconv.read_model(data, model)
