@@ -401,6 +401,8 @@ def main() -> None:
             profile += "-snapshot-index"
         if os.environ.get("HCU_C3_MOVEMENT_TRACE") == "1":
             profile += "-movement-trace"
+        if os.environ.get("HCU_DEBUG_WEAPON_CYCLE") == "1":
+            profile += "-weapon-cycle"
         if os.environ.get("HCU_C3_SESSION_TRACE") == "1":
             profile += "-session-trace"
         if os.environ.get("HCU_C3_PHASE_PROBE") == "1":
@@ -443,6 +445,8 @@ def main() -> None:
         source_flags.append("-DHALO_PS2_C3_SNAPSHOT_INDEX=1")
     if hcu_c3 and os.environ.get("HCU_C3_MOVEMENT_TRACE") == "1":
         source_flags.append("-DHALO_PS2_C3_MOVEMENT_TRACE=1")
+    if hcu_c3 and os.environ.get("HCU_DEBUG_WEAPON_CYCLE") == "1":
+        source_flags.append("-DHCU_DEBUG_WEAPON_CYCLE=1")
     if hcu_c3 and os.environ.get("HCU_C3_SESSION_TRACE") == "1":
         source_flags.append("-DHALO_PS2_C3_SESSION_TRACE=1")
     if hcu_c3 and os.environ.get("HCU_C3_PHASE_PROBE") == "1":

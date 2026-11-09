@@ -347,6 +347,8 @@ def main() -> None:
             closure_suffix += "-snapshot-index"
         if os.environ.get("HCU_C3_MOVEMENT_TRACE") == "1":
             closure_suffix += "-movement-trace"
+        if os.environ.get("HCU_DEBUG_WEAPON_CYCLE") == "1":
+            closure_suffix += "-weapon-cycle"
         if os.environ.get("HCU_C3_SESSION_TRACE") == "1":
             closure_suffix += "-session-trace"
         if os.environ.get("HCU_C3_PHASE_PROBE") == "1":

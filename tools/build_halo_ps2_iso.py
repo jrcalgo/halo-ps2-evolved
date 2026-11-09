@@ -92,6 +92,8 @@ def production_closure_dir() -> Path:
         suffix += "-snapshot-index"
     if env.get("HCU_C3_MOVEMENT_TRACE") == "1":
         suffix += "-movement-trace"
+    if env.get("HCU_DEBUG_WEAPON_CYCLE") == "1":
+        suffix += "-weapon-cycle"
     if env.get("HCU_C3_SESSION_TRACE") == "1":
         suffix += "-session-trace"
     if env.get("HCU_C3_PHASE_PROBE") == "1":

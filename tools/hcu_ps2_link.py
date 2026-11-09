@@ -479,6 +479,8 @@ def main() -> None:
             OUT = OUT.with_name(OUT.name + "-snapshot-index")
         if os.environ.get("HCU_C3_MOVEMENT_TRACE") == "1":
             OUT = OUT.with_name(OUT.name + "-movement-trace")
+        if os.environ.get("HCU_DEBUG_WEAPON_CYCLE") == "1":
+            OUT = OUT.with_name(OUT.name + "-weapon-cycle")
         if os.environ.get("HCU_C3_SESSION_TRACE") == "1":
             OUT = OUT.with_name(OUT.name + "-session-trace")
         if os.environ.get("HCU_C3_PHASE_PROBE") == "1":
