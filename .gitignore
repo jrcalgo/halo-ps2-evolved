@@ -4,3 +4,8 @@
 /data/retail/
 __pycache__/
 *.pyc
+
+# Retail-derived menu art is generated from the user's own disc at ISO-build
+# time (tools/build_hcu_menu_assets.py); only the non-retail glyphs are tracked.
+/src/stream/assets/*
+!/src/stream/assets/ps2_button_glyphs.*

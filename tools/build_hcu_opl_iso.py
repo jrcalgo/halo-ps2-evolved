@@ -21,6 +21,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_RETAIL_XISO = Path.home() / "Documents/Halo/Halo - Combat Evolved.xiso.iso"
 sys.path.insert(0, str(ROOT / "tools"))
 import hcu_mp_map_table as mp  # noqa: E402
 
@@ -218,7 +219,9 @@ def main() -> int:
                         default=ROOT / "assets/ps2/boot-logo-ntsc.bin",
                         help="12-sector PS2 logo source (default: bundled NTSC logo)")
     parser.add_argument("--retail-iso", type=Path,
-                        help="optional Halo CE Xbox XISO; regenerates menu textures and audio")
+                        help="Halo CE Xbox XISO the menu textures, audio and music are pulled from "
+                             "(default: $HALO_RETAIL_XISO, else ~/Documents/Halo/Halo - Combat Evolved.xiso.iso "
+                             "when any menu package is missing)")
     parser.add_argument("--menu-dir", type=Path,
                         default=ROOT / "build/halo-ps2-bloodgulch/packages",
                         help="directory with menu_textures.bin, menu_audio.hsb, and load.rgb")
@@ -236,7 +239,17 @@ def main() -> int:
     menu_dir = args.menu_dir if args.menu_dir.is_absolute() else ROOT / args.menu_dir
     texture_path = menu_dir / "menu_textures.bin"
     audio_path = menu_dir / "menu_audio.hsb"
+    music_path = menu_dir / "menu_music.hms"
     loading_path = menu_dir / "load.rgb"
+    packages = (texture_path, audio_path, music_path)
+    if args.retail_iso is None and not all(path.is_file() for path in packages):
+        # Retail-derived art and audio are never tracked: pull them from the disc.
+        candidates = [os.environ.get("HALO_RETAIL_XISO"), str(DEFAULT_RETAIL_XISO)]
+        args.retail_iso = next((Path(c).expanduser() for c in candidates if c and Path(c).expanduser().is_file()), None)
+        if args.retail_iso is None:
+            missing = ", ".join(path.name for path in packages if not path.is_file())
+            parser.error(f"missing menu packages ({missing}); pass --retail-iso or set HALO_RETAIL_XISO "
+                         "to your Halo CE Xbox XISO")
     if args.retail_iso:
         if not args.retail_iso.is_file():
             parser.error(f"missing retail XISO: {args.retail_iso}")
@@ -244,6 +257,7 @@ def main() -> int:
         run("python3", "tools/build_hcu_menu_assets.py", str(args.retail_iso.resolve()),
             "--out", str(output.parent / "menu-assets"), "--package-out", str(texture_path))
         run("python3", "tools/build_hcu_menu_audio.py", str(args.retail_iso.resolve()), str(audio_path))
+        run("python3", "tools/build_hcu_menu_music.py", str(args.retail_iso.resolve()), str(music_path))
 
     table = mp.maps()
     # (iso path, host path, sort weight). ELFs stay inside the BIOS loadelf window.

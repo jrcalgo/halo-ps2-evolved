@@ -1,8 +1,24 @@
 from pathlib import Path
+import os
 import subprocess
 
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+ASSETS = ROOT / "src/stream/assets"
+RETAIL_ISO = Path(os.environ.get(
+    "HALO_RETAIL_XISO", Path.home() / "Documents/Halo/Halo - Combat Evolved.xiso.iso"))
+
+
+def _ensure_retail_assets():
+    """Retail-derived art is untracked: pull it from the disc, or skip."""
+    if (ASSETS / "halo_ce_ring_inner.t8").is_file() and (ASSETS / "halo_ce_ring_mesh.bin").is_file():
+        return
+    if not RETAIL_ISO.is_file():
+        pytest.skip("retail menu assets need the Halo CE XISO (set HALO_RETAIL_XISO)")
+    build = subprocess.run(["python3", "tools/build_hcu_menu_assets.py", str(RETAIL_ISO)],
+                           cwd=ROOT, capture_output=True, text=True)
+    assert build.returncode == 0, build.stdout + build.stderr
 
 
 def test_controller_glyph_atlas_layout():
@@ -20,6 +36,7 @@ def test_controller_glyph_atlas_layout():
 
 
 def test_main_menu_state_and_ring_texture(tmp_path):
+    _ensure_retail_assets()
     binary = tmp_path / "hcu-main-menu"
     build = subprocess.run(
         [

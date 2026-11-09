@@ -222,8 +222,7 @@ $(WORLD_OUTPUT)/stream/hcu_main.o: src/stream/hcu_main.c src/stream/hcu_main_men
 		-c $< -o $@
 
 $(WORLD_OUTPUT)/stream/hcu_main_menu.o: src/stream/hcu_main_menu.c src/stream/hcu_main_menu.h hcu-profile-force \
-	src/stream/assets/ps2_button_glyphs.rgb5a1 src/stream/assets/halo_ce_camera.bin \
-	src/stream/assets/halo_ce_ring_mesh.bin src/stream/assets/halo_ce_ring_shadow.rgb5a1
+	src/stream/assets/ps2_button_glyphs.rgb5a1
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
 
