@@ -9,6 +9,13 @@
 
 #define HCU_RENDER_FRAME_MAX_VIEWS 4u
 
+/* Black bar between split windows, in pixels of a 512x448 frame. CE insets 4 pixels (of 640x480) on each side of a
+ * shared edge, which scaled came to 6 columns by 8 rows; the bar is thinner here (4 by 4, about half the area), which
+ * looks the same width across and down on a 4:3 screen. Frames smaller than HCU_RENDER_SPLIT_MIN_SIZE in either direction keep no bar. */
+#define HCU_RENDER_SPLIT_GAP_X 4
+#define HCU_RENDER_SPLIT_GAP_Y 4
+#define HCU_RENDER_SPLIT_MIN_SIZE 128
+
 typedef struct {
 	int32_t x, y, w, h;
 } hcu_render_rect;
@@ -16,11 +23,12 @@ typedef struct {
 typedef struct {
 	uint32_t view_count;
 	hcu_render_rect views[HCU_RENDER_FRAME_MAX_VIEWS];
-	/* Reserved clear rectangle; the 3-view layout uses every pixel, so it is always empty (w == 0). */
+	/* Rectangle to clear black BEFORE the views draw (w == 0: none). Split layouts leave a bar between windows. */
 	hcu_render_rect clear;
 } hcu_render_layout;
 
-/* Full screen for 1 view, horizontal halves (stacked) for 2, top half plus bottom quarters for 3, quadrants for 4.
+/* Full screen for 1 view, horizontal halves (stacked) for 2, top half plus bottom quarters for 3, quadrants for 4,
+ * with a black bar between windows (the layout's `Views` no longer tile every pixel).
  * Returns 0 and fills out on success; -1 for view_count outside 1..4 or a screen
  * too small to split (each half/quadrant needs at least 1 pixel). */
 int hcu_render_layout_compute(uint32_t view_count, int32_t screen_w, int32_t screen_h,
