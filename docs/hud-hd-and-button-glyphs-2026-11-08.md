@@ -27,10 +27,10 @@ physical pad onto Xbox analog slots in a fixed order, so the mapping back is exa
 | B | Circle |
 | X | Square |
 | Y | Triangle |
-| Black | R1 |
-| White | L1 |
-| Left trigger | L2 |
-| Right trigger | R2 |
+| Black | R2 |
+| White | L2 |
+| Left trigger | L1 |
+| Right trigger | R1 |
 
 If the player rebinds the action control, CE returns a different Xbox button and the prompt follows it. Icons with no
 DualShock twin (the d-pad, start and back, stick presses) fall back to the map's own art.
