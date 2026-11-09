@@ -103,6 +103,8 @@ int main(void)
 
 	hcu_spu_attach(&hw, samples, count);
 	CHECK(hcu_spu_ready());
+	CHECK(hcu_spu_sound_length_ms(hashes[0]) == 1000u); /* 22050 samples at 22050 Hz */
+	CHECK(hcu_spu_sound_length_ms(0x12345u) == 0u);
 	nops = 0;
 	r = req(HCU_SOUND_EVENT_IMPULSE, 7, 4, 100, 0.5f);
 	hcu_spu_request(&r, hashes[0]);

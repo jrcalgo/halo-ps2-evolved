@@ -205,6 +205,15 @@ int hcu_spu_ready(void)
 	return s_hw != 0 && s_sample_count != 0;
 }
 
+uint32_t hcu_spu_sound_length_ms(uint32_t name_hash)
+{
+	uint32_t i;
+	for (i = 0; i < s_sample_count; ++i)
+		if (s_samples[i].hash == name_hash && s_samples[i].rate)
+			return (uint32_t)((uint64_t)s_samples[i].samples * 1000u / s_samples[i].rate);
+	return 0;
+}
+
 void hcu_spu_get_stats(hcu_spu_stats *out)
 {
 	uint32_t i, active = 0;

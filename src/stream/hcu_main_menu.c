@@ -3149,7 +3149,12 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 	enum hcu_main_menu_action action = HCU_MAIN_MENU_ACTION_NONE; size_t mark;
 	uint8_t *font; uint32_t *clut; unsigned frame = 0;
 #if defined(__mips__)
-	int theme_loop_started = 0;
+	/* Retail title1: the intro, then a loop recording picked at random each time the loop comes round (three of
+	 * them, never one twice before the others have played). theme_phase 0: intro not started, 1: waiting for the
+	 * next piece at theme_next_ms, 2: the old single loop (a bank without the other recordings). */
+	int theme_phase = 0; unsigned theme_next_ms = 0, theme_played = 0, theme_last = 3u, theme_seed = 0;
+	static const char *const theme_loops[3] = { "sound\\music\\title1\\loops", "sound\\music\\title1\\loops2",
+		"sound\\music\\title1\\loops3" };
 #endif
 	const void *textures[MENU_TEXTURE_SLOTS]; void *texture_allocation = NULL;
 	if (!video || !dma_storage || dma_bytes < MENU_PACKET_QW * 16u || !scratch)
@@ -3219,11 +3224,29 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 		menu_read_input(&input, events, &up, &down, &left, &right, &confirm, &back, &start);
 #if defined(__mips__)
 		hcu_spu_tick(menu_elapsed_ms());
-		/* Retail title1 intro is 33.29 seconds; start the loop at the
-		 * nearest frame so the port does not leave an audible pause. */
-		if (!theme_loop_started && menu_elapsed_ms() >= 33290u) {
-			menu_sound("sound\\music\\title1\\loops", HCU_SOUND_EVENT_LOOPING_START, frame);
-			theme_loop_started = 1;
+		/* The intro is 33.29 s; each next piece starts on the frame nearest the end of the one before (scheduled
+		 * from the first start, so the frame rounding does not add up) and the port leaves no audible pause. */
+		if (!theme_phase) {
+			unsigned intro = hcu_spu_sound_length_ms(hcu_spu_name_hash("sound\\music\\title1\\in"));
+			theme_next_ms = intro ? intro : 33290u;
+			theme_seed = (unsigned)GetTimerSystemTime() | 1u;
+			theme_phase = 1;
+		}
+		if (theme_phase == 1 && menu_elapsed_ms() + 20u >= theme_next_ms) {
+			unsigned pick, length = 0, free_mask, tries;
+			if (theme_played == 7u) theme_played = theme_last < 3u ? 1u << theme_last : 0u;
+			free_mask = ~theme_played & 7u;
+			theme_seed = theme_seed * 1664525u + 1013904223u;
+			pick = (theme_seed >> 16) % 3u;
+			for (tries = 0; tries < 3u && !(free_mask & (1u << pick)); ++tries) pick = (pick + 1u) % 3u;
+			length = hcu_spu_sound_length_ms(hcu_spu_name_hash(theme_loops[pick]));
+			if (length) {
+				menu_sound(theme_loops[pick], HCU_SOUND_EVENT_IMPULSE, frame);
+				theme_played |= 1u << pick; theme_last = pick; theme_next_ms += length;
+			} else {
+				menu_sound(theme_loops[0], HCU_SOUND_EVENT_LOOPING_START, frame);
+				theme_phase = 2;
+			}
 		}
 		if (confirm || start)
 			menu_sound("sound\\sfx\\ui\\forward", HCU_SOUND_EVENT_IMPULSE, frame);
@@ -3361,7 +3384,10 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 	}
 #if defined(__mips__)
 	menu_sound("sound\\music\\title1\\in", HCU_SOUND_EVENT_STOP, frame);
-	menu_sound("sound\\music\\title1\\loops", HCU_SOUND_EVENT_LOOPING_STOP, frame);
+	menu_sound(theme_loops[0], HCU_SOUND_EVENT_LOOPING_STOP, frame);
+	menu_sound(theme_loops[0], HCU_SOUND_EVENT_STOP, frame);
+	menu_sound(theme_loops[1], HCU_SOUND_EVENT_STOP, frame);
+	menu_sound(theme_loops[2], HCU_SOUND_EVENT_STOP, frame);
 #endif
 	menu_storage_save(&state);
 	if (action == HCU_MAIN_MENU_ACTION_MULTIPLAYER) {

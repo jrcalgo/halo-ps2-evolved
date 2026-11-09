@@ -83,6 +83,8 @@ void hcu_spu_request(const hcu_sound_request *request, uint32_t name_hash);
 void hcu_spu_tick(uint32_t now);
 void hcu_spu_get_stats(hcu_spu_stats *out);
 int hcu_spu_ready(void);
+/* Playing time in milliseconds of the loaded bank's sound (its first permutation) at pitch 1; 0 when it is not in the bank. */
+uint32_t hcu_spu_sound_length_ms(uint32_t name_hash);
 /* Listener pose (the first view's camera). Without one, sounds are centred at full distance gain. */
 void hcu_spu_set_listener(const float position[3], const float forward[3], const float up[3]);
 /* Distance gain and left/right gains (constant power) for a source; returns the distance gain. */
