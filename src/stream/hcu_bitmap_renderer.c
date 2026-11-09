@@ -7,7 +7,7 @@
 int32_t bsp_render_fence_observed(uint32_t kick_seq);
 
 /* Pages/CLUT slots kept free of non-HUD claims: ~13 resident HUD bitmaps, one to two pages each. */
-#define HCU_BITMAP_HUD_RESERVE_PAGES 52u
+#define HCU_BITMAP_HUD_RESERVE_PAGES 40u   /* measured: the HUD holds 27-35 pages; 52 left 17-25 free pages no object could use */
 #define HCU_BITMAP_HUD_RESERVE_CLUT 16u
 
 static int aligned16(const void *p)
