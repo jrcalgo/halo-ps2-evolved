@@ -45,6 +45,17 @@ int main(void)
 	/* Split view (640x224): vertical fov is kept, hfov follows the view aspect. */
 	CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, fov_deg, 640.0f / 224.0f, 0.5f, 900.0f, &cam) == 1);
 	CHECK(near(tanf(cam.hfov * 0.5f) / (640.0f / 224.0f), tanf(fov_deg * 0.5f), 1e-5f));
+	/* Split windows keep the single-player horizontal angle: converting with hcu_views_fov_aspect() gives the
+	 * same hfov for a half-height window as for the full frame, whatever the window's own aspect. */
+	{
+		hcu_view_camera full, half;
+		CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, fov_deg, hcu_views_fov_aspect(512.0f / 448.0f),
+			0.5f, 900.0f, &full) == 1);
+		CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, fov_deg, hcu_views_fov_aspect(512.0f / 220.0f),
+			0.5f, 900.0f, &half) == 1);
+		CHECK(near(full.hfov, half.hfov, 1e-6f));
+		CHECK(near(tanf(full.hfov * 0.5f), tanf(fov_deg * 0.5f) * (512.0f / 448.0f), 1e-4f));
+	}
 	/* CE projection (halo-ce-universal source/render/render_cameras.c:793-802 clipped bounds, :1165-1171 full
 	 * bounds): vertical_field_of_view is the input; tan(h/2) = tan(v/2) * viewport_w / viewport_h. */
 	CHECK(near(tanf(cam.hfov * 0.5f), tanf(fov_deg * 0.5f) * (640.0f / 224.0f), 1e-4f));

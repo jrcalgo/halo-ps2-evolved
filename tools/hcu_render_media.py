@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 HALO_PS2_TOOLS = ROOT / "submodules/halo-ps2/tools"
 sys.path.insert(0, str(HALO_PS2_TOOLS))
-from halo2ps2 import bspconv, hp2, texconv  # noqa: E402
+from halo2ps2 import bspconv, hp2, terrain, texconv  # noqa: E402
 import hcu_profile_chunks as chunks  # noqa: E402
 
 FORMAT = "hcu-render-media-v1"
@@ -64,7 +64,7 @@ def build(map_path: Path, bsp_index: int = 0) -> dict:
     bsps = hp2.parse(bsps_pack).read(bsp_tag)
     result = texconv.convert_map(map_path, lightmaps=True, bsp_filter=[bsp_index])
     pack = hp2.parse(result.pack)
-    texs = pack.read("TEXS")
+    texs = terrain.build_texs(map_path, result)   # full-resolution tinted terrain (halo2ps2/terrain.py)
     payloads = {(chunks.CHUNK_BSPS, bsp_index): bsps,
                 (chunks.CHUNK_TEXS, bsp_index): texs}
     if lm_tag in {s.tag for s in pack.sections}:

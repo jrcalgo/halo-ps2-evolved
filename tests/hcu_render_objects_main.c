@@ -351,11 +351,13 @@ static int test_first_person_camera_without_models_and_ce_invisibility(void)
 	 * near planes are rejected. The renderer ignores camera roll, and invalid
 	 * viewport metadata leaves the object visible. */
 	s.objects[4].world.position[0] = 10.0f;
-	s.objects[4].world.position[1] = 7.25f;
+	/* Windows keep the single-player horizontal angle (hcu_views_fov_aspect), so the side planes sit at
+	 * tan(vfov/2) * 512/448 = 0.6243, not at the 640x480 window's own aspect. */
+	s.objects[4].world.position[1] = 6.2f;
 	s.objects[4].world.position[2] = 0.0f;
 	s.objects[4].render_radius = 0.05f;
 	CHECK(hcu_render_objects_object_visible_in_view(&s, &s.views[0], 4u));
-	s.objects[4].world.position[1] = 7.8f;
+	s.objects[4].world.position[1] = 6.8f;
 	CHECK(!hcu_render_objects_object_visible_in_view(&s, &s.views[0], 4u));
 	s.objects[4].world.position[1] = 0.0f;
 	s.objects[4].world.position[0] = 0.01f;
@@ -363,28 +365,33 @@ static int test_first_person_camera_without_models_and_ce_invisibility(void)
 	s.objects[4].world.position[0] = 0.08f;
 	s.objects[4].render_radius = 0.05f;
 	CHECK(hcu_render_objects_object_visible_in_view(&s, &s.views[0], 4u));
-	/* C3's three-view top rectangle is twice as wide as the single-view
-	 * rectangle. Verify an admission frustum uses the chosen output layout: a
-	 * wide pre-admission frustum admits this point, but the single-view output
-	 * frustum correctly excludes it. */
+	/* Split windows keep the single-player horizontal angle, so a wide short window (the three-view top, about
+	 * 2.3:1) sees less vertically than the single-view rectangle. Verify an admission frustum uses the chosen
+	 * output layout: this point is 0.4 up per unit forward, inside the single view (vertical half-tangent 0.546)
+	 * and outside the wide window's (0.268). */
 	{
 		hcu_render_layout layout;
 		hcu_render_objects_frustum frustum;
 		halo_ps2_frame_view layout_view = s.views[0];
 		s.objects[4].world.position[0] = 10.0f;
-		s.objects[4].world.position[1] = 9.0f;
-		s.objects[4].world.position[2] = 0.0f;
+		s.objects[4].world.position[1] = 0.0f;
+		s.objects[4].world.position[2] = 4.0f;
 		s.objects[4].render_radius = 0.05f;
 		CHECK(hcu_render_layout_compute(1u, 512, 448, &layout) == 0);
 		CHECK(hcu_render_objects_frustum_build_aspect(&layout_view,
 			(float)layout.views[0].w / (float)layout.views[0].h, &frustum));
-		CHECK(!hcu_render_objects_object_visible_with_frustum(&s, &layout_view, 4u, &frustum));
-		/* Same snapshot and object under the three-view top aspect: the old
-		 * widened all-views admission path would retain this otherwise offscreen object. */
+		CHECK(hcu_render_objects_object_visible_with_frustum(&s, &layout_view, 4u, &frustum));
 		CHECK(hcu_render_layout_compute(3u, 512, 448, &layout) == 0);
 		CHECK(hcu_render_objects_frustum_build_aspect(&layout_view,
 			(float)layout.views[0].w / (float)layout.views[0].h, &frustum));
+		CHECK(!hcu_render_objects_object_visible_with_frustum(&s, &layout_view, 4u, &frustum));
+		/* Sideways the windows agree: 6.2 is inside 0.6243 * 10 everywhere, 6.8 outside everywhere. */
+		s.objects[4].world.position[2] = 0.0f;
+		s.objects[4].world.position[1] = 6.2f;
 		CHECK(hcu_render_objects_object_visible_with_frustum(&s, &layout_view, 4u, &frustum));
+		s.objects[4].world.position[1] = 6.8f;
+		CHECK(!hcu_render_objects_object_visible_with_frustum(&s, &layout_view, 4u, &frustum));
+		s.objects[4].world.position[1] = 0.0f;
 		/* For every supported layout, test the actual rectangle aspect for each
 		 * view. This guards the asymmetric three-view top/bottom geometry. */
 		{
@@ -393,12 +400,13 @@ static int test_first_person_camera_without_models_and_ce_invisibility(void)
 				CHECK(hcu_render_layout_compute(views, 512, 448, &layout) == 0);
 				for (v = 0; v < views; ++v) {
 					float aspect = (float)layout.views[v].w / (float)layout.views[v].h;
-					CHECK(aspect > 1.0f && aspect <= 2.3f);
+					CHECK(aspect > 1.0f && aspect <= 2.4f);
 				}
 			}
 		}
 		/* A point comfortably inside the single-view frustum remains admitted. */
 		s.objects[4].world.position[1] = 5.0f;
+		s.objects[4].world.position[2] = 0.0f;
 		CHECK(hcu_render_objects_frustum_build_aspect(&layout_view, 512.0f / 448.0f, &frustum));
 		CHECK(hcu_render_objects_object_visible_with_frustum(&s, &layout_view, 4u, &frustum));
 	}
@@ -1262,6 +1270,40 @@ static int test_find_model_prefers_full_over_proxy(void)
 	return 0;
 }
 
+/* A view whose draw capacity is exhausted by earlier-indexed scenery/weapons must still emit every biped:
+ * other players' bodies are spawned after the map objects, so snapshot order would drop them first. */
+static int test_bipeds_survive_full_draw_list(void)
+{
+	halo_ps2_frame_snapshot s;
+	hcu_render_objects_model models[HCU_OBJECTS_MAX_MODELS];
+	hcu_render_object_draw draw[HCU_OBJECTS_MAX_DRAW];
+	hcu_render_objects_counters c;
+	hcu_render_synthetic_object object;
+	uint32_t n = 0, oi, bipeds = 0, k;
+	const uint32_t total = HCU_OBJECTS_MAX_DRAW + 8u;
+	models_table(models);
+	CHECK(hcu_render_synthetic_begin(&s, 1u, 0u, 1u) == 0);
+	CHECK(hcu_render_synthetic_view(&s, 0u, &kcam) == 0);
+	for (oi = 0; oi < total; ++oi) {
+		int is_biped = (oi == total - 1u || oi == total - 5u);
+		memset(&object, 0, sizeof object);
+		object.resource_id = is_biped ? 100u : 200u;
+		object.definition_index = 3000u + oi;
+		object.type = is_biped ? HCU_OBJECTS_TYPE_BIPED : HCU_OBJECTS_TYPE_WEAPON;
+		object.world = mat_at((float)(1u + (oi % 20u)), 0.0f, 0.0f);
+		CHECK(hcu_render_synthetic_object_add(&s, 0u, oi, &object) == 0);
+	}
+	memset(&c, 0, sizeof c);
+	CHECK(hcu_render_objects_select(&s, 0u, models, 2, draw, HCU_OBJECTS_MAX_DRAW, &n, &c) == 0);
+	CHECK(n == HCU_OBJECTS_MAX_DRAW);
+	for (k = 0; k < n; ++k)
+		if (draw[k].type == HCU_OBJECTS_TYPE_BIPED) ++bipeds;
+	CHECK(bipeds == 2u);
+	CHECK(draw[0].type == HCU_OBJECTS_TYPE_BIPED && draw[1].type == HCU_OBJECTS_TYPE_BIPED);
+	CHECK(c.failures == total - HCU_OBJECTS_MAX_DRAW); /* only the surplus non-biped objects are dropped */
+	return 0;
+}
+
 int main(void)
 {
 #if defined(HCU_RENDER_OBJECTS_EE) && ((defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE) || (defined(HALO_PS2_C3_PERF_PROBE) && HALO_PS2_C3_PERF_PROBE))
@@ -1291,6 +1333,7 @@ int main(void)
 	if (test_fp_lod_per_view()) return 14;
 	if (test_actual_boulder_bound_frustum()) return 19;
 	if (test_find_model_prefers_full_over_proxy()) return 20;
+	if (test_bipeds_survive_full_draw_list()) return 21;
 	printf("hcu_render_objects tests passed\n");
 	return 0;
 }

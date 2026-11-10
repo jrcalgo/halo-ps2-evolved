@@ -82,7 +82,7 @@ typedef struct {
 	uint16_t palette_first;
 	uint16_t palette_count;
 	uint8_t ground_weapon_lod;
-	uint8_t reserved_lod;
+	uint8_t reserved_lod;                /* active camouflage level 0..255 (CE unit.active_camouflage; weapons inherit the holder's) */
 	uint32_t pose_hash;                  /* FNV-1a over the object's palette matrices (0 when unskinned) */
 	halo_ps2_snapshot_matrix4x3 world;
 } hcu_render_object_draw;

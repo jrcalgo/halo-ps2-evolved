@@ -32,7 +32,7 @@ measure = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(measure)
 
 MANIFEST = ROOT / "build/m2-c2-r3-selected-packages/pkg/bloodgulch_mounted_gunner_4p4bot/bloodgulch_mounted_gunner_4p4bot.json"
-POOL_BYTES = 4169088  # C3 objects residency pool, budget v6 (2071936 under v5, 1547648 under v4)
+POOL_BYTES = 5217664  # C3 objects residency pool, budget v9 (4169088 under v6, 2071936 under v5)
 HEADROOM = 0.10
 
 

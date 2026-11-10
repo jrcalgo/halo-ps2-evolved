@@ -113,6 +113,24 @@ static int hcu_render_object_descends_from(const halo_ps2_frame_snapshot *snap,
 	return 0;
 }
 
+/* Camo level of an object; a held weapon inherits its holder's. */
+static uint8_t hcu_render_object_camo(const halo_ps2_frame_snapshot *snap, uint32_t index)
+{
+	const halo_ps2_frame_object *object;
+	uint32_t i;
+	if (index >= snap->object_count) return 0;
+	object = &snap->objects[index];
+	if (object->camo) return object->camo;
+	if (object->attachment_first > snap->attachment_count ||
+		object->attachment_count > snap->attachment_count - object->attachment_first) return 0;
+	for (i = object->attachment_first; i < (uint32_t)object->attachment_first + object->attachment_count; ++i) {
+		const halo_ps2_frame_attachment *a = &snap->attachments[i];
+		if (a->kind == HALO_PS2_FRAME_ATTACHMENT_PARENT_LINK && a->child_object == index &&
+			a->parent_object < snap->object_count) return snap->objects[a->parent_object].camo;
+	}
+	return 0;
+}
+
 /* A weapon is loose only when the published parent-link inventory confirms it
  * has no parent. Other attachment kinds do not imply object parenting. */
 static int hcu_render_object_is_loose_weapon(const halo_ps2_frame_snapshot *snap, uint32_t index)
@@ -534,7 +552,7 @@ int hcu_render_objects_select(const halo_ps2_frame_snapshot *snap, uint32_t view
 {
 	const halo_ps2_frame_view *v;
 	const hcu_render_objects_frustum *frustum;
-	uint32_t ref, first, n, emitted = 0, i;
+	uint32_t ref, first, n, emitted = 0, i, pass;
 	if (!snap || !out || !count || !counters) return HCU_RENDER_CONTENT_E_ARGUMENT;
 	*count = 0;
 	if (snap->version != HALO_PS2_FRAME_SNAPSHOT_VERSION || view >= snap->view_count ||
@@ -553,13 +571,18 @@ int hcu_render_objects_select(const halo_ps2_frame_snapshot *snap, uint32_t view
 		counters->failures++;
 		return HCU_RENDER_CONTENT_E_ARGUMENT;
 	}
+	/* Two passes: bipeds (every player's body) are emitted before anything else, so a crowded view that
+	 * fills the per-view draw capacity with scenery/weapons/vehicles in snapshot order can never push another
+	 * player's biped out of the list (split screen: the others' bipeds are spawned after the map objects). */
+	for (pass = 0; pass < 2u; pass++)
 	for (ref = first; ref < first + n; ref++) {
 		uint32_t oi = snap->view_refs[ref];
 		const halo_ps2_frame_object *o;
 		const halo_ps2_frame_resource *r;
 		int slot;
-		if (oi >= snap->object_count) { counters->failures++; continue; }
+		if (oi >= snap->object_count) { if (pass == 0u) counters->failures++; continue; }
 		o = &snap->objects[oi];
+		if ((o->type == HCU_OBJECTS_TYPE_BIPED) != (pass == 0u)) continue;
 		/* CE publishes the local player's unit and attached inventory with the
 		 * rest of the world. In first-person, it skips this biped and therefore
 		 * never enters its child list. Filter both the body and its descendants
@@ -602,7 +625,7 @@ int hcu_render_objects_select(const halo_ps2_frame_snapshot *snap, uint32_t view
 		out[emitted].palette_first = o->palette_first;
 		out[emitted].palette_count = o->palette_count;
 		out[emitted].ground_weapon_lod = (uint8_t)hcu_render_object_is_loose_weapon(snap, oi);
-		out[emitted].reserved_lod = 0;
+		out[emitted].reserved_lod = hcu_render_object_camo(snap, oi);
 		out[emitted].pose_hash = cached_hash ? cached_hash : hcu_render_objects_pose_hash(snap->palette, snap->palette_count,
 			o->palette_first, o->palette_count);
 		out[emitted].world = o->world;
@@ -2603,6 +2626,20 @@ static int slot_binding(void *user, uint32_t shader_id, mat_binding_t *out)
 	if (b.flags & TEX_B_TWO_SIDED) out->flags |= MAT_TWO_SIDED;
 	out->uv_scale[0] = b.uv_scale[0];
 	out->uv_scale[1] = b.uv_scale[1];
+	out->disp_first_plus1 = 0u; out->disp_frames = 0u; out->disp_kind = 0u; out->disp_limit = 0u; out->disp_fn = 0u;
+	if ((b.flags & TEX_B_DISPLAY) && b.disp_first_plus1 && b.disp_frames >= 2u) {
+		/* Weapon display: the renderer picks the frame texture from the held weapon's function values. */
+		out->disp_first_plus1 = (uint16_t)(s->tex_base + b.disp_first_plus1);
+		out->disp_frames = b.disp_frames; out->disp_kind = b.disp_kind;
+		out->disp_limit = b.disp_limit; out->disp_fn = b.disp_fn;
+	}
+	out->scroll_fn[0] = out->scroll_fn[1] = 0u; out->scroll_period[0] = out->scroll_period[1] = 0; out->scroll_scale[0] = out->scroll_scale[1] = 0;
+	if (b.flags & TEX_B_SCROLL) {
+		/* Animated map (teleporter cone/shield, shield glows): obj_render offsets the part's uv from the clock. */
+		out->scroll_fn[0] = b.scroll_fn[0]; out->scroll_fn[1] = b.scroll_fn[1];
+		out->scroll_period[0] = b.scroll_period[0]; out->scroll_period[1] = b.scroll_period[1];
+		out->scroll_scale[0] = b.scroll_scale[0]; out->scroll_scale[1] = b.scroll_scale[1];
+	}
 	if (out->tex < 0) {
 		/* Converter-exported texture-less shader (plasma/glass): positive = deliberately untextured, not a cache miss. */
 		if (b.texture == TEX_NONE) return 1;
@@ -4297,7 +4334,9 @@ static void object_pass(void *user, render_ctx_t *rc)
 			(defined(HALO_PS2_C3_PERF_PROBE) && HALO_PS2_C3_PERF_PROBE)
 			uint32_t pass_start = timer_cycles();
 #endif
+			obj_render_set_camo(d->reserved_lod);
 			obj_render_pass(&s_objr, rc);
+			obj_render_set_camo(0);
 		#if (defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE) || \
 			(defined(HALO_PS2_C3_PERF_PROBE) && HALO_PS2_C3_PERF_PROBE)
 			s_world_render_cycles += timer_cycles() - pass_start;
@@ -4478,7 +4517,12 @@ static void object_pass(void *user, render_ctx_t *rc)
 			uint32_t pass_start = timer_cycles();
 #endif
 			bsp_render_set_object_claim_priority(1);
+			obj_render_set_weapon_functions(s_snapshot->views[s_cur_view].first_person_function);
+			obj_render_set_camo(s_snapshot->views[s_cur_view].unit_object < s_snapshot->object_count ?
+				s_snapshot->objects[s_snapshot->views[s_cur_view].unit_object].camo : 0u);
 			obj_render_pass(&s_objr, &viewmodel_rc);
+			obj_render_set_camo(0);
+			obj_render_set_weapon_functions(NULL);
 			bsp_render_set_object_claim_priority(0);
 		#if (defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE) || \
 			(defined(HALO_PS2_C3_PERF_PROBE) && HALO_PS2_C3_PERF_PROBE)

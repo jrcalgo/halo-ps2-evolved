@@ -65,7 +65,8 @@ int hcu_views_camera_from_snapshot(const float pos[3], const float forward[3], c
 	memcpy(out->pos, pos, sizeof out->pos);
 	out->yaw = atan2f(fy, fx);
 	out->pitch = asinf(unit_z);
-	/* CE split screen keeps one vertical angle for every window and derives the horizontal extent from the
+	/* (Callers pass hcu_views_fov_aspect() so split windows keep the single-player horizontal angle.)
+	 * CE split screen keeps one vertical angle for every window and derives the horizontal extent from the
 	 * window's own viewport pixels (submodules/halo-ce-universal/source/render/render_cameras.c:719-766 frustum
 	 * with x scaled by viewport h/w; :1160-1171 projection scales). So tan(vfov/2) is kept and
 	 * hfov = 2 atan(tan(vfov/2) * w/h) with the view's own w/h. The vertical angle is the one CE computes in
@@ -76,6 +77,12 @@ int hcu_views_camera_from_snapshot(const float pos[3], const float forward[3], c
 	out->near_z = near_z;
 	out->far_z = far_z;
 	return 1;
+}
+
+float hcu_views_fov_aspect(float view_aspect)
+{
+	(void)view_aspect;
+	return HCU_VIEWS_FULL_FRAME_ASPECT;
 }
 
 int hcu_views_must_skip(int ever_active)

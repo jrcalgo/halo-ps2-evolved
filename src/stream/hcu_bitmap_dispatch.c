@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "stream/hcu_bitmap_dispatch.h"
 #include "stream/hcu_bitmap_defer_probe.h"
 #include "render/gs.h"
@@ -27,6 +28,9 @@ extern int32_t bsp_render_hud_effect_clut_base_words(uint32_t *clut_base_words) 
 #define HCU_BITMAP_RELEASE_KIND_LEASE 2u   /* = BSP_SRC_BITMAP_LEASE in render/bsp_render.h */
 
 #define HCU_BITMAP_PAGE_WORDS 2048u
+
+/* Probe-only A/B control (PINE-writable): nonzero reverts HUD source reads to blocking. */
+uint32_t g_hcu_bitmap_prefetch_off;
 
 int32_t hcu_bitmap_dispatch_capture_screen_effects(hcu_bitmap_dispatch_context *context,
 	const halo_ps2_bitmap_request_queue *queue)
@@ -1117,6 +1121,15 @@ static hcu_bitmap_dispatch_status dispatch_request_impl(
 			return HCU_BITMAP_DISPATCH_E_CHUNK;
 		if (memcmp(chunk_view.sha256, binding->expected_chunk_sha256, 32))
 			return HCU_BITMAP_DISPATCH_E_IDENTITY;
+		/* A HUD bitmap that is not in VRAM (first draw after a weapon change, or evicted) would otherwise do a
+		 * synchronous optical read here, 40-400 ms on the frame path. Start the read in the background and
+		 * defer the request: CE re-issues it next frame and the read becomes a memcpy once the transfer lands. */
+		if (context && resident_mode && !g_hcu_bitmap_prefetch_off &&
+			hcu_asset_profile_range_ready(profile, HCU_ASSET_CHUNK_MEDIA, binding->chunk_id, 0u,
+				chunk_view.size) == 0) {
+			context->counters.misses--; /* counted again when the retry reads */
+			return HCU_BITMAP_DISPATCH_E_DEFERRED;
+		}
 		raw = (uint8_t *)staging_buffer;
 		if (context) {
 			context->counters.source_reads++;

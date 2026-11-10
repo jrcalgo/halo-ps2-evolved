@@ -61,6 +61,13 @@ typedef struct {
 int hcu_views_camera_from_snapshot(const float pos[3], const float forward[3], const float up[3],
 	float vertical_fov, float view_aspect, float z_near, float z_far, hcu_view_camera *out);
 
+/* Split-screen windows keep the single-player HORIZONTAL field of view (the menu's FOV across the full 512x448
+ * frame), so every window shows the same width as one player alone and only the vertical extent follows the
+ * window's own aspect. Pass this, not the window's aspect, as view_aspect to hcu_views_camera_from_snapshot;
+ * the camera's own aspect stays the window's. It is the full-frame aspect for any input a view can have. */
+#define HCU_VIEWS_FULL_FRAME_ASPECT (512.0f / 448.0f)
+float hcu_views_fov_aspect(float view_aspect);
+
 /* Snapshot views are accepted only for one map generation at a time: the first accepted view sets it,
  * a view from another generation is refused. Returns 1 when accepted. */
 int hcu_views_accept_generation(hcu_views_stats *s, uint32_t map_generation);

@@ -60,6 +60,11 @@ static int src_binding(void *user, uint32_t shader_id, mat_binding_t *out)
 	if (b.flags & TEX_B_TWO_SIDED) out->flags |= MAT_TWO_SIDED;
 	out->uv_scale[0] = b.uv_scale[0];
 	out->uv_scale[1] = b.uv_scale[1];
+	for (int d = 0; d < 2; d++) {
+		out->detail_plus1[d] = b.detail_plus1[d] && b.detail_plus1[d] <= m->tex.texture_count ? b.detail_plus1[d] : 0;
+		out->detail_scale[d] = b.detail_scale[d];
+	}
+	if (b.flags & TEX_B_BLENDED_BASE) out->flags |= MAT_BLENDED_BASE;
 	return out->tex < 0 ? -1 : 0;
 }
 
@@ -73,8 +78,10 @@ static int src_texture(void *user, int tex, tex_image_t *out)
 	if (!m || !m->has_tex || tex < 0 || (uint32_t)tex >= m->tex.texture_count) return -1;
 	t = tex_get(&m->tex, (uint32_t)tex);
 	/* A 256-px world texture takes 8 GS pages and a 128-px one 2; the visible world alone fills the cache, so the
-	 * first-person model and effect textures cannot be admitted. Textures that large use mip 1. */
-	if (!(t.mip_count > 1u && (t.width >= HCU_MEDIA_WORLD_MIP1_SIZE || t.height >= HCU_MEDIA_WORLD_MIP1_SIZE) &&
+	 * first-person model and effect textures cannot be admitted. Textures that large use mip 1, except TEX_F_FULLRES
+	 * terrain: one 512 map covers a whole level, so mip 1 would leave the ground at 4 world units per texel. */
+	if (!(!(t.flags & (TEX_F_FULLRES | TEX_F_DETAIL)) && t.mip_count > 1u &&
+		(t.width >= HCU_MEDIA_WORLD_MIP1_SIZE || t.height >= HCU_MEDIA_WORLD_MIP1_SIZE) &&
 		tex_mip(&m->tex, &t, 1, &mv)) && !tex_mip(&m->tex, &t, 0, &mv)) return -1;
 	out->pixels = mv.pixels;
 	out->pixel_bytes = mv.bytes;
