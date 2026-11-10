@@ -1,4 +1,5 @@
 #include "stream/hcu_asset_profile.h"
+#include "stream/crc32.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -68,6 +69,31 @@ int main(int argc,char **argv)
 				destination,sizeof(destination));
 			if(rc!=HCU_ASSET_PROFILE_E_HASH || reader.payload_reads < 2 ||
 				destination[0] != 0) return 97;
+		}
+		{
+			/* Fast verification: the registered header+directory CRC-32 stands in for every payload hash. */
+			mutating_reader reader;
+			hcu_asset_profile_view fast_view;
+			uint32_t doff, dsize, crc;
+			memcpy(&doff, p + 20, 4); memcpy(&dsize, p + 24, 4);
+			crc = hcu_crc32_update(0, p, doff + dsize);
+			memset(&reader, 0, sizeof(reader));
+			reader.image = p;
+			if (hcu_asset_profile_fast_verify_package(read_mutating, &reader, (uint32_t)n) != -1) return 110;
+			hcu_asset_profile_register_directory_crc32((uint32_t)expected, (uint32_t)n, crc);
+			if (hcu_asset_profile_fast_verify_package(read_mutating, &reader, (uint32_t)n) != 1) return 111;
+			if (hcu_asset_profile_preflight_reader(read_mutating, &reader, (uint32_t)n, (uint32_t)expected,
+				&fast_view) != HCU_ASSET_PROFILE_OK || !hcu_asset_profile_fast_trusted()) return 112;
+			p[n-1]^=1; /* payload damage is the build step's business, not a run-time read */
+			if (hcu_asset_profile_fast_verify_package(read_mutating, &reader, (uint32_t)n) != 1) return 113;
+			p[n-1]^=1;
+			p[doff + dsize - 1]^=1; /* directory damage is always caught (a new reader has no cached proof) */
+			{
+				mutating_reader other;
+				memset(&other, 0, sizeof(other)); other.image = p;
+				if (hcu_asset_profile_fast_verify_package(read_mutating, &other, (uint32_t)n) != 0) return 114;
+			}
+			p[doff + dsize - 1]^=1;
 		}
 	} else printf("ERR %d\n",rc);
 	free(p); return 0;
