@@ -114,6 +114,7 @@ static int hcu_render_object_descends_from(const halo_ps2_frame_snapshot *snap,
 	return 0;
 }
 
+uint32_t g_hcu_dbg_fp_camo;   /* analysis builds: first-person camo target<<8 | drawn level */
 /* Camo level of an object; a held weapon inherits its holder's. */
 static uint8_t hcu_render_object_camo(const halo_ps2_frame_snapshot *snap, uint32_t index)
 {
@@ -4580,6 +4581,7 @@ static void object_pass(void *user, render_ctx_t *rc)
 				if (fp_camo[vi] < target) { fp_camo[vi] += 13.0f; if (fp_camo[vi] > target) fp_camo[vi] = target; }
 				else if (fp_camo[vi] > target) { fp_camo[vi] -= 13.0f; if (fp_camo[vi] < target) fp_camo[vi] = target; }
 				obj_render_set_camo((uint8_t)fp_camo[vi]);
+				g_hcu_dbg_fp_camo = ((uint32_t)target << 8) | (uint32_t)fp_camo[vi];
 			}
 			obj_render_pass(&s_objr, &viewmodel_rc);
 			obj_render_set_camo(0);
@@ -4636,14 +4638,14 @@ static void object_pass(void *user, render_ctx_t *rc)
 			{
 				uint32_t ee[8];
 				obj_render_ee_stats(ee);
-				printf("HALO_PS2_LOCAL lag-draw frame=%u view=%u world-ms=%.2f fp-ms=%.2f fx-bytes=%u drawn=%u tris=%u ee-calls=%u evals=%u need=%u need-tris=%u eval-ms=%.2f need-ms=%.2f gov=%u fp-models=%u fp-same-pose=%u\n",
+				printf("HALO_PS2_LOCAL lag-draw frame=%u view=%u world-ms=%.2f fp-ms=%.2f fx-bytes=%u drawn=%u tris=%u ee-calls=%u evals=%u need=%u need-tris=%u eval-ms=%.2f need-ms=%.2f gov=%u fp-models=%u fp-same-pose=%u fp-camo=%u/%u\n",
 					(unsigned)s_frame, (unsigned)s_cur_view,
 					timer_ms(0, s_world_render_cycles), timer_ms(0, s_fp_render_cycles),
 					(unsigned)s_view_counters.fx_source_read_bytes,
 					(unsigned)s_view_drawn, (unsigned)s_view_triangles,
 					(unsigned)ee[5], (unsigned)ee[0], (unsigned)ee[1], (unsigned)ee[2],
 					timer_ms(0, ee[3]), timer_ms(0, ee[4]), (unsigned)hcu_render_objects_frame_governor_level(),
-					(unsigned)ee[6], (unsigned)ee[7]);
+					(unsigned)ee[6], (unsigned)ee[7], (unsigned)(g_hcu_dbg_fp_camo >> 8), (unsigned)(g_hcu_dbg_fp_camo & 255u));
 			}
 #endif
 		}
