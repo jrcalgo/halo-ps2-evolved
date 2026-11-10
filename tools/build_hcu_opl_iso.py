@@ -161,8 +161,7 @@ def assert_bios_directory_window(iso: Path) -> None:
         required = ["HPS2_000.01", "E", "MAPS", "PACKAGES"]
         required += [item.map_alias for item in table]
         required += [item.package_alias for item in table]
-        required += ["MAPSUI.MAP", "PACKAGESLOAD.RGB", "PACKAGESMENU_AUDIO.HSB",
-                     "PACKAGESMENU_TEXTURES.BIN"]
+        required += ["MAPSUI.MAP", "LOAD.RGB", "MAUDIO.HSB", "MMUSIC.HMS", "MTEX.BIN"]
         if "MAPSUI.HP2" in root_all:
             required.append("MAPSUI.HP2")
         hidden = [name for name in required if name not in root_visible]
@@ -171,8 +170,7 @@ def assert_bios_directory_window(iso: Path) -> None:
         root_map = {name: (extent, size) for name, extent, size in _root_entries(handle)}
         child_need = {
             "E": [item.elf_iso for item in table],
-            "PACKAGES": [f"{item.name.upper()}.HSB" for item in table]
-            + ["MENU_TEXTURES.BIN", "MENU_AUDIO.HSB", "LOAD.RGB"],
+            "PACKAGES": [f"{item.token}.HSB" for item in table],
             "MAPS": ["UI.MAP", "A30.MAP", "A50.MAP", "C40.MAP"],
         }
         maps_extent, maps_size = root_map["MAPS"]
@@ -211,9 +209,10 @@ def _root_entries_at(handle, extent: int, size: int) -> list[tuple[str, int, int
     return entries
 
 
-def menu_package_jobs(texture_path: Path, audio_path: Path, music_path: Path, assets_dir: Path):
+def menu_package_jobs(texture_path: Path, audio_path: Path, music_path: Path, assets_dir: Path,
+                      loading_path: Path | None = None):
     """(package, command builder taking the retail iso) for each cached menu package."""
-    return [
+    jobs = [
         (texture_path, lambda iso: ["python3", "tools/build_hcu_menu_assets.py", iso,
                                     "--out", str(assets_dir), "--package-out", str(texture_path)]),
         (audio_path, lambda iso: ["python3", "tools/build_hcu_menu_audio.py", iso, str(audio_path)]),
@@ -223,7 +222,7 @@ def menu_package_jobs(texture_path: Path, audio_path: Path, music_path: Path, as
 
 def refresh_menu_package(package: Path, command, retail_iso: Path | None, force: bool, parser) -> None:
     """Pull a menu package from the retail disc once; later builds reuse the cached file."""
-    if package.is_file() and not force:
+    if package.is_file() and not force and (package.name != "load.rgb" or loading_assets_current(package)):
         print(f"menu package cached: {package.name}")
         return
     if retail_iso is None:
@@ -251,6 +250,18 @@ def main() -> int:
     TMP.mkdir(parents=True, exist_ok=True)
     os.environ.setdefault("TMPDIR", str(TMP))
 
+    if loading_path is not None:
+        # The retail loading picture and chant live inside default.xbe, not as disc files.
+        jobs.append((loading_path, lambda iso: ["python3", "tools/build_hcu_loading_assets.py", iso, str(loading_path)]))
+    return jobs
+
+
+def loading_assets_current(package: Path) -> bool:
+    """load.rgb is the retail loading picture only when tools/build_hcu_loading_assets.py stamped it (older builds
+    carried an invented backplate under the same name)."""
+    sys.path.insert(0, str(ROOT / "tools"))
+    from build_hcu_loading_assets import current
+    return current(package)
     elf = args.elf.resolve()
     output = args.output if args.output.is_absolute() else ROOT / args.output
     output = output.resolve()
@@ -272,7 +283,7 @@ def main() -> int:
         parser.error(f"missing retail XISO: {retail_iso}")
     # Retail-derived art and audio are never tracked: pull them from the disc once, then reuse the cached packages
     # (delete them or pass --refresh-menu-assets to pull again).
-    for package, generator in menu_package_jobs(texture_path, audio_path, music_path, output.parent / "menu-assets"):
+    for package, generator in menu_package_jobs(texture_path, audio_path, music_path, output.parent / "menu-assets", loading_path):
         refresh_menu_package(package, generator, retail_iso, args.refresh_menu_assets, parser)
 
     table = mp.maps()
@@ -293,9 +304,10 @@ def main() -> int:
         sources.append((item.package_alias, ROOT / item.package_path, 0))
         sources.append((f"PACKAGES/{item.name.upper()}.HSB", ROOT / item.hsb_path, 0))
     sources += [
-        ("PACKAGES/MENU_TEXTURES.BIN", texture_path, 0),
-        ("PACKAGES/MENU_AUDIO.HSB", audio_path, 0),
-        ("PACKAGES/LOAD.RGB", loading_path, 0),
+        ("MTEX.BIN", texture_path, 0),
+        ("MAUDIO.HSB", audio_path, 0),
+        ("MMUSIC.HMS", music_path, 0),
+        ("LOAD.RGB", loading_path, 0),
     ]
     missing = [f"{iso} ({path})" for iso, path, _weight in sources if not path.is_file()]
     if missing:

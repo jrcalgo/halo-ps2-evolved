@@ -13,8 +13,6 @@ from ctypes import Structure, byref, c_bool, c_char_p, c_double, c_int, c_void_p
 from pathlib import Path
 
 from PIL import Image
-from PIL import ImageDraw
-from PIL import ImageFilter
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -210,68 +208,6 @@ def write_space_texture(image: Image.Image, destination: Path, name: str) -> Non
     source = image.convert("RGBA").resize((128, 128), Image.Resampling.LANCZOS)
     source.save(destination / f"{name}.png")
     (destination / f"{name}.rgb5a1").write_bytes(rgb5a1(source))
-
-
-def write_loading_backplate(destination: Path) -> None:
-    """Reconstruct CE's tinted-glass Halo loading image for the PS2 renderer.
-
-    The supplied Xbox XISO has no loose loading.tga. The moving blue progress
-    flash is rendered at runtime; this static art is deliberately separate
-    from the menu planet, star field, and material textures.
-    """
-    scale = 2
-    width, height = 512 * scale, 448 * scale
-    canvas = Image.new("RGBA", (width, height), (1, 3, 9, 255))
-    pixels = canvas.load()
-    for y in range(height):
-        for x in range(width):
-            dx = (x - width * 0.5) / width
-            dy = (y - height * 0.48) / height
-            lift = max(0.0, 1.0 - (dx * dx * 5.5 + dy * dy * 8.0))
-            value = int(3 + lift * 8)
-            pixels[x, y] = (value, value + 2, value + 7, 255)
-
-    box = (24 * scale, 126 * scale, 488 * scale, 350 * scale)
-    glow = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-    ImageDraw.Draw(glow).ellipse(box, outline=(115, 157, 194, 92), width=20 * scale)
-    canvas.alpha_composite(glow.filter(ImageFilter.GaussianBlur(15 * scale)))
-
-    far = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-    fd = ImageDraw.Draw(far)
-    fd.arc(box, 180, 360, fill=(75, 104, 132, 145), width=9 * scale)
-    fd.arc((38 * scale, 137 * scale, 474 * scale, 339 * scale), 180, 360,
-           fill=(35, 54, 76, 185), width=4 * scale)
-    canvas.alpha_composite(far)
-
-    near = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-    nd = ImageDraw.Draw(near)
-    nd.arc(box, 0, 180, fill=(128, 160, 186, 205), width=10 * scale)
-    nd.arc((38 * scale, 137 * scale, 474 * scale, 339 * scale), 0, 180,
-           fill=(61, 83, 105, 225), width=4 * scale)
-    nd.arc((49 * scale, 143 * scale, 463 * scale, 333 * scale), 0, 180,
-           fill=(24, 38, 55, 235), width=3 * scale)
-    for i in range(17):
-        x = (66 + i * 23) * scale
-        y = (263 + int(23 * (1.0 - abs(x / scale - 256) / 210))) * scale
-        nd.line((x, y, x, y + 8 * scale), fill=(89, 112, 132, 165), width=scale)
-    canvas.alpha_composite(near)
-
-    label = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-    ld = ImageDraw.Draw(label)
-    try:
-        from PIL import ImageFont
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 11 * scale)
-    except OSError:
-        from PIL import ImageFont
-        font = ImageFont.load_default()
-    text = "LOADING"
-    bounds = ld.textbbox((0, 0), text, font=font)
-    ld.text(((width - (bounds[2] - bounds[0])) // 2, 390 * scale), text,
-            font=font, fill=(122, 153, 177, 165))
-    canvas.alpha_composite(label)
-    canvas = canvas.convert("RGB").resize((512, 448), Image.Resampling.LANCZOS)
-    canvas.save(destination / "halo_ce_loading_backplate.png")
-    (destination / "loading.rgb5a1").write_bytes(rgb5a1(canvas.convert("RGBA")))
 
 
 def quantize_rgba(sheet: Image.Image) -> tuple[bytes, bytes]:
@@ -683,7 +619,6 @@ def main() -> int:
         camera_path = write_menu_camera_path(decompressed, args.out)
         sky_mesh = write_sky_mesh(decompressed, args.out)
         ring_mesh = write_menu_ring_mesh(decompressed, args.out)
-        write_loading_backplate(args.out)
     write_button_glyphs(args.out, args.button_icons)
     if args.package_out:
         args.package_out.parent.mkdir(parents=True, exist_ok=True)
