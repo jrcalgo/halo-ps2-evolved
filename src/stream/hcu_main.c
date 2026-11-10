@@ -2078,11 +2078,8 @@ int hcu_c3_bitmap_map_bind(void)
 			printf("HALO_PS2_FAIL c3-bitmap frame-owner-bind\n");
 			return 0;
 		}
-		if (hcu_bitmap_renderer_set_screen_effect_backend(&s_c3_bitmap_renderer,
-			hcu_bitmap_screen_effect_backend_native, NULL) != HCU_BITMAP_FRAME_OK) {
-			printf("HALO_PS2_FAIL c3-bitmap screen-effect-backend\n");
-			return 0;
-		}
+		/* No native screen-effect backend is installed: it needs a framebuffer copy (BSP_SCREEN_EFFECT_SOURCE_PAGES is 0)
+		 * and so never drew. The zoom masks are drawn by the dispatcher as a black quad with alpha Y. */
 		/* Set backend state while the renderer is still detached; attach marks
 		 * it busy until the next drained map boundary. */
 		if (HCU_C3_BITMAP_OWNER_BIND(&hcu_c3_bitmap_frame_owner, s_c3_bitmap_queue,

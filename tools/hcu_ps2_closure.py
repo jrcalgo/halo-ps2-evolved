@@ -403,6 +403,18 @@ def main() -> None:
             profile += "-movement-trace"
         if os.environ.get("HCU_DEBUG_WEAPON_CYCLE") == "1":
             profile += "-weapon-cycle"
+        if os.environ.get("HCU_DEBUG_CAMO") == "1":
+            profile += "-camo"
+        if os.environ.get("HCU_DEBUG_TELEPORTER") == "1":
+            profile += "-teleporter"
+        if os.environ.get("HCU_DEBUG_ZOOM") == "1":
+            profile += "-zoom"
+        if os.environ.get("HCU_DEBUG_FLASHLIGHT") == "1":
+            profile += "-flashlight"
+        if os.environ.get("HCU_DEBUG_VEHICLE_EXIT") == "1":
+            profile += "-vehicle-exit"
+        if os.environ.get("HCU_DEBUG_FLASH") == "1":
+            profile += "-flash"
         if os.environ.get("HCU_C3_SESSION_TRACE") == "1":
             profile += "-session-trace"
         if os.environ.get("HCU_C3_PHASE_PROBE") == "1":
@@ -447,6 +459,18 @@ def main() -> None:
         source_flags.append("-DHALO_PS2_C3_MOVEMENT_TRACE=1")
     if hcu_c3 and os.environ.get("HCU_DEBUG_WEAPON_CYCLE") == "1":
         source_flags.append("-DHCU_DEBUG_WEAPON_CYCLE=1")
+    if hcu_c3 and os.environ.get("HCU_DEBUG_CAMO") == "1":
+        source_flags.append("-DHCU_DEBUG_CAMO=1")
+    if hcu_c3 and os.environ.get("HCU_DEBUG_TELEPORTER") == "1":
+        source_flags.append("-DHCU_DEBUG_TELEPORTER=1")
+    if hcu_c3 and os.environ.get("HCU_DEBUG_ZOOM") == "1":
+        source_flags.append("-DHCU_DEBUG_ZOOM=1")
+    if hcu_c3 and os.environ.get("HCU_DEBUG_FLASHLIGHT") == "1":
+        source_flags.append("-DHCU_DEBUG_FLASHLIGHT=1")
+    if hcu_c3 and os.environ.get("HCU_DEBUG_VEHICLE_EXIT") == "1":
+        source_flags.append("-DHCU_DEBUG_VEHICLE_EXIT=1")
+    if hcu_c3 and os.environ.get("HCU_DEBUG_FLASH") == "1":
+        source_flags.append("-DHCU_DEBUG_FLASH=1")
     if hcu_c3 and os.environ.get("HCU_C3_SESSION_TRACE") == "1":
         source_flags.append("-DHALO_PS2_C3_SESSION_TRACE=1")
     if hcu_c3 and os.environ.get("HCU_C3_PHASE_PROBE") == "1":

@@ -300,13 +300,14 @@ int main(void)
 	{
 		uint16_t before = queue.count;
 		/* Screen flash: bitmap-free flagged request with the colour in vertex 0. */
-		if (!check(halo_ps2_bitmap_request_capture_screen_flash(&queue, 1, 1.0f, 0.5f, 0.25f, 0.5f) ==
+		if (!check(halo_ps2_bitmap_request_capture_screen_flash(&queue, 1, 1.0f, 0.5f, 0.25f, 0.5f, 0.5f) ==
 			HALO_PS2_BITMAP_REQUEST_OK && queue.count == before + 1u &&
 			queue.requests[before].screen_flash == 1u && queue.requests[before].screen_flash_type == 1u &&
 			queue.requests[before].bitmap_tag_index == -1 && !queue.requests[before].has_multiply_map &&
-			queue.requests[before].vertices[0].color == 0x80FF8040u,
+			queue.requests[before].vertices[0].color == 0x80FF8040u &&
+			queue.requests[before].vertices[1].color == 0x80u,
 			"screen flash is captured as a flagged, bitmap-free request")) return 1;
-		if (!check(halo_ps2_bitmap_request_capture_screen_flash(&queue, 0, 1.0f, 1.0f, 1.0f, 1.0f) ==
+		if (!check(halo_ps2_bitmap_request_capture_screen_flash(&queue, 0, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f) ==
 			HALO_PS2_BITMAP_REQUEST_UNSUPPORTED && queue.count == before + 1u,
 			"screen flash type none is rejected")) return 1;
 	}

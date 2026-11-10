@@ -84,8 +84,9 @@ def test_unsupported_3d_images_fail_closed(tmp_path):
         serialize_bitmap(sources, owner, schema)
 
 
-def test_retail_sniper_masks_preserve_native_mip_zero():
-    """The zoom mask must reach dispatch at its retail dimensions, not half size."""
+def test_retail_scope_masks_are_black_alpha_psmt4_at_native_size():
+    """Every zoom mask (sniper full/split, pistol and rocket full/split) reaches dispatch at its retail dimensions as
+    black texels whose GS alpha is the mask's Y, so the draw is framebuffer * (1 - Y)."""
     root = Path(__file__).resolve().parents[1]
     source_path = root / "build/retail-maps/decompressed/bloodgulch.map"
     if not source_path.is_file():
@@ -93,40 +94,50 @@ def test_retail_sniper_masks_preserve_native_mip_zero():
     sys.path[:0] = [str(root / "submodules/halo-ps2/tools"),
                     str(root / "submodules/halo-ps2/tools/halo2ps2")]
     from halo2ps2 import bitmaps, texconv
+    from hcu_profile_bitmap import SCOPE_MASK_BITMAPS
     source = texconv.MapData.open(source_path)
     assert hashlib.sha256(source_path.read_bytes()).hexdigest() == (
         "9eb0374cbe4571af640ae0d2e0ebf6119543cdbbece44d49543b4748c4cf0dc1")
     expected = {
-        3861513398: (r"ui\hud\bitmaps\sniper\sniper_scope_mask2", 512, 256, 65536),
-        3861578935: (r"ui\hud\bitmaps\sniper\sniper_scope_mask_sm", 256, 256, 32768),
+        r"ui\hud\bitmaps\sniper\sniper_scope_mask2": (512, 256),
+        r"ui\hud\bitmaps\sniper\sniper_scope_mask_sm": (256, 256),
+        r"ui\hud\bitmaps\pistol\pistol_scope_mask": (256, 256),
+        r"ui\hud\bitmaps\pistol\pistol_scope_mask split": (256, 256),
     }
-    assert {row[0].casefold() for row in expected.values()} <= SOURCE_RESOLUTION_HUD_BITMAPS
-    for datum, (path, width, height, pixel_bytes) in expected.items():
-        entry = source.by_id[datum]
+    assert set(expected) == SCOPE_MASK_BITMAPS
+    seen = set()
+    for entry in source.index.entries:
+        path = entry.path.casefold()
+        if entry.group != "bitm" or path not in expected:
+            continue
+        seen.add(path)
+        width, height = expected[path]
         image = bitmaps.parse_images(source.region, source.base, entry.data_address)[0]
-        assert entry.path == path
-        texture = _convert_scope_mask(source, image, datum)
+        texture = _convert_scope_mask(source, image, entry.tag_id)
         assert (texture.width, texture.height) == (width, height)
-        expected_bytes = width * height
-        assert texture.psm == texconv.PSMT8 and texture.clut_entries == 256
-        assert len(texture.mips[0]) == expected_bytes and len(texture.clut) == 1024
-        # Validate the serialized TEXS representation, including CSM1 CLUT
-        # ordering. Compare post-conversion values to GS channel normalization.
+        assert texture.psm == texconv.PSMT4 and texture.clut_entries == 16
+        assert len(texture.mips) == 1 and len(texture.mips[0]) == width * height // 2 and len(texture.clut) == 64
+        # Serialized TEXS passes the production tex reader.
         payload = texconv.build_texs([texture], [])
         c_payload = ctypes.create_string_buffer(payload)
         assert _engine_tex_reader()(c_payload, len(payload))
         section = texconv.parse_texs(payload)
         tex = section.textures[0]
-        assert (tex["width"], tex["height"], tex["psm"], tex["mips"]) == (
-            width, height, texconv.PSMT8, 1)
-        indices = section.mip(tex, 0)[2][:expected_bytes]
-        palette = texconv.parse_clut(payload[tex["clut_offset"]:tex["clut_offset"] + 1024], 256)
+        assert (tex["width"], tex["height"], tex["psm"], tex["mips"]) == (width, height, texconv.PSMT4, 1)
+        indices = texconv.unpack_nibbles(section.mip(tex, 0)[2][:width * height // 2])
+        palette = texconv.parse_clut(payload[tex["clut_offset"]:tex["clut_offset"] + 64], 16)
+        assert all(entry[:3] == (0, 0, 0) for entry in palette)
         _w, _h, rgba = bitmaps.decode_level(image, source.pixels(image), 0)
-        expected = [(rgba[i], rgba[i + 1], rgba[i + 2], texconv.ps2_alpha(rgba[i + 3]))
-                    for i in range(0, len(rgba), 4)]
-        reconstructed = [palette[index] for index in indices]
-        assert reconstructed == expected
-
+        wanted = [rgba[i] for i in range(0, len(rgba), 4)]
+        got = [palette[index][3] for index in indices]
+        # the hole stays fully clear and the ring fully dark: 0 and 255 are always levels
+        for y, a in zip(wanted, got):
+            if y in (0, 255):
+                assert a == texconv.ps2_alpha(y)
+        errors = [abs(a - texconv.ps2_alpha(y)) for y, a in zip(wanted, got)]
+        assert sum(1 for e in errors if e) <= len(errors) * 0.02, "more than 2% of texels moved to another level"
+        assert max(errors) <= 24
+    assert seen == set(expected)
 
 
 def test_sprite_frame_cannot_reference_a_missing_image(tmp_path):

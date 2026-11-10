@@ -95,16 +95,15 @@ hcu_bitmap_quad_status hcu_bitmap_quad_emit_validated(chain_t *chain,
 	const tex_info *image, const hcu_bitmap_quad_state_t *state,
 	const hcu_bitmap_vertex_t vertices[4]);
 
-/* Screen flash: one untextured quad covering `rect`, scissored to it. `type` is
- * CE's render_screen_flash type (1 lighten, 2 darken, 3 max, 4 min, 6 tint) and
- * `argb` the flash colour with the intensity already applied. Lighten/max draw
- * Cs + Cd*(1-As) in two passes, with colour and alpha capped below opaque; a
- * near-black colour skips the add. Darken, min and tint are Cs*As+Cd*(1-As),
- * and darken caps alpha so it cannot replace the frame. Type 5 (invert) is not
- * drawn and returns OK. The draw is followed by a GS restore. */
+/* Screen flash: untextured blend passes over `rect`, scissored to it. `type` is CE's render_screen_flash type (1 lighten,
+ * 2 darken, 3 max, 4 min, 5 invert, 6 tint), `argb` the flash definition's colour (not scaled) and `intensity` the
+ * flash intensity 0..255; each type draws retail's formula (see hcu_bitmap_quad.c) with no alpha caps. `frame_base` is the
+ * GS FRAME_1 value with FBMSK clear (0 when unknown): it lets invert and tint treat channels separately and is written
+ * back after the draw. COLCLAMP is set to 1. A flash whose passes are all no-ops at this intensity returns OK
+ * without drawing. The draw is followed by a GS restore. */
 hcu_bitmap_quad_status hcu_bitmap_quad_emit_flash(chain_t *chain,
 	uint16_t screen_w, uint16_t screen_h, const hcu_bitmap_rect *rect,
-	uint32_t z, int16_t type, uint32_t argb);
+	uint32_t z, int16_t type, uint32_t argb, uint32_t intensity, uint64_t frame_base);
 
 /* Untextured quad in the same virtual-frame space as other HUD vertices.
  * `subtract` selects Cd - Cs (a hole punched out of a previous additive quad);

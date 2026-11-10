@@ -179,6 +179,8 @@ typedef struct {
 	uint32_t screen_effect_prepared_count;
 	uint8_t screen_effect_snapshot_valid;
 	uint8_t screen_effect_backend_active;
+	/* GS FRAME_1 of the frame's draw buffer (FBMSK clear), set each frame by the screen-effect hook; 0 when unknown. */
+	uint64_t flash_frame_base;
 } hcu_bitmap_dispatch_context;
 
 /* Snapshot the native parameter block from a sealed CE queue. The current PS2

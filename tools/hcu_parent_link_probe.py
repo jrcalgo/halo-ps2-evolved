@@ -349,6 +349,18 @@ def main() -> None:
             closure_suffix += "-movement-trace"
         if os.environ.get("HCU_DEBUG_WEAPON_CYCLE") == "1":
             closure_suffix += "-weapon-cycle"
+        if os.environ.get("HCU_DEBUG_CAMO") == "1":
+            closure_suffix += "-camo"
+        if os.environ.get("HCU_DEBUG_TELEPORTER") == "1":
+            closure_suffix += "-teleporter"
+        if os.environ.get("HCU_DEBUG_ZOOM") == "1":
+            closure_suffix += "-zoom"
+        if os.environ.get("HCU_DEBUG_FLASHLIGHT") == "1":
+            closure_suffix += "-flashlight"
+        if os.environ.get("HCU_DEBUG_VEHICLE_EXIT") == "1":
+            closure_suffix += "-vehicle-exit"
+        if os.environ.get("HCU_DEBUG_FLASH") == "1":
+            closure_suffix += "-flash"
         if os.environ.get("HCU_C3_SESSION_TRACE") == "1":
             closure_suffix += "-session-trace"
         if os.environ.get("HCU_C3_PHASE_PROBE") == "1":

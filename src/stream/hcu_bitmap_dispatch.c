@@ -475,7 +475,10 @@ int hcu_bitmap_meter_build_clut(const halo_ps2_bitmap_request *request, uint8_t 
 	}
 	for (i = 0; i < 256u; ++i) {
 		float shape = (float)k_meter_shape_level[i >> 6] * (1.0f / 255.0f);
-		float y = (float)((i & 63u) * 4u + 2u) * (1.0f / 255.0f), keep, ramp, band, col[3];
+		/* The bin's low edge, not its centre: the retail thresholds are mult * rounds + bias with the bullets' Y at
+		 * mult * k (sniper 60, rocket launcher 120, assault rifle 4), so a bullet is filled only while its Y is
+		 * below the threshold; the centre (Y + 2) pushed the top bullet of a full magazine over it. */
+		float y = (float)((i & 63u) * 4u) * (1.0f / 255.0f), keep, ramp, band, col[3];
 		if (!(i >> 6)) { pr[i] = pg[i] = pb[i] = pa[i] = 0.0f; continue; }
 		if (y > 1.0f) y = 1.0f;
 		if (y >= flash_alpha) {
@@ -577,20 +580,18 @@ static const hcu_bitmap_binding *binding_find(const hcu_bitmap_binding *bindings
 	return NULL;
 }
 
-/* Only the two retail zoom masks are allowed above the normal 256px bitmap
- * cap. Their PSMT8 mip 0 and full CLUT preserve GS-normalized source values;
- * lower generated mips are omitted. The CE capture provenance bit is
- * necessary but not sufficient. */
+/* The scope masks (hcu_profile_bitmap.SCOPE_MASK_BITMAPS) are the only bitmaps allowed above the normal 256px cap: black
+ * texels whose alpha is the mask's Y, PSMT4 with 16 levels (PSMT8 with 256 for an older package). The full-view mask is
+ * 512x256 and the split-view masks 256x256, so the shape (not a datum) is what admits one on any map. */
 static int screen_effect_mask_shape(const halo_ps2_bitmap_request *request,
 	const tex_info *image, uint32_t mip_bytes, uint32_t clut_bytes)
 {
-	if (!request || !image || !request->screen_effect_mask ||
-		image->psm != GS_PSMT8 || image->clut_entries != 256u || clut_bytes != 1024u)
-		return 0;
-	if (image->source_id == 3861513398u)
-		return image->width == 512u && image->height == 256u && mip_bytes == 131072u;
-	if (image->source_id == 3861578935u)
-		return image->width == 256u && image->height == 256u && mip_bytes == 65536u;
+	uint32_t texels;
+	if (!request || !image || !request->screen_effect_mask) return 0;
+	if (!((image->width == 512u && image->height == 256u) || (image->width == 256u && image->height == 256u))) return 0;
+	texels = (uint32_t)image->width * image->height;
+	if (image->psm == GS_PSMT4) return image->clut_entries == 16u && clut_bytes == 64u && mip_bytes == texels / 2u;
+	if (image->psm == GS_PSMT8) return image->clut_entries == 256u && clut_bytes == 1024u && mip_bytes == texels;
 	return 0;
 }
 
@@ -613,6 +614,36 @@ static hcu_bitmap_dispatch_status compose_source_get(hcu_bitmap_dispatch_context
 	const hcu_bitmap_binding *binding, uint32_t generation,
 	hcu_bitmap_compose_source **out)
 {
+/* A chunk whose bytes were read but whose image the HUD cannot draw stays rejected for the map generation: left alone, the
+ * request is re-issued every frame and each one is a disc read (a scope mask the shape check refused cost 90 ms a frame). */
+static uint32_t s_hud_reject[16], s_hud_reject_count, s_hud_reject_gen;
+static int hud_rejected(uint32_t chunk, uint32_t generation)
+{
+	uint32_t i;
+	if (s_hud_reject_gen != generation) return 0;
+	for (i = 0; i < s_hud_reject_count; i++) if (s_hud_reject[i] == chunk) return 1;
+	return 0;
+}
+static void hud_reject(uint32_t chunk, uint32_t generation)
+{
+	if (s_hud_reject_gen != generation) { s_hud_reject_gen = generation; s_hud_reject_count = 0u; }
+	if (hud_rejected(chunk, generation) || s_hud_reject_count >= 16u) return;
+	s_hud_reject[s_hud_reject_count++] = chunk;
+	printf("HALO_PS2_LOCAL hud-chunk-rejected chunk=%u\n", (unsigned)chunk);
+}
+#define HUD_REJECT_FORMAT() do { hud_reject(binding->chunk_id, expected_generation); return HCU_BITMAP_DISPATCH_E_FORMAT; } while (0)
+
+#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
+/* A HUD chunk read on the frame path (a cache miss): printed for the first 64 reads of a run, then every 64th. */
+static void hud_read_trace(const char *site, uint32_t chunk, uint32_t size)
+{
+	static uint32_t count;
+	if (count < 64u || (count & 63u) == 0u)
+		printf("HALO_PS2_LOCAL hud-read site=%s chunk=%u size=%u n=%u\n", site, (unsigned)chunk, (unsigned)size, (unsigned)count);
+	count++;
+}
+#endif
+
 	uint8_t *storage = (uint8_t *)ctx->source_storage;
 	hcu_bitmap_compose_source *source = NULL;
 	hcu_asset_chunk_view chunk;
@@ -652,6 +683,9 @@ static hcu_bitmap_dispatch_status compose_source_get(hcu_bitmap_dispatch_context
 		return HCU_BITMAP_DISPATCH_E_CHUNK;
 	}
 	ctx->counters.read_calls += stats.payload_read_calls;
+#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
+	hud_read_trace("compose-source", binding->chunk_id, chunk.size);
+#endif
 	ctx->counters.read_bytes += stats.payload_read_bytes;
 	ctx->counters.read_cycles += stats.read_cycles;
 	ctx->counters.hash_cycles += stats.hash_cycles;
@@ -1273,6 +1307,7 @@ static hcu_bitmap_dispatch_status dispatch_request_impl(
 			observed_profile = *profile;
 			observed_profile.memory_image = NULL;
 			observed_profile.read_at = bitmap_counted_read;
+		if (hud_rejected(binding->chunk_id, expected_generation)) return HCU_BITMAP_DISPATCH_E_FORMAT;
 			observed_profile.reader_context = &probe;
 			read_profile = &observed_profile;
 		}
@@ -1323,6 +1358,9 @@ static hcu_bitmap_dispatch_status dispatch_request_impl(
 			context->counters.hash_cycles += stats.hash_cycles;
 			context->counters.source_cycles += BITMAP_CYCLES() - source_begin;
 			if (result != HCU_ASSET_PROFILE_OK) return HCU_BITMAP_DISPATCH_E_CHUNK;
+#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
+		hud_read_trace(request->screen_effect_mask ? "dispatch-mask" : "dispatch", binding->chunk_id, chunk_view.size);
+#endif
 		} else {
 			int result = hcu_asset_profile_read_chunk(read_profile, HCU_ASSET_CHUNK_MEDIA,
 				binding->chunk_id, raw, slot_stride);
@@ -1338,7 +1376,7 @@ have_raw:
 		parse_begin = BITMAP_CYCLES();
 		if (context) context->counters.parses++;
 		if (tex_open(&section, raw, read_bytes) != TEX_OK || binding->image_index >= section.texture_count)
-			return HCU_BITMAP_DISPATCH_E_FORMAT;
+			HUD_REJECT_FORMAT();
 		image = tex_get(&section, binding->image_index);
 		if (image.source_id != binding->expected_source_datum)
 			return HCU_BITMAP_DISPATCH_E_IDENTITY;
@@ -1346,13 +1384,13 @@ have_raw:
 			(image.width > 256u && !request->screen_effect_mask) || image.height > 256u ||
 			image.width > 512u || log2_exact(image.width) < 0 ||
 			log2_exact(image.height) < 0 || !tex_mip(&section, &image, 0, &mip))
-			return HCU_BITMAP_DISPATCH_E_FORMAT;
+			HUD_REJECT_FORMAT();
 		clut = tex_clut(&section, &image);
 		clut_bytes = (uint32_t)image.clut_entries * 4u;
 		if (!clut || !clut_bytes || (mip.bytes & 15u) || (clut_bytes & 15u))
-			return HCU_BITMAP_DISPATCH_E_FORMAT;
+			HUD_REJECT_FORMAT();
 		if (image.width > 256u && !screen_effect_mask_shape(request, &image, mip.bytes, clut_bytes))
-			return HCU_BITMAP_DISPATCH_E_FORMAT;
+			HUD_REJECT_FORMAT();
 		if (context) context->counters.parse_cycles += BITMAP_CYCLES() - parse_begin;
 	}
 	if ((image.psm != GS_PSMT8 && image.psm != GS_PSMT4) ||
@@ -1488,6 +1526,32 @@ have_raw:
 		/* CE vertices are viewport-relative: offset into this view and clip to it. */
 		if (hcu_bitmap_quad_place(&state, &target, vertices, placed) != 0) goto rollback;
 		memcpy(vertices, placed, sizeof(vertices));
+	if (request->screen_effect_mask && !prepare_only) {
+		/* Retail's zoom effect darkens the view by the mask's Y: framebuffer * (1 - Y), a black quad with alpha Y (the
+		 * CLUT is black with alpha Y). The mask's texels sit 1:1 on the pane, centred, and its edge texel is
+		 * extended over the rest (clamp). Corners are given in the HUD's virtual frame, which place() scales back. */
+		float sx = (float)target.w / (float)screen_w, sy = (float)target.h / (float)screen_h;
+		float scale = sx < sy ? sx : sy;
+		float mw = (float)image.width, mh = (float)image.height;
+		float ox = ((float)target.w - mw) * 0.5f, oy = ((float)target.h - mh) * 0.5f;
+		float tx[2], ty[2];
+		unsigned k;
+		if (!(scale > 0.0f)) goto rollback;
+		tx[0] = -ox; tx[1] = (float)target.w - ox;
+		ty[0] = -oy; ty[1] = (float)target.h - oy;
+		for (k = 0; k < 4; k++) {
+			vertices[k].x = (k == 1 || k == 2) ? (float)target.w / scale : 0.0f;
+			vertices[k].y = (k >= 2) ? (float)target.h / scale : 0.0f;
+			/* put_vertex maps u to 0.5 + u * (width - 1) texels */
+			vertices[k].u = (tx[(k == 1 || k == 2) ? 1 : 0] - 0.5f) / (mw - 1.0f);
+			vertices[k].v = (ty[(k >= 2) ? 1 : 0] - 0.5f) / (mh - 1.0f);
+			vertices[k].argb = 0xFFFFFFFFu;
+		}
+		state.blend = HCU_BITMAP_BLEND_ALPHA;
+		state.point_sampled = 1;
+		state.uv_extended = 1;
+		state.clamp = GS_CLAMP(1, 1, 0, image.width - 1u, 0, image.height - 1u);
+	}
 		if (request->has_meter & HALO_PS2_BITMAP_METER_PRESENT) {
 			int palette = meter_emit_palette(context, &image, &state, vertices, request, tbp, tbw,
 				upload_chain, geometry_chain, lease);
@@ -1621,6 +1685,9 @@ int32_t hcu_bitmap_dispatch_screen_effect_mask_complement_clut(
 	ctx->counters.source_bytes += chunk.size;
 	ctx->counters.hash_checks++;
 	ctx->counters.read_calls += stats.payload_read_calls;
+#if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
+	hud_read_trace("mask-clut", binding->chunk_id, chunk.size);
+#endif
 	ctx->counters.read_bytes += stats.payload_read_bytes;
 	ctx->counters.read_cycles += stats.read_cycles;
 	ctx->counters.hash_cycles += stats.hash_cycles;
@@ -1715,12 +1782,10 @@ int hcu_bitmap_dispatch_reader(const halo_ps2_bitmap_request_reader *reader,
 		hcu_bitmap_lease *lease = &ctx->leases[ctx->lease_count];
 		hcu_bitmap_dispatch_status status;
 		hcu_bitmap_rect target;
-		/* A captured effect mask is never a standalone HUD quad. It was either
-		 * consumed by the native pre-HUD backend or held inactive without one. */
-		if (reader->requests[i].screen_effect_mask) {
-			if (!ctx->screen_effect_backend_active) ctx->screen_effect_masks_deferred++;
-			continue;
-		}
+		/* A captured effect mask is consumed by a native pre-HUD backend when one is active. Without one it is
+		 * drawn below as the retail scope darkening (a black quad whose alpha is the mask's Y). */
+		if (reader->requests[i].screen_effect_mask && ctx->screen_effect_backend_active)
+			continue; /* a native backend draws it before the HUD */
 		memset(lease, 0, sizeof(*lease));
 		if (hcu_bitmap_view_resolve(ctx->views, ctx->view_count, reader->requests[i].view_index,
 			ctx->screen_w, ctx->screen_h, &target) != 0) {
@@ -1731,7 +1796,8 @@ int hcu_bitmap_dispatch_reader(const halo_ps2_bitmap_request_reader *reader,
 		if (reader->requests[i].screen_flash) {
 			hcu_bitmap_quad_status flash = hcu_bitmap_quad_emit_flash(ctx->geometry_chain,
 				ctx->screen_w, ctx->screen_h, &target, 0xFFFFFFu,
-				(int16_t)reader->requests[i].screen_flash_type, reader->requests[i].vertices[0].color);
+				(int16_t)reader->requests[i].screen_flash_type, reader->requests[i].vertices[0].color,
+				reader->requests[i].vertices[1].color & 255u, ctx->flash_frame_base);
 			if (flash == HCU_BITMAP_QUAD_OK) ctx->screen_flashes++;
 			else if (flash == HCU_BITMAP_QUAD_CAPACITY) ctx->counters.deferred++;
 			else if (ctx->first_error == HCU_BITMAP_DISPATCH_OK) ctx->first_error = HCU_BITMAP_DISPATCH_E_ARGUMENT;

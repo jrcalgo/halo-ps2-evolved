@@ -40,7 +40,7 @@ SOURCE_RESOLUTION_HUD_BITMAPS = {
     r"weapons\sniper rifle\bitmaps\angle_ticks2",
     # The zoom-selected full and split scope masks are authored at 512×256
     # and 256×256. Keep their mip 0 so the mask itself is not blurred by
-    # package-time reduction; runtime admission is separately datum-gated.
+    # package-time reduction (_convert_scope_mask packs them as PSMT4).
     r"ui\hud\bitmaps\sniper\sniper_scope_mask2",
     r"ui\hud\bitmaps\sniper\sniper_scope_mask_sm",
 }
@@ -87,24 +87,45 @@ def _source_sha(path):
     return digest.hexdigest()
 
 
+# The zoom screen effect darkens the view by the mask's Y (retail: framebuffer * (1 - Y)), which is a black quad with alpha
+# Y. Each mask is stored as that quad's texture: black texels whose GS alpha is Y, in 16 levels (PSMT4), so a 512x256 mask is
+# a 64 KB chunk the HUD cache holds. The levels are the 16 most used Y values (the hole 0, the surround ~0.5, the ring 1.0
+# are always among them); every other texel takes the nearest level, which only moves a few antialiased edge texels.
+SCOPE_MASK_BITMAPS = {
+    r"ui\hud\bitmaps\sniper\sniper_scope_mask2",
+    r"ui\hud\bitmaps\sniper\sniper_scope_mask_sm",
+    r"ui\hud\bitmaps\pistol\pistol_scope_mask",
+    r"ui\hud\bitmaps\pistol\pistol_scope_mask split",
+}
+
+
+def scope_mask_levels(values, count=16):
+    """The `count` Y values a mask keeps: the most used ones, always with the full-clear 0 and the full-dark 255."""
+    freq = {}
+    for v in values:
+        freq[v] = freq.get(v, 0) + 1
+    if len(freq) <= count:
+        return sorted(freq)
+    ranked = [v for v, _n in sorted(freq.items(), key=lambda kv: (-kv[1], kv[0]))]
+    keep = ranked[:count]
+    for must in (0, 255):
+        if must in freq and must not in keep:
+            keep[-1 if keep[-1] not in (0, 255) else -2] = must
+    return sorted(set(keep))
+
+
 def _convert_scope_mask(m, img, source_id):
-    """Pack exact GS-normalized grayscale/alpha values into a PSMT8 CLUT."""
+    """A8Y8 / AY8 scope mask -> PSMT4 texture of black texels with alpha Y (see SCOPE_MASK_BITMAPS)."""
     width, height, rgba = bitmaps.decode_level(img, m.pixels(img), 0)
-    pixels = [(rgba[i], rgba[i + 1], rgba[i + 2], texconv.ps2_alpha(rgba[i + 3]))
-              for i in range(0, len(rgba), 4)]
-    palette = sorted(set(pixels))
-    if not palette or len(palette) > 256:
-        raise BitmapProfileError("scope mask exceeds exact PSMT8 GS palette capacity")
-    palette_index = {color: index for index, color in enumerate(palette)}
-    indices = bytes(palette_index[color] for color in pixels)
-    words = [r | g << 8 | b << 16 | a << 24 for r, g, b, a in palette]
-    words += [words[-1]] * (256 - len(words))
-    clut = bytearray(1024)
-    for i, word in enumerate(words):
-        struct.pack_into("<I", clut, texconv.clut_swap(i) * 4, word)
-    return texconv.Ps2Texture(source_id, width, height, texconv.PSMT8,
-        texconv.TF_BLEND, bytes(clut), 256, [texconv._pad16(indices)],
-        texconv._average_rgba(rgba), len(palette), 0.0)
+    ys = [rgba[i] for i in range(0, len(rgba), 4)]
+    levels = scope_mask_levels(ys)
+    nearest = {y: min(range(len(levels)), key=lambda k: (abs(levels[k] - y), k)) for y in set(ys)}
+    indices = bytes(nearest[y] for y in ys)
+    clut = texconv.build_clut([(0, 0, 0, level) for level in levels], 16)
+    black = bytearray(4 * len(ys))
+    black[3::4] = bytes(levels[nearest[y]] for y in ys)
+    return texconv.Ps2Texture(source_id, width, height, texconv.PSMT4, texconv.TF_BLEND, clut, 16,
+        [texconv._pad16(texconv.pack_nibbles(indices))], texconv._average_rgba(bytes(black)), len(levels), 0.0)
 
 
 def _engine_tex_reader():
@@ -264,10 +285,7 @@ def serialize_bitmap(sources: dict, owner: dict, schema: dict, *,
             continue
         try:
             path = entry.path.casefold()
-            is_scope_mask = path in {
-                r"ui\hud\bitmaps\sniper\sniper_scope_mask2",
-                r"ui\hud\bitmaps\sniper\sniper_scope_mask_sm",
-            }
+            is_scope_mask = path in SCOPE_MASK_BITMAPS
             native_hud = path in NATIVE_RESOLUTION_HUD_BITMAPS
             preserve_source_resolution = path in SOURCE_RESOLUTION_HUD_BITMAPS or native_hud
             is_meter = path in METER_HUD_BITMAPS and img.format_name == "a8y8"

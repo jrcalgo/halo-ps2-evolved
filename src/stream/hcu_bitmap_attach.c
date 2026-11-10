@@ -69,6 +69,11 @@ static int32_t attach_screen_effect(void *user, u32 frame, const video_t *video,
 		return -1;
 	}
 	r->dispatch->geometry_chain = geometry;
+	/* the screen flash switches FBMSK per channel and puts this value back */
+	r->dispatch->flash_frame_base = (video->back == 0 || video->back == 1) ?
+		((uint64_t)(video->fb[video->back].address / 2048u) |
+		(uint64_t)(video->fb[video->back].width / 64u) << 16 |
+		(uint64_t)video->fb[video->back].psm << 24) : 0u;
 	r->dispatch->upload_chain = upload;
 	memset(&reader, 0, sizeof(reader));
 	if (halo_ps2_bitmap_requests_acquire(r->owner->queue, r->owner->generation, &reader) !=

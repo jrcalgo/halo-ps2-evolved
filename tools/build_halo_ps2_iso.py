@@ -94,6 +94,18 @@ def production_closure_dir() -> Path:
         suffix += "-movement-trace"
     if env.get("HCU_DEBUG_WEAPON_CYCLE") == "1":
         suffix += "-weapon-cycle"
+    if env.get("HCU_DEBUG_CAMO") == "1":
+        suffix += "-camo"
+    if env.get("HCU_DEBUG_TELEPORTER") == "1":
+        suffix += "-teleporter"
+    if env.get("HCU_DEBUG_ZOOM") == "1":
+        suffix += "-zoom"
+    if env.get("HCU_DEBUG_FLASHLIGHT") == "1":
+        suffix += "-flashlight"
+    if env.get("HCU_DEBUG_VEHICLE_EXIT") == "1":
+        suffix += "-vehicle-exit"
+    if env.get("HCU_DEBUG_FLASH") == "1":
+        suffix += "-flash"
     if env.get("HCU_C3_SESSION_TRACE") == "1":
         suffix += "-session-trace"
     if env.get("HCU_C3_PHASE_PROBE") == "1":

@@ -63,6 +63,14 @@ int hcu_bitmap_view_resolve(const hcu_bitmap_view *views, uint32_t view_count,
 	return -1;
 }
 
+/* The uniform scale from the HUD's virtual frame to a pane: 1 for a full-screen rect, below 1 for a split pane. */
+static float pane_scale(const hcu_bitmap_rect *r, uint16_t screen_w, uint16_t screen_h)
+{
+	float sx = (float)r->w / (float)screen_w, sy = (float)r->h / (float)screen_h;
+	float scale = sx < sy ? sx : sy;
+	return scale > 1.0f ? 1.0f : scale;
+}
+
 int hcu_bitmap_quad_place(hcu_bitmap_quad_state_t *s, const hcu_bitmap_rect *r,
 	const hcu_bitmap_vertex_t in[4], hcu_bitmap_vertex_t out[4])
 {
@@ -78,9 +86,7 @@ int hcu_bitmap_quad_place(hcu_bitmap_quad_state_t *s, const hcu_bitmap_rect *r,
 	 * (hud_split_view_begin), and the same uniform scale maps it back. A
 	 * full-screen rect has scale 1. */
 	{
-		float sx = (float)r->w / (float)s->screen_w, sy = (float)r->h / (float)s->screen_h;
-		float scale = sx < sy ? sx : sy;
-		if (scale > 1.0f) scale = 1.0f;
+		float scale = pane_scale(r, s->screen_w, s->screen_h);
 		for (i = 0; i < 4; i++) {
 			out[i] = in[i];
 			out[i].x = in[i].x * scale + (float)r->x;
@@ -170,92 +176,189 @@ hcu_bitmap_quad_status hcu_bitmap_quad_emit(chain_t *c,const tex_section *textur
 	return hcu_bitmap_quad_emit_validated(c,&image,s,vertices);
 }
 
-/* One VIF qword, a GIF A+D tag with ALPHA/TEST/XYOFFSET/SCISSOR, one draw tag,
- * 6 * 3 vertex qwords. */
+/* Screen flash (CE _rasterizer_screen_flash, rasterizer_xbox_screen_effect.c). The request carries the flash
+ * definition's colour (argb, not scaled) and the intensity I (0..255); F = colour * I and Fa = alpha * I. Each type is
+ * a short run of GS blend passes over the pane, the same arithmetic as retail's pixel combiner:
+ *   1 lighten  F + Cd(1-Fa)             Cd(1-As) then Cd+Cs                       (damage, pickups, fades)
+ *   2 darken   Cd - F                   (Cd-Cs)                                   (camouflage pickup)
+ *   3 max      max(Cd, sat(F-Fa))       (Cd-X) then (Cd+X)
+ *   4 min      min(Cd, sat(F+Fa))       (X-Cd) twice
+ *   5 invert   S(1-Cd) + Cd(1-F)        per channel Cd*k + S or S - Cd*|k|, k = 1-S-F, S = sat(F(2F-1)+Fa) (overshield)
+ *   6 tint     Fa + Cd(1-(1-c)I)        per channel Cd*k + Fa, k = 1-(1-c)I       (health pack, teleporter)
+ * Untextured Cs is the vertex colour as is (0..255); the blend's alpha/FIX operand has 128 for 1.0. Channels whose
+ * factor differs get their own pass with FBMSK keeping the others (needs the frame register in `frame_base`). COLCLAMP
+ * is set so the sums and differences saturate. The pass count is at most 3. */
+/* Qwords of a fixed one-quad A+D draw (the radar marker below). */
 #define HCU_FLASH_DATA_QW (1u + 5u + 1u + 6u * 3u)
-/* GS 128 is opaque. Stay under it so a flash cannot replace the frame. */
-#define HCU_FLASH_GS_CAP 96u
-#define HCU_FLASH_BLACK_GS 8u
+#define HCU_FLASH_MAX_PASSES 3u
+#define HCU_FLASH_EPS (1.0f / 512.0f)
 
-static int flash_near_black(uint32_t argb)
+typedef struct { uint64_t alpha; uint32_t mask; uint32_t rgb[3]; uint32_t as; } flash_pass;
+
+static float flash_sat(float x) { return x < 0.0f ? 0.0f : (x > 1.0f ? 1.0f : x); }
+static uint32_t flash_byte(float x) { return (uint32_t)(flash_sat(x) * 255.0f + 0.5f); }
+static uint32_t flash_half(float x) { return (uint32_t)(flash_sat(x) * 128.0f + 0.5f); }
+
+static flash_pass *flash_add(flash_pass *p, unsigned *n, uint64_t alpha, uint32_t mask,
+	const float rgb[3], uint32_t as)
 {
-	uint32_t r=gs_channel((argb>>16)&255u), g=gs_channel((argb>>8)&255u), b=gs_channel(argb&255u);
-	return r<=HCU_FLASH_BLACK_GS && g<=HCU_FLASH_BLACK_GS && b<=HCU_FLASH_BLACK_GS;
+	flash_pass *o = &p[(*n)++];
+	o->alpha = alpha; o->mask = mask; o->as = as;
+	o->rgb[0] = flash_byte(rgb[0]); o->rgb[1] = flash_byte(rgb[1]); o->rgb[2] = flash_byte(rgb[2]);
+	return o;
 }
 
-static uint32_t flash_gs(uint32_t byte, uint32_t cap)
+/* Per-channel passes of Cd*k + cs (k >= 0) or cs - Cd*|k| (k < 0): channels sharing a factor share a pass. */
+static void flash_channel_passes(flash_pass *p, unsigned *n, const float k[3], const float cs[3],
+	const int active[3], uint64_t frame_base)
 {
-	uint32_t c=gs_channel(byte);
-	return c>cap?cap:c;
-}
-
-static void cap_flash_vertex(uint64_t *q, uint32_t argb, int cap_rgb)
-{
-	uint32_t a=flash_gs(argb>>24, HCU_FLASH_GS_CAP);
-	uint32_t r=cap_rgb?flash_gs((argb>>16)&255u, HCU_FLASH_GS_CAP):(uint32_t)q[0];
-	uint32_t g=cap_rgb?flash_gs((argb>>8)&255u, HCU_FLASH_GS_CAP):(uint32_t)(q[0]>>32);
-	uint32_t b=cap_rgb?flash_gs(argb&255u, HCU_FLASH_GS_CAP):(uint32_t)q[1];
-	q[0]=(uint64_t)r|(uint64_t)g<<32;
-	q[1]=(uint64_t)b|(uint64_t)a<<32;
-}
-
-static void emit_flash_verts(uint64_t *q, const hcu_bitmap_vertex_t v[4],
-	const hcu_bitmap_quad_state_t *s, const unsigned order[6], int cap_a, int cap_rgb)
-{
-	tex_info none; unsigned i;
-	memset(&none,0,sizeof(none)); none.width=1; none.height=1;
-	for(i=0;i<6;i++,q+=6){
-		put_vertex(q,&v[order[i]],s,&none);
-		if(cap_a) cap_flash_vertex(q,v[order[i]].argb,cap_rgb);
+	int done[3] = { 0, 0, 0 };
+	unsigned i, j;
+	for (i = 0; i < 3u; i++) {
+		uint32_t fix, mask = 0xFF000000u;
+		int neg;
+		float absk, rgb[3] = { 0.0f, 0.0f, 0.0f };
+		if (!active[i] || done[i]) continue;
+		neg = k[i] < 0.0f;
+		absk = neg ? -k[i] : k[i];
+		fix = flash_half(absk);
+		for (j = 0; j < 3u; j++) {
+			if (active[j] && !done[j] && (k[j] < 0.0f) == neg && flash_half(k[j] < 0.0f ? -k[j] : k[j]) == fix &&
+				(j == i || frame_base)) {
+				done[j] = 1;
+				rgb[j] = cs[j];
+			} else {
+				mask |= 0xFFu << (8u * j);
+				/* without the frame register one pass covers every channel at the first factor */
+				if (!frame_base) rgb[j] = cs[j];
+			}
+		}
+		if (!frame_base) mask = 0;
+		flash_add(p, n, neg ? GS_ALPHA(2,1,2,0,fix) : GS_ALPHA(1,2,2,0,fix), mask, rgb, 128u);
+		if (!frame_base) break;
 	}
+}
+
+static unsigned flash_build_passes(flash_pass *p, int16_t type, uint32_t argb, uint32_t intensity, uint64_t frame_base)
+{
+	float c[3], ca, I = (float)intensity * (1.0f / 255.0f), F[3], Fa, X[3], zero[3] = { 0.0f, 0.0f, 0.0f };
+	unsigned n = 0, i;
+	c[0] = (float)((argb >> 16) & 255u) * (1.0f / 255.0f);
+	c[1] = (float)((argb >> 8) & 255u) * (1.0f / 255.0f);
+	c[2] = (float)(argb & 255u) * (1.0f / 255.0f);
+	ca = (float)(argb >> 24) * (1.0f / 255.0f);
+	for (i = 0; i < 3u; i++) F[i] = c[i] * I;
+	Fa = ca * I;
+	switch (type) {
+	case 1: /* lighten */
+		if (Fa > HCU_FLASH_EPS) flash_add(p, &n, GS_ALPHA(2,1,0,1,0), 0u, zero, flash_half(Fa));
+		if (F[0] > HCU_FLASH_EPS || F[1] > HCU_FLASH_EPS || F[2] > HCU_FLASH_EPS)
+			flash_add(p, &n, GS_ALPHA(0,2,2,1,128), 0u, F, 128u);
+		break;
+	case 2: /* darken */
+		if (F[0] > HCU_FLASH_EPS || F[1] > HCU_FLASH_EPS || F[2] > HCU_FLASH_EPS)
+			flash_add(p, &n, GS_ALPHA(1,0,2,2,128), 0u, F, 128u);
+		break;
+	case 3: /* max */
+		for (i = 0; i < 3u; i++) X[i] = flash_sat(F[i] - Fa);
+		if (X[0] > HCU_FLASH_EPS || X[1] > HCU_FLASH_EPS || X[2] > HCU_FLASH_EPS) {
+			flash_add(p, &n, GS_ALPHA(1,0,2,2,128), 0u, X, 128u);
+			flash_add(p, &n, GS_ALPHA(0,2,2,1,128), 0u, X, 128u);
+		}
+		break;
+	case 4: /* min */
+		for (i = 0; i < 3u; i++) X[i] = flash_sat(F[i] + Fa);
+		if (X[0] < 1.0f - HCU_FLASH_EPS || X[1] < 1.0f - HCU_FLASH_EPS || X[2] < 1.0f - HCU_FLASH_EPS) {
+			flash_add(p, &n, GS_ALPHA(0,1,2,2,128), 0u, X, 128u);
+			flash_add(p, &n, GS_ALPHA(0,1,2,2,128), 0u, X, 128u);
+		}
+		break;
+	case 5: { /* invert */
+		float k[3], S[3]; int active[3];
+		for (i = 0; i < 3u; i++) {
+			S[i] = flash_sat(F[i] * (2.0f * F[i] - 1.0f) + Fa);
+			k[i] = 1.0f - S[i] - F[i];
+			active[i] = S[i] > HCU_FLASH_EPS || k[i] < 1.0f - HCU_FLASH_EPS;
+		}
+		flash_channel_passes(p, &n, k, S, active, frame_base);
+		break;
+	}
+	case 6: { /* tint */
+		float k[3], cs[3]; int active[3];
+		for (i = 0; i < 3u; i++) {
+			k[i] = 1.0f - (1.0f - c[i]) * I;
+			cs[i] = Fa;
+			active[i] = Fa > HCU_FLASH_EPS || k[i] < 1.0f - HCU_FLASH_EPS;
+		}
+		flash_channel_passes(p, &n, k, cs, active, frame_base);
+		break;
+	}
+	default: break;
+	}
+	return n;
 }
 
 hcu_bitmap_quad_status hcu_bitmap_quad_emit_flash(chain_t *c,uint16_t screen_w,uint16_t screen_h,
-	const hcu_bitmap_rect *r,uint32_t z,int16_t type,uint32_t argb)
+	const hcu_bitmap_rect *r,uint32_t z,int16_t type,uint32_t argb,uint32_t intensity,uint64_t frame_base)
 {
 	hcu_bitmap_quad_state_t s; hcu_bitmap_vertex_t in[4],v[4];
-	uint64_t prim,alpha; uint32_t *w; uint64_t *q; unsigned i,pass2; uint32_t data_qw;
-	int cap_a, cap_rgb;
+	flash_pass passes[HCU_FLASH_MAX_PASSES];
+	uint64_t prim; uint32_t *w; uint64_t *q; unsigned i,j,np,restore_n; uint32_t data_qw;
+	gs_ad ad[5];
 	static const unsigned order[6]={0,1,2,0,2,3};
-	if(!c||!c->base||!r||type<=0||type>6||z>0xFFFFFFu) return HCU_BITMAP_QUAD_INVALID;
-	if(type==5) return HCU_BITMAP_QUAD_OK;
+	if(!c||!c->base||!r||type<=0||type>6||z>0xFFFFFFu||intensity>255u) return HCU_BITMAP_QUAD_INVALID;
 	memset(&s,0,sizeof(s)); s.screen_w=screen_w; s.screen_h=screen_h; s.z=z;
-	for(i=0;i<4;i++){
-		in[i].x=(i==1||i==2)?(float)r->w:0.0f; in[i].y=(i>=2)?(float)r->h:0.0f;
-		in[i].u=0.0f; in[i].v=0.0f; in[i].argb=argb;
+	/* The flash covers the whole pane. hcu_bitmap_quad_place maps the HUD's virtual frame (pane / scale pixels) to the
+	 * pane, so the corners are given in that frame: pane / scale, which place scales back to the pane's own size. Plain
+	 * pane-sized corners were scaled a second time and filled only the pane's top-left corner (0.4955 of it in a 2P
+	 * pane, a quarter in 4P). A full-screen pane has scale 1. */
+	if(r->w<=0||r->h<=0||!screen_w||!screen_h) return HCU_BITMAP_QUAD_INVALID;
+	np=flash_build_passes(passes,type,argb,intensity,frame_base);
+	if(!np) return HCU_BITMAP_QUAD_OK; /* nothing to draw at this intensity */
+	{
+		float scale=pane_scale(r,screen_w,screen_h);
+		for(i=0;i<4;i++){
+			in[i].x=(i==1||i==2)?(float)r->w/scale:0.0f; in[i].y=(i>=2)?(float)r->h/scale:0.0f;
+			in[i].u=0.0f; in[i].v=0.0f; in[i].argb=argb;
+		}
 	}
 	if(hcu_bitmap_quad_place(&s,r,in,v)!=0) return HCU_BITMAP_QUAD_INVALID;
-	/* Pass 1 scales Cd by (1-As). A near-black Cs would then add nothing, so skip it. */
-	pass2=(type==1||type==3) && !flash_near_black(argb) ? 1u : 0u;
-	cap_a=type==1||type==2||type==3;
-	cap_rgb=type==1||type==3;
-	data_qw=HCU_FLASH_DATA_QW+(pass2?21u:0u);
-	if(c->overflow||c->qw>c->cap_qw||
-		data_qw+1u+HCU_BITMAP_GS_RESTORE_QW(HCU_BITMAP_GS_RESTORE_DRAW_N)>c->cap_qw-c->qw)
+	restore_n=frame_base?5u:4u;
+	/* VIF qword, setup tag + COLCLAMP/TEST/XYOFFSET/SCISSOR, then per pass an A+D tag (ALPHA, FRAME), a draw tag and 18 vertex qwords. */
+	data_qw=1u+5u;
+	for(i=0;i<np;i++) data_qw+=(frame_base?3u:2u)+1u+18u;
+	if(c->overflow||c->qw>c->cap_qw||data_qw+1u+(3u+restore_n)>c->cap_qw-c->qw)
 		return HCU_BITMAP_QUAD_CAPACITY;
-	if(type==1||type==3) alpha=GS_ALPHA(2,1,0,1,0); /* Cd * (1 - As), then + Cs */
-	else alpha=GS_ALPHA(0,1,0,1,0);                 /* darken, min, tint: bounded alpha tint */
 	prim=GS_PRIM(GSX_PRIM_TRIANGLE,1,0,0,1,0,1,0,0); /* untextured, alpha blended */
 	w=(uint32_t*)chain_cnt(c,data_qw,0); if(!w) return HCU_BITMAP_QUAD_CAPACITY;
 	w[0]=VIF_CODE(VIF_NOP,0,0); w[1]=VIF_CODE(VIF_NOP,0,0); w[2]=VIF_CODE(VIF_FLUSHA,0,0); w[3]=VIF_CODE(VIF_DIRECT,0,data_qw-1u);
 	q=(uint64_t*)(w+4);
 	q[0]=GIF_TAG(4,1,0,0,GIFX_FLG_PACKED,1); q[1]=GIF_REGS_AD;
-	q[2]=alpha; q[3]=GS_A_ALPHA_1;
+	q[2]=1u; q[3]=0x46u; /* COLCLAMP = 1: clamp the blend result to 0..255 */
 	q[4]=GS_TEST(0,1,0,0,0,0,1,1); q[5]=GS_A_TEST_1;
 	q[6]=framebuffer_xyoffset(screen_w,screen_h); q[7]=GS_A_XYOFFSET_1;
 	q[8]=scissor_value(&s); q[9]=GS_A_SCISSOR_1;
-	q[10]=GIF_TAG(6,1,1,prim,GIFX_FLG_PACKED,3); q[11]=0x531; q+=12;
-	emit_flash_verts(q,v,&s,order,cap_a,cap_rgb);
-	q+=36;
-	if(pass2){
-		q[0]=GIF_TAG(1,1,0,0,GIFX_FLG_PACKED,1); q[1]=GIF_REGS_AD;
-		q[2]=GS_ALPHA(0,2,2,1,128); q[3]=GS_A_ALPHA_1;
-		q[4]=GIF_TAG(6,1,1,prim,GIFX_FLG_PACKED,3); q[5]=0x531; q+=6;
-		emit_flash_verts(q,v,&s,order,cap_a,cap_rgb);
+	q+=10;
+	for(j=0;j<np;j++){
+		const flash_pass *p=&passes[j];
+		q[0]=GIF_TAG(frame_base?2:1,1,0,0,GIFX_FLG_PACKED,1); q[1]=GIF_REGS_AD;
+		q[2]=p->alpha; q[3]=GS_A_ALPHA_1; q+=4;
+		if(frame_base){ q[0]=frame_base|(uint64_t)p->mask<<32; q[1]=GS_A_FRAME_1; q+=2; }
+		q[0]=GIF_TAG(6,1,1,prim,GIFX_FLG_PACKED,3); q[1]=0x531; q+=2;
+		for(i=0;i<6;i++,q+=6){
+			tex_info none; memset(&none,0,sizeof(none)); none.width=1; none.height=1;
+			put_vertex(q,&v[order[i]],&s,&none);
+			q[0]=(uint64_t)p->rgb[0]|(uint64_t)p->rgb[1]<<32; q[1]=(uint64_t)p->rgb[2]|(uint64_t)p->as<<32;
+		}
 	}
-	if(!hcu_bitmap_restore_gs_draw_state(c,NULL,NULL,framebuffer_xyoffset(screen_w,screen_h),
-		(uint64_t)(screen_w-1u)<<16|(uint64_t)(screen_h-1u)<<48))
-		return HCU_BITMAP_QUAD_CAPACITY;
+	/* Restore the draw state the flash changed (and the frame register's mask). */
+	i=0;
+	ad[i].data=GS_TEST(0,1,0,0,0,0,1,1); ad[i++].addr=DECAL_GS_A_TEST_1;
+	ad[i].data=GS_ALPHA(0,1,0,1,0); ad[i++].addr=DECAL_GS_A_ALPHA_1;
+	ad[i].data=framebuffer_xyoffset(screen_w,screen_h); ad[i++].addr=DECAL_GS_A_XYOFFSET_1;
+	ad[i].data=(uint64_t)(screen_w-1u)<<16|(uint64_t)(screen_h-1u)<<48; ad[i++].addr=DECAL_GS_A_SCISSOR_1;
+	if(frame_base){ ad[i].data=frame_base; ad[i++].addr=DECAL_GS_A_FRAME_1; }
+	if(!decal_compose_emit_ad(c,ad,i,0)) return HCU_BITMAP_QUAD_CAPACITY;
 	return HCU_BITMAP_QUAD_OK;
 }
 

@@ -64,15 +64,16 @@ static int s_bitmap_frame_consumer_registered = 1;
 static int s_bitmap_frame_active;
 struct render_screen_flash { short type; float intensity; struct { float alpha, red, green, blue; } color; };
 static short stub_flash_type;
-static int flash_requests; static short flash_request_type; static float flash_request_rgba[4];
+static int flash_requests; static short flash_request_type; static float flash_request_rgba[4]; static float flash_request_intensity;
 static void player_effect_get_screen_flash(short player, struct render_screen_flash *flash) {
   (void)player; flash->type = stub_flash_type; flash->intensity = 0.5f;
   flash->color.red = 1.0f; flash->color.green = 0.5f; flash->color.blue = 0.25f; flash->color.alpha = 1.0f;
 }
-static void halo_ps2_bitmap_request_screen_flash(short type, float r, float g, float b, float a) {
-  flash_requests++; flash_request_type = type;
+static void halo_ps2_bitmap_request_screen_flash(short type, float r, float g, float b, float a, float intensity) {
+  flash_requests++; flash_request_type = type; flash_request_intensity = intensity;
   flash_request_rgba[0] = r; flash_request_rgba[1] = g; flash_request_rgba[2] = b; flash_request_rgba[3] = a;
 }
+static real ps2_bitmap_flash_unit(real value) { return value < 0.0f ? 0.0f : value > 1.0f ? 1.0f : value; }
 static real hud_split_view_begin(struct render_camera *saved) {
   if (saved) *saved = render.camera;
   return 1.0f;
@@ -139,9 +140,11 @@ int main(void) {
   assert(flash_requests == 0);
   stub_flash_type = 1; event_count = view_count = 0;
   assert(ps2_bitmap_frame_run(windows, 3) == HALO_PS2_BITMAP_FRAME_OK);
+  /* the colour goes through unscaled, the intensity separately (retail combines them per flash type) */
   assert(flash_requests == 2 && flash_request_type == 1 &&
-    flash_request_rgba[0] == 0.5f && flash_request_rgba[1] == 0.25f &&
-    flash_request_rgba[2] == 0.125f && flash_request_rgba[3] == 0.5f);
+    flash_request_rgba[0] == 1.0f && flash_request_rgba[1] == 0.5f &&
+    flash_request_rgba[2] == 0.25f && flash_request_rgba[3] == 1.0f &&
+    flash_request_intensity == 0.5f);
   stub_flash_type = 0; event_count = view_count = 0;
   {
     struct render_window four_players_and_console[5];

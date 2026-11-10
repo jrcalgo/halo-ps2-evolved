@@ -21,7 +21,7 @@ def test_real_chain_and_gs_tex_readers_validate_quad(tmp_path):
         subprocess.run(args, check=True, capture_output=True, text=True)
 
 
-def test_screen_flash_quad_is_untextured_and_scissored(tmp_path):
+def test_screen_flash_passes_match_the_retail_formulas(tmp_path):
     exe = tmp_path / "hcu_bitmap_flash_test"
     subprocess.run([
         "cc", "-std=c11", "-Wall", "-Wextra", "-Werror",
@@ -31,8 +31,14 @@ def test_screen_flash_quad_is_untextured_and_scissored(tmp_path):
         str(ENGINE / "src/render/chain.c"), str(ENGINE / "src/world/tex.c"),
         "-lm", "-o", str(exe),
     ], check=True, capture_output=True, text=True)
-    for mode in ("lighten", "darken", "tint", "invert", "overflow", "bad_rect"):
-        subprocess.run([str(exe), mode], check=True, capture_output=True, text=True)
+    modes = (
+        "lighten_damage", "lighten_fade", "lighten_full", "lighten_white", "lighten_zero", "darken_camo", "darken_full",
+        "max", "max_noop", "min", "invert_overshield", "invert_half", "invert_noframe", "tint_health",
+        "tint_teleporter", "tint_teleporter_noframe", "overflow", "bad_rect", "bad_type", "pane_2p", "pane_4p", "pane_full",
+    )
+    for mode in modes:
+        result = subprocess.run([str(exe), mode], capture_output=True, text=True)
+        assert result.returncode == 0, f"{mode}: rc={result.returncode} {result.stdout}"
 
 
 def test_button_glyphs_are_bounded_vector_packets(tmp_path):
