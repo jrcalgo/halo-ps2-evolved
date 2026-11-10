@@ -29,9 +29,167 @@ extern int32_t bsp_render_hud_effect_clut_base_words(uint32_t *clut_base_words) 
 
 #define HCU_BITMAP_PAGE_WORDS 2048u
 
-/* PINE-writable A/B control. Nonzero (the default) keeps HUD source reads blocking. Deferring them behind a background
- * read left the radar, ammo count, crosshair and first-person weapon undrawn on Blood Gulch, so it is opt-in. */
+/* PINE-writable A/B control: nonzero keeps HUD source reads blocking. Blocking is the default: with the deferral on,
+ * the HUD (ammo gauge, radar contents) and the first-person weapon textures stayed undrawn under real-time pacing even
+ * though a fast headless run drew them, so deferral is opt-in until it is shown to hold at real speed. */
 uint32_t g_hcu_bitmap_prefetch_off = 1u;
+
+/* port: HUD chunk cache. A HUD bitmap that is not in the GS texture cache (a weapon just picked up, a HUD page not yet
+ * drawn) is a synchronous disc read of 30-60 KB on the frame path, 125-425 ms per weapon, and that is the pickup lag.
+ * The raw chunks are kept in a RAM region the caller hands over (the streaming map-owner arena, which production
+ * gameplay never allocates from), filled once per map generation at the first HUD request from the binding table, and
+ * on any miss after that. A hit is a memcpy; the bytes were verified when they were read. */
+#define HUDC_ENTRIES 640u
+static uint8_t *s_hudc_mem;
+static uint32_t s_hudc_cap, s_hudc_used, s_hudc_count, s_hudc_gen, s_hudc_hits, s_hudc_stores;
+static struct { uint32_t id, size, off, sha4, hits; } s_hudc[HUDC_ENTRIES];
+
+void hcu_bitmap_chunk_cache_bind(void *mem, uint32_t bytes)
+{
+	s_hudc_mem = (uint8_t *)mem; s_hudc_cap = mem ? bytes : 0u;
+	s_hudc_used = s_hudc_count = s_hudc_gen = 0u;
+}
+static uint32_t hudc_sha4(const uint8_t sha[32]) { uint32_t v; memcpy(&v, sha, 4); return v; }
+static int hudc_find(uint32_t id, uint32_t size, const uint8_t sha[32])
+{
+	uint32_t i, k = hudc_sha4(sha);
+	for (i = 0; i < s_hudc_count; i++)
+		if (s_hudc[i].id == id && s_hudc[i].size == size && s_hudc[i].sha4 == k) return (int)i;
+	return -1;
+}
+/* Frees room for `need` bytes by dropping entries nothing has read since the prewarm, last stored first, and packs the
+ * rest down. Returns 1 when `need` now fits. */
+static int hudc_make_room(uint32_t need)
+{
+	uint32_t i, live = 0u, kept = 0u;
+	uint8_t drop[HUDC_ENTRIES];
+	for (i = 0; i < s_hudc_count; i++) { drop[i] = 0u; live += (s_hudc[i].size + 15u) & ~15u; }
+	for (i = s_hudc_count; i-- > 0 && s_hudc_cap - live < need + 16u;)
+		if (!s_hudc[i].hits) { drop[i] = 1u; live -= (s_hudc[i].size + 15u) & ~15u; }
+	if (s_hudc_cap - live < need + 16u) return 0;
+	for (i = 0, s_hudc_used = 0u; i < s_hudc_count; i++) {
+		if (drop[i]) continue;
+		if (s_hudc[i].off != s_hudc_used) memmove(s_hudc_mem + s_hudc_used, s_hudc_mem + s_hudc[i].off, s_hudc[i].size);
+		s_hudc[kept] = s_hudc[i]; s_hudc[kept].off = s_hudc_used;
+		s_hudc_used += (s_hudc[i].size + 15u) & ~15u;
+		kept++;
+	}
+	s_hudc_count = kept;
+	return 1;
+}
+static void hudc_store(uint32_t id, uint32_t size, const uint8_t sha[32], const void *raw)
+{
+	uint32_t at;
+	if (!s_hudc_mem || !size || hudc_find(id, size, sha) >= 0) return;
+	if (s_hudc_count >= HUDC_ENTRIES || ((s_hudc_used + 15u) & ~15u) + size > s_hudc_cap)
+		if (!hudc_make_room(size)) return;
+	at = (s_hudc_used + 15u) & ~15u;
+	memcpy(s_hudc_mem + at, raw, size);
+	s_hudc[s_hudc_count].id = id; s_hudc[s_hudc_count].size = size; s_hudc[s_hudc_count].off = at;
+	s_hudc[s_hudc_count].sha4 = hudc_sha4(sha); s_hudc[s_hudc_count].hits = 0u;
+	s_hudc_count++; s_hudc_used = at + size; s_hudc_stores++;
+}
+
+/* Fill the cache from the binding table, once per map generation, before the first HUD frame is drawn. The whole set a
+ * map can request is several MB, far more than the cache holds, while every weapon's HUD together needs a few dozen
+ * small chunks (the 25 a full weapon cycle reads total 216 KB). So the small chunks go in first: those up to 2.5 KB,
+ * then up to 9 KB, then up to 70 KB while room remains. A chunk the prewarm kept that nothing then reads is the first
+ * to make way for one that is first read later. The chosen chunks are fetched in disc order, neighbours in one request
+ * (a chunk costs a disc seek of about 20 ms read on its own, and a segment row read beside it) when the package was
+ * accepted by the CRC check, so the payload bytes are the stored bytes. */
+#define HUDC_PREWARM_MAX 1024u
+#define HUDC_RUN_GAP 24576u
+static void hudc_prewarm(const hcu_asset_profile_view *profile, const hcu_bitmap_binding *bindings,
+	uint32_t binding_count, uint32_t generation, void *staging, uint32_t staging_bytes, uint32_t stride)
+{
+	static struct { uint32_t key, id, size, offset; uint8_t single, chosen; uint8_t sha[32]; } order[HUDC_PREWARM_MAX];
+	uint32_t i, j, n = 0, skipped = 0, tier_n[4] = {0, 0, 0, 0}, tier_b[4] = {0, 0, 0, 0}, used = 0u, runs = 0u, raw_chunks = 0u;
+	int raw_ok;
+	if (!s_hudc_mem || s_hudc_gen == generation) return;
+	s_hudc_gen = generation; s_hudc_used = s_hudc_count = 0u; s_hudc_hits = s_hudc_stores = 0u;
+	for (i = 0; i < binding_count && n < HUDC_PREWARM_MAX; i++) {
+		hcu_asset_chunk_view cv;
+		int seen = 0;
+		uint32_t tier;
+		for (j = 0; j < i && !seen; j++) seen = bindings[j].chunk_id == bindings[i].chunk_id;
+		if (seen || hcu_asset_profile_lookup(profile, HCU_ASSET_CHUNK_MEDIA, bindings[i].chunk_id, &cv) != HCU_ASSET_PROFILE_OK ||
+			cv.size > stride || memcmp(cv.sha256, bindings[i].expected_chunk_sha256, 32)) continue;
+		tier = cv.size <= 2560u ? 0u : cv.size <= 9216u ? 1u : cv.size <= 71680u ? 2u : 3u;
+		if (tier == 3u) { skipped++; continue; }
+		tier_n[tier]++; tier_b[tier] += cv.size;
+		order[n].key = (tier << 28) | (cv.offset & 0x0FFFFFFFu);
+		order[n].id = bindings[i].chunk_id; order[n].size = cv.size; order[n].offset = cv.offset;
+		order[n].single = cv.segment_count == 1u && cv.size <= HCU_ASSET_PROFILE_MAX_MEDIA_CHUNK_BYTES;
+		order[n].chosen = 0u;
+		memcpy(order[n].sha, cv.sha256, 32);
+		n++;
+	}
+	for (i = 1; i < n; i++) {                       /* by tier, then disc offset */
+		__typeof__(order[0]) t = order[i];
+		for (j = i; j > 0 && order[j - 1].key > t.key; j--) order[j] = order[j - 1];
+		order[j] = t;
+	}
+	for (i = 0; i < n && used < HUDC_ENTRIES; i++) {   /* what fits, in tier order */
+		uint32_t need = (order[i].size + 15u) & ~15u;
+		if (s_hudc_used + need > s_hudc_cap) continue;
+		order[i].chosen = 1u; s_hudc_used += need; used++;
+	}
+	s_hudc_used = 0u;
+	/* Fetch in disc order: sort the chosen by offset. */
+	for (i = 1; i < n; i++) {
+		__typeof__(order[0]) t = order[i];
+		for (j = i; j > 0 && order[j - 1].offset > t.offset; j--) order[j] = order[j - 1];
+		order[j] = t;
+	}
+	raw_ok = hcu_asset_profile_fast_trusted() > 0 && staging_bytes >= 4096u;
+	if (raw_ok) {                                   /* the stored bytes must be the chunk: check one against a staged read */
+		for (i = 0; i < n && !(order[i].chosen && order[i].single); i++) {}
+		if (i < n) {
+			hcu_asset_profile_staged_stats stats;
+			raw_ok = hcu_asset_profile_read_raw(profile, order[i].offset, staging, order[i].size) == HCU_ASSET_PROFILE_OK &&
+				hcu_asset_profile_read_chunk_staged_profiled(profile, HCU_ASSET_CHUNK_MEDIA, order[i].id, s_hudc_mem,
+					s_hudc_cap, &stats) == HCU_ASSET_PROFILE_OK &&
+				memcmp(staging, s_hudc_mem, order[i].size) == 0;
+			if (!raw_ok) printf("HALO_PS2_LOCAL hud-chunk-cache raw-check-failed chunk=%u\n", (unsigned)order[i].id);
+		}
+	}
+	for (i = 0; i < n;) {
+		hcu_asset_profile_staged_stats stats;
+		uint32_t first = i, end, last, span;
+		if (!order[i].chosen) { i++; continue; }
+		if (raw_ok && order[i].single) {
+			end = order[i].offset + order[i].size; last = i;
+			for (j = i + 1; j < n; j++) {
+				if (!order[j].chosen) continue;
+				if (!order[j].single || order[j].offset < end || order[j].offset - end > HUDC_RUN_GAP ||
+					order[j].offset + order[j].size - order[first].offset > staging_bytes) break;
+				end = order[j].offset + order[j].size; last = j;
+			}
+			span = end - order[first].offset;
+			if (hcu_asset_profile_read_raw(profile, order[first].offset, staging, span) == HCU_ASSET_PROFILE_OK) {
+				runs++;
+				for (j = first; j <= last; j++)
+					if (order[j].chosen && order[j].single && order[j].offset >= order[first].offset &&
+						order[j].offset + order[j].size <= end) {
+						hudc_store(order[j].id, order[j].size, order[j].sha,
+							(const uint8_t *)staging + (order[j].offset - order[first].offset));
+						raw_chunks++;
+					}
+				i = last + 1;
+				continue;
+			}
+		}
+		if (hcu_asset_profile_read_chunk_staged_profiled(profile, HCU_ASSET_CHUNK_MEDIA, order[i].id, staging, stride,
+			&stats) == HCU_ASSET_PROFILE_OK)
+			hudc_store(order[i].id, order[i].size, order[i].sha, staging);
+		i++;
+	}
+	printf("HALO_PS2_LOCAL hud-chunk-cache prewarm bindings=%u candidates=%u too-big=%u chunks=%u bytes=%u cap=%u "
+		"raw-runs=%u raw-chunks=%u tier0=%u/%u tier1=%u/%u tier2=%u/%u\n",
+		(unsigned)binding_count, (unsigned)n, (unsigned)skipped, (unsigned)s_hudc_count, (unsigned)s_hudc_used,
+		(unsigned)s_hudc_cap, (unsigned)runs, (unsigned)raw_chunks, (unsigned)tier_n[0], (unsigned)tier_b[0],
+		(unsigned)tier_n[1], (unsigned)tier_b[1], (unsigned)tier_n[2], (unsigned)tier_b[2]);
+}
 
 int32_t hcu_bitmap_dispatch_capture_screen_effects(hcu_bitmap_dispatch_context *context,
 	const halo_ps2_bitmap_request_queue *queue)
@@ -1033,6 +1191,7 @@ static hcu_bitmap_dispatch_status dispatch_request_impl(
 	if (request->has_multiply_map) return HCU_BITMAP_DISPATCH_E_UNSUPPORTED;
 	if (request->generation != expected_generation)
 		return HCU_BITMAP_DISPATCH_E_IDENTITY;
+	hudc_prewarm(profile, bindings, binding_count, expected_generation, staging_buffer, staging_buffer_bytes, slot_stride);
 	if (request->bitmap_tag_index < 0 || request->bitmap_index >= 4096u)
 		return HCU_BITMAP_DISPATCH_E_IDENTITY;
 	for (i = 0; i < binding_count; i++)
@@ -1129,13 +1288,13 @@ static hcu_bitmap_dispatch_status dispatch_request_impl(
 			hcu_asset_profile_range_ready(profile, HCU_ASSET_CHUNK_MEDIA, binding->chunk_id, 0u,
 				chunk_view.size) == 0) {
 			/* The background transfer may never land (another read owns the single read-ahead slot), and a HUD
-			 * bitmap deferred forever is a missing radar, ammo count and crosshair. Defer a chunk a few frames,
-			 * then take the blocking read like before. */
+			 * bitmap deferred forever is a missing radar, ammo count and crosshair. Defer a chunk for up to 20
+			 * frames, then take the blocking read like before. */
 			static uint32_t deferred_chunk[16];
 			static uint8_t deferred_count[16];
 			uint32_t slot = binding->chunk_id & 15u;
 			if (deferred_chunk[slot] != binding->chunk_id) { deferred_chunk[slot] = binding->chunk_id; deferred_count[slot] = 0u; }
-			if (deferred_count[slot] < 6u) {
+			if (deferred_count[slot] < 20u) {
 				deferred_count[slot]++;
 				context->counters.misses--; /* counted again when the retry reads */
 				return HCU_BITMAP_DISPATCH_E_DEFERRED;
@@ -1143,6 +1302,15 @@ static hcu_bitmap_dispatch_status dispatch_request_impl(
 			deferred_chunk[slot] = 0xFFFFFFFFu;
 		}
 		raw = (uint8_t *)staging_buffer;
+		{
+			const int hit = hudc_find(binding->chunk_id, chunk_view.size, chunk_view.sha256);
+			if (hit >= 0) {
+				memcpy(raw, s_hudc_mem + s_hudc[hit].off, chunk_view.size);
+				s_hudc[hit].hits++;
+				s_hudc_hits++;
+				goto have_raw;
+			}
+		}
 		if (context) {
 			context->counters.source_reads++;
 			context->counters.source_bytes += chunk_view.size;
@@ -1161,6 +1329,11 @@ static hcu_bitmap_dispatch_status dispatch_request_impl(
 			if (context) context->counters.source_cycles += BITMAP_CYCLES() - source_begin;
 			if (result != HCU_ASSET_PROFILE_OK) return HCU_BITMAP_DISPATCH_E_CHUNK;
 		}
+		printf("HALO_PS2_LOCAL hud-chunk-miss id=%u size=%u cached=%u/%u\n", (unsigned)binding->chunk_id,
+			(unsigned)chunk_view.size, (unsigned)s_hudc_used, (unsigned)s_hudc_cap);
+		hudc_store(binding->chunk_id, chunk_view.size, chunk_view.sha256, raw);
+		{ const int k = hudc_find(binding->chunk_id, chunk_view.size, chunk_view.sha256); if (k >= 0) s_hudc[k].hits = 1u; }
+have_raw:
 		read_bytes = chunk_view.size;
 		parse_begin = BITMAP_CYCLES();
 		if (context) context->counters.parses++;

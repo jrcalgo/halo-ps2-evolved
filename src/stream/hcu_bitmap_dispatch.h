@@ -106,6 +106,9 @@ typedef enum {
  * keeps the per-frame source retention bounded by the texcache upload budget.
  * `journal` is the bounded per-request undo journal for the shared tc_t (no whole-table copy).
  * Keep a lease until both upload and draw DMA have fenced. */
+/* Hand over the RAM region that holds HUD source chunks (see hudc_* in the .c); NULL disables the cache. */
+void hcu_bitmap_chunk_cache_bind(void *mem, uint32_t bytes);
+
 hcu_bitmap_dispatch_status hcu_bitmap_dispatch_request(
 	const halo_ps2_bitmap_request *request,
 	const hcu_bitmap_binding *bindings, uint32_t binding_count,

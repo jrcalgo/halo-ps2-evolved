@@ -81,6 +81,9 @@ int hcu_asset_profile_read_chunk_staged_profiled(const hcu_asset_profile_view *v
 int hcu_asset_profile_read_range(const hcu_asset_profile_view *view,
 	uint32_t type, uint32_t chunk_id, uint32_t logical_offset,
 	void *destination, uint32_t size);
+/* Read package bytes as they are stored, with no segment or digest check. For a package already accepted by the
+ * fast (CRC) verify, to pull a run of neighbouring chunks in one request; the caller must know the range is payload. */
+int hcu_asset_profile_read_raw(const hcu_asset_profile_view *view, uint32_t offset, void *destination, uint32_t size);
 /* Non-blocking read-ahead hook for one package reader: fn(package_offset, size) returns 1 when those bytes are
  * resident and 0 while a background transfer is pending. */
 typedef int (*hcu_asset_profile_prefetch_fn)(uint32_t offset, uint32_t size);

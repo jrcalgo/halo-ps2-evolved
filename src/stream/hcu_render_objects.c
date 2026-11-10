@@ -3,6 +3,7 @@
 #include "stream/hcu_render_frame.h"
 
 #include <math.h>
+#include <stdio.h>
 #include <string.h>
 #if defined(HALO_PS2_C3_MOVEMENT_TRACE)
 #include <stdio.h>
@@ -2380,6 +2381,7 @@ static void fp_prewarm(uint32_t frame)
  * stand-in. Floor slots that are loaded have rank 0, so no request displaces them, as long as the floor stays within
  * OBJ_FLOOR_PERCENT of the pool (the rest of the pool is for the full-detail models and viewmodels, which come and go). */
 #define OBJ_FLOOR_PERCENT 45u
+#define OBJ_FP_PRELOAD_PERCENT 70u
 static int slot_is_floor(const obj_slot *s)
 {
 	uint32_t need;
@@ -2470,6 +2472,24 @@ static void floor_preload(void)
 			entry_request(s_profile, i, 0u, 1u);
 			if (s_slots[i].loaded) held += s_slots[i].pool_size;
 		}
+	/* The first-person weapons and hands of the map. Picking a gun up used to start a sliced load of its viewmodel (48 KB a
+	 * frame, with a hash) that showed as a hitch and a gun that arrived late. They are read here, whole, into the empty
+	 * pool, while the load is still running; idle ones sit at rank 2 afterwards, so scenery cannot displace them. Only up to
+	 * OBJ_FP_PRELOAD_PERCENT of the pool, so the vehicles and the rest of the visible set keep room. */
+	{
+		uint32_t fp_loaded = 0u, fp_bytes = 0u;
+		for (i = 0; i < s_slot_count; i++) {
+			const obj_slot *s = &s_slots[i];
+			uint32_t need;
+			if (s->loaded || s->refused || !s->entry || !path_is_fp_model(s->entry->path) || entry_need(s, &need) != 0) continue;
+			if (s_res.pool_used + need > (uint32_t)(((uint64_t)s_res.pool_bytes * OBJ_FP_PRELOAD_PERCENT) / 100u) ||
+				pool_find(need) < 0) continue;
+			entry_request(s_profile, i, 0u, 1u);
+			if (s_slots[i].loaded) { fp_loaded++; fp_bytes += s_slots[i].pool_size; }
+		}
+		printf("HALO_PS2_LOCAL fp-preload models=%u bytes=%u pool=%u/%u\n", (unsigned)fp_loaded, (unsigned)fp_bytes,
+			(unsigned)s_res.pool_used, (unsigned)s_res.pool_bytes);
+	}
 	memset(&s_res.hits, 0, sizeof s_res.hits);
 	s_res.misses = 0u;
 }
@@ -3096,9 +3116,17 @@ static void fx_src_prewarm_step(uint32_t previous_frame_read_bytes)
 		const hcu_bitmap_binding *b;
 		uint32_t free_slot, any = 0;
 		if (s_fx_prewarm_cursor >= s_fx_bind_count) return;
-		if (s_fx_src_head > s_fx_src_pool_bytes / 4u * 3u) { s_fx_prewarm_cursor = s_fx_bind_count; return; }
+		if (s_fx_src_head > s_fx_src_pool_bytes / 4u * 3u) {
+			printf("HALO_PS2_LOCAL fx-prewarm stop=pool-full frame=%u cursor=%u/%u pool=%u/%u\n", (unsigned)s_frame,
+				(unsigned)s_fx_prewarm_cursor, (unsigned)s_fx_bind_count, (unsigned)s_fx_src_head, (unsigned)s_fx_src_pool_bytes);
+			s_fx_prewarm_cursor = s_fx_bind_count; return;
+		}
 		for (free_slot = 0; free_slot < FX_SRC_SLOTS; free_slot++) if (!s_fx_src_slot[free_slot].used) { any = 1; break; }
-		if (!any) { s_fx_prewarm_cursor = s_fx_bind_count; return; }
+		if (!any) {
+			printf("HALO_PS2_LOCAL fx-prewarm stop=slots-full frame=%u cursor=%u/%u\n", (unsigned)s_frame,
+				(unsigned)s_fx_prewarm_cursor, (unsigned)s_fx_bind_count);
+			s_fx_prewarm_cursor = s_fx_bind_count; return;
+		}
 		b = &s_fx_bind[s_fx_prewarm_cursor++];
 		if (b->image_index != 0u ||
 			hcu_asset_profile_lookup(s_fx_profile, HCU_ASSET_CHUNK_MEDIA, b->chunk_id, &cv) != HCU_ASSET_PROFILE_OK ||
@@ -3106,6 +3134,9 @@ static void fx_src_prewarm_step(uint32_t previous_frame_read_bytes)
 			memcmp(cv.sha256, b->expected_chunk_sha256, 32) || fx_src_find(b->chunk_id, cv.sha256, cv.size) >= 0) continue;
 		s_view_counters.fx_source_read_bytes += cv.size;
 		(void)fx_src_fill(b->chunk_id, cv.sha256, cv.size);
+		if (s_fx_prewarm_cursor >= s_fx_bind_count)
+			printf("HALO_PS2_LOCAL fx-prewarm stop=table-done frame=%u bindings=%u pool=%u/%u\n", (unsigned)s_frame,
+				(unsigned)s_fx_bind_count, (unsigned)s_fx_src_head, (unsigned)s_fx_src_pool_bytes);
 	}
 }
 
@@ -4334,6 +4365,7 @@ static void object_pass(void *user, render_ctx_t *rc)
 			(defined(HALO_PS2_C3_PERF_PROBE) && HALO_PS2_C3_PERF_PROBE)
 			uint32_t pass_start = timer_cycles();
 #endif
+			obj_render_set_camo_time((float)s_frame * (1.0f / 30.0f));
 			obj_render_set_camo(d->reserved_lod);
 			obj_render_pass(&s_objr, rc);
 			obj_render_set_camo(0);
@@ -4518,8 +4550,18 @@ static void object_pass(void *user, render_ctx_t *rc)
 #endif
 			bsp_render_set_object_claim_priority(1);
 			obj_render_set_weapon_functions(s_snapshot->views[s_cur_view].first_person_function);
-			obj_render_set_camo(s_snapshot->views[s_cur_view].unit_object < s_snapshot->object_count ?
-				s_snapshot->objects[s_snapshot->views[s_cur_view].unit_object].camo : 0u);
+			obj_render_set_camo_time((float)s_frame * (1.0f / 30.0f));
+			{
+				/* The cloak comes on and goes off over about two thirds of a second instead of switching: the target
+				 * is the unit's level, the drawn level follows it a step per rendered frame. */
+				static float fp_camo[4];
+				const uint32_t vi = s_cur_view < 4u ? s_cur_view : 3u;
+				const float target = (float)(s_snapshot->views[s_cur_view].unit_object < s_snapshot->object_count ?
+					s_snapshot->objects[s_snapshot->views[s_cur_view].unit_object].camo : 0u);
+				if (fp_camo[vi] < target) { fp_camo[vi] += 13.0f; if (fp_camo[vi] > target) fp_camo[vi] = target; }
+				else if (fp_camo[vi] > target) { fp_camo[vi] -= 13.0f; if (fp_camo[vi] < target) fp_camo[vi] = target; }
+				obj_render_set_camo((uint8_t)fp_camo[vi]);
+			}
 			obj_render_pass(&s_objr, &viewmodel_rc);
 			obj_render_set_camo(0);
 			obj_render_set_weapon_functions(NULL);
@@ -4571,12 +4613,18 @@ static void object_pass(void *user, render_ctx_t *rc)
 			s_timing_probe.skinned_nodes = s_view_skinned;
 			s_timing_probe.failures = s_view_counters.failures;
 #if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
-			if (s_fp_render_cycles > 294912u * 8u || s_world_render_cycles > 294912u * 16u)
-				printf("HALO_PS2_LOCAL lag-draw frame=%u view=%u world-ms=%.2f fp-ms=%.2f fx-bytes=%u drawn=%u tris=%u\n",
+			if (s_fp_render_cycles > 294912u * 8u || s_world_render_cycles > 294912u * 16u || (s_frame % 30u) == 0u)
+			{
+				uint32_t ee[6];
+				obj_render_ee_stats(ee);
+				printf("HALO_PS2_LOCAL lag-draw frame=%u view=%u world-ms=%.2f fp-ms=%.2f fx-bytes=%u drawn=%u tris=%u ee-calls=%u evals=%u need=%u need-tris=%u eval-ms=%.2f need-ms=%.2f\n",
 					(unsigned)s_frame, (unsigned)s_cur_view,
 					timer_ms(0, s_world_render_cycles), timer_ms(0, s_fp_render_cycles),
 					(unsigned)s_view_counters.fx_source_read_bytes,
-					(unsigned)s_view_drawn, (unsigned)s_view_triangles);
+					(unsigned)s_view_drawn, (unsigned)s_view_triangles,
+					(unsigned)ee[5], (unsigned)ee[0], (unsigned)ee[1], (unsigned)ee[2],
+					timer_ms(0, ee[3]), timer_ms(0, ee[4]));
+			}
 #endif
 		}
 	#endif

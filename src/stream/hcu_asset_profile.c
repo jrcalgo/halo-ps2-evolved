@@ -659,6 +659,12 @@ int hcu_asset_profile_read_segment(const hcu_asset_profile_view *v, uint32_t typ
 	return HCU_ASSET_PROFILE_OK;
 }
 
+int hcu_asset_profile_read_raw(const hcu_asset_profile_view *v, uint32_t offset, void *dst, uint32_t n)
+{
+	if (!v || !dst) return HCU_ASSET_PROFILE_E_ARGUMENT;
+	return rawread(v, offset, dst, n) ? HCU_ASSET_PROFILE_OK : HCU_ASSET_PROFILE_E_BOUNDS;
+}
+
 int hcu_asset_residency_init(hcu_asset_residency *t, hcu_asset_residency_entry *entries, uint32_t capacity)
 {
 	if (!t || (!entries && capacity)) return HCU_ASSET_PROFILE_E_ARGUMENT;

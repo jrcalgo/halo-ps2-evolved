@@ -5106,6 +5106,15 @@ int main(int argc, char **argv)
 	/* Legacy bootstrap map storage is released only after the renderer fence
 	 * has retired. Without this gate the unload path would free live GS/DMA
 	 * readers. */
+	/* What the map-owner arena has left after the runtime registered holds the HUD chunk cache (production gameplay
+	 * allocates nothing further from it), so a weapon pickup finds its HUD bitmaps in RAM instead of on the disc. */
+	{
+		size_t room = arena_free(&map_owner_storage);
+		room = room > 16384u ? (room - 16384u) & ~(size_t)15u : 0u;
+		if (room > 917504u) room = 917504u;
+		hcu_bitmap_chunk_cache_bind(room ? arena_alloc(&map_owner_storage, room, 16u) : NULL, (uint32_t)room);
+		printf("HALO_PS2_LOCAL hud-chunk-cache bound bytes=%u\n", (unsigned)room);
+	}
 	if (!s_partition_selected &&
 		!hcu_map_service_set_legacy_renderer_drained(&s_map_service,
 			hcu_renderer_drained, NULL)) {
