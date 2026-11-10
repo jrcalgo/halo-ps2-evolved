@@ -1,5 +1,6 @@
 #include "stream/hcu_asset_profile.h"
 #include "stream/sha256.h"
+#include "stream/crc32.h"
 #include "stream/hcu_load_trace.h"
 
 #include <stdlib.h>
@@ -47,11 +48,78 @@ static struct {
 	hcu_asset_profile_read_at reader; void *context; uint32_t total; int valid;
 } s_verified;
 
+#define HCP_CRC_SLOTS 4u
+static struct { uint32_t profile, bytes, crc; int used; } s_crc[HCP_CRC_SLOTS];
+static struct { hcu_asset_profile_read_at reader; void *context; uint32_t size; int valid; } s_fast;
+
 static void forget_load_proofs(void)
 {
 	s_pkg.valid = 0;
 	s_verified.valid = 0;
 	s_dir_valid = 0;
+	s_fast.valid = 0;
+}
+
+void hcu_asset_profile_register_directory_crc32(uint32_t profile_id, uint32_t package_bytes, uint32_t crc32)
+{
+	uint32_t i, free_slot = HCP_CRC_SLOTS;
+	for (i = 0; i < HCP_CRC_SLOTS; i++) {
+		if (s_crc[i].used && s_crc[i].profile == profile_id && s_crc[i].bytes == package_bytes) { s_crc[i].crc = crc32; return; }
+		if (!s_crc[i].used && free_slot == HCP_CRC_SLOTS) free_slot = i;
+	}
+	if (free_slot == HCP_CRC_SLOTS) free_slot = 0; /* oldest entry makes way: a run holds at most two packages */
+	s_crc[free_slot].profile = profile_id; s_crc[free_slot].bytes = package_bytes; s_crc[free_slot].crc = crc32; s_crc[free_slot].used = 1;
+}
+
+static const uint32_t *crc_for(uint32_t profile_id, uint32_t package_bytes)
+{
+	uint32_t i;
+	for (i = 0; i < HCP_CRC_SLOTS; i++)
+		if (s_crc[i].used && s_crc[i].profile == profile_id && s_crc[i].bytes == package_bytes) return &s_crc[i].crc;
+	return 0;
+}
+
+int hcu_asset_profile_fast_trusted(void)
+{
+	return s_fast.valid;
+}
+
+static uint32_t le32_raw(const uint8_t *p)
+{ return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24; }
+
+/* CRC-32 of the header and directory (offset 0 .. directory offset + directory bytes). */
+static int directory_crc(hcu_asset_profile_read_at reader, void *context, uint32_t size, uint32_t *crc_out, uint32_t *profile_out)
+{
+	uint8_t h[32], buf[1024];
+	uint32_t at, end, crc;
+	if (size < 32u || reader(context, 0, h, 32) != 0) return 0;
+	if (!(h[0] == 'H' && h[1] == 'C' && h[2] == 'P' && (h[3] == '1' || h[3] == '2'))) return 0;
+	if (le32_raw(h + 8) != 32u || le32_raw(h + 28) != size) return 0;
+	end = le32_raw(h + 20) + le32_raw(h + 24);
+	if (end < 32u || end > size) return 0;
+	crc = hcu_crc32_update(0, h, 32);
+	for (at = 32u; at < end; ) {
+		uint32_t k = end - at; if (k > sizeof(buf)) k = (uint32_t)sizeof(buf);
+		if (reader(context, at, buf, k) != 0) return 0;
+		crc = hcu_crc32_update(crc, buf, k);
+		at += k;
+	}
+	*crc_out = crc; if (profile_out) *profile_out = le32_raw(h + 12);
+	return 1;
+}
+
+int hcu_asset_profile_fast_verify_package(hcu_asset_profile_read_at reader, void *context, uint32_t size)
+{
+	uint32_t crc = 0, profile = 0; const uint32_t *want;
+	uint8_t h[32];
+	if (!reader) return -1;
+	if (s_fast.valid && s_fast.reader == reader && s_fast.context == context && s_fast.size == size) return 1;
+	if (size < 32u || reader(context, 0, h, 32) != 0) return -1;
+	want = crc_for(le32_raw(h + 12), size);
+	if (!want) return -1;
+	if (!directory_crc(reader, context, size, &crc, &profile) || crc != *want) { s_fast.valid = 0; return 0; }
+	s_fast.reader = reader; s_fast.context = context; s_fast.size = size; s_fast.valid = 1;
+	return 1;
 }
 
 void hcu_asset_profile_directory_cache_bind(void *memory, uint32_t bytes)
@@ -173,12 +241,13 @@ static int read_hashed(hcu_asset_profile_read_at reader, void *context,
 int hcu_asset_profile_preflight_reader_scratch(hcu_asset_profile_read_at reader,void *context,uint32_t image_size,uint32_t expected,hcu_asset_profile_view *view,uint8_t *buf,uint32_t buf_bytes)
 {
 	uint8_t h[32],dig[32],expected_logical[32],*dir=0; uint32_t ver,rs,profile,count,doff,dsize,total,last_end,i,pt=0,pi=0,prev_index=0,logical_off=0,logical_size=0,seg_count=0; uint64_t expect;
-	sha256_context logical_sha, pkg; int in_logical=0, dir_owned=0, rc=HCU_ASSET_PROFILE_OK;
+	sha256_context logical_sha, pkg; int in_logical=0, dir_owned=0, fast=0, rc=HCU_ASSET_PROFILE_OK; uint32_t dir_crc=0;
 	hcu_asset_profile_read_at raw_reader=reader; void *raw_context=context;
 	if(!reader||!view) return HCU_ASSET_PROFILE_E_ARGUMENT;
 	if(!buf||buf_bytes<HCP_SCRATCH) return HCU_ASSET_PROFILE_E_ARGUMENT;
 	forget_load_proofs();
 	if(image_size<32||!rd(reader,context,0,h,32)) return HCU_ASSET_PROFILE_E_BOUNDS;
+	fast=crc_for(le32(h+12),image_size)!=0;
 	ver=le32(h+4); rs=ver==1?48u:ver==2?96u:0u;
 	if(!rs || (ver==1?memcmp(h,"HCP1",4):memcmp(h,"HCP2",4)) || le32(h+8)!=32) return HCU_ASSET_PROFILE_E_FORMAT;
 	profile=le32(h+12); count=le32(h+16); doff=le32(h+20); dsize=le32(h+24); total=le32(h+28);
@@ -202,6 +271,7 @@ int hcu_asset_profile_preflight_reader_scratch(hcu_asset_profile_read_at reader,
 			if(!read_hashed(raw_reader,raw_context,doff+at,dir+at,k,&pkg)) { rc=HCU_ASSET_PROFILE_E_BOUNDS; goto out; }
 			at+=k;
 		}
+		if(fast) { dir_crc=hcu_crc32_update(hcu_crc32_update(0,h,32),dir,dsize); }
 	}
 	last_end=doff+dsize;
 	for(i=0;i<count;i++) {
@@ -214,7 +284,7 @@ int hcu_asset_profile_preflight_reader_scratch(hcu_asset_profile_read_at reader,
 		if(!hcu_asset_chunk_id_valid(type,id)||!n||(ver==1&&type==2&&n>65536u)||
 			(off&15u)||off!=canonical||off>total||n>total-off) { rc=HCU_ASSET_PROFILE_E_BOUNDS; goto out; }
 		at=last_end;
-		while(at<off) {
+		while(!fast&&at<off) {
 			uint32_t k=off-at,z; if(k>buf_bytes) k=buf_bytes;
 			if(!read_hashed(raw_reader,raw_context,at,buf,k,&pkg)) { rc=HCU_ASSET_PROFILE_E_BOUNDS; goto out; }
 			for(z=0;z<k;z++) if(buf[z]) { rc=HCU_ASSET_PROFILE_E_FORMAT; goto out; }
@@ -222,9 +292,11 @@ int hcu_asset_profile_preflight_reader_scratch(hcu_asset_profile_read_at reader,
 		}
 		if(ver==1) {
 			if(i&&(type<pt||(type==pt&&id<=pi))) { rc=HCU_ASSET_PROFILE_E_FORMAT; goto out; }
+			if(!fast) {
 			sha256_init(&segsha); at=off; rem=n;
 			while(rem) { uint32_t k=rem<buf_bytes?rem:(uint32_t)buf_bytes; if(!read_hashed(raw_reader,raw_context,at,buf,k,&pkg)) { rc=HCU_ASSET_PROFILE_E_BOUNDS; goto out; } sha256_update(&segsha,buf,k); at+=k; rem-=k; }
 			sha256_final(&segsha,dig); HCU_LOAD_TRACE_HASH("hcp1",n); if(memcmp(dig,row+16,32)) { rc=HCU_ASSET_PROFILE_E_HASH; goto out; }
+			}
 		} else {
 			if(!ls||!nseg||nseg>count||idx>=nseg||n>65536u||lo>ls||n>ls-lo) { rc=HCU_ASSET_PROFILE_E_FORMAT; goto out; }
 			if(!i || type!=pt || id!=pi) {
@@ -233,19 +305,28 @@ int hcu_asset_profile_preflight_reader_scratch(hcu_asset_profile_read_at reader,
 				if(idx!=0||lo!=0) { rc=HCU_ASSET_PROFILE_E_FORMAT; goto out; }
 				logical_size=ls; logical_off=0; seg_count=nseg; prev_index=0; in_logical=1; memcpy(expected_logical,row+64,32); sha256_init(&logical_sha);
 			} else if(idx!=prev_index+1||lo!=logical_off||ls!=logical_size||nseg!=seg_count||memcmp(expected_logical,row+64,32)) { rc=HCU_ASSET_PROFILE_E_FORMAT; goto out; }
+			if(!fast) {
 			sha256_init(&segsha); at=off; rem=n;
 			while(rem) { uint32_t k=rem<buf_bytes?rem:(uint32_t)buf_bytes; if(!read_hashed(raw_reader,raw_context,at,buf,k,&pkg)) { rc=HCU_ASSET_PROFILE_E_BOUNDS; goto out; } sha256_update(&segsha,buf,k); sha256_update(&logical_sha,buf,k); at+=k; rem-=k; }
 			sha256_final(&segsha,dig); HCU_LOAD_TRACE_HASH("segment",n); if(memcmp(dig,row+32,32)) { rc=HCU_ASSET_PROFILE_E_HASH; goto out; }
+			}
 			logical_off+=n; prev_index=idx;
-			if(idx+1==nseg) { sha256_final(&logical_sha,dig); HCU_LOAD_TRACE_HASH("logical",logical_size); if(logical_off!=logical_size||memcmp(dig,row+64,32)) { rc=HCU_ASSET_PROFILE_E_HASH; goto out; } in_logical=0; }
+			if(idx+1==nseg) { if(fast) { if(logical_off!=logical_size) { rc=HCU_ASSET_PROFILE_E_FORMAT; goto out; } } else { sha256_final(&logical_sha,dig); HCU_LOAD_TRACE_HASH("logical",logical_size); if(logical_off!=logical_size||memcmp(dig,row+64,32)) { rc=HCU_ASSET_PROFILE_E_HASH; goto out; } } in_logical=0; }
 		}
 		last_end=off+n; pt=type; pi=id;
 	}
 	if(in_logical||last_end!=total) { rc=HCU_ASSET_PROFILE_E_FORMAT; goto out; }
+	if(fast) {
+		/* The payload was verified at build time; the directory carries its digests and this CRC covers it. */
+		const uint32_t *want=crc_for(profile,total);
+		if(!want||dir_crc!=*want) { rc=HCU_ASSET_PROFILE_E_HASH; goto out; }
+		s_fast.reader=raw_reader; s_fast.context=raw_context; s_fast.size=total; s_fast.valid=1;
+	} else {
 	sha256_final(&pkg,dig);
 	HCU_LOAD_TRACE_HASH("package",total);
 	memcpy(s_pkg.digest,dig,32);
 	s_pkg.reader=raw_reader; s_pkg.context=raw_context; s_pkg.size=total; s_pkg.valid=1;
+	}
 	s_verified.reader=raw_reader; s_verified.context=raw_context; s_verified.total=total; s_verified.valid=1;
 	if(s_dir_mem && doff+dsize<=s_dir_cap) {
 		memcpy(s_dir_mem,h,32);
@@ -260,7 +341,7 @@ int hcu_asset_profile_preflight_reader_scratch(hcu_asset_profile_read_at reader,
 	}
 out:
 	if(dir_owned) free(dir);
-	if(rc) { s_pkg.valid=0; s_verified.valid=0; s_dir_valid=0; }
+	if(rc) { s_pkg.valid=0; s_verified.valid=0; s_dir_valid=0; s_fast.valid=0; }
 	return rc;
 }
 int hcu_asset_profile_preflight_reader(hcu_asset_profile_read_at reader,void *context,uint32_t image_size,uint32_t expected,hcu_asset_profile_view *view)

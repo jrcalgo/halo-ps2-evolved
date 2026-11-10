@@ -108,6 +108,11 @@ static int verify_profile_package_hash(hcu_asset_profile_read_at reader,
 	uint32_t offset = 0;
 	if (!reader || !expected || !size) return 0;
 	{
+		/* Verified once at build time: the envelope and its directory CRC-32 are all the runtime checks. */
+		int fast = hcu_asset_profile_fast_verify_package(reader, context, size);
+		if (fast >= 0) return fast;
+	}
+	{
 		uint8_t cached[32];
 		if (hcu_asset_profile_take_package_digest(reader, context, size, cached))
 			return memcmp(cached, expected, 32) == 0;

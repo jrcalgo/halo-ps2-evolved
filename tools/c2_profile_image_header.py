@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import zlib
 import json
 import os
 import struct
@@ -48,6 +49,41 @@ def sha256_file(path: Path) -> str:
         for block in iter(lambda: handle.read(1 << 20), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def verify_hcp_payload(path: Path) -> int:
+    """Check every digest an HCP1/HCP2 package carries against its payload, once, at build time, and return the
+    CRC-32 of the header and directory. The runtime trusts this: it checks the envelope and that CRC-32 only
+    (src/stream/hcu_asset_profile.h, fast verification)."""
+    data = path.read_bytes()
+    magic, version = data[:4], int.from_bytes(data[4:8], "little")
+    header_ok = (magic, version) in ((b"HCP1", 1), (b"HCP2", 2))
+    if not header_ok or int.from_bytes(data[8:12], "little") != 32:
+        raise HeaderError(f"{path.name}: not an HCP1/HCP2 package")
+    count, doff, dsize, total = (int.from_bytes(data[o:o + 4], "little") for o in (16, 20, 24, 28))
+    record = 48 if version == 1 else 96
+    if total != len(data) or doff != 32 or dsize != count * record:
+        raise HeaderError(f"{path.name}: inconsistent header")
+    logical = None
+    for i in range(count):
+        row = data[doff + i * record:doff + (i + 1) * record]
+        off, n = int.from_bytes(row[8:12], "little"), int.from_bytes(row[12:16], "little")
+        payload = data[off:off + n]
+        if len(payload) != n:
+            raise HeaderError(f"{path.name}: row {i} runs past the end")
+        if version == 1:
+            if hashlib.sha256(payload).digest() != row[16:48]:
+                raise HeaderError(f"{path.name}: row {i} payload digest differs")
+            continue
+        if hashlib.sha256(payload).digest() != row[32:64]:
+            raise HeaderError(f"{path.name}: row {i} segment digest differs")
+        idx, nseg = int.from_bytes(row[24:28], "little"), int.from_bytes(row[28:32], "little")
+        if idx == 0:
+            logical = hashlib.sha256()
+        logical.update(payload)
+        if idx + 1 == nseg and logical.digest() != row[64:96]:
+            raise HeaderError(f"{path.name}: row {i} logical digest differs")
+    return zlib.crc32(data[:doff + dsize]) & 0xFFFFFFFF
 
 
 def relative_to_root(path: Path, root: Path) -> str:
@@ -107,6 +143,7 @@ def build_header(row: str, package_root: Path, asset_root: Path) -> str:
     package_sha = sha256_file(package_path)
     if package_sha != manifest["package_sha256"]:
         raise HeaderError(f"HCP sha256 {package_sha} differs from the manifest pin")
+    package_dir_crc = verify_hcp_payload(package_path)
     package_bytes = package_path.stat().st_size
     if package_bytes != manifest["memory"]["package_file_bytes"]:
         raise HeaderError("HCP size differs from the manifest's package_file_bytes")
@@ -171,6 +208,7 @@ def build_header(row: str, package_root: Path, asset_root: Path) -> str:
     out.append(f'#define HCU_C2_IMAGE_PACKAGE_PATH "{package_rel}"')
     out.append(f"#define HCU_C2_IMAGE_PACKAGE_BYTES {package_bytes}u")
     out.append(f"static const uint8_t HCU_C2_IMAGE_PACKAGE_SHA256[32] = {sha_array(package_sha)};")
+    out.append(f"#define HCU_C2_IMAGE_PACKAGE_DIR_CRC32 0x{package_dir_crc:08X}u")
     out.append(f"#define HCU_C2_IMAGE_METADATA_BYTES {len(blob)}u")
     out.append(f"#define HCU_C2_IMAGE_METADATA_STORAGE_BYTES {storage_bytes}u")
     out.append(f"static const uint8_t HCU_C2_IMAGE_METADATA_SHA256[32] = {sha_array(metadata_sha)};")

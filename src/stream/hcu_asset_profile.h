@@ -45,6 +45,16 @@ int hcu_asset_profile_take_package_digest(hcu_asset_profile_read_at read_at,
 /* 1 when that same preflight checked every chunk hash for this view.
  * Consumes the proof so a later visitor re-reads. */
 int hcu_asset_profile_chunks_fresh(const hcu_asset_profile_view *view);
+/* Fast verification. A package's payload is verified once, at build time (tools/c2_profile_image_header.py checks
+ * every segment, logical and whole-file SHA-256 and records the CRC-32 of the header and directory, which carry all
+ * the payload digests). When that CRC is registered for a (profile, size), the runtime checks the envelope
+ * structure and that CRC and does not read or hash the payload again. Packages without a registered CRC take the
+ * full SHA-256 path. */
+void hcu_asset_profile_register_directory_crc32(uint32_t profile_id, uint32_t package_bytes, uint32_t crc32);
+/* 1 / 0: the package's header and directory match the registered CRC-32; -1: none registered (use the SHA path). */
+int hcu_asset_profile_fast_verify_package(hcu_asset_profile_read_at read_at, void *reader_context, uint32_t size);
+/* 1 while the latest preflight or fast verify accepted a package by CRC, so chunk payloads need no SHA pass. */
+int hcu_asset_profile_fast_trusted(void);
 /* Keep a directory image in caller memory so later row lookups do not re-read. */
 void hcu_asset_profile_directory_cache_bind(void *memory, uint32_t bytes);
 int hcu_asset_profile_preflight(const void *image, size_t image_size,

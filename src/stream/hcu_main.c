@@ -969,6 +969,9 @@ static int hcu_register_selected_runtime(hcu_map_service *service,
 		memcpy(runtime.metadata_sha256, HCU_C2_IMAGE_METADATA_SHA256, 32);
 		runtime.metadata_storage = metadata_storage;
 		runtime.metadata_storage_bytes = HCU_C2_IMAGE_METADATA_STORAGE_BYTES;
+#ifdef HCU_C2_IMAGE_PACKAGE_DIR_CRC32
+		hcu_asset_profile_register_directory_crc32(HCU_C2_IMAGE_PROFILE_ID, HCU_C2_IMAGE_PACKAGE_BYTES, HCU_C2_IMAGE_PACKAGE_DIR_CRC32);
+#endif
 		runtime.source_read = hcu_c2_source_read;
 		runtime.relocation_storage = relocation_storage;
 		runtime.relocation_storage_bytes = HCU_C2_IMAGE_RELOCATION_BYTES;
@@ -1089,6 +1092,9 @@ static int hcu_register_successor_runtime(hcu_map_service *service,
 	runtime.stream_scratch_bytes = HCU_C2_STREAM_SCRATCH_BYTES;
 	runtime.maximum_tag_image_bytes = (uint32_t)s_partition.tag_cache_bytes;
 	runtime.renderer_drained = hcu_renderer_drained;
+#ifdef HCU_C2_SUCC_PACKAGE_DIR_CRC32
+	hcu_asset_profile_register_directory_crc32(HCU_C2_SUCC_PROFILE_ID, HCU_C2_SUCC_PACKAGE_BYTES, HCU_C2_SUCC_PACKAGE_DIR_CRC32);
+#endif
 	runtime.renderer_quiesce = hcu_renderer_quiesce;
 	runtime.renderer_quiesce_context = NULL;
 #ifdef HCU_C3_RENDER_BUILT
