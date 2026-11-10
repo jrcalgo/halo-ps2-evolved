@@ -10,7 +10,7 @@ from collections import defaultdict
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
 sys.path.insert(0, str(TOOLS))
-from hcu_profile_bitmap import serialize_bitmap  # noqa: E402
+from hcu_profile_bitmap import serialize_bitmap, FACE0_GEL_BITMAPS  # noqa: E402
 import hcu_profile_consumer_exclusions as exclusion_rules  # noqa: E402
 from hcu_profile_media import build_media  # noqa: E402
 from audit_hcu_profile_non2d import FIELD_RULES  # noqa: E402
@@ -123,6 +123,9 @@ def classify_profile_non2d(sources: dict, tags: list, bitmap_consumers: list,
         for image in images:
             if image.is_2d:
                 continue
+            if (tag["path"].casefold() in FACE0_GEL_BITMAPS and image.type == bitmaps.TYPE_CUBE and
+                    image.index == 0 and image.format_name == "y8"):
+                continue                      # face 0 is converted as a 2D texture (hcu_profile_bitmap)
             owners = consumers.get(output_datum, [])
             owner_rows = [{"group": row["owner_group"], "field": row["field"]} for row in owners]
             disposition = classify_bitmap_role(tag["path"], IMAGE_TYPE_NAMES.get(image.type, "unknown"), owner_rows)

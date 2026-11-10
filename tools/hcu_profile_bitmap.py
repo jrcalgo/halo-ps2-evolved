@@ -31,6 +31,21 @@ OPTIONAL_FUELROD_REFLECTIONS = {
     r"characters\grunt\bitmaps\reflection grunt diffuse",
 }
 
+# Retail flashlight gel: a 128x128 Y8 cube map whose face 0 (the first face, mip 0 at the start of the pixel
+# data) is the bright ring pattern CE projects from the light (ligh.gel_map). The PS2 has no cube sampler, so face 0
+# ships as an ordinary 2D texture for the parent's flashlight pool; the other five faces are unused by the spotlight.
+FACE0_GEL_BITMAPS = {
+    r"characters\cyborg\bitmaps\spotlight cyborg",
+}
+
+
+def _cube_face0(img):
+    """A 2D view of cube face 0: same pixel offset, one face's mip chain, depth 1, type 2D."""
+    import dataclasses
+    face = bitmaps.level_size(img.format, img.width, img.height)
+    return dataclasses.replace(img, type=bitmaps.TYPE_2D, depth=1, pixel_size=face, mip_count=0)
+
+
 # These authored HUD strips are sampled at the weapon's native screen-space
 # resolution. Preserve Xbox mip 0 for the two exact sniper angle-ticks assets;
 # ordinary world/UI bitmap policy remains half-resolution and capped at 256.
@@ -250,6 +265,9 @@ def serialize_bitmap(sources: dict, owner: dict, schema: dict, *,
         identity = {"source_key": source_key, "source_sha256": source_sha,
                     "group": "bitm", "path": entry.path, "source_datum": datum,
                     "source_image_index": img.index}
+        if (entry.path.casefold() in FACE0_GEL_BITMAPS and img.type == bitmaps.TYPE_CUBE and
+                img.index == 0 and img.format_name == "y8"):
+            img = _cube_face0(img)
         if not img.is_2d:
             exclusion=(non2d_disposition or {}).get(img.index)
             if exclusion is not None:

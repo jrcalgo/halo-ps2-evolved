@@ -135,6 +135,7 @@ typedef struct {
 	float decal_intensity;
 	float segment_end_color_argb[4], segment_end_width;
 	float particle_scale_adjust;
+	float light_beam[3], light_range;   /* HALO_PS2_FRAME_FX_LIGHT: the beam's unit vector and the light's reach */
 } hcu_render_effect_draw;
 
 typedef struct {

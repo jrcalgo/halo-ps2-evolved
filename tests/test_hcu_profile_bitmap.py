@@ -168,3 +168,31 @@ def test_retail_health_ammo_radar_hud_keep_native_resolution():
                                               preserve_source_resolution=True)
             assert (texture.width, texture.height) == (image.width, image.height)
     assert seen == NATIVE_RESOLUTION_HUD_BITMAPS
+
+
+def test_retail_flashlight_gel_ships_cube_face_zero_as_a_2d_texture():
+    """The cyborg flashlight's gel is a 128x128 Y8 cube map; face 0 (the ring pattern) must be converted as an
+    ordinary 2D texture whose brightest texels sit at the centre, and the other faces must not be shipped."""
+    root = Path(__file__).resolve().parents[1]
+    source_path = root / "build/retail-maps/decompressed/bloodgulch.map"
+    if not source_path.is_file():
+        pytest.skip("retail Blood Gulch source map unavailable")
+    sys.path[:0] = [str(root / "submodules/halo-ps2/tools"),
+                    str(root / "submodules/halo-ps2/tools/halo2ps2")]
+    from halo2ps2 import bitmaps, texconv
+    from hcu_profile_bitmap import FACE0_GEL_BITMAPS, _cube_face0
+    source = texconv.MapData.open(source_path)
+    entry = next(e for e in source.index.entries
+                 if e.group == "bitm" and e.path.casefold() in FACE0_GEL_BITMAPS)
+    image = bitmaps.parse_images(source.region, source.base, entry.data_address)[0]
+    assert image.type == bitmaps.TYPE_CUBE and image.format_name == "y8" and (image.width, image.height) == (128, 128)
+    face = _cube_face0(image)
+    assert face.is_2d and face.pixel_size == 128 * 128 and face.pixel_offset == image.pixel_offset
+    texture = texconv.convert_texture(source, face, entry.tag_id, texconv.CLASS_BLEND)
+    payload = texconv.build_texs([texture], [])
+    assert _engine_tex_reader()(ctypes.create_string_buffer(payload), len(payload))
+    _w, _h, rgba = bitmaps.decode_level(face, source.pixels(face), 0)
+    luma = [rgba[i] for i in range(0, len(rgba), 4)]
+    centre = sum(luma[y * 128 + x] for y in range(60, 68) for x in range(60, 68)) / 64
+    corner = sum(luma[y * 128 + x] for y in range(0, 8) for x in range(0, 8)) / 64
+    assert centre > 150 and corner < 40, (centre, corner)

@@ -393,7 +393,10 @@ def _check_bitmap_coverage(image,schema,tags,declared,media,bindings,consumers,p
         if dependency is None or not isinstance(index,int) or index<0 or binding.get('source_image_index')!=index:
             raise ProfileValidationError('BITM binding lacks a precise source image identity')
         key=(dependency['output_datum'],index)
-        if inventory.get(key)!=0 or key in covered:
+        from hcu_profile_bitmap import FACE0_GEL_BITMAPS
+        # the retail flashlight gel ships its cube face 0 as a 2D texture (see hcu_profile_bitmap.FACE0_GEL_BITMAPS)
+        gel_face0=inventory.get(key)==2 and index==0 and str(dependency.get('path','')).casefold() in FACE0_GEL_BITMAPS
+        if (inventory.get(key)!=0 and not gel_face0) or key in covered:
             raise ProfileValidationError('BITM binding has an invalid or duplicated 2D image index')
         covered.add(key)
     excluded=set()
