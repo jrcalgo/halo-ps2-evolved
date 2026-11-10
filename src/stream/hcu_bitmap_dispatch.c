@@ -29,8 +29,9 @@ extern int32_t bsp_render_hud_effect_clut_base_words(uint32_t *clut_base_words) 
 
 #define HCU_BITMAP_PAGE_WORDS 2048u
 
-/* Probe-only A/B control (PINE-writable): nonzero reverts HUD source reads to blocking. */
-uint32_t g_hcu_bitmap_prefetch_off;
+/* PINE-writable A/B control. Nonzero (the default) keeps HUD source reads blocking. Deferring them behind a background
+ * read left the radar, ammo count, crosshair and first-person weapon undrawn on Blood Gulch, so it is opt-in. */
+uint32_t g_hcu_bitmap_prefetch_off = 1u;
 
 int32_t hcu_bitmap_dispatch_capture_screen_effects(hcu_bitmap_dispatch_context *context,
 	const halo_ps2_bitmap_request_queue *queue)
@@ -1127,8 +1128,19 @@ static hcu_bitmap_dispatch_status dispatch_request_impl(
 		if (context && resident_mode && !g_hcu_bitmap_prefetch_off &&
 			hcu_asset_profile_range_ready(profile, HCU_ASSET_CHUNK_MEDIA, binding->chunk_id, 0u,
 				chunk_view.size) == 0) {
-			context->counters.misses--; /* counted again when the retry reads */
-			return HCU_BITMAP_DISPATCH_E_DEFERRED;
+			/* The background transfer may never land (another read owns the single read-ahead slot), and a HUD
+			 * bitmap deferred forever is a missing radar, ammo count and crosshair. Defer a chunk a few frames,
+			 * then take the blocking read like before. */
+			static uint32_t deferred_chunk[16];
+			static uint8_t deferred_count[16];
+			uint32_t slot = binding->chunk_id & 15u;
+			if (deferred_chunk[slot] != binding->chunk_id) { deferred_chunk[slot] = binding->chunk_id; deferred_count[slot] = 0u; }
+			if (deferred_count[slot] < 6u) {
+				deferred_count[slot]++;
+				context->counters.misses--; /* counted again when the retry reads */
+				return HCU_BITMAP_DISPATCH_E_DEFERRED;
+			}
+			deferred_chunk[slot] = 0xFFFFFFFFu;
 		}
 		raw = (uint8_t *)staging_buffer;
 		if (context) {
