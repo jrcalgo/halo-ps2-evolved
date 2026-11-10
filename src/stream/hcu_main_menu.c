@@ -506,8 +506,7 @@ static void menu_adjust_indicator_option(hcu_main_menu_state *state, int step)
 
 static int menu_type_row_enabled(unsigned row)
 {
-	/* Quick start replays the last cooperative game, which this port does not have yet, and a split
-	 * screen game is not saved past its end, so it never offers one. */
+	/* Online is not implemented yet: shown dim and skipped by the cursor. */
 	return row == HCU_MAIN_MENU_TYPE_SPLIT_SCREEN || row == HCU_MAIN_MENU_TYPE_EDIT_GAMETYPES;
 }
 
@@ -575,11 +574,6 @@ enum hcu_main_menu_action hcu_main_menu_step(hcu_main_menu_state *state,
 		/* A type edited with the whole list open may not exist on the saved map. */
 		if (!state->edit_gametypes && !menu_selection_supported(state, state->session.variant_index))
 			menu_apply_variant_selection(state, HCU_GAME_SLAYER);
-		if (state->row == HCU_MAIN_MENU_TYPE_QUICK_START) {
-			/* Start now with the saved map and game type; the first pad plays. */
-			if (!state->player_count) { state->joined_mask |= 1u; state->player_count = 1; }
-			return HCU_MAIN_MENU_ACTION_MULTIPLAYER;
-		}
 		state->page = state->edit_gametypes ? HCU_MAIN_MENU_PAGE_GAMETYPE_SELECT : HCU_MAIN_MENU_PAGE_CONNECT;
 		state->row = 0;
 		return HCU_MAIN_MENU_ACTION_NONE;
@@ -2496,14 +2490,12 @@ static void menu_type_picture(packet2_t *packet, const video_t *video, unsigned 
 }
 
 /* The retail multiplayer type list: rows on the left, the picture and description of the highlighted row on the
- * right. Cooperative play and system link are drawn dim and are skipped by the cursor. */
+ * right. Online is drawn dim and is skipped by the cursor. */
 static void menu_type_select(packet2_t *packet, const video_t *video, const hcu_main_menu_state *state)
 {
 	static const char *const labels[HCU_MAIN_MENU_TYPE_ROW_COUNT] = {
-		"QUICK START", "COOPERATIVE PLAY", "SPLIT SCREEN", "ONLINE", "EDIT GAMETYPES"};
+		"SPLIT SCREEN", "ONLINE", "EDIT GAMETYPES"};
 	static const char *const description[HCU_MAIN_MENU_TYPE_ROW_COUNT][3] = {
-		{"START A GAME NOW WITH THE", "SAVED MAP AND GAME TYPE.", ""},
-		{"PLAY THROUGH THE SINGLE-PLAYER", "CAMPAIGN WITH A FRIEND.", ""},
 		{"PIT UP TO FOUR PEOPLE AGAINST", "EACH OTHER ON ONE TV.", ""},
 		{"PLAY AGAINST PEOPLE OVER THE", "INTERNET. NOT AVAILABLE YET.", ""},
 		{"SET ALL THE ATTRIBUTES FOR YOUR", "MULTIPLAYER GAMETYPES AND", "KEEP THEM FOR FUTURE USE."}};

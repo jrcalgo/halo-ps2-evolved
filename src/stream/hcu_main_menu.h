@@ -38,11 +38,9 @@ enum hcu_main_menu_page {
 	HCU_MAIN_MENU_PAGE_GAMETYPE_SELECT
 };
 
-/* Rows of the retail multiplayer type list. Quick start (offered only after a cooperative game, and
- * split screen games are not kept), cooperative play and online are shown but cannot be selected. */
+/* Rows of the multiplayer type list. Retail's quick start (it only replays a cooperative game) and cooperative play are
+ * not offered: the port has no campaign. Online is shown but cannot be selected. */
 enum hcu_main_menu_type_row {
-	HCU_MAIN_MENU_TYPE_QUICK_START,
-	HCU_MAIN_MENU_TYPE_COOP,
 	HCU_MAIN_MENU_TYPE_SPLIT_SCREEN,
 	HCU_MAIN_MENU_TYPE_ONLINE,
 	HCU_MAIN_MENU_TYPE_EDIT_GAMETYPES,

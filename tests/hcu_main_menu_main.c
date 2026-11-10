@@ -39,19 +39,20 @@ int main(void)
 	if (hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0) != HCU_MAIN_MENU_ACTION_NONE ||
 		state.page != HCU_MAIN_MENU_PAGE_TYPE ||
 		state.row != HCU_MAIN_MENU_TYPE_SPLIT_SCREEN) return 5;
-	/* The cursor skips quick start, cooperative play and online, which this port cannot start. */
+	/* The list is split screen, online, edit gametypes: quick start and cooperative play are gone (this port has
+	 * neither). The cursor skips online, which this port cannot start. */
+	if (HCU_MAIN_MENU_TYPE_ROW_COUNT != 3u) return 49;
 	(void)hcu_main_menu_step(&state, 0, 1, 0, 0, 0, 0);
 	if (state.row != HCU_MAIN_MENU_TYPE_EDIT_GAMETYPES) return 50;
 	(void)hcu_main_menu_step(&state, 0, 1, 0, 0, 0, 0);
-	if (state.row != HCU_MAIN_MENU_TYPE_SPLIT_SCREEN) return 51; /* wraps past quick start */
+	if (state.row != HCU_MAIN_MENU_TYPE_SPLIT_SCREEN) return 51; /* wraps past online */
 	(void)hcu_main_menu_step(&state, 1, 0, 0, 0, 0, 0);
 	if (state.row != HCU_MAIN_MENU_TYPE_EDIT_GAMETYPES) return 52;
 	(void)hcu_main_menu_step(&state, 0, 1, 0, 0, 0, 0);
 	{
-		static const unsigned off[] = {HCU_MAIN_MENU_TYPE_QUICK_START, HCU_MAIN_MENU_TYPE_COOP,
-			HCU_MAIN_MENU_TYPE_ONLINE};
+		static const unsigned off[] = {HCU_MAIN_MENU_TYPE_ONLINE};
 		unsigned i;
-		for (i = 0; i < 3u; ++i) {
+		for (i = 0; i < 1u; ++i) {
 			state.row = (uint8_t)off[i];
 			if (hcu_main_menu_step(&state, 0, 0, 0, 0, 1, 0) != HCU_MAIN_MENU_ACTION_NONE ||
 				state.page != HCU_MAIN_MENU_PAGE_TYPE) return 53;
