@@ -261,6 +261,28 @@ static void present(float progress)
 	++s_frame; s_rendering = 0;
 }
 
+/* One black frame. The GS keeps whatever the last program left in its buffers, so before the first loading frame is ready
+ * (its background is read from disc) the display would show the menu again for about a second. Two calls blacken both
+ * buffers. */
+static void present_black(void)
+{
+	unsigned char *storage = s_dma;
+	if (!s_ready || !s_video || !storage || s_rendering || s_dma_bytes < FRAME_PACKET_QW * 16u) return;
+	s_rendering = 1;
+	packet2_reset(&s_packet, 0);
+	s_packet.max_qwords_count = FRAME_PACKET_QW; s_packet.type = P2_TYPE_NORMAL;
+	s_packet.mode = P2_MODE_NORMAL; s_packet.base = s_packet.next = (qword_t *)storage;
+	video_add_setup_env(s_video, &s_packet);
+	video_add_clear(s_video, &s_packet, 0, 0, 0);
+	packet2_update(&s_packet, draw_finish(s_packet.next));
+	SyncDCache(storage, storage + (s_packet.next - s_packet.base) * 16u);
+	dma_channel_send_packet2(&s_packet, DMA_CHANNEL_GIF, 1);
+	dma_wait_fast();
+	draw_wait_finish();
+	video_present(s_video);
+	s_rendering = 0;
+}
+
 void hcu_loading_screen_begin(void)
 {
 	/* The main menu and BSP renderer share the GS texture window. Reload into
@@ -272,6 +294,8 @@ void hcu_loading_screen_begin(void)
 		return;
 	}
 	if (s_hold && s_active) return;
+	present_black();
+	present_black();
 	if (!upload_assets()) {
 		printf("HALO_PS2_FAIL loading-screen-assets\n");
 		return;

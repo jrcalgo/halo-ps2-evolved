@@ -79,10 +79,35 @@ int hcu_views_camera_from_snapshot(const float pos[3], const float forward[3], c
 	return 1;
 }
 
+static unsigned s_windows = 1u;
+
+void hcu_views_set_window_count(unsigned windows) { s_windows = windows ? windows : 1u; }
+unsigned hcu_views_window_count(void) { return s_windows; }
+
+/* a window's physical aspect from its pixel aspect: the 512x448 buffer is shown 4:3 */
+static float physical_aspect(float pixel_aspect)
+{
+	return pixel_aspect * ((4.0f / 3.0f) / HCU_VIEWS_FULL_FRAME_ASPECT);
+}
+
 float hcu_views_fov_aspect(float view_aspect)
 {
-	(void)view_aspect;
-	return HCU_VIEWS_FULL_FRAME_ASPECT;
+	return s_windows > 1u ? physical_aspect(view_aspect) : HCU_VIEWS_FULL_FRAME_ASPECT;
+}
+
+float hcu_views_vertical_fov(float snapshot_vertical_fov)
+{
+	return s_windows > 1u ? 2.0f * atanf(HCU_VIEWS_SPLIT_HALF_TANGENT) : snapshot_vertical_fov;
+}
+
+float hcu_views_camera_aspect(float window_pixel_aspect)
+{
+	return s_windows > 1u ? physical_aspect(window_pixel_aspect) : window_pixel_aspect;
+}
+
+float hcu_views_fov_aspect_camera(float camera_aspect)
+{
+	return s_windows > 1u ? camera_aspect : HCU_VIEWS_FULL_FRAME_ASPECT;
 }
 
 int hcu_views_must_skip(int ever_active)

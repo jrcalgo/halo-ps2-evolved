@@ -68,6 +68,22 @@ int hcu_views_camera_from_snapshot(const float pos[3], const float forward[3], c
 #define HCU_VIEWS_FULL_FRAME_ASPECT (512.0f / 448.0f)
 float hcu_views_fov_aspect(float view_aspect);
 
+/* Retail split screen (Xbox, verified against default.xbe, see docs/retail-splitscreen-fov-2026-11-10.md): with more than
+ * one window every window uses the SAME vertical angle, 56.35 degrees (half tangent 0.5357), and the horizontal angle that
+ * its physical (4:3 television) shape gives: 110 degrees for the 8:3 windows (2 players, the top window of 3), 71 for the
+ * 4:3 ones (4 players, the bottom windows of 3). The frame's window count is set once per frame; with one window nothing
+ * here changes, the menu's FOV slider decides. */
+#define HCU_VIEWS_SPLIT_HALF_TANGENT 0.5357f
+void hcu_views_set_window_count(unsigned windows);
+unsigned hcu_views_window_count(void);
+/* The vertical angle for the camera: the snapshot's own with one window, retail's with several. */
+float hcu_views_vertical_fov(float snapshot_vertical_fov);
+/* The aspect a window's camera projects with (its clip matrix scales y by it): the window's pixel aspect with one window
+ * (unchanged), its physical aspect with several (pixels are 4/3 / (512/448) wider than tall). */
+float hcu_views_camera_aspect(float window_pixel_aspect);
+/* hcu_views_fov_aspect for a camera that already carries its camera aspect (the viewmodel pass). */
+float hcu_views_fov_aspect_camera(float camera_aspect);
+
 /* Snapshot views are accepted only for one map generation at a time: the first accepted view sets it,
  * a view from another generation is refused. Returns 1 when accepted. */
 int hcu_views_accept_generation(hcu_views_stats *s, uint32_t map_generation);

@@ -186,6 +186,35 @@ int main(void)
 		}
 	}
 
+	/* Retail split screen: one vertical angle (56.35 degrees) for every window, the horizontal one from the window's
+	 * physical (4:3 television) shape: 110 for the 8:3 windows, 71 for the 4:3 ones. One window changes nothing. */
+	{
+		const float slider_vfov = 1.0245f;   /* the menu slider's 58.7 degrees */
+		float v, a;
+		hcu_views_set_window_count(1u);
+		CHECK(near(hcu_views_vertical_fov(slider_vfov), slider_vfov, 1e-6f));
+		CHECK(near(hcu_views_camera_aspect(2.0f), 2.0f, 1e-6f));
+		CHECK(near(hcu_views_fov_aspect(2.0f), HCU_VIEWS_FULL_FRAME_ASPECT, 1e-6f));
+		hcu_views_set_window_count(2u);
+		v = hcu_views_vertical_fov(slider_vfov);
+		CHECK(near(v * 57.29578f, 56.35f, 0.05f));
+		/* a 2 player window: 512x224 buffer pixels */
+		a = hcu_views_camera_aspect(512.0f / 224.0f);
+		CHECK(near(a, 8.0f / 3.0f, 1e-3f));
+		CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, v, hcu_views_fov_aspect(512.0f / 224.0f), 0.5f, 900.0f, &cam) == 1);
+		CHECK(near(cam.hfov * 57.29578f, 110.0f, 0.3f));
+		CHECK(near(tanf(cam.hfov * 0.5f) / a, tanf(v * 0.5f), 1e-4f));      /* the clip matrix's vertical angle */
+		/* a 4 player window: 256x224 */
+		hcu_views_set_window_count(4u);
+		a = hcu_views_camera_aspect(256.0f / 224.0f);
+		CHECK(near(a, 4.0f / 3.0f, 1e-3f));
+		CHECK(hcu_views_camera_from_snapshot(pos, yaw_fwd, up, v, hcu_views_fov_aspect(256.0f / 224.0f), 0.5f, 900.0f, &cam) == 1);
+		CHECK(near(cam.hfov * 57.29578f, 70.7f, 0.5f));
+		CHECK(near(hcu_views_fov_aspect_camera(a), a, 1e-6f));
+		hcu_views_set_window_count(1u);
+		CHECK(near(hcu_views_fov_aspect_camera(a), HCU_VIEWS_FULL_FRAME_ASPECT, 1e-6f));
+	}
+
 	/* Generation gate: the first accepted generation sticks, another one is refused and counted. */
 	memset(&st, 0, sizeof st);
 	CHECK(hcu_views_accept_generation(&st, 7u) == 1);

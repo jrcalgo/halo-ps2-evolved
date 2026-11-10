@@ -182,7 +182,8 @@ int hcu_render_objects_frustum_build_aspect(const halo_ps2_frame_view *view,
 		aspect = (x1 - x0) / (y1 - y0);
 	}
 	if (!hcu_views_camera_from_snapshot(camera->position, camera->forward, camera->up,
-		camera->vertical_field_of_view, hcu_views_fov_aspect(aspect), camera->z_near, camera->z_far, &converted))
+		hcu_views_vertical_fov(camera->vertical_field_of_view), hcu_views_fov_aspect(aspect), camera->z_near, camera->z_far,
+		&converted))
 		return 0;
 	sin_yaw = sinf(converted.yaw); cos_yaw = cosf(converted.yaw);
 	sin_pitch = sinf(converted.pitch); cos_pitch = cosf(converted.pitch);
@@ -192,7 +193,7 @@ int hcu_render_objects_frustum_build_aspect(const halo_ps2_frame_view *view,
 	up[0] = -sin_pitch * cos_yaw; up[1] = -sin_pitch * sin_yaw; up[2] = cos_pitch;
 	half_h = converted.hfov * 0.5f;
 	/* The window's own vertical angle for the single-player horizontal one (aspect is the window's w/h). */
-	half_v = atanf(tanf(half_h) / aspect);
+	half_v = atanf(tanf(half_h) / hcu_views_camera_aspect(aspect));
 	sin_v = sinf(half_v); cos_v = cosf(half_v);
 	sin_h = sinf(half_h); cos_h = cosf(half_h);
 	/* near/far */
@@ -4440,7 +4441,7 @@ static void object_pass(void *user, render_ctx_t *rc)
 					isfinite(viewmodel_source.aspect) && viewmodel_source.aspect > 0.05f &&
 					viewmodel_source.aspect < 20.0f)
 					viewmodel_source.hfov = 2.0f * atanf(
-						tanf(authored_fov * 0.5f) * hcu_views_fov_aspect(viewmodel_source.aspect));
+						tanf(authored_fov * 0.5f) * hcu_views_fov_aspect_camera(viewmodel_source.aspect));
 			}
 			if (camera_viewmodel_context(&viewmodel_source, rc->viewport_w, rc->viewport_h,
 				VIDEO_WIDTH, VIDEO_HEIGHT, &viewmodel_cam, viewmodel_clip, &viewmodel_frustum) == 0) {

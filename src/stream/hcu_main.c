@@ -2458,12 +2458,15 @@ static uint8_t s_c3_last_good_valid[HCU_RENDER_VIEWS_MAX];
 static int hcu_c3_views_hund(float v)
 {
 	return (int)(v >= 0.0f ? v * 100.0f + 0.5f : v * 100.0f - 0.5f);
+	uint8_t prespawn_hold[HCU_RENDER_VIEWS_MAX];  /* this frame the view is held black before the first spawn */
 }
 
 static void hcu_c3_views_begin(const halo_ps2_frame_snapshot *borrowed_snapshot)
 {
 	if (s_c3r.frames == 0u) {
 		/* The map generation lock is set by hcu_c3_snapshot_map_loaded before this map's first frame. Clearing
+/* Rendered frames a view may stay without a unit at the start of a map before the stand-in camera is drawn (about 6 s). */
+#define HCU_C3_PRESPAWN_HOLD_FRAMES 180u
 		 * it here let the previous map's bank define the generation, so its views were accepted. */
 		uint32_t have_generation = s_c3v.stats.have_generation;
 		uint32_t generation = s_c3v.stats.generation;
@@ -2566,8 +2569,9 @@ static const text_batch_t *hcu_c3_views_camera(unsigned v, camera_t *cam, const 
 		} else {
 			s_c3v.ever_active[v] = 1;
 			if (hcu_views_accept_generation(&s_c3v.stats, s_c3v.snap->map_generation) &&
+	s_c3v.prespawn_hold[v] = 0u;
 				hcu_views_camera_from_snapshot(view->camera.position, view->camera.forward, view->camera.up,
-					view->camera.vertical_field_of_view, projection_aspect,
+					hcu_views_vertical_fov(view->camera.vertical_field_of_view), hcu_views_fov_aspect(projection_aspect),
 					view->camera.z_near, view->camera.z_far, &hc)) {
 				from_snapshot = 1;
 			} else {
@@ -2577,6 +2581,9 @@ static const text_batch_t *hcu_c3_views_camera(unsigned v, camera_t *cam, const 
 	}
 #endif
 #if defined(HCU_C3_FRAME_SNAPSHOT)
+			if (!s_c3v.ever_active[v])
+				printf("HALO_PS2_LOCAL c3-first-view-active frame=%u view=%u unit=%u sequence=%u\n",
+					(unsigned)s_c3r.frames, v, (unsigned)view->unit_object, (unsigned)s_c3v.snap->sequence);
 	/* Unit position beside the camera position, for the spawn-cam versus conversion question. */
 	if ((s_c3r.frames == 0u || (s_c3r.frames % 30u) == 0u) && s_c3v.snap && view &&
 		view->unit_object < s_c3v.snap->object_count) {
@@ -2614,7 +2621,7 @@ static const text_batch_t *hcu_c3_views_camera(unsigned v, camera_t *cam, const 
 	}
 #endif
 	camera_init(cam);
-	cam->aspect = projection_aspect;
+	cam->aspect = hcu_views_camera_aspect(projection_aspect);
 	if (from_snapshot) {
 		/* Controlled renderer diagnostic: preserve the live snapshot position and
 		 * yaw while forcing a steep down-look pitch for the low-world-load case. */
@@ -2655,6 +2662,15 @@ static const text_batch_t *hcu_c3_views_camera(unsigned v, camera_t *cam, const 
 		/* Not drawn: the caller skips bsp_render_view and the objects pass for this view. */
 		text_batch_clear(tb);
 		s_c3v.hud_lines[v] = 0;
+#if defined(HCU_C3_FRAME_SNAPSHOT)
+	} else if (s_c3v.snap && s_c3r.frames < HCU_C3_PRESPAWN_HOLD_FRAMES) {
+		/* Retail shows nothing before the first spawn (the loading UI stays up until the game has ticked, main.c:6681) and
+		 * never a camera of its own: the fixed valley camera and "RESPAWNING" were a PS2-only stand-in. Draw nothing
+		 * until the view has a unit; if it never does, the stand-in returns after the hold so a stuck start stays visible. */
+		s_c3v.source[v] = HCU_VIEW_CAMERA_SKIPPED;
+		s_c3v.stats.skipped_views++;
+		s_c3v.prespawn_hold[v] = 1u;
+#endif
 		s_c3v.fp_nodes[v] = 0;
 		return NULL;
 	}
@@ -3401,6 +3417,7 @@ static uint32_t s_gov_present_cycles;   /* cycles the last video_present slept (
 #endif
 #if HCU_C3_TIMING_ENABLED
 	c3_view_t0 = timer_cycles();
+	hcu_views_set_window_count(hcu_c3_view_count());
 #endif
 	/* C3:objects begin */
 	frame_snapshot = hcu_c3_objects_frame_begin();
@@ -3423,7 +3440,15 @@ static uint32_t s_gov_present_cycles;   /* cycles the last video_present slept (
 #if defined(HALO_PS2_C3_PHASE_PROBE) && HALO_PS2_C3_PHASE_PROBE
 		if (!overlay) views_skipped++;
 #endif
-		if (!overlay) continue;  /* skipped: no last-good camera for an active view (counted, not drawn) */
+		if (!overlay) {
+			/* skipped: no last-good camera for an active view (counted, not drawn); before the first spawn the pane is
+			 * cleared to black instead, so the frame still has a draw and shows nothing, as retail does */
+			if (s_c3v.prespawn_hold[v]) {
+				vp.clear = 1;
+				(void)bsp_render_view(NULL, NULL, &vp);
+			}
+			continue;
+		}
 #if defined(HALO_PS2_C3_MOVEMENT_TRACE) && HALO_PS2_C3_MOVEMENT_TRACE
 		/* The parent consumes this camera directly. CE observer/render globals
 		 * can be unused in the headless publisher, so trace the actual draw view. */
