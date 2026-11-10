@@ -543,6 +543,8 @@ int hcu_render_objects_parity_summary(hcu_render_parity_summary *out);
 /* Object/ground-weapon draw distance. The parent calls lod_tick once per frame with the
  * measured frame time. lodctl budget is 33.3 ms at 30 fps. Scale is 1 until the first tick. */
 void hcu_render_objects_lod_tick(float frame_ms);
+/* 0 (full detail) .. 4: how far the frame-time governor, fed CPU work time, has lowered the first-person model detail. */
+uint32_t hcu_render_objects_frame_governor_level(void);
 float hcu_render_objects_lod_distance_scale(void);
 /* Frame lifetime: begin unpins the previous frame when its kick has completed, optionally publishes the
  * synthetic snapshot (synthetic_views > 0, HCU_C3_OBJECTS_SYNTHETIC) and pins the latest published

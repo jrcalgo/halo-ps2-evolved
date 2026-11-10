@@ -2722,11 +2722,21 @@ static int s_world_lod_inited;
 void hcu_render_objects_lod_tick(float frame_ms)
 {
 	if (!s_world_lod_inited) {
-		lodctl_init(&s_world_lod, 33.3f, 30);
+		/* 30 ms of CPU work leaves the margin the vsync alignment needs inside the 33.3 ms frame. */
+		lodctl_init(&s_world_lod, 30.0f, 30);
 		s_world_lod_inited = 1;
 	}
-	/* lodctl_frame already steps down when frame_ms exceeds the 33.3 ms budget. */
+	/* frame_ms is the work time (the flip interval less the vsync sleep). A frame of 90 ms or more is a load hitch
+	 * (a first-use model, bitmap or sound), not a steady cost, and would hold the detail down for two seconds. */
+	if (frame_ms >= 90.0f) return;
 	lodctl_frame(&s_world_lod, frame_ms, 0);
+}
+
+/* How far the frame-time governor has stepped down (0 = full detail .. 4). It lowers the first-person model's level of
+ * detail, which is what costs most when a frame runs long; world draw distance is never scaled (that showed as pop-in). */
+uint32_t hcu_render_objects_frame_governor_level(void)
+{
+	return s_world_lod_inited ? (uint32_t)s_world_lod.level : 0u;
 }
 
 float hcu_render_objects_lod_distance_scale(void)
@@ -4537,7 +4547,12 @@ static void object_pass(void *user, render_ctx_t *rc)
 		s_objr.sky_model = -1;
 		s_objr.pose = pose_fn;
 		s_objr.pose_user = &pose;
-		s_fp_lodctl.level = (s_view_fp_lod == HCU_OBJECTS_FP_LOD_FAR) ? 4 : 0;
+		{
+			const uint32_t gov = hcu_render_objects_frame_governor_level();
+			const int governed = gov >= 4u ? 4 : gov >= 2u ? 2 : 0;   /* lodctl biases: 0, 0, 1, 1, 2 steps */
+			const int asked = (s_view_fp_lod == HCU_OBJECTS_FP_LOD_FAR) ? 4 : 0;
+			s_fp_lodctl.level = asked > governed ? asked : governed;
+		}
 		s_objr.lod = &s_fp_lodctl;
 		s_fp_cam = &s_snapshot->views[s_cur_view].camera;
 #if defined(HALO_PS2_C3_MOVEMENT_TRACE)
@@ -4556,8 +4571,12 @@ static void object_pass(void *user, render_ctx_t *rc)
 				 * is the unit's level, the drawn level follows it a step per rendered frame. */
 				static float fp_camo[4];
 				const uint32_t vi = s_cur_view < 4u ? s_cur_view : 3u;
-				const float target = (float)(s_snapshot->views[s_cur_view].unit_object < s_snapshot->object_count ?
+				/* Fully cloaked, the weapon and hands are only a refraction of what is behind them, which over sand or
+				 * sky is the same picture: they vanish. The player's own cloak therefore stops at 75%: about a quarter
+				 * of the lit model stays under the distortion, so the gun reads as moving glass (as retail's does). */
+				float target = (float)(s_snapshot->views[s_cur_view].unit_object < s_snapshot->object_count ?
 					s_snapshot->objects[s_snapshot->views[s_cur_view].unit_object].camo : 0u);
+				if (target > 190.0f) target = 190.0f;
 				if (fp_camo[vi] < target) { fp_camo[vi] += 13.0f; if (fp_camo[vi] > target) fp_camo[vi] = target; }
 				else if (fp_camo[vi] > target) { fp_camo[vi] -= 13.0f; if (fp_camo[vi] < target) fp_camo[vi] = target; }
 				obj_render_set_camo((uint8_t)fp_camo[vi]);
@@ -4615,15 +4634,16 @@ static void object_pass(void *user, render_ctx_t *rc)
 #if defined(HALO_PS2_C3_LAG_TRACE) && HALO_PS2_C3_LAG_TRACE
 			if (s_fp_render_cycles > 294912u * 8u || s_world_render_cycles > 294912u * 16u || (s_frame % 30u) == 0u)
 			{
-				uint32_t ee[6];
+				uint32_t ee[8];
 				obj_render_ee_stats(ee);
-				printf("HALO_PS2_LOCAL lag-draw frame=%u view=%u world-ms=%.2f fp-ms=%.2f fx-bytes=%u drawn=%u tris=%u ee-calls=%u evals=%u need=%u need-tris=%u eval-ms=%.2f need-ms=%.2f\n",
+				printf("HALO_PS2_LOCAL lag-draw frame=%u view=%u world-ms=%.2f fp-ms=%.2f fx-bytes=%u drawn=%u tris=%u ee-calls=%u evals=%u need=%u need-tris=%u eval-ms=%.2f need-ms=%.2f gov=%u fp-models=%u fp-same-pose=%u\n",
 					(unsigned)s_frame, (unsigned)s_cur_view,
 					timer_ms(0, s_world_render_cycles), timer_ms(0, s_fp_render_cycles),
 					(unsigned)s_view_counters.fx_source_read_bytes,
 					(unsigned)s_view_drawn, (unsigned)s_view_triangles,
 					(unsigned)ee[5], (unsigned)ee[0], (unsigned)ee[1], (unsigned)ee[2],
-					timer_ms(0, ee[3]), timer_ms(0, ee[4]));
+					timer_ms(0, ee[3]), timer_ms(0, ee[4]), (unsigned)hcu_render_objects_frame_governor_level(),
+					(unsigned)ee[6], (unsigned)ee[7]);
 			}
 #endif
 		}

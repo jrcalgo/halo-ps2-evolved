@@ -3336,6 +3336,7 @@ void hcu_c3_render_tick(int tick)
 	uint32_t view_probe_start = 0;
 	static uint32_t previous_probe_start;
 	uint32_t current_probe_start = timer_cycles();
+static uint32_t s_gov_present_cycles;   /* cycles the last video_present slept (vsync wait) */
 	uint32_t views_skipped = 0;
 	frame_probe.frame_interval_cycles = previous_probe_start ? current_probe_start - previous_probe_start : 0u;
 	previous_probe_start = current_probe_start;
@@ -3483,7 +3484,12 @@ void hcu_c3_render_tick(int tick)
 	c3_video_wait_t1 = timer_cycles();
 	c3_present_t0 = timer_cycles();
 	#endif
-	video_present(&s_hcu_video);
+	{
+		/* video_present sleeps until the vertical sync: that is idle time, not work. */
+		const uint32_t present_begin = timer_cycles();
+		video_present(&s_hcu_video);
+		s_gov_present_cycles = timer_cycles() - present_begin;
+	}
 	#if HCU_C3_TIMING_ENABLED
 	c3_present_t1 = timer_cycles();
 	c3_submit_t0 = timer_cycles();
@@ -3498,7 +3504,7 @@ void hcu_c3_render_tick(int tick)
 	{
 		static uint32_t lod_prev;
 		uint32_t lod_now = timer_cycles();
-		float lod_ms = lod_prev ? timer_ms(lod_prev, lod_now) : 16.0f;
+		float lod_ms = lod_prev ? timer_ms(lod_prev, lod_now) - timer_ms(0, s_gov_present_cycles) : 16.0f;
 		lod_prev = lod_now;
 		hcu_render_objects_lod_tick(lod_ms);
 	}
@@ -3511,10 +3517,14 @@ void hcu_c3_render_tick(int tick)
 		#endif
 		uint32_t probe_end_cycles = timer_cycles();
 		bsp_render_phase_timing_get(&phase_probe);
+		/* The frame-time governor is fed the time the CPU spent on the frame, not the flip interval: at a 30 Hz lock
+		 * the interval is 33.3 ms whether the frame took 12 ms or 33, so it could not tell a frame with headroom from
+		 * one at its limit. Work is the interval minus the sleep in video_present. */
 		hcu_c3_phase_probe_publish(&phase_probe);
 		#if defined(HCU_C3_OBJECTS)
 		hcu_render_objects_residency_stats(&residency);
 		#endif
+		if (lod_ms < 1.0f) lod_ms = 1.0f;
 		frame_probe.frame = s_c3r.frames;
 		frame_probe.tick = (uint32_t)tick;
 		frame_probe.view_count = layout.view_count;
