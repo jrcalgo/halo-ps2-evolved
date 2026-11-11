@@ -64,15 +64,15 @@ def hsb_is_resident(path: Path) -> bool:
     return magic == b"HSB1" and total - data_off - spu_bytes < 4096
 
 
-def prepare_map(name: str) -> str:
+def prepare_map(name: str, output_root: Path | None = None, force: bool = False) -> str:
     item = next(row for row in mp.maps() if row.name == name)
-    dest = ROOT / "build/c3" / name
+    dest = (output_root / name) if output_root is not None else ROOT / "build/c3" / name
     pkg_out = dest / "pkg" / item.row
     hcp = pkg_out / f"{item.row}.hcp"
     manifest_out = pkg_out / f"{item.row}.json"
     src = SELECTED / item.row
     env = c3_base()
-    if not hcp.is_file() or not manifest_out.is_file():
+    if force or not hcp.is_file() or not manifest_out.is_file():
         manifest = json.loads((src / f"{item.row}.json").read_text())
         subprocess.run([
             sys.executable, "tools/hcu_render_media.py",
