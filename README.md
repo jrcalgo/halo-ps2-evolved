@@ -23,7 +23,7 @@ The project started as a hybrid: a PS2-native renderer and map pipeline driving 
 - CE's fixed 30 Hz simulation, kept intact on real PS2 limits: 32 MiB EE RAM, 4 MiB GS eDRAM, 2 MiB IOP RAM and 2 MiB SPU2 RAM. Features are fitted to the hardware, not given larger pools or heap fallbacks.
 - Delivery through Open PS2 Loader.
 
-Out of scope: network play and System Link, PAL, and campaign.
+Out of scope: PAL, and campaign.
 
 ## Status
 
