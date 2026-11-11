@@ -4141,7 +4141,7 @@ static uint32_t flashlight_disc(const render_ctx_t *rc, const hcu_render_effect_
 	int textured, uint32_t *out)
 {
 	/* 128 is a texel's own colour through the GS modulate; the gain lifts the pool over the lit surface */
-	const float gain = textured ? 128.0f * 0.8f : 0.35f * 255.0f;
+	const float gain = textured ? 128.0f * 0.6f : 0.35f * 255.0f;
 	float n[3], a[3], b[3], beam[3], ref[3] = { 0.0f, 0.0f, 1.0f }, l, peak = gain * e->age_sec, stretch = 1.0f, bd;
 	float pts[FLASH_VERTS][3], lv[FLASH_VERTS], uv[FLASH_VERTS][2];
 	uint32_t total = 0;
