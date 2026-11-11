@@ -28,6 +28,15 @@ class VagTests(unittest.TestCase):
         self.assertTrue(all(b == 0 for b in vag[-14:]))
         self.assertGreater(snr_db(pcm, sb.decode_vag(vag)[:len(pcm)]), 25.0)
 
+    def test_loop_sample_wraps_in_hardware(self):
+        # a loop track: loop-start on the first block, end|repeat on the last audio block, no silent terminator block
+        pcm = [int(9000 * math.sin(i * 0.11)) for i in range(28 * 12)]
+        vag = sb.encode_vag(pcm, loop=True)
+        self.assertEqual(len(vag), 16 * 12)
+        self.assertEqual(vag[1], 4)
+        self.assertEqual(vag[-15], 3)
+        self.assertTrue(all(vag[16 * i + 1] == 0 for i in range(1, 11)))
+
     def test_silence_encodes_to_zero_nibbles(self):
         vag = sb.encode_vag([0] * 56)
         self.assertEqual(len(vag), 48)

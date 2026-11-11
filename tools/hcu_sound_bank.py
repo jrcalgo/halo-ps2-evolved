@@ -186,14 +186,20 @@ def _vag_block(chunk: list[int], h1: int, h2: int, filt: int, shift: int):
 
 
 VAG_TERMINATOR_FLAGS = 7  # loop start | repeat | end
+VAG_FLAG_END = 1
+VAG_FLAG_REPEAT = 2
+VAG_FLAG_LOOP_START = 4
 
 
-def encode_vag(pcm: list[int], terminator: bool = True, reset: bool = False) -> bytes:
+def encode_vag(pcm: list[int], terminator: bool = True, reset: bool = False, loop: bool = False) -> bytes:
     """Encode mono PCM16 to SPU VAG blocks (one shot). The SPU2 does not reliably stop at an end flag: a voice that
     outlives its sample (the game tick that keys it off can be late) replays the sample from its start as a steady
     tone. The audio therefore ends in a silent terminator block flagged loop-start|repeat|end, which loops on itself.
     `terminator=False` leaves that block off (a stream's blocks carry no flags and the player sets them) and `reset`
-    makes the first block independent of the decoder's history (filter 0), so it can follow any other audio."""
+    makes the first block independent of the decoder's history (filter 0), so it can follow any other audio.
+    `loop` makes a sample the SPU2 repeats by itself (a looping sound's loop track): the first block carries the
+    loop-start flag and the last block loop-end|repeat, so the voice wraps from the last audio block to the first with no
+    silent block between them and no key-off/key-on from the CPU (which left an audible gap each pass)."""
     blocks = bytearray()
     h1 = h2 = 0
     total = (len(pcm) + 27) // 28
@@ -223,6 +229,10 @@ def encode_vag(pcm: list[int], terminator: bool = True, reset: bool = False) -> 
         blocks.append(flags)
         for i in range(0, 28, 2):
             blocks.append(nibbles[i] | (nibbles[i + 1] << 4))
+    if loop and len(blocks) >= 16:
+        blocks[1] |= VAG_FLAG_LOOP_START
+        blocks[len(blocks) - 15] |= VAG_FLAG_END | VAG_FLAG_REPEAT
+        return bytes(blocks)
     if terminator:
         blocks += bytes([0, VAG_TERMINATOR_FLAGS]) + bytes(14)
     return bytes(blocks)
@@ -294,6 +304,25 @@ def _tier(path: str) -> int:
         if prefix in lowered and any(word in lowered for word in words):
             return tier
     return len(TIERS)
+
+
+def looping_sound_paths(cache: CacheMap) -> set[str]:
+    """Paths of the snd! tags that are the loop (or alternate loop) track of a looping sound (lsnd) tag. Layouts:
+    looping_sound_definition tracks block at 0x3C, 0xA0-byte tracks with the loop reference at 0x40 and the alternate
+    loop at 0x80 (a tag reference is group, name pointer, name length, tag id)."""
+    by_id = {t.tag_id: t.path for t in cache.tags}
+    paths = set()
+    for tag in cache.tags:
+        if tag.group != "lsnd" or tag.indexed:
+            continue
+        d = cache.off(tag.data_addr)
+        count, first = cache.reflexive(d, 0x3C)
+        for i in range(count):
+            for field in (0x40, 0x80):
+                tag_id = struct.unpack_from("<I", cache.buf, first + 160 * i + field + 12)[0]
+                if tag_id in by_id:
+                    paths.add(by_id[tag_id])
+    return paths
 
 
 def sound_permutations(cache: CacheMap, tag) -> tuple[dict, list[dict]]:
@@ -370,6 +399,7 @@ def build_bank(map_path: Path, budget: int = DEFAULT_BUDGET, max_perms: int = 2,
     its tag rate. When the lines do not fit in the resident budget, header spu_bytes stops at the gameplay prefix
     (never past SPU2 RAM minus the paging pool) and the lines page in on first play."""
     cache = CacheMap(map_path.read_bytes())
+    loop_paths = looping_sound_paths(cache)
     candidates = []
     announcers = []
     for tag in cache.tags:
@@ -426,7 +456,7 @@ def build_bank(map_path: Path, budget: int = DEFAULT_BUDGET, max_perms: int = 2,
                 pcm = resample(pcm, info["rate"], rate)
             if len(pcm) < 28:
                 continue
-            encoded.append((pcm, encode_vag(pcm), perm, rate))
+            encoded.append((pcm, encode_vag(pcm, loop=path in loop_paths), perm, rate))
         # identical blocks (the same recording under two tags) are stored once; their entries share the offset
         fresh = {vag for _pcm, vag, _perm, _rate in encoded if vag not in stored}
         cost = sum(len(vag) for vag in fresh)

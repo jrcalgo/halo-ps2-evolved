@@ -85,8 +85,9 @@ def prepare_map(name: str) -> str:
         ], cwd=ROOT, env=env, check=True)
     hsb = dest / f"{name}.hsb"
     stamp = hsb.with_name(hsb.name + ".args")
-    sound_args = " ".join(SOUND_BANK_ARGS)
-    if not hsb_is_resident(hsb) or not stamp.is_file() or stamp.read_text() != sound_args:
+    # "#loop-flags-v1": loop tracks carry SPU2 loop flags (hcu_sound_bank.looping_sound_paths); older banks are rebuilt
+    sound_args = " ".join(SOUND_BANK_ARGS) + " #loop-flags-v1"
+    if force or not hsb_is_resident(hsb) or not stamp.is_file() or stamp.read_text() != sound_args:
         # Audio is never paged: a paged bank overwrites SPU RAM under playing voices (the buzz) and its tail sounds
         # (footsteps, reloads, ...) are silent or late. Every map ships a fully resident bank, announcer included: the
         # announcer speech and the least critical tiers are crushed to 8 kHz so everything fits SPU2 RAM.

@@ -212,6 +212,8 @@ int main(void)
 	r = req(HCU_SOUND_EVENT_LOOPING_START, 9, 3, 600, 1.0f);
 	hcu_spu_request(&r, hashes[0]);
 	CHECK(nops == 8);
+	/* a loop's loop address is its first block (it wraps in hardware); a one-shot's is its silent terminator */
+	CHECK(ops[6].kind == 1 && ops[6].entry == (1u | 0x2100u) && ops[6].value == samples[0].spu_addr);
 	nops = 0;
 	hcu_spu_request(&r, hashes[0]);
 	hcu_spu_get_stats(&st);
@@ -220,7 +222,7 @@ int main(void)
 	hcu_spu_tick(610 * TEST_MS_PER_TICK);
 	CHECK(nops == 0);
 	hcu_spu_tick(640 * TEST_MS_PER_TICK);
-	CHECK(nops == 9); /* key-off, then the eight key-on operations */
+	CHECK(nops == 0); /* the loop wraps in hardware: no key-off, no key-on */
 	hcu_spu_get_stats(&st);
 	CHECK(st.loop_restarts == 1 && st.voices_active == 1);
 	r = req(HCU_SOUND_EVENT_FADE, 9, 3, 641, 0.5f);

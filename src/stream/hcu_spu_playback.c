@@ -471,7 +471,8 @@ static int request_volumes(const hcu_sound_request *r, const hcu_spu_sample *sam
 	return *vol_l || *vol_r;
 }
 
-static void key_on(uint32_t voice, const hcu_sound_request *r, const hcu_spu_sample *sample, uint32_t vol_l, uint32_t vol_r)
+static void key_on(uint32_t voice, const hcu_sound_request *r, const hcu_spu_sample *sample, uint32_t vol_l, uint32_t vol_r,
+	int looping)
 {
 	s_hw->set_param(voice_entry(voice, SD_VOICE_PARAM_VOLL), (uint16_t)vol_l);
 	s_hw->set_param(voice_entry(voice, SD_VOICE_PARAM_VOLR), (uint16_t)vol_r);
@@ -481,7 +482,11 @@ static void key_on(uint32_t voice, const hcu_sound_request *r, const hcu_spu_sam
 	s_hw->set_addr(voice_entry(voice, SD_VOICE_ADDR_SSA), sample->spu_addr);
 	/* the SPU2 keeps a voice's loop address across key-ons and jumps to it at an end block, so a stale one (the
 	 * previous sound's) restarts or garbles this sample: point it at the sample's silent terminator block */
-	if (sample->bytes >= 16u) s_hw->set_addr(voice_entry(voice, SD_VOICE_ADDR_LSAX), sample->spu_addr + sample->bytes - 16u);
+	/* A loop wraps in hardware: its loop address is the sample's first block, and the silent terminator block (flagged
+	 * loop-start|repeat|end) sends the voice back there without the CPU keying it off and on again, which left an
+	 * audible gap every pass (the 1.3 s ambience loops ticked like a clock). One block of silence remains in the seam. */
+	if (looping) s_hw->set_addr(voice_entry(voice, SD_VOICE_ADDR_LSAX), sample->spu_addr);
+	else if (sample->bytes >= 16u) s_hw->set_addr(voice_entry(voice, SD_VOICE_ADDR_LSAX), sample->spu_addr + sample->bytes - 16u);
 	s_hw->set_switch((uint16_t)(SD_CORE1 | SD_SWITCH_KON_ENTRY), 1u << voice);
 	s_voice[voice].hw_live = 1;
 }
@@ -497,7 +502,7 @@ static uint32_t voice_ticks(const hcu_spu_sample *sample, float pitch, uint32_t 
 
 /* globals\globals multiplayer_information speech. Logged only when one of these is offered, so weapon
  * playback does not print. The UI ticks (countdown, respawn) are not in this list. */
-static const char *announcer_name(uint32_t hash)
+static __attribute__((unused)) const char *announcer_name(uint32_t hash)
 {
 	static const char *const names[] = {
 		"sound\\dialog\\multiplayer1\\play_ball",
@@ -619,7 +624,7 @@ static void start_sound(const hcu_sound_request *r, uint32_t hash, int looping)
 	voice = pick_voice(priority, r->game_time, &stolen);
 	if (voice < 0) { s_stats.dropped_busy++; return; }
 	if (stolen) { key_off((uint32_t)voice); s_stats.stolen++; }
-	key_on((uint32_t)voice, r, sample, vol_l, vol_r);
+	key_on((uint32_t)voice, r, sample, vol_l, vol_r, looping);
 	/* a one-shot keeps its voice and sample a little past the nominal end: the key-on goes through IOP RPCs */
 	ticks = voice_ticks(sample, r->pitch, looping ? 2u : HCU_SPU_TAIL_MS);
 	s_voice[voice].active = 1;
@@ -679,10 +684,10 @@ static void fade_sound(const hcu_sound_request *r, uint32_t hash)
 	}
 }
 
-/* Once per game tick: restart looping voices whose sample ended (the bank's VAG data has no loop flag). */
+/* Once per game tick: page-ins, queued starts, expiry of one-shots; loops wrap in hardware. */
 void hcu_spu_tick(uint32_t now)
 {
-	uint32_t i, vol_l, vol_r, ticks, queued;
+	uint32_t i, ticks, queued;
 	if (!s_hw) return;
 	/* last tick's final slice has had a tick to land in SPU2 RAM; starts queued for it may key on now */
 	s_settling = NULL;
@@ -722,12 +727,10 @@ void hcu_spu_tick(uint32_t now)
 			s_stats.expiry_koffs++;
 		}
 	}
+	/* A looping voice wraps in the SPU2 (see key_on); this only counts its passes and keeps its end time rolling. */
 	for (i = 0; i < HCU_SPU_VOICES; ++i) {
 		voice_state *v = &s_voice[i];
 		if (!v->active || !v->looping || (int32_t)(now - v->end_tick) < 0) continue;
-		s_hw->set_switch((uint16_t)(SD_CORE1 | SD_SWITCH_KOFF_ENTRY), 1u << i);
-		(void)request_volumes(&v->request, v->sample, &vol_l, &vol_r);
-		key_on(i, &v->request, v->sample, vol_l, vol_r);
 		ticks = voice_ticks(v->sample, v->request.pitch, 2u);
 		v->start_tick = now;
 		v->end_tick = now + ticks;
