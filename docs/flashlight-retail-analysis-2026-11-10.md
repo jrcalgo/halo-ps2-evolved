@@ -71,7 +71,7 @@ not cut by BSP cluster connectivity even when the gun muzzle is inside geometry.
   (forward x up), -up as three texture coordinate rows, and a cone ramp `forward * 1/(R-R/2)` with offset `-R/2/(R-R/2)`,
   where `R = specular_radius_multiplier * radius = 12 wu`; texture stage 1 is a **cube map** (`rasterizer_set_texture(1, 2, 1, ...)`),
   clamp addressing, linear filters, and the same 6-combiner pixel shader. The gel is therefore a perspective projection of the
-  cube face the beam points into, and it fades in along the axis from 6 wu to 12 wu (beyond the 6 wu diffuse radius).
+  cube face the beam points into, and it covers the axis from 6 wu to 12 wu (beyond the 6 wu diffuse radius); the direction of that ramp was not decoded from the XBE, the port fades it out (half strength at 6 wu to zero at 12 wu).
   The cube data (observed): face 0 (+X) is the bright ring pattern (mean 52, max 255, every texel non-zero); face 1 is
   all zero; faces 2-5 carry only faint wide-angle spill (max 19-37). Xbox stores cube faces 128-byte aligned
   (21,888-byte stride for the 128x128 + mips). So shipping face 0 as a 2D bitmap (what the port does) is faithful for every
@@ -150,3 +150,7 @@ surfaces, gain 0.6).
   `0x76f50` specular spot light begin, `0x1262f0`/`0x1260f0` colour interpolate(+scale); constants `.data` 0x1f0aa0 (0.5), 0x1f0b90 (1/6),
   0x1f0c18 (1/900), 0x1f0d3c (1/12), 0x1f0d54 (1/3600), 0x1f1210 (1/24).
 - PS2: `submodules/halo-ce-universal/port/ps2/src/ps2_render.c:843-960`, `src/stream/hcu_render_objects.c` (`flashlight_disc`, `flashlight_pass`).
+
+## Status (2026-11-10, v56)
+
+Fixes 1-4 are implemented (marker origin, 12 wu reach, projective gel, no gel on marines) in `object_lights.c`, `ps2_render.c` (halo-ce-universal 5472b811) and `hcu_render_objects.c`. Checked on a debug ISO: lit Wizard room (floor pool, pale at 0.6 gain) and Longest (round gel pool on a wall). A biped's torch seen from outside is not clearly visible in either capture.

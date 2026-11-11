@@ -4124,64 +4124,81 @@ if (dbg_dc_ok) {
 }
 
 /* port: the flashlight (HALO_PS2_FRAME_FX_LIGHT, published by ps2_render.c): the pool of light the beam makes on
- * the surface it hits. Retail projects the cyborg's gel (ligh.gel_map, cube `spotlight cyborg`, whose face 0 the
- * converter ships as an ordinary 2D bitmap) through a 45 degree cone and adds it to what the cone lands on. Here the
- * pool is an additive Gouraud disc lying in that surface's plane, stretched along the beam's footprint, textured
- * with the gel (polar mapping, so the gel's rings fall on the surface as they do in retail) and modulated by the
- * light's power and distance attenuation. Added with Cs + Cd, depth-tested and not depth-written, so it brightens
- * world and objects alike and hides nothing. Until the gel is resident the disc is flat (centre bright, rim dark). */
+ * the surface it hits. Retail (flashlight_cyborg, see docs/flashlight-retail-analysis-2026-11-10.md) is a spot light on the
+ * weapon's `flashlight` marker: white times the light power, a cone that is full to 20 degrees and gone at 45, a diffuse
+ * reach of 6 wu and a gel (cube `spotlight cyborg`, whose face 0 the converter ships as an ordinary 2D bitmap) projected
+ * in perspective out to 12 wu, but only for a definition that is not no-specular (not the marines' torch). Here the pool is
+ * an additive Gouraud disc: each rim vertex is the beam's ray at the ring's angle (tan 0.364 = 20 deg ... 1.0 = 45 deg)
+ * intersected with the surface plane, so the footprint on a slanted surface is exact; its gel UV is the perspective
+ * projection (0.5 + 0.5 * tan * (cos, sin)); its brightness is the cone term times the distance term along the ray (full
+ * diffuse out to 6 wu, then the gel's half-strength fade to 12). Added with Cs + Cd, depth-tested and not depth-written, so
+ * it brightens world and objects alike and hides nothing. Until the gel is resident (or without one) the disc is flat. */
 #define FLASH_SEGMENTS 16u
 #define FLASH_RINGS 4u
 #define FLASH_VERTS (1u + FLASH_RINGS * FLASH_SEGMENTS)
-#define FLASH_MAX_STRETCH 2.5f
-static const float s_flash_ring_radius[FLASH_RINGS] = { 0.25f, 0.5f, 0.75f, 1.0f };
-static const float s_flash_ring_level[FLASH_RINGS] = { 0.8f, 0.5f, 0.2f, 0.0f }; /* flat fallback, of the centre */
+#define FLASH_DIFFUSE_RANGE 6.0f
+#define FLASH_SPOT_RANGE 12.0f
+static const float s_flash_ring_tan[FLASH_RINGS] = { 0.364f, 0.6f, 0.85f, 1.0f };   /* 20 deg, ..., 45 deg */
+
+/* retail cone term: clamp(cos * 1/(cos20 - cos45) - cos45/(cos20 - cos45)) */
+static float flash_cone(float tan_angle)
+{
+	float c = 1.0f / sqrtf(1.0f + tan_angle * tan_angle), v = c * 4.29f - 3.03f;
+	return v < 0.0f ? 0.0f : v > 1.0f ? 1.0f : v;
+}
+
+/* the diffuse term (full to its 6 wu, falling as 1 - (d/6)^2 / 2) and the gel's fade out to 12 wu, by path length */
+static float flash_distance(float d)
+{
+	if (d <= FLASH_DIFFUSE_RANGE) { float q = d / FLASH_DIFFUSE_RANGE; return 1.0f - 0.5f * q * q; }
+	if (d >= FLASH_SPOT_RANGE) return 0.0f;
+	return 0.5f * (FLASH_SPOT_RANGE - d) / (FLASH_SPOT_RANGE - FLASH_DIFFUSE_RANGE);
+}
 
 static uint32_t flashlight_disc(const render_ctx_t *rc, const hcu_render_effect_draw *e, const clip_gs *g,
 	int textured, uint32_t *out)
 {
 	/* 128 is a texel's own colour through the GS modulate; the gain lifts the pool over the lit surface */
 	const float gain = textured ? 128.0f * 0.6f : 0.35f * 255.0f;
-	float n[3], a[3], b[3], beam[3], ref[3] = { 0.0f, 0.0f, 1.0f }, l, peak = gain * e->age_sec, stretch = 1.0f, bd;
+	float n[3], beam[3], a[3], b[3], from[3], ref[3] = { 0.0f, 0.0f, 1.0f }, l, peak = gain * e->age_sec, num;
 	float pts[FLASH_VERTS][3], lv[FLASH_VERTS], uv[FLASH_VERTS][2];
 	uint32_t total = 0;
 	unsigned r, k, j, t, np = 1;
 	int cnt;
 	for (k = 0; k < 3; k++) n[k] = e->forward[k];
 	l = fx_len(n);
-	if (!(l > 1e-6f) || !(e->scale > 0.0f) || !(e->age_sec > 0.0f)) return 0;
+	if (!(l > 1e-6f) || !(e->light_range > 0.0f) || !(e->age_sec > 0.0f)) return 0;
 	for (k = 0; k < 3; k++) n[k] /= l;
 	for (k = 0; k < 3; k++) beam[k] = e->light_beam[k];
 	l = fx_len(beam);
-	if (l > 1e-6f) {
-		for (k = 0; k < 3; k++) beam[k] /= l;
-		bd = fabsf(n[0] * beam[0] + n[1] * beam[1] + n[2] * beam[2]);
-		/* the cone's footprint on a slanted surface is an ellipse: its long axis is the beam projected into the plane */
-		for (k = 0; k < 3; k++) a[k] = beam[k] - n[k] * (n[0] * beam[0] + n[1] * beam[1] + n[2] * beam[2]);
-		l = fx_len(a);
-		if (l > 1e-4f) {
-			for (k = 0; k < 3; k++) a[k] /= l;
-			stretch = bd > 1.0f / FLASH_MAX_STRETCH ? 1.0f / bd : FLASH_MAX_STRETCH;
-		} else l = 0.0f;
-	} else l = 0.0f;
-	if (!(l > 1e-4f)) {
-		if (fabsf(n[2]) > 0.99f) { ref[0] = 0.0f; ref[1] = 1.0f; ref[2] = 0.0f; }
-		fx_cross(ref, n, a);
-		l = fx_len(a);
-		if (!(l > 1e-6f)) return 0;
-		for (k = 0; k < 3; k++) a[k] /= l;
-		stretch = 1.0f;
-	}
-	fx_cross(n, a, b);
+	if (!(l > 1e-6f)) return 0;
+	for (k = 0; k < 3; k++) beam[k] /= l;
+	/* the light is back along the beam from the hit; the gel is round, so any perpendicular basis serves */
+	for (k = 0; k < 3; k++) from[k] = e->position[k] - beam[k] * e->light_range;
+	if (fabsf(beam[2]) > 0.99f) { ref[0] = 0.0f; ref[1] = 1.0f; ref[2] = 0.0f; }
+	fx_cross(ref, beam, a);
+	l = fx_len(a);
+	if (!(l > 1e-6f)) return 0;
+	for (k = 0; k < 3; k++) a[k] /= l;
+	fx_cross(beam, a, b);
+	num = 0.0f;
+	for (k = 0; k < 3; k++) num += n[k] * (e->position[k] - from[k]);
 	for (k = 0; k < 3; k++) pts[0][k] = e->position[k];
-	lv[0] = 1.0f; uv[0][0] = 0.5f; uv[0][1] = 0.5f;
+	lv[0] = flash_distance(e->light_range); uv[0][0] = 0.5f; uv[0][1] = 0.5f;
 	for (r = 0; r < FLASH_RINGS; r++)
 		for (j = 0; j < FLASH_SEGMENTS; j++) {
 			float ang = 6.2831853f * (float)j / (float)FLASH_SEGMENTS;
-			float cu = cosf(ang) * s_flash_ring_radius[r], su = sinf(ang) * s_flash_ring_radius[r];
-			float ca = cu * e->scale * stretch, sa = su * e->scale;
-			for (k = 0; k < 3; k++) pts[np][k] = e->position[k] + a[k] * ca + b[k] * sa;
-			lv[np] = s_flash_ring_level[r];
+			float cu = cosf(ang) * s_flash_ring_tan[r], su = sinf(ang) * s_flash_ring_tan[r];
+			float dir[3], dl, den, tt, tmax, path;
+			for (k = 0; k < 3; k++) dir[k] = beam[k] + a[k] * cu + b[k] * su;
+			dl = fx_len(dir);
+			den = n[0] * dir[0] + n[1] * dir[1] + n[2] * dir[2];
+			tmax = FLASH_SPOT_RANGE / dl;
+			tt = den < -1e-3f ? num / den : tmax;
+			if (!(tt > 0.0f) || tt > tmax) tt = tmax;
+			path = tt * dl;
+			for (k = 0; k < 3; k++) pts[np][k] = from[k] + dir[k] * tt;
+			lv[np] = flash_cone(s_flash_ring_tan[r]) * flash_distance(path);
 			uv[np][0] = 0.5f + 0.5f * cu; uv[np][1] = 0.5f + 0.5f * su;
 			np++;
 		}
@@ -4204,7 +4221,8 @@ static uint32_t flashlight_disc(const render_ctx_t *rc, const hcu_render_effect_
 		{
 			const unsigned idx[3] = { i0, i1, i2 };
 			for (k = 0; k < 3; k++) {
-				float c = textured ? peak : peak * lv[idx[k]];
+				float c = peak * lv[idx[k]];
+				if (c > 255.0f) c = 255.0f;
 				clip_project(rc->clip, pts[idx[k]], &in[k]);
 				for (j = 0; j < CLIP_ATTRS; j++) in[k].a[j] = 0.0f;
 				if (textured) { in[k].a[0] = uv[idx[k]][0]; in[k].a[1] = uv[idx[k]][1]; }
@@ -4255,7 +4273,7 @@ static void flashlight_pass(render_ctx_t *rc)
 	uint32_t i, nv, counts[4], light_count = 0, total = 0;
 	uint16_t which[4];
 	uint64_t tex0 = 0;
-	int textured = 0;
+	int textured = 0, lit_tex[4] = { 0, 0, 0, 0 }, any_tex = 0;
 	clip_gs g;
 	chain_t *c = rc->chain;
 	u32 *w;
@@ -4270,12 +4288,19 @@ static void flashlight_pass(render_ctx_t *rc)
 		which[light_count] = (uint16_t)i; light_count++;
 	}
 	if (!light_count) return;
-	if (rc->opt && rc->opt->textures) textured = flashlight_gel_texture(&s_fx[which[0]], &tex0);
+	/* the gel is the cyborg torch's only; a light without one (the marines') is a flat smooth disc */
+	if (rc->opt && rc->opt->textures)
+		for (i = 0; i < light_count; i++)
+			if (s_fx[which[i]].resource_id != HCU_FX_BITMAP_NONE) {
+				textured = flashlight_gel_texture(&s_fx[which[i]], &tex0);
+				break;
+			}
 	light_count = 0;
 	for (i = 0; i < s_fx_count && light_count < 4u; i++) {
 		if (s_fx[i].kind != HALO_PS2_FRAME_FX_LIGHT) continue;
 		if (((s_fx[i].flags & HALO_PS2_FRAME_FX_FIRST_PERSON) != 0u)) continue;
-		nv = flashlight_disc(rc, &s_fx[i], &g, textured, NULL);
+		lit_tex[light_count] = textured && s_fx[i].resource_id != HCU_FX_BITMAP_NONE;
+		nv = flashlight_disc(rc, &s_fx[i], &g, lit_tex[light_count], NULL);
 		if (!nv) continue;
 		which[light_count] = (uint16_t)i; counts[light_count] = nv; total += nv; light_count++;
 	}
@@ -4293,18 +4318,18 @@ static void flashlight_pass(render_ctx_t *rc)
 	q[2] = GS_ALPHA(0, 2, 2, 1, 128);              q[3] = GS_A_ALPHA_1;      /* Cs + Cd */
 	q[4] = GS_TEST(0, 6, 0x40, 0, 0, 0, 1, 2);      q[5] = GS_A_TEST_1;
 	q[6] = GS_ZBUF(*rb_zbuf_page_ptr(), GS_PSMZ24, 1); q[7] = GS_A_ZBUF_1;     /* no depth write */
-	if (textured) fx_tex_state(c, tex0, 0, 0);
+	if (any_tex) fx_tex_state(c, tex0, 0, 0);
 	for (i = 0; i < light_count; i++) {
 		w = chain_cnt(c, FX_PACKET_HDR_QW + 3u * counts[i], 0);
 		if (!w) break;
 		w[0] = VIF_CODE(VIF_NOP, 0, 0); w[1] = VIF_CODE(VIF_NOP, 0, 0);
 		w[2] = VIF_CODE(VIF_FLUSHA, 0, 0); w[3] = VIF_CODE(VIF_DIRECT, 0, 1 + 3 * counts[i]);
 		q = (u64 *)(w + 4);
-		q[0] = GIF_TAG(counts[i], 1, 1, GS_PRIM(GSX_PRIM_TRIANGLE, 1, textured, 0, 1, 0, 0, 0, 0), GIFX_FLG_PACKED, 3);
+		q[0] = GIF_TAG(counts[i], 1, 1, GS_PRIM(GSX_PRIM_TRIANGLE, 1, lit_tex[i], 0, 1, 0, 0, 0, 0), GIFX_FLG_PACKED, 3);
 		q[1] = 0x412;
-		(void)flashlight_disc(rc, &s_fx[which[i]], &g, textured, (uint32_t *)(q + 2));
+		(void)flashlight_disc(rc, &s_fx[which[i]], &g, lit_tex[i], (uint32_t *)(q + 2));
 		s_view_counters.fx_drawn++;
-		if (textured) s_view_counters.fx_textured++;
+		if (lit_tex[i]) s_view_counters.fx_textured++;
 	}
 	(void)fx_blend_state(c, 0u);                        /* back to alpha blend for what follows */
 }
@@ -4338,6 +4363,7 @@ static uint32_t flare_quad(const render_ctx_t *rc, const hcu_render_effect_draw 
 		if (col[k] < 0.0f) col[k] = 0.0f;
 	}
 	for (j = 0; j < 4; j++) {
+		any_tex |= lit_tex[light_count];
 		float x = cx[j] * sx, y = cy[j] * sy;
 		float rx = x * cr - y * sr, ry = x * sr + y * cr;
 		for (k = 0; k < 3; k++) pts[j][k] = e->position[k] + right[k] * rx + up[k] * ry;
