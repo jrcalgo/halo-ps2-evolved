@@ -4225,10 +4225,37 @@ static uint32_t flashlight_disc(const render_ctx_t *rc, const hcu_render_effect_
 	return total;
 }
 
+/* The gel bitmap's texture, resident in the GS cache; 0 until it is (the pool is then drawn flat). */
+static int flashlight_gel_texture_element(const hcu_render_effect_draw *e, uint32_t element, uint64_t *tex0)
+{
+	uint32_t bi = HCU_FX_BITMAP_NONE;
+	bsp_fx_tex_src src;
+	int st, source_attempted = 0;
+	if (!s_fx_bind || !s_fx_bind_count || e->resource_id == HCU_FX_BITMAP_NONE) return 0;
+	if (!hcu_fx_bitmap_resolve(s_fx_bind, s_fx_bind_count, e->resource_id, element, &bi) || bi >= s_fx_bind_count) return 0;
+	if (fx_backoff_active(bi)) return 0;
+	s_fx_submit_blend = 3u;                       /* an add blend: transparent palette entries are cleared */
+	st = hcu_fx_texture_resolve_prechecked(s_fx_descriptors, &s_fx_bind[bi],
+		s_fx_profile ? s_fx_profile->profile_id : 0u, s_snapshot ? s_snapshot->map_generation : 0u,
+		fx_resident_query, fx_admission_defer, fx_source_load, fx_source_submit, &src, tex0,
+		&source_attempted, NULL);
+	if (source_attempted) s_view_counters.fx_source_calls++;
+	if (st == BSP_FX_TEX_OK) { fx_backoff_set(bi, 0); return 1; }
+	if (source_attempted) fx_backoff_set(bi, 1);
+	return 0;
+}
+
+static int flashlight_gel_texture(const hcu_render_effect_draw *e, uint64_t *tex0)
+{
+	return flashlight_gel_texture_element(e, 0u, tex0);
+}
+
 static void flashlight_pass(render_ctx_t *rc)
 {
 	uint32_t i, nv, counts[4], light_count = 0, total = 0;
 	uint16_t which[4];
+	uint64_t tex0 = 0;
+	int textured = 0;
 	clip_gs g;
 	chain_t *c = rc->chain;
 	u32 *w;
@@ -4266,6 +4293,7 @@ static void flashlight_pass(render_ctx_t *rc)
 	q[2] = GS_ALPHA(0, 2, 2, 1, 128);              q[3] = GS_A_ALPHA_1;      /* Cs + Cd */
 	q[4] = GS_TEST(0, 6, 0x40, 0, 0, 0, 1, 2);      q[5] = GS_A_TEST_1;
 	q[6] = GS_ZBUF(*rb_zbuf_page_ptr(), GS_PSMZ24, 1); q[7] = GS_A_ZBUF_1;     /* no depth write */
+	if (textured) fx_tex_state(c, tex0, 0, 0);
 	for (i = 0; i < light_count; i++) {
 		w = chain_cnt(c, FX_PACKET_HDR_QW + 3u * counts[i], 0);
 		if (!w) break;
@@ -4276,8 +4304,115 @@ static void flashlight_pass(render_ctx_t *rc)
 		q[1] = 0x412;
 		(void)flashlight_disc(rc, &s_fx[which[i]], &g, textured, (uint32_t *)(q + 2));
 		s_view_counters.fx_drawn++;
+		if (textured) s_view_counters.fx_textured++;
 	}
 	(void)fx_blend_state(c, 0u);                        /* back to alpha blend for what follows */
+}
+
+/* port: the weapon's lens flare (plasma pistol / rifle charge glow). ps2_render.c publishes each reflection of the held
+ * weapon's light as an FX_LIGHT carrying the first-person flag: position (world), forward[0..1] the sprite's scale,
+ * forward[2] its rotation in degrees, scale the half size, age_sec the brightness, light_beam the colour, resource_id
+ * the lens flare's bitmap and permutation the reflection's bitmap index. Retail draws these as additive camera
+ * facing sprites over the gun (the Xbox widget path); here each is two additive triangles with the bitmap resident
+ * in the GS cache, drawn in the viewmodel pass so they use the weapon's projection. */
+static uint32_t flare_quad(const render_ctx_t *rc, const hcu_render_effect_draw *e, const float right[3], const float up[3],
+	const clip_gs *g, uint32_t *out)
+{
+	static const float cx[4] = { -1.0f, 1.0f, 1.0f, -1.0f };
+	static const float cy[4] = { -1.0f, -1.0f, 1.0f, 1.0f };
+	static const float tu[4] = { 0.0f, 1.0f, 1.0f, 0.0f };
+	static const float tv[4] = { 1.0f, 1.0f, 0.0f, 0.0f };
+	static const unsigned order[6] = { 0, 1, 2, 0, 2, 3 };
+	float rot = e->forward[2] * (3.14159265f / 180.0f), cr = cosf(rot), sr = sinf(rot);
+	float sx = e->forward[0] * e->scale, sy = e->forward[1] * e->scale;
+	float pts[4][3], col[3], a;
+	cvert in[3], poly[CLIP_MAX_VERTS];
+	uint32_t total = 0;
+	unsigned t, k, j;
+	int cnt;
+	if (!(e->scale > 0.0f) || !(e->age_sec > 0.0f) || !isfinite(sx) || !isfinite(sy)) return 0;
+	a = e->age_sec > 1.0f ? 1.0f : e->age_sec;
+	for (k = 0; k < 3; k++) {
+		col[k] = 128.0f * a * e->light_beam[k];
+		if (col[k] > 255.0f) col[k] = 255.0f;
+		if (col[k] < 0.0f) col[k] = 0.0f;
+	}
+	for (j = 0; j < 4; j++) {
+		float x = cx[j] * sx, y = cy[j] * sy;
+		float rx = x * cr - y * sr, ry = x * sr + y * cr;
+		for (k = 0; k < 3; k++) pts[j][k] = e->position[k] + right[k] * rx + up[k] * ry;
+	}
+	for (t = 0; t < 2; t++) {
+		for (k = 0; k < 3; k++) {
+			unsigned v = order[t * 3u + k];
+			clip_project(rc->clip, pts[v], &in[k]);
+			for (j = 0; j < CLIP_ATTRS; j++) in[k].a[j] = 0.0f;
+			in[k].a[0] = tu[v]; in[k].a[1] = tv[v];
+			in[k].a[4] = col[0]; in[k].a[5] = col[1]; in[k].a[6] = col[2]; in[k].a[7] = 128.0f;
+		}
+		cnt = clip_polygon(in, rc->cam->near_z, poly);
+		if (cnt < 3) continue;
+		for (j = 1; (int)j + 1 < cnt; j++) {
+			if (out) {
+				clip_pack_vertex(&poly[0], 0, g, out); out += 12;
+				clip_pack_vertex(&poly[j], 0, g, out); out += 12;
+				clip_pack_vertex(&poly[j + 1], 0, g, out); out += 12;
+			}
+			total += 3;
+		}
+	}
+	return total;
+}
+
+static void flare_pass(render_ctx_t *rc)
+{
+	uint32_t i, nv;
+	float right[3], up[3];
+	clip_gs g;
+	chain_t *c = rc->chain;
+	u32 *w;
+	u64 *q;
+	int state_set = 0;
+	if (!s_fx_count || !s_snapshot || s_cur_view >= s_snapshot->view_count || !rc->opt || !rc->opt->textures) return;
+	if (hcu_render_fx_camera_basis(&s_snapshot->views[s_cur_view].camera, right, up) != 0) return;
+	g.near_z = rc->cam->near_z; g.zmax = 16777215.0f;
+	g.sx = (float)VIDEO_WIDTH * 0.5f; g.sy = (float)VIDEO_HEIGHT * 0.5f; g.ox = 2048.0f; g.oy = 2048.0f;
+	g.fog_k = 0.0f; g.fog_b = 4080.0f;
+	for (i = 0; i < s_fx_count; i++) {
+		uint64_t tex0 = 0;
+		if (s_fx[i].kind != HALO_PS2_FRAME_FX_LIGHT || !(s_fx[i].flags & HALO_PS2_FRAME_FX_FIRST_PERSON)) continue;
+		if (!flashlight_gel_texture_element(&s_fx[i], s_fx[i].permutation, &tex0)) continue;
+		nv = flare_quad(rc, &s_fx[i], right, up, &g, NULL);
+		if (!nv) continue;
+		if (!chain_has_space(c, FX_STATE_QW + FX_BLEND_STATE_QW + FX_STATE_QW + FX_PACKET_HDR_QW + 3u * nv + 2u)) {
+			s_view_counters.fx_skipped_space++;
+			break;
+		}
+		if (!state_set) {
+			w = chain_cnt(c, FX_STATE_QW, rb_take_pending());
+			if (!w) return;
+			w[0] = VIF_CODE(VIF_NOP, 0, 0); w[1] = VIF_CODE(VIF_NOP, 0, 0);
+			w[2] = VIF_CODE(VIF_FLUSHA, 0, 0); w[3] = VIF_CODE(VIF_DIRECT, 0, 1 + 3);
+			q = (u64 *)(w + 4);
+			q[0] = GIF_TAG(3, 1, 0, 0, GIFX_FLG_PACKED, 1); q[1] = GIF_REGS_AD;
+			q[2] = GS_ALPHA(0, 2, 2, 1, 128);              q[3] = GS_A_ALPHA_1;      /* Cs + Cd */
+			q[4] = GS_TEST(0, 6, 0x40, 0, 0, 0, 1, 1);      q[5] = GS_A_TEST_1;      /* drawn over the gun */
+			q[6] = GS_ZBUF(*rb_zbuf_page_ptr(), GS_PSMZ24, 1); q[7] = GS_A_ZBUF_1;     /* no depth write */
+			state_set = 1;
+		}
+		fx_tex_state(c, tex0, 0, 0);
+		w = chain_cnt(c, FX_PACKET_HDR_QW + 3u * nv, 0);
+		if (!w) break;
+		w[0] = VIF_CODE(VIF_NOP, 0, 0); w[1] = VIF_CODE(VIF_NOP, 0, 0);
+		w[2] = VIF_CODE(VIF_FLUSHA, 0, 0); w[3] = VIF_CODE(VIF_DIRECT, 0, 1 + 3 * nv);
+		q = (u64 *)(w + 4);
+		q[0] = GIF_TAG(nv, 1, 1, GS_PRIM(GSX_PRIM_TRIANGLE, 1, 1, 0, 1, 0, 0, 0, 0), GIFX_FLG_PACKED, 3);
+		q[1] = 0x412;
+		(void)flare_quad(rc, &s_fx[i], right, up, &g, (uint32_t *)(q + 2));
+		s_view_counters.fx_drawn++;
+		s_view_counters.fx_textured++;
+	}
+	if (state_set) (void)fx_blend_state(c, 0u);
 }
 
 /* One viewmodel texture per frame. The cursor walks every loaded viewmodel texture; a GS cache hit is cheap,
@@ -4294,25 +4429,6 @@ static void fp_tex_warm_one(void)
 		uint32_t slot, count, local;
 		if (s_fp_warm_slot >= s_slot_count) { s_fp_warm_slot = 0u; s_fp_warm_local = 0u; }
 		slot = s_fp_warm_slot;
-/* The gel bitmap's texture, resident in the GS cache; 0 until it is (the pool is then drawn flat). */
-static int flashlight_gel_texture(const hcu_render_effect_draw *e, uint64_t *tex0)
-{
-	uint32_t bi = HCU_FX_BITMAP_NONE;
-	bsp_fx_tex_src src;
-	int st, source_attempted = 0;
-	if (!s_fx_bind || !s_fx_bind_count || e->resource_id == HCU_FX_BITMAP_NONE) return 0;
-	if (!hcu_fx_bitmap_resolve(s_fx_bind, s_fx_bind_count, e->resource_id, 0u, &bi) || bi >= s_fx_bind_count) return 0;
-	if (fx_backoff_active(bi)) return 0;
-	s_fx_submit_blend = 3u;                       /* an add blend: transparent palette entries are cleared */
-	st = hcu_fx_texture_resolve_prechecked(s_fx_descriptors, &s_fx_bind[bi],
-		s_fx_profile ? s_fx_profile->profile_id : 0u, s_snapshot ? s_snapshot->map_generation : 0u,
-		fx_resident_query, fx_admission_defer, fx_source_load, fx_source_submit, &src, tex0,
-		&source_attempted, NULL);
-	if (source_attempted) s_view_counters.fx_source_calls++;
-	if (st == BSP_FX_TEX_OK) { fx_backoff_set(bi, 0); return 1; }
-	if (source_attempted) fx_backoff_set(bi, 1);
-	return 0;
-}
 
 		s = &s_slots[slot];
 		count = (s->loaded && s->has_tex) ? s->tex.texture_count : 0u;
