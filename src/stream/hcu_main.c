@@ -1677,6 +1677,12 @@ static void hcu_c3_frame_probe_publish(const hcu_c3_frame_probe *frame)
 /* rendered-frame counter read by the fire-test markers (players.c, weak reference); written every frame so the
  * section survives --gc-sections. 4 bytes + one store per frame. */
 volatile unsigned hcu_debug_frames;
+/* fire-test marker counters: microseconds of CPU draw work and of vsync wait, summed over rendered frames */
+volatile unsigned long long hcu_debug_draw_cycles, hcu_debug_present_cycles;
+static uint32_t hcu_debug_render_t0;
+/* rendered-frame counter read by the fire-test markers (players.c, weak reference); written every frame so the
+ * section survives --gc-sections. 4 bytes + one store per frame. */
+volatile unsigned hcu_debug_frames;
 	for (i = 0; i < 4u; ++i) slot->view_cycles[i] = frame->view_cycles[i];
 	slot->build_cycles = frame->build_cycles;
 	slot->gs_wait_cycles = frame->gs_wait_cycles;
@@ -3358,6 +3364,7 @@ static uint32_t s_gov_present_cycles;   /* cycles the last video_present slept (
 	previous_probe_start = current_probe_start;
 	#endif
 	/* C3 timing is compile-time gated. COP0 Count
+	hcu_debug_render_t0 = timer_cycles();
 	 * runs at EE_CLOCK_HZ (294.912 MHz), so each cycle is ~3.39 ns; timer_ms()
 	 * converts deltas and the unsigned subtraction handles counter wrap. */
 #if HCU_C3_TIMING_ENABLED
@@ -3530,8 +3537,10 @@ static uint32_t s_gov_present_cycles;   /* cycles the last video_present slept (
 		static uint32_t lod_prev;
 		uint32_t lod_now = timer_cycles();
 		float lod_ms = lod_prev ? timer_ms(lod_prev, lod_now) - timer_ms(0, s_gov_present_cycles) : 16.0f;
+		hcu_debug_draw_cycles += present_begin - hcu_debug_render_t0;
 		lod_prev = lod_now;
 		hcu_render_objects_lod_tick(lod_ms);
+		hcu_debug_present_cycles += s_gov_present_cycles;
 	}
 #endif
 	#if defined(HALO_PS2_C3_PHASE_PROBE) && HALO_PS2_C3_PHASE_PROBE

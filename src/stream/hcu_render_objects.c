@@ -3901,9 +3901,12 @@ static void fx_pass(render_ctx_t *rc, int first_person_pass)
 		if (qst < 0 || (s_fx[i].kind == HALO_PS2_FRAME_FX_DECAL &&
 			!(s_fx[i].flags & HALO_PS2_FRAME_FX_NATIVE_GEOMETRY)) ||
 			hcu_render_fx_flat_colour(s_fx[i].kind, rgba) != 0) {
+extern volatile int g_debug_fx_mode; /* ps2_render.c fire-test switch */
 			s_view_counters.effects_refused++;
 			continue;
 		}
+	if (g_debug_fx_mode == 1 || g_debug_fx_mode == 3)
+		return;
 		if (s_fx[i].kind == HALO_PS2_FRAME_FX_PARTICLE) fx_particle_colour(&s_fx[i], rgba);
 		if (s_fx[i].kind == HALO_PS2_FRAME_FX_DECAL) fx_decal_colour(&s_fx[i], rgba);
 		if (s_fx[i].kind == HALO_PS2_FRAME_FX_CONTRAIL) fx_contrail_colour(&s_fx[i], cam, rgba, rgba_end);
