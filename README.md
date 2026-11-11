@@ -1,3 +1,7 @@
+<div style="text-align:center">
+  <img src="assets/bloodgulch.jpg" length=400>
+</div>
+
 # halo-ps2-evolved
 
 A native PlayStation 2 port of Halo: Combat Evolved multiplayer, built by compiling the game's own decompiled simulation for the console rather than reimplementing it.
