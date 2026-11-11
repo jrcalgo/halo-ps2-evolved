@@ -1860,6 +1860,10 @@ int hcu_bitmap_dispatch_reader(const halo_ps2_bitmap_request_reader *reader,
 			ctx->cache, ctx->journal, ctx->cache_readers, ctx->cache_reader_count,
 			ctx->slots, ctx->slot_count,
 			ctx->source_storage, ctx->source_storage_bytes, ctx->slot_stride,
+		/* A multiply overlay faded to nothing (the sniper's angle ticks while unzoomed) draws nothing:
+		 * its primary map is only a mask and must never be drawn plain. */
+		if (reader->requests[i].has_multiply_map && reader->requests[i].multiply_tint[3] == 0u)
+			continue;
 			ctx->staging_buffer, ctx->staging_buffer_bytes,
 			ctx->upload_chain, ctx->geometry_chain,
 			ctx->texture_page_base_words, ctx->clut_base_words,

@@ -407,6 +407,10 @@ def main() -> None:
             profile += "-camo"
         if os.environ.get("HCU_DEBUG_TELEPORTER") == "1":
             profile += "-teleporter"
+        if os.environ.get("HCU_DEBUG_PROMPT") == "1":
+            profile += "-prompt"
+        if os.environ.get("HCU_DEBUG_FIRE") == "1":
+            profile += "-fire"
         if os.environ.get("HCU_DEBUG_ZOOM") == "1":
             profile += "-zoom"
         if os.environ.get("HCU_DEBUG_FLASHLIGHT") == "1":
@@ -463,6 +467,10 @@ def main() -> None:
         source_flags.append("-DHCU_DEBUG_CAMO=1")
     if hcu_c3 and os.environ.get("HCU_DEBUG_TELEPORTER") == "1":
         source_flags.append("-DHCU_DEBUG_TELEPORTER=1")
+    if hcu_c3 and os.environ.get("HCU_DEBUG_PROMPT") == "1":
+        source_flags.append("-DHCU_DEBUG_PROMPT=1")
+    if hcu_c3 and os.environ.get("HCU_DEBUG_FIRE") == "1":
+        source_flags.append("-DHCU_DEBUG_FIRE=1")
     if hcu_c3 and os.environ.get("HCU_DEBUG_ZOOM") == "1":
         source_flags.append("-DHCU_DEBUG_ZOOM=1")
     if hcu_c3 and os.environ.get("HCU_DEBUG_FLASHLIGHT") == "1":
@@ -632,7 +640,7 @@ def main() -> None:
                 "note": "These selected section totals are diagnostic only and are not complete PT_LOAD accounting. Final elf_static accounting uses file-backed LOAD bytes; LOAD NOBITS is charged to resident_gameplay. The rooted link below is the reachable image.",
             }
             rooted = output / "rooted.o"
-            roots = ["game_initialize", "game_tick", "halo_shell_main", "actors_update", "hs_update",
+            roots = ["game_initialize", "game_tick", "effects_cosmetic_level", "halo_shell_main", "actors_update", "hs_update",
                      "ps2_cache_mount_ctag", "ps2_cache_mount_ctag_with_file_source",
 				     "ps2_cache_mount_ctag_stream", "ps2_cache_set_ctag_visitor",
 				     "ps2_ctag_stream_validator_begin",

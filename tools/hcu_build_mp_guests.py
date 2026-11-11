@@ -42,8 +42,8 @@ def c3_base() -> dict[str, str]:
         "TEMP": str(TMP),
         "HCU_C3": "1",
         "HCU_C3_TELEMETRY": "0",
-        "HCU_C3_TIMING": "0",
-        "HCU_C3_LAG_TRACE": "0",
+        "HCU_C3_TIMING": os.environ.get("HCU_C3_TIMING", "0"),
+        "HCU_C3_LAG_TRACE": os.environ.get("HCU_C3_LAG_TRACE", "0"),
         "HCU_C3_OBJECTS": "1",
         "HCU_C3_BITMAP_RESIDENT": "1",
         "HCU_C3_BUILD_PRESET": "quiet",
@@ -181,6 +181,7 @@ def link_menu(reuse_from: Path) -> Path:
     env = c3_base()
     env["C_INCLUDE_PATH"] = str(ROOT / "build/c3/bloodgulch/inc")
     env["HCU_C3_OBJECTS_GEN"] = str(ROOT / "build/c3/bloodgulch/objects-gen")
+    env["HCU_C3_TIMING"] = "0"  # frame timing is a gameplay-guest diagnostic; the menu image has no batch profile call
     cmd = [
         sys.executable, "tools/hcu_parent_link_probe.py",
         "--asset-profile", "optical",

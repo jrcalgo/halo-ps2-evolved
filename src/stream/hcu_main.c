@@ -1674,6 +1674,9 @@ static void hcu_c3_frame_probe_publish(const hcu_c3_frame_probe *frame)
 	slot->frame = frame->frame;
 	slot->tick = frame->tick;
 	slot->view_count = frame->view_count;
+/* rendered-frame counter read by the fire-test markers (players.c, weak reference); written every frame so the
+ * section survives --gc-sections. 4 bytes + one store per frame. */
+volatile unsigned hcu_debug_frames;
 	for (i = 0; i < 4u; ++i) slot->view_cycles[i] = frame->view_cycles[i];
 	slot->build_cycles = frame->build_cycles;
 	slot->gs_wait_cycles = frame->gs_wait_cycles;
@@ -3757,6 +3760,7 @@ static uint32_t s_gov_present_cycles;   /* cycles the last video_present slept (
 					r0->vertices[3].x, r0->vertices[3].y, r0->vertices[3].u, r0->vertices[3].v,
 					(unsigned)r0->vertices[0].color);
 			}
+	hcu_debug_frames = (unsigned)s_c3r.frames;
 			for (di = 0; di < dq->count && di < 40u; ++di)
 				printf("HALO_PS2_LOCAL dq-req i=%u tag=%d bm=%u v=%d x=%.1f y=%.1f x2=%.1f y2=%.1f blend=%d\n",
 					(unsigned)di, (int)dq->requests[di].bitmap_tag_index, (unsigned)dq->requests[di].bitmap_index,
@@ -4225,10 +4229,10 @@ void hcu_c3_scheduler_progress(unsigned completed_ticks, unsigned game_ticks,
 		float wall_ms = interval_wall_ms;
 		float sim_hz = wall_ms > 0.0f ? (float)interval_completed_ticks * 1000.0f / wall_ms : 0.0f;
 		float game_hz = wall_ms > 0.0f ? (float)interval_game_ticks * 1000.0f / wall_ms : 0.0f;
-		printf("HALO_PS2_LOCAL c3-scheduler-progress completed=%u game-total=%u sim-ticks=%u game-ticks=%u renders=%u renders-total=%u dropped-ticks=%u dropped-total=%u ee-ms=%.1f sim-hz=%.2f game-hz=%.2f\n",
+		printf("HALO_PS2_LOCAL c3-scheduler-progress completed=%u game-total=%u sim-ticks=%u game-ticks=%u renders=%u renders-total=%u dropped-ticks=%u dropped-total=%u ee-ms=%.1f sim-hz=%.2f game-hz=%.2f gov=%ld\n",
 			completed_ticks, game_ticks, interval_completed_ticks, interval_game_ticks, interval_render_frames,
 			(unsigned)s_c3r.frames, interval_dropped_ticks, dropped_ticks,
-			wall_ms, sim_hz, game_hz);
+			wall_ms, sim_hz, game_hz, effects_cosmetic_level());
 		interval_completed_ticks = 0;
 		interval_game_ticks = 0;
 		interval_dropped_ticks = 0;
@@ -4250,6 +4254,7 @@ void hcu_c3_render_map_release(void)
 	bsp_render_frame_counters fc;
 	int world_rc = -99;
 	uint32_t readers_before, readers_after;
+		extern long effects_cosmetic_level(void); /* port: cosmetic governor, effects.c */
 	if (!s_c3r.media.loaded && !s_c3r.world.bound) {
 		/* No BSP media is installed, but bitmap work can still have used the
 		 * parent frame hooks. Retire the DMA/fence boundary before detaching them. */

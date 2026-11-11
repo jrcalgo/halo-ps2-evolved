@@ -485,6 +485,10 @@ def main() -> None:
             OUT = OUT.with_name(OUT.name + "-camo")
         if os.environ.get("HCU_DEBUG_TELEPORTER") == "1":
             OUT = OUT.with_name(OUT.name + "-teleporter")
+        if os.environ.get("HCU_DEBUG_PROMPT") == "1":
+            OUT = OUT.with_name(OUT.name + "-prompt")
+        if os.environ.get("HCU_DEBUG_FIRE") == "1":
+            OUT = OUT.with_name(OUT.name + "-fire")
         if os.environ.get("HCU_DEBUG_ZOOM") == "1":
             OUT = OUT.with_name(OUT.name + "-zoom")
         if os.environ.get("HCU_DEBUG_FLASHLIGHT") == "1":

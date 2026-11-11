@@ -359,6 +359,10 @@ def main() -> None:
             closure_suffix += "-flashlight"
         if os.environ.get("HCU_DEBUG_VEHICLE_EXIT") == "1":
             closure_suffix += "-vehicle-exit"
+        if os.environ.get("HCU_DEBUG_PROMPT") == "1":
+            closure_suffix += "-prompt"
+        if os.environ.get("HCU_DEBUG_FIRE") == "1":
+            closure_suffix += "-fire"
         if os.environ.get("HCU_DEBUG_FLASH") == "1":
             closure_suffix += "-flash"
         if os.environ.get("HCU_C3_SESSION_TRACE") == "1":
