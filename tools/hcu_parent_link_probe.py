@@ -235,6 +235,8 @@ def main() -> None:
                         help="deprecated exact-root alias; prefer --asset-profile")
     parser.add_argument("--boot-diagnostics", action="store_true",
                         help="build a distinct staged GS/exception diagnostic using the production CRT")
+    parser.add_argument("--opl-diagnostic-telemetry", action="store_true",
+                        help="once-a-second live telemetry line; OPL diagnostic ISO ELFs only")
     parser.add_argument("--m2-ui-lifecycle-test", action="store_true",
                         help="build a distinct opt-in CE UI lifecycle guest ELF")
     parser.add_argument("--step8-mp-capacity-diagnostic", action="store_true",
@@ -313,8 +315,12 @@ def main() -> None:
                       "-m2-ui-lifecycle" if args.m2_ui_lifecycle_test else
                       "-m2-animation-trace" if args.m2_animation_trace else
                       "-m3-render-clear" if args.m3_render_clear_test else "")
+    if args.opl_diagnostic_telemetry and (not args.boot_diagnostics or asset_profile != "opl-iso"):
+        parser.error("--opl-diagnostic-telemetry requires --boot-diagnostics and --asset-profile opl-iso")
     if args.boot_diagnostics:
         profile_suffix += "-boot-diag"
+    if args.opl_diagnostic_telemetry:
+        profile_suffix += "-opl-diag-telemetry"
     if args.tag_cache_bytes != 2097152:
         profile_suffix += f"-tagcache-{args.tag_cache_bytes}"
     if args.partition_profile:
@@ -462,6 +468,7 @@ def main() -> None:
          "WORLD_PLAY=0", "WORLD_HCU_LINK_PROBE=1", "WORLD_HCU_GAMEPLAY=1",
          f"WORLD_HCU_ASSET_PROFILE={asset_profile}",
          f"WORLD_HCU_BOOT_DIAG={1 if args.boot_diagnostics else 0}",
+         f"WORLD_HCU_OPL_DIAG_TELEMETRY={1 if args.opl_diagnostic_telemetry else 0}",
          f"WORLD_HCU_RENDER_CLEAR_TEST={1 if args.m3_render_clear_test else 0}",
          f"WORLD_HCU_ANIMATION_TRACE_TEST={1 if args.m2_animation_trace else 0}",
          f"WORLD_HCU_M2_UI_LIFECYCLE_TEST={1 if (args.m2_ui_lifecycle_test or args.step8_mp_capacity_diagnostic) else 0}",
@@ -662,6 +669,7 @@ def main() -> None:
             "runtime_guest_mode": "headless-ce-map-load" if guest_scope else None,
             "asset_profile": asset_profile,
             "boot_diagnostics": args.boot_diagnostics,
+            "opl_diagnostic_telemetry": args.opl_diagnostic_telemetry,
             "asset_root": asset_root,
             "partition_profile": args.partition_profile,
             "profile_package_root": str(args.profile_package_root),
@@ -719,6 +727,7 @@ def main() -> None:
                 "make -B -f tools/ee-world.mk WORLD_PLAY=0 WORLD_HCU_LINK_PROBE=1 "
                 "WORLD_HCU_GAMEPLAY=1 WORLD_HCU_ASSET_PROFILE=" + asset_profile +
                 f" WORLD_HCU_BOOT_DIAG={1 if args.boot_diagnostics else 0}" +
+                f" WORLD_HCU_OPL_DIAG_TELEMETRY={1 if args.opl_diagnostic_telemetry else 0}" +
                 " WORLD_HCU_RENDER_CLEAR_TEST=" +
                 ("1" if args.m3_render_clear_test else "0") +
                 " WORLD_HCU_ANIMATION_TRACE_TEST=" +

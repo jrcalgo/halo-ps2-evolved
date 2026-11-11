@@ -1,4 +1,7 @@
 #include "stream/hcu_boot_diag.h"
+#if defined(HALO_PS2_OPL_DIAG_TELEMETRY) && HALO_PS2_OPL_DIAG_TELEMETRY
+#include "stream/hcu_opl_diag_telemetry.h"
+#endif
 #include "stream/hcu_main_menu.h"
 #include "stream/hcu_map_table.h"
 
@@ -3421,6 +3424,9 @@ enum hcu_main_menu_action hcu_main_menu_run(video_t *video,
 		if (frame == 0) printf("HALO_PS2_LOCAL main-menu-frame stage=dma-done\n");
 		draw_wait_finish();
 		if (frame == 0) printf("HALO_PS2_LOCAL main-menu-frame stage=finish\n");
+#if defined(HALO_PS2_OPL_DIAG_TELEMETRY) && HALO_PS2_OPL_DIAG_TELEMETRY && defined(__mips__)
+		hcu_opl_diag_telemetry_tick(menu_elapsed_ms());
+#endif
 		video_present(video); ++frame;
 		if (frame == 1) {
 			hcu_boot_diag_stage(HCU_BOOT_MENU, 0);

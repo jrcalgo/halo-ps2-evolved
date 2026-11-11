@@ -72,6 +72,9 @@ WORLD_HCU_MEMORY_BRIDGE := 1
 # Diagnostic builds keep the installed production CRT, with a register-only
 # entry trampoline. Disabled builds contain neither display nor exception code.
 WORLD_HCU_BOOT_DIAG ?= 0
+# Live UDP telemetry is an OPL diagnostic-ISO ELF only. The release packer
+# rejects the marker, and the default leaves this object out of the link.
+WORLD_HCU_OPL_DIAG_TELEMETRY ?= 0
 ifeq ($(WORLD_HCU_BOOT_DIAG),1)
 EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_boot_diag.o $(WORLD_OUTPUT)/stream/hcu_boot_entry.o $(WORLD_OUTPUT)/stream/hcu_boot_screen.o
 EE_LDFLAGS += -Wl,-e,hcu_boot_entry -Wl,--wrap,_libcglue_init -Wl,--wrap,SetupHeap -Wl,--wrap,_InitSys -Wl,--wrap,_libcglue_args_parse -Wl,--wrap,InitAlarm -Wl,--wrap,_ps2sdk_init_timer -Wl,--wrap,InitThread -Wl,--wrap,InitExecPS2 -Wl,--wrap,InitTLBFunctions
@@ -113,6 +116,9 @@ EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_main.o \
 	$(WORLD_OUTPUT)/stream/hcu_filexio_irx.o \
 	$(WORLD_OUTPUT)/stream/ctag_ps2_backend.o \
 	$(WORLD_OUTPUT)/stream/hcu_c3_tz.o
+ifeq ($(WORLD_HCU_OPL_DIAG_TELEMETRY),1)
+EE_OBJS += $(WORLD_OUTPUT)/stream/hcu_opl_diag_telemetry.o
+endif
 EE_OBJS += $(WORLD_OUTPUT)/render/hud_effect.o
 WORLD_FILEXIO := 1
 # C3 (opt-in HCU_C3=1): snapshot bank, sound-request recorder, render content and frame layout.
@@ -235,6 +241,10 @@ $(WORLD_OUTPUT)/stream/hcu_file_bridge.o: src/stream/hcu_file_bridge.c
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
 
 $(WORLD_OUTPUT)/stream/hcu_loading_screen.o: src/stream/hcu_loading_screen.c src/stream/hcu_loading_screen.h
+	@mkdir -p $(@D)
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
+
+$(WORLD_OUTPUT)/stream/hcu_opl_diag_telemetry.o: src/stream/hcu_opl_diag_telemetry.c src/stream/hcu_opl_diag_telemetry.h
 	@mkdir -p $(@D)
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -Isrc -c $< -o $@
 
@@ -497,6 +507,9 @@ EE_CFLAGS += -DHALO_PS2_BOOT_COMPACT=1
 endif
 ifeq ($(WORLD_HCU_BOOT_DIAG),1)
 EE_CFLAGS += -DHALO_PS2_BOOT_DIAG=1
+endif
+ifeq ($(WORLD_HCU_OPL_DIAG_TELEMETRY),1)
+EE_CFLAGS += -DHALO_PS2_OPL_DIAG_TELEMETRY=1
 endif
 # C3 umbrella (opt-in): the parent and the CE port compile the same frame-snapshot path.
 # C3 telemetry is separate and off by default; set HCU_C3_TELEMETRY=1 for qualification logs.

@@ -18,6 +18,9 @@
 /* C3:snapshot end */
 #include "stream/hcu_storage_boot.h"
 #include "stream/hcu_boot_diag.h"
+#if defined(HALO_PS2_OPL_DIAG_TELEMETRY) && HALO_PS2_OPL_DIAG_TELEMETRY
+#include "stream/hcu_opl_diag_telemetry.h"
+#endif
 #include "halo_ps2_cache.h"
 #include "halo_ps2_bitmap_frame.h"
 #include "ps2_step8_memory_owners.h"
@@ -1282,6 +1285,9 @@ static void hcu_c3_spu_feed(void *context, const hcu_sound_request *request)
 #endif
 	s_spu_cycles += t0;
 	if (t0 > s_spu_max_cycles) s_spu_max_cycles = t0;
+#if defined(HALO_PS2_OPL_DIAG_TELEMETRY) && HALO_PS2_OPL_DIAG_TELEMETRY
+	hcu_opl_diag_telemetry_tick(s_spu_now_ms);
+#endif
 }
 static void hcu_c3_sound_tick(void)
 {
@@ -4885,6 +4891,9 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	printf("HALO_PS2_LOCAL storage-boot-ready\n");
+#if defined(HALO_PS2_OPL_DIAG_TELEMETRY) && HALO_PS2_OPL_DIAG_TELEMETRY
+	hcu_opl_diag_telemetry_init();
+#endif
 	if (!file_set_default_root(HALO_HCU_ASSET_ROOT)) {
 		printf("[err] invalid asset root %s\n", HALO_HCU_ASSET_ROOT);
 		physical_memory_free();

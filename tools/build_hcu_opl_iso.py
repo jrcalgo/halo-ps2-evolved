@@ -149,6 +149,26 @@ def _names_in_directory(handle, extent: int, size: int, first_sector_only: bool)
     return found
 
 
+LIVE_TELEMETRY_MARKER = b"HALO_PS2_OPL_DIAG_TELEMETRY"
+
+
+def elf_has_live_telemetry(path: Path) -> bool:
+    return LIVE_TELEMETRY_MARKER in path.read_bytes()
+
+
+def assert_release_omits_live_telemetry(elfs: list[Path]) -> None:
+    """The play disc is not a diagnostic session. Live telemetry stays in the OPL diagnostic ISO."""
+    present = [str(path) for path in elfs if elf_has_live_telemetry(path)]
+    if present:
+        raise RuntimeError("live telemetry belongs only in an OPL diagnostic ISO: " + ", ".join(present))
+
+
+def assert_diagnostic_elves_have_live_telemetry(elfs: list[Path]) -> None:
+    missing = [str(path) for path in elfs if not elf_has_live_telemetry(path)]
+    if missing:
+        raise RuntimeError("OPL diagnostic ISO requires live telemetry in: " + ", ".join(missing))
+
+
 def assert_bios_directory_window(iso: Path) -> None:
     """Fail if the BIOS one-sector directory cache would hide a file it must open."""
     table = mp.maps()
@@ -309,6 +329,9 @@ def loading_assets_current(package: Path) -> bool:
         ("MMUSIC.HMS", music_path, 0),
         ("LOAD.RGB", loading_path, 0),
     ]
+    telemetry_elves = [path for iso, path, _weight in sources
+                       if iso == "HPS2_000.01" or iso.endswith(".ELF")]
+    assert_release_omits_live_telemetry(telemetry_elves)
     missing = [f"{iso} ({path})" for iso, path, _weight in sources if not path.is_file()]
     if missing:
         parser.error("missing ISO inputs: " + ", ".join(missing))

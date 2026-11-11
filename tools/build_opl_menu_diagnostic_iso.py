@@ -11,6 +11,7 @@ from pathlib import Path
 import subprocess
 from freeze_opl_baseline import iso_inventory
 from build_opl_boot_probes import sha
+from build_hcu_opl_iso import assert_diagnostic_elves_have_live_telemetry
 
 SECTOR = 2048
 
@@ -27,6 +28,10 @@ def main():
     work = output.parent / (output.stem + '-verification')
     work.mkdir(parents=True, exist_ok=False)
     before = iso_inventory(source, work / 'before-elfs')
+    try:
+        assert_diagnostic_elves_have_live_telemetry([menu])
+    except RuntimeError as error:
+        parser.error(str(error))
     payload = menu.read_bytes()
     old = next(row for row in before if row['path'] == 'HPS2_000.01')
     if len(payload) > old['bytes']:
@@ -79,7 +84,7 @@ def main():
               'unchanged_other_files_and_extents': len(before) - 1,
               'unchanged_guest_elf_count': sum(r['path'].startswith('E/') and r['extracted_elf'] for r in before),
               'menu_lba_preserved': old['lba'], 'system_identifier': 'PLAYSTATION',
-              'release_image': False}
+              'release_image': False, 'live_telemetry': True}
     (work / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps(result, indent=2))
 

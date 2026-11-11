@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 
 from freeze_opl_baseline import iso_inventory
-from build_hcu_opl_iso import assert_bios_directory_window
+from build_hcu_opl_iso import assert_bios_directory_window, assert_diagnostic_elves_have_live_telemetry
 
 
 def sha(path):
@@ -71,6 +71,12 @@ def main():
     for name, path in replacements.items():
         if name not in old or path.stat().st_size > old[name]["bytes"]:
             parser.error(f"replacement does not fit frozen extent: {name}")
+    diagnostic_elves = [path for name, path in replacements.items()
+                        if name == "HPS2_000.01" or name.endswith(".ELF")]
+    try:
+        assert_diagnostic_elves_have_live_telemetry(diagnostic_elves)
+    except RuntimeError as error:
+        parser.error(str(error))
     subprocess.run(["cp", "--reflink=auto", "--", str(args.baseline), str(args.output)], check=True)
     args.output.chmod(0o644)
     with args.output.open("r+b") as stream:
@@ -94,6 +100,7 @@ def main():
     assert_bios_directory_window(args.output)
     report = {"baseline_sha256": sha(args.baseline), "iso_sha256": sha(args.output),
               "iso_bytes": args.output.stat().st_size, "release_image": False,
+              "live_telemetry": True,
               "rebuilt_elf_count": 14, "unchanged_file_count": len(before) - len(replacements),
               "all_extents_preserved": True, "replacements": {
                   name: {"file": str(path), "sha256": sha(path)}
